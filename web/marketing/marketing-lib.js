@@ -133,7 +133,7 @@ export function nativeSharePayload(set, lengthId, { code }, data) {
 
 /** Every id the page renders, in page order; the unit test checks they are unique. */
 export function pageAnchors(data) {
-  const anchors = ["affiliate"];
+  const anchors = ["affiliate", "affiliates"];
   for (const section of data.sections) {
     anchors.push(section.id, `${section.id}-brand`);
     for (const product of section.products ?? []) {

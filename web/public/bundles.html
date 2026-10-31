@@ -87,6 +87,31 @@
             <button type="button" id="loadMorePassesBtn" class="btn btn-small btn-secondary">Load more</button>
           </div>
         </div>
+
+        <div id="affiliateSection" class="bundles-section" hidden>
+          <h2>Affiliates</h2>
+          <p class="hint">Set the tier and state of a referrer. Only an approved affiliate earns the tier's rate.</p>
+          <div class="pass-entry">
+            <label for="affiliateReferrerHash">Referrer hash</label>
+            <input type="text" id="affiliateReferrerHash" autocomplete="off" spellcheck="false" />
+            <button type="button" id="affiliateLookupBtn" class="btn btn-small btn-secondary">Look up</button>
+            <label for="affiliateTier">Tier</label>
+            <select id="affiliateTier">
+              <option value="customer">Customer</option>
+              <option value="casual">Casual affiliate</option>
+              <option value="creator">Creator affiliate</option>
+              <option value="family">Family</option>
+            </select>
+            <label for="affiliateState">State</label>
+            <select id="affiliateState">
+              <option value="applied">Applied</option>
+              <option value="approved">Approved</option>
+              <option value="ended">Ended</option>
+            </select>
+            <button type="button" id="affiliateSaveBtn" class="btn">Save affiliate</button>
+            <p id="affiliateResult" class="hint" role="status" aria-live="polite"></p>
+          </div>
+        </div>
       </div>
 
       <div class="feature-status-summary" data-feature-status="summary">

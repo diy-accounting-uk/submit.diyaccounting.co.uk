@@ -59,6 +59,19 @@ export async function serveRealSite(page, { signedIn = false, apiHandler = () =>
   });
 }
 
+// Records the consent answer as declined and removes the banner and dialog, so a capture shows the page.
+async function declineConsent(page) {
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem("consent.rum", "declined");
+      localStorage.setItem("consent.analytics", "declined");
+    } catch {
+      // storage is blocked: the banner is removed below
+    }
+    for (const id of ["consent-banner", "consent-dialog"]) document.getElementById(id)?.remove();
+  });
+}
+
 // Screenshots of a page at phone and desktop width, light and dark, for review.
 export async function screenshotAll(page, label, pageName) {
   const dir = path.join(process.cwd(), "target/rook-screenshots", label);
@@ -70,6 +83,7 @@ export async function screenshotAll(page, label, pageName) {
     for (const theme of ["light", "dark"]) {
       await page.setViewportSize({ width, height });
       await page.emulateMedia({ colorScheme: theme });
+      await declineConsent(page);
       await page.screenshot({ path: path.join(dir, `${pageName}-${width}-${theme}.png`), fullPage: true });
     }
   }

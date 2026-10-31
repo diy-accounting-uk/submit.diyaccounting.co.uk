@@ -330,6 +330,17 @@ describe("projectFields whitelists", () => {
     expect(projectFields("commissions", image, null, "INSERT")).toBeNull();
   });
 
+  test.each([
+    ["held-for-review pointer", { pk: "held#tiger-happy-maple-river", issuedBy: "held", useCount: 1000 }],
+    ["nightly figures", { pk: "figures#tiger-happy-maple-river", newAccounts: 4 }],
+  ])("passes: a %s item projects to null", (_name, image) => {
+    expect(projectFields("passes", image, null, "INSERT")).toBeNull();
+  });
+
+  test("passes: a pass item still projects", () => {
+    expect(projectFields("passes", { pk: "pass#tiger-happy-maple-river", useCount: 3 }, null, "INSERT")).not.toBeNull();
+  });
+
   test("a REMOVE event projects from OldImage, not NewImage", () => {
     const oldImage = { hashedSub: "hash-old", bundleId: "resident-pro", createdAt: "t1", expiry: "t2", ttl: 1 };
     const newImage = { hashedSub: "hash-new", bundleId: "should-not-be-used" };

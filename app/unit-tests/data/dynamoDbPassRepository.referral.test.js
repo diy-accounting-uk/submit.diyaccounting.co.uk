@@ -36,8 +36,17 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
-const { putReferralClaim, deleteReferralClaim, putRedemption, redeemPass, getReferralClaim, getRedemption, getAffiliate, setReviewLimit } =
-  await import("@app/data/dynamoDbPassRepository.js");
+const {
+  putReferralClaim,
+  deleteReferralClaim,
+  putRedemption,
+  redeemPass,
+  getReferralClaim,
+  getRedemption,
+  getAffiliate,
+  setReviewLimit,
+  putAffiliate,
+} = await import("@app/data/dynamoDbPassRepository.js");
 
 describe("data/dynamoDbPassRepository - referral claim, redemption record and review limit", () => {
   beforeEach(() => {
@@ -123,5 +132,22 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
   test("setReviewLimit returns null when the pass does not exist", async () => {
     mockSend.mockRejectedValue(Object.assign(new Error("missing"), { name: "ConditionalCheckFailedException" }));
     expect(await setReviewLimit("code-1", 2000, "2026-01-01T00:00:00.000Z")).toBeNull();
+  });
+
+  test("putAffiliate sets tier, state and time, keeping other attributes", async () => {
+    mockSend.mockResolvedValue({ Attributes: { tier: "casual", state: "applied" } });
+    await putAffiliate({ referrerHash: "h1", tier: "casual", state: "applied", now: "2026-01-01T00:00:00.000Z" });
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.Key).toEqual({ pk: "affiliate#h1" });
+    expect(params.UpdateExpression).toBe("SET tier = :tier, #state = :state, updatedAt = :now");
+    expect(params.ExpressionAttributeNames).toEqual({ "#state": "state" });
+    expect(params.ExpressionAttributeValues).toEqual({ ":tier": "casual", ":state": "applied", ":now": "2026-01-01T00:00:00.000Z" });
+  });
+
+  test("putAffiliate sets approvedAt when the state is approved", async () => {
+    mockSend.mockResolvedValue({ Attributes: { tier: "casual", state: "approved" } });
+    await putAffiliate({ referrerHash: "h1", tier: "casual", state: "approved", now: "2026-01-01T00:00:00.000Z" });
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.UpdateExpression).toBe("SET tier = :tier, #state = :state, updatedAt = :now, approvedAt = :now");
   });
 });

@@ -43,7 +43,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
   # The one place this number is written. The budget guard, its step name and its skip
@@ -247,11 +246,12 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: false
 
-      - name: Set up Node
+      - name: Set up the toolchain
         if: steps.role.outputs.configured == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       # The escalation starts only when the operator, and no bot, removed `maintainer-review`
       # from this issue last. The check reads the issue's own timeline.
@@ -272,30 +272,14 @@ jobs:
           repositories: private.diyaccounting.co.uk
           permission-issues: read
 
-      - name: Configure AWS role via GitHub OIDC
-        if: steps.role.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume the read-only alarm triage role
-        if: steps.role.outputs.configured == 'true'
+      - name: Assume the AWS actions and the read-only alarm triage roles
         id: assume-triage-role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        if: steps.role.outputs.configured == 'true'
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Stop when the agent kill switch is on
         if: steps.role.outputs.configured == 'true'
@@ -1026,13 +1010,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+          npm-install: scripts
+          npm-cache: 'false'
 
       - name: Generate a token that writes issues in the private repository
         id: private-token
@@ -1153,35 +1135,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node
+      - name: Set up the toolchain
         if: steps.key.outputs.configured == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
-      - name: Configure AWS role via GitHub OIDC
+      - name: Assume the AWS actions and deployment roles
         if: steps.key.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: steps.key.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Install dependencies
         if: steps.key.outputs.configured == 'true'

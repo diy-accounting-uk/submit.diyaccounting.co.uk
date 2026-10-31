@@ -128,6 +128,15 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passReleasePostLambdaProps;
     public Function passReleasePostLambda;
     public ILogGroup passReleasePostLambdaLogGroup;
+    public AbstractApiLambdaProps affiliatePostLambdaProps;
+    public Function affiliatePostLambda;
+    public ILogGroup affiliatePostLambdaLogGroup;
+    public AbstractApiLambdaProps affiliateGetLambdaProps;
+    public Function affiliateGetLambda;
+    public ILogGroup affiliateGetLambdaLogGroup;
+    public AbstractApiLambdaProps passHeldGetLambdaProps;
+    public Function passHeldGetLambda;
+    public ILogGroup passHeldGetLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -143,6 +152,9 @@ public class AccountStack extends Stack {
     public Function commissionReleaseLambda;
     public ILogGroup commissionReleaseLambdaLogGroup;
     public Rule commissionReleaseSchedule;
+    public Function commissionCreditPayoutLambda;
+    public ILogGroup commissionCreditPayoutLambdaLogGroup;
+    public Rule commissionCreditPayoutSchedule;
 
     public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
     public Function sessionBeaconPostLambda;
@@ -228,6 +240,12 @@ public class AccountStack extends Stack {
         // The sign-out route's own CORS allow-list (DiyaGlStack's DIYA_GL_ALLOWED_ORIGINS, see
         // diyaGlCors.js): the books client calls it cross-origin from the DIYA-GL pages, so it
         // needs the same allow-list those routes use.
+        // The live Stripe secret the commission credit payout reads to write customer balances.
+        @Value.Default
+        default String stripeSecretKeyArn() {
+            return "";
+        }
+
         @Value.Default
         default String booksAllowedOrigins() {
             return "";
@@ -1234,7 +1252,8 @@ public class AccountStack extends Stack {
         this.passPostLambdaLogGroup = passPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passPostLambdaProps);
         // Redeem is an atomic UpdateItem; when it fails, diagnoseFailure reads the pass back.
-        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem");
+        // A redemption that reaches the review limit writes the held pointer item
+        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
         bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
@@ -1325,12 +1344,132 @@ public class AccountStack extends Stack {
         this.passReleasePostLambda = passReleasePostApiLambda.ingestLambda;
         this.passReleasePostLambdaLogGroup = passReleasePostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passReleasePostLambdaProps);
-        passesTable.grant(this.passReleasePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // A release lifts or restores the held pointer, so it also writes and deletes pointer items
+        passesTable.grant(
+                this.passReleasePostLambda,
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem");
         // passReleasePost admits operators only, so it reads the operator list
         OperatorEmailsHelper.grantOperatorEmailsAccess(this.passReleasePostLambda, region, account, props.envName());
         infof(
                 "Created Pass Release POST Lambda %s",
                 this.passReleasePostLambda.getNode().getId());
+
+        // ============================================================================
+        // Affiliate POST Lambda (JWT auth - an operator sets a referrer's affiliate record)
+        // ============================================================================
+        var affiliatePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var affiliatePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliatePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.affiliatePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliatePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliatePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.affiliatePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliatePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliatePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliatePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliatePostLambdaCustomAuthorizer)
+                        .environment(affiliatePostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliatePostApiLambda);
+        this.affiliatePostLambdaProps = affiliatePostApiLambda.apiProps;
+        this.affiliatePostLambda = affiliatePostApiLambda.ingestLambda;
+        this.affiliatePostLambdaLogGroup = affiliatePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliatePostLambdaProps);
+        passesTable.grant(this.affiliatePostLambda, "dynamodb:UpdateItem");
+        // affiliatePost admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliatePostLambda, region, account, props.envName());
+        infof(
+                "Created Affiliate POST Lambda %s",
+                this.affiliatePostLambda.getNode().getId());
+
+        // ============================================================================
+        // Affiliate GET Lambda (JWT auth - an operator reads a referrer's affiliate record)
+        // ============================================================================
+        var affiliateGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var affiliateGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliateGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.affiliateGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliateGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliateGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.affiliateGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliateGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliateGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliateGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliateGetLambdaCustomAuthorizer)
+                        .environment(affiliateGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliateGetApiLambda);
+        this.affiliateGetLambdaProps = affiliateGetApiLambda.apiProps;
+        this.affiliateGetLambda = affiliateGetApiLambda.ingestLambda;
+        this.affiliateGetLambdaLogGroup = affiliateGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliateGetLambdaProps);
+        passesTable.grant(this.affiliateGetLambda, "dynamodb:GetItem");
+        // affiliateGet admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliateGetLambda, region, account, props.envName());
+        infof(
+                "Created Affiliate GET Lambda %s",
+                this.affiliateGetLambda.getNode().getId());
+        // Pass Held GET Lambda (JWT auth - an operator lists the passes held for review)
+        // ============================================================================
+        var passHeldGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passHeldGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passHeldGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passHeldGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passHeldGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passHeldGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passHeldGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passHeldGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passHeldGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passHeldGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passHeldGetLambdaCustomAuthorizer)
+                        .environment(passHeldGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passHeldGetApiLambda);
+        this.passHeldGetLambdaProps = passHeldGetApiLambda.apiProps;
+        this.passHeldGetLambda = passHeldGetApiLambda.ingestLambda;
+        this.passHeldGetLambdaLogGroup = passHeldGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passHeldGetLambdaProps);
+        // The list is a Query on the issuedBy-index under the held key; the index needs its own grant
+        passesTable.grant(this.passHeldGetLambda, "dynamodb:Query");
+        grantTableIndexActions(passesTable, this.passHeldGetLambda, "issuedBy-index", "dynamodb:Query");
+        // passHeldGet admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passHeldGetLambda, region, account, props.envName());
+        infof(
+                "Created Pass Held GET Lambda %s",
+                this.passHeldGetLambda.getNode().getId());
 
         // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
@@ -1533,6 +1672,64 @@ public class AccountStack extends Stack {
                 this.commissionReleaseLambda.getNode().getId());
 
         // ============================================================================
+        // Commission Credit Payout Lambda (EventBridge scheduled, monthly)
+        // ============================================================================
+        var commissionCreditPayoutLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            commissionCreditPayoutLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        var commissionCreditPayoutLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionCreditPayoutLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionCreditPayoutLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(commissionCreditPayoutLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionCreditPayoutLambdaConstruct);
+        this.commissionCreditPayoutLambda = commissionCreditPayoutLambdaConstruct.ingestLambda;
+        this.commissionCreditPayoutLambdaLogGroup = commissionCreditPayoutLambdaConstruct.logGroup;
+        commissionsTable.grant(
+                this.commissionCreditPayoutLambda, "dynamodb:GetItem", "dynamodb:Query", "dynamodb:UpdateItem");
+        bundlesTable.grant(this.commissionCreditPayoutLambda, "dynamodb:Query");
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.commissionCreditPayoutLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+
+        this.commissionCreditPayoutSchedule = Rule.Builder.create(
+                        this, props.sharedNames().account.commissionCreditPayoutLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName + "-schedule")
+                .description(
+                        "Pay payable commission credit lines onto Stripe customer balances on the 1st of each month")
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("15").hour("4").day("1").build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.commissionCreditPayoutLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Commission Credit Payout Lambda %s with monthly schedule",
+                this.commissionCreditPayoutLambda.getNode().getId());
+
+        // ============================================================================
         // Session Beacon POST Lambda (public, no auth)
         // ============================================================================
         var sessionBeaconPostLambdaEnv = new PopulatedMap<String, String>()
@@ -1690,6 +1887,9 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
         cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
+        cfnOutput(this, "AffiliatePostLambdaArn", this.affiliatePostLambda.getFunctionArn());
+        cfnOutput(this, "AffiliateGetLambdaArn", this.affiliateGetLambda.getFunctionArn());
+        cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());

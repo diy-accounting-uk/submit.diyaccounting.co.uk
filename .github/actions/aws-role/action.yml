@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-145 Assume an AWS role by OIDC, with an optional chained deploy role
+# - **Use when:** a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
+# - **Does:** aws-role assumes the actions role by GitHub OIDC, then assumes the deploy role through it when `deploy-role-arn` is set. The credentials go to the job environment. The calling job grants `id-token: write`.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/aws-role/action.yml`
+# - **Files:** .github/actions/aws-role/action.yml
+# - **Keywords:** aws credentials, oidc, role chaining, actions role, deploy role, configure-aws-credentials
+# - **Related:** OPS-144
+# @end-capability
+
+name: "Assume an AWS role"
+description: "OIDC role assumption, with an optional chained second role"
+
+inputs:
+  actions-role-arn:
+    description: "Role assumed by GitHub OIDC"
+    required: true
+  deploy-role-arn:
+    description: "Role assumed through the first role; empty skips the chain"
+    required: false
+    default: ""
+  aws-region:
+    description: "AWS region"
+    required: false
+    default: "eu-west-2"
+
+outputs:
+  aws-account-id:
+    description: "Account id of the last role assumed"
+    value: ${{ steps.chained.outputs.aws-account-id || steps.first.outputs.aws-account-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS role via GitHub OIDC
+      id: first
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.actions-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Assume AWS deployment role
+      id: chained
+      if: ${{ inputs.deploy-role-arn != '' }}
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.deploy-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3

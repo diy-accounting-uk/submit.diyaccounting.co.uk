@@ -13,6 +13,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFixRow, buildPrBody, fixBranchName, fixRowPath } from "../../scripts/support-fix-pr.mjs";
 
+const AWS_ROLE_STEP = /configure-aws-credentials|\.\/\.github\/actions\/aws-role/;
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 const text = readFileSync(resolve(ROOT, ".github/workflows/support-triage.yml"), "utf8");
@@ -77,8 +79,8 @@ describe("support-triage.yml", () => {
   });
 
   it("gives the handling job AWS access and the post job none", () => {
-    expect(jobBlock("handle")).toContain("configure-aws-credentials");
-    expect(jobBlock("post")).not.toContain("configure-aws-credentials");
+    expect(jobBlock("handle")).toMatch(AWS_ROLE_STEP);
+    expect(jobBlock("post")).not.toMatch(AWS_ROLE_STEP);
     expect(jobBlock("post")).not.toContain("id-token");
   });
 
@@ -122,7 +124,7 @@ describe("support-triage.yml", () => {
     expect(fixPr).toContain("permission-contents: write");
     expect(fixPr).toContain("permission-pull-requests: write");
     expect(fixPr).toContain("repositories: submit.diyaccounting.co.uk");
-    expect(fixPr).not.toContain("configure-aws-credentials");
+    expect(fixPr).not.toMatch(AWS_ROLE_STEP);
     expect(fixPr).not.toContain("id-token");
     expect(fixPr).toMatch(/permissions:\n {6}contents: read\n/);
     for (const name of ["select", "handle", "post", "draft", "ledger"]) {

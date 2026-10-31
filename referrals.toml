@@ -4,6 +4,7 @@ version = "1.0.0"
 
 [ledger]
 accrue = true                 # false: invoice.paid writes no new lines or card records; reversals still run
+payCredit = false             # true: the monthly job moves payable credit lines onto Stripe customer balances
 defaultTier = "customer"
 volumeHoldConversionsPerDay = 5
 earlyCancelDays = 30

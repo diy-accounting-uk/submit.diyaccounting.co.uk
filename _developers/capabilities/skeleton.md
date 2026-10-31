@@ -242,6 +242,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-08 -->
 <!-- capability BILL-09 -->
 <!-- capability BILL-45 -->
+<!-- capability BILL-48 -->
+<!-- capability BILL-49 -->
+<!-- capability BILL-50 -->
 <!-- capability BILL-10 -->
 <!-- capability BILL-11 -->
 ### Practice clients and HMRC authorisation (BILL)
@@ -309,6 +312,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-44 -->
 <!-- capability BILL-46 -->
 <!-- capability BILL-47 -->
+<!-- capability BILL-51 -->
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
@@ -336,6 +340,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-136 -->
 <!-- capability OPS-137 -->
 <!-- capability OPS-143 -->
+<!-- capability OPS-144 -->
+<!-- capability OPS-145 -->
 ### ci slot pool and sweep (OPS)
 
 <!-- generated:group ci-slot-pool-and-sweep-ops -->
@@ -347,6 +353,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-13 -->
 <!-- capability OPS-14 -->
 <!-- capability OPS-14a -->
+<!-- capability OPS-146 -->
 <!-- capability OPS-15 -->
 <!-- capability OPS-16 -->
 ### Alarms, triage and probes (OPS)

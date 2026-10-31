@@ -35,6 +35,9 @@ const PUT_RECORD_BATCH_LIMIT = 500;
 
 const STRIPE_SUBSCRIPTION_PK_PREFIX = "stripe#";
 const REDEMPTION_PK_PREFIX = "redemption#";
+// Items the passes table holds that the app derives from pass items: the held-for-review pointer
+// and the nightly figures. They are not passes, so they do not leave the table.
+const DERIVED_PASS_PK_PREFIXES = ["held#", "figures#"];
 const COMMISSION_PK_PREFIX = "commission#";
 const COMMISSION_LINE_SK_PREFIX = "line#";
 
@@ -110,6 +113,7 @@ function stripSubscriptionPrefix(pk) {
  * on a pass item stays out: only a redemption item projects it.
  */
 function projectPass(image) {
+  if (typeof image.pk === "string" && DERIVED_PASS_PK_PREFIXES.some((prefix) => image.pk.startsWith(prefix))) return null;
   const isRedemption = typeof image.pk === "string" && image.pk.startsWith(REDEMPTION_PK_PREFIX);
   return {
     pass_id: typeof image.pk === "string" ? hashSub(image.pk) : null,

@@ -12,6 +12,15 @@
   "submitHosts": [
     "submit.diyaccounting.co.uk"
   ],
+  "affiliates": {
+    "applyUrl": "",
+    "ratePercent": 30,
+    "months": 12,
+    "creditHoldDays": 30,
+    "cashHoldDays": 120,
+    "capMonthPounds": 100,
+    "capTaxYearPounds": 1000
+  },
   "offers": {
     "withPass": "7 days of free VAT submissions",
     "withoutPass": "a free day pass"

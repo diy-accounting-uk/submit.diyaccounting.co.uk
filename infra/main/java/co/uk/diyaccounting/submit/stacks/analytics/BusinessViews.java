@@ -264,6 +264,10 @@ public class BusinessViews extends Construct {
                             "stripe_charges",
                             "activity_events_all")),
             new ViewDefinition(
+                    "v_affiliate_commissions_monthly",
+                    "Commission held, payable, paid and reversed in pence, by month and tier, live mode only",
+                    List.of("dynamo_commissions")),
+            new ViewDefinition(
                     "v_usd_gbp_daily",
                     "Pounds per dollar on each day from the European Central Bank reference rate, carried over"
                             + " days the bank does not publish",

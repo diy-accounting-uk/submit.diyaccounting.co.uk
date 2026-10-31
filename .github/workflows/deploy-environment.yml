@@ -30,6 +30,10 @@ concurrency:
   # see that job's comment in deploy.yml. It re-derives this group's resolution independently
   # rather than sharing it, so changing how an environment name is resolved here needs the same
   # change on that side.
+  #
+  # deploy.yml waits on the jobs of this workflow by name (ENV_JOBS_READ_BY_APP_STACKS and
+  # ENV_JOBS_READ_BY_EDGE_AND_OPS in its env block), so a rename of one of those jobs needs the
+  # same change in deploy.yml.
   group: deploy-environment-${{ (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
   cancel-in-progress: false
 

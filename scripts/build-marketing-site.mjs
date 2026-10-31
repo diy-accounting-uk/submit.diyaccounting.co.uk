@@ -71,8 +71,25 @@ export const TOKEN_SOURCES = [
 // data
 // ---------------------------------------------------------------------------------------------
 
+/** The figures of the affiliate section, taken from referrals.toml so a rate change needs no copy edit. */
+export function affiliateFigures() {
+  const referrals = TOML.parse(fs.readFileSync(path.join(REPO_ROOT, "referrals.toml"), "utf8"));
+  const customer = referrals.tiers.find((t) => t.id === "customer");
+  const cash = referrals.tiers.find((t) => t.id === "casual");
+  return {
+    ratePercent: cash.rateBps / 100,
+    months: cash.months,
+    creditHoldDays: customer.holdDays,
+    cashHoldDays: cash.holdDays,
+    capMonthPounds: cash.capMonthPence / 100,
+    capTaxYearPounds: cash.capTaxYearPence / 100,
+  };
+}
+
 export function readMarketingData() {
-  return JSON.parse(JSON.stringify(TOML.parse(fs.readFileSync(TOML_FILE, "utf8"))));
+  const data = JSON.parse(JSON.stringify(TOML.parse(fs.readFileSync(TOML_FILE, "utf8"))));
+  data.affiliates = { ...data.affiliates, ...affiliateFigures() };
+  return data;
 }
 
 export function renderMarketingJson() {

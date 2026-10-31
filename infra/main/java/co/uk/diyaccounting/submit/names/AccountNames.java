@@ -190,6 +190,30 @@ public class AccountNames {
     public String passReleasePostLambdaUrlPath;
     public boolean passReleasePostLambdaJwtAuthorizer;
     public boolean passReleasePostLambdaCustomAuthorizer;
+    public String affiliatePostIngestLambdaHandler;
+    public String affiliatePostIngestLambdaFunctionName;
+    public String affiliatePostIngestLambdaArn;
+    public String affiliatePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliatePostLambdaHttpMethod;
+    public String affiliatePostLambdaUrlPath;
+    public boolean affiliatePostLambdaJwtAuthorizer;
+    public boolean affiliatePostLambdaCustomAuthorizer;
+    public String affiliateGetIngestLambdaHandler;
+    public String affiliateGetIngestLambdaFunctionName;
+    public String affiliateGetIngestLambdaArn;
+    public String affiliateGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliateGetLambdaHttpMethod;
+    public String affiliateGetLambdaUrlPath;
+    public boolean affiliateGetLambdaJwtAuthorizer;
+    public boolean affiliateGetLambdaCustomAuthorizer;
+    public String passHeldGetIngestLambdaHandler;
+    public String passHeldGetIngestLambdaFunctionName;
+    public String passHeldGetIngestLambdaArn;
+    public String passHeldGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passHeldGetLambdaHttpMethod;
+    public String passHeldGetLambdaUrlPath;
+    public boolean passHeldGetLambdaJwtAuthorizer;
+    public boolean passHeldGetLambdaCustomAuthorizer;
 
     // Pass Generate POST Lambda (JWT auth - user pass generation via tokens)
     public String passGeneratePostIngestLambdaHandler;
@@ -220,6 +244,10 @@ public class AccountNames {
     public String commissionReleaseLambdaFunctionName;
     public String commissionReleaseLambdaArn;
     public String commissionReleaseProvisionedConcurrencyLambdaAliasArn;
+    public String commissionCreditPayoutLambdaHandler;
+    public String commissionCreditPayoutLambdaFunctionName;
+    public String commissionCreditPayoutLambdaArn;
+    public String commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn;
 
     // Session Beacon POST Lambda (public, no auth)
     public String sessionBeaconPostIngestLambdaHandler;
@@ -767,6 +795,72 @@ public class AccountNames {
                 "Raises, sets or removes the review limit of a pass held for review (operator only)",
                 "releasePass"));
 
+        // Affiliate POST Lambda (JWT auth; the handler admits operators only)
+        this.affiliatePostLambdaHttpMethod = HttpMethod.POST;
+        this.affiliatePostLambdaUrlPath = "/api/v1/affiliate";
+        this.affiliatePostLambdaJwtAuthorizer = true;
+        this.affiliatePostLambdaCustomAuthorizer = false;
+        var affiliatePostLambdaHandlerName = "affiliatePost.ingestHandler";
+        var affiliatePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliatePostLambdaHandlerName);
+        this.affiliatePostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliatePostLambdaHandlerDashed);
+        this.affiliatePostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliatePostLambdaHandlerName);
+        this.affiliatePostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliatePostLambdaHandlerDashed);
+        this.affiliatePostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliatePostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliatePostLambdaHttpMethod,
+                this.affiliatePostLambdaUrlPath,
+                "Set an affiliate",
+                "Sets the tier and state of a referrer's affiliate record (operator only)",
+                "setAffiliate"));
+
+        // Affiliate GET Lambda (JWT auth; the handler admits operators only)
+        this.affiliateGetLambdaHttpMethod = HttpMethod.GET;
+        this.affiliateGetLambdaUrlPath = "/api/v1/affiliate";
+        this.affiliateGetLambdaJwtAuthorizer = true;
+        this.affiliateGetLambdaCustomAuthorizer = false;
+        var affiliateGetLambdaHandlerName = "affiliateGet.ingestHandler";
+        var affiliateGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliateGetLambdaHandlerName);
+        this.affiliateGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliateGetLambdaHandlerDashed);
+        this.affiliateGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateGetLambdaHandlerName);
+        this.affiliateGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, affiliateGetLambdaHandlerDashed);
+        this.affiliateGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliateGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliateGetLambdaHttpMethod,
+                this.affiliateGetLambdaUrlPath,
+                "Read an affiliate",
+                "Reads the tier and state of a referrer's affiliate record (operator only)",
+                "getAffiliate"));
+        // Pass Held GET Lambda (JWT auth; the handler admits operators only)
+        this.passHeldGetLambdaHttpMethod = HttpMethod.GET;
+        this.passHeldGetLambdaUrlPath = "/api/v1/pass/held";
+        this.passHeldGetLambdaJwtAuthorizer = true;
+        this.passHeldGetLambdaCustomAuthorizer = false;
+        var passHeldGetLambdaHandlerName = "passHeldGet.ingestHandler";
+        var passHeldGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passHeldGetLambdaHandlerName);
+        this.passHeldGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, passHeldGetLambdaHandlerDashed);
+        this.passHeldGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, passHeldGetLambdaHandlerName);
+        this.passHeldGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, passHeldGetLambdaHandlerDashed);
+        this.passHeldGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passHeldGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.passHeldGetLambdaHttpMethod,
+                this.passHeldGetLambdaUrlPath,
+                "List held passes",
+                "Lists the passes held for review, with their issuer hash, use count, review limit and held time (operator only)",
+                "listHeldPasses"));
+
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         this.passGeneratePostLambdaHttpMethod = HttpMethod.POST;
         this.passGeneratePostLambdaUrlPath = "/api/v1/pass/generate";
@@ -839,6 +933,18 @@ public class AccountNames {
                 "%s-%s".formatted(root.appLambdaArnPrefix, commissionReleaseLambdaHandlerDashed);
         this.commissionReleaseProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.commissionReleaseLambdaArn, root.provisionedConcurrencyAliasName);
+
+        var commissionCreditPayoutLambdaHandlerName = "commissionCreditPayout.handler";
+        var commissionCreditPayoutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(commissionCreditPayoutLambdaHandlerName);
+        this.commissionCreditPayoutLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, commissionCreditPayoutLambdaHandlerDashed);
+        this.commissionCreditPayoutLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, commissionCreditPayoutLambdaHandlerName);
+        this.commissionCreditPayoutLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, commissionCreditPayoutLambdaHandlerDashed);
+        this.commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.commissionCreditPayoutLambdaArn, root.provisionedConcurrencyAliasName);
 
         // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
         // the bare /api/session/beacon the endpoint used before: CloudFront only forwards

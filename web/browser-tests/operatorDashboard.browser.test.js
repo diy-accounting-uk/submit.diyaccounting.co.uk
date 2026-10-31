@@ -432,20 +432,55 @@ const FIXTURE_PAID_SUBSCRIBERS = {
 
 const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
 
-const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42, months: 14.25 };
+// Thirty days of a small service: about 130 visits, 41 paid landings, £84 of ad spend over 96 clicks.
+const SAMPLE_VALUE_BY_UNIT = { count: 132, gbp: 84, usd: 18.6, ratio: 0.42, hours: 6.5, runs: 38, months: 14.25 };
+const SAMPLE_VALUE_BY_ID = {
+  "ads-clicks": 96,
+  "ads-impressions": 4180,
+  "ads-ctr": 0.023,
+  "ads-cost-gbp": 84,
+  "ads-cost-per-click-gbp": 0.88,
+  "paid-landings": 41,
+  "ads-cost-per-paid-landing-gbp": 2.05,
+  "revenue-gbp": 312,
+  "revenue-subscriptions-gbp": 252,
+  "revenue-donations-gbp": 40,
+  "revenue-paypal-donations-gbp": 20,
+  "probe-pass-rate": 0.994,
+  "deploy-failure-rate": 0.06,
+  "hmrc-submission-failure-rate": 0.02,
+  "submission-failure-rate": 0.02,
+  "alarms-fired": 3,
+  "charges-without-activation": 0,
+  "hmrc-submission-failures": 1,
+  "company-turnover": 3800,
+  "company-costs": 2650,
+  "company-profit": 1150,
+  "company-cash-at-bank": 18400,
+};
+// A sum covers three times as many days in ninety as in thirty; a rate or a median stays the same.
+const spreadOverNinety = (observation, thirtyDays) =>
+  ["count", "gbp", "usd"].includes(observation.unit) ? Math.round(thirtyDays * 3 * 100) / 100 : thirtyDays;
+const sampleValue = (observation) =>
+  observation.id.endsWith("::started")
+    ? 40
+    : observation.id.endsWith("::completed")
+      ? 31
+      : (SAMPLE_VALUE_BY_ID[observation.id] ?? SAMPLE_VALUE_BY_UNIT[observation.unit]);
 
 // Every observation the publisher defines, each with a value in every column, which is the
 // most the page ever renders; the layout tests size the page's reserved heights against it.
 function fullShapeSnapshot() {
   const context = {
+    envName: "prod",
     region: "eu-west-2",
     athenaWorkGroupName: "prod-env-analytics",
     githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
     ga4PropertyId: "523400333",
   };
-  const windows = (unit) => ({
-    last30: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
-    last90: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
+  const windows = (observation) => ({
+    last30: { value: sampleValue(observation), trend: 0.08 },
+    last90: { value: spreadOverNinety(observation, sampleValue(observation)), trend: 0.08 },
   });
   return {
     generatedAt: "2026-09-29T07:45:25.539Z",
@@ -461,8 +496,8 @@ function fullShapeSnapshot() {
         source: observation.view,
         measure: measureDescription(observation),
         better: betterDirection(observation.id),
-        ...windows(observation.unit),
-        ...(observation.fastWindowView ? { today: { value: 12 }, previousDay: { value: 123 }, last7: { value: 1234 } } : {}),
+        ...windows(observation),
+        ...(observation.fastWindowView ? { today: { value: 5 }, previousDay: { value: 4 }, last7: { value: 31 } } : {}),
         deepLink: observation.deepLink(context),
       })),
     })),
@@ -498,6 +533,23 @@ test.describe("Operator Dashboard", () => {
   async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
     await page.route("**/dashboard.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: dashboardHtmlContent });
+    });
+    await page.route("**/api/v1/pass/held*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          passes: [
+            {
+              code: "tiger-happy-mountain-silver",
+              issuedBy: "9f2c4e7a1b3d",
+              useCount: 1000,
+              reviewLimit: 1000,
+              heldAt: "2026-10-30T09:15:00.000Z",
+            },
+          ],
+        }),
+      });
     });
     await page.route("**/api/v1/operator/snapshot*", async (route) => {
       await route.fulfill({
@@ -1383,6 +1435,9 @@ test.describe("Operator Dashboard", () => {
           expect(cardRight).toBeLessThanOrEqual(width);
           const firstColour = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--chart-1").trim());
           expect(firstColour).toBe(colorScheme === "dark" ? "#56b4e9" : "#0072b2");
+          await page.evaluate(() => {
+            for (const id of ["consent-banner", "consent-dialog"]) document.getElementById(id)?.remove();
+          });
           await page.locator("#chartsPanel").screenshot({ path: `target/rook-screenshots/dash/charts-${width}-${colorScheme}.png` });
           await page.screenshot({ path: `target/rook-screenshots/dash/dashboard-${width}-${colorScheme}.png`, fullPage: true });
         });

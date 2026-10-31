@@ -10,6 +10,8 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const AWS_ROLE_STEP = /configure-aws-credentials|\.\/\.github\/actions\/aws-role/;
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 const text = readFileSync(resolve(ROOT, ".github/workflows/support-reader.yml"), "utf8");
@@ -63,7 +65,7 @@ describe("support-reader.yml", () => {
 
   it("gives post no AWS credentials", () => {
     const post = jobBlock("post");
-    expect(post).not.toContain("configure-aws-credentials");
+    expect(post).not.toMatch(AWS_ROLE_STEP);
     expect(post).not.toContain("id-token");
   });
 

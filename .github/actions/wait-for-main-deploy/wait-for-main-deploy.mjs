@@ -98,9 +98,18 @@ async function listRunsOnMain() {
   return (body.workflow_runs ?? []).filter(isUnfinished);
 }
 
-async function jobsForRun(runId) {
-  const body = await github(`/actions/runs/${runId}/jobs?per_page=100`);
-  return body.jobs ?? [];
+const JOBS_PER_PAGE = 100;
+
+// Every job of a run. A deploy.yml run has more than 200 jobs and 'set origins' is past the
+// first page, so one page reads as "has not started".
+export async function jobsForRun(runId) {
+  const jobs = [];
+  for (let page = 1; ; page += 1) {
+    const body = await github(`/actions/runs/${runId}/jobs?per_page=${JOBS_PER_PAGE}&page=${page}`);
+    const pageJobs = body.jobs ?? [];
+    jobs.push(...pageJobs);
+    if (pageJobs.length < JOBS_PER_PAGE) return jobs;
+  }
 }
 
 // Each gating entry carries the run id (for naming the deploy run in a caller's summary) and a

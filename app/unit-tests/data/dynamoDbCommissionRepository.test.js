@@ -216,9 +216,49 @@ describe("data/dynamoDbCommissionRepository", () => {
   });
 
   test("putReversalLine refuses to overwrite and returns false when it exists", async () => {
-    expect(await repo.putReversalLine({ pk: "p", sk: "s" })).toBe(true);
-    expect(mockSend.mock.calls[0][0].params.ConditionExpression).toBe("attribute_not_exists(pk)");
-    mockSend.mockRejectedValue(Object.assign(new Error("x"), { name: "ConditionalCheckFailedException" }));
-    expect(await repo.putReversalLine({ pk: "p", sk: "s" })).toBe(false);
+    expect(await repo.putReversalLine({ pk: "commission#r", sk: "s", form: "cash" })).toBe(true);
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items).toHaveLength(1);
+    expect(items[0].Put.ConditionExpression).toBe("attribute_not_exists(pk)");
+    mockSend.mockRejectedValue(cancelled("ConditionalCheckFailed"));
+    expect(await repo.putReversalLine({ pk: "commission#r", sk: "s", form: "cash" })).toBe(false);
+  });
+
+  test("putReversalLine of a credit line also writes the payable pointer", async () => {
+    await repo.putReversalLine({ pk: "commission#r", sk: "line#in_1#reversal", form: "credit" });
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[1].Put.Item).toEqual({ pk: "payable", sk: "r#line#in_1#reversal", linePk: "commission#r", lineSk: "line#in_1#reversal" });
+  });
+
+  test("releaseLine of a credit line writes the payable pointer after the totals", async () => {
+    await repo.releaseLine(
+      { ...heldLine, form: "credit" },
+      { now: "n", payableMonth: "m", payableTaxYear: "t", totals: [{ sk: "totals#credit", field: "creditPence", cap: null }] },
+    );
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items).toHaveLength(4);
+    expect(items[3].Put.Item.pk).toBe("payable");
+  });
+
+  test("reversePayableLine of a credit line deletes the payable pointer", async () => {
+    await repo.reversePayableLine({ ...heldLine, form: "credit" }, { reason: "refund", now: "n", totals: [] });
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[1].Delete.Key).toEqual({ pk: "payable", sk: "ref-1#line#in_1" });
+  });
+
+  test("queryPayablePointers reads the payable partition by key", async () => {
+    mockSend.mockResolvedValue({ Items: [{ sk: "a" }] });
+    expect(await repo.queryPayablePointers()).toEqual([{ sk: "a" }]);
+    expect(mockSend.mock.calls[0][0].params.ExpressionAttributeValues).toEqual({ ":payable": "payable" });
+  });
+
+  test("markLinePaid conditions on payable, records the fields and deletes the pointer", async () => {
+    expect(await repo.markLinePaid(heldLine, { now: "n", fields: { balanceTransactionId: "cbtxn_1" } })).toBe(true);
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[0].Update.ConditionExpression).toBe("#state = :payable");
+    expect(items[0].Update.ExpressionAttributeValues[":f0"]).toBe("cbtxn_1");
+    expect(items[1].Delete.Key).toEqual({ pk: "payable", sk: "ref-1#line#in_1" });
+    mockSend.mockRejectedValue(cancelled("ConditionalCheckFailed", "None"));
+    expect(await repo.markLinePaid(heldLine, { now: "n" })).toBe(false);
   });
 });
