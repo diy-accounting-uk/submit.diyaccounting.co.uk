@@ -240,7 +240,7 @@ class SubmitEnvironmentCdkResourceTest {
                         "test-env-activity-telegram",
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
 
         // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
         // mid-teardown's ALARM events are dropped instead of forwarded.
@@ -291,7 +291,7 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull, GA4 BigQuery event
         // export pull and GA4 daily aggregate pull jobs, each with an Errors alarm only, invoked
@@ -315,7 +315,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
+            SubmitApplicationCdkSupport.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,
