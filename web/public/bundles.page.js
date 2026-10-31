@@ -1232,13 +1232,13 @@ async function fetchMyGeneratedPasses(append) {
   }
 }
 
-// The marketing site follows the environment of this page: prod pages link to marketing, every other host to ci-marketing.
-const PROD_SUBMIT_HOSTS = ["submit.diyaccounting.co.uk", "prod-submit.diyaccounting.co.uk"];
+// Prod hosts are the apex and every prod- host (prod-submit and the per-deployment prod-<sha>.submit); the rest are ci.
+function isProdSubmitHost(hostname) {
+  return hostname === "submit.diyaccounting.co.uk" || hostname.startsWith("prod-");
+}
 
 function marketingPostUrl(pass) {
-  const marketingHost = PROD_SUBMIT_HOSTS.includes(window.location.hostname)
-    ? "marketing.diyaccounting.co.uk"
-    : "ci-marketing.diyaccounting.co.uk";
+  const marketingHost = isProdSubmitHost(window.location.hostname) ? "marketing.diyaccounting.co.uk" : "ci-marketing.diyaccounting.co.uk";
   const url = new URL(`https://${marketingHost}/`);
   url.searchParams.set("pass", pass.code);
   url.hash = String(pass.bundleId || "").includes("vat") ? "submit-vat" : "submit-all";
