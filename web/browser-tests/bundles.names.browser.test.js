@@ -77,4 +77,32 @@ test.describe("bundles and usage names", () => {
     await expect(empty).toContainText("Generate Digital Pass or Generate Physical Pass");
     await screenshotAll(page, "names", "bundles-resident");
   });
+
+  test("bundles.html names the bundles that generate passes when the passes answer before the catalogue service is ready", async ({
+    page,
+  }) => {
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("day-guest") });
+    const pageErrors = [];
+    const consoleProblems = [];
+    page.on("pageerror", (err) => pageErrors.push(err.message));
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") consoleProblems.push(msg.text());
+    });
+    // The catalogue arrives first, the passes answer next, the environment name (read before the
+    // catalogue service exists) arrives last.
+    await page.route("**/api/v1/pass/my-passes*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await route.fallback();
+    });
+    await page.route("**/submit.environment-name.txt", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.fallback();
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    const empty = page.locator("#generatedPassesEmpty");
+    await expect(empty).toContainText("Resident", { timeout: 15000 });
+    expect(consoleProblems.filter((text) => text.includes("Failed to fetch my generated passes"))).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
 });

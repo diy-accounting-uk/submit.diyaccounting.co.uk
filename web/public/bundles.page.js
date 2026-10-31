@@ -1050,10 +1050,11 @@ let __noGeneratedPasses = false;
 const PASS_ACTIVITY_IDS = ["generate-pass-digital", "generate-pass-physical"];
 
 // The empty-list text says how to generate a pass when a held bundle allows it, and which
-// bundles allow it when none does. It waits for the catalogue, which holds both answers.
+// bundles allow it when none does. It waits for the catalogue and its service, which hold both
+// answers; the catalogue load calls it again once both exist.
 function renderGeneratedPassesEmptyText() {
   const emptyMsg = document.getElementById("generatedPassesEmpty");
-  if (!emptyMsg || !__noGeneratedPasses || !__catalogueData?.bundles) return;
+  if (!emptyMsg || !__noGeneratedPasses || !__catalogueData?.bundles || !__catalogService) return;
   const passActivities = (__catalogueData.activities || []).filter((a) => PASS_ACTIVITY_IDS.includes(a.id));
   const allowedIds = new Set(passActivities.flatMap((a) => a.bundles || []));
   const heldAllowed = parseUserBundles().some((entry) => allowedIds.has(typeof entry === "string" ? entry : entry.bundleId));
