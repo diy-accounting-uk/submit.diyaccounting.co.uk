@@ -8,6 +8,7 @@ import { ALLOWED_LOGINS, OPERATOR_LOGIN } from "../../../scripts/issue-agent-all
 const OPERATOR = "antonycc";
 const labeled = (login) => ({ event: "labeled", label: { name: "maintainer-review" }, actor: { login } });
 const unlabeled = (login) => ({ event: "unlabeled", label: { name: "maintainer-review" }, actor: { login } });
+const ev = (event, name, login) => ({ event, label: { name }, actor: { login } });
 const state = (labels, events) => approvalState({ labels, events, operatorLogin: OPERATOR });
 
 describe("maintainer review gate", () => {
@@ -53,6 +54,57 @@ describe("maintainer review gate", () => {
   it("ignores events about other labels", () => {
     const other = { event: "unlabeled", label: { name: "support" }, actor: { login: OPERATOR } };
     expect(state([], [labeled("diyaccounting-ops[bot]"), other])).toBe("not-approved");
+  });
+
+  describe("injection-suspected", () => {
+    it("is pending while the label is present, even after the operator removed maintainer-review", () => {
+      const events = [labeled("a"), ev("labeled", "injection-suspected", "diyaccounting-agent[bot]"), unlabeled(OPERATOR)];
+      expect(state(["support", "injection-suspected"], events)).toBe("pending");
+    });
+
+    it("is approved when the operator removed both labels", () => {
+      const events = [
+        labeled("a"),
+        ev("labeled", "injection-suspected", "diyaccounting-agent[bot]"),
+        unlabeled(OPERATOR),
+        ev("unlabeled", "injection-suspected", OPERATOR),
+      ];
+      expect(state(["support"], events)).toBe("approved");
+    });
+
+    it("is not approved when a bot removed the injection label", () => {
+      const events = [
+        labeled("a"),
+        ev("labeled", "injection-suspected", "diyaccounting-agent[bot]"),
+        ev("unlabeled", "injection-suspected", "diyaccounting-agent[bot]"),
+        unlabeled(OPERATOR),
+      ];
+      expect(state(["support"], events)).toBe("not-approved");
+    });
+  });
+
+  describe("rejected", () => {
+    it("is rejected while the label is present, whatever else the timeline says", () => {
+      const events = [labeled("a"), unlabeled(OPERATOR), ev("labeled", "rejected", OPERATOR)];
+      expect(state(["support", "rejected"], events)).toBe("rejected");
+      expect(state(["support", "rejected", "maintainer-review"], events)).toBe("rejected");
+    });
+
+    it("is pending when the operator removed rejected and maintainer-review has not come back", () => {
+      const events = [labeled("a"), unlabeled(OPERATOR), ev("labeled", "rejected", OPERATOR), ev("unlabeled", "rejected", OPERATOR)];
+      expect(state(["support"], events)).toBe("pending");
+    });
+
+    it("is pending once the sweep put maintainer-review back", () => {
+      const events = [
+        labeled("a"),
+        unlabeled(OPERATOR),
+        ev("labeled", "rejected", OPERATOR),
+        ev("unlabeled", "rejected", OPERATOR),
+        labeled("diyaccounting-agent[bot]"),
+      ];
+      expect(state(["support", "maintainer-review"], events)).toBe("pending");
+    });
   });
 
   it("reads the issue and its timeline from GitHub", async () => {

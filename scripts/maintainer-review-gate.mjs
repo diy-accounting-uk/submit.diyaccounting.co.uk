@@ -10,14 +10,18 @@
 //
 //   1. the label is not on the issue now, and
 //   2. the last `maintainer-review` event on the issue timeline is `unlabeled`, and
-//   3. the actor of that event is the operator login.
+//   3. the actor of that event is the operator login, and
+//   4. neither `injection-suspected` nor `rejected` is on the issue now, and
+//   5. the last `injection-suspected` event, if there is one, is an `unlabeled` by the operator.
 //
-// A bot or an agent that removes the label fails check 3. An issue that never carried the label
-// fails check 2. The CLI exits non-zero unless the state is `approved`.
+// A bot or an agent that removes a label fails check 3 or 5. An issue that never carried
+// `maintainer-review` fails check 2. `rejected` stops the issue for good until the operator
+// removes it, and removing it puts `maintainer-review` back (scripts/support-label-sweep.mjs), so
+// the issue waits for approval again. The CLI exits non-zero unless the state is `approved`.
 //
 // usage: maintainer-review-gate.mjs --repo <owner/name> --issue <number>
 // env:   GH_TOKEN (read access to the repository's issues), GITHUB_OUTPUT
-// Prints and writes `state=approved|pending|not-approved`.
+// Prints and writes `state=approved|pending|not-approved|rejected`.
 
 import { appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -25,6 +29,8 @@ import { OPERATOR_LOGIN } from "./issue-agent-allowlist.mjs";
 import { assertIssueNumber, assertRepo, githubGet, githubGetAll } from "./github-issue-comment.mjs";
 
 export const REVIEW_LABEL = "maintainer-review";
+export const INJECTION_LABEL = "injection-suspected";
+export const REJECTED_LABEL = "rejected";
 
 const sameLogin = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLowerCase();
 
@@ -33,16 +39,24 @@ const sameLogin = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").to
  * @param {string[]} input.labels label names on the issue now
  * @param {{event: string, label?: {name: string}, actor?: {login: string}}[]} input.events the issue timeline, oldest first
  * @param {string} input.operatorLogin
- * @returns {"approved"|"pending"|"not-approved"}
+ * @returns {"approved"|"pending"|"not-approved"|"rejected"}
  */
 export function approvalState({ labels, events, operatorLogin }) {
-  if (labels.includes(REVIEW_LABEL)) return "pending";
-  const reviewEvents = events.filter(
-    (entry) => (entry.event === "labeled" || entry.event === "unlabeled") && entry.label?.name === REVIEW_LABEL,
-  );
-  const last = reviewEvents[reviewEvents.length - 1];
-  if (!last || last.event !== "unlabeled") return "not-approved";
-  return sameLogin(last.actor?.login, operatorLogin) ? "approved" : "not-approved";
+  if (labels.includes(REJECTED_LABEL)) return "rejected";
+  if (labels.includes(INJECTION_LABEL) || labels.includes(REVIEW_LABEL)) return "pending";
+  const labelEvents = (name) =>
+    events.filter((entry) => (entry.event === "labeled" || entry.event === "unlabeled") && entry.label?.name === name);
+  const last = (list) => list[list.length - 1];
+  const lastReview = last(labelEvents(REVIEW_LABEL));
+  const lastRejected = last(labelEvents(REJECTED_LABEL));
+  // The operator removed `rejected` and the sweep has not put `maintainer-review` back yet.
+  if (lastRejected && events.indexOf(lastRejected) > events.indexOf(lastReview)) return "pending";
+  const lastInjection = last(labelEvents(INJECTION_LABEL));
+  if (lastInjection && !(lastInjection.event === "unlabeled" && sameLogin(lastInjection.actor?.login, operatorLogin))) {
+    return "not-approved";
+  }
+  if (!lastReview || lastReview.event !== "unlabeled") return "not-approved";
+  return sameLogin(lastReview.actor?.login, operatorLogin) ? "approved" : "not-approved";
 }
 
 export async function issueApprovalState({ repo, issue, token, fetchImpl = fetch }) {

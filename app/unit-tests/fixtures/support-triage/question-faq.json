@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "A plain question that a published FAQ answers.",
+  "handlingInput": {
+    "issueNumber": 9001,
+    "category": "receipts",
+    "faqId": "where-is-receipt",
+    "summary": "The customer asks where to find the receipt for a VAT return they submitted last week.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "where-is-receipt",
+    "firstSentencePattern": "receipt",
+    "requiredPhrases": ["receipt"],
+    "forbiddenPhrases": ["Dear ", "close this ticket"]
+  }
+}

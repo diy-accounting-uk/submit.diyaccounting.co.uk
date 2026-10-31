@@ -63,6 +63,13 @@ describe("support-reader.yml", () => {
     expect(jobBlock("ledger")).not.toContain("permission-issues");
   });
 
+  it("labels the issue injection-suspected from the checked answer, in post only", () => {
+    const post = jobBlock("post");
+    expect(post).toContain("steps.check.outputs.injection-suspected == 'true'");
+    expect(post).toContain('support-label-sweep.mjs label --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --label injection-suspected');
+    expect(jobBlock("read")).not.toContain("support-label-sweep");
+  });
+
   it("gives post no AWS credentials", () => {
     const post = jobBlock("post");
     expect(post).not.toMatch(AWS_ROLE_STEP);

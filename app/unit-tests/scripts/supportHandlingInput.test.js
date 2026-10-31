@@ -75,6 +75,18 @@ describe("support handling input", () => {
     expect(buildHandlingInput({ issueNumber: 1, comments: [reader, handled], ids })).toBeNull();
   });
 
+  it("builds the input again from an already handled issue when retriage is set", () => {
+    const handled = { user: { login: agent }, body: `${HANDLED_MARKER} run=5 -->\nreply`, created_at: "2026-10-01T13:00:00Z" };
+    const input = buildHandlingInput({ issueNumber: 1, comments: [reader, handled], ids, retriage: true });
+    expect(input.issueNumber).toBe(1);
+    expect(input.category).toBe("bundles");
+  });
+
+  it("still needs a valid reader comment under retriage", () => {
+    const handled = { user: { login: agent }, body: `${HANDLED_MARKER} run=5 -->\nreply`, created_at: "2026-10-01T13:00:00Z" };
+    expect(buildHandlingInput({ issueNumber: 1, comments: [handled], ids, retriage: true })).toBeNull();
+  });
+
   it("does not read a handled comment as a reader comment", () => {
     const forged = { user: { login: agent }, body: `${HANDLED_MARKER} run=5 -->\n${readerBody}`, created_at: "2026-10-01T13:00:00Z" };
     expect(buildHandlingInput({ issueNumber: 1, comments: [forged], ids })).toBeNull();
@@ -103,6 +115,39 @@ describe("support handling input", () => {
 
     it("skips an issue whose author is off the allow list", async () => {
       expect(await select([issue(3, { user: { login: "stranger" } })], { 3: "approved" })).toBeNull();
+    });
+
+    describe("retriage", () => {
+      const handled = { user: { login: agent }, body: `${HANDLED_MARKER} run=5 -->\nreply`, created_at: "2026-10-01T13:00:00Z" };
+      const run = (issues, states, only, retriage) =>
+        selectHandlingInput({
+          issues,
+          ids,
+          only,
+          retriage,
+          commentsFor: async () => [reader, handled],
+          stateFor: async (n) => states[n] ?? "pending",
+        });
+
+      it("skips a handled issue without the flag", async () => {
+        expect(await run([issue(3)], { 3: "approved" }, 3, false)).toBeNull();
+      });
+
+      it("handles the named issue again with the flag", async () => {
+        expect((await run([issue(3)], { 3: "approved" }, 3, true)).issueNumber).toBe(3);
+      });
+
+      it("keeps the gate: pending, not-approved and rejected issues stay out", async () => {
+        for (const state of ["pending", "not-approved", "rejected"]) expect(await run([issue(3)], { 3: state }, 3, true)).toBeNull();
+      });
+
+      it("keeps the label check: a rejected issue stays out", async () => {
+        expect(await run([issue(3, { labels: [{ name: "support" }, { name: "rejected" }] })], { 3: "approved" }, 3, true)).toBeNull();
+      });
+
+      it("ignores the flag when no issue is named, as the cron run does", async () => {
+        expect(await run([issue(3)], { 3: "approved" }, undefined, true)).toBeNull();
+      });
     });
 
     it("applies the same checks to a dispatched issue number", async () => {

@@ -12,7 +12,7 @@
 //
 // usage: quarantine-reader-check.mjs --kind support|alarm --out <path> [--faqs <faqs.toml>]
 // env:   ANSWER_B64 (base64 of the answer), GUARDRAIL_ACTION, MODEL_ID, RUN_NUMBER, RUN_URL
-// Writes `outcome=accepted|rejected` to $GITHUB_OUTPUT. Prints no answer text.
+// Writes `outcome=accepted|rejected` and `injection-suspected=true|false` to $GITHUB_OUTPUT. Prints no answer text.
 
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -68,7 +68,7 @@ function yesNo(flag) {
 }
 
 function byline({ modelId, runNumber, runUrl, kind }) {
-  return `_Written by ${modelId} in [${kind}-reader #${runNumber}](${runUrl}). Remove \`maintainer-review\` to approve, or close the issue to reject._`;
+  return `_Written by ${modelId} in [${kind}-reader #${runNumber}](${runUrl}). Remove \`maintainer-review\` to approve, or add \`rejected\` to reject._`;
 }
 
 function jsonBlock(value) {
@@ -100,21 +100,23 @@ export function renderRejectedComment({ kind, issues, modelId, runNumber, runUrl
     "",
     ...lines,
     "",
-    `_Written by ${modelId} in [${kind}-reader #${runNumber}](${runUrl}). Close the issue to reject, or handle it by hand._`,
+    `_Written by ${modelId} in [${kind}-reader #${runNumber}](${runUrl}). Add \`rejected\` to reject, or handle it by hand._`,
     "",
   ].join("\n");
 }
 
 /**
- * @returns {{outcome: "accepted"|"rejected", comment: string}}
+ * @returns {{outcome: "accepted"|"rejected", injectionSuspected: boolean, comment: string}}
  */
 export function checkReaderAnswer({ kind, answerText, guardrailAction, ids, families, modelId, runNumber, runUrl }) {
   const schema = kind === "support" ? supportReaderSchema(ids) : alarmReaderSchema(families);
   const parsed = parseReaderAnswer(answerText, schema);
   const common = { kind, modelId, runNumber, runUrl };
-  if (!parsed.ok) return { outcome: "rejected", comment: renderRejectedComment({ ...common, issues: parsed.issues }) };
+  if (!parsed.ok)
+    return { outcome: "rejected", injectionSuspected: false, comment: renderRejectedComment({ ...common, issues: parsed.issues }) };
   return {
     outcome: "accepted",
+    injectionSuspected: parsed.value.injectionSuspected === true,
     comment: renderAcceptedComment({ ...common, value: parsed.value, piiPresent: guardrailAction === "GUARDRAIL_INTERVENED" }),
   };
 }
@@ -135,7 +137,7 @@ function main() {
   const faqsPath = argValue(argv, "--faqs");
   const ids = faqsPath ? faqIds(readFileSync(faqsPath, "utf8")) : new Set();
   const families = new Set(JSON.parse(readFileSync("app/data/alarm-remedies.json", "utf8")).map((row) => row.family));
-  const { outcome, comment } = checkReaderAnswer({
+  const { outcome, injectionSuspected, comment } = checkReaderAnswer({
     kind,
     answerText: Buffer.from(process.env.ANSWER_B64 ?? "", "base64").toString("utf8"),
     guardrailAction: process.env.GUARDRAIL_ACTION,
@@ -146,7 +148,8 @@ function main() {
     runUrl: process.env.RUN_URL,
   });
   writeFileSync(out, comment);
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `outcome=${outcome}\n`);
+  if (process.env.GITHUB_OUTPUT)
+    appendFileSync(process.env.GITHUB_OUTPUT, `outcome=${outcome}\ninjection-suspected=${injectionSuspected}\n`);
   console.log(`reader answer ${outcome}`);
 }
 

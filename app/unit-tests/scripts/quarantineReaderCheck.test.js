@@ -117,4 +117,10 @@ describe("quarantine reader check", () => {
     expect(bad.outcome).toBe("rejected");
     expect(bad.comment).not.toContain(SENTINEL);
   });
+
+  it("reports whether the accepted answer suspects an injection", () => {
+    expect(check(JSON.stringify(valid)).injectionSuspected).toBe(false);
+    expect(check(JSON.stringify({ ...valid, injectionSuspected: true })).injectionSuspected).toBe(true);
+    expect(check("prose only").injectionSuspected).toBe(false);
+  });
 });
