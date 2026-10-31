@@ -134,6 +134,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps affiliateGetLambdaProps;
     public Function affiliateGetLambda;
     public ILogGroup affiliateGetLambdaLogGroup;
+    public AbstractApiLambdaProps passHeldGetLambdaProps;
+    public Function passHeldGetLambda;
+    public ILogGroup passHeldGetLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -1240,7 +1243,8 @@ public class AccountStack extends Stack {
         this.passPostLambdaLogGroup = passPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passPostLambdaProps);
         // Redeem is an atomic UpdateItem; when it fails, diagnoseFailure reads the pass back.
-        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem");
+        // A redemption that reaches the review limit writes the held pointer item
+        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
         bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
@@ -1331,7 +1335,13 @@ public class AccountStack extends Stack {
         this.passReleasePostLambda = passReleasePostApiLambda.ingestLambda;
         this.passReleasePostLambdaLogGroup = passReleasePostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passReleasePostLambdaProps);
-        passesTable.grant(this.passReleasePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // A release lifts or restores the held pointer, so it also writes and deletes pointer items
+        passesTable.grant(
+                this.passReleasePostLambda,
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem");
         // passReleasePost admits operators only, so it reads the operator list
         OperatorEmailsHelper.grantOperatorEmailsAccess(this.passReleasePostLambda, region, account, props.envName());
         infof(
@@ -1413,6 +1423,44 @@ public class AccountStack extends Stack {
         infof(
                 "Created Affiliate GET Lambda %s",
                 this.affiliateGetLambda.getNode().getId());
+        // Pass Held GET Lambda (JWT auth - an operator lists the passes held for review)
+        // ============================================================================
+        var passHeldGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passHeldGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passHeldGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passHeldGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passHeldGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passHeldGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passHeldGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passHeldGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passHeldGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passHeldGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passHeldGetLambdaCustomAuthorizer)
+                        .environment(passHeldGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passHeldGetApiLambda);
+        this.passHeldGetLambdaProps = passHeldGetApiLambda.apiProps;
+        this.passHeldGetLambda = passHeldGetApiLambda.ingestLambda;
+        this.passHeldGetLambdaLogGroup = passHeldGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passHeldGetLambdaProps);
+        // The list is a Query on the issuedBy-index under the held key; the index needs its own grant
+        passesTable.grant(this.passHeldGetLambda, "dynamodb:Query");
+        grantTableIndexActions(passesTable, this.passHeldGetLambda, "issuedBy-index", "dynamodb:Query");
+        // passHeldGet admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passHeldGetLambda, region, account, props.envName());
+        infof(
+                "Created Pass Held GET Lambda %s",
+                this.passHeldGetLambda.getNode().getId());
 
         // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
@@ -1774,6 +1822,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
         cfnOutput(this, "AffiliatePostLambdaArn", this.affiliatePostLambda.getFunctionArn());
         cfnOutput(this, "AffiliateGetLambdaArn", this.affiliateGetLambda.getFunctionArn());
+        cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());

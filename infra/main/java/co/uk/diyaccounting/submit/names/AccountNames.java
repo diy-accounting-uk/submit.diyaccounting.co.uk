@@ -206,6 +206,14 @@ public class AccountNames {
     public String affiliateGetLambdaUrlPath;
     public boolean affiliateGetLambdaJwtAuthorizer;
     public boolean affiliateGetLambdaCustomAuthorizer;
+    public String passHeldGetIngestLambdaHandler;
+    public String passHeldGetIngestLambdaFunctionName;
+    public String passHeldGetIngestLambdaArn;
+    public String passHeldGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passHeldGetLambdaHttpMethod;
+    public String passHeldGetLambdaUrlPath;
+    public boolean passHeldGetLambdaJwtAuthorizer;
+    public boolean passHeldGetLambdaCustomAuthorizer;
 
     // Pass Generate POST Lambda (JWT auth - user pass generation via tokens)
     public String passGeneratePostIngestLambdaHandler;
@@ -827,6 +835,27 @@ public class AccountNames {
                 "Read an affiliate",
                 "Reads the tier and state of a referrer's affiliate record (operator only)",
                 "getAffiliate"));
+        // Pass Held GET Lambda (JWT auth; the handler admits operators only)
+        this.passHeldGetLambdaHttpMethod = HttpMethod.GET;
+        this.passHeldGetLambdaUrlPath = "/api/v1/pass/held";
+        this.passHeldGetLambdaJwtAuthorizer = true;
+        this.passHeldGetLambdaCustomAuthorizer = false;
+        var passHeldGetLambdaHandlerName = "passHeldGet.ingestHandler";
+        var passHeldGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passHeldGetLambdaHandlerName);
+        this.passHeldGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, passHeldGetLambdaHandlerDashed);
+        this.passHeldGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, passHeldGetLambdaHandlerName);
+        this.passHeldGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, passHeldGetLambdaHandlerDashed);
+        this.passHeldGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passHeldGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.passHeldGetLambdaHttpMethod,
+                this.passHeldGetLambdaUrlPath,
+                "List held passes",
+                "Lists the passes held for review, with their issuer hash, use count, review limit and held time (operator only)",
+                "listHeldPasses"));
 
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         this.passGeneratePostLambdaHttpMethod = HttpMethod.POST;

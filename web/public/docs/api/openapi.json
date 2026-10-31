@@ -4096,6 +4096,13 @@
         "operationId" : "generatePassWithTokens"
       }
     },
+    "/pass/held" : {
+      "get" : {
+        "summary" : "List held passes",
+        "description" : "Lists the passes held for review, with their issuer hash, use count, review limit and held time (operator only)",
+        "operationId" : "listHeldPasses"
+      }
+    },
     "/pass/my-passes" : {
       "get" : {
         "summary" : "List generated passes",

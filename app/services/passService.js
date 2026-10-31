@@ -193,6 +193,8 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
   const redeemed = await passRepository.redeemPass(code, now);
 
   if (redeemed) {
+    if (isHeldForReview(redeemed)) await markHeld(redeemed);
+
     // Atomic redeem succeeded, but still need to check email restriction
     if (redeemed.restrictedToEmailHash) {
       if (!userEmail) {
@@ -221,7 +223,46 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
 
   // Atomic redeem failed - diagnose why
   const reason = await diagnoseFailure(code);
+  if (reason === "held_for_review") {
+    const held = await passRepository.getPass(code);
+    if (held) await markHeld(held);
+  }
   return { valid: false, reason };
+}
+
+/**
+ * List the pass in the held view. A failure to write the pointer is logged and does not fail the
+ * redemption; the next attempt on the held pass writes it again.
+ */
+async function markHeld(pass) {
+  try {
+    await passRepository.putHeldPointer({
+      code: pass.code,
+      passIssuedBy: pass.issuedBy,
+      useCount: pass.useCount,
+      reviewLimit: pass.reviewLimit,
+      heldAt: pass.updatedAt,
+      ttl: pass.ttl,
+    });
+  } catch (error) {
+    logger.error({ message: "Held pointer not stored", code: pass.code, error: error.message });
+  }
+}
+
+/**
+ * The passes held for review, longest-held first.
+ *
+ * @returns {Promise<Object[]>} code, issuer hash, use count, review limit and held time of each
+ */
+export async function listHeldPasses() {
+  const { items } = await passRepository.getHeldPasses();
+  return items.map((item) => ({
+    code: item.code,
+    issuedBy: item.passIssuedBy ?? null,
+    useCount: item.useCount,
+    reviewLimit: item.reviewLimit,
+    heldAt: item.createdAt,
+  }));
 }
 
 /**
@@ -353,7 +394,13 @@ export async function releasePass(code, { raiseBy, reviewLimit, remove }) {
     newLimit = reviewLimit;
   }
 
-  return passRepository.setReviewLimit(code, newLimit, new Date().toISOString());
+  const updated = await passRepository.setReviewLimit(code, newLimit, new Date().toISOString());
+  if (updated && isHeldForReview(updated)) {
+    await markHeld(updated);
+  } else if (updated) {
+    await passRepository.deleteHeldPointer(code);
+  }
+  return updated;
 }
 
 /**

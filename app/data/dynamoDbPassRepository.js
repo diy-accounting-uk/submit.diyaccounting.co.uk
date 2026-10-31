@@ -202,6 +202,50 @@ export async function setReviewLimit(code, reviewLimit, now) {
   }
 }
 
+// The held pointers carry this constant in issuedBy, so the issuedBy-index holds every pointer under
+// one key and nothing else under it: no issuer's hashed sub equals it.
+export const HELD_INDEX_KEY = "held";
+
+/**
+ * Store the pointer to a pass held for review. The pointer is its own item, so it sits in the
+ * issuedBy-index under HELD_INDEX_KEY, sorted by when the hold began, and the pass item itself
+ * is not touched. Writing it again for the same pass replaces it.
+ */
+export async function putHeldPointer({ code, passIssuedBy, useCount, reviewLimit, heldAt, ttl }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const item = { pk: `held#${code}`, code, issuedBy: HELD_INDEX_KEY, createdAt: heldAt, useCount, reviewLimit };
+  if (passIssuedBy) item.passIssuedBy = passIssuedBy;
+  if (ttl) item.ttl = ttl;
+  await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName, Item: item }));
+  logger.info({ message: "Held pointer stored", pk: item.pk });
+}
+
+export async function deleteHeldPointer(code) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand((module) => new module.DeleteCommand({ TableName: tableName, Key: { pk: `held#${code}` } }));
+  logger.info({ message: "Held pointer deleted", pk: `held#${code}` });
+}
+
+/**
+ * The passes held for review, longest-held first, read from the issuedBy-index under
+ * HELD_INDEX_KEY. A Query on the index key, never a scan.
+ */
+export async function getHeldPasses({ limit = 100 } = {}) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.QueryCommand({
+        TableName: tableName,
+        IndexName: "issuedBy-index",
+        KeyConditionExpression: "issuedBy = :held",
+        ExpressionAttributeValues: { ":held": HELD_INDEX_KEY },
+        ScanIndexForward: true,
+        Limit: limit,
+      }),
+  );
+  return { items: result.Items || [] };
+}
+
 /**
  * Claim the one referral redemption an account may ever make. Returns false when the account has
  * already claimed one.

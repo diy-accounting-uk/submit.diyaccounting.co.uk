@@ -138,6 +138,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review: use when an operator must let a digital pass that reached its review limit be used again.
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
+    - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
@@ -1610,7 +1611,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1689,6 +1690,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review
 - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
 - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
+- [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 <!-- /generated:group passes-bill -->
@@ -1762,6 +1764,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/affiliateGet.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
 - **Keywords:** affiliate, tier, state, referrer, operator
 - **Related:** BILL-46, BILL-48
+
+#### BILL-50 List the passes held for review
+
+- **Use when:** an operator must see every pass held for review, whoever issued it, and release one.
+- **Does:** The passHeldGet.js ingestHandler lists the passes held for review, for an operator only. It calls passService.listHeldPasses, which Queries the issuedBy-index under the constant key "held". passService writes a held pointer item when a redemption brings a pass's useCount up to its reviewLimit and deletes it when a release lifts the hold. Each row carries code, issuer hash, use count, review limit and held time. The operator dashboard lists them with a Release button that posts to passReleasePost.js.
+- **Run:** `GET /api/v1/pass/held`
+- **Entry:** `app/functions/account/passHeldGet.js:ingestHandler`
+- **Files:** app/functions/account/passHeldGet.js, app/unit-tests/functions/passHeldGet.test.js, web/public/operator/dashboard.page.js, web/browser-tests/operatorHeldPasses.browser.test.js
+- **Keywords:** pass, held for review, held pointer, operator, release, issuedBy-index
+- **Related:** BILL-45, BILL-10, DATA-26
 
 #### BILL-10 Redeem a pass
 
@@ -7141,8 +7153,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
-- held for review: [BILL-45](#bill-45-release-a-pass-held-for-review)
+- held for review: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review)
 - held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- held pointer: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -7260,6 +7273,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issue pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - issue template: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - issued passes: [BILL-09](#bill-09-list-a-users-issued-passes)
+- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - iterate skill: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
@@ -7568,7 +7582,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -7623,7 +7637,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
-- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -7865,7 +7879,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
-- release: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- release: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)

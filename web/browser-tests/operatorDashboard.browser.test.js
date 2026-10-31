@@ -533,6 +533,23 @@ test.describe("Operator Dashboard", () => {
     await page.route("**/dashboard.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: dashboardHtmlContent });
     });
+    await page.route("**/api/v1/pass/held*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          passes: [
+            {
+              code: "tiger-happy-mountain-silver",
+              issuedBy: "9f2c4e7a1b3d",
+              useCount: 1000,
+              reviewLimit: 1000,
+              heldAt: "2026-10-30T09:15:00.000Z",
+            },
+          ],
+        }),
+      });
+    });
     await page.route("**/api/v1/operator/snapshot*", async (route) => {
       await route.fulfill({
         status: snapshotStatus,

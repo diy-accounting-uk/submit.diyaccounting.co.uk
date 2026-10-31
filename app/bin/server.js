@@ -122,6 +122,7 @@ import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/pa
 import { apiEndpoint as passReleasePostApiEndpoint } from "../functions/account/passReleasePost.js";
 import { apiEndpoint as affiliatePostApiEndpoint } from "../functions/account/affiliatePost.js";
 import { apiEndpoint as affiliateGetApiEndpoint } from "../functions/account/affiliateGet.js";
+import { apiEndpoint as passHeldGetApiEndpoint } from "../functions/account/passHeldGet.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
@@ -426,6 +427,7 @@ passAdminPostApiEndpoint(app);
 passReleasePostApiEndpoint(app);
 affiliatePostApiEndpoint(app);
 affiliateGetApiEndpoint(app);
+passHeldGetApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);
