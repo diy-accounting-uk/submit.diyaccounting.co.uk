@@ -59,9 +59,18 @@ async function listPushRunsForSha() {
   return page.workflow_runs || [];
 }
 
-async function jobsForRun(runId) {
-  const page = await github(`/actions/runs/${runId}/jobs?per_page=100`);
-  return page.jobs || [];
+const JOBS_PER_PAGE = 100;
+
+// Every job of a run. A deploy.yml run has more than 200 jobs, and a stack job past the first
+// page would read as "no stack job started".
+export async function jobsForRun(runId) {
+  const jobs = [];
+  for (let page = 1; ; page += 1) {
+    const body = await github(`/actions/runs/${runId}/jobs?per_page=${JOBS_PER_PAGE}&page=${page}`);
+    const pageJobs = body.jobs || [];
+    jobs.push(...pageJobs);
+    if (pageJobs.length < JOBS_PER_PAGE) return jobs;
+  }
 }
 
 async function main() {

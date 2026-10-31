@@ -120,10 +120,11 @@ function run(command, args) {
   return result.stdout;
 }
 
-function readGreenRun({ repo, branch, comparedFrom }) {
+// runGh(command, args) returns a command's stdout; the tests pass a stand-in for gh.
+export function readGreenRun({ repo, branch, comparedFrom }, runGh = run) {
   if (!comparedFrom) return null;
   const runs = JSON.parse(
-    run("gh", [
+    runGh("gh", [
       "api",
       `repos/${repo}/actions/workflows/deploy.yml/runs?branch=${encodeURIComponent(branch)}&status=success&per_page=20`,
       "--jq",
@@ -132,7 +133,7 @@ function readGreenRun({ repo, branch, comparedFrom }) {
   );
   const green = runs.find((r) => r.headSha === comparedFrom);
   if (!green) return null;
-  const jobs = run("gh", [
+  const jobs = runGh("gh", [
     "api",
     "--paginate",
     `repos/${repo}/actions/runs/${green.id}/jobs?per_page=100`,

@@ -10,7 +10,7 @@ process.env.GH_TOKEN = "test-token";
 process.env.GITHUB_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
 process.env.CURRENT_RUN_ID = "1";
 
-const { blockedOnlyByDestroyCiCallerJobs, olderUnfinishedRuns, github } =
+const { blockedOnlyByDestroyCiCallerJobs, olderUnfinishedRuns, github, fetchJobs, namedJobsCompleted, environmentGatingRuns } =
   await import("../../../.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs");
 
 function run(overrides) {
@@ -155,5 +155,85 @@ describe("github", () => {
     await expect(github("/actions/runs/7", { retrySeconds: 0 })).rejects.toThrow("answered 404");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
+  });
+});
+
+// A deploy.yml run has 205 jobs: pages of 100, 100 and 5. Job 190 is on page 2.
+function pagedJobsFetch() {
+  const jobs = Array.from({ length: 205 }, (_, i) => ({ id: i + 1, name: `job ${i + 1}`, status: "completed" }));
+  return vi.fn(async (url) => {
+    const page = Number(new URL(url).searchParams.get("page") || 1);
+    const body = { total_count: jobs.length, jobs: jobs.slice((page - 1) * 100, page * 100) };
+    return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
+  });
+}
+
+describe("fetchJobs", () => {
+  test("reads every page of a 205-job run and finds job 190", async () => {
+    const fetchMock = pagedJobsFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const jobs = await fetchJobs(7);
+    vi.unstubAllGlobals();
+    expect(jobs).toHaveLength(205);
+    expect(jobs.find((job) => job.name === "job 190")).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("namedJobsCompleted", () => {
+  const jobs = [
+    { name: "create secrets", status: "completed" },
+    { name: "deploy data / deploy prod-env-DataStack", status: "completed" },
+    { name: "deploy data / names", status: "in_progress" },
+    { name: "deploy observability us-east-1 / params", status: "queued" },
+  ];
+
+  test("is false with no prefixes", () => {
+    expect(namedJobsCompleted(jobs, [])).toBe(false);
+  });
+
+  test("is true when every prefix matches only completed jobs", () => {
+    expect(namedJobsCompleted(jobs, ["create secrets"])).toBe(true);
+  });
+
+  test("is false while any job a prefix matches is unfinished", () => {
+    expect(namedJobsCompleted(jobs, ["create secrets", "deploy data /"])).toBe(false);
+  });
+
+  test("is false when a prefix matches no job, so a renamed job waits for the whole run", () => {
+    expect(namedJobsCompleted(jobs, ["create secrets", "deploy identity"])).toBe(false);
+  });
+
+  test("'deploy observability /' does not match 'deploy observability us-east-1 /'", () => {
+    expect(namedJobsCompleted(jobs, ["deploy observability /"])).toBe(false);
+    expect(namedJobsCompleted([{ name: "deploy observability us-east-1 / params", status: "completed" }], ["deploy observability /"])).toBe(
+      false,
+    );
+  });
+});
+
+describe("environmentGatingRuns", () => {
+  const runs = [
+    { id: 11, name: "deploy environment", head_branch: "main", status: "in_progress", created_at: "2026-10-31T00:00:00Z" },
+    { id: 12, name: "deploy environment", head_branch: "claude/other", status: "in_progress", created_at: "2026-10-31T00:00:00Z" },
+  ];
+
+  test("with no prefixes every unfinished run of the environment gates and no jobs are read", async () => {
+    const loadJobs = vi.fn();
+    const gating = await environmentGatingRuns(runs, "prod", 1, [], loadJobs);
+    expect(gating).toHaveLength(1);
+    expect(loadJobs).not.toHaveBeenCalled();
+  });
+
+  test("a run whose named jobs are completed does not gate", async () => {
+    const loadJobs = vi.fn().mockResolvedValue([{ name: "deploy identity", status: "completed" }]);
+    const gating = await environmentGatingRuns(runs, "prod", 1, ["deploy identity"], loadJobs);
+    expect(gating).toEqual([]);
+  });
+
+  test("a run whose named job has not started still gates", async () => {
+    const loadJobs = vi.fn().mockResolvedValue([{ name: "create secrets", status: "completed" }]);
+    const gating = await environmentGatingRuns(runs, "prod", 1, ["create secrets", "deploy identity"], loadJobs);
+    expect(gating).toHaveLength(1);
   });
 });

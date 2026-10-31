@@ -163,6 +163,12 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   # GITHUB_REF_TO_ENV: resolved per-job via needs.params.outputs.github-environment
+  # Job-name prefixes in deploy-environment.yml: a job listed here deploys an env resource that an
+  # app stack reads. Add a job when an app stack starts to read a new env resource. A rename in
+  # deploy-environment.yml needs the same change here; a prefix that matches no job waits for the
+  # whole run. "deploy observability /" does not match "deploy observability us-east-1 /".
+  ENV_JOBS_READ_BY_APP_STACKS: 'create secrets,verify certificate,deploy identity,deploy data /,deploy ecr /,deploy ecr us-east-1 /,deploy observability /'
+  ENV_JOBS_READ_BY_EDGE_AND_OPS: 'deploy activity,deploy analytics'
 
 jobs:
 
@@ -673,6 +679,27 @@ jobs:
           workflows: 'deploy-environment.yml'
           match-mode: 'environment'
           target-environment: ${{ needs.params.outputs.github-environment }}
+          jobs: ${{ env.ENV_JOBS_READ_BY_APP_STACKS }}
+
+  # EdgeStack reads the activity bus and the analytics lake bucket, and OpsStack reads the
+  # activity bus. Both start long after those jobs end, so this gate states the order that timing
+  # already gives.
+  wait-for-environment-edge-inputs:
+    name: 'wait for environment edge inputs'
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Wait for the activity and analytics jobs of an in-progress deploy-environment.yml run
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+          workflows: 'deploy-environment.yml'
+          match-mode: 'environment'
+          target-environment: ${{ needs.params.outputs.github-environment }}
+          jobs: ${{ env.ENV_JOBS_READ_BY_EDGE_AND_OPS }}
 
   names:
     needs:
@@ -2088,8 +2115,10 @@ jobs:
       && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
       && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')))
       && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')))
+      && needs.wait-for-environment-edge-inputs.result == 'success'
       && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')) }}
     needs:
+      - wait-for-environment-edge-inputs
       - stack-holdings
       - params
       - names
@@ -2427,8 +2456,10 @@ jobs:
       ${{ !cancelled() && needs.params.result == 'success' && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.mvn-package.result == 'success' && needs.push-images.result == 'success'
       && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')))
       && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')))
+      && needs.wait-for-environment-edge-inputs.result == 'success'
       && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-ops')) }}
     needs:
+      - wait-for-environment-edge-inputs
       - stack-holdings
       - params
       - names

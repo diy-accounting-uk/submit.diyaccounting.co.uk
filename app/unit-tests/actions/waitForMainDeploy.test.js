@@ -3,9 +3,9 @@
 
 // app/unit-tests/actions/waitForMainDeploy.test.js
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 
-import { runStillGatesProbes, decidePollOutcome } from "../../../.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs";
+import { runStillGatesProbes, decidePollOutcome, jobsForRun } from "../../../.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs";
 
 function job(name, status) {
   return { name, status };
@@ -93,5 +93,41 @@ describe("decidePollOutcome", () => {
     const result = decidePollOutcome(0, 0, 0);
     expect(result.stop).toBe(true);
     expect(result.deployInProgress).toBe(false);
+  });
+});
+
+// A deploy.yml run has 205 jobs: pages of 100, 100 and 5. Job 190 is on page 2.
+function pagedJobsFetch() {
+  const jobs = Array.from({ length: 205 }, (_, i) => ({ id: i + 1, name: `job ${i + 1}`, status: "completed" }));
+  return vi.fn(async (url) => {
+    const page = Number(new URL(url).searchParams.get("page") || 1);
+    const body = { total_count: jobs.length, jobs: jobs.slice((page - 1) * 100, page * 100) };
+    return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
+  });
+}
+
+describe("jobsForRun", () => {
+  test("reads every page of a 205-job run and finds job 190", async () => {
+    const fetchMock = pagedJobsFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const jobs = await jobsForRun(7);
+    vi.unstubAllGlobals();
+    expect(jobs).toHaveLength(205);
+    expect(jobs.find((job) => job.name === "job 190")).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  test("'set origins' on page 2 is seen, so a run past it does not gate", async () => {
+    const jobs = Array.from({ length: 205 }, (_, i) => ({ name: i === 105 ? "set origins" : `job ${i + 1}`, status: "completed" }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        const page = Number(new URL(url).searchParams.get("page") || 1);
+        return { ok: true, status: 200, json: async () => ({ jobs: jobs.slice((page - 1) * 100, page * 100) }) };
+      }),
+    );
+    const allJobs = await jobsForRun(7);
+    vi.unstubAllGlobals();
+    expect(runStillGatesProbes({ id: 7, status: "in_progress" }, allJobs).gates).toBe(false);
   });
 });

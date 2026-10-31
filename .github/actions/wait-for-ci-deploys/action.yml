@@ -30,6 +30,13 @@ inputs:
     description: "Environment ('ci' or 'prod') to match against when match-mode is 'environment'."
     required: false
     default: ''
+  jobs:
+    description: >-
+      Comma-separated job-name prefixes, used only with match-mode 'environment'. A run stops
+      gating once every prefix matches at least one of its jobs and every matched job has
+      completed. A prefix that matches no job keeps the wait. Empty waits for the whole run.
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -41,6 +48,7 @@ runs:
         WAIT_FOR_CI_DEPLOYS_WORKFLOWS: ${{ inputs.workflows }}
         WAIT_FOR_CI_DEPLOYS_MATCH_MODE: ${{ inputs.match-mode }}
         WAIT_FOR_CI_DEPLOYS_TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+        WAIT_FOR_CI_DEPLOYS_JOBS: ${{ inputs.jobs }}
       # The github.action_path and github.workspace expressions expand to the runner's host
       # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
       # step is the checkout's path wherever the step runs.
