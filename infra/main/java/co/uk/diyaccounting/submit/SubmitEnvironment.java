@@ -23,10 +23,12 @@ import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.ScanDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SecurityBaselineStack;
 import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
+import co.uk.diyaccounting.submit.stacks.StaticSiteStack;
 import co.uk.diyaccounting.submit.stacks.security.SecurityLakeStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
+import java.util.List;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
@@ -46,6 +48,7 @@ public class SubmitEnvironment {
     public final IngestionStack ingestionStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
+    public final StaticSiteStack developerSiteStack;
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
     public final EcrStack ue1EcrStack;
@@ -69,6 +72,8 @@ public class SubmitEnvironment {
         public String securityServicesEnabled;
         public String authCertificateArn;
         public String holdingCertificateArn;
+        public String developerDocRootPath;
+        public String developerCertificateArn;
         public String regionalCertificateArn;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
@@ -165,6 +170,12 @@ public class SubmitEnvironment {
                 "HOLDING_CERTIFICATE_ARN", appProps.holdingCertificateArn, "(from holdingCertificateArn in cdk.json)");
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
+        var developerCertificateArn = envOr(
+                "DEVELOPER_CERTIFICATE_ARN",
+                appProps.developerCertificateArn,
+                "(from developerCertificateArn in cdk.json)");
+        var developerDocRootPath = envOr(
+                "DEVELOPER_DOC_ROOT_PATH", appProps.developerDocRootPath, "(from developerDocRootPath in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
                 appProps.regionalCertificateArn,
@@ -529,6 +540,36 @@ public class SubmitEnvironment {
             warnf(
                     "Skipping HoldingStack synthesis: HOLDING_CERTIFICATE_ARN not set (issue it with request-holding-cert.yml)");
             this.holdingStack = null;
+        }
+
+        // Create the developer site: ci-developer on ci, prod-developer and developer on prod
+        if (developerCertificateArn != null
+                && !developerCertificateArn.isBlank()
+                && !developerCertificateArn.startsWith("(from")) {
+            var developerStackId = "%s-env-DeveloperSiteStack".formatted(envName);
+            infof("Synthesizing stack %s for environment %s", developerStackId, envName);
+            this.developerSiteStack = new StaticSiteStack(
+                    app,
+                    developerStackId,
+                    StaticSiteStack.StaticSiteStackProps.builder()
+                            .env(usEast1Env)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .siteName("developer")
+                            .domainNames(
+                                    "prod".equals(envName)
+                                            ? List.of(
+                                                    "prod-developer." + appProps.hostedZoneName,
+                                                    "developer." + appProps.hostedZoneName)
+                                            : List.of(envName + "-developer." + appProps.hostedZoneName))
+                            .certificateArn(developerCertificateArn)
+                            .docRootPath(developerDocRootPath)
+                            .unmanagedPrefixes(List.of("reports/"))
+                            .build());
+        } else {
+            warnf(
+                    "Skipping DeveloperSiteStack synthesis: DEVELOPER_CERTIFICATE_ARN not set (issue it with request-site-cert.yml)");
+            this.developerSiteStack = null;
         }
 
         // Create BillingWebhookStack for always-available Stripe webhook endpoint

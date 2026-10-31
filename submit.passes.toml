@@ -23,9 +23,9 @@
 # operator               → operator             → No (free, admin-issued, email-restricted to the operator)
 # resident-pro-test-pass → resident-pro         → No (free, admin-issued, test/sandbox)
 # resident-pro-pass      → resident-pro         → No (free, admin-issued, production)
-# campaign               → invited-guest        → Costs 10 tokens to issue (user-issued, Phase 6)
-# digital-pass           → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
-# physical-pass          → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
+# campaign               → invited-guest        → User-issued, tokens charged by the generate-pass activity
+# digital-pass           → day-guest            → User-issued, tokens charged by the generate-pass-digital activity
+# physical-pass          → day-guest            → User-issued, tokens charged by the generate-pass-physical activity
 #
 # See PASSES.md for full documentation and web/public/submit.catalogue.toml for bundle definitions.
 
@@ -166,30 +166,26 @@ defaultMaxUses = 1
 requiresEmailRestriction = false
 
 # digital-pass → unlocks "day-guest" bundle
-# Grants: 3 tokens, 1 day timeout per redeemer, 7 day pass validity, 100 uses
-# Tokens: 3 per redeemer (no refresh for day-guest)
-# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
-# Short validity (7 days) encourages focused digital campaigns.
-# 100 uses allows broad distribution via social media, email, messaging.
-# See PLAN_GENERATE_PASS_ACTIVITY.md
+# Grants: 3 tokens, 1 day timeout per redeemer (7 days of free VAT submissions)
+# Validity: the pass works for 90 days, a referral link with no use cap.
+# reviewLimit: at 1000 uses the pass refuses further redemptions until the operator reviews it.
+# Tokens: the issuer pays the tokenCost of the generate-pass-digital activity in submit.catalogue.toml.
+# userIssuable: a signed-in user may generate this pass type.
 [[passTypes]]
 id = "digital-pass"
 name = "Digital Pass"
 description = "Time-limited digital pass for short campaigns (social media, email, QR sharing)"
 bundleId = "day-guest"
-defaultValidityPeriod = "P7D"
-defaultMaxUses = 20
+defaultValidityPeriod = "P90D"
+reviewLimit = 1000
 requiresEmailRestriction = false
-tokenCostToIssue = 3
+userIssuable = true
 
 # physical-pass → unlocks "day-guest" bundle
-# Grants: 3 tokens, 1 day timeout per redeemer, no expiry, 10 uses
-# Tokens: 3 per redeemer (no refresh for day-guest)
-# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
+# Grants: 3 tokens, 1 day timeout per redeemer, no expiry, 1 use
+# Tokens: the issuer pays the tokenCost of the generate-pass-physical activity in submit.catalogue.toml.
 # No time limit means merchandise retains value indefinitely.
-# 10 uses discourages sharing while rewarding continued display.
 # Designed for t-shirts, mugs, stickers with QR code + 4-word passphrase.
-# See PLAN_GENERATE_PASS_ACTIVITY.md
 [[passTypes]]
 id = "physical-pass"
 name = "Physical Pass"
@@ -197,12 +193,12 @@ description = "Usage-limited pass for printed merchandise (t-shirts, mugs)"
 bundleId = "day-guest"
 defaultMaxUses = 1
 requiresEmailRestriction = false
-tokenCostToIssue = 3
+userIssuable = true
 
 # campaign → unlocks "invited-guest" bundle
 # Grants: 3 tokens refreshing monthly per redeemer, 3 day validity
 # Tokens: 3 per month per redeemer
-# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
+# Tokens: the issuer pays the token cost of the generating activity.
 [[passTypes]]
 id = "campaign-pass"
 name = "Campaign Pass"
@@ -211,5 +207,5 @@ bundleId = "invited-guest"
 defaultValidityPeriod = "P3D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
-tokenCostToIssue = 3
+userIssuable = true
 

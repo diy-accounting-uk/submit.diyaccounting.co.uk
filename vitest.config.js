@@ -30,10 +30,9 @@ export default defineConfig(({ mode }) => {
     test: {
       env,
       environment: "node",
-      // Limit workers without CLI flags
+      // One forked process per worker; half the cores leave headroom so import-heavy files stay inside their timeouts on a busy machine.
       pool: "forks",
-      maxWorkers: 1,
-      minWorkers: 1,
+      maxWorkers: "50%",
 
       // Disable file-level parallelism and concurrent tests
       // fileParallelism: false, // run test files sequentially

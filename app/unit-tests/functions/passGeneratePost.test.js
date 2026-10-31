@@ -206,8 +206,9 @@ describe("passGeneratePost", () => {
       expect.objectContaining({
         passTypeId: "digital-pass",
         bundleId: "day-guest",
-        validityPeriod: "P7D",
-        maxUses: 20,
+        validityPeriod: "P90D",
+        maxUses: null,
+        reviewLimit: 1000,
         issuedBy: "hashed_test-user-sub",
         createdBy: "user",
         notes: "My note",

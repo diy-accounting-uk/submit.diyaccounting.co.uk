@@ -1,0 +1,91 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Developers - DIY Accounting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Developer resources for DIY Accounting: the Submit API, the MCP server, the diya-gl library and images, and the latest test reports."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="developer.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+    <header>
+      <h1>DIY Accounting developers</h1>
+      <p class="subtitle">APIs, libraries, images and test reports</p>
+    </header>
+
+    <main id="mainContent">
+      <section class="panel" id="api">
+        <h2>Submit API</h2>
+        <p>The HTTP API behind DIY Accounting Submit, served from submit.diyaccounting.co.uk.</p>
+        <ul>
+          <li><a href="https://submit.diyaccounting.co.uk/docs/api/index.html">Swagger UI</a></li>
+          <li><a href="https://submit.diyaccounting.co.uk/docs/api/openapi.json">openapi.json</a></li>
+          <li><a href="https://submit.diyaccounting.co.uk/docs/api/openapi.yaml">openapi.yaml</a></li>
+        </ul>
+      </section>
+
+      <section class="panel" id="mcp">
+        <h2>MCP API</h2>
+        <p>The tools of the Submit MCP server, their input schemas and the server endpoint.</p>
+        <ul>
+          <li><a href="mcp-api.html">Tools and schemas</a></li>
+          <li>Endpoint: <code>https://submit.diyaccounting.co.uk/mcp</code></li>
+        </ul>
+      </section>
+
+      <section class="panel" id="libraries">
+        <h2>Libraries and images</h2>
+        <ul>
+          <li>
+            npm: <a href="https://www.npmjs.com/package/@diy-accounting-uk/diya-gl">@diy-accounting-uk/diya-gl</a>, the ledger library and
+            command line tool
+          </li>
+          <li>
+            npm: <a href="https://www.npmjs.com/package/@diy-accounting-uk/diya-submit">@diy-accounting-uk/diya-submit</a>, the Submit MCP
+            server
+          </li>
+          <li>
+            Homebrew tap:
+            <a href="https://github.com/diy-accounting-uk/homebrew-diya-gl">diy-accounting-uk/homebrew-diya-gl</a>
+          </li>
+          <li>
+            Container image:
+            <a href="https://github.com/orgs/diy-accounting-uk/packages/container/package/diya-gl">ghcr.io/diy-accounting-uk/diya-gl</a>
+          </li>
+          <li>
+            Container image:
+            <a href="https://github.com/orgs/diy-accounting-uk/packages/container/package/diya-submit-mcp"
+              >ghcr.io/diy-accounting-uk/diya-submit-mcp</a
+            >
+          </li>
+        </ul>
+      </section>
+
+      <section class="panel" id="reports">
+        <h2>Test reports</h2>
+        <p>The Playwright report of the last green run on the main branch.</p>
+        <ul>
+          <li><a href="https://ci-developer.diyaccounting.co.uk/reports/submit/index.html">Submit</a></li>
+          <li>
+            Spreadsheets:
+            <a href="https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/actions/workflows/test.yml"
+              >test runs on GitHub Actions</a
+            >
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; DIY Accounting Limited</p>
+    </footer>
+  </body>
+</html>

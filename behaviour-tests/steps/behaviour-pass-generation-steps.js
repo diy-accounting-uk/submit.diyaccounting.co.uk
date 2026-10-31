@@ -4,7 +4,7 @@
 // behaviour-tests/steps/behaviour-pass-generation-steps.js
 // Step functions for generate-pass-digital and generate-pass-physical activities.
 
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 
 /**
@@ -35,7 +35,7 @@ export async function goToGeneratePhysicalPassPage(page, testUrl, screenshotPath
 
 /**
  * Generate a pass by clicking the Generate Pass button on either digital or physical page.
- * Returns the pass code from the result display.
+ * Waits for the landing in My generated passes and returns the focused pass's code.
  */
 export async function generatePass(page, screenshotPath) {
   return await test.step("Click Generate Pass button", async () => {
@@ -43,11 +43,11 @@ export async function generatePass(page, screenshotPath) {
     console.log("[generate-pass]: Clicking Generate Pass button");
     await generateBtn.click();
 
-    // Wait for pass code to appear in the result
-    const passCodeEl = page.locator("#generatedPassCode");
-    await passCodeEl.waitFor({ state: "visible", timeout: 15000 });
-
-    const passCode = await passCodeEl.textContent();
+    // The generate page hands over to My generated passes, with the new pass in focus.
+    await page.waitForURL(/\/bundles\.html.*#myGeneratedPasses/, { timeout: 15000 });
+    const passEntry = page.locator("#myGeneratedPasses [data-pass-code]:focus");
+    await passEntry.waitFor({ state: "visible", timeout: 15000 });
+    const passCode = await passEntry.getAttribute("data-pass-code");
     console.log(`[generate-pass]: Generated pass code: ${passCode}`);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-02-result.png`, readerView: true });
 
@@ -56,27 +56,29 @@ export async function generatePass(page, screenshotPath) {
 }
 
 /**
- * Verify the generated pass result is displayed with expected elements.
+ * Verify the landing after generation: My generated passes is visible, the new pass is listed and
+ * in focus, and the confirmation points at the section.
  */
-export async function verifyPassGenerated(page, screenshotPath) {
-  await test.step("Verify pass generation result", async () => {
-    // Verify pass code is displayed
-    const passCodeEl = page.locator("#generatedPassCode");
-    await passCodeEl.waitFor({ state: "visible", timeout: 10000 });
-    const passCode = await passCodeEl.textContent();
-    console.log(`[generate-pass]: Pass code displayed: ${passCode}`);
-
-    // Verify pass URL is displayed
-    const passUrlEl = page.locator("#generatedPassUrl");
-    const passUrl = await passUrlEl.textContent().catch(() => "");
-    console.log(`[generate-pass]: Pass URL displayed: ${passUrl}`);
-
-    // Verify QR code SVG is rendered (client-side generated)
-    const qrCodeSvg = page.locator("#generatedPassQrCode svg");
-    const qrVisible = await qrCodeSvg.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`[generate-pass]: QR code SVG visible: ${qrVisible}`);
-
+export async function verifyPassGenerated(page, expectedPassCode, screenshotPath) {
+  await test.step("Verify the landing in My generated passes", async () => {
+    await expect(page.locator("#myGeneratedPasses")).toBeVisible({ timeout: 10000 });
+    const passEntry = page.locator(`#generatedPassesList [data-pass-code="${expectedPassCode}"]`);
+    await expect(passEntry).toBeVisible({ timeout: 10000 });
+    await expect(passEntry).toBeFocused();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Track what this link earns under My generated passes");
+    expect(new URL(page.url()).hash).toBe("#myGeneratedPasses");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-03-verified.png`, readerView: true });
+  });
+}
+
+/**
+ * Open the QR page of a listed pass through its "View QR" link.
+ */
+export async function openPassQr(page, passCode, screenshotPath) {
+  await test.step("Open the pass QR page", async () => {
+    await page.locator(`#generatedPassesList [data-pass-code="${passCode}"] a`, { hasText: "View QR" }).click();
+    await page.locator("#passResult").waitFor({ state: "visible", timeout: 15000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-04-qr.png`, readerView: true });
   });
 }
 

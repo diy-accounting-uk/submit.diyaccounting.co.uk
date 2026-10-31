@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect, vi } from "vitest";
-import { createPacer, fetchTransactionsPage } from "@app/services/paypalTransactionSearch.js";
+import { PayPalDataNotAvailableError, createPacer, fetchTransactionsPage } from "@app/services/paypalTransactionSearch.js";
 
 const params = { startDate: new Date("2026-09-01T00:00:00Z"), endDate: new Date("2026-09-02T23:59:59Z"), page: 1 };
 const okResponse = { ok: true, status: 200, headers: new Headers(), json: async () => ({ transaction_details: [] }) };
@@ -58,6 +58,33 @@ describe("fetchTransactionsPage rate limiting", () => {
     await expect(fetchTransactionsPage("token", params, fetchImpl, { sleep })).rejects.toThrow(/failed with 500/);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(sleep).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchTransactionsPage data not available", () => {
+  const notAvailable = {
+    ok: false,
+    status: 404,
+    headers: new Headers(),
+    json: async () => ({ name: "INVALID_REQUEST", message: "Data for the given start date is not available." }),
+  };
+
+  test("a 404 INVALID_REQUEST for the start date throws the named error without retry", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(notAvailable);
+    const sleep = vi.fn().mockResolvedValue();
+
+    await expect(fetchTransactionsPage("token", params, fetchImpl, { sleep })).rejects.toBeInstanceOf(PayPalDataNotAvailableError);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test("any other 404 throws the plain error", async () => {
+    const other = { ...notAvailable, json: async () => ({ name: "INVALID_REQUEST", message: "Something else." }) };
+    const fetchImpl = vi.fn().mockResolvedValue(other);
+
+    const error = await fetchTransactionsPage("token", params, fetchImpl, { sleep: vi.fn() }).catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(PayPalDataNotAvailableError);
+    expect(error.message).toMatch(/failed with 404/);
   });
 });
 

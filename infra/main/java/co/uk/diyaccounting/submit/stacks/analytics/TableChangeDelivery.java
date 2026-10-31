@@ -332,6 +332,9 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("use_count", "bigint"));
                 columns.add(column("revoked_at", "string"));
                 columns.add(column("actor", "string"));
+                columns.add(column("redeemed_by", "string"));
+                columns.add(column("redeemed_at", "string"));
+                columns.add(column("redemption_code", "string"));
             }
             default -> throw new IllegalArgumentException("No Glue columns declared for table kind: " + kind);
         }

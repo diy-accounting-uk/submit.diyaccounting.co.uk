@@ -757,6 +757,9 @@ const passReasonMessages = {
   wrong_email: "This pass is restricted to a different email address.",
   email_required: "This pass requires email verification.",
   not_yet_valid: "This pass is not yet valid.",
+  held_for_review: "This pass is on hold while we review it. Please try again later.",
+  own_pass: "You cannot redeem a pass you generated.",
+  referral_already_used: "This account has already redeemed a referral pass.",
 };
 
 function showPassStatus(message, type) {
@@ -1038,6 +1041,23 @@ function renderGeneratedPassesEmptyText() {
   emptyMsg.style.display = "block";
 }
 
+// A pass just generated lands here: show it, scroll to it and put focus on it.
+function focusNewlyGeneratedPass() {
+  const url = new URL(window.location.href);
+  const newCode = url.searchParams.get("newPass");
+  if (!newCode) return;
+  url.searchParams.delete("newPass");
+  window.history.replaceState(null, "", url);
+  const card = Array.from(document.querySelectorAll("#generatedPassesList [data-pass-code]")).find(
+    (el) => el.getAttribute("data-pass-code") === newCode,
+  );
+  if (!card) return;
+  card.setAttribute("tabindex", "-1");
+  card.scrollIntoView({ block: "center" });
+  card.focus();
+  showStatus(`Pass ${newCode} generated. Track what this link earns under My generated passes`, "success");
+}
+
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
   if (!idToken) return;
@@ -1078,7 +1098,11 @@ async function fetchMyGeneratedPasses(append) {
       const expiryLabel = pass.validUntil
         ? new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
         : "No expiry";
-      const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
+      const usageLabel =
+        pass.maxUses === undefined || pass.maxUses === null
+          ? `${pass.useCount || 0} uses`
+          : `${pass.useCount || 0} of ${pass.maxUses} uses`;
+      const heldLabel = pass.heldForReview ? " · on hold for review" : "";
       const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
@@ -1095,7 +1119,7 @@ async function fetchMyGeneratedPasses(append) {
           domEl("span", { class: "status-tag" }, typeLabel),
         ),
         pass.notes ? domEl("div", { class: "bundle-note" }, pass.notes) : null,
-        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}`),
+        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}${heldLabel}`),
         domEl(
           "div",
           { class: "bundle-row-line" },
@@ -1123,6 +1147,8 @@ async function fetchMyGeneratedPasses(append) {
 
     __myPassesNextPageKey = data.nextPageKey || null;
     loadMore.style.display = __myPassesNextPageKey ? "block" : "none";
+
+    if (!append) focusNewlyGeneratedPass();
   } catch (err) {
     console.warn("Failed to fetch my generated passes:", err);
   }

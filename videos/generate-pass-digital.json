@@ -118,10 +118,10 @@
           "headline": "Always redeemed anonymously",
           "keyWord": "anonymously"
         },
-        { "action": "await", "until": "#passResult", "label": "Generating the pass" },
+        { "action": "await", "until": "#generatedPassesList [data-pass-code]", "label": "Generating the pass" },
         {
           "action": "point",
-          "target": "#generatedPassCode",
+          "target": "#generatedPassesList .pass-code",
           "caption": "This is the pass code, ready to share.",
           "headline": "Share this code",
           "keyWord": "Share",

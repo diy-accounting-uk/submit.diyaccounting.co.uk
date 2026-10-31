@@ -3,7 +3,7 @@
 
 // web/browser-tests/tokenBalance.browser.test.js
 // One token balance everywhere: the header follows a bundle request and a generated pass, the
-// digital pass page drops its "This will use" line once a pass exists, and a reader with no
+// generated pass lands in My generated passes in focus, and a reader with no
 // token bundle sees no balance.
 
 import { test, expect } from "@playwright/test";
@@ -37,7 +37,7 @@ test.describe("token balance", () => {
     await screenshotAll(page, "balance", "bundles-after-request");
   });
 
-  test("the digital pass page and the header agree after a pass, and the cost line goes", async ({ page }) => {
+  test("the header agrees with the balance after a pass, on the landing in My generated passes", async ({ page }) => {
     const bundles = [
       { bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 10, tokensRemaining: 90 },
       { bundleId: "day-guest", allocated: true, tokensGranted: 3, tokensConsumed: 0, tokensRemaining: 3 },
@@ -49,6 +49,9 @@ test.describe("token balance", () => {
         if (url.pathname === "/api/v1/pass/generate") {
           generated = true;
           return { code: "tiger-happy-mountain-silver", passTypeId: "digital-pass", maxUses: 20, tokensConsumed: 10, tokensRemaining: 83 };
+        }
+        if (url.pathname === "/api/v1/pass/my-passes") {
+          return { passes: [{ code: "tiger-happy-mountain-silver", passTypeId: "digital-pass", maxUses: 20, useCount: 0 }] };
         }
         if (url.pathname === "/api/v1/bundle") {
           const resident = { ...bundles[0], tokensConsumed: generated ? 20 : 10, tokensRemaining: generated ? 80 : 90 };
@@ -64,9 +67,11 @@ test.describe("token balance", () => {
     await expect(page.locator("#tokenInfo")).toBeVisible();
     await page.locator("#generatePassBtn").click();
 
-    await expect(page.locator("#tokensAfter")).toContainText("83 tokens remaining");
-    await expect(page.locator("#tokenInfo")).toBeHidden();
+    await page.waitForURL(/\/bundles\.html\?newPass=tiger-happy-mountain-silver#myGeneratedPasses/);
     await expect(page.locator(".token-balance .token-count")).toHaveText("83 tokens");
+    await expect(page.locator("#myGeneratedPasses")).toBeVisible();
+    await expect(page.locator('[data-pass-code="tiger-happy-mountain-silver"]')).toBeFocused();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Track what this link earns under My generated passes");
     await screenshotAll(page, "balance", "generate-digital-after");
   });
 

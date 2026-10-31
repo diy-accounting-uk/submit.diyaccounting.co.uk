@@ -331,6 +331,9 @@ jobs:
       - name: Check formatting (Prettier)
         run: npx prettier --check .
 
+      - name: Check external actions are pinned to a commit SHA
+        run: node scripts/check-action-pins.mjs
+
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: 'temurin'
@@ -864,10 +867,16 @@ jobs:
 
       - run: npm run test:web-unit
 
-  npm-browser-test:
+  # The browser tests run on one worker, so three shards cut the wall time to about a third.
+  # `npm-browser-test` below keeps the job name and gathers the shards.
+  npm-browser-test-shard:
     if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-browser-test') }}
-    name: 'npm browser test'
+    name: 'npm browser test shard ${{ matrix.shard }}/3'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     needs:
       - select-jobs
       - changes
@@ -890,7 +899,22 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: npm run test:browser
+      - run: npm run test:browser -- --shard=${{ matrix.shard }}/3
+
+  npm-browser-test:
+    if: ${{ always() && needs.npm-browser-test-shard.result != 'skipped' }}
+    name: 'npm browser test'
+    runs-on: ubuntu-latest
+    needs:
+      - npm-browser-test-shard
+    permissions: {}
+    steps:
+      - name: Fail unless every shard passed
+        env:
+          SHARD_RESULT: ${{ needs.npm-browser-test-shard.result }}
+        run: |
+          echo "Browser test shards: ${SHARD_RESULT}"
+          test "${SHARD_RESULT}" = "success"
 
   mvn-test:
     if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'mvn-test')) }}
@@ -2466,6 +2490,26 @@ jobs:
           retention-days: 7
           path: |
             target/behaviour-test-results/**/*.jsonl
+
+      # The developer site links this path as the latest Playwright report for submit. The ci
+      # environment's bucket holds it, because this job only holds ci credentials. A called run
+      # sees the caller's github.ref, so a deploy.yml run on main publishes too.
+      - name: Publish the Playwright report to the developer site
+        if: ${{ success() && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          OUTPUTS=$(aws cloudformation describe-stacks --region us-east-1 \
+            --stack-name ci-env-DeveloperSiteStack \
+            --query 'Stacks[0].Outputs' --output json 2>/dev/null || echo '[]')
+          BUCKET=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "BucketName") | .OutputValue')
+          DISTRIBUTION_ID=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "DistributionId") | .OutputValue')
+          if [ -z "${BUCKET}" ]; then
+            echo "::notice::ci-env-DeveloperSiteStack is not deployed; the report is not published"
+            exit 0
+          fi
+          aws s3 sync target/test-reports/html-report "s3://${BUCKET}/reports/submit/" --delete --region us-east-1
+          aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths '/reports/submit/*'
 
   # The weekly blind crawl (scripts/exploratory-crawl.mjs). It runs on the scheduled run only
   # when today is a Sunday (the gate step reads `date -u +%u`), and on a workflow_dispatch with

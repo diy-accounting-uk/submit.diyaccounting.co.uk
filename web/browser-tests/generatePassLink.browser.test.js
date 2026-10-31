@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/generatePassLink.browser.test.js
-// The digital pass page builds the pass link from the origin it is served from.
+// The digital pass page hands a generated pass over to My generated passes.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -11,7 +11,7 @@ import path from "path";
 const SITE = "https://submit.example.test";
 
 test.describe("Generate digital pass page", () => {
-  test("shows a pass link on the page's own origin", async ({ page }) => {
+  test("opens My generated passes with the new pass named in the address", async ({ page }) => {
     const root = path.join(process.cwd(), "web/public");
     const html = fs.readFileSync(path.join(root, "passes/generate-digital.html"), "utf-8");
     const pageJs = fs.readFileSync(path.join(root, "passes/generate-digital.page.js"), "utf-8");
@@ -55,6 +55,6 @@ test.describe("Generate digital pass page", () => {
     await page.goto(`${SITE}/passes/generate-digital.html`, { waitUntil: "domcontentloaded" });
     await page.locator("#generatePassBtn").click();
 
-    await expect(page.locator("#generatedPassUrl")).toHaveText(`${SITE}/bundles.html?pass=tiger-happy-mountain-silver`);
+    await page.waitForURL(`${SITE}/bundles.html?newPass=tiger-happy-mountain-silver#myGeneratedPasses`);
   });
 });

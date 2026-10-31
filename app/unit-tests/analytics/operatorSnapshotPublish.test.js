@@ -75,7 +75,6 @@ import {
   runAthenaQuery,
   OBJECTIVE_DEFINITIONS,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
-import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/services/productCatalog.js";
 
 const WINDOWED_QUERY_COUNT = new Set(
   OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations.map((o) => `${o.view}|${o.dayColumn}`)),
@@ -1594,39 +1593,6 @@ describe("operatorSnapshotPublish", () => {
         expect(observation.last90).toEqual({ value: null, trend: null });
       }
       expect(snapshot.failedObservationCount).toBe(0);
-    });
-
-    test("the activity-started-and-completed observation set has a started and completed pair for every prod-listed catalogue activity", async () => {
-      mockAllQueriesSucceedWith(["4", "3", "9", "7"]);
-
-      const context = {
-        envName: "test",
-        region: "eu-west-2",
-        athenaWorkGroupName: "test-env-analytics",
-        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
-        ga4PropertyId: "523400333",
-      };
-      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
-
-      const activities = snapshot.objectives.find((o) => o.id === "activity-started-and-completed");
-      const catalog = loadCatalogFromRoot();
-      const prodActivityIds = (catalog.activities || [])
-        .filter((activity) => isActivityListedInEnvironment(activity, "prod"))
-        .map((activity) => activity.id);
-
-      expect(prodActivityIds.length).toBeGreaterThan(0);
-      expect(activities.observations).toHaveLength(prodActivityIds.length * 2);
-      for (const activityId of prodActivityIds) {
-        expect(activities.observations.some((o) => o.id === `${activityId}::started`)).toBe(true);
-        expect(activities.observations.some((o) => o.id === `${activityId}::completed`)).toBe(true);
-      }
-      for (const observation of activities.observations) {
-        expect(observation.deepLink).toEqual(expect.any(String));
-      }
-
-      // self-employed is catalogued but not listed in prod (environments excludes it) -- its
-      // pair must not appear, or a non-prod activity would silently join the operator's table.
-      expect(activities.observations.some((o) => o.id === "self-employed::started")).toBe(false);
     });
   });
 

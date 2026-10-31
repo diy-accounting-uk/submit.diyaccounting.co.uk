@@ -238,9 +238,37 @@ describe("projectFields whitelists", () => {
       use_count: 1,
       revoked_at: null,
       actor: "customer",
+      redeemed_by: null,
+      redeemed_at: null,
+      redemption_code: null,
     });
     expect(Object.values(row)).not.toContain("pass#SECRET-CODE-1");
     expect(Object.values(row)).not.toContain("should never appear");
+  });
+
+  test("passes: a redemption item projects the code, the redeemer, the issuer and the pass type", () => {
+    const image = {
+      pk: "redemption#tiger-happy-mountain-silver#hash-redeemer",
+      code: "tiger-happy-mountain-silver",
+      redeemedBy: "hash-redeemer",
+      issuedBy: "hash-issuer",
+      passTypeId: "digital-pass",
+      redeemedAt: "2026-01-03T00:00:00.000Z",
+    };
+    const row = projectFields("passes", image, null, "INSERT");
+    expect(row).toMatchObject({
+      pass_type_id: "digital-pass",
+      issued_by: "hash-issuer",
+      redeemed_by: "hash-redeemer",
+      redeemed_at: "2026-01-03T00:00:00.000Z",
+      redemption_code: "tiger-happy-mountain-silver",
+    });
+  });
+
+  test("passes: a pass item never projects its code", () => {
+    const row = projectFields("passes", { pk: "pass#secret-code", code: "secret-code", passTypeId: "digital-pass" }, null, "INSERT");
+    expect(row.redemption_code).toBeNull();
+    expect(Object.values(row)).not.toContain("secret-code");
   });
 
   test("a REMOVE event projects from OldImage, not NewImage", () => {

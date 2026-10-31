@@ -1,0 +1,209 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* developer.css: the flat house style of diyaccounting.co.uk, with light and dark tokens. */
+
+:root {
+  --color-brand-primary: #2c5aa0;
+  --color-text-primary: #333;
+  --color-text-secondary: #666;
+  --color-background: #f9f9f9;
+  --color-surface: #fff;
+  --color-border: #ddd;
+  --color-code-background: #f1f3f5;
+  --color-focus: #005ea5;
+  --font-family-base: Arial, sans-serif;
+  --spacing-sm: 0.5em;
+  --spacing-md: 1em;
+  --spacing-lg: 1.5em;
+  --radius-md: 6px;
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --max-width-content: 800px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-brand-primary: #8ab4f8;
+    --color-text-primary: #e8eaed;
+    --color-text-secondary: #b0b6bd;
+    --color-background: #16181d;
+    --color-surface: #20242b;
+    --color-border: #3a404a;
+    --color-code-background: #2a2f38;
+    --color-focus: #8ab4f8;
+    --shadow-md: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-brand-primary: #8ab4f8;
+  --color-text-primary: #e8eaed;
+  --color-text-secondary: #b0b6bd;
+  --color-background: #16181d;
+  --color-surface: #20242b;
+  --color-border: #3a404a;
+  --color-code-background: #2a2f38;
+  --color-focus: #8ab4f8;
+  --shadow-md: none;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  padding: var(--spacing-md);
+  max-width: var(--max-width-content);
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 2.2em;
+  color: var(--color-brand-primary);
+  text-align: center;
+  margin-bottom: 0.3em;
+}
+
+h2 {
+  color: var(--color-brand-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.subtitle,
+.nav {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+a {
+  color: var(--color-brand-primary);
+}
+
+a:focus,
+summary:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+p a,
+li a {
+  text-decoration: underline;
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.panel p,
+.panel ul {
+  margin-bottom: var(--spacing-md);
+}
+
+.panel ul {
+  padding-left: 1.5em;
+}
+
+.panel li {
+  margin-bottom: var(--spacing-sm);
+}
+
+.panel > :last-child {
+  margin-bottom: 0;
+}
+
+code,
+pre {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--color-code-background);
+  border-radius: 4px;
+}
+
+code {
+  padding: 0.1em 0.3em;
+}
+
+pre {
+  padding: var(--spacing-md);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-md);
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+details.tool {
+  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-sm) 0;
+}
+
+details.tool > p {
+  margin: var(--spacing-sm) 0;
+}
+
+summary {
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+  display: block;
+  overflow-x: auto;
+}
+
+th,
+td {
+  border: 1px solid var(--color-border);
+  padding: 0.3em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tag {
+  font-size: 0.75em;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.1em 0.6em;
+  margin-left: 0.5em;
+}
+
+footer {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9em;
+  margin-top: var(--spacing-lg);
+}

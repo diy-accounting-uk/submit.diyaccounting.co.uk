@@ -174,7 +174,7 @@ running turn, so an answer given inside one never reaches them.
 
 Run in sequence to verify code works:
 ```bash
-npm test                              # Unit + system tests (~4s)
+npm test                              # Unit + system tests (~80s)
 ./mvnw clean verify                   # Java CDK build
 npm run test:submitVatBehaviour-proxy # E2E behaviour tests
 ```

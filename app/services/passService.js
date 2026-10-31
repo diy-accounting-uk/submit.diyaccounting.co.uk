@@ -44,7 +44,8 @@ export function addDuration(date, duration) {
  * @param {string} [params.validFrom] - ISO8601 start time (default: now)
  * @param {string} [params.validUntil] - ISO8601 end time (exclusive with validityPeriod)
  * @param {string} [params.validityPeriod] - ISO8601 duration (e.g. "P7D", "P1M")
- * @param {number} [params.maxUses] - Maximum redemptions (default: 1)
+ * @param {number|null} [params.maxUses] - Maximum redemptions (default: 1; null for a pass with no use cap)
+ * @param {number} [params.reviewLimit] - Use count at which the pass is held for the operator to review
  * @param {string} [params.restrictedToEmail] - Email to restrict pass to (null = unrestricted)
  * @param {string} [params.emailHashSecret] - Secret for hashing email (if not using env secret)
  * @param {string} [params.createdBy] - Creator identifier
@@ -61,6 +62,7 @@ export function buildPassRecord({
   validUntil,
   validityPeriod,
   maxUses = 1,
+  reviewLimit,
   restrictedToEmail,
   emailHashSecret,
   createdBy,
@@ -108,9 +110,10 @@ export function buildPassRecord({
     ttl_datestamp,
     createdAt: now,
     updatedAt: now,
-    maxUses,
     useCount: 0,
   };
+  if (maxUses !== null) record.maxUses = maxUses;
+  if (reviewLimit) record.reviewLimit = reviewLimit;
   if (effectiveValidUntil) record.validUntil = effectiveValidUntil;
   if (restrictedToEmailHash) {
     record.restrictedToEmailHash = restrictedToEmailHash;
@@ -212,7 +215,7 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
       valid: true,
       pass: redeemed,
       bundleId: redeemed.bundleId,
-      usesRemaining: redeemed.maxUses - redeemed.useCount,
+      usesRemaining: usesRemaining(redeemed),
     };
   }
 
@@ -244,12 +247,27 @@ function hashEmailForComparison(userEmail, emailHashSecret, emailHashSecretVersi
   return hashEmailWithEnvSecret(userEmail).hash;
 }
 
+// A pass with no maxUses has no use cap; reviewLimit is what holds it.
+function isExhausted(pass) {
+  return pass.maxUses !== undefined && pass.useCount >= pass.maxUses;
+}
+
+function isHeldForReview(pass) {
+  return pass.reviewLimit !== undefined && pass.useCount >= pass.reviewLimit;
+}
+
+function usesRemaining(pass) {
+  const limits = [pass.maxUses, pass.reviewLimit].filter((limit) => limit !== undefined);
+  return limits.length > 0 ? Math.min(...limits) - pass.useCount : null;
+}
+
 /**
  * Validate a pass record against current time and optional email.
  */
 function validatePass(pass, now, userEmail, emailHashSecret) {
   if (pass.revokedAt) return { valid: false, reason: "revoked", pass };
-  if (pass.useCount >= pass.maxUses) return { valid: false, reason: "exhausted", pass };
+  if (isExhausted(pass)) return { valid: false, reason: "exhausted", pass };
+  if (isHeldForReview(pass)) return { valid: false, reason: "held_for_review", pass };
   if (now < pass.validFrom) return { valid: false, reason: "not_yet_valid", pass };
   if (pass.validUntil && now > pass.validUntil) return { valid: false, reason: "expired", pass };
 
@@ -262,7 +280,7 @@ function validatePass(pass, now, userEmail, emailHashSecret) {
         emailRestricted: true,
         pass,
         bundleId: pass.bundleId,
-        usesRemaining: pass.maxUses - pass.useCount,
+        usesRemaining: usesRemaining(pass),
       };
     }
 
@@ -277,7 +295,7 @@ function validatePass(pass, now, userEmail, emailHashSecret) {
     valid: true,
     pass,
     bundleId: pass.bundleId,
-    usesRemaining: pass.maxUses - pass.useCount,
+    usesRemaining: usesRemaining(pass),
   };
 }
 
@@ -294,8 +312,39 @@ export async function diagnoseFailure(code) {
 
   const now = new Date().toISOString();
   if (pass.revokedAt) return "revoked";
-  if (pass.useCount >= pass.maxUses) return "exhausted";
+  if (isExhausted(pass)) return "exhausted";
+  if (isHeldForReview(pass)) return "held_for_review";
   if (now < pass.validFrom) return "not_yet_valid";
   if (pass.validUntil && now > pass.validUntil) return "expired";
   return "unknown";
+}
+
+/**
+ * Read a pass record without validating it.
+ *
+ * @param {string} code - The passphrase code
+ * @returns {Promise<Object|null>} The stored pass, or null
+ */
+export async function getPassRecord(code) {
+  return passRepository.getPass(code);
+}
+
+/**
+ * Claim the one referral redemption an account may make, ever.
+ *
+ * @returns {Promise<boolean>} false when the account already holds one
+ */
+export async function claimReferral(hashedSub, code) {
+  return passRepository.putReferralClaim(hashedSub, code, new Date().toISOString());
+}
+
+export async function releaseReferral(hashedSub) {
+  await passRepository.deleteReferralClaim(hashedSub);
+}
+
+/**
+ * Record a completed redemption of a user-issued pass.
+ */
+export async function recordRedemption({ code, hashedSub, issuedBy, passTypeId }) {
+  await passRepository.putRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt: new Date().toISOString() });
 }

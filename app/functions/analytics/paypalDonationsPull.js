@@ -15,7 +15,13 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
 import { recentPullDays } from "../../lib/dateUtils.js";
-import { createPacer, fetchAccessToken, fetchAllTransactions, realSleep } from "../../services/paypalTransactionSearch.js";
+import {
+  PayPalDataNotAvailableError,
+  createPacer,
+  fetchAccessToken,
+  fetchAllTransactions,
+  realSleep,
+} from "../../services/paypalTransactionSearch.js";
 import {
   CREDIT_NOTE_EVENT_CODES,
   REFUND_EVENT_CODES,
@@ -178,7 +184,7 @@ export function daysOf(event) {
  *
  * @param {{date?: string, from?: string, to?: string}} [event] - `date` ("YYYY-MM-DD") overrides
  *   yesterday and today so far; `from` and `to` (inclusive, at most 93 days) backfill a range.
- * @returns {Promise<{days: Array<{date: string, key: string, count: number}>}>}
+ * @returns {Promise<{days: Array<{date: string, key: string|null, count: number, skipped?: boolean}>}>}
  */
 export async function handler(event = {}) {
   const bucket = requireEnv("ANALYTICS_LAKE_BUCKET_NAME");
@@ -193,7 +199,17 @@ export async function handler(event = {}) {
   const results = [];
   for (const targetDate of days) {
     const { start, end } = computeDayWindow(targetDate);
-    const transactions = await fetchAllTransactions(accessToken, start, end, fetch, { sleep: realSleep, pace });
+    let transactions;
+    try {
+      transactions = await fetchAllTransactions(accessToken, start, end, fetch, { sleep: realSleep, pace });
+    } catch (error) {
+      if (error instanceof PayPalDataNotAvailableError && targetDate === new Date().toISOString().slice(0, 10)) {
+        logger.warn({ message: "PayPal has no data yet for the current UTC day; skipped", date: targetDate });
+        results.push({ date: targetDate, key: null, count: 0, skipped: true });
+        continue;
+      }
+      throw error;
+    }
     const rows = donationRowsFromTransactions(transactions, {
       onlyDate: targetDate,
       onUnmatched: (id, currency) =>
