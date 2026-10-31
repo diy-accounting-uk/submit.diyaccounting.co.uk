@@ -24,6 +24,8 @@
   --c-error-tint: #fdecea;
   --c-warn: #7a4a00;
   --c-warn-tint: #fff4d6;
+  --c-sandbox-tint: #f6ee8c;
+  --c-unavailable-tint: #e4e7ec;
   --c-info: #1d4f91;
   --c-info-tint: #e8f0fa;
   --c-focus: #ffdd00;
@@ -103,6 +105,8 @@
   --c-error-tint: #331a17;
   --c-warn: #f2c14e;
   --c-warn-tint: #2e2510;
+  --c-sandbox-tint: #4a4512;
+  --c-unavailable-tint: #2b323d;
   --c-info: #8fb4ec;
   --c-info-tint: #1e2c40;
   --c-scrim: rgb(0 0 0 / 0.72);
