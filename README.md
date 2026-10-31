@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-24 Document developer setup and repository conventions
+- **Use when:** a new contributor needs the setup guide, or the session record needs reading.
+- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, and REPORT_*.md files are session and audit reports.
+- **Run:** no command; see Does and Entry
+- **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md
+- **Keywords:** readme, setup guide, developer onboarding, next.md, plan doc, session report, architecture report
+- **Related:** DEV-27, DEV-40
+@end-capability -->
+
 # DIY Accounting Submit™
 
 **HMRC recognised software for Making Tax Digital VAT submissions**

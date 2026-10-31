@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-34 File a full ITSA tax year in sandbox
+// - **Use when:** a whole ITSA tax year must be filed end to end against HMRC's sandbox for one test user.
+// - **Does:** itsa-sandbox-year.js files an annual submission, a triggered and adjusted BSAS, a calculation and a final declaration for the self-employment business. It also files quarterly updates for both businesses and resets the sandbox's stateful test data via a checkpoint between runs.
+// - **Run:** `scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js`
+// - **Entry:** `scripts/itsa-sandbox-year.js:main`
+// - **Files:** scripts/itsa-sandbox-year.js, app/unit-tests/scripts/itsa-sandbox-year.test.js
+// - **Keywords:** itsa sandbox, full tax year, bsas, final declaration, checkpoint, test support api, dated quarters, cumulative model
+// - **Related:** HMRC-33, HMRC-35, HMRC-16, HMRC-21
+// @end-capability
+
 /**
  *
  * Files a whole ITSA tax year against the HMRC sandbox with one test user, for a self-employment

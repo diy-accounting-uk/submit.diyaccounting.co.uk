@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-33 Enforce and consume activity tokens
+// - **Use when:** a token-costed activity must check balance before an HMRC call and charge only on success.
+// - **Does:** The tokenEnforcement.js module's hasTokensForActivity checks a qualifying bundle has enough tokens before the HMRC call. A rejected submission never costs a token, because chargeTokenOnSuccess and consumeTokenForActivity decrement the count only once HMRC confirms success. A bundle carrying the unlimited sentinel is exempt from counting.
+// - **Run:** `import { hasTokensForActivity, consumeTokenForActivity, chargeTokenOnSuccess } from "app/services/tokenEnforcement.js"`
+// - **Entry:** `app/services/tokenEnforcement.js:hasTokensForActivity`; `app/services/tokenEnforcement.js:consumeTokenForActivity`
+// - **Files:** app/services/tokenEnforcement.js, app/unit-tests/services/tokenEnforcement.test.js, app/unit-tests/services/tokenEnforcement.consumption.test.js, app/system-tests/tokenConsumption.system.test.js, behaviour-tests/tokenEnforcement.behaviour.test.js, web/public/widgets/submission-cost.js, web/browser-tests/submissionCost.browser.test.js, app/unit-tests/data/dynamoDbBundleRepository.tokenEvent.test.js
+// - **Keywords:** token, enforce tokens, consume token, unlimited sentinel, hasTokensForActivity, resident-pro licence
+// - **Related:** BILL-04, BILL-06, BILL-37
+// @end-capability
+
 // app/services/tokenEnforcement.js
 
 import { createLogger } from "../lib/logger.js";

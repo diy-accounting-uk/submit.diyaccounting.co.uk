@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability DATA-46 Configure the YouTube channel as code
+# - **Use when:** the channel scripts/youtube-upload.js targets needs declaring or checking without a recorded channel id.
+# - **Does:** youtube.toml declares the YouTube channel scripts/youtube-upload.js uploads to. The channel is resolved by handle through the YouTube Data API rather than a recorded channel id.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `infra/google/gcp/youtube.toml:`
+# - **Files:** infra/google/gcp/youtube.toml
+# - **Keywords:** youtube channel config, youtube data api, channel handle, youtube-upload.js, channel as code
+# - **Related:** DATA-44
+# @end-capability
+
 # The YouTube channel scripts/youtube-upload.js uploads to, as code.
 #
 # No numeric channel id is recorded here: the YouTube Data API resolves a channel by handle

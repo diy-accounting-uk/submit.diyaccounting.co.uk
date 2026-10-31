@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-04 Stream DynamoDB table changes into the lake
+// - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
+// - **Does:** dynamoStreamToFirehose.js serves four DynamoDB Streams event source mappings for receipts, bundles, subscriptions and passes. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
+// - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
+// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes
+// @end-capability
+
 // app/functions/analytics/dynamoStreamToFirehose.js
 //
 // One Lambda, four DynamoDB Streams event source mappings (receipts, bundles, subscriptions,

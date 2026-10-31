@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-02 Derive environment and deployment names from a branch
+# - **Use when:** a workflow step needs the same environment, deployment name and domain URLs another step already computed.
+# - **Does:** get-names computes the environment name, ci or prod, from the branch or an explicit override. It computes the deployment name from a hash of the branch or an override. It computes the domain URLs that follow from those two names.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/get-names/action.yml`
+# - **Files:** .github/actions/get-names/action.yml
+# - **Keywords:** environment name, deployment name, get-names, branch hash, domain url, ci or prod, naming convention
+# - **Related:** OPS-03, OPS-04
+# @end-capability
+
 name: "Get environment and domain names"
 description: "Computes environment name, deployment name, and domain URLs based on branch and inputs"
 

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-49 Stage Stripe transactions for reconciliation
+// - **Use when:** one month's Stripe balance transactions and payouts must be pulled and staged for accounts reconciliation.
+// - **Does:** stripe-stage.js pulls one month's Stripe balance transactions and payouts. It keeps gross, fee and net separate, nothing netted, and writes them to the staging tree. It reads the live secret key from stripe.toml's Secrets Manager entry.
+// - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/finance/stripe-stage.js --month 2026-03`
+// - **Entry:** `scripts/finance/stripe-stage.js:`
+// - **Files:** scripts/finance/stripe-stage.js, app/unit-tests/scripts/finance/stripeStage.test.js
+// - **Keywords:** stripe balance transactions, stripe payouts, accounts staging, gross fee net, stripe.toml secret
+// - **Related:** DATA-48, DATA-50, DATA-51
+// @end-capability
+
 /**
  * Stages a month's Stripe balance transactions and payouts to the workspace's staging tree, as
  * the raw Stripe objects, gross, fee and net kept separate (nothing here nets a charge against

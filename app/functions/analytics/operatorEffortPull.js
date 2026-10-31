@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-07 Pull GitHub operator-effort data
+// - **Use when:** workflow runs, issue events or commits must be pulled into the lake for the operator-effort views.
+// - **Does:** operatorEffortPull.js pulls one UTC day of data: GitHub Actions runs, repo-wide issue events and commits. It reads the REST API through a GitHub App installation token. It tags each commit has_claude_coauthor from its Co-Authored-By trailer, not author identity, and writes NDJSON under curated/operator/.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/operatorEffortPull.js:handler`
+// - **Files:** app/functions/analytics/operatorEffortPull.js, app/unit-tests/analytics/operatorEffortPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorEffortTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorEffortTablesTest.java
+// - **Keywords:** operator effort, github actions runs, issue events, commits, github app token, co-authored-by claude, operator interventions
+// - **Related:** DATA-33
+// @end-capability
+
 // app/functions/analytics/operatorEffortPull.js
 //
 // Nightly job that pulls one UTC day of GitHub Actions runs (by trigger and actor), repo-wide

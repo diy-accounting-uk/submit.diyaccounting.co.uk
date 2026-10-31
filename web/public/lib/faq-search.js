@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-10 Serve general site pages
+// - **Use when:** adding or changing a static informational page, or the FAQ/help search behind it.
+// - **Does:** Static pages cover the homepage, about, accessibility, guide, help, privacy, terms and usage token history. faqs.toml holds the FAQ entries. faq-search.js does bigram fuzzy matching over them. help-page.js controls search, the accordion and the support-ticket modal.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/public/lib/faq-search.js:FAQSearch`; `web/public/lib/help-page.js:HelpPage`
+// - **Files:** web/public/index.html, web/public/about.html, web/public/accessibility.html, web/public/guide.html, web/public/help.html, web/public/privacy.html, web/public/terms.html, web/public/usage.html, web/public/faqs.toml, web/public/lib/faq-search.js, web/public/lib/help-page.js, web/public/images/favicon/IMPLEMENTATION.html, behaviour-tests/help.behaviour.test.js, web/browser-tests/privacy-notice.browser.test.js, web/unit-tests/seo-validation.test.js
+// - **Keywords:** static pages, faq search, help page, accessibility statement, privacy, terms, usage history, bigram matching
+// - **Related:** SITE-05, SITE-19
+// @end-capability
+
 /**
  * FAQ Search Module
  *

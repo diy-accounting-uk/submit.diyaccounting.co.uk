@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-73 Detect 404 scan-rate attacks
+// - **Use when:** a single client IP is probing many paths and the 404 rate against one distribution needs watching.
+// - **Does:** scanRate404Detect.js runs every five minutes over the cloudfront_requests Glue table of CloudFront access logs. It flags a client IP that raises more than a configured 404 threshold in a minute against one distribution. ScanDetectionStack owns the Lambda and its EventBridge schedule, and creates no VPC Flow Logs.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/security/scanRate404Detect.js:handler`
+// - **Files:** app/functions/security/scanRate404Detect.js, app/unit-tests/functions/scanRate404Detect.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStackTest.java
+// - **Keywords:** 404 scan, scan rate, cloudfront logs, glue athena, security detection, brute force, distribution
+// - **Related:** OPS-74, OPS-75
+// @end-capability
+
 // app/functions/security/scanRate404Detect.js
 //
 // Five-minute scheduled poll (ScanDetectionStack) over the cloudfront_requests Athena table

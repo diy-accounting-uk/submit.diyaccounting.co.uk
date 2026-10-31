@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-20 Enforce daily run budgets for agent paths
+# - **Use when:** an unattended agent workflow needs a daily cap on how many results it posts.
+# - **Does:** agent-run-budget counts successful runs of a named workflow, job and step in the last 24 hours. It reports an over-budget status and count, shared by every unattended agent path so this counting logic exists once.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/agent-run-budget/action.yml`
+# - **Files:** .github/actions/agent-run-budget/action.yml
+# - **Keywords:** run budget, daily cap, over budget, agent path, rate limit agent
+# - **Related:** OPS-18
+# @end-capability
+
 name: "Stop an agent path once its daily run budget is spent"
 description: "Counts how many runs of the named workflow have already reached the named step (in the named job) with a success conclusion in the last 24 hours, and reports whether the caller is over its daily budget. Shared by every unattended agent path so this counting logic exists once."
 

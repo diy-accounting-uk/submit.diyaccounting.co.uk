@@ -3,6 +3,17 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-114 Provision ECR image repositories
+// - **Use when:** the ECR repositories the Lambda Docker images push to need creating with lifecycle policies.
+// - **Does:** EcrStack creates the ECR repositories and image lifecycle policies the Lambda Docker images are pushed to.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java
+// - **Keywords:** ecr repository, docker image, lifecycle policy, lambda image
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-95 Generate WCAG accessibility compliance rows
+// - **Use when:** WCAG manual and automated review results need turning into rows for the compliance dashboard.
+// - **Does:** compliance-accessibility-rows.js parses WCAG 2.2 manual review results into rows for the board and compliance dashboard. wcag22-manual-review.js compiles the manual testing results: keyboard navigation, screen reader and contrast checks.
+// - **Run:** `node scripts/compliance-accessibility-rows.js <environment> <checkedAt> [--pa11y path] [--axe path] [--axe-wcag22 path]`; `node scripts/wcag22-manual-review.js --url <url> [--output FILE]`
+// - **Entry:** `scripts/compliance-accessibility-rows.js`; `scripts/wcag22-manual-review.js`
+// - **Files:** scripts/compliance-accessibility-rows.js, app/unit-tests/scripts/complianceAccessibilityRows.test.js, scripts/wcag22-manual-review.js
+// - **Keywords:** wcag 2.2, manual review, compliance rows, dora row, keyboard nav, screen reader, contrast
+// - **Related:** OPS-96, OPS-97
+// @end-capability
+
 // scripts/compliance-accessibility-rows.js
 //
 // Turns compliance.yml's pa11y and axe result files into newline-delimited JSON rows for

@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-03 Look up AWS resources by domain convention
+# - **Use when:** a workflow step needs a deployment's Cognito pool, API Gateway or CloudFront IDs without a stored ID.
+# - **Does:** lookup-resources queries AWS for the Cognito User Pool, API Gateway and CloudFront resources of a deployment. It derives every resource from the deployment's deterministic domain name, for example ci-<subdomain>.<domain>. No caller needs to store a resource ID.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/lookup-resources/action.yml`
+# - **Files:** .github/actions/lookup-resources/action.yml
+# - **Keywords:** lookup resources, cognito user pool, api gateway, cloudfront, domain convention, deterministic naming
+# - **Related:** OPS-02
+# @end-capability
+
 name: "Lookup AWS resources by domain convention"
 description: "Looks up Cognito, API Gateway, and CloudFront resources using deterministic domain names"
 

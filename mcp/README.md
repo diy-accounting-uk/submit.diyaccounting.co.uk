@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability MCP-14 Document the submission MCP's plan and tool reference
+- **Use when:** starting work on the submission MCP: what is built, planned, and how to run it.
+- **Does:** ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md is the plan of record for the submission MCP: milestones, book-to-filing field mappings and open rows. mcp/README.md is the package's short reference: how to run it, test it, and its tools at time of writing.
+- **Run:** `npm --prefix mcp install`; `npm --prefix mcp test`
+- **Entry:** `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`; `mcp/README.md`
+- **Files:** ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md, mcp/README.md
+- **Keywords:** plan submission mcp, mcp readme, milestones, field mappings, plan of record
+- **Related:** MCP-01
+@end-capability -->
+
 # @diy-accounting-uk/diya-submit
 
 The submission MCP for DIY Accounting Submit (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`). It opens a customer's

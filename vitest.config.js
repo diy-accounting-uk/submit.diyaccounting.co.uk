@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-23 Configure the test and lint toolchains
+// - **Use when:** Vitest coverage thresholds, Playwright browser settings, or ESLint/security-lint rules need checking or changing.
+// - **Does:** vitest.config.js sets the Vitest environment, coverage thresholds and test-discovery patterns for app/unit-tests and web/unit-tests. playwright.config.js configures the browser and behaviour-test runs. eslint.config.js and eslint.security.config.js configure the repository's lint and security-lint rule sets.
+// - **Run:** `npm run test:unit`; `npm run test:browser`; `npm run linting`
+// - **Entry:** `vitest.config.js`; `playwright.config.js`; `eslint.config.js`
+// - **Files:** vitest.config.js, playwright.config.js, eslint.config.js, eslint.security.config.js
+// - **Keywords:** vitest config, playwright config, eslint config, coverage thresholds, test discovery, security lint
+// - **Related:** DEV-20, DEV-21
+// @end-capability
+
 import { defineConfig } from "vitest/config";
 import dotenv from "dotenv";
 import path from "path";

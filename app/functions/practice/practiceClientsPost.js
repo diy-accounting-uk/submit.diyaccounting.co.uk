@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-16 Manage practice clients
+// - **Use when:** a practice's client roster must be created, read, archived or listed.
+// - **Does:** The practiceClientsPost.js, practiceClientGet.js, practiceClientDelete.js and practiceClientsListGet.js handlers create, read, archive-delete and list a practice's clients against dynamoDbPracticeClientRepository.js. web/public/practice.js renders the roster with HMRC authorisation status and invitation controls on practice.html.
+// - **Run:** `POST /api/v1/practice/clients`; `GET /api/v1/practice/clients/:clientId`; `DELETE /api/v1/practice/clients/:clientId`; `GET /api/v1/practice/clients`
+// - **Entry:** `app/functions/practice/practiceClientsPost.js:ingestHandler`; `app/functions/practice/practiceClientsListGet.js:ingestHandler`; `app/data/dynamoDbPracticeClientRepository.js:createClient`
+// - **Files:** app/functions/practice/practiceClientsPost.js, app/functions/practice/practiceClientGet.js, app/functions/practice/practiceClientDelete.js, app/functions/practice/practiceClientsListGet.js, app/unit-tests/functions/practiceClientsPost.test.js, app/unit-tests/functions/practiceClientGet.test.js, app/unit-tests/functions/practiceClientDelete.test.js, app/unit-tests/functions/practiceClientsListGet.test.js, app/data/dynamoDbPracticeClientRepository.js, app/unit-tests/data/dynamoDbPracticeClientRepository.test.js, web/public/practice.html, web/public/practice.js, web/browser-tests/practice.browser.test.js, behaviour-tests/practiceLicence.behaviour.test.js
+// - **Keywords:** practice, client roster, crud, archive client, list clients, practice.html
+// - **Related:** BILL-12, BILL-13, BILL-14, BILL-15
+// @end-capability
+
 // app/functions/practice/practiceClientsPost.js
 
 import { validateEnv } from "../../lib/env.js";

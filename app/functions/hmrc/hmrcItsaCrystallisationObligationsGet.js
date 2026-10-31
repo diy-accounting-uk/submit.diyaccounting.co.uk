@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-20 Retrieve ITSA crystallisation obligations
+// - **Use when:** the final-declaration obligation for a tax year must be checked before submission.
+// - **Does:** hmrcItsaCrystallisationObligationsGet.js's ingestHandler calls HMRC's Obligations API filtered to the crystallisation obligation. No dedicated page consumes it; the OpenAPI spec documents it only.
+// - **Run:** `GET /api/v1/hmrc/itsa/obligations/crystallisation`
+// - **Entry:** `app/functions/hmrc/hmrcItsaCrystallisationObligationsGet.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaCrystallisationObligationsGet.js, app/unit-tests/functions/hmrcItsaCrystallisationObligationsGet.test.js
+// - **Keywords:** crystallisation, final declaration obligation, itsa obligations, tax year, intent to crystallise
+// - **Related:** HMRC-10, HMRC-21
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaCrystallisationObligationsGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-35 Forecast Google Ads keyword performance
+// - **Use when:** a task asks how many clicks or conversions a proposed keyword list and daily budget would deliver.
+// - **Does:** ads-forecast.js is a read-only keyword forecast for a given keyword list. It reports historical searches, competition and bid range, plus expected clicks and cost at a daily budget. It never creates or spends against a live campaign.
+// - **Run:** `npm run ads:forecast -- --keywords "vat filing software,mtd vat" --budget-gbp 50`; `npm run ads:forecast -- --keywords-file keywords.txt --budget-gbp 50`
+// - **Entry:** `infra/google/ads/ads-forecast.js:main`
+// - **Files:** infra/google/ads/ads-forecast.js, app/unit-tests/scripts/adsForecast.test.js
+// - **Keywords:** google ads forecast, keyword forecast, expected clicks, daily budget, maximize clicks bidding, developer_token_not_approved
+// - **Related:** DATA-33, DATA-34, DATA-36
+// @end-capability
+
 // infra/google/ads/ads-forecast.js
 //
 // Read-only Google Ads keyword forecast for the account named in infra/google/ads/ads.toml, for

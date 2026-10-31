@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// Regenerates the contents sections of REPORT_CAPABILITIES.md from its capability entries.
-// The entries (#### headings with their field lines) are the only hand-written part; the global
-// index, each area's and each group's contents, and the keyword index are derived from them,
-// between <!-- generated:... --> markers. `--check` exits 1 when the file is not current.
-
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-export const REPORT_PATH = resolve(ROOT, "REPORT_CAPABILITIES.md");
+// The render module of scripts/capabilities-generate.mjs. From a report whose entries are in place it
+// derives the global index, each area's and each group's contents, and the keyword index, between the
+// <!-- generated:... --> markers.
 
 export function slug(heading) {
   return heading
@@ -146,19 +138,4 @@ export function render(markdown) {
     for (const g of a.groups) out = replaceBlock(out, `group ${slug(g.heading)}`, renderGroupContents(g));
   }
   return out;
-}
-
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
-  const current = readFileSync(REPORT_PATH, "utf8");
-  const next = render(current);
-  if (process.argv.includes("--check")) {
-    if (next !== current) {
-      console.error("REPORT_CAPABILITIES.md contents are stale: run `npm run capabilities:index`");
-      process.exit(1);
-    }
-    console.log("REPORT_CAPABILITIES.md contents are current");
-  } else {
-    writeFileSync(REPORT_PATH, next);
-    console.log("REPORT_CAPABILITIES.md contents regenerated");
-  }
 }

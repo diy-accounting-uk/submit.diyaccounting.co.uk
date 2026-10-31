@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-17 Manage ITSA losses and claims
+// - **Use when:** losses or relief claims must be read, submitted or deleted against HMRC.
+// - **Does:** hmrcItsaLossesAndClaimsGet/Put/Delete.js read, submit and delete losses and relief claims. lossesAndClaims.html loads existing entries and edits them.
+// - **Run:** `GET /api/v1/hmrc/itsa/losses-and-claims`; `PUT /api/v1/hmrc/itsa/losses-and-claims`; `DELETE /api/v1/hmrc/itsa/losses-and-claims`
+// - **Entry:** `app/functions/hmrc/hmrcItsaLossesAndClaimsGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaLossesAndClaimsDelete.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaLossesAndClaimsGet.js, app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js, app/functions/hmrc/hmrcItsaLossesAndClaimsDelete.js, app/unit-tests/functions/hmrcItsaLossesAndClaims.test.js, app/unit-tests/functions/hmrcItsaLossesAndClaimsPut.activity.test.js, app/unit-tests/functions/hmrcItsaLossesAndClaimsDelete.activity.test.js, web/public/hmrc/itsa/lossesAndClaims.html, web/browser-tests/itsaLossesAndClaims.browser.test.js, behaviour-tests/itsaLossesAndClaims.behaviour.test.js
+// - **Keywords:** losses and claims, relief claims, itsa losses, loss carry forward, sideways relief
+// - **Related:** HMRC-19, HMRC-18
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaLossesAndClaimsGet.js
 
 import { createLogger } from "../../lib/logger.js";

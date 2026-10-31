@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-31 Run the weekly security review and its triage
+# - **Use when:** the weekly security-review issue needs a review, or a review must run on demand.
+# - **Does:** security-review.yml opens a security-review issue every Monday, then runs a Sonnet agent over the checked-out commit, read-only, against prompts/security-review.md. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
+# - **Run:** `gh workflow run security-review.yml`; `gh workflow run security-review.yml -f issue_number=<n>` for an existing issue; read a report with `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
+# - **Entry:** `.github/workflows/security-review.yml`
+# - **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
+# - **Keywords:** security review, security triage, OWASP, private report, weekly review, security-review.yml
+# - **Related:** OPS-17, OPS-18, OPS-20
+# @end-capability
+
 # .github/workflows/security-review.yml
 
 name: security-review

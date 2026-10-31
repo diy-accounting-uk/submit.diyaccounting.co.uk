@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-34 Validate GitHub Actions workflow files
+# - **Use when:** a workflow file's syntax or deployment-safety conventions need checking before a push.
+# - **Does:** validate-workflows.sh parses every .github/workflows/*.yml file. It checks syntax, required environment variables and deployment-safety conventions.
+# - **Run:** `npm run lint:workflows`; `./scripts/validate-workflows.sh`
+# - **Entry:** `scripts/validate-workflows.sh`
+# - **Files:** scripts/validate-workflows.sh
+# - **Keywords:** validate workflows, workflow lint, yaml syntax, deployment safety conventions, required env vars
+# - **Related:** OPS-32
+# @end-capability
+
 #
 # Validate GitHub Actions workflow syntax
 #

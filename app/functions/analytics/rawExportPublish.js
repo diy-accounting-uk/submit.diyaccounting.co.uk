@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-20 Publish the nightly raw export for indexing
+// - **Use when:** a dashboard figure must be readable as a plain file, for the corpus index.
+// - **Does:** rawExportPublish.js writes one CSV per Athena business view and one JSON per one-stop-dashboard objective to s3://<lake>/exports/<env>/<date>/. scripts/analytics-pull.sh does a one-way aws s3 sync --delete of that exports prefix down to the workspace's analytics/<env>/ tree. RawExport.java provisions the publishing Lambda.
+// - **Run:** `scripts/analytics-pull.sh`
+// - **Entry:** `app/functions/analytics/rawExportPublish.js:handler`
+// - **Files:** app/functions/analytics/rawExportPublish.js, app/unit-tests/analytics/rawExportPublish.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/RawExport.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/RawExportTest.java, scripts/analytics-pull.sh
+// - **Keywords:** raw export, csv per view, s3 sync, corpus index, analytics-pull, exports prefix, workspace mirror
+// - **Related:** DATA-18
+// @end-capability
+
 // app/functions/analytics/rawExportPublish.js
 //
 // Nightly job that writes one CSV per Athena view and one JSON per one-stop-dashboard objective

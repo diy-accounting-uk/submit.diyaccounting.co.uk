@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-19 Provide shared behaviour-test fixtures and steps
+// - **Use when:** a behaviour test needs a background process, a page-interaction step, a DynamoDB assertion or a GA4 query.
+// - **Does:** behaviour-helpers.js starts and manages the local DynamoDB, HTTP server and stripe listen background processes a behaviour run needs. dynamodb-assertions.js, dynamodb-export.js, figures-helper.js, fileHelper.js and ga4PurchaseQuery.js read exported DynamoDB tables, caption screenshots, manage marker files and query GA4 purchases. gotoWithRetries.js retries Playwright navigation past transient errors, and behaviour-steps.js wraps page interactions as named test.step blocks with screenshots.
+// - **Run:** `import { ... } from "behaviour-tests/helpers/behaviour-helpers.js"`; `import { ... } from "behaviour-tests/steps/behaviour-steps.js"`
+// - **Entry:** `behaviour-tests/helpers/behaviour-helpers.js`; `behaviour-tests/steps/behaviour-steps.js`
+// - **Files:** behaviour-tests/helpers/behaviour-helpers.js, behaviour-tests/helpers/dynamodb-assertions.js, behaviour-tests/helpers/dynamodb-export.js, behaviour-tests/helpers/figures-helper.js, behaviour-tests/helpers/fileHelper.js, behaviour-tests/helpers/ga4PurchaseQuery.js, behaviour-tests/helpers/gotoWithRetries.js, behaviour-tests/helpers/playwrightTestForCapture.js, behaviour-tests/helpers/playwrightTestWithout.js, behaviour-tests/helpers/serverHelper.js, behaviour-tests/helpers/waitForSuccessOrError.js, behaviour-tests/steps/behaviour-steps.js
+// - **Keywords:** behaviour test helpers, playwright fixtures, stripe listen, ga4 purchase query, bigquery, screenshot captions, retry navigation, test step
+// - **Related:** DEV-18, DEV-17
+// @end-capability
+
 // behaviour-tests/helpers/behaviour-helpers.js
 import { startDynamoDB, ensureConfiguredTablesExist } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";

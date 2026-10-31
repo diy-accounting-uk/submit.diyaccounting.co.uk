@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-05 Reconcile bundle capacity counters
+// - **Use when:** a capacity counter may have drifted from the true count of active allocations.
+// - **Does:** The bundleCapacityReconcile.js handler runs hourly on a schedule. It recounts active, non-expired allocations per capped bundle with countActiveAllocations. It overwrites the capacity counter table to correct drift.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/account/bundleCapacityReconcile.js:handler`
+// - **Files:** app/functions/account/bundleCapacityReconcile.js, app/unit-tests/functions/bundleCapacityReconcile.test.js, app/system-tests/bundleCapacityReconcile.system.test.js, app/unit-tests/data/dynamoDbBundleRepository.countActiveAllocations.test.js
+// - **Keywords:** reconcile, capacity counter, drift, scheduled lambda, countActiveAllocations, hourly
+// - **Related:** BILL-01, BILL-02
+// @end-capability
+
 // app/functions/account/bundleCapacityReconcile.js
 //
 // Scheduled Lambda (EventBridge, every hour) that queries the bundleId-expiry-index

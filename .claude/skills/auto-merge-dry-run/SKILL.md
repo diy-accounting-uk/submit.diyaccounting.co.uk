@@ -6,6 +6,16 @@ description: Everything /auto-merge reports, with nothing it changes — the sam
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-33 Preview what auto-merge would do
+- **Use when:** the operator wants to see what would merge before anything does.
+- **Does:** auto-merge-dry-run reads the auto-merge skill and follows it in dry-run mode. It gathers everything, renders every table and reaches every verdict, but takes no action. It changes nothing on disk and merges no PR.
+- **Run:** `/auto-merge-dry-run`
+- **Entry:** `.claude/skills/auto-merge-dry-run/SKILL.md`
+- **Files:** .claude/skills/auto-merge-dry-run/SKILL.md
+- **Keywords:** auto-merge dry run, merge preview, no-op verdict, read-only merge check
+- **Related:** DEV-32
+@end-capability -->
+
 # auto-merge-dry-run
 
 **Read `.claude/skills/auto-merge/SKILL.md` and follow it in dry-run mode.** That is this skill's

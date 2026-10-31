@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability BILL-32 Provision Stripe secrets
+# - **Use when:** Stripe API keys or webhook signing secrets must be created or updated in Secrets Manager.
+# - **Does:** The stripe-setup-secrets.sh script creates or updates Stripe API keys and webhook signing secrets in AWS Secrets Manager. It covers both the ci and prod environments.
+# - **Run:** `./scripts/stripe-setup-secrets.sh <env> <secret_key> <webhook_secret> <price_id>`
+# - **Entry:** `scripts/stripe-setup-secrets.sh`
+# - **Files:** scripts/stripe-setup-secrets.sh
+# - **Keywords:** stripe, secrets manager, api key, webhook signing secret, provision secrets
+# - **Related:** BILL-28, BILL-30
+# @end-capability
+
 #
 # scripts/stripe-setup-secrets.sh
 #

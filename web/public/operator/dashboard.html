@@ -2,6 +2,16 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+<!-- @capability DATA-26 Render the operator objectives dashboard
+- **Use when:** the operator-only dashboard page must show the eight one-stop objectives or the account's activity list.
+- **Does:** web/public/operator/dashboard.html is the operator-only page, behind the operator bundle entitlement. It renders the eight one-stop objectives' trailing 30/90-day observations, trend and deep links from operatorSnapshotGet.js. It also lists the account's entitled bundles; ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ONE_STOP_DASHBOARD.md is the plan it implements.
+- **Run:** no command; see Does and Entry
+- **Entry:** `web/public/operator/dashboard.html:`
+- **Files:** web/public/operator/dashboard.html, web/browser-tests/operatorDashboard.browser.test.js, web/browser-tests/operatorDashboardActivity.browser.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ONE_STOP_DASHBOARD.md
+- **Keywords:** operator dashboard page, one-stop objectives, operator bundle entitlement, activity list, trend deep link
+- **Related:** DATA-19
+@end-capability -->
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />

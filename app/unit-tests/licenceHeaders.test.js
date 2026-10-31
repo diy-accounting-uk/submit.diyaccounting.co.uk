@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-20 Check SPDX licence headers
+// - **Use when:** a new source file is added, or licence-header coverage across the repository needs checking or fixing.
+// - **Does:** licenceHeaders.test.js walks every comment-capable tracked file, excluding generated exports, generated test-report output and Crown-copyright or third-party material. It asserts each file carries the PolyForm Internal Use SPDX identifier and the company copyright line. add-spdx-headers.js adds the matching JS or Java header block to files that are missing one.
+// - **Run:** `npm run test:unit`; `node scripts/add-spdx-headers.js`
+// - **Entry:** `app/unit-tests/licenceHeaders.test.js`; `scripts/add-spdx-headers.js`
+// - **Files:** app/unit-tests/licenceHeaders.test.js, scripts/add-spdx-headers.js
+// - **Keywords:** spdx, licence header, copyright header, polyform internal use, header check, header injection
+// @end-capability
+
 // licenceHeaders.test.js -- every comment-capable tracked file carries the
 // SPDX identifier for PolyForm Internal Use and the company's copyright
 // line. Twinned from the spreadsheets repository's

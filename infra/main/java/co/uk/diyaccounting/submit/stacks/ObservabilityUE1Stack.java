@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-118 Provision the Observability stack in us-east-1
+// - **Use when:** a CloudWatch resource must live in us-east-1 for a global service such as CloudFront metrics or alarms.
+// - **Does:** ObservabilityUE1Stack creates the CloudWatch resources that must live in us-east-1 for global services, such as CloudFront metrics and alarms.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1Stack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1Stack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1StackTest.java
+// - **Keywords:** us-east-1, cloudfront metrics, global service alarms, observability
+// - **Related:** OPS-117
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

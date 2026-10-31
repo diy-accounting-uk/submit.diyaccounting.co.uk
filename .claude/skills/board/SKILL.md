@@ -6,6 +6,16 @@ description: Render the open-work board — one table for NEXT.md items, then on
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-27 Render the open-work board
+- **Use when:** the operator asks for the board, the open items, or what is in flight.
+- **Does:** board renders a table for NEXT.md items, then one list per PLAN_*.md of the open tasks not yet on the board. It also renders open alarm issues by family, live ci and prod deployments, and a branch audit. It reads NEXT.md and the PLAN_*.md documents fresh every time, never from memory.
+- **Run:** `/board`
+- **Entry:** `.claude/skills/board/SKILL.md`
+- **Files:** .claude/skills/board/SKILL.md
+- **Keywords:** board, open work, next.md, backlog, alarm issues, ci deployments, branch audit, in flight
+- **Related:** DEV-33, DEV-28
+@end-capability -->
+
 # board
 
 Render the current open-work board from `NEXT.md` and the `PLAN_*.md` documents (all at the repo

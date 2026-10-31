@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-09 List a user's issued passes
+// - **Use when:** a page must show up to 50 passes a caller has issued.
+// - **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and maps them to a public-safe shape.
+// - **Run:** `GET /api/v1/pass/my-passes`
+// - **Entry:** `app/functions/account/passMyPassesGet.js:ingestHandler`
+// - **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
+// - **Keywords:** pass, my passes, issued passes, list passes, getPassesByIssuer
+// - **Related:** BILL-06, BILL-07
+// @end-capability
+
 // app/functions/account/passMyPassesGet.js
 
 import { validateEnv } from "../../lib/env.js";

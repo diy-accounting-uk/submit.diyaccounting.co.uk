@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-81 Mask and redact sensitive data from logs
+// - **Use when:** text or an object bound for a log line or shared output may carry PII or secret values.
+// - **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`
+// - **Files:** app/lib/dataMasking.js, app/unit-tests/lib/dataMasking.test.js
+// - **Keywords:** pii redaction, data masking, secrets in logs, sensitive fields, log hygiene
+// - **Related:** OPS-86
+// @end-capability
+
 // app/lib/dataMasking.js
 
 /**

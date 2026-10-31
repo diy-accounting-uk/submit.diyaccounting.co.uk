@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-15 Submit and manage the UK property annual summary
+// - **Use when:** the year-end UK property annual summary must be read or filed.
+// - **Does:** hmrcItsaUkPropertyAnnualGet.js and hmrcItsaUkPropertyAnnualPut.js read and submit the year-end UK property annual summary. ukPropertyAnnualSubmission.html loads and edits it.
+// - **Run:** `GET /api/v1/hmrc/itsa/uk-property/annual`; `PUT /api/v1/hmrc/itsa/uk-property/annual`
+// - **Entry:** `app/functions/hmrc/hmrcItsaUkPropertyAnnualGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaUkPropertyAnnualPut.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaUkPropertyAnnualGet.js, app/functions/hmrc/hmrcItsaUkPropertyAnnualPut.js, app/unit-tests/functions/hmrcItsaUkPropertyAnnualGet.test.js, app/unit-tests/functions/hmrcItsaUkPropertyAnnualPut.test.js, app/unit-tests/functions/hmrcItsaUkPropertyAnnualPut.activity.test.js, web/public/hmrc/itsa/ukPropertyAnnualSubmission.html, behaviour-tests/itsaUkPropertyAnnualSubmission.behaviour.test.js
+// - **Keywords:** uk property annual, year-end summary, rental property, itsa annual submission, property income allowance
+// - **Related:** HMRC-13, HMRC-14
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaUkPropertyAnnualGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-25 Configure and gate CloudWatch RUM
+// - **Use when:** a page's RUM telemetry must read its app monitor config and respect consent.
+// - **Does:** The RUM client reads its app monitor id, region, identity pool and guest role from page meta tags. It sends telemetry only once consent.rum, or the legacy consent.analytics, is granted. rum-placeholders.system.test.js confirms the RUM_ placeholders exist in source HTML before deployment substitutes them.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/unit-tests/rum-config.test.js:`; `app/system-tests/rum-placeholders.system.test.js:`
+// - **Files:** web/unit-tests/rum-config.test.js, web/unit-tests/rum-consent.test.js, app/system-tests/rum-placeholders.system.test.js
+// - **Keywords:** cloudwatch rum, app monitor, guest role, consent.rum, rum placeholders, meta tag config
+// - **Related:** DATA-24, SS-34
+// @end-capability
+
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";

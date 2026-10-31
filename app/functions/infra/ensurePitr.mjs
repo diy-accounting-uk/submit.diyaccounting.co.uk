@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-132 Enable DynamoDB PITR on deploy
+// - **Use when:** a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
+// - **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/infra/ensurePitr.mjs:onEvent`; `app/functions/infra/ensurePitr.mjs:isComplete`
+// - **Files:** app/functions/infra/ensurePitr.mjs, app/unit-tests/functions/ensurePitr.test.js
+// - **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups
+// - **Related:** OPS-113
+// @end-capability
+
 // app/functions/infra/ensurePitr.mjs
 //
 // Custom resource handler pair for a CDK Provider that turns on DynamoDB point-in-time recovery.

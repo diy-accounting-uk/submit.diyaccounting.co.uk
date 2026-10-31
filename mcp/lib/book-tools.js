@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-03 Load and save diya-gl books via MCP
+// - **Use when:** an MCP session needs to open or save a diya-gl book, locally or in the cloud.
+// - **Does:** The two open_book and save_book tools in mcp/lib/book-tools.js back this server's session. open_book reads a book.toml plus lines.jsonl directory, any file the engine reads, or a cloud book. save_book writes the session's book in one of five formats, locally or to the cloud.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/book-tools.js:openBook`; `mcp/lib/book-tools.js:saveBook`; `mcp/lib/book-tools.js:createSession`
+// - **Files:** mcp/lib/book-tools.js, mcp/test/book-tools.test.js, mcp/test/fixtures/brickwork-pro-ltd-vat/book.toml, mcp/test/fixtures/precision-code-ltd-full/book.toml
+// - **Keywords:** open_book, save_book, diya-gl, book.toml, lines.jsonl, cloud book, mcp book tools, xlsx export
+// - **Related:** MCP-02, MCP-04, MCP-05, MCP-06, SS-03, SS-06
+// @end-capability
+
 // book-tools.js -- the two book tools over the filesystem: open_book loads a
 // diya-gl book from a directory (book.toml + lines.jsonl) or from any file
 // the diya-gl engine reads (a workbook, a package zip, a diya-gl zip, a

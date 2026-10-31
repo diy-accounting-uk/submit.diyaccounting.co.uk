@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-111 Provision cross-account backup vaults and plans
+// - **Use when:** the primary account's backup plans, or the separate backup account's vault and restore roles, need synthesizing.
+// - **Does:** BackupStack creates the AWS Backup vaults, backup plans and SNS notifications in the primary account. CrossAccountBackupVaultStack creates the vault in the separate backup account and grants it restore permissions. BackupAccountAccessStack creates the cross-account IAM roles the backup account uses to restore into the primary account. SubmitBackupAccount is the CDK app entrypoint that synthesizes the backup-account stacks.
+// - **Run:** `gh workflow run setup-backup-account.yml`; `./setup-s3-replication.sh`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java`; `infra/main/java/co/uk/diyaccounting/submit/stacks/CrossAccountBackupVaultStack.java`; `infra/main/java/co/uk/diyaccounting/submit/SubmitBackupAccount.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CrossAccountBackupVaultStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/BackupAccountAccessStack.java, infra/test/java/co/uk/diyaccounting/submit/BackupStackCdkResourceTest.java, infra/main/java/co/uk/diyaccounting/submit/SubmitBackupAccount.java, infra/test/java/co/uk/diyaccounting/submit/SubmitBackupAccountCdkResourceTest.java, .github/workflows/setup-backup-account.yml, scripts/setup-s3-replication.sh, cdk-typescript/scripts/diff-templates.mjs
+// - **Keywords:** backup vault, backup plan, cross-account backup, restore permissions, sns notification, backup account
+// - **Related:** OPS-109
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

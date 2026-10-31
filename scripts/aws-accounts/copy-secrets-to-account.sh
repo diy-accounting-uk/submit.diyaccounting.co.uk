@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-106 Replicate secrets across AWS accounts
+# - **Use when:** Secrets Manager entries must be copied from one AWS account to another during a migration.
+# - **Does:** copy-secrets-to-account.sh copies Secrets Manager secrets from one AWS account to another. It runs as a dry run by default and copies only when given --execute.
+# - **Run:** `./scripts/aws-accounts/copy-secrets-to-account.sh --source-profile <profile> --target-profile <profile> [--env <env>] [--execute]`
+# - **Entry:** `scripts/aws-accounts/copy-secrets-to-account.sh`
+# - **Files:** scripts/aws-accounts/copy-secrets-to-account.sh
+# - **Keywords:** copy secrets, secrets manager, account migration, dry run, cross-account secrets
+# - **Related:** OPS-107
+# @end-capability
+
 #
 # scripts/aws-accounts/copy-secrets-to-account.sh
 #

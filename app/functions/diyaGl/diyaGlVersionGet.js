@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-20 Fetch a versioned diya-gl book
+// - **Use when:** a specific stored version of a ledger book must be retrieved.
+// - **Does:** The diyaGlVersionGet.js ingestHandler retrieves a specific stored version of a ledger book from S3.
+// - **Run:** `GET /api/v1/diya-gl/books/:bookId/versions/:version`
+// - **Entry:** `app/functions/diyaGl/diyaGlVersionGet.js:ingestHandler`
+// - **Files:** app/functions/diyaGl/diyaGlVersionGet.js, app/unit-tests/functions/diyaGlVersionGet.test.js
+// - **Keywords:** diya-gl, ledger book, versioned fetch, book version, get version, s3 retrieval
+// - **Related:** BILL-17, BILL-19
+// @end-capability
+
 // app/functions/diyaGl/diyaGlVersionGet.js
 
 import { createLogger } from "../../lib/logger.js";

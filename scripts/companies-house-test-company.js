@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-12 Generate synthetic test companies
+// - **Use when:** a test needs a real-shaped Companies House test company without a live entity.
+// - **Does:** companies-house-test-company.js generates a synthetic test company with a company number, name and address. It is used against the http-simulator and in behaviour tests.
+// - **Run:** `node scripts/companies-house-test-company.js`; `node scripts/companies-house-test-company.js --delete <companyNumber> <authCode>`
+// - **Entry:** `scripts/companies-house-test-company.js:createTestCompany`; `scripts/companies-house-test-company.js:deleteTestCompany`
+// - **Files:** scripts/companies-house-test-company.js
+// - **Keywords:** companies house, test company, synthetic data, http-simulator, behaviour test, fixtures
+// - **Related:** CH-13
+// @end-capability
+
 /**
  *
  * Create or delete a Companies House sandbox test company with the test data generator.

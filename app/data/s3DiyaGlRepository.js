@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-23 Store diya-gl books in S3
+// - **Use when:** a diya-gl endpoint needs book or version keys, metadata read/write, listing, tagging or cross-client moves.
+// - **Does:** The s3DiyaGlRepository.js module is the S3 repository behind every diya-gl endpoint. It computes book and version keys, and reads and writes metadata. It lists and tags books, applies visibility rules, and moves a book between clients.
+// - **Run:** `import { moveBookToClient, listBooks, deleteBook, putVersion, getVersion } from "app/data/s3DiyaGlRepository.js"`
+// - **Entry:** `app/data/s3DiyaGlRepository.js:moveBookToClient`; `app/data/s3DiyaGlRepository.js:listBooks`
+// - **Files:** app/data/s3DiyaGlRepository.js, app/unit-tests/data/s3DiyaGlRepository.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md
+// - **Keywords:** diya-gl, s3 repository, book keys, metadata, tagging, visibility, cross-client move
+// - **Related:** BILL-15, BILL-17, BILL-18, BILL-19, BILL-20, SS-27
+// @end-capability
+
 // app/data/s3DiyaGlRepository.js
 //
 // S3-backed store for the paid diya-gl book storage tier: one metadata.json sidecar and a

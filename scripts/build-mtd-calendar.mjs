@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-22 Source and publish sourced tax facts
+// - **Use when:** a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+// - **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. build-rates-page.mjs renders web/public/rates.html (rate tables per tax year and financial year, each cell sourced) and the rates-data.js module, and copies five diya-gl tax modules into web/public/lib/diya-gl/tax/. rates-calculator.js and rates-compute.js run the tax, National Insurance, VAT, CIS and corporation tax calculator in the browser over those modules. The unit tests fail on an unsourced fact, a source older than 30 days, a committed page that differs from the render, or an engine figure that differs from its quoted gov.uk figure.
+// - **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npm run build:rates-page`; `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js web/unit-tests/ratesCompute.test.js`
+// - **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/tax-sources.mjs:quoteAppearsIn`; `scripts/build-rates-page.mjs:renderRatesPage`; `web/public/lib/rates/rates-compute.js:computeSelfEmployed`
+// - **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
+// - **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
+// - **Related:** SITE-10, SITE-12
+// @end-capability
+
 // Renders web/public/mtd-calendar.html from the tax-sources source files.
 // Usage: node scripts/build-mtd-calendar.mjs   (npm run build:mtd-calendar)
 // Every fact below needs at least one source file listing its id; the build throws otherwise.

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-85 Obtain and use GitHub App API tokens
+// - **Use when:** a script or Lambda must call the GitHub API and needs a short-lived App installation token.
+// - **Does:** githubAppToken.js mints short-lived GitHub App installation tokens for API access. gitHubHelpers.js provides higher-level helpers built on top of them, such as creating issues, comments and releases.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/githubAppToken.js:getInstallationAccessToken`; `app/lib/gitHubHelpers.js:appendAutomationDisclosure`
+// - **Files:** app/lib/githubAppToken.js, app/lib/gitHubHelpers.js, app/unit-tests/lib/gitHubHelpers.test.js, app/unit-tests/lib/githubAppToken.test.js
+// - **Keywords:** github app token, installation token, github api, issues and comments, releases, github helpers
+// - **Related:** OPS-71
+// @end-capability
+
 // app/lib/githubAppToken.js
 //
 // Mints a GitHub App installation access token: a short-lived App JWT (RS256, node:crypto),

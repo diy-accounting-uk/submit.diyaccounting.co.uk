@@ -1,6 +1,16 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+<!-- @capability OPS-133 Serve the root-domain holding page
+- **Use when:** a visitor lands on the bare diyaccounting.co.uk root domain and needs redirecting to the submit subdomain.
+- **Does:** A static HTML page is served at the diyaccounting.co.uk root domain and redirects visitors to the submit subdomain.
+- **Run:** no command; see Does and Entry
+- **Entry:** `web/holding/index.html`
+- **Files:** web/holding/index.html
+- **Keywords:** holding page, root domain, redirect, diyaccounting.co.uk
+- **Related:** OPS-116
+@end-capability -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-25 Retrieve a Stripe checkout session's status
+// - **Use when:** a page after checkout must know whether a session id succeeded.
+// - **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. It tries the live Stripe client, then the test-mode client. A session id is only valid in the mode that created it.
+// - **Run:** `GET /api/v1/billing/checkout/:id`
+// - **Entry:** `app/functions/billing/billingCheckoutSessionGet.js:ingestHandler`
+// - **Files:** app/functions/billing/billingCheckoutSessionGet.js, app/unit-tests/functions/billingCheckoutSessionGet.test.js
+// - **Keywords:** stripe, checkout session, session status, live mode, test mode
+// - **Related:** BILL-24
+// @end-capability
+
 // app/functions/billing/billingCheckoutSessionGet.js
 
 import { createLogger } from "../../lib/logger.js";

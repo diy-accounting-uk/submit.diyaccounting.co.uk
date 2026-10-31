@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-39 Generate a software bill of materials
+# - **Use when:** a dependency inventory of the shipped application is needed.
+# - **Does:** sbom.yml generates a software bill of materials for the application and publishes it.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/sbom.yml`
+# - **Files:** .github/workflows/sbom.yml
+# - **Keywords:** sbom, bill of materials, dependency inventory, supply chain, software composition
+# - **Related:** OPS-51
+# @end-capability
+
 name: sbom
 run-name: "SBOM generation for ${{ github.ref_name }}"
 

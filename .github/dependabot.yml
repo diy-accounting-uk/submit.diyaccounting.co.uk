@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-36 Configure Dependabot dependency updates
+# - **Use when:** checking or changing which ecosystems Dependabot updates, or its schedule.
+# - **Does:** dependabot.yml declares which package managers, schedules and grouping strategy Dependabot uses. It raises dependency-update pull requests from that configuration.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/dependabot.yml`
+# - **Files:** .github/dependabot.yml
+# - **Keywords:** dependabot, dependency updates, package manager, grouping strategy, scheduled pr
+# @end-capability
+
 version: 2
 updates:
   - package-ecosystem: github-actions

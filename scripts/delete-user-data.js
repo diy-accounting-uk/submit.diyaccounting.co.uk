@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-40 Delete a customer's data for GDPR erasure
+// - **Use when:** a customer has exercised their GDPR right to erasure.
+// - **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. delete-user-data-by-email.yml resolves an email to its hashed subject through an Athena lookup first; delete-user-data.yml deletes directly by hashed subject. confirm=false runs a dry run.
+// - **Run:** `gh workflow run delete-user-data-by-email.yml -f email=<email> -f environment-name=<ci|prod> -f confirm=<true|false>`; `gh workflow run delete-user-data.yml -f hashed-sub=<hash> -f environment-name=<ci|prod> -f confirm=<true|false>`
+// - **Entry:** `scripts/delete-user-data.js:main`
+// - **Files:** .github/workflows/delete-user-data-by-email.yml, .github/workflows/delete-user-data.yml, scripts/delete-user-data.js
+// - **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, athena lookup, dry run
+// - **Related:** OPS-41, OPS-49
+// @end-capability
+
 /**
  * Delete user data (GDPR Right to Erasure / "Right to be Forgotten")
  *

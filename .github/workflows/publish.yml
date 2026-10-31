@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-51 Publish build artifacts and documentation
+# - **Use when:** checking where build artifacts or generated documentation get published.
+# - **Does:** publish.yml publishes build artifacts, npm packages and Docker images, and generated documentation, to their destinations.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/publish.yml`
+# - **Files:** .github/workflows/publish.yml
+# - **Keywords:** publish artifacts, npm package, docker image, generated documentation, publish.yml
+# @end-capability
+
 # .github/workflows/publish.yml
 
 name: publish

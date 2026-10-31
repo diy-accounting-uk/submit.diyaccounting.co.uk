@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability HMRC-31 Wire HMRC Lambda handlers into CDK stacks
+// - **Use when:** a new or changed HMRC Lambda needs its CDK function, props and log group declared.
+// - **Does:** HmrcStack.java declares the VAT endpoints, token exchange, receipts and most self-employment/BSAS/calculation/final-declaration ITSA Lambdas. HmrcItsaStack.java declares UK property, losses and claims, and tax liability adjustments Lambdas.
+// - **Run:** `./mvnw clean verify`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/HmrcStack.java:HmrcStack`; `infra/main/java/co/uk/diyaccounting/submit/stacks/HmrcItsaStack.java:HmrcItsaStack`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/HmrcStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/HmrcItsaStack.java, app/unit-tests/hmrcFunctionsCdkRegistration.test.js
+// - **Keywords:** cdk stack, lambda wiring, hmrc stack, hmrc itsa stack, log group, java cdk
+// - **Related:** HMRC-01, HMRC-12
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

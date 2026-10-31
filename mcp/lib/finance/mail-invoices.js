@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-12 Read invoices from the local mail index
+// - **Use when:** supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
+// - **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching mail-antony for each supplier within a date range. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`; `mcp/lib/finance/mail-invoices.js:runCorpus`
+// - **Files:** mcp/lib/finance/mail-invoices.js, mcp/test/mail-invoices.test.js
+// - **Keywords:** supplier invoices, corpus cli, mail-antony, invoice import, purchases lines, mail index search
+// - **Related:** MCP-10, MCP-11
+// @end-capability
+
 // mail-invoices.js -- supplier invoices staged into diya-gl purchases lines,
 // read from the already-indexed mailbox through corpus-loom's CLI rather than
 // a Gmail harvester: the invoice emails and their PDF attachments already sit

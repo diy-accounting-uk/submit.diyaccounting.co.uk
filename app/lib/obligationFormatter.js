@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-28 Format and match HMRC obligations
+// - **Use when:** a raw HMRC obligation must be shown to a customer or matched to entered dates.
+// - **Does:** obligationFormatter.js formats a raw HMRC obligation without exposing its period key. findObligationByDateRange matches an obligation to a customer's entered dates, and syntheticPeriodKeys derives keys for sandbox testing.
+// - **Run:** `import { formatObligationForDisplay, findObligationByDateRange } from "app/lib/obligationFormatter.js"`
+// - **Entry:** `app/lib/obligationFormatter.js:formatObligationForDisplay`; `app/lib/obligationFormatter.js:findObligationByDateRange`; `app/lib/obligationFormatter.js:syntheticPeriodKeys`
+// - **Files:** app/lib/obligationFormatter.js, app/unit-tests/lib/obligationFormatter.test.js
+// - **Keywords:** obligation formatting, period key hidden, date range match, synthetic period key, sandbox obligations
+// - **Related:** HMRC-03, HMRC-10
+// @end-capability
+
 // app/lib/obligationFormatter.js
 
 /**

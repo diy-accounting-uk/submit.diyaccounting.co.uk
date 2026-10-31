@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-06 Retrieve VAT penalties
+// - **Use when:** a customer needs penalties HMRC has applied to the VAT account.
+// - **Does:** hmrcVatPenaltiesGet.js's ingestHandler calls HMRC's VAT Penalties API. vatPenalties.html displays the returned penalties.
+// - **Run:** `GET /api/v1/hmrc/vat/penalty`
+// - **Entry:** `app/functions/hmrc/hmrcVatPenaltiesGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatPenaltiesGet.js:getVatPenalties`
+// - **Files:** app/functions/hmrc/hmrcVatPenaltiesGet.js, app/unit-tests/functions/hmrcVatPenaltiesGet.test.js, behaviour-tests/getVatPenalties.behaviour.test.js, web/public/hmrc/vat/vatPenalties.html
+// - **Keywords:** vat penalties, penalty points, vat account, hmrc vat api, late submission penalty
+// - **Related:** HMRC-04, HMRC-05
+// @end-capability
+
 // app/functions/hmrc/hmrcVatPenaltiesGet.js
 
 import { createLogger } from "../../lib/logger.js";

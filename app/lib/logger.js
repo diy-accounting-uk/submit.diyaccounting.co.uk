@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-86 Provide structured PII-redacting logging
+// - **Use when:** a Lambda or script needs structured JSON logging to CloudWatch with PII stripped before it is written.
+// - **Does:** logger.js creates a Pino logger that writes structured JSON to CloudWatch. createLogger redacts PII fields before a line is emitted, proved by loggerPiiRedaction.test.js.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/logger.js:createLogger`; `app/lib/logger.js:sanitiseData`
+// - **Files:** app/lib/logger.js, app/unit-tests/lib/loggerPiiRedaction.test.js
+// - **Keywords:** pino logger, structured logging, pii redaction, cloudwatch logs, safe logger
+// - **Related:** OPS-81
+// @end-capability
+
 // app/lib/logger.js
 
 /**

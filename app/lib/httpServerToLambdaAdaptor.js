@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-06 Adapt Lambda handlers to Express routes
+// - **Use when:** a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
+// - **Does:** httpServerToLambdaAdaptor.js converts an Express request into the same Lambda event shape API Gateway produces, including the decoded bearer JWT. It converts the Lambda-style result back into an Express response. registerLambdaRoute wires one route through it in one line.
+// - **Run:** `import { registerLambdaRoute } from "app/lib/httpServerToLambdaAdaptor.js"`
+// - **Entry:** `app/lib/httpServerToLambdaAdaptor.js:registerLambdaRoute`; `app/lib/httpServerToLambdaAdaptor.js:buildLambdaEventFromHttpRequest`
+// - **Files:** app/lib/httpServerToLambdaAdaptor.js, app/unit-tests/httpServerToLambdaAdaptor.test.js
+// - **Keywords:** express adaptor, lambda event, api gateway event shape, registerLambdaRoute, local server routing
+// - **Related:** SITE-07, SITE-08
+// @end-capability
+
 // app/lib/httpServerToLambdaAdaptor.js
 
 import { createLogger } from "./logger.js";

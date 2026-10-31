@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-30 Sync the Stripe product/price catalogue
+// - **Use when:** a bundle's price changes, or a new on-subscription bundle needs a Stripe product.
+// - **Does:** The stripe-sync.js script plans changes by default. With --apply, it creates a Stripe product and price per on-subscription bundle, plus each webhook endpoint. Account API keys come from Secrets Manager, never an environment variable.
+// - **Run:** `node infra/stripe/stripe-sync.js --environment ci --mode test`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply`; `node infra/stripe/stripe-sync.js --environment prod --mode live --apply --products-only`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply --bundle <bundle-id>`; `/stripe-catalogue-sync`
+// - **Entry:** `infra/stripe/stripe-sync.js`; `infra/stripe/lib/stripeCatalogue.js:buildStripeProductsFromCatalog`
+// - **Files:** infra/stripe/stripe-sync.js, infra/stripe/lib/stripeCatalogue.js, infra/stripe/stripe.toml, app/unit-tests/scripts/stripeSync.test.js
+// - **Keywords:** stripe, catalogue sync, product, price, webhook endpoints, plan and apply, secrets manager
+// - **Related:** BILL-31, BILL-32, BILL-37
+// @end-capability
+
 // infra/stripe/stripe-sync.js
 //
 // Plans, then optionally applies, the Stripe side of subscriptions: a product and a recurring

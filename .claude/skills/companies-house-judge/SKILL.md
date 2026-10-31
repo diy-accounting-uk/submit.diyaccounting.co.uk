@@ -6,6 +6,16 @@ description: Judge a Companies House review folder as the XML Gateway team would
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability CH-18 Judge a Companies House review as the XML team would
+- **Use when:** a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
+- **Does:** The companies-house-judge skill reads the folder that companies-house-review.mjs wrote: our data in source/, the other company's example in reference/, reconciliation.md per case and one index.html per review. The session reads every file and screenshot as an LLM judge, writes judge.json with a verdict, added checks and reasoning per case, has the script render the page again, and boards a NEXT.md row per cause.
+- **Run:** `/companies-house-judge`; `node scripts/companies-house-review.mjs --adp-zip <zip> --run <case>=<run id>...`; `node scripts/companies-house-review.mjs --render-only --out-dir <folder>` renders judge.json without a new review
+- **Entry:** `.claude/skills/companies-house-judge/SKILL.md`; `scripts/lib/companiesHouseReviewPage.js:renderIndex`
+- **Files:** .claude/skills/companies-house-judge/SKILL.md, scripts/lib/companiesHouseReviewPage.js, scripts/lib/companiesHouseReviewFolder.js, scripts/lib/companiesHouseReviewReconcile.js
+- **Keywords:** companies house, llm judge, reconciliation, source data, reference example, index.html, judge.json, triage, xml gateway, retest
+- **Related:** CH-17, CH-16
+@end-capability -->
+
 # companies-house-judge
 
 `companies-house-review` builds the evidence: each filed case rebuilt, rendered, compared with a

@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-23 Raise an issue from a probe-test failure
+# - **Use when:** a prod probe-test failure needs an issue raised automatically for triage.
+# - **Does:** probe-failure-issue.yml opens a [PROBE] issue carrying the failure detail, when the main deploy's probe tests fail.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/probe-failure-issue.yml`
+# - **Files:** .github/workflows/probe-failure-issue.yml
+# - **Keywords:** probe failure, probe issue, raise issue, deploy validation failure, probe-failure-issue.yml
+# - **Related:** OPS-27
+# @end-capability
+
 # A scheduled probe that fails runs unattended: nobody is watching the run the way a deploy's
 # own web-test failure is watched (that path rolls the apex back and raises its own issue in
 # deploy.yml's rollback-origins). This raises one issue per failed scheduled probe-test run,

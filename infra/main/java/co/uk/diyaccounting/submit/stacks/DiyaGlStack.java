@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-39 CDK: diya-gl stack
+// - **Use when:** tracing or changing the infrastructure behind diya-gl endpoints.
+// - **Does:** The DiyaGlStack.java construct wires the diya-gl list, version, put and delete Lambdas. It also wires the practice client book-move Lambda. It grants their S3 bucket and DynamoDB access. The bucket's expire-sandbox lifecycle rule, in DataStack.java, expires sandbox books.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/DiyaGlStackTest.java
+// - **Keywords:** cdk, diya-gl stack, s3 bucket grant, book-move lambda, expire-sandbox lifecycle
+// - **Related:** BILL-15, BILL-17, BILL-21, BILL-23, SS-27
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

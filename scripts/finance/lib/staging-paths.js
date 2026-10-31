@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-50 Resolve finance staging directory paths
+// - **Use when:** a finance script must find the shared staging tree, or label a month by UK accounting year-end.
+// - **Does:** staging-paths.js resolves the shared ../staging/<year-end>/<source>/ path outside the repository. It uses git rev-parse --git-common-dir, so every worktree stages into the same tree. It labels a month by UK accounting year-end; paypal-stage.js and stripe-stage.js share it.
+// - **Run:** `import { resolveStagingPath } from "scripts/finance/lib/staging-paths.js"`
+// - **Entry:** `scripts/finance/lib/staging-paths.js:`
+// - **Files:** scripts/finance/lib/staging-paths.js, app/unit-tests/scripts/finance/stagingPaths.test.js
+// - **Keywords:** staging directory, accounting year-end, git-common-dir, shared worktree staging, finance staging path
+// - **Related:** DATA-48, DATA-49
+// @end-capability
+
 // scripts/finance/lib/staging-paths.js
 //
 // Resolves ../staging/<year-end>/<source>/ paths outside this repository, the way

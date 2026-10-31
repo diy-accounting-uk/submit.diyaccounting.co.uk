@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-10 Import a NatWest bank statement into diya-gl lines
+// - **Use when:** a NatWest current-account CSV export must become validated diya-gl bank lines for a book.
+// - **Does:** bankLinesFromCsv in mcp/lib/finance/bank-lines.js parses a NatWest CSV export into one validated line per transaction, with no filtering or netting. closingBalance reads the statement's closing balance. Direction is set in diya-gl:bankCode from the sign of the statement's Value column.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/finance/bank-lines.js:bankLinesFromCsv`; `mcp/lib/finance/bank-lines.js:closingBalance`
+// - **Files:** mcp/lib/finance/bank-lines.js, mcp/test/bank-lines.test.js
+// - **Keywords:** natwest csv, bank statement import, diya-gl bank lines, bankcode, reconciliation, finance import
+// - **Related:** MCP-11, MCP-12
+// @end-capability
+
 // bank-lines.js -- parses a NatWest current account CSV export
 // (Date,Type,Description,Value,Balance,Account Name,Account Number) into
 // validated diya-gl bank lines, one per statement transaction. Every

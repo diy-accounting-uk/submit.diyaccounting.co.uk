@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-77 Silence alarms during deployment teardown
+// - **Use when:** a deployment is being torn down and its alarms must not fire GitHub issues or Telegram alerts.
+// - **Does:** alarmSilence.js reads an SSM parameter a deployment's teardown writes before it deletes anything. The alarm-to-GitHub-issue and Telegram-forwarder routers drop any ALARM state change for a silenced deployment. silence-deployment-alarms.mjs is the CLI that arms and clears the silence around a deployment window.
+// - **Run:** `node scripts/silence-deployment-alarms.mjs --env <env> --deployment <deployment>`
+// - **Entry:** `app/lib/alarmSilence.js:silenceDeployment`; `scripts/silence-deployment-alarms.mjs`
+// - **Files:** app/lib/alarmSilence.js, app/unit-tests/lib/alarmSilence.test.js, scripts/silence-deployment-alarms.mjs
+// - **Keywords:** alarm silence, teardown, ssm parameter, deployment window, suppress alerts, destroy workflow
+// - **Related:** OPS-71, OPS-70
+// @end-capability
+
 // app/lib/alarmSilence.js
 //
 // A deployment's teardown writes one SSM parameter before it deletes

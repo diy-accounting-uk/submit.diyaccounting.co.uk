@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-70 Forward operational activity events to Telegram
+// - **Use when:** an EventBridge activity event needs routing to the right Telegram group as formatted text.
+// - **Does:** activityTelegramForwarder.js is the EventBridge target Lambda for operational activity events. It resolves chat routing per event type and formats the message. handler(event) posts it to the Telegram Bot API. It runs on the activity EventBridge trigger, not on demand.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/ops/activityTelegramForwarder.js:handler`
+// - **Files:** app/functions/ops/activityTelegramForwarder.js, app/unit-tests/functions/activityTelegramForwarder.test.js
+// - **Keywords:** telegram, activity events, eventbridge, ops notifications, chat routing, alerts, forwarder
+// - **Related:** OPS-72
+// @end-capability
+
 // app/functions/ops/activityTelegramForwarder.js
 //
 // EventBridge target Lambda: receives ActivityEvent events and forwards them

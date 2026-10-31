@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-20 Take Companies House codes on a page instead of in the chat
+// - **Use when:** a Companies House filing through the MCP needs the company authentication code or a director's personal code, or the codes link, its entry or its seal needs tracing.
+// - **Does:** request_companies_house_codes posts to `/api/v1/mcp/codes-entries` and answers a link to companies-house/mcpCodes.html. The user types the codes there; mcpCodesEntry.js seals them with AES-256-GCM under a key derived from the MCP blob key and stores them in the mcp-sessions table for ten minutes. The accounts, confirmation statement and filing data routes take the entry by `codesEntryId` once (applyCodesEntry deletes it as it reads it, for its owner only), so no tool argument holds a code. With `clientIds`, the entry is a batch entry: the tool names each practice client from the client list, the page asks for one company authentication code per client by name, and filling it stores each client's code sealed as an item of its own under `codes:<entryId>/<clientId>`. The filing route deletes only the item of the client named by the body's `clientId` (takeCodesEntryForClient, DeleteItem as before, so no infra change), so `run_for_clients` with `submit_micro_entity_accounts_sandbox` passes one `codesEntryId` for every client (as does `submit_small_company_accounts_sandbox`). A batch entry is for `accounts` and `confirmation-statement-data`. A client-scoped accounts filing whose client lacks the `CH-ACCOUNTS` key is authorised by its `codesEntryId`: the entry must hold that client's codes (a batch entry item) or have been minted for the client's own company number, else the route answers 400 for the entry or 403 `client-not-authorised` when none is sent.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/mcp/mcpCodesEntry.js`; `app/services/companiesHouseCodesEntry.js`; `app/data/dynamoDbCodesEntryRepository.js`; `mcp/lib/submit-tools.js:requestCompaniesHouseCodes`
+// - **Files:** app/functions/mcp/mcpCodesEntry.js, app/services/companiesHouseCodesEntry.js, app/data/dynamoDbCodesEntryRepository.js, app/lib/codesSeal.js, app/lib/mcpBlobKey.js, mcp/lib/server.js, mcp/lib/batch-tools.js, web/public/companies-house/mcpCodes.html, web/public/companies-house/mcpCodes.page.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
+// - **Keywords:** companies house codes, company authentication code, personal code, codes entry, codesEntryId, request_companies_house_codes, mcpCodes, codes link
+// - **Related:** MCP-07, MCP-18
+// @end-capability
+
 // app/functions/mcp/mcpCodesEntry.js
 // The Companies House codes entry: a tool call mints an entry (POST, signed in) and gets a link;
 // the user opens the link and types the codes on the page (GET to read what to ask for, PUT to

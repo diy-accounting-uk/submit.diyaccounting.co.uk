@@ -3,6 +3,17 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-119 Provision the Ops stack
+// - **Use when:** the operational Lambdas, alert topic or health canary backing deployment sweeps need synthesizing.
+// - **Does:** OpsStack creates the operational Lambdas and the SNS alert topic and health canary backing deployment sweeps, user-management and health-check tasks.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/OpsStackTest.java
+// - **Keywords:** ops stack, health canary, alert topic, deployment sweep, user management lambda
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

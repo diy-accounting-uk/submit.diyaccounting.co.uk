@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-29 Verify commit signatures on pull requests
+# - **Use when:** a PR's commits must all carry a verified signature before merge.
+# - **Does:** verify-commit-signatures.yml reads each commit's commit.verification field from the GitHub API. It fails the PR, as a required status check, if any commit is unsigned.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/verify-commit-signatures.yml`
+# - **Files:** .github/workflows/verify-commit-signatures.yml
+# - **Keywords:** commit signatures, required status check, gpg signing, unsigned commit, verification field
+# - **Related:** OPS-28
+# @end-capability
+
 name: verify-commit-signatures
 run-name: "Commit signature check for PR #${{ github.event.pull_request.number }}"
 

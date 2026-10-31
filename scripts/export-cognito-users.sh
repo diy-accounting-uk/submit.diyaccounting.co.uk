@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-137 Export Cognito users for reporting or backup
+# - **Use when:** every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
+# - **Does:** export-cognito-users.sh lists every user in a Cognito user pool and exports their attributes, such as email, sub and status, to CSV or JSON.
+# - **Run:** `./scripts/export-cognito-users.sh <user-pool-id> [output-directory]`
+# - **Entry:** `scripts/export-cognito-users.sh`
+# - **Files:** scripts/export-cognito-users.sh
+# - **Keywords:** cognito export, user pool, csv export, json export, user attributes
+# - **Related:** OPS-110
+# @end-capability
+
 #
 # Export Cognito User Pool users (metadata only, passwords cannot be exported)
 #

@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability DATA-54 Relayout the lake's year/month/day objects into dt= prefixes
+# - **Use when:** a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
+# - **Does:** analytics-dt-relayout.sh lists each curated/<dataset>/year=Y/month=M/day=D/ object under activity-events, alarm-state-changes and the four dynamo_* tables, copies it with aws s3api copy-object (metadata and content type preserved, idempotent on rerun) to the matching dt=Y-M-D/ key, then removes the registered activity_events and alarm_state_changes partitions whose day was copied with glue batch-delete-partition. --dry-run prints the mapping and counts only; --before <date> limits which days are relayouted. The old year/month/day objects are left for the lifecycle rule.
+# - **Run:** `scripts/analytics-dt-relayout.sh --env ci|prod [--dry-run] [--before YYYY-MM-DD]`; `gh workflow run analytics-dt-relayout.yml -f environment=ci -f dry-run=true`
+# - **Entry:** `scripts/analytics-dt-relayout.sh:build_mapping`; `scripts/analytics-dt-relayout.sh:delete_relayouted_partitions`
+# - **Files:** scripts/analytics-dt-relayout.sh, .github/workflows/analytics-dt-relayout.yml
+# - **Keywords:** dt relayout, year month day, dt prefix, partition projection, batch-delete-partition, curated prefix, lake relayout
+# - **Related:** DATA-11, DATA-12, DATA-15
+# @end-capability
+
 #
 # Copies the analytics lake's year=Y/month=M/day=D curated objects into dt=Y-M-D prefixes, the
 # layout the tables move to for partition projection. Each object is copied with a server-side

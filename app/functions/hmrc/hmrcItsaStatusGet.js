@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-11 Retrieve ITSA status
+// - **Use when:** a taxpayer's Making Tax Digital enrolment for a tax year must be checked.
+// - **Does:** hmrcItsaStatusGet.js's ingestHandler calls HMRC's ITSA Status API for the given tax year. No page in this repository consumes the result yet.
+// - **Run:** `GET /api/v1/hmrc/itsa/status`
+// - **Entry:** `app/functions/hmrc/hmrcItsaStatusGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaStatusGet.js:getItsaStatus`
+// - **Files:** app/functions/hmrc/hmrcItsaStatusGet.js, app/unit-tests/functions/hmrcItsaStatusGet.test.js
+// - **Keywords:** itsa status, mtd enrolment, tax year, hmrc itsa status api, making tax digital
+// - **Related:** HMRC-09
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaStatusGet.js
 
 import { createLogger } from "../../lib/logger.js";

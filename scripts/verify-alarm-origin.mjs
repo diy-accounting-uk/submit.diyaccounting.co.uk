@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-78 Verify an alarm issue's claimed transition
+// - **Use when:** triage must confirm an alarm issue's stated window and transition really happened before acting on it.
+// - **Does:** verify-alarm-origin.mjs re-reads cloudwatch describe-alarm-history to confirm the named alarm transitioned to ALARM inside the window the issue body claims. It fails closed: a missing name, an unparseable window, an AWS error, or no matching transition all return verified false. alarm-triage.yml exits non-zero on an unverified result.
+// - **Run:** `node scripts/verify-alarm-origin.mjs --alarm-name <name> --window "<window text>" --region <region>`
+// - **Entry:** `scripts/verify-alarm-origin.mjs`
+// - **Files:** scripts/verify-alarm-origin.mjs, app/unit-tests/scripts/verifyAlarmOrigin.test.js
+// - **Keywords:** alarm history, verify transition, fail closed, triage workflow, describe-alarm-history, proof
+// - **Related:** OPS-71, OPS-79
+// @end-capability
+
 // scripts/verify-alarm-origin.mjs
 //
 // Confirms that an alarm issue's claim is true: that the named CloudWatch

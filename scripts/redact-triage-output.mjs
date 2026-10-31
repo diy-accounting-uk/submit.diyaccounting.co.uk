@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-17 Redact and gate unattended-agent output before publishing
+// - **Use when:** an unattended agent's output must reach a public GitHub surface safely.
+// - **Does:** publish-filter runs redact-triage-output.mjs's DENY_PATTERNS and redact function, plus AWS Bedrock guardrails, over an unattended agent's text. It blocks anything that fails before the text reaches a GitHub issue or PR comment. extractFinalAssistantText and maxTurnsNote pull the reportable text out of the agent's --output-format json transcript.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/redact-triage-output.mjs:redact`; `.github/actions/publish-filter/action.yml`
+// - **Files:** .github/actions/publish-filter/action.yml, scripts/redact-triage-output.mjs, app/unit-tests/scripts/redactTriageOutput.test.js
+// - **Keywords:** redact, publish filter, guardrail, bedrock, deny patterns, agent output, unattended agent
+// - **Related:** OPS-18
+// @end-capability
+
 // scripts/redact-triage-output.mjs
 //
 // Reads the Claude Code JSON output from a headless alarm-triage run, pulls out the final

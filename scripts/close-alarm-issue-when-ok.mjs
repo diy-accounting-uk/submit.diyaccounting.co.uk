@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-21 Auto-close resolved alarm issues
+// - **Use when:** checking whether an open alarm issue should already have closed, or to run the close check by hand.
+// - **Does:** close-alarm-issue-when-ok.mjs checks whether an [ALARM] issue's CloudWatch alarm has returned to OK. alarm-remedy-close.yml runs it on a schedule over every open alarm issue and closes the issue when the alarm is OK.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/close-alarm-issue-when-ok.mjs:decideClosure`; `scripts/close-alarm-issue-when-ok.mjs:loadRemedyRow`
+// - **Files:** .github/workflows/alarm-remedy-close.yml, scripts/close-alarm-issue-when-ok.mjs, app/unit-tests/scripts/closeAlarmIssueWhenOk.test.js
+// - **Keywords:** auto-close, alarm issue, cloudwatch alarm ok, remedy row, alarm family
+// - **Related:** OPS-25
+// @end-capability
+
 // scripts/close-alarm-issue-when-ok.mjs
 //
 // Closes one open [ALARM] issue when its family's remedy row says it can

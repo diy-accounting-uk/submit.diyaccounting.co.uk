@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-126 Provide config-composition helpers for CDK code
+// - **Use when:** Java CDK config code needs order-preserving maps or null-tolerant merges instead of double-brace hacks.
+// - **Does:** Kind is a set of tiny, static, null-tolerant helpers, such as order-preserving maps and explicit merge, that make Java CDK config code read like JS or Node config, documented in KIND.md. KindCdk builds on it for CDK-specific concerns: environment setup, CloudFormation outputs and AwsCustomResource provider management. PopulatedMap extends HashMap to throw on any blank key or value.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java`; `infra/main/java/co/uk/diyaccounting/submit/utils/KindCdk.java`; `infra/main/java/co/uk/diyaccounting/submit/utils/PopulatedMap.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java, infra/main/java/co/uk/diyaccounting/submit/utils/KindCdk.java, ../private.diyaccounting.co.uk/engineering/submit/archive/infra/main/java/co/uk/diyaccounting/submit/utils/KIND.md, infra/main/java/co/uk/diyaccounting/submit/utils/PopulatedMap.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindTest.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindCdkTest.java
+// - **Keywords:** kind helpers, config composition, cdk config, null-tolerant map, populatedmap
+// - **Related:** OPS-127
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.utils;
 
 import java.util.Map;

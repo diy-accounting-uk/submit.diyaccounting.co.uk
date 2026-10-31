@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-128 Generate S3 lifecycle rules for storage tiering
+// - **Use when:** an S3 bucket needs intelligent tiering or object expiration rules generated for its CloudFormation template.
+// - **Does:** S3 generates CloudFormation S3 LifecycleRule configurations for intelligent tiering, moving objects to Infrequent Access after 30 days and Glacier after 90, and for object expiration.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/S3.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/S3.java, infra/test/java/co/uk/diyaccounting/submit/utils/S3Test.java
+// - **Keywords:** s3 lifecycle, storage tiering, intelligent tiering, glacier, object expiration
+// - **Related:** OPS-113
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.utils;
 
 import java.util.List;

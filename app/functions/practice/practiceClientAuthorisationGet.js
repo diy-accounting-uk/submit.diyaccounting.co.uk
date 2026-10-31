@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-13 Check a client's authorisation status
+// - **Use when:** a page or job must know whether a client's HMRC agent authorisation is pending or granted.
+// - **Does:** The practiceClientAuthorisationGet.js ingestHandler re-reads a pending invitation's status from HMRC. Once no invitation is pending, it checks HMRC's relationships endpoint for an existing authority. It caches the resulting status on the client record.
+// - **Run:** `GET /api/v1/practice/clients/:clientId/authorisation`
+// - **Entry:** `app/functions/practice/practiceClientAuthorisationGet.js:ingestHandler`
+// - **Files:** app/functions/practice/practiceClientAuthorisationGet.js, app/unit-tests/functions/practiceClientAuthorisationGet.test.js
+// - **Keywords:** practice, client, hmrc, authorisation status, relationships endpoint, cached status
+// - **Related:** BILL-12, BILL-14
+// @end-capability
+
 // app/functions/practice/practiceClientAuthorisationGet.js
 
 import { validateEnv } from "../../lib/env.js";

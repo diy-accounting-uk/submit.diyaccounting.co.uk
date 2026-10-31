@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-36 Provide ITSA behaviour-test step helpers
+// - **Use when:** an ITSA behaviour-test spec needs a shared init, fill, submit or verify step.
+// - **Does:** behaviour-hmrc-itsa-steps.js exports 46 Playwright step helpers spanning business details, obligations, periods, annual summaries, calculation, final declaration and losses and claims. Eight ITSA behaviour test files share these helpers.
+// - **Run:** `npm run test:itsaBusinessDetailsBehaviour-proxy`; `npm run test:itsaObligationsBehaviour-proxy`; `npm run test:itsaSelfEmploymentPeriodBehaviour-proxy`; `npm run test:itsaAnnualSubmissionBehaviour-proxy`; `npm run test:itsaUkPropertyPeriodBehaviour-proxy`; `npm run test:itsaUkPropertyAnnualSubmissionBehaviour-proxy`; `npm run test:itsaLossesAndClaimsBehaviour-proxy`; `npm run test:itsaFinalDeclarationBehaviour-proxy`
+// - **Entry:** `behaviour-tests/steps/behaviour-hmrc-itsa-steps.js`
+// - **Files:** behaviour-tests/steps/behaviour-hmrc-itsa-steps.js
+// - **Keywords:** playwright steps, behaviour test helpers, itsa journeys, step definitions, init fill submit verify
+// - **Related:** HMRC-09, HMRC-12, HMRC-17, HMRC-21
+// @end-capability
+
 // behaviour-tests/steps/behaviour-hmrc-itsa-steps.js
 
 import { expect, test } from "@playwright/test";

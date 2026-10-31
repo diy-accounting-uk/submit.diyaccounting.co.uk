@@ -5,6 +5,16 @@ description: Expert guidance for Java-based AWS CDK infrastructure and serverles
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability OPS-54 Define specialized Claude Code sub-agent personas
+- **Use when:** dispatching a sub-agent that needs one of these domains' conventions already loaded.
+- **Does:** Eight .agent.md personas each scope a sub-agent to one area of this repository. Areas include AWS CDK Java, Playwright testing, refactoring, Stripe, HMRC MTD API, security, and TODO discovery. A dispatched agent inherits the right domain knowledge without re-deriving it.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/agents/aws-cdk-java-specialist.agent.md`
+- **Files:** .github/agents/aws-cdk-java-specialist.agent.md, .github/agents/behavior-test-master.agent.md, .github/agents/clean-code-guardian.agent.md, .github/agents/entitlement-subscription-specialist.agent.md, .github/agents/hmrc-api-expert.agent.md, .github/agents/security-hardener.agent.md, .github/agents/summarize-repository.agent.md, .github/agents/todo-inator.agent.md
+- **Keywords:** sub-agent persona, agent.md, domain-scoped agent, cdk java specialist, behaviour test master
+- **Related:** OPS-56
+@end-capability -->
+
 # Infrastructure-as-Code Architect: AWS CDK Java Specialist
 
 Purpose: Guide the development and maintenance of the project's infrastructure using AWS CDK v2 in Java. This agent ensures that the serverless architecture is consistent, secure, and well-integrated with the application code.

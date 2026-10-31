@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-07 Build and validate 9-box VAT return data
+// - **Use when:** a VAT return body must be built, validated or calculated from box entries.
+// - **Does:** vatReturnTypes.js holds the HMRC 9-box field configuration and calculates Box 3 and Box 5. It validates monetary and whole-number fields and builds the HMRC request body from 9-box or legacy input.
+// - **Run:** `import { buildVatReturnBody, validateVatReturnBody, calculateTotalVatDue, calculateNetVatDue } from "app/lib/vatReturnTypes.js"`
+// - **Entry:** `app/lib/vatReturnTypes.js:buildVatReturnBody`; `app/lib/vatReturnTypes.js:validateVatReturnBody`
+// - **Files:** app/lib/vatReturnTypes.js, app/unit-tests/lib/vatReturnTypes.test.js
+// - **Keywords:** 9-box, vat box config, box 3, box 5, vat validation, legacy vatdue, vat return body
+// - **Related:** HMRC-01, HMRC-27
+// @end-capability
+
 // app/lib/vatReturnTypes.js
 
 /**

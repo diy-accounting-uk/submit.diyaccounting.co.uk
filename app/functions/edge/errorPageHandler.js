@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-131 Serve CloudFront custom error pages
+// - **Use when:** CloudFront returns an HTTP error and the visitor needs the right static error page instead of a raw status.
+// - **Does:** errorPageHandler.js is the CloudFront@Edge viewer-request handler that renders the right static page for each HTTP error status, via errorPageHtml.js. The web/public/errors/*.html pages are the served output, and error-page.js is the web component that displays error-page detail in the app shell.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/edge/errorPageHandler.js:handler`
+// - **Files:** app/functions/edge/errorPageHandler.js, app/functions/edge/errorPageHtml.js, app/unit-tests/edge/errorPageHandler.test.js, web/public/errors/403.html, web/public/errors/404.html, web/public/errors/404-error-distribution.html, web/public/errors/404-error-origin.html, web/public/errors/500.html, web/public/errors/502.html, web/public/errors/503.html, web/public/errors/504.html, web/public/widgets/error-page.js
+// - **Keywords:** cloudfront edge, custom error page, 403, 404, 500, error handler, viewer request
+// - **Related:** OPS-115
+// @end-capability
+
 // app/functions/edge/errorPageHandler.js
 // Lambda@Edge origin-response handler for custom error pages
 

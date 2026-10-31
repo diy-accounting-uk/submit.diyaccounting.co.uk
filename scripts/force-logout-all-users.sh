@@ -2,6 +2,25 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-64 Runbook information-security operations
+# - **Use when:** an information-security incident needs its runbook procedure, or all users need a cross-account logout hold.
+# - **Does:** ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md is the operational runbook for information-security incidents and controls. force-logout-all-users.sh implements the cross-account user hold in its section 6.6.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `scripts/force-logout-all-users.sh`
+# - **Files:** ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md, scripts/force-logout-all-users.sh
+# - **Keywords:** infosec runbook, incident response, force logout, cross-account hold, section 6.6, runbook_information_security.md
+# - **Related:** OPS-62
+# @end-capability
+
+# @capability OPS-110 Force logout all users during a security incident
+# - **Use when:** a security incident requires every user in an environment's Cognito pool signed out immediately.
+# - **Does:** force-logout-all-users.sh calls Cognito's admin global-sign-out for every user in an environment's user pool, as part of the cross-account hold in ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 6.6. Refresh tokens die immediately; an already-issued access token can stay valid up to an hour.
+# - **Run:** `./scripts/force-logout-all-users.sh <env>`
+# - **Entry:** `scripts/force-logout-all-users.sh`
+# - **Files:** scripts/force-logout-all-users.sh
+# - **Keywords:** force logout, global sign-out, cognito, security incident, access token, refresh token
+# @end-capability
+
 #
 # Force every user in an environment's Cognito user pool to sign out immediately,
 # for the cross-account hold in ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 6.6.

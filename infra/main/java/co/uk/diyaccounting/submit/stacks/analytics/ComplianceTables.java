@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-14 Catalogue compliance findings for the dashboard
+// - **Use when:** accessibility or fraud-header check output must be queryable for the compliance panel.
+// - **Does:** ComplianceTables.java provisions two Glue tables the compliance panel reads. compliance_accessibility holds one row per page per tool per WCAG standard from the compliance.yml pa11y/axe runs. compliance_fraud_headers holds one row per month from the fraud-header-email-check.js output; both tables come from a workflow step, not a Lambda.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ComplianceTables.java:ComplianceTables`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ComplianceTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/ComplianceTablesTest.java
+// - **Keywords:** compliance accessibility, compliance fraud headers, wcag standard, pa11y, axe, fraud header check, compliance panel
+// - **Related:** DATA-11
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.util.LinkedHashMap;

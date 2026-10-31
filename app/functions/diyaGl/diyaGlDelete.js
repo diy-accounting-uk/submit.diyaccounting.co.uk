@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-18 Delete a diya-gl book
+// - **Use when:** a ledger book must be removed from S3 after authorisation and ownership checks.
+// - **Does:** The diyaGlDelete.js ingestHandler deletes a ledger book from S3 via deleteBook, after authorisation and ownership checks.
+// - **Run:** `DELETE /api/v1/diya-gl/books/:bookId`
+// - **Entry:** `app/functions/diyaGl/diyaGlDelete.js:ingestHandler`; `app/data/s3DiyaGlRepository.js:deleteBook`
+// - **Files:** app/functions/diyaGl/diyaGlDelete.js, app/unit-tests/functions/diyaGlDelete.test.js
+// - **Keywords:** diya-gl, ledger book, delete book, deleteBook, ownership check
+// - **Related:** BILL-17, BILL-21
+// @end-capability
+
 // app/functions/diyaGl/diyaGlDelete.js
 
 import { createLogger } from "../../lib/logger.js";

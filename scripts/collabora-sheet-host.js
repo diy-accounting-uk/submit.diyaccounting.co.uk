@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-140 Record a real spreadsheet workbook in Collabora Online
+// - **Use when:** a video needs a downloadable workbook (the Basic Sole Trader Excel package) shown being filled in, with its own formulas working.
+// - **Does:** collabora-sheet-host.js fetches a package zip from the spreadsheets site (or takes `--file`), reads the .xlsx out with zlib, starts the pinned collabora/code container (or uses `--cool-url`, the GitHub Actions service container) and serves a WOPI host whose start page opens a fresh copy of the workbook in the editor on every load. collabora.js drives it: GoToCell for cursor moves, the cursor rectangle as the cell's on-screen box, and typing and keys over Collabora's socket messages, because page.keyboard drops characters there. The scene actions `sheetPrepare` (hard recalculation, hides the welcome panel), `sheetZoom`, `sheetCell`, `sheetPoint` and `sheetType` use it. video-capture.yml starts the Collabora service container only for `accounting-spreadsheet-profit`.
+// - **Run:** `npm run video:accounting-spreadsheet-profit -- --no-narration`; `node scripts/collabora-sheet-host.js --package "<package name>"`
+// - **Entry:** `scripts/collabora-sheet-host.js`; `scripts/lib/video/collabora.js`
+// - **Files:** scripts/collabora-sheet-host.js, scripts/lib/video/collabora.js, scripts/lib/video/actions.js, scripts/collabora-sheet-spike.js, videos/accounting-spreadsheet-profit.json, app/unit-tests/video/collaboraSheet.test.js, .github/workflows/video-capture.yml, _developers/DESIGN_SPREADSHEET_VIDEO.md
+// - **Keywords:** collabora, libreoffice, xlsx, workbook, spreadsheet video, wopi, sole trader, excel
+// - **Related:** OPS-93, OPS-139
+// @end-capability
+
 // scripts/collabora-sheet-host.js
 //
 // Serves a downloadable spreadsheet package's workbook to Collabora Online (CODE, LibreOffice in

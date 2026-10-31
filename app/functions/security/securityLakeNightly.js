@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-75 Run nightly Security Lake analysis
+// - **Use when:** the previous day's AWS Security Lake data needs an automated threat and pattern review.
+// - **Does:** securityLakeNightly.js analyzes the previous day's AWS Security Lake data for threats and suspicious patterns. SecurityLakeStack and SecurityLakeTables provision the Security Lake sources and the Glue and Athena tables it reads.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/security/securityLakeNightly.js:handler`
+// - **Files:** app/functions/security/securityLakeNightly.js, app/unit-tests/functions/security/securityLakeNightly.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/security/SecurityLakeStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/security/SecurityLakeTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/security/SecurityLakeStackTest.java
+// - **Keywords:** security lake, nightly analysis, guardduty, security hub findings, threat detection, glue athena
+// - **Related:** OPS-73, OPS-74
+// @end-capability
+
 // app/functions/security/securityLakeNightly.js
 //
 // Nightly job for the security dashboard's data. Writes one JSON-lines file per source per day to

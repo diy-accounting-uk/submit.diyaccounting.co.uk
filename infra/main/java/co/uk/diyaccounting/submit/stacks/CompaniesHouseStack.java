@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability CH-14 Provision the Companies House CDK stack
+// - **Use when:** adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
+// - **Does:** CompaniesHouseStack.java creates all thirteen Companies House Lambda functions as ApiLambda origins. It wires each function's API Gateway route.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStackTest.java
+// - **Keywords:** cdk, companies house, lambda, api gateway, infrastructure, stack, ApiLambda
+// - **Related:** CH-08, CH-09
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

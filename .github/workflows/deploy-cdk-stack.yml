@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-08 Deploy a single CDK stack on demand
+# - **Use when:** only one CDK stack needs deploying, without running the full pipeline.
+# - **Does:** deploy-cdk-stack.yml runs CDK synth and deploy for one named stack in a chosen environment. It skips the rest of the deployment pipeline.
+# - **Run:** `gh workflow run deploy-cdk-stack.yml -f stackName=<name> -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/deploy-cdk-stack.yml`
+# - **Files:** .github/workflows/deploy-cdk-stack.yml
+# - **Keywords:** single stack deploy, cdk synth, cdk deploy, manual stack deploy, stackName
+# - **Related:** OPS-09
+# @end-capability
+
 name: deploy-cdk-stack
 run-name: "deploy cdk stack from ${{ github.ref_name }}"
 

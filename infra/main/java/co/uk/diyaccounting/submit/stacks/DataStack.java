@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-113 Provision the DynamoDB and S3 data stack
+// - **Use when:** the application's DynamoDB tables and S3 buckets need synthesizing with encryption, PITR and TTL policies.
+// - **Does:** DataStack creates the application's DynamoDB tables, such as bundles, passes, clients and operators, and S3 buckets with encryption, PITR and TTL policies.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/DataStackTest.java
+// - **Keywords:** dynamodb tables, s3 buckets, pitr, ttl policy, encryption, data stack
+// - **Related:** OPS-112
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

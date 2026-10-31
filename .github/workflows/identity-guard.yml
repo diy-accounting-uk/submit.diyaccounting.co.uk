@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-28 Enforce commit identity allowlist
+# - **Use when:** a PR's commit authorship must be checked against the allowed identity list.
+# - **Does:** identity-guard.yml checks, on every PR, that all commit authors' email addresses appear in allowed-commit-identities.yml. It rejects commits from unrecognised identities.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/identity-guard.yml`
+# - **Files:** .github/allowed-commit-identities.yml, .github/workflows/identity-guard.yml
+# - **Keywords:** identity guard, commit identity, allowlist, author email, unrecognised identity
+# - **Related:** OPS-29
+# @end-capability
+
 name: identity-guard
 run-name: "identity guard for PR #${{ github.event.pull_request.number }}"
 

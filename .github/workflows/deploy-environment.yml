@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-09 Deploy environment stacks and populate secrets
+# - **Use when:** environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
+# - **Does:** deploy-environment.yml synths and deploys the environment-level CDK stacks: ObservabilityStack, DataStack and the rest. Its create-secrets job writes the environment's GitHub Environment secret values into AWS Secrets Manager, tagged by put-secret-with-rotation-tag.sh.
+# - **Run:** `gh workflow run deploy-environment.yml -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/deploy-environment.yml`
+# - **Files:** .github/workflows/deploy-environment.yml, app/unit-tests/deployEnvironmentWorkflowPaths.test.js
+# - **Keywords:** deploy environment, environment stacks, create-secrets, observabilitystack, datastack
+# - **Related:** OPS-42
+# @end-capability
+
 # deploy-environment: public-url fix for probe test (bump)
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"

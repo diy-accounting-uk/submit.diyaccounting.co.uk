@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-38 Sync GA4 properties, streams and key events
+// - **Use when:** a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
+// - **Does:** ga4-sync.js makes every GA4 property declared in analytics.toml match live state: the shared cross-site property plus one per-environment property. It finds or creates each property, its data streams, enhanced-measurement settings, key events and BigQuery link. It writes the chosen stream's measurement id onto the matching GitHub Environment's SUBMIT_GA4_MEASUREMENT_ID variable.
+// - **Run:** `npm run ga4:sync`; `npm run ga4:sync -- --apply`
+// - **Entry:** `infra/google/ga4/ga4-sync.js:main`
+// - **Files:** infra/google/ga4/ga4-sync.js, app/unit-tests/scripts/ga4Sync.test.js, infra/google/ga4/analytics.toml
+// - **Keywords:** ga4 property sync, data streams, key events, enhanced measurement, bigquery link, measurement id, github environment variable
+// - **Related:** DATA-39, DATA-05, DATA-06
+// @end-capability
+
 // infra/google/ga4/ga4-sync.js
 //
 // Idempotent GA4 setup over infra/google/ga4/analytics.toml, for every property the file declares: the

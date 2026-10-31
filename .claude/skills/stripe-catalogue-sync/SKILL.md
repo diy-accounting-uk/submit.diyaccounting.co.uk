@@ -6,6 +6,15 @@ description: Sync the Stripe products and prices from the bundle catalogue, in t
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-39 Sync Stripe products and prices from the catalogue
+- **Use when:** a bundle's price changes or a new on-subscription bundle needs a Stripe product.
+- **Does:** stripe-catalogue-sync reads web/public/submit.catalogue.toml and creates or finds the matching Stripe product and price for each subscription bundle. infra/stripe/stripe-sync.js plans by default and applies only on --apply. The skill runs test mode on one go and live mode on a separate go.
+- **Run:** `/stripe-catalogue-sync`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply`
+- **Entry:** `.claude/skills/stripe-catalogue-sync/SKILL.md`; `infra/stripe/stripe-sync.js`
+- **Files:** .claude/skills/stripe-catalogue-sync/SKILL.md
+- **Keywords:** stripe sync, bundle catalogue, price sync, product sync, subscription bundle, stripe-sync.js
+@end-capability -->
+
 # stripe-catalogue-sync — sync Stripe products and prices from the catalogue
 
 `web/public/submit.catalogue.toml` is the source of truth for what each on-subscription

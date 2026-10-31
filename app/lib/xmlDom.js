@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-11 Parse XML safely
+// - **Use when:** code must build or read XML Gateway GovTalk envelopes without XML injection risk.
+// - **Does:** xmlDom.js wraps the xmldom library with guards against XXE and billion-laughs attacks. The XML Gateway client uses it to build and read GovTalk envelopes.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/xmlDom.js:parseXmlDocument`
+// - **Files:** app/lib/xmlDom.js
+// - **Keywords:** xml, xxe, billion laughs, govtalk, xml gateway, xmldom, safe parsing
+// - **Related:** CH-08, CH-10
+// @end-capability
+
 // app/lib/xmlDom.js
 // Minimal XML parsing built on happy-dom's DOMParser, already a dependency for this repo's
 // DOM-based tests. Used wherever code needs to parse or well-formedness-check XML: the

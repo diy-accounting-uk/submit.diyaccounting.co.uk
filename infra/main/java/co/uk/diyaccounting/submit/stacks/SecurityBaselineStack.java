@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-121 Provision the Security Baseline stack
+// - **Use when:** an account needs its AWS Config recorder or its CIS AWS Foundations Benchmark subscription set up.
+// - **Does:** SecurityBaselineStack is an account-singleton compliance baseline. It creates the AWS Config configuration recorder Security Hub's standards subscriptions need, and subscribes the account to the CIS AWS Foundations Benchmark v5.0.0 standard, replacing v1.2.0. It depends on Security Hub already existing from ObservabilityStack, and synthesizes only when securityServicesEnabled is true.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityBaselineStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityBaselineStack.java
+// - **Keywords:** security baseline, aws config recorder, cis benchmark, security hub standards
+// - **Related:** OPS-117, OPS-122
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

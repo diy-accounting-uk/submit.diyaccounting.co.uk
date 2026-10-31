@@ -1,6 +1,15 @@
 #!/bin/bash
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-134 Monitor GitHub Actions CI from the CLI
+# - **Use when:** main and every open PR's head branch need polling until CI is green, with each red and each PR's readiness reported once.
+# - **Does:** watch-ci.sh polls the GitHub API to watch every CI workflow run on main and each open PR's head branch until it completes. It reports each red once, each PR's merge-readiness once per head, and one tally when the whole scope is terminal.
+# - **Run:** `./scripts/watch-ci.sh [state-dir]`
+# - **Entry:** `scripts/watch-ci.sh`
+# - **Files:** scripts/watch-ci.sh
+# - **Keywords:** watch ci, github actions, poll workflow, pr readiness, ci monitoring
+# @end-capability
 # Poll GitHub Actions for main plus every open PR's head branch. Emit each red once, each
 # PR's merge-readiness once per head, and one tally when everything in scope is terminal.
 # bash 3.2: no associative arrays; state lives in files under $1.

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-16 Manage the durable Cognito test-user lifecycle
+// - **Use when:** a test lane needs a working Cognito login, native email/password auth toggled, or test users purged.
+// - **Does:** ensure-cognito-test-user.js creates and rotates the password, TOTP device and DynamoDB data for one test lane's durable Cognito user. toggle-cognito-native-auth.js switches native email/password sign-in on or off, and enable-cognito-native-test.js and disable-cognito-native-test.js wrap that toggle for local runs. cleanup-test-users.js purges test users' DynamoDB data and deletes the Cognito users, and create-hmrc-test-user.js provisions an HMRC Sandbox test user.
+// - **Run:** `node scripts/ensure-cognito-test-user.js <environment-name> <test-lane>`; `node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|diya-gl|both]`; `npm run test:enableCognitoNative`; `npm run test:disableCognitoNative`; `node scripts/cleanup-test-users.js <environment-name> [--confirm] [--json]`; `node scripts/create-hmrc-test-user.js`; `npm run test:totpCode`
+// - **Entry:** `scripts/ensure-cognito-test-user.js`; `scripts/toggle-cognito-native-auth.js`; `scripts/enable-cognito-native-test.js`; `scripts/disable-cognito-native-test.js`; `scripts/cleanup-test-users.js`; `scripts/create-hmrc-test-user.js`; `scripts/totp-code.js`
+// - **Files:** scripts/ensure-cognito-test-user.js, scripts/toggle-cognito-native-auth.js, scripts/enable-cognito-native-test.js, scripts/disable-cognito-native-test.js, scripts/cleanup-test-users.js, scripts/create-hmrc-test-user.js, scripts/totp-code.js, app/unit-tests/scripts/create-hmrc-test-user.test.js, app/unit-tests/scripts/ensure-cognito-test-user.test.js, app/unit-tests/scripts/toggle-cognito-native-auth.test.js
+// - **Keywords:** cognito, test user, totp, mfa, native auth, hosted ui, synthetic user, hmrc sandbox test user, durable user, supportedidentityproviders
+// - **Related:** DEV-14
+// @end-capability
+
 //
 // Ensure the durable Cognito test user for a test lane exists, and rotate its credentials
 //

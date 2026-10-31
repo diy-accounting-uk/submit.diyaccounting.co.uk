@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability DEV-15 Fetch and publish proxy-variant secrets
+# - **Use when:** a local proxy-variant run needs HMRC/Stripe secrets, or a renewed local TLS certificate needs publishing.
+# - **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC and Stripe secrets from Secrets Manager. It execs a given command with those secrets set in its environment. local-tls-publish.sh is a certbot deploy-hook that publishes a renewed local TLS certificate to Secrets Manager for CI.
+# - **Run:** `scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy`; `scripts/local-tls-publish.sh`
+# - **Entry:** `scripts/proxy-secrets.sh`; `scripts/local-tls-publish.sh`
+# - **Files:** scripts/proxy-secrets.sh, scripts/local-tls-publish.sh
+# - **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets, local tls, certbot deploy hook, certificate publish
+# - **Related:** DEV-14
+# @end-capability
+
 #
 # scripts/proxy-secrets.sh
 #

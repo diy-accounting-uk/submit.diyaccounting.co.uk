@@ -6,6 +6,16 @@ description: From a prod-env-charges-without-activation alarm (or its [ALARM] is
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-53 Repair a paid Stripe charge that has no activation
+- **Use when:** the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
+- **Does:** `ChargesWithoutActivation` in `Submit/Analytics` is the shortfall of `subscription-activated` events against paid Stripe charges for the reconciliation day. The alarm breaches above 0 for a day. The skill finds the charge and its checkout session in Stripe, the account by `hashedSub` with `Query` only, and the webhook failure in the Lambda log. It prints the `stripe events resend` command that re-runs the grant, then drafts the customer email with email-draft.
+- **Run:** `/paid-without-activation`
+- **Entry:** `.claude/skills/paid-without-activation/SKILL.md`
+- **Files:** .claude/skills/paid-without-activation/SKILL.md, app/functions/analytics/analyticsMetricsPublish.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, app/functions/billing/billingWebhookPost.js
+- **Keywords:** paid without activation, charge no activation, webhook failed, bundle not granted, stripe events resend, customer paid no bundle, reconciliation alarm
+- **Related:** DEV-42, DEV-45
+@end-capability -->
+
 # paid-without-activation
 
 The alarm `prod-env-charges-without-activation` fires when `ChargesWithoutActivation` in

@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-37 CDK: billing app stack
+// - **Use when:** tracing or changing the per-deployment billing checkout, session, portal or recover Lambdas.
+// - **Does:** The BillingStack.java construct wires the per-deployment billing Lambdas: checkout create, checkout-session get, portal get, and the recover stub. It grants each its Stripe secret and DynamoDB access.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java
+// - **Keywords:** cdk, billing stack, checkout lambda, portal lambda, stripe secret grant
+// - **Related:** BILL-24, BILL-26, BILL-27, BILL-38
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

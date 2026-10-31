@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-142 Read a support ticket in quarantine
+# - **Use when:** a support ticket in the private repository needs a checked summary for the operator before any agent handles it.
+# - **Does:** support-reader.yml polls every 10 minutes for open `support` issues that carry `maintainer-review` and have no reader comment. A model with no tools reads the ticket under the quarantine reader role. Code accepts its answer only as one JSON object that fits app/lib/quarantineReaderSchema.js. The workflow posts the checked summary as a comment on the private issue. A rejected answer posts only schema issue paths and codes. No ticket or model text reaches the public logs: the answer crosses jobs encrypted.
+# - **Run:** `gh workflow run support-reader.yml -f issue-number=<n>`
+# - **Entry:** `.github/workflows/support-reader.yml`; `scripts/quarantine-reader-check.mjs:checkReaderAnswer`
+# - **Files:** .github/workflows/support-reader.yml, app/lib/quarantineReaderSchema.js, scripts/quarantine-reader-request.mjs, scripts/quarantine-reader-check.mjs, scripts/support-reader-select.mjs, scripts/github-issue-comment.mjs, prompts/support-reader.md, app/unit-tests/lib/quarantineReaderSchema.test.js, app/unit-tests/scripts/quarantineReaderCheck.test.js, app/unit-tests/scripts/quarantineReaderRequest.test.js, app/unit-tests/scripts/supportReaderSelect.test.js, app/unit-tests/scripts/githubIssueComment.test.js, app/unit-tests/supportReaderWorkflow.test.js
+# - **Keywords:** quarantine reader, support reader, maintainer-review, prompt injection, schema check, private issue, untrusted ticket
+# - **Related:** OPS-17, OPS-18, OPS-19
+# @end-capability
+
 name: support-reader
 run-name: support reader
 

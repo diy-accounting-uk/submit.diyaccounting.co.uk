@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-02 Transform activity events into lake rows
+// - **Use when:** the activity-event Firehose stream must flatten EventBridge envelopes into lake rows.
+// - **Does:** activityEventTransform.js is the Kinesis Firehose transformation Lambda for the activity-event delivery stream. Its handler flattens each envelope into one flat JSON row with event_id, event_ts, actor, flow and outcome. A record that fails to parse returns ProcessingFailed so Firehose routes it to the error prefix.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/activityEventTransform.js:handler`
+// - **Files:** app/functions/analytics/activityEventTransform.js, app/unit-tests/analytics/activityEventTransform.test.js
+// - **Keywords:** firehose transform, activity events, parquet, flatten envelope, openx deserializer, kinesis firehose, processingfailed
+// - **Related:** DATA-01
+// @end-capability
+
 // app/functions/analytics/activityEventTransform.js
 //
 // Firehose transformation for the activity-event delivery stream.

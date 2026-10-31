@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-12 Provision the analytics lake and Athena workgroup
+// - **Use when:** a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
+// - **Does:** AnalyticsStack.java is the environment-scoped stack that outlives any one deployment. It owns the activity-event delivery stream, the lake's S3 buckets and the Glue catalog database. It also owns the Athena workgroup every other analytics construct queries or writes into.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java:AnalyticsStack`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/AnalyticsStackTest.java
+// - **Keywords:** analytics lake, glue database, athena workgroup, environment-scoped stack, lake bucket, s3 lake
+// - **Related:** DATA-13
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-17 Trace and secure client requests
+// - **Use when:** a fetch needs a W3C traceparent and request id stamped on it, or a random value for OAuth state.
+// - **Does:** correlation-utils.js generates and stores a W3C traceparent and an x-request-id per session. It installs a window.fetch wrapper that stamps both onto same-origin requests. crypto-utils.js supplies the underlying random values, used both for that tracing and for the OAuth state parameter in the login flow.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/public/lib/utils/correlation-utils.js:installCorrelationInterceptor`; `web/public/lib/utils/crypto-utils.js:generateRandomState`
+// - **Files:** web/public/lib/utils/correlation-utils.js, web/public/lib/utils/crypto-utils.js
+// - **Keywords:** traceparent, x-request-id, correlation id, fetch wrapper, oauth state, random hex, sha256
+// - **Related:** SITE-01, SITE-16
+// @end-capability
+
 // Correlation and tracing utilities for request tracking
 
 import { randomHex } from "./crypto-utils.js";

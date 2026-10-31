@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-04 Fetch a company profile
+// - **Use when:** a filing journey has a company number and needs the company's registered details.
+// - **Does:** companiesHouseCompanyGet.js fetches a single company's details via getCompanyProfile. It enforces the caller's bundle entitlement and returns the profile as JSON.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseCompanyGet.js:ingestHandler`; `app/functions/companies-house/companiesHouseCompanyGet.js:getCompanyProfile`
+// - **Files:** app/functions/companies-house/companiesHouseCompanyGet.js, app/unit-tests/functions/companiesHouseCompanyGet.test.js, app/services/companiesHouseApi.js
+// - **Keywords:** companies house, company profile, company number, bundle entitlement, GET /api/v1/companies-house/company
+// - **Related:** CH-03
+// @end-capability
+
 // app/functions/companies-house/companiesHouseCompanyGet.js
 
 import { createLogger } from "../../lib/logger.js";

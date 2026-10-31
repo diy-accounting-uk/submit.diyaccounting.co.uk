@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-23 Exchange an HMRC OAuth code for a token
+// - **Use when:** an OAuth authorisation code from HMRC must become an access token.
+// - **Does:** hmrcTokenPost.js's ingestHandler calls prepareTokenExchangeRequest to build the token request, then buildTokenExchangeResponse executes it. It reads the application's client secret from Secrets Manager.
+// - **Run:** `POST /api/v1/hmrc/token`
+// - **Entry:** `app/functions/hmrc/hmrcTokenPost.js:ingestHandler`; `app/functions/hmrc/hmrcTokenPost.js:prepareTokenExchangeRequest`
+// - **Files:** app/functions/hmrc/hmrcTokenPost.js, app/unit-tests/functions/hmrcTokenPost.test.js, app/system-tests/hmrcAuth.system.test.js, web/public/activities/submitVatCallback.html, web/browser-tests/submitVatCallback.browser.test.js, web/public/lib/hmrc-scope-check.js, behaviour-tests/steps/behaviour-hmrc-steps.js
+// - **Keywords:** oauth, authorisation code, access token, hmrc token exchange, client secret, secrets manager
+// - **Related:** HMRC-33
+// @end-capability
+
 // app/functions/hmrc/hmrcTokenPost.js
 
 import { createLogger } from "../../lib/logger.js";

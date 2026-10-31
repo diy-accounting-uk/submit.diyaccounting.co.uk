@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-14 Render page chrome and widgets
+// - **Use when:** a page needs the shared header, nav and footer, or a small shared UI widget.
+// - **Does:** page-chrome.js builds the shared header, main nav and footer around each page's own static h1. It leaves a fallback link in place until it has run, so a script failure never strands the page. loading-spinner.js, status-messages.js and view-source-link.js are smaller widgets. dom-utils.js holds the underlying DOM helpers. developer-mode.js adds a header toggle visible only to users with a synthetic test bundle.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/public/widgets/page-chrome.js`; `web/public/lib/utils/dom-utils.js:showStatus`
+// - **Files:** web/public/widgets/page-chrome.js, web/public/widgets/loading-spinner.js, web/public/widgets/status-messages.js, web/public/widgets/view-source-link.js, web/public/lib/utils/dom-utils.js, web/public/developer-mode.js, web/browser-tests/navigation.browser.test.js, web/browser-tests/mobileLayout.browser.test.js
+// - **Keywords:** page chrome, header nav footer, loading spinner, status messages, developer mode, synthetic bundle toggle, dom helpers
+// - **Related:** SITE-12, SITE-17
+// @end-capability
+
 // Page Chrome Widget
 //
 // Renders the header band (home, help and the account row) and the main nav

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-08 Bootstrap the app server
+// - **Use when:** running the site locally against a full Express server instead of deployed Lambdas.
+// - **Does:** app/bin/server.js is the Express dev and local server. It registers every Lambda-style endpoint through the adaptor, serves HTTPS locally, sets the CSP header, and wires mock OAuth and billing routes when real Cognito or Stripe are unavailable.
+// - **Run:** `npm run start`; `npm run start:simulator`
+// - **Entry:** `app/bin/server.js`
+// - **Files:** app/index.js, app/bin/server.js, app/bin/main.js, app/unit-tests/bin/server.test.js, app/unit-tests/main.test.js
+// - **Keywords:** express server, local dev server, https local, csp header, mock oauth, mock billing
+// - **Related:** SITE-06
+// @end-capability
+
 // app/bin/server.js
 
 import path from "path";

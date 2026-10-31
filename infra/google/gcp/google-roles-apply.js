@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-45 Apply GA4 and GCP IAM role bindings
+// - **Use when:** a principal's GA4 Analytics Admin access or GCP Resource Manager IAM bindings must match project.toml.
+// - **Does:** google-roles-apply.js reads project.toml and lists live GA4 Analytics Admin and GCP IAM bindings for its named principals. It diffs and applies the difference. It only touches a binding the file names; removing an entry stops managing a grant, not revoking it.
+// - **Run:** `node infra/google/gcp/google-roles-apply.js`; `node infra/google/gcp/google-roles-apply.js --apply`
+// - **Entry:** `infra/google/gcp/google-roles-apply.js:`
+// - **Files:** infra/google/gcp/google-roles-apply.js, app/unit-tests/scripts/googleRolesApply.test.js, infra/google/gcp/project.toml
+// - **Keywords:** ga4 analytics admin access, gcp iam bindings, resource manager, project.toml principals, role diff apply
+// - **Related:** DATA-41, DATA-43
+// @end-capability
+
 // infra/google/gcp/google-roles-apply.js
 //
 // Reads infra/google/gcp/project.toml, lists the live GA4 Analytics Admin API access bindings

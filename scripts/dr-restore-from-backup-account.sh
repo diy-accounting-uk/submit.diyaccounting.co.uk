@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-109 Disaster-recovery restore into a new prod account
+# - **Use when:** a full disaster-recovery drill needs a new prod AWS account restored from the backup account's vault.
+# - **Does:** dr-restore-from-backup-account.sh restores a new prod AWS account from the backup account's vault as a full disaster-recovery drill. restore-tables-from-backup.sh copies DynamoDB table data cross-account by scan and batch-write-item, since AWS Backup's cross-account copy needs a vault setup this repository has not built yet.
+# - **Run:** `./scripts/dr-restore-from-backup-account.sh <new-account-id> <backup-account-id> [restore-point] [region]`; `./scripts/aws-accounts/restore-tables-from-backup.sh --source-profile <profile> --target-profile <profile> [--env <env>] [--dry-run]`
+# - **Entry:** `scripts/dr-restore-from-backup-account.sh`; `scripts/aws-accounts/restore-tables-from-backup.sh`
+# - **Files:** scripts/dr-restore-from-backup-account.sh, scripts/aws-accounts/restore-tables-from-backup.sh
+# - **Keywords:** disaster recovery, dr drill, restore prod, backup vault, cross-account restore, scan and batch-write
+# - **Related:** OPS-105
+# @end-capability
+
 #
 # Disaster Recovery: Restore from backup account to new PROD account
 #

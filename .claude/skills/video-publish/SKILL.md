@@ -6,6 +6,16 @@ description: Publish the recorded product videos to the DIY Accounting Submit Yo
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-41 Publish videos to the YouTube channel
+- **Use when:** the operator asks to publish, re-publish or check the videos, or a recording is ready.
+- **Does:** video-publish takes recordings from video-capture.yml runs to the DIY Accounting Submit YouTube channel. It checks them, uploads unlisted with the stored credentials, and flips them public, driven by videos/publish.json and scripts/youtube-upload.js.
+- **Run:** `/video-publish`; `npm run video:publish`
+- **Entry:** `.claude/skills/video-publish/SKILL.md`; `scripts/youtube-upload.js`
+- **Files:** .claude/skills/video-publish/SKILL.md
+- **Keywords:** video publish, youtube upload, unlisted to public, publish.json, youtube-upload.js, channel
+- **Related:** DEV-40
+@end-capability -->
+
 # video-publish — from a video-capture run to the YouTube channel
 
 Channel: https://www.youtube.com/@DIYAccountingSubmit. Recordings come from

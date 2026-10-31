@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-08 Check a pass's validity
+// - **Use when:** a pass code must be checked before login, without consuming a use.
+// - **Does:** The passGet.js ingestHandler calls passService.checkPass to report whether a code is valid. For an email-restricted pass with no email supplied, it reports valid but email-restricted, and does not increment the use count.
+// - **Run:** `GET /api/v1/pass`
+// - **Entry:** `app/functions/account/passGet.js:ingestHandler`
+// - **Files:** app/functions/account/passGet.js
+// - **Keywords:** pass, check pass, validity, pre-login, checkPass, email restricted
+// - **Related:** BILL-10
+// @end-capability
+
 // app/functions/account/passGet.js
 
 import { validateEnv } from "../../lib/env.js";

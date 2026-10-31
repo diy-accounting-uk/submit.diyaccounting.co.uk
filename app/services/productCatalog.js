@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-35 Load and query the product/activity catalogue
+// - **Use when:** code needs which bundles an activity requires, which activities a bundle unlocks, or Stripe prices for a bundle.
+// - **Does:** The productCatalog.js module parses submit.catalogue.toml and answers which bundles an activity requires and which activities a bundle unlocks. It also reports per-environment listing restrictions, capped bundle ids, and Stripe prices by interval. catalog-service.js is the browser-side equivalent; entitlement-status.js reads both to show whether an activity is unlocked.
+// - **Run:** `import { loadCatalogFromRoot, bundlesForActivity, activitiesForBundle } from "app/services/productCatalog.js"`
+// - **Entry:** `app/services/productCatalog.js:loadCatalogFromRoot`; `app/services/productCatalog.js:bundlesForActivity`
+// - **Files:** app/services/productCatalog.js, app/unit-tests/services/productCatalog.test.js, app/system-tests/productCatalog.system.test.js, web/public/lib/services/catalog-service.js, web/unit-tests/catalog-service.test.js, web/unit-tests/catalog-paths.test.js, web/public/submit.catalogue.toml, web/public/widgets/entitlement-status.js, app/system-tests/helpers/catalogueValues.js
+// - **Keywords:** catalogue, product catalogue, activity, bundle mapping, capped bundle, stripe price by interval, entitlement status
+// - **Related:** BILL-01, BILL-04, BILL-30, BILL-33
+// @end-capability
+
 // app/services/productCatalog.js
 import fs from "node:fs";
 import path from "node:path";

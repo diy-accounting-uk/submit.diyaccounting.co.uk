@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-08 Parse VAT returns from a bulk CSV file
+// - **Use when:** a CSV of VAT return figures from a spreadsheet package must become 9-box objects.
+// - **Does:** vatReturnCsv.js's parseVatReturnCsv reads a CSV file against the CSV_VAT_RETURN_CONTRACT.md contract. It throws a VatReturnCsvError with a named reason for each rejected row.
+// - **Run:** `import { parseVatReturnCsv } from "app/lib/vatReturnCsv.js"`
+// - **Entry:** `app/lib/vatReturnCsv.js:parseVatReturnCsv`
+// - **Files:** app/lib/vatReturnCsv.js, app/unit-tests/lib/vatReturnCsv.test.js, _developers/CSV_VAT_RETURN_CONTRACT.md
+// - **Keywords:** csv import, bulk vat return, vat return csv, spreadsheets contract, vatreturncsverror, 9-box
+// - **Related:** HMRC-07
+// @end-capability
+
 // app/lib/vatReturnCsv.js
 
 /**

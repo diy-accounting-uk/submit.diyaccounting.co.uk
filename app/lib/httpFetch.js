@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-10 Fetch HTTP with a timeout
+// - **Use when:** any outbound Companies House API call needs a bounded wait instead of hanging.
+// - **Does:** httpFetch.js wraps the native fetch function with a configurable timeout. Every Companies House API, filing and XML Gateway service uses it for outbound calls.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/httpFetch.js:fetchWithTimeout`; `app/lib/httpFetch.js:fetchJsonWithTimeout`
+// - **Files:** app/lib/httpFetch.js
+// - **Keywords:** fetch, timeout, http client, companies house, outbound call, abort
+// - **Related:** CH-11
+// @end-capability
+
 // app/lib/httpFetch.js
 // Shared HTTP fetch utility with timeout and abort support
 

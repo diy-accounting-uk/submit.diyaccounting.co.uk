@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-17 Export and embed DynamoDB test state in reports
+// - **Use when:** a behaviour or system test run's DynamoDB state needs exporting, reporting or publishing for review.
+// - **Does:** export-dynamodb-for-test-users.js and export-test-dynamodb.sh export bundles, receipts and HMRC API records to JSON, per user or per test environment. generate-test-reports.js reads a behaviour run's testContext.json and hmrc-api-requests.jsonl files and writes a test report plus a reports index. inject-dynamodb-into-test-report.js embeds that export into the report HTML, and publish-web-test-local.sh copies the report into web/public/tests/.
+// - **Run:** `node scripts/export-dynamodb-for-test-users.js <deployment-name> <user-sub> [user-sub2 ...]`; `scripts/export-test-dynamodb.sh <deployment-name>`; `npm run test-report -- --testName <name> [--testFile <path>] [--envFile <path>]`; `node scripts/inject-dynamodb-into-test-report.js`; `scripts/publish-web-test-local.sh <sourceReport> <targetTest>`
+// - **Entry:** `scripts/export-dynamodb-for-test-users.js`; `scripts/generate-test-reports.js`; `app/test-helpers/dynamodbExporter.js:exportDynamoDBDataForUsers`
+// - **Files:** scripts/export-dynamodb-for-test-users.js, scripts/export-test-dynamodb.sh, scripts/generate-test-reports.js, scripts/inject-dynamodb-into-test-report.js, scripts/publish-web-test-local.sh, app/test-helpers/dynamodbExporter.js, app/unit-tests/web/test-report-web-test-local.test.js, app/unit-tests/web/trackedTestReportsAuthorizationMasking.test.js
+// - **Keywords:** dynamodb export, test report, testcontext, hmrc-api-requests, audit trail, post-mortem, web-test-local, jsonl
+// - **Related:** DEV-16, DEV-19
+// @end-capability
+
 /**
  * Export DynamoDB data for specific test users
  *

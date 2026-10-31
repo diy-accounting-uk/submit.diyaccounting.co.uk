@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-55 Pull PayPal receipts into the lake
+// - **Use when:** the previous day's settled PayPal receipts and refunds must land in the lake, or a range of past days must be backfilled.
+// - **Does:** paypalDonationsPull.js reads the previous day's PayPal Transaction Search records with the two credentials in Secrets Manager. It keeps settled receipts (T0013 donations labelled donation-paypal, other receipts paypal-other-receipt) and refunds as negative rows naming their receipt, and drops holds, releases, conversions and transfers through app/services/paypalTransactions.js. A non-GBP receipt takes the pound amount its T0200 conversion credited; one with no conversion is logged and left out. It writes gzipped NDJSON under curated/paypal/; PayPalDonationTables.java provisions paypal_donations, which v_revenue_daily unions with Stripe. The Lambda accepts `date`, or `from` and `to` (at most 93 days) to backfill. The job exists only when PAYPAL_PULL_ENABLED is true; the table exists everywhere.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/paypalDonationsPull.js:handler`
+// - **Files:** app/functions/analytics/paypalDonationsPull.js, app/unit-tests/analytics/paypalDonationsPull.test.js, app/services/paypalTransactions.js, app/services/paypalTransactionSearch.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTablesTest.java, infra/main/resources/analytics/views/v_revenue_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java
+// - **Keywords:** paypal donations pull, paypal receipts, paypal refunds, currency conversion, backfill, curated paypal, paypal_donations, revenue view
+// - **Related:** DATA-09, DATA-48
+// @end-capability
+
 // app/functions/analytics/paypalDonationsPull.js
 //
 // Nightly job that pulls the previous day's PayPal transactions from the Transaction Search API,

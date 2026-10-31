@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-24 Verify HMRC agent authorisation for a client
+// - **Use when:** a practice must check its access token carries a delegated client relationship.
+// - **Does:** hmrcAgentAuthorisation.js calls HMRC's Agent Authorisation API to check a delegated relationship for a service such as MTD-VAT. A practice can then act for a client without storing the client's credentials.
+// - **Run:** `import { getRelationship, isClientAuthorisedForService } from "app/lib/hmrcAgentAuthorisation.js"`
+// - **Entry:** `app/lib/hmrcAgentAuthorisation.js:getRelationship`; `app/lib/hmrcAgentAuthorisation.js:isClientAuthorisedForService`
+// - **Files:** app/lib/hmrcAgentAuthorisation.js, app/unit-tests/lib/hmrcAgentAuthorisation.test.js
+// - **Keywords:** agent authorisation, delegated relationship, mtd-vat, practice client, agent services
+// - **Related:** HMRC-03, HMRC-01
+// @end-capability
+
 // app/lib/hmrcAgentAuthorisation.js
 //
 // Client for HMRC's Agent Authorisation API. The practice's own HMRC access token carries

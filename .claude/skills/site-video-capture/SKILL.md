@@ -6,6 +6,16 @@ description: Record a video of the real site for a human audience from a scene s
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-40 Record a product demo video
+- **Use when:** asked to make, update or re-record a product demo or training video.
+- **Does:** site-video-capture drives a real browser through a scene script (videos/<name>.json) with Playwright. It draws a pointer, trail and captions with an in-page overlay, and captures the session with CDP screencast. It encodes a constant-60fps H.264 mp4 with ffmpeg, and writes a vtt, a transcript and per-scene stills.
+- **Run:** `/site-video-capture`; `npm run video:tour-proxy`
+- **Entry:** `.claude/skills/site-video-capture/SKILL.md`; `scripts/site-video-capture.js`
+- **Files:** .claude/skills/site-video-capture/SKILL.md
+- **Keywords:** video capture, scene script, playwright recording, cdp screencast, ffmpeg, demo video, training video
+- **Related:** DEV-41
+@end-capability -->
+
 # site-video-capture — record a scene script into a video
 
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the

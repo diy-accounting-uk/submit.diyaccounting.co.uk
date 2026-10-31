@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-42 Parse ISO 8601 durations for expiry
+// - **Use when:** a catalogue-declared duration must become an expiry date for a bundle grant, pass or token reset.
+// - **Does:** The dateUtils.js module provides parseIsoDurationToDate to compute an expiry date from a duration. Bundle grants, pass validity periods and token-reset windows all call it. It also provides TTL calculation for pass records and a per-minute bucket for the bundle-read burst detector.
+// - **Run:** `import { parseIsoDurationToDate, calculateTtl, nowMinute } from "app/lib/dateUtils.js"`
+// - **Entry:** `app/lib/dateUtils.js:parseIsoDurationToDate`
+// - **Files:** app/lib/dateUtils.js
+// - **Keywords:** iso 8601 duration, expiry, ttl, date utils, parseIsoDurationToDate, burst bucket
+// - **Related:** BILL-01, BILL-06, BILL-02
+// @end-capability
+
 // app/lib/dateUtils.js
 // Shared date utilities for TTL calculations and timestamp handling
 

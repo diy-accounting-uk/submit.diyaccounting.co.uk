@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-23 Render a submission record in the house style
+// - **Use when:** a page or a builder shows or files a VAT return, an Income Tax update or declaration, a confirmation statement, accounts or a CT600 computation, or a page shows a customer's copy of one.
+// - **Does:** submission-record.css holds the house style in two layers: the record and the customer copy around it. submissionRecord.js renders the record headings, statement tables and figures, and customerCopyHtml frames a record with the brand, the submission number, status and date, explanations and links. The generator writes the record layer inline for the iXBRL builders and copies the helper for the browser. A unit test fails when either copy is not current.
+// - **Run:** `npm run generate:submission-record`; `node scripts/generate-submission-record.mjs --check`; `npx vitest run app/unit-tests/lib/submissionRecord.test.js`
+// - **Entry:** `app/lib/submissionRecord.js:customerCopyHtml`; `app/lib/submissionRecord.js:recordTable`; `scripts/generate-submission-record.mjs:generatedFiles`
+// - **Files:** web/public/submission-record.css, app/lib/submissionRecord.js, app/lib/submissionRecordStyle.js, web/public/lib/submission-record.js, scripts/generate-submission-record.mjs, app/unit-tests/lib/submissionRecord.test.js
+// - **Keywords:** house style, submission record, customer copy, receipt, ixbrl style, inline css, statement table, brackets, double rule
+// - **Related:** CH-16
+// @end-capability
+
 // The render helper for every submission record, in the house style that
 // web/public/submission-record.css defines. The record functions write the plain record: the
 // entity's name and reference, the title and period, the statement tables with their figures,

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-04 Enforce bundle entitlement on a request
+// - **Use when:** an endpoint must reject a caller who lacks the bundle an activity requires.
+// - **Does:** The bundleManagement.js enforceBundles function matches the request path against the catalogue's activities. It computes the required bundles and throws BundleEntitlementError or BundleAuthorizationError unless the caller holds one. A client-scoped request also requires the practice's own active resident-pro subscription; addBundles, removeBundles and updateUserBundles are the shared bundle-list mutators.
+// - **Run:** `import { enforceBundles, addBundles, removeBundles, updateUserBundles } from "app/services/bundleManagement.js"`
+// - **Entry:** `app/services/bundleManagement.js:enforceBundles`; `app/services/bundleManagement.js:updateUserBundles`
+// - **Files:** app/services/bundleManagement.js, app/unit-tests/services/bundleManagement.test.js, app/system-tests/bundleManagement.system.test.js, app/lib/operators.js, app/unit-tests/lib/operators.test.js
+// - **Keywords:** entitlement, enforce bundle, authorization, authorisation, operator match, resident-pro, BundleEntitlementError
+// - **Related:** BILL-01, BILL-03, BILL-35
+// @end-capability
+
 // app/services/bundleEnforcement.js
 
 import { createLogger } from "../lib/logger.js";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-80 Build AWS console deep links for operators
+// - **Use when:** an alert or report needs a direct link into CloudWatch logs, alarms or X-Ray instead of a description.
+// - **Does:** consoleLinks.js generates direct URLs into the AWS console for CloudWatch logs, alarms, dashboards, Athena and X-Ray traces. An operator investigating an alert jumps straight to the relevant resource.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/consoleLinks.js:buildAlarmConsoleLink`; `app/lib/consoleLinks.js:buildLogsInsightsLink`
+// - **Files:** app/lib/consoleLinks.js, app/unit-tests/lib/consoleLinks.test.js
+// - **Keywords:** console links, cloudwatch console, x-ray console, deep link, operator tooling, athena link
+// - **Related:** OPS-76
+// @end-capability
+
 // app/lib/consoleLinks.js
 //
 // Builds AWS console URLs for the evidence links an alarm issue carries:

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-18 Manage ITSA tax liability adjustments
+// - **Use when:** a manual adjustment to a taxpayer's calculated tax liability must be read, submitted or deleted.
+// - **Does:** hmrcItsaTaxLiabilityAdjustmentsGet/Put/Delete.js read, submit and delete manual liability adjustments. taxLiabilityAdjustments.html is the form.
+// - **Run:** `GET /api/v1/hmrc/itsa/tax-liability-adjustments`; `PUT /api/v1/hmrc/itsa/tax-liability-adjustments`; `DELETE /api/v1/hmrc/itsa/tax-liability-adjustments`
+// - **Entry:** `app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsDelete.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsGet.js, app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js, app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsDelete.js, app/unit-tests/functions/hmrcItsaTaxLiabilityAdjustments.test.js, app/unit-tests/functions/hmrcItsaTaxLiabilityAdjustmentsPut.activity.test.js, app/unit-tests/functions/hmrcItsaTaxLiabilityAdjustmentsDelete.activity.test.js, web/public/hmrc/itsa/taxLiabilityAdjustments.html
+// - **Keywords:** tax liability adjustments, manual adjustment, itsa calculation, tax liability, class 4 nic
+// - **Related:** HMRC-19, HMRC-17
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-03 Search the Companies House register
+// - **Use when:** a user types a company name or number and needs matching results to pick from.
+// - **Does:** companiesHouseSearchGet.js searches Companies House for companies matching a query term. It validates pagination parameters and returns paginated JSON via companiesHouseHttpGet.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseSearchGet.js:ingestHandler`
+// - **Files:** app/functions/companies-house/companiesHouseSearchGet.js, app/unit-tests/functions/companiesHouseSearchGet.test.js, web/public/companies-house/companySearch.html, web/public/lib/services/companies-house-service.js, web/browser-tests/companySearch.browser.test.js, behaviour-tests/companiesHouse.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-steps.js
+// - **Keywords:** companies house, search, typeahead, company search, register, pagination, GET /api/v1/companies-house/search
+// - **Related:** CH-04
+// @end-capability
+
 // app/functions/companies-house/companiesHouseSearchGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-13 Auto-destroy stale CI deployments
+// - **Use when:** a stale or finished ci deployment must be torn down, or a live one's self-destruct timer needs resetting.
+// - **Does:** SelfDestructStack schedules an EventBridge rule that invokes selfDestruct.js's ingestHandler. The handler deletes a CI deployment's stacks in dependency order and removes leftover S3 buckets and resources. destroy-ci.yml runs the sweep on a schedule, skipping any slot a deploy still holds.
+// - **Run:** `gh workflow run destroy-ci.yml -f deployment-name=<name> -f sweep-for-stacks=<true|false>`
+// - **Entry:** `app/functions/infra/selfDestruct.js:ingestHandler`
+// - **Files:** .github/workflows/destroy-ci.yml, .github/workflows/keepalive.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/SelfDestructStackTest.java, app/functions/infra/selfDestruct.js, app/system-tests/selfDestruct.system.test.js, app/unit-tests/functions/selfDestruct.test.js
+// - **Keywords:** self-destruct, teardown, destroy stale deployments, sweep, eventbridge, keepalive, creationtime
+// - **Related:** OPS-10, OPS-14
+// @end-capability
+
 // app/functions/selfDestruct.js
 
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";

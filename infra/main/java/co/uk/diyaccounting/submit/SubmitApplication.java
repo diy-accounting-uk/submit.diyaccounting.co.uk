@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-123 Wire CDK application entrypoints per account
+// - **Use when:** deciding which stacks synthesize for which account and environment combination.
+// - **Does:** SubmitApplication and SubmitEnvironment are the CDK app entrypoints that decide which stacks synthesize for which account and environment combination, against the shared SubmitStackProps contract every stack implements: env name, deployment name, resource prefix, CloudTrail flag and shared names.
+// - **Run:** `npm run cdk:synth-environment`; `npm run cdk:synth-application`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`; `infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java`; `infra/main/java/co/uk/diyaccounting/submit/stacks/SubmitStackProps.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java, infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java, infra/main/java/co/uk/diyaccounting/submit/stacks/SubmitStackProps.java, infra/test/java/co/uk/diyaccounting/submit/SubmitApplicationCdkResourceTest.java, infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java, infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentUE1CdkResourceTest.java
+// - **Keywords:** cdk entrypoint, stack wiring, submitstackprops, per-account synthesis, environment app
+// - **Related:** OPS-112, OPS-113
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;

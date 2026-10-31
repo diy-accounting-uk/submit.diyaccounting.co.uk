@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-107 List production Secrets Manager entries
+# - **Use when:** an inventory of an account's Secrets Manager entries and KMS keys is needed before copying secrets.
+# - **Does:** list-prod-secrets.sh lists all Secrets Manager secrets and KMS keys and aliases in the current account. It never prints secret values; its output feeds copy-secrets-to-account.sh.
+# - **Run:** `./scripts/aws-accounts/list-prod-secrets.sh --profile <profile> [--env <environment>]`
+# - **Entry:** `scripts/aws-accounts/list-prod-secrets.sh`
+# - **Files:** scripts/aws-accounts/list-prod-secrets.sh
+# - **Keywords:** list secrets, secrets manager inventory, kms keys, account migration
+# - **Related:** OPS-106
+# @end-capability
+
 #
 # scripts/aws-accounts/list-prod-secrets.sh
 #

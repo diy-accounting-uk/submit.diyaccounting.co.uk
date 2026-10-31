@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-38 CDK: billing webhook stack
+// - **Use when:** tracing or changing the always-on webhook endpoint that must survive application stack teardown.
+// - **Does:** The BillingWebhookStack.java construct is a separate, environment-level stack that is never torn down. Stripe webhook deliveries succeed even while application stacks are destroyed. It runs the webhook Lambda behind its own API Gateway domain with zero provisioned concurrency, since Stripe retries cold starts.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java
+// - **Keywords:** cdk, webhook stack, environment-level stack, never torn down, stripe retry, provisioned concurrency
+// - **Related:** BILL-28, BILL-37
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

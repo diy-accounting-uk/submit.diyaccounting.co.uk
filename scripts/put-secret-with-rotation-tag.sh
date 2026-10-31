@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-45 Manage AWS Secrets Manager entries and rotation tags
+# - **Use when:** a secret's value or rotation date needs checking, listing, backing up or restoring.
+# - **Does:** manage-secrets.yml lists, checks, backs up and restores secrets for an environment, including the user-sub-hash salt. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
+# - **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation|backup-salt|restore-salt> -f environment-name=<ci|prod>`
+# - **Entry:** `scripts/put-secret-with-rotation-tag.sh`
+# - **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
+# - **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret
+# - **Related:** OPS-43, OPS-10
+# @end-capability
+
 #
 # Creates or updates a Secrets Manager secret and stamps it with a rotated-at tag,
 # so the tag reflects the last time the value actually changed rather than the last

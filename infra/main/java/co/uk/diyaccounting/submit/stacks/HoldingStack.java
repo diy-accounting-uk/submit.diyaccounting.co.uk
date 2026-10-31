@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-116 Provision the holding-page stack
+// - **Use when:** the submit service's own holding page needs its own CloudFront distribution for a failover retarget.
+// - **Does:** HoldingStack serves the submit service's holding page from its own CloudFront distribution. It is tagged OriginFor=<holding fqdn> so a failover can retarget the live aliases onto it.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/HoldingStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/HoldingStack.java
+// - **Keywords:** holding page stack, failover, cloudfront distribution, originfor tag
+// - **Related:** OPS-133
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

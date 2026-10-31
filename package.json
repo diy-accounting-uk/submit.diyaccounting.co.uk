@@ -485,7 +485,6 @@
     "msads:forecast": "node infra/microsoft/ads/msads.js --forecast",
     "msads:report": "node infra/microsoft/ads/msads.js --report",
     "exploratory:diff": "node scripts/exploratory-diff.mjs",
-    "capabilities:index": "node scripts/capabilities-index.mjs",
     "capabilities:generate": "node scripts/capabilities-generate.mjs",
     "capabilities:check": "node scripts/capabilities-generate.mjs --check",
     "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",

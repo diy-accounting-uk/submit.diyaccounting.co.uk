@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-90 Encode captured video frames and captions
+// - **Use when:** a recorded scene's raw frames need encoding to video and its captions need generating to match.
+// - **Does:** encode.js builds the ffmpeg concat-demuxer manifest from the frame ledger capture.js writes, and shells out to ffmpeg, via ffmpeg-static, to produce constant-fps H.264 output. captions.js generates the WebVTT and transcript from the same step record, so the SC 1.2.1 text alternative always matches the built video. playwright-video-reporter.js copies a Playwright test's recorded video to a stable path for downstream tooling.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/lib/video/encode.js`; `scripts/lib/video/captions.js`; `scripts/playwright-video-reporter.js`
+// - **Files:** scripts/lib/video/encode.js, scripts/lib/video/captions.js, app/unit-tests/video/encode.test.js, app/unit-tests/video/captions.test.js, scripts/playwright-video-reporter.js
+// - **Keywords:** ffmpeg, video encode, webvtt, transcript, captions, sc 1.2.1, concat demuxer
+// - **Related:** OPS-88, OPS-91
+// @end-capability
+
 // scripts/lib/video/encode.js
 //
 // The concat manifest and the ffmpeg encode from design section 6. buildManifest is pure (no

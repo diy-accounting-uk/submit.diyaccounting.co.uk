@@ -1,6 +1,15 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability OPS-65 Document security policy and disclosure
+- **Use when:** someone needs to know how to report a vulnerability, or what the disclosure procedure commits to.
+- **Does:** SECURITY.md states the security policy and vulnerability-disclosure procedure for the repository.
+- **Run:** no command; see Does and Entry
+- **Entry:** `SECURITY.md`
+- **Files:** SECURITY.md
+- **Keywords:** security policy, vulnerability disclosure, responsible disclosure, security.md, report a vulnerability
+@end-capability -->
+
 # Security
 
 ## Reporting a vulnerability

@@ -2,6 +2,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-103 Bootstrap a new AWS account for CDK
+# - **Use when:** a fresh AWS account needs its CDK bootstrap stacks, OIDC provider and deployment roles created.
+# - **Does:** bootstrap-account.sh bootstraps a new AWS account for CDK deployments and GitHub Actions OIDC. It creates the CDK bootstrap stacks, the OIDC provider, the github-actions-role and the deployment-role.
+# - **Run:** `./scripts/aws-accounts/bootstrap-account.sh --account-id <id> --account-name <name> --profile <profile>`
+# - **Entry:** `scripts/aws-accounts/bootstrap-account.sh`
+# - **Files:** scripts/aws-accounts/bootstrap-account.sh
+# - **Keywords:** bootstrap account, cdk prerequisites, oidc provider, deployment role, new account
+# @end-capability
+
 #
 # scripts/aws-accounts/bootstrap-account.sh
 #

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-40 Submit and manage the foreign property annual summary and its adjustments
+// - **Use when:** the year-end foreign property annual summary must be read or filed, or a foreign property BSAS must be read or adjusted.
+// - **Does:** hmrcItsaForeignPropertyAnnualGet.js and hmrcItsaForeignPropertyAnnualPut.js read and submit the annual summary. The BSAS Lambdas read HMRC's figures and send an adjustment. The page always sends every country entry.
+// - **Run:** `GET /api/v1/hmrc/itsa/foreign-property/annual`; `PUT /api/v1/hmrc/itsa/foreign-property/annual`; `GET /api/v1/hmrc/itsa/bsas/foreign-property`; `POST /api/v1/hmrc/itsa/bsas/foreign-property/adjust`; `npm run test:itsaForeignPropertyAnnualSubmissionBehaviour-simulator`
+// - **Entry:** `app/functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasForeignPropertyAdjustPost.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaForeignPropertyAnnualGet.js, app/functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js, app/functions/hmrc/hmrcItsaBsasForeignPropertyGet.js, app/functions/hmrc/hmrcItsaBsasForeignPropertyAdjustPost.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualPut.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualPut.activity.test.js, app/unit-tests/functions/hmrcItsaBsasForeignPropertyGet.test.js, app/unit-tests/functions/hmrcItsaBsasForeignPropertyAdjustPost.test.js, web/public/hmrc/itsa/foreignPropertyAnnualSubmission.html, web/public/hmrc/itsa/foreignPropertyAdjustments.html, web/browser-tests/foreignPropertyAnnual.browser.test.js, web/browser-tests/foreignPropertyAdjustments.browser.test.js, behaviour-tests/itsaForeignPropertyAnnualSubmission.behaviour.test.js
+// - **Keywords:** foreign property annual, foreign property bsas, foreign property adjustments, overseas property, year-end summary, itsa foreign property
+// - **Related:** HMRC-15, HMRC-16, HMRC-39
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js
 
 import { createLogger } from "../../lib/logger.js";

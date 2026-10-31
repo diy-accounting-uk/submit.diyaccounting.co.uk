@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-115 Provision the Edge/CloudFront stack
+// - **Use when:** CloudFront distributions, edge Lambdas or caching behaviours for the web app and API need synthesizing.
+// - **Does:** EdgeStack creates the CloudFront distributions, edge Lambdas, including the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
+// - **Keywords:** cloudfront, edge lambda, caching policy, waf log subscription, edge stack
+// - **Related:** OPS-74, OPS-131
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

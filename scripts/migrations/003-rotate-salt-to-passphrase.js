@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-40 Migrate the hashed-sub salt
+// - **Use when:** the salt used to hash user subs must be rotated to a new passphrase.
+// - **Does:** The 003-rotate-salt-to-passphrase.js post-deploy migration generates a new 8-word passphrase salt. It re-keys every hashed-sub-keyed DynamoDB item from the old salt to the new one and updates the salt canary. The new passphrase is printed for the operator to record physically.
+// - **Run:** `ENVIRONMENT_NAME=<ci|prod> node scripts/migrations/runner.js --phase post-deploy`; `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=post-deploy`
+// - **Entry:** `scripts/migrations/003-rotate-salt-to-passphrase.js`; `scripts/migrations/runner.js`
+// - **Files:** scripts/migrations/003-rotate-salt-to-passphrase.js
+// - **Keywords:** migration, salt rotation, hashed sub, passphrase salt, re-key, salt canary, post-deploy
+// - **Related:** BILL-41
+// @end-capability
+
 // scripts/migrations/003-rotate-salt-to-passphrase.js
 // Post-deploy migration: Generates an 8-word passphrase salt (v2), adds it to the registry,
 // re-keys all items from v1 to v2, and updates the canary.

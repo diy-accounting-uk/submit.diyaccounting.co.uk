@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-74 Detect WAF-blocked scan attacks
+// - **Use when:** requests the SensitivePathScan WAF rule blocked need to become an ops alert, or a block needs a false-positive check.
+// - **Does:** wafScanDetect.js subscribes to the WAF access-log group's blocks-only CloudWatch Logs subscription filter, wired in EdgeStack. Each invocation decodes a gzipped log batch and turns every SensitivePathScan block into an ops Telegram alert. verify-waf-false-positives.sh audits CloudFront access logs for requests WAF blocked and flags likely false positives.
+// - **Run:** `./scripts/verify-waf-false-positives.sh`
+// - **Entry:** `app/functions/security/wafScanDetect.js:handler`; `scripts/verify-waf-false-positives.sh`
+// - **Files:** app/functions/security/wafScanDetect.js, app/unit-tests/functions/wafScanDetect.test.js, scripts/verify-waf-false-positives.sh
+// - **Keywords:** waf, sensitivepathscan, blocked requests, subscription filter, false positive, scan detection, cloudfront waf
+// - **Related:** OPS-73
+// @end-capability
+
 // app/functions/security/wafScanDetect.js
 //
 // Subscribed to the WAF access log group's blocks-only CloudWatch Logs subscription filter

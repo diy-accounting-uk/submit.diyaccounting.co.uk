@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-87 Process SQS message batches in Lambda workers
+// - **Use when:** an SQS-triggered Lambda must handle each record's failure independently instead of failing the whole batch.
+// - **Does:** sqsWorkerHelper.js orchestrates a Lambda's SQS-triggered batch processing. processSqsRecords handles per-record errors so one bad message does not fail the whole batch.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/sqsWorkerHelper.js:processSqsRecords`; `app/lib/sqsWorkerHelper.js:isRetryableError`
+// - **Files:** app/lib/sqsWorkerHelper.js
+// - **Keywords:** sqs, batch processing, partial batch failure, lambda worker, retryable error
+// @end-capability
+
 // app/lib/sqsWorkerHelper.js
 // Shared helpers for SQS worker Lambda handlers
 

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-01 Publish activity events to the bus
+// - **Use when:** a Lambda or route must record a business event for the analytics lake and Telegram alerts.
+// - **Does:** publishActivityEvent and publishActivityFailureEvent send structured events to the ACTIVITY_BUS_NAME EventBridge bus. Calls are fire-and-forget and never block the caller. ActivityStack.java provisions the bus and a rule that forwards every event to a Telegram-forwarding Lambda.
+// - **Run:** `import { publishActivityEvent, publishActivityFailureEvent } from "app/lib/activityAlert.js"`
+// - **Entry:** `app/lib/activityAlert.js:publishActivityEvent`; `app/lib/activityAlert.js:publishActivityFailureEvent`
+// - **Files:** app/lib/activityAlert.js, app/unit-tests/lib/activityAlert.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java
+// - **Keywords:** activity event, eventbridge, activity bus, telegram alert, fire and forget, business event, actor class, hashed sub
+// - **Related:** DATA-02
+// @end-capability
+
 // app/lib/activityAlert.js
 
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";

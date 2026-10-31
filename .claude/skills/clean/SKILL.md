@@ -6,6 +6,16 @@ description: Find what this repository has left behind (stale deployments, merge
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-34 Clean up stale deployments and branches
+- **Use when:** the operator says clean, clean up, or tidy the repo.
+- **Does:** clean gathers five categories of leftover state: stale deployments, merged branches, worktrees, logs, test artefacts and build output. It shows them together and removes every category the operator agrees to in one go. It then fetches, switches to main and pulls, once nothing is in progress.
+- **Run:** `/clean`
+- **Entry:** `.claude/skills/clean/SKILL.md`
+- **Files:** .claude/skills/clean/SKILL.md
+- **Keywords:** clean, stale deployment sweep, merged branch cleanup, worktree removal, build output cleanup, tidy repo
+- **Related:** DEV-22
+@end-capability -->
+
 # clean
 
 Five categories, gathered first, shown together, agreed once, removed once. Nothing is removed

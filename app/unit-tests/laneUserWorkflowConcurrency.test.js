@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-15 Serialize lane test-user rotation jobs
+// - **Use when:** a new workflow job rotates a lane's durable test user, to avoid two jobs racing it.
+// - **Does:** laneUserWorkflowConcurrency.test.js parses every workflow file. It checks that each job calling ensure-cognito-test-user.js declares a job-level concurrency group for its environment and lane, without cancel-in-progress. Two such jobs racing the same user would otherwise leave one mid-test with its bundle purged out from under it.
+// - **Run:** `npx vitest --run app/unit-tests/laneUserWorkflowConcurrency.test.js`
+// - **Entry:** `app/unit-tests/laneUserWorkflowConcurrency.test.js`
+// - **Files:** app/unit-tests/laneUserWorkflowConcurrency.test.js
+// - **Keywords:** lane user, concurrency group, cognito test user, ensure-cognito-test-user, race condition, behaviour test lane
+// - **Related:** OPS-12
+// @end-capability
+
 // laneUserWorkflowConcurrency.test.js -- each behaviour-test lane keeps one durable Cognito user
 // per environment, and every workflow job that runs scripts/ensure-cognito-test-user.js purges
 // that user's bundles, rotates its password and re-enrols its TOTP device before testing. Two

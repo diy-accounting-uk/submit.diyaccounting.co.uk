@@ -6,6 +6,16 @@ description: From a prod-env-hmrc-submission-failure alarm (or its [ALARM] issue
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-42 Look up a VAT submission-failure alarm's customer
+- **Use when:** the operator asks who a submission-failure alarm was or whether the customer needs a reply.
+- **Does:** vat-submission-failure-alarm-user-lookup finds the customer behind a failed VAT submission, what HMRC answered, and whether they wrote to support. Every AWS call is read-only through the diya-submit-prod SSO profile. It runs only Query, never Scan, against customer tables keyed by hashedSub.
+- **Run:** `/vat-submission-failure-alarm-user-lookup`
+- **Entry:** `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md`
+- **Files:** .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
+- **Keywords:** alarm lookup, submission failure, hashedsub, customer lookup, support ticket lookup, read-only aws query
+- **Related:** DEV-25
+@end-capability -->
+
 # vat-submission-failure-alarm-user-lookup
 
 Everything here is read-only AWS through the `diya-submit-prod` SSO profile

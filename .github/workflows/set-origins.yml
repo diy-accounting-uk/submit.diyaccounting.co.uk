@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-04 Update Route53/CloudFront origins for a domain
+# - **Use when:** an apex or environment domain must move to a different origin, or fall back to the holding page.
+# - **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment.
+# - **Run:** `gh workflow run set-origins.yml -f domain-source=<branch|holding|last-known-good> -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/set-origins.yml`; `.github/actions/set-origins/action.yml`
+# - **Files:** .github/actions/set-origins/action.yml, .github/workflows/set-origins.yml
+# - **Keywords:** set origins, route53, cloudfront alias, holding page, last-known-good, domain cutover
+# - **Related:** OPS-05
+# @end-capability
+
 name: set origins
 
 on:

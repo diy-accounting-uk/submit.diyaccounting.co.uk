@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-39 Submit and manage foreign property periodic updates and property details
+// - **Use when:** quarterly or cumulative foreign property income and expense updates, or the foreign properties of a business, must be filed, read or changed.
+// - **Does:** Three Lambdas create, read and amend foreign property periodic updates. Three more list, add and change the foreign properties of a business from 2026-27. foreignPropertyPeriod.html sends one entry per country.
+// - **Run:** `POST /api/v1/hmrc/itsa/foreign-property/period`; `GET /api/v1/hmrc/itsa/foreign-property/period`; `PUT /api/v1/hmrc/itsa/foreign-property/period`; `GET /api/v1/hmrc/itsa/foreign-property/details`; `POST /api/v1/hmrc/itsa/foreign-property/details`; `PUT /api/v1/hmrc/itsa/foreign-property/details`; `npm run test:itsaForeignPropertyPeriodBehaviour-simulator`
+// - **Entry:** `app/functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaForeignPropertyPeriodPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaForeignPropertyDetailsPost.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js, app/functions/hmrc/hmrcItsaForeignPropertyPeriodGet.js, app/functions/hmrc/hmrcItsaForeignPropertyPeriodPut.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsPost.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsPut.js, app/lib/foreignPropertyBody.js, app/unit-tests/lib/foreignPropertyBody.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPost.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPost.activity.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPut.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPut.activity.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsPost.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsPut.test.js, web/public/hmrc/itsa/foreignPropertyPeriod.html, web/public/hmrc/itsa/foreignPropertyPeriodAmend.html, web/public/hmrc/itsa/foreignPropertyPeriods.html, web/public/hmrc/itsa/foreignPropertyPeriodView.html, web/public/hmrc/itsa/foreignPropertyDetails.html, web/browser-tests/foreignPropertyEntries.browser.test.js, web/browser-tests/foreignPropertyPeriodFields.browser.test.js, web/browser-tests/foreignPropertyDetails.browser.test.js, behaviour-tests/itsaForeignPropertyPeriod.behaviour.test.js
+// - **Keywords:** foreign property period, overseas rental income, country code, foreign property details, property id, cumulative update, itsa foreign property
+// - **Related:** HMRC-14, HMRC-40
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js
 
 import { createLogger } from "../../lib/logger.js";

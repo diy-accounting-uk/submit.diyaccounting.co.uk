@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-91 Validate video scene scripts and timing
+// - **Use when:** a scene script needs schema validation, a recorded timeline needs acceptance checks, or only the affected scenes should re-record.
+// - **Does:** scriptSchema.js is a hand-rolled validator for a scene script against videos/scene-script.schema.json, throwing on a bad path rather than skipping it. checks.js runs the acceptance checks, such as timing match and typing cadence, against a recorded timeline. check-video-timings.js runs those checks from the command line. video-scenes-to-record.mjs diffs git to find which scene files changed, and video-scripts-for-changed-files.mjs finds which scene scripts reference a given set of changed code files.
+// - **Run:** `node scripts/check-video-timings.js <timeline.json>`; `node scripts/video-scenes-to-record.mjs --publish videos/publish.json --recorded <recorded-file>`; `node scripts/video-scripts-for-changed-files.mjs --environment <env>`
+// - **Entry:** `scripts/lib/video/scriptSchema.js`; `scripts/lib/video/checks.js`; `scripts/check-video-timings.js`
+// - **Files:** scripts/lib/video/scriptSchema.js, scripts/lib/video/checks.js, scripts/check-video-timings.js, scripts/video-scenes-to-record.mjs, scripts/video-scripts-for-changed-files.mjs, app/unit-tests/video/scriptSchema.test.js, app/unit-tests/video/checks.test.js, app/unit-tests/video/scenesToRecord.test.js, app/unit-tests/scripts/videoScriptsForChangedFiles.test.js, app/unit-tests/videoScenePages.test.js
+// - **Keywords:** scene script validation, schema, timing checks, typing cadence, changed files, scenes to record
+// - **Related:** OPS-88, OPS-92
+// @end-capability
+
 // scripts/lib/video/scriptSchema.js
 //
 // Hand-rolled validator for a scene script (videos/*.json), matching

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-47 Capture a screenshot of every site page
+// - **Use when:** a design pass or visual review needs every page under web/public at phone and desktop width, light and dark, with the console errors each page logs.
+// - **Does:** site-screenshots.mjs finds every .html page under web/public except tests/ and docs/. It starts the simulator lane when none answers, and stops what it started. It signs in once through the mock OAuth form. It opens each page at 1280 and 390 pixels, in light and dark colour schemes. It takes a full-page PNG as the page loads, and a second PNG after it submits an empty form when the page has a submit button. A page that redirects an anonymous visitor to sign-in is captured again, signed in. It writes index.json with page, width, theme, state, file and console errors.
+// - **Run:** `npm run site:screenshots`; `node scripts/site-screenshots.mjs --only <part-of-page-path> --out <dir>`
+// - **Entry:** `scripts/site-screenshots.mjs:main`
+// - **Files:** scripts/site-screenshots.mjs, package.json
+// - **Keywords:** site screenshots, page screenshots, whole-site design pass, console errors, dark mode, responsive, phone width, empty form, index.json
+// - **Related:** DEV-14, DEV-46
+// @end-capability
+
 // scripts/site-screenshots.mjs
 //
 // Full-page screenshots of every page under web/public/ (except tests/ and docs/) at two widths

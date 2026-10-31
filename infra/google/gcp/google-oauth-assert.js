@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-44 Assert Google OAuth client configuration
+// - **Use when:** the sign-in or YouTube OAuth client's live configuration must be checked against oauth.toml.
+// - **Does:** google-oauth-assert.js checks oauth.toml's declared OAuth clients (sign-in, YouTube upload, Drive browser) against everything a live API can confirm. It checks each client's Auth Platform brand, its id against Cognito or Secrets Manager, and token scopes. It never writes anything. drive-client-record.js writes the downloaded Drive browser client's id into oauth.toml. google-api-keys.js plans and applies api-keys.toml, the restricted Drive Picker key.
+// - **Run:** `node infra/google/gcp/google-oauth-assert.js`
+// - **Entry:** `infra/google/gcp/google-oauth-assert.js:main`
+// - **Files:** infra/google/gcp/google-oauth-assert.js, app/unit-tests/scripts/googleOauthAssert.test.js, infra/google/gcp/oauth.toml, scripts/drive-client-record.js, infra/google/gcp/google-api-keys.js, infra/google/gcp/api-keys.toml
+// - **Keywords:** oauth client assert, auth platform brand, cognito client id, youtube client secret, refresh token scopes, read-only, oauth.toml
+// - **Related:** DATA-46
+// @end-capability
+
 // infra/google/gcp/google-oauth-assert.js
 //
 // Checks infra/google/gcp/oauth.toml's Google OAuth clients against everything about them a

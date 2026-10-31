@@ -2,6 +2,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-108 Backfill TTL on existing DynamoDB records
+# - **Use when:** DynamoDB items created before a table's TTL configuration need a time-to-live value set retroactively.
+# - **Does:** set-ttl-on-existing-records.sh sets the time-to-live attribute on DynamoDB items, such as HMRC receipts or old logs, that predate the table's TTL configuration, so they age out automatically.
+# - **Run:** `./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile <profile> --table <table> --ttl-days <n> [--dry-run]`
+# - **Entry:** `scripts/aws-accounts/set-ttl-on-existing-records.sh`
+# - **Files:** scripts/aws-accounts/set-ttl-on-existing-records.sh
+# - **Keywords:** ttl backfill, dynamodb ttl, hmrc receipts, old logs, expire records
+# @end-capability
+
 # Set TTL on all existing records in a DynamoDB table
 # Usage: ./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile diya-submit-prod --table prod-env-hmrc-api-requests --ttl-days 1 [--dry-run]
 #

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-01 Cancel superseded push-triggered deploys
+// - **Use when:** a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
+// - **Does:** cancel-superseded-push-deploy.mjs finds a push-triggered deploy.yml run on the same commit that has not started a stack job. It cancels that run when a workflow_dispatch redeploy names an explicit deployment-name. The two runs then never deploy the same stacks in parallel.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `.github/actions/cancel-superseded-push-deploy/cancel-superseded-push-deploy.mjs:main`; `.github/actions/cancel-superseded-push-deploy/cancel-superseded-push-deploy.mjs:cancelableSupersededRuns`
+// - **Files:** .github/actions/cancel-superseded-push-deploy/action.yml, .github/actions/cancel-superseded-push-deploy/cancel-superseded-push-deploy.mjs
+// - **Keywords:** cancel run, superseded deploy, push trigger, workflow_dispatch, same commit, deploy.yml, stack job, race
+// - **Related:** OPS-06
+// @end-capability
+
 // Cancels any push-triggered deploy.yml run of this run's own commit that has not yet started a
 // stack job, so a workflow_dispatch run carrying an explicit deployment-name does not deploy the
 // same commit twice in parallel. Every stack-deploying job in deploy.yml (deploy-auth,

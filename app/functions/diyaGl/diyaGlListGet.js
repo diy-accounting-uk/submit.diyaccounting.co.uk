@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-19 List a user's diya-gl books
+// - **Use when:** a caller's own ledger books must be listed from S3.
+// - **Does:** The diyaGlListGet.js ingestHandler lists the authenticated user's ledger books from S3, paginated.
+// - **Run:** `GET /api/v1/diya-gl/books`
+// - **Entry:** `app/functions/diyaGl/diyaGlListGet.js:ingestHandler`
+// - **Files:** app/functions/diyaGl/diyaGlListGet.js, app/unit-tests/functions/diyaGlListGet.test.js
+// - **Keywords:** diya-gl, ledger book, list books, pagination, s3 listing, user books
+// - **Related:** BILL-17, BILL-20
+// @end-capability
+
 // app/functions/diyaGl/diyaGlListGet.js
 
 import { createLogger } from "../../lib/logger.js";

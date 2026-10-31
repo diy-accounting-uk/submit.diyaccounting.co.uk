@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-03 Simulate HMRC OAuth
+// - **Use when:** a test needs HMRC's sign-in and grant-permission flow without a real HMRC account.
+// - **Does:** apiEndpoint reproduces HMRC's four-step grant flow at GET and POST /oauth/authorize. The steps are the permission page, sign-in choice, credentials form and grant step. It also runs an auto-grant shortcut for tests and issues mock tokens at POST /oauth/token.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/hmrc-oauth.js"`
+// - **Entry:** `app/http-simulator/routes/hmrc-oauth.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/hmrc-oauth.js
+// - **Keywords:** hmrc oauth, grant flow, mock token, authorization_code, refresh_token, client_credentials, sandbox login
+// - **Related:** DEV-01, DEV-08, DEV-09
+// @end-capability
+
 // app/http-simulator/routes/hmrc-oauth.js
 // Replaces HMRC OAuth flow for tests
 // Handles: GET /oauth/authorize (permission page), POST /oauth/authorize (multi-step grant), POST /oauth/token

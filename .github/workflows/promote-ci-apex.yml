@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-05 Promote a CI deployment to the CI apex
+# - **Use when:** a ci deployment has passed its probes and the ci apex must point at it.
+# - **Does:** promote-ci-apex.yml moves ci-submit.diyaccounting.co.uk to point at a named ci-setN deployment whose probes have passed. It moves CloudFront and the API Gateway custom domain in sequence, under a non-cancellable concurrency group. deploy.yml dispatches it automatically after probes pass; it is also safe to run by hand.
+# - **Run:** `gh workflow run promote-ci-apex.yml -f deployment-name=<ci-setN>`
+# - **Entry:** `.github/workflows/promote-ci-apex.yml`
+# - **Files:** .github/workflows/promote-ci-apex.yml
+# - **Keywords:** promote apex, ci apex, ci-set, cloudfront cutover, api gateway custom domain
+# - **Related:** OPS-04
+# @end-capability
+
 # promote-ci-apex: point ci-submit.diyaccounting.co.uk at a set whose probes have passed.
 # deploy.yml dispatches this after set-last-known-good-deployment; it is also safe to dispatch by
 # hand to put the apex back on a known set.

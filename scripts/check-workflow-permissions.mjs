@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-33 Enforce workflow-to-workflow permission grants
+// - **Use when:** a workflow calls another reusable workflow and its permission grants need checking before a run fails.
+// - **Does:** check-workflow-permissions.mjs re-derives GitHub's own reusable-workflow permission check with a line-based reader, not a YAML parser. It verifies every permissions scope a called workflow's jobs use was granted by the caller. It catches what actionlint does not, and what otherwise only fails at run start with no per-job log.
+// - **Run:** `node scripts/check-workflow-permissions.mjs`
+// - **Entry:** `scripts/check-workflow-permissions.mjs:findViolations`; `scripts/check-workflow-permissions.mjs:parseWorkflow`
+// - **Files:** scripts/check-workflow-permissions.mjs, app/unit-tests/scripts/checkWorkflowPermissions.test.js
+// - **Keywords:** workflow permissions, reusable workflow, permission grant, actionlint gap, called workflow
+// - **Related:** OPS-33
+// @end-capability
+
 // scripts/check-workflow-permissions.mjs
 //
 // A `uses: ./.github/workflows/<file>.yml` call site grants the called workflow a

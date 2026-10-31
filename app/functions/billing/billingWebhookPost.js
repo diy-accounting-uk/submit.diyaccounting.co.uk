@@ -1,6 +1,26 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-21 Expire lapsed diya-gl books by S3 lifecycle
+// - **Use when:** a subscriber's resident bundle lapses or returns, and their diya-gl books must change retention tier.
+// - **Does:** The billingWebhookPost.js handler moves a lapsed owner's resident books to the sandbox tier on customer.subscription.deleted, and every client's books for a practice. It calls setOwnerBooksRetention, which retags each book object and rewrites its retention and expiresAt metadata. The retag restarts the clock of the diya-gl bucket's expire-sandbox lifecycle rule, which expires a sandbox book after 37 days. A checkout that activates the bundle again restores the sandbox books to resident. A replayed event changes nothing.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/billing/billingWebhookPost.js:lapseResidentBooks`; `app/functions/billing/billingWebhookPost.js:lapsePracticeClientBooks`; `app/data/s3DiyaGlRepository.js:setOwnerBooksRetention`
+// - **Files:** app/functions/billing/billingWebhookPost.js, app/data/s3DiyaGlRepository.js, app/unit-tests/functions/billingWebhookPost.test.js, app/unit-tests/data/s3DiyaGlRepository.test.js, behaviour-tests/diyaGlSubscription.behaviour.test.js, behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js
+// - **Keywords:** diya-gl, lapse, s3 lifecycle, expire-sandbox, sandbox tier, resident tier, retag, setOwnerBooksRetention, subscription deleted
+// - **Related:** BILL-18, BILL-22
+// @end-capability
+
+// @capability BILL-28 Process Stripe webhook events
+// - **Use when:** Stripe delivers a checkout, invoice, subscription, refund or dispute event to grant, sync or flag a subscription.
+// - **Does:** The billingWebhookPost.js ingestHandler verifies the Stripe signature with test and live secrets, then handles checkout, invoice, subscription and dispute events. It grants bundles, resets tokens, syncs status, marks past-due or cancelled, and auto-accepts disputes. Every other event type is logged and ignored.
+// - **Run:** `POST /api/v1/billing/webhook`; `gh workflow run stripe-cancel-subscription.yml -f subscription-id=<sub_xxx> -f mode=<at-period-end|immediate> -f environment-name=<ci|prod>`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-cancel-subscription.js <subscription_id> [options]`; `node scripts/stripe-trigger-lifecycle.sh`
+// - **Entry:** `app/functions/billing/billingWebhookPost.js:ingestHandler`
+// - **Files:** app/functions/billing/billingWebhookPost.js, app/unit-tests/functions/billingWebhookPost.test.js, app/data/dynamoDbSubscriptionRepository.js, app/system-tests/billingInfrastructure.system.test.js, .github/workflows/stripe-cancel-subscription.yml, scripts/stripe-cancel-subscription.js, scripts/stripe-trigger-lifecycle.sh
+// - **Keywords:** stripe, webhook, checkout.session.completed, invoice.paid, subscription updated, dispute, refund, cancel subscription
+// - **Related:** BILL-01, BILL-24, BILL-30
+// @end-capability
+
 // app/functions/billing/billingWebhookPost.js
 
 import { createLogger } from "../../lib/logger.js";

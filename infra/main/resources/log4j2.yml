@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-129 Configure Lambda/CDK application logging
+# - **Use when:** the Java CDK application's own log appenders, patterns or retention need changing, for main or test runs.
+# - **Does:** Log4j2 YAML configuration defines the log appenders, patterns and retention for the Java CDK application's own logging, separately for main and test resources.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `infra/main/resources/log4j2.yml`
+# - **Files:** infra/main/resources/log4j2.yml, infra/test/resources/log4j2.yml
+# - **Keywords:** log4j2, cdk application logging, log appenders, log retention
+# @end-capability
+
 Configuration:
   status: warn
   Appenders:

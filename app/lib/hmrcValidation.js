@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-27 Validate HMRC identifiers, dates and amounts
+// - **Use when:** a VRN, NINO, UTR, period key, ISO date, tax year or amount must be validated.
+// - **Does:** hmrcValidation.js validates HMRC identifiers, dates, tax years and VAT monetary or whole amounts. It resolves the dated or cumulative ITSA submission model, masks IPs and device ids, and maps HMRC error codes.
+// - **Run:** `import { isValidVrn, isValidNino, resolveItsaSubmissionModel } from "app/lib/hmrcValidation.js"`
+// - **Entry:** `app/lib/hmrcValidation.js:isValidVrn`; `app/lib/hmrcValidation.js:resolveItsaSubmissionModel`; `app/lib/hmrcValidation.js:getHmrcErrorMessage`
+// - **Files:** app/lib/hmrcValidation.js, app/unit-tests/lib/hmrcValidation.test.js
+// - **Keywords:** vrn, nino, utr, period key, tax year, cumulative model, error code mapping, mask ip
+// - **Related:** HMRC-12, HMRC-07
+// @end-capability
+
 // app/lib/hmrcValidation.js
 
 /**

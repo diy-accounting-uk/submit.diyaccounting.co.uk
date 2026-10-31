@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-04 Derive micro-entity accounts figures for Companies House filing
+// - **Use when:** a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
+// - **Does:** deriveMicroEntityAccounts in app/services/microEntityAccounts.js reads the current year from the engine's published balance sheet, PubBalSht. It reads the prior year from the book's opening balance. It checks each sheet balances before rounding both years to whole pounds. mcp/lib/accounts-tools.js re-exports it for the derive_micro_entity_accounts tool; DATA-52's nightly company book pull imports the same function.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/services/microEntityAccounts.js:deriveMicroEntityAccounts`
+// - **Files:** app/services/microEntityAccounts.js, mcp/lib/accounts-tools.js, mcp/test/accounts-tools.test.js
+// - **Keywords:** derive_micro_entity_accounts, frs 105, balance sheet, companies house, micro-entity, pubbalsht, accounts filing
+// - **Related:** MCP-03, MCP-08, DATA-52
+// @end-capability
+
 // app/services/microEntityAccounts.js
 //
 // deriveMicroEntityAccounts: calculates a loaded Company book and gives the figures the micro-entity

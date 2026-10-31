@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-02 Verify JWTs at the API gateway
+// - **Use when:** an API route needs the caller's Cognito access token checked, or their sub decoded.
+// - **Does:** customAuthorizer.js is an API Gateway HTTP API Lambda authorizer. It verifies the access token signature with aws-jwt-verify. It runs a mid-session country-change check and reads MFA context from the ID token. jwtHelper.js decodes a JWT payload without checking its signature for already-authorized Lambda functions.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/auth/customAuthorizer.js:ingestHandler`; `app/lib/jwtHelper.js:getUserSub`
+// - **Files:** app/functions/auth/customAuthorizer.js, app/lib/jwtHelper.js, infra/main/java/co/uk/diyaccounting/submit/stacks/AuthStack.java, app/system-tests/customAuthorizer.system.test.js, app/unit-tests/functions/customAuthorizer.test.js
+// - **Keywords:** jwt, authorizer, api gateway, access token, sub, mfa context, country change, aws-jwt-verify, signature verify
+// - **Related:** SITE-01
+// @end-capability
+
 // app/functions/auth/customAuthorizer.js
 // Custom Lambda authorizer that extracts JWT from X-Authorization header
 // and validates it against Cognito, similar to native JWT authorizer

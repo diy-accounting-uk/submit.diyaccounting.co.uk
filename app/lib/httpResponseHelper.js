@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-07 Format HTTP responses and errors
+// - **Use when:** a Lambda function needs a standard JSON response, or Express needs a JSON error page.
+// - **Does:** httpResponseHelper.js builds the Lambda-style response objects, such as http200OkResponse and http400BadRequestResponse, with correlation headers merged in. jsonErrorHandler.js is the Express error-handling middleware that turns an uncaught throw into a JSON 500 response instead of an HTML error page.
+// - **Run:** `import { http200OkResponse } from "app/lib/httpResponseHelper.js"`
+// - **Entry:** `app/lib/httpResponseHelper.js:http200OkResponse`; `app/lib/jsonErrorHandler.js:jsonErrorHandler`
+// - **Files:** app/lib/httpResponseHelper.js, app/lib/jsonErrorHandler.js, app/unit-tests/lib/jsonErrorHandler.test.js
+// - **Keywords:** http response helper, json error, correlation headers, error middleware, status codes
+// - **Related:** SITE-06
+// @end-capability
+
 // app/lib/httpResponseHelper.js
 
 import { v4 as uuidv4 } from "uuid";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-09 Track and poll async API requests
+// - **Use when:** an API call takes too long for a single Lambda response and the client must poll for a result.
+// - **Does:** dynamoDbAsyncRequestRepository.js stores async request state with a 1-hour TTL. asyncApiServices.js runs the processing and returns a 202 for a caller to poll. api-client.js attaches the Cognito token, retries once after a forced token refresh on a 401, and polls a 202 response with a backing-off delay until it resolves.
+// - **Run:** `import { initiateProcessing } from "app/services/asyncApiServices.js"`; `import { executeAsyncRequestPolling } from "web/public/lib/services/api-client.js"`
+// - **Entry:** `app/data/dynamoDbAsyncRequestRepository.js:putAsyncRequest`; `app/services/asyncApiServices.js:initiateProcessing`; `web/public/lib/services/api-client.js:executeAsyncRequestPolling`
+// - **Files:** app/data/dynamoDbAsyncRequestRepository.js, app/services/asyncApiServices.js, web/public/lib/services/api-client.js, app/unit-tests/data/dynamoDbAsyncRequestRepository.test.js, app/unit-tests/services/asyncApiServices.test.js, app/system-tests/asyncRequestPersistence.system.test.js, web/unit-tests/fetch-polling.test.js
+// - **Keywords:** async request, 202 accepted, polling, dynamodb ttl, queue processing, token refresh retry, 403 bundle message
+// - **Related:** SITE-06, SITE-07
+// @end-capability
+
 // app/data/dynamoDbAsyncRequestRepository.js
 
 import { createLogger } from "../lib/logger.js";

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-52 Pull the company's own diya-gl book into the lake
+// - **Use when:** DIY Accounting Limited's own P&L and balance sheet must land in the lake from its resident diya-gl book.
+// - **Does:** companyBookPull.js reads the book named by COMPANY_BOOK_ID under COMPANY_BOOK_OWNER_PREFIX straight off S3, with an IAM role scoped to that one book's prefix only, no user identity and no salt. It derives the seven FRS 105 balance-sheet lines through app/services/microEntityAccounts.js and writes one NDJSON line under curated/finance/. The job and its grant exist only when both values are configured; a malformed value fails synth.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/companyBookPull.js:handler`
+// - **Files:** app/functions/analytics/companyBookPull.js, app/unit-tests/analytics/companyBookPull.test.js, app/services/microEntityAccounts.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java
+// - **Keywords:** company book pull, diya-gl book, frs 105, balance sheet, micro-entity accounts, curated finance, company book id, company book owner prefix
+// - **Related:** DATA-09
+// @end-capability
+
 // app/functions/analytics/companyBookPull.js
 //
 // Nightly job that reads DIY Accounting Limited's own diya-gl book straight off S3

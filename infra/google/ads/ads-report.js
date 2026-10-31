@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-34 Report Google Ads campaign performance
+// - **Use when:** a task asks how Google Ads campaigns, ad groups or keywords are performing over a date range.
+// - **Does:** ads-report.js is a read-only performance report per campaign, ad group and keyword over a date range. It reports impressions, clicks, cost, average CPC, CTR, conversions and conversion value. The default range is 28 days ending yesterday.
+// - **Run:** `npm run ads:report`; `npm run ads:report -- --from 2026-08-26 --to 2026-09-22`; `npm run ads:report -- --from 2026-08-26 --to 2026-09-22 --json`
+// - **Entry:** `infra/google/ads/ads-report.js:main`
+// - **Files:** infra/google/ads/ads-report.js, app/unit-tests/scripts/adsReport.test.js
+// - **Keywords:** google ads report, cpc, ctr, conversions, conversion value, keyword performance, ad group performance
+// - **Related:** DATA-33, DATA-36
+// @end-capability
+
 // infra/google/ads/ads-report.js
 //
 // Read-only Google Ads performance report for the account named in infra/google/ads/ads.toml:

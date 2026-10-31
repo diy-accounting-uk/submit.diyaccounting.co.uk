@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-35 Verify third-party console configuration against declared state
+// - **Use when:** a third-party console's live configuration must be checked against the declared infra/** state.
+// - **Does:** infra-apply.yml runs one read-only check per provider: Companies House, HMRC, Stripe, PayPal and Telegram. Each check asserts live state against the file that provider's infra/** directory declares. Its github-sync step plans this repository's own GitHub settings from infra/github/github.toml, applied only by a person holding ADMIN_TOKEN.
+// - **Run:** `gh workflow run infra-apply.yml`
+// - **Entry:** `infra/github/github-sync.js:parseConfig`; `infra/telegram/telegram-assert.js:assertBot`
+// - **Files:** .github/workflows/infra-apply.yml, infra/github/github-sync.js, infra/github/github.toml, infra/telegram/telegram-assert.js, infra/telegram/telegram.toml, app/unit-tests/scripts/telegramAssert.test.js, app/unit-tests/scripts/githubSync.test.js
+// - **Keywords:** third-party console, infra-apply, companies house, hmrc, stripe, paypal, telegram, github settings, declared state
+// - **Related:** OPS-42
+// @end-capability
+
 // infra/github/github-sync.js
 //
 // Plans, then optionally applies, this repository's own GitHub settings against

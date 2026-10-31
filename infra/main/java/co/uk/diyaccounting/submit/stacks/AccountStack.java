@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-36 CDK: account stack
+// - **Use when:** tracing or changing the infrastructure behind bundle, pass, practice-client and capacity-reconcile endpoints.
+// - **Does:** The AccountStack.java construct wires the Lambdas behind bundle get, post and delete. It also wires the pass endpoints, the practice-client endpoints, the operator snapshot, and the bundle-capacity-reconcile schedule. It builds their API Gateway routes and DynamoDB table grants.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/AccountStackTest.java
+// - **Keywords:** cdk, account stack, api gateway, dynamodb grants, lambda wiring
+// - **Related:** BILL-01, BILL-06, BILL-12, BILL-05
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

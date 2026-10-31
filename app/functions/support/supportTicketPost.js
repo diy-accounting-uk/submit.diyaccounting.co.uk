@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-05 Submit support tickets
+// - **Use when:** a visitor needs to send a support request from the site.
+// - **Does:** supportTicketPost.js opens an issue in the private repository, labelled maintainer-review for the operator, using a GitHub App installation token limited to issues write. It caps each IP to 3 submissions per minute via the DynamoDB security-state table. It marks the issue unverified since anyone can post to it, and returns success only, with no issue link. support-api.js is the browser counterpart that calls the endpoint.
+// - **Run:** `POST /api/v1/support/ticket`
+// - **Entry:** `app/functions/support/supportTicketPost.js:ingestHandler`; `web/public/lib/support-api.js`
+// - **Files:** app/functions/support/supportTicketPost.js, web/public/lib/support-api.js, app/unit-tests/functions/supportTicketPost.test.js, app/unit-tests/supportIssueFormCategories.test.js
+// - **Keywords:** support ticket, github issue, github app, rate limit, unverified issue, help page form
+// - **Related:** SITE-13
+// @end-capability
+
 // app/functions/support/supportTicketPost.js
 //
 // POST /api/v1/support/ticket has no authorizer: anyone can file a ticket without signing in.

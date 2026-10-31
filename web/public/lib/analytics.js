@@ -1,6 +1,26 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-24 Load GA4 analytics on site pages
+// - **Use when:** a site page must load gtag.js with the correct measurement id, consent state and cross-domain linking.
+// - **Does:** web/public/lib/analytics.js loads gtag.js with the environment's measurement id read from /submit.env. It defaults consent to denied and reapplies a returning visitor's saved localStorage consent. It links the three diyaccounting.co.uk hosts as one cross-domain session and sets a visitor_kind property.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/public/lib/analytics.js:startGa4`
+// - **Files:** web/public/lib/analytics.js, web/unit-tests/analytics.test.js
+// - **Keywords:** gtag.js, ga4 measurement id, consent denied default, cross-domain session, visitor_kind property, submit.env
+// - **Related:** DATA-23, SS-31
+// @end-capability
+
+// @capability SITE-15 Show and persist cookie consent
+// - **Use when:** GA4 analytics consent must be gated behind a visible cookie-consent banner.
+// - **Does:** A consent banner with id consent-banner shows on first visit and gates GA4's analytics_storage consent, denied by default. The visitor's accept or decline choice persists across page loads. lib/analytics.js implements the consent calls; the browser test in this capability drives the real static site end to end against it.
+// - **Run:** `npm run test:browser`
+// - **Entry:** `web/public/lib/analytics.js`
+// - **Files:** web/browser-tests/cookieConsent.browser.test.js
+// - **Keywords:** cookie consent, consent banner, ga4, analytics_storage, consent mode, privacy banner
+// - **Related:** SITE-10, SS-31
+// @end-capability
+
 // Google Analytics 4 and Microsoft Advertising UET — Submit (submit.diyaccounting.co.uk)
 // The measurement id is per environment, not hardcoded: it comes from /submit.env's
 // GA4_MEASUREMENT_ID key, generated at deploy time (see web/public/submit.env). The UET tag id

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-14 Submit and manage UK property periodic updates
+// - **Use when:** quarterly or cumulative UK property rental income and expense updates must be filed or read.
+// - **Does:** Four Lambdas create, read, amend and list UK property periodic updates against HMRC's UK Property Business API. They share the dated/cumulative model split with the self-employment periods.
+// - **Run:** `POST /api/v1/hmrc/itsa/uk-property/period`; `GET /api/v1/hmrc/itsa/uk-property/period`; `PUT /api/v1/hmrc/itsa/uk-property/period`; `GET /api/v1/hmrc/itsa/uk-property/periods`
+// - **Entry:** `app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaUkPropertyPeriodPut.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js, app/functions/hmrc/hmrcItsaUkPropertyPeriodGet.js, app/functions/hmrc/hmrcItsaUkPropertyPeriodPut.js, app/functions/hmrc/hmrcItsaUkPropertyPeriodsGet.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodPost.test.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodPost.activity.test.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodGet.test.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodPut.test.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodPut.activity.test.js, app/unit-tests/functions/hmrcItsaUkPropertyPeriodsGet.test.js, web/public/hmrc/itsa/ukPropertyPeriod.html, web/public/hmrc/itsa/ukPropertyPeriodAmend.html, web/public/hmrc/itsa/ukPropertyPeriodView.html, web/public/hmrc/itsa/ukPropertyPeriods.html, behaviour-tests/itsaUkPropertyPeriod.behaviour.test.js
+// - **Keywords:** uk property period, rental income, cumulative model, dated quarters, itsa property, quarterly update
+// - **Related:** HMRC-12, HMRC-15
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js
 
 import { createLogger } from "../../lib/logger.js";
