@@ -31,6 +31,10 @@
     return consoleBase(region, "cloudwatch") + "#alarmsV2:?search=" + encodeURIComponent(alarmNamePrefix);
   }
 
+  function logsInsightsUrl(region, logGroupName) {
+    return consoleBase(region, "cloudwatch") + "#logsV2:logs-insights$3FqueryDetail$3D~(source~(~'" + encodeHashValue(logGroupName) + "))";
+  }
+
   function xrayUrl(region) {
     return consoleBase(region, "xray") + "#/service-map";
   }
@@ -85,6 +89,12 @@
         href: rumUrl(env.region, env.id + "-env-rum"),
       });
       operations.links.push({ label: "Alarms", account: env.account, env: env.id, href: alarmsUrl(env.region, env.id + "-") });
+      operations.links.push({
+        label: "Bedrock invocations in Logs Insights",
+        account: env.account,
+        env: env.id,
+        href: logsInsightsUrl(env.region, "/" + env.id + "/bedrock/invocations"),
+      });
       operations.links.push({ label: "X-Ray service map", account: env.account, env: env.id, href: xrayUrl(env.region) });
     });
     SIBLING_RUM.forEach((rum) => {

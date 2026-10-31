@@ -313,6 +313,83 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
         cfnOutput(this, "ApiAccessLogGroupArn", this.apiAccessLogGroup.getLogGroupArn());
 
+        // ------------------ Bedrock model invocation logging ------------------
+        // The setting is account-and-region wide and CloudFormation has no resource for it, so an
+        // AwsCustomResource calls PutModelInvocationLoggingConfiguration. Every Bedrock call runs
+        // in this region through the eu.anthropic.* inference profiles. Text, image and embedding
+        // bodies stay off because prompts carry support ticket summaries and alarm data; each log
+        // record keeps the caller's identity ARN, the model, the token counts and the request id.
+        String bedrockLogGroupName = "/%s/bedrock/invocations".formatted(props.envName());
+        LogGroup bedrockInvocationLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogGroup")
+                .logGroupName(bedrockLogGroupName)
+                .retention(RetentionDays.TWO_WEEKS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        Role bedrockInvocationLogRole = Role.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogRole")
+                .assumedBy(new ServicePrincipal("bedrock.amazonaws.com")
+                        .withConditions(Map.of(
+                                "StringEquals", Map.of("aws:SourceAccount", this.getAccount()),
+                                "ArnLike",
+                                        Map.of(
+                                                "aws:SourceArn",
+                                                "arn:aws:bedrock:%s:%s:*"
+                                                        .formatted(this.getRegion(), this.getAccount())))))
+                .build();
+        bedrockInvocationLogRole.addToPolicy(PolicyStatement.Builder.create()
+                .actions(List.of("logs:CreateLogStream", "logs:PutLogEvents"))
+                .resources(List.of(bedrockInvocationLogGroup.getLogGroupArn() + ":*"))
+                .build());
+        Map<String, Object> bedrockLoggingConfig = Map.of(
+                "cloudWatchConfig",
+                Map.of("logGroupName", bedrockLogGroupName, "roleArn", bedrockInvocationLogRole.getRoleArn()),
+                "textDataDeliveryEnabled",
+                false,
+                "imageDataDeliveryEnabled",
+                false,
+                "embeddingDataDeliveryEnabled",
+                false);
+        AwsCustomResource bedrockInvocationLogging = AwsCustomResource.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogging")
+                .onCreate(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("putModelInvocationLoggingConfiguration")
+                        .parameters(Map.of("loggingConfig", bedrockLoggingConfig))
+                        .physicalResourceId(PhysicalResourceId.of(bedrockLogGroupName))
+                        .build())
+                .onUpdate(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("putModelInvocationLoggingConfiguration")
+                        .parameters(Map.of("loggingConfig", bedrockLoggingConfig))
+                        .physicalResourceId(PhysicalResourceId.of(bedrockLogGroupName))
+                        .build())
+                .onDelete(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("deleteModelInvocationLoggingConfiguration")
+                        .build())
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
+                .build();
+        bedrockInvocationLogging.getNode().addDependency(bedrockInvocationLogGroup);
+        bedrockInvocationLogging.getNode().addDependency(bedrockInvocationLogRole);
+        bedrockInvocationLogging
+                .getNode()
+                .addDependency(KindCdk.grantToAwsCustomResourceProvider(
+                        this,
+                        List.of(
+                                PolicyStatement.Builder.create()
+                                        .actions(List.of(
+                                                "bedrock:PutModelInvocationLoggingConfiguration",
+                                                "bedrock:DeleteModelInvocationLoggingConfiguration"))
+                                        .resources(List.of("*"))
+                                        .build(),
+                                PolicyStatement.Builder.create()
+                                        .actions(List.of("iam:PassRole"))
+                                        .resources(List.of(bedrockInvocationLogRole.getRoleArn()))
+                                        .build())));
+        cfnOutput(this, "BedrockInvocationLogGroupArn", bedrockInvocationLogGroup.getLogGroupArn());
+
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
         // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
         CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(

@@ -619,6 +619,9 @@ test.describe("Operator Dashboard", () => {
     );
     await expect(first).toContainText("account submit-prod 972912397388");
     await expect(page.locator("#awsLinksGroups a", { hasText: "account submit-ci 367191799875" }).first()).toBeVisible();
+    const bedrock = page.locator("#awsLinksGroups a", { hasText: "Bedrock invocations in Logs Insights" });
+    await expect(bedrock).toHaveCount(2);
+    await expect(bedrock.first()).toHaveAttribute("href", /#logsV2:logs-insights.*\*2fprod\*2fbedrock\*2finvocations/);
     await expect(page.locator("#awsLinksGroups h3")).toHaveText([
       "Replaces the CloudWatch analytics dashboard",
       "Replaces the CloudWatch operations dashboard",

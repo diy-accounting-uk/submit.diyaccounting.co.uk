@@ -148,6 +148,7 @@ class SubmitEnvironmentCdkResourceTest {
                 Match.objectLike(Map.of("IsMultiRegionTrail", true, "IncludeGlobalServiceEvents", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
         assertApiAccessLogGroupKeepsTheConfiguredRetention(observability, appProps);
+        assertBedrockInvocationLoggingIsMetadataOnly(observability);
 
         // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack
         // manages the CIS v5.0.0 and AWS Foundational Security Best Practices subscriptions
@@ -355,6 +356,36 @@ class SubmitEnvironmentCdkResourceTest {
      * that every other ensured log group gets.
      */
     @SuppressWarnings("unchecked")
+    private static void assertBedrockInvocationLoggingIsMetadataOnly(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::Logs::LogGroup",
+                Match.objectLike(Map.of("LogGroupName", "/test/bedrock/invocations", "RetentionInDays", 14)));
+        var bedrockRoles = observability.findResources("AWS::IAM::Role").values().stream()
+                .map(resource -> String.valueOf(
+                        ((Map<String, Object>) resource.get("Properties")).get("AssumeRolePolicyDocument")))
+                .filter(document -> document.contains("bedrock.amazonaws.com"))
+                .toList();
+        assertEquals(1, bedrockRoles.size(), "expected one role Bedrock can assume");
+        assertTrue(bedrockRoles.get(0).contains("aws:SourceAccount"), "the role must be scoped to the account");
+        List<String> puts = observability.findResources("Custom::AWS").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(properties -> properties == null ? "" : String.valueOf(properties.get("Create")))
+                .filter(create -> create.contains("putModelInvocationLoggingConfiguration"))
+                .toList();
+        assertEquals(1, puts.size(), "expected one putModelInvocationLoggingConfiguration call");
+        for (String field :
+                List.of("textDataDeliveryEnabled", "imageDataDeliveryEnabled", "embeddingDataDeliveryEnabled")) {
+            assertTrue(puts.get(0).contains("\"" + field + "\":false"), field + " must stay off");
+        }
+        assertTrue(puts.get(0).contains("/test/bedrock/invocations"), "the call must name the log group");
+        assertTrue(
+                observability.findResources("Custom::AWS").values().stream()
+                        .map(resource ->
+                                String.valueOf(((Map<String, Object>) resource.get("Properties")).get("Delete")))
+                        .anyMatch(delete -> delete.contains("deleteModelInvocationLoggingConfiguration")),
+                "expected the logging configuration to be deleted with the stack");
+    }
+
     private static void assertApiAccessLogGroupKeepsTheConfiguredRetention(
             Template observability, SubmitEnvironment.SubmitEnvironmentProps appProps) {
         String configured = System.getenv("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS");
