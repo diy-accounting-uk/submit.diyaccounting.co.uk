@@ -424,6 +424,7 @@
     "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/lib-dynamodb": "^3.1045.0",
     "@axe-core/cli": "^4.11.3",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@vitest/coverage-v8": "5.0.5",
     "aws-cdk": "^2.1138.0",
