@@ -435,6 +435,21 @@ function goToHash() {
 // Start
 // ---------------------------------------------------------------------------------------------
 
+function renderAffiliates(data) {
+  const figures = data.affiliates;
+  for (const el of document.querySelectorAll("[data-aff]")) {
+    el.textContent = el.dataset.aff === "disclosure" ? data.disclosure : figures[el.dataset.aff].toLocaleString("en-GB");
+  }
+  for (const el of document.querySelectorAll("[data-aff-offer]")) el.textContent = data.offers.withPass;
+  for (const el of document.querySelectorAll("[data-aff-generate]")) el.href = data.generatePassUrl;
+  const apply = document.querySelector("[data-aff-apply]");
+  if (!figures.applyUrl) return;
+  const link = document.createElement("a");
+  link.href = figures.applyUrl;
+  link.textContent = "Apply to become an affiliate";
+  apply.replaceChildren(link);
+}
+
 async function start() {
   const main = byId("mainContent");
   let manifest = null;
@@ -446,6 +461,7 @@ async function start() {
     main.append(el("p", { class: "load-error", role: "alert", text: "The posts could not load. Reload the page." }));
     return;
   }
+  renderAffiliates(state.data);
   try {
     const response = await fetch("brand/shots/manifest.json");
     if (response.ok) manifest = await response.json();

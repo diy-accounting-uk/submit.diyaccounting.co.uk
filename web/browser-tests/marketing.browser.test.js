@@ -222,3 +222,14 @@ test("at 390 pixels wide the page does not scroll sideways", async ({ page, cont
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test("the affiliates section shows its figures from the data and no dead application link", async ({ page, context }) => {
+  await openPage(page, context);
+  const section = page.locator("#affiliates");
+  await expect(section.getByRole("heading", { name: "Become an affiliate" })).toBeVisible();
+  await expect(section).toContainText("30% of what a referred customer pays, for their first 12 months");
+  await expect(section).toContainText("Credit goes on your own subscription after 30 days");
+  await expect(section).toContainText("cash after 120 days");
+  await expect(section).toContainText("Applications are opening soon.");
+  await expect(section.locator("[data-aff-apply] a")).toHaveCount(0);
+});
