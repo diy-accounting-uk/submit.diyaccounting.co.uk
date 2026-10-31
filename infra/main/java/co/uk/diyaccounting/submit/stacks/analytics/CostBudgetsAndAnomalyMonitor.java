@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-16 Alert on cost budget and anomaly thresholds
+// - **Use when:** a new environment needs a monthly cost budget alarm or, in prod, anomaly detection.
+// - **Does:** CostBudgetsAndAnomalyMonitor.java provisions a monthly AWS Budget for the account. In prod only, it also provisions a Cost Anomaly Detection monitor. Both notify through SNS into the same Telegram-forwarder Lambda ActivityStack owns.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CostBudgetsAndAnomalyMonitor.java:CostBudgetsAndAnomalyMonitor`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CostBudgetsAndAnomalyMonitor.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/CostBudgetsAndAnomalyMonitorTest.java
+// - **Keywords:** aws budgets, cost anomaly detection, sns notification, telegram forwarder, monthly budget, cost alert
+// - **Related:** DATA-01, DATA-08, DATA-17
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.util.List;

@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-37 Check HTTPS certificate expiry
+# - **Use when:** checking whether a served domain's certificate is close to expiry.
+# - **Does:** certificate-check.yml checks ACM and Let's Encrypt certificates for the domains this repository serves, on a schedule. It alerts before a certificate expires.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/certificate-check.yml`
+# - **Files:** .github/workflows/certificate-check.yml
+# - **Keywords:** certificate expiry, acm, lets encrypt, https certificate, scheduled alert, tls cert check
+# - **Related:** OPS-45
+# @end-capability
+
 name: certificate-check
 run-name: "certificate check of ${{ github.ref_name }}"
 

@@ -6,6 +6,16 @@ description: Arm a background Monitor over this repository's GitHub CI, then act
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-31 Watch GitHub CI to green
+- **Use when:** the operator says watch the builds, keep it green, or hands over a branch to get through CI.
+- **Does:** watch arms a background Monitor over this repository's GitHub CI, using persistent mode. It acts on what the monitor reports until the whole scope is green. It never uses a foreground poll loop, and ends on evidence, not on elapsed time.
+- **Run:** `/watch`
+- **Entry:** `.claude/skills/watch/SKILL.md`
+- **Files:** .claude/skills/watch/SKILL.md
+- **Keywords:** watch, github ci, monitor tool, background poll, green build, ci failure react
+- **Related:** DEV-28, DEV-32, DEV-30
+@end-capability -->
+
 # watch
 
 This skill is a brief for one background monitor. Arm it, keep working, and act on the events it

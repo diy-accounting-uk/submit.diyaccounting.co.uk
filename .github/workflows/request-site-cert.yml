@@ -13,6 +13,7 @@ on:
         required: true
         options:
           - 'developer'
+          - 'marketing'
         default: 'developer'
       environment-name:
         type: choice

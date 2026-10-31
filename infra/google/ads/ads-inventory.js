@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-33 Read the Google Ads account inventory
+// - **Use when:** a plan or report needs a read-only snapshot of the live Google Ads account before acting.
+// - **Does:** ads-inventory.js is a read-only snapshot of the account named in ads.toml. It reads the customer record, conversion actions and goals, campaigns and asset groups. It also reads the GA4/Ads link, writing nothing; it is the shared layer ads-sync.js, ads-report.js and ads-forecast.js build on.
+// - **Run:** `npm run ads:inventory`
+// - **Entry:** `infra/google/ads/ads-inventory.js:main`
+// - **Files:** infra/google/ads/ads-inventory.js, app/unit-tests/scripts/adsInventory.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/ADS_MCP_EVALUATION.md
+// - **Keywords:** google ads inventory, read-only snapshot, conversion actions, asset groups, ga4 ads link, shared query layer
+// - **Related:** DATA-32, DATA-34, DATA-35
+// @end-capability
+
 // infra/google/ads/ads-inventory.js
 //
 // Read-only snapshot of the Google Ads account named in infra/google/ads/ads.toml: the customer

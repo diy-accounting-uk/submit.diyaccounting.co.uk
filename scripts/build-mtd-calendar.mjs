@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-22 Source and publish sourced tax facts
+// - **Use when:** a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+// - **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. build-rates-page.mjs renders web/public/rates.html (rate tables per tax year and financial year, each cell sourced) and the rates-data.js module, and copies five diya-gl tax modules into web/public/lib/diya-gl/tax/. rates-calculator.js and rates-compute.js run the tax, National Insurance, VAT, CIS and corporation tax calculator in the browser over those modules. The unit tests fail on an unsourced fact, a source older than 30 days, a committed page that differs from the render, or an engine figure that differs from its quoted gov.uk figure.
+// - **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npm run build:rates-page`; `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js web/unit-tests/ratesCompute.test.js`
+// - **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/tax-sources.mjs:quoteAppearsIn`; `scripts/build-rates-page.mjs:renderRatesPage`; `web/public/lib/rates/rates-compute.js:computeSelfEmployed`
+// - **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
+// - **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
+// - **Related:** SITE-10, SITE-12
+// @end-capability
+
 // Renders web/public/mtd-calendar.html from the tax-sources source files.
 // Usage: node scripts/build-mtd-calendar.mjs   (npm run build:mtd-calendar)
 // Every fact below needs at least one source file listing its id; the build throws otherwise.
@@ -300,6 +310,10 @@ function cellHtml([status, note]) {
   return escapeHtml(status) + (note ? ` <span class="calendar-date">${escapeHtml(note)}</span>` : "");
 }
 
+export function availabilityClass(status) {
+  return `avail-${status.replace(" ", "-")}`;
+}
+
 function availabilityHtml() {
   const rows = AVAILABILITY.map((row) => {
     const links = [
@@ -312,7 +326,7 @@ function availabilityHtml() {
     const mcp = row.cells[4][0] === "not offered" ? "" : ` <a href="mcp.html">MCP</a>`;
     return (
       `<tr><th scope="row">${escapeHtml(row.filing)}</th>` +
-      row.cells.map((c, i) => `<td data-label="${CHANNELS[i]}">${cellHtml(c)}</td>`).join("") +
+      row.cells.map((c, i) => `<td class="${availabilityClass(c[0])}" data-label="${CHANNELS[i]}">${cellHtml(c)}</td>`).join("") +
       `<td data-label="Docs and video">${links}${mcp ? "," + mcp : ""}</td></tr>`
     );
   }).join("");
@@ -320,7 +334,7 @@ function availabilityHtml() {
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
     `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
     `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-03 Delete a bundle
+// - **Use when:** one bundle must be removed from a user's allocation.
+// - **Does:** The bundleDelete.js ingestHandler removes one bundle from a user's allocation. It calls bundleManagement.js's updateUserBundles over the same async path bundlePost.js uses.
+// - **Run:** `DELETE /api/v1/bundle`; `DELETE /api/v1/bundle/:id`
+// - **Entry:** `app/functions/account/bundleDelete.js:ingestHandler`; `app/functions/account/bundleDelete.js:deleteUserBundle`
+// - **Files:** app/functions/account/bundleDelete.js, app/unit-tests/functions/bundleDelete.handler.test.js
+// - **Keywords:** bundle, delete bundle, remove bundle, unassign, updateUserBundles
+// - **Related:** BILL-01, BILL-04
+// @end-capability
+
 // app/functions/account/bundleDelete.js
 
 import { validateEnv } from "../../lib/env.js";

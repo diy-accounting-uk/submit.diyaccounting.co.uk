@@ -5,6 +5,16 @@ description: Write the session's report as REPORT_SESSION_SUBMIT_<id>_<date>.md 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-37 Write the session report
+- **Use when:** the operator asks for a session report, an account of the session, or how did this session do.
+- **Does:** session-report writes REPORT_SESSION_SUBMIT_<id>_<date>.md at the workspace root. It records what the session landed, what made it efficient, where it lost time or money, and ranked improvements. Every figure comes from git, job minutes, agent token counts, deploy runs and the transcript, never from memory.
+- **Run:** `/session-report`
+- **Entry:** `.claude/skills/session-report/SKILL.md`
+- **Files:** .claude/skills/session-report/SKILL.md
+- **Keywords:** session report, measured figures, job minutes, token counts, loss ranking, report_session file
+- **Related:** DEV-24
+@end-capability -->
+
 # session-report
 
 One file per session, in `../private.diyaccounting.co.uk/sessions/` (the private repository beside this one): `REPORT_SESSION_SUBMIT_<id>_<YYYY-MM-DD>.md`. It leads with the

@@ -29,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 50;
+    private static final int VIEW_COUNT = 51;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -44,12 +44,13 @@ class BusinessViewsTest {
                                 .build())
                         .build());
 
-        var resultsBucket = Bucket.fromBucketName(stack, "ResultsBucket", sharedNames.analyticsResultsBucketName);
+        var resultsBucket =
+                Bucket.fromBucketName(stack, "ResultsBucket", sharedNames.analytics.analyticsResultsBucketName);
 
         var props = BusinessViews.BusinessViewsProps.builder()
                 .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                .glueDatabaseName(sharedNames.glueDatabaseName)
-                .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                 .resultsBucket(resultsBucket)
                 .build();
 
@@ -130,6 +131,7 @@ class BusinessViewsTest {
                 "v_compliance_status",
                 "v_sign_ins_daily",
                 "v_paid_subscribers_by_channel",
+                "v_pass_performance",
                 "v_paid_landings_daily",
                 "v_ads_cost_daily",
                 "v_ads_cost_per_paid_landing_daily",
@@ -429,7 +431,8 @@ class BusinessViewsTest {
     void athenaAndGlueGrantsAreScopedToTheOneWorkgroupAndTheNamedTablesOnly() {
         Template template = synthBusinessViews();
         var sharedNames = SubmitSharedNames.forDocs();
-        var workGroupArn = "arn:aws:athena:eu-west-2:111111111111:workgroup/" + sharedNames.athenaWorkGroupName;
+        var workGroupArn =
+                "arn:aws:athena:eu-west-2:111111111111:workgroup/" + sharedNames.analytics.athenaWorkGroupName;
 
         var policies = template.findResources("AWS::IAM::Policy");
         assertTrue(!policies.isEmpty(), "expected at least one IAM policy");

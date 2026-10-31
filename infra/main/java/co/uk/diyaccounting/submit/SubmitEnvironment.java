@@ -49,6 +49,7 @@ public class SubmitEnvironment {
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
     public final StaticSiteStack developerSiteStack;
+    public final StaticSiteStack marketingSiteStack;
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
     public final EcrStack ue1EcrStack;
@@ -74,6 +75,8 @@ public class SubmitEnvironment {
         public String holdingCertificateArn;
         public String developerDocRootPath;
         public String developerCertificateArn;
+        public String marketingDocRootPath;
+        public String marketingCertificateArn;
         public String regionalCertificateArn;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
@@ -176,6 +179,12 @@ public class SubmitEnvironment {
                 "(from developerCertificateArn in cdk.json)");
         var developerDocRootPath = envOr(
                 "DEVELOPER_DOC_ROOT_PATH", appProps.developerDocRootPath, "(from developerDocRootPath in cdk.json)");
+        var marketingCertificateArn = envOr(
+                "MARKETING_CERTIFICATE_ARN",
+                appProps.marketingCertificateArn,
+                "(from marketingCertificateArn in cdk.json)");
+        var marketingDocRootPath = envOr(
+                "MARKETING_DOC_ROOT_PATH", appProps.marketingDocRootPath, "(from marketingDocRootPath in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
                 appProps.regionalCertificateArn,
@@ -570,6 +579,35 @@ public class SubmitEnvironment {
             warnf(
                     "Skipping DeveloperSiteStack synthesis: DEVELOPER_CERTIFICATE_ARN not set (issue it with request-site-cert.yml)");
             this.developerSiteStack = null;
+        }
+
+        // Create the marketing site: ci-marketing on ci, prod-marketing and marketing on prod
+        if (marketingCertificateArn != null
+                && !marketingCertificateArn.isBlank()
+                && !marketingCertificateArn.startsWith("(from")) {
+            var marketingStackId = "%s-env-MarketingSiteStack".formatted(envName);
+            infof("Synthesizing stack %s for environment %s", marketingStackId, envName);
+            this.marketingSiteStack = new StaticSiteStack(
+                    app,
+                    marketingStackId,
+                    StaticSiteStack.StaticSiteStackProps.builder()
+                            .env(usEast1Env)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .siteName("marketing")
+                            .domainNames(
+                                    "prod".equals(envName)
+                                            ? List.of(
+                                                    "prod-marketing." + appProps.hostedZoneName,
+                                                    "marketing." + appProps.hostedZoneName)
+                                            : List.of(envName + "-marketing." + appProps.hostedZoneName))
+                            .certificateArn(marketingCertificateArn)
+                            .docRootPath(marketingDocRootPath)
+                            .build());
+        } else {
+            warnf(
+                    "Skipping MarketingSiteStack synthesis: MARKETING_CERTIFICATE_ARN not set (issue it with request-site-cert.yml)");
+            this.marketingSiteStack = null;
         }
 
         // Create BillingWebhookStack for always-available Stripe webhook endpoint

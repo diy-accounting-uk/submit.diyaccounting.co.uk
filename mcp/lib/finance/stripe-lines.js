@@ -1,6 +1,26 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-51 Turn staged Stripe activity into diya-gl lines
+// - **Use when:** staged Stripe transactions or payouts must become validated diya-gl bookkeeping lines.
+// - **Does:** stripe-lines.js turns staged Stripe transactions into diya-gl lines, posting each charge's gross and fee separately. stripePayoutLines turns payouts into bank lines dated to arrival_date. reconcileStripeMonth checks that charges minus fees minus refunds equal payouts plus balance change.
+// - **Run:** `import { stripeLinesFromTransactions, stripePayoutLines, reconcileStripeMonth } from "mcp/lib/finance/stripe-lines.js"`
+// - **Entry:** `mcp/lib/finance/stripe-lines.js:stripeLinesFromTransactions`; `mcp/lib/finance/stripe-lines.js:stripePayoutLines`; `mcp/lib/finance/stripe-lines.js:reconcileStripeMonth`
+// - **Files:** mcp/lib/finance/stripe-lines.js, mcp/test/stripe-lines.test.js
+// - **Keywords:** diya-gl lines, stripe gross fee split, credit note, bank line, arrival_date, stripe reconciliation, validateLines
+// - **Related:** DATA-49
+// @end-capability
+
+// @capability MCP-13 Import Stripe transaction and payout lines
+// - **Use when:** staged Stripe balance transactions and payouts must become validated diya-gl sales, purchases and bank lines.
+// - **Does:** stripeLinesFromTransactions in mcp/lib/finance/stripe-lines.js posts a charge's gross to sales, its fee to purchases, and refunds as credit notes. stripePayoutLines posts each payout as a bank line dated to its arrival date. reconcileStripeMonth checks a staged month's charges, fees, refunds and payouts balance.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/finance/stripe-lines.js:stripeLinesFromTransactions`; `mcp/lib/finance/stripe-lines.js:stripePayoutLines`; `mcp/lib/finance/stripe-lines.js:reconcileStripeMonth`
+// - **Files:** mcp/lib/finance/stripe-lines.js, mcp/test/stripe-lines.test.js
+// - **Keywords:** stripe import, balance transactions, payouts, diya-gl lines, reconcile stripe, sales fee split
+// - **Related:** MCP-10, MCP-12
+// @end-capability
+
 // stripe-lines.js -- staged Stripe balance transactions and payouts turned
 // into validated diya-gl lines. A charge's gross amount and its Stripe fee
 // are never netted: the gross posts to sales, the fee posts to purchases,

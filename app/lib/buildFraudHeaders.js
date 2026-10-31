@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-25 Build HMRC fraud-prevention headers
+// - **Use when:** a call to any HMRC API needs Gov-Client or Gov-Vendor fraud-prevention headers.
+// - **Does:** buildFraudHeaders.js constructs the Gov-Client and Gov-Vendor headers HMRC's fraud-prevention spec requires. It detects the vendor's public IP via checkip.amazonaws.com and caches it per Lambda cold start.
+// - **Run:** `import { buildFraudHeaders } from "app/lib/buildFraudHeaders.js"`
+// - **Entry:** `app/lib/buildFraudHeaders.js:buildFraudHeaders`
+// - **Files:** app/lib/buildFraudHeaders.js, app/unit-tests/lib/buildFraudHeaders.test.js
+// - **Keywords:** fraud prevention headers, gov-client, gov-vendor, device id, vendor ip, checkip
+// - **Related:** HMRC-26, HMRC-29
+// @end-capability
+
 // app/lib/buildFraudHeaders.js
 
 import { createLogger } from "./logger.js";

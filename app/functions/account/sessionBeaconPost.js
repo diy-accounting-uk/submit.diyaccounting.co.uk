@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-04 Track visits via session beacon
+// - **Use when:** the site needs to record a visit or logout as an activity event, filtered for crawlers.
+// - **Does:** sessionBeaconPost.js classifies the visitor as human, crawler or AI agent from the user agent. It publishes a new-session or logout activity event and drops crawler traffic. session-beacon.js fires the session-start beacon once per browser session. auth-status.js sends the logout beacon.
+// - **Run:** `POST /api/v1/session/beacon`
+// - **Entry:** `app/functions/account/sessionBeaconPost.js:ingestHandler`; `web/public/lib/session-beacon.js`
+// - **Files:** app/functions/account/sessionBeaconPost.js, web/public/lib/session-beacon.js, app/unit-tests/functions/sessionBeaconPost.test.js
+// - **Keywords:** session beacon, visitor classification, crawler, ai agent, activity event, analytics event, logout beacon
+// - **Related:** SITE-01, SITE-03
+// @end-capability
+
 // app/functions/account/sessionBeaconPost.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-43 Read the Google Cloud and GA4 inventory
+// - **Use when:** a toml file or a script's plan must be checked against the live Google Cloud/GA4 state before acting.
+// - **Does:** google-inventory.js is a read-only snapshot of the GA4 project's enabled services, IAM policy and budgets. It reads every GA4 account and property, its streams, key events and BigQuery links. It also reads the service account's keys, the project's IAP brand, and BigQuery transfer configs.
+// - **Run:** `npm run google:inventory`
+// - **Entry:** `infra/google/gcp/google-inventory.js:main`
+// - **Files:** infra/google/gcp/google-inventory.js, app/unit-tests/scripts/googleInventory.test.js
+// - **Keywords:** google cloud inventory, ga4 inventory, iam policy snapshot, billing budgets, iap brand, bigquery datasets, read-only check
+// - **Related:** DATA-38, DATA-41
+// @end-capability
+
 // infra/google/gcp/google-inventory.js
 //
 // Read-only snapshot of everything this repo's Google footprint touches: the enabled

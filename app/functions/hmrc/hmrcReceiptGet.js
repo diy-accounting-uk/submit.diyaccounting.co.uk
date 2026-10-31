@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-22 Store and retrieve HMRC submission receipts
+// - **Use when:** a customer's stored VAT or ITSA receipt must be listed or fetched.
+// - **Does:** hmrcReceiptGet.js's ingestHandler lists or fetches receipts by name or key. dynamoDbReceiptRepository.js's get, scan and put back it with DynamoDB; receipts.html is the customer page.
+// - **Run:** `GET /api/v1/hmrc/receipt`; `GET /api/v1/hmrc/receipt/:name`
+// - **Entry:** `app/functions/hmrc/hmrcReceiptGet.js:ingestHandler`; `app/data/dynamoDbReceiptRepository.js:getReceipt`; `app/data/dynamoDbReceiptRepository.js:putReceipt`
+// - **Files:** app/functions/hmrc/hmrcReceiptGet.js, app/unit-tests/functions/hmrcReceiptGet.test.js, app/data/dynamoDbReceiptRepository.js, app/unit-tests/data/dynamoDbReceiptRepository.test.js, app/system-tests/dynamoDbReceiptStore.system.test.js, web/public/hmrc/receipt/receipts.html, behaviour-tests/steps/behaviour-hmrc-receipts-steps.js
+// - **Keywords:** hmrc receipt, vat receipt, itsa receipt, dynamodb receipt, receipts page
+// - **Related:** HMRC-01, HMRC-21
+// @end-capability
+
 // app/functions/hmrc/hmrcReceiptGet.js
 
 import { createLogger } from "../../lib/logger.js";

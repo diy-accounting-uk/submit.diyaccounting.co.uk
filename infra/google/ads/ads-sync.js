@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-32 Sync the Google Ads account
+// - **Use when:** ads.toml's declared tagging, goals, campaigns or bidding strategy must be applied to the live account.
+// - **Does:** ads-sync.js diffs ads.toml's declared tagging, goals and campaign settings against the live Google Ads account. It applies the difference with --apply. A missing Search campaign and a missing [upload] conversion action are created outright; it never creates the GA4 conversion actions, goals or Performance Max campaigns.
+// - **Run:** `npm run ads:sync`; `npm run ads:sync -- --apply`
+// - **Entry:** `infra/google/ads/ads-sync.js:main`; `infra/google/ads/ads-sync.js:planAds`
+// - **Files:** infra/google/ads/ads-sync.js, app/unit-tests/scripts/adsSync.test.js, infra/google/ads/ads.toml
+// - **Keywords:** google ads sync, campaign bidding, auto-tagging, conversion goal, search campaign create, ads.toml, plan apply
+// - **Related:** DATA-33, DATA-42
+// @end-capability
+
 // infra/google/ads/ads-sync.js
 //
 // Plans (and, with --apply, makes) the Google Ads account match infra/google/ads/ads.toml's

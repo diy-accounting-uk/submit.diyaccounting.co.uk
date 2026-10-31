@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-08 Bootstrap the app server
+// - **Use when:** running the site locally against a full Express server instead of deployed Lambdas.
+// - **Does:** app/bin/server.js is the Express dev and local server. It registers every Lambda-style endpoint through the adaptor, serves HTTPS locally, sets the CSP header, and wires mock OAuth and billing routes when real Cognito or Stripe are unavailable.
+// - **Run:** `npm run start`; `npm run start:simulator`
+// - **Entry:** `app/bin/server.js`
+// - **Files:** app/index.js, app/bin/server.js, app/bin/main.js, app/unit-tests/bin/server.test.js, app/unit-tests/main.test.js
+// - **Keywords:** express server, local dev server, https local, csp header, mock oauth, mock billing
+// - **Related:** SITE-06
+// @end-capability
+
 // app/bin/server.js
 
 import path from "path";
@@ -109,6 +119,7 @@ import { apiEndpoint as companiesHousePscVerificationStatementGetApiEndpoint } f
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
+import { apiEndpoint as passReleasePostApiEndpoint } from "../functions/account/passReleasePost.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
@@ -410,6 +421,7 @@ companiesHousePscVerificationStatementGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
+passReleasePostApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);

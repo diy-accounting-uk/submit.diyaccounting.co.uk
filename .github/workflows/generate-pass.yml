@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability BILL-11 Generate admin passes from CLI or workflow
+# - **Use when:** an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
+# - **Does:** The generate-pass.yml workflow reads a pass type's defaults from submit.passes.toml and runs scripts/generate-pass-with-qr.js. That script creates passes with QR codes and can provision an HMRC sandbox or Cognito test user. scripts/generate-pass.js is the local CLI equivalent with no QR output.
+# - **Run:** `gh workflow run generate-pass.yml -f pass-type=<type> -f environment=<ci|prod>`; `node scripts/generate-pass.js <pass-type> <environment> [--email E] [--max-uses N] [--validity-period P7D] [--quantity N] [--notes T]`; `node scripts/generate-pass-with-qr.js`
+# - **Entry:** `.github/workflows/generate-pass.yml`; `scripts/generate-pass.js`; `scripts/generate-pass-with-qr.js`
+# - **Files:** .github/workflows/generate-pass.yml, scripts/generate-pass.js, scripts/generate-pass-with-qr.js
+# - **Keywords:** pass, generate pass, workflow_dispatch, qr code, cli, operator, hmrc sandbox user, cognito test user
+# - **Related:** BILL-06, BILL-07
+# @end-capability
+
 name: Generate Pass
 run-name: "generate ${{ inputs.pass-type || 'day-guest-test-pass' }} pass for ${{ inputs.environment || inputs.environment-name || 'ci' }}"
 

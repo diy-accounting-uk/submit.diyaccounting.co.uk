@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-32 Register and verify HMRC Developer Hub application config
+// - **Use when:** the sandbox or production HMRC Developer Hub app's API subscriptions must be checked.
+// - **Does:** hmrc.toml declares the sandbox and production HMRC Developer Hub applications as code: client ids, hosts, redirect URIs and API subscriptions. hmrc-assert.js probes each subscription and treats a 403 RESOURCE_FORBIDDEN as a build failure.
+// - **Run:** `node infra/hmrc/hmrc-assert.js --environment ci`; `node infra/hmrc/hmrc-assert.js --environment prod`
+// - **Entry:** `infra/hmrc/hmrc-assert.js:main`; `infra/hmrc/hmrc.toml`
+// - **Files:** infra/hmrc/hmrc.toml, infra/hmrc/hmrc-assert.js, app/unit-tests/scripts/hmrcAssert.test.js
+// - **Keywords:** hmrc developer hub, api subscriptions, client id, redirect uri, resource_forbidden, hmrc.toml
+// - **Related:** HMRC-33, HMRC-23
+// @end-capability
+
 /**
  *
  * Assert infra/hmrc/hmrc.toml's API subscriptions against live HMRC state. A subscription

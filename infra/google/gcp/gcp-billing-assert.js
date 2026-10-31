@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-41 Assert GCP billing budget and stray project
+// - **Use when:** the GA4 billing account's budget alert thresholds must be checked, or a stray auto-created project verified empty.
+// - **Does:** gcp-billing-assert.js finds or creates a budget on the billing account holding diyaccounting-ga4. It uses the alert thresholds in project.toml, reusing any existing hand-created budget rather than duplicating it. It also checks that the auto-created stray project valued-context-507200-m9 is empty before it is deleted.
+// - **Run:** `node infra/google/gcp/gcp-billing-assert.js`; `node infra/google/gcp/gcp-billing-assert.js --apply`
+// - **Entry:** `infra/google/gcp/gcp-billing-assert.js:main`
+// - **Files:** infra/google/gcp/gcp-billing-assert.js, app/unit-tests/scripts/gcp-billing-assert.test.js
+// - **Keywords:** gcp billing budget, alert thresholds, stray project, billing account, budget dedupe, project.toml
+// - **Related:** DATA-16, DATA-40
+// @end-capability
+
 /**
  *
  * Assert two GCP billing housekeeping facts as code: a budget carrying the alert thresholds

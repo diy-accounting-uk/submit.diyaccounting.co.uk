@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-12 Prove the client status-stack and fetch/auth
+// - **Use when:** a change touches the status-stack state machine, core fetch/auth logic.
+// - **Does:** Playwright component and DOM tests exercise the status-stack state machine and the core fetch and auth logic. They also cover the test-data-link page. ITSA business-details and VAT-obligations page tests live with HMRC filing, not here.
+// - **Run:** `npx playwright test web/browser-tests/chromium.client.status-stack.test.js`; `npx playwright test web/browser-tests/chromium.client.test.js`
+// - **Entry:** `web/browser-tests/chromium.client.status-stack.test.js`; `web/browser-tests/chromium.client.test.js`
+// - **Files:** web/browser-tests/chromium.client.status-stack.test.js, web/browser-tests/chromium.client.test.js, web/browser-tests/test-data-link.browser.test.js
+// - **Keywords:** status stack, browser test, client fetch, auth logic, test-data-link, playwright component test
+// - **Related:** DEV-25
+// @end-capability
+
 // web/browser-tests/chromium.client.status-stack.test.js
 
 import { test, expect, chromium } from "@playwright/test";

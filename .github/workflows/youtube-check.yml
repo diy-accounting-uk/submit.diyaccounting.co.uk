@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-53 Verify YouTube channel consistency weekly
+# - **Use when:** checking whether the stored YouTube credentials or channel state have gone stale.
+# - **Does:** youtube-check.yml checks weekly that the stored YouTube refresh token and channel state are still valid. It runs as github-actions[bot].
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/youtube-check.yml`
+# - **Files:** .github/workflows/youtube-check.yml
+# - **Keywords:** youtube check, refresh token, channel state, weekly verification, youtube-check.yml
+# @end-capability
+
 name: youtube check
 run-name: "youtube check from ${{ github.ref_name }}"
 

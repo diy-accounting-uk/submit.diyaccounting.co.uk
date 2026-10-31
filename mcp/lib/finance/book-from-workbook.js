@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-11 Seed a book from a workbook set
+// - **Use when:** a finished trading year's Company package workbooks must seed a new book.toml for the following year.
+// - **Does:** bookFromWorkbookSet in mcp/lib/finance/book-from-workbook.js reads a complete Company package through the diya-gl engine's own extractors. The package is Financialaccounts.xlsx, Fixedassets.xlsx, Companysecretary.xlsx and the Sales, Purchases and bank workbooks. It validates the result against the published v2 book schema.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/finance/book-from-workbook.js:bookFromWorkbookSet`; `mcp/lib/finance/book-from-workbook.js:toToml`
+// - **Files:** mcp/lib/finance/book-from-workbook.js, mcp/test/book-from-workbook.test.js
+// - **Keywords:** book from workbook, seed book.toml, company package, workbook set, opening balances, fixed asset register, book schema
+// - **Related:** MCP-03, MCP-10
+// @end-capability
+
 // book-from-workbook.js -- seeds a diya-gl book.toml (entity information,
 // chart of accounts, opening balances, debtors, creditors, fixed assets,
 // dividends and members) from a complete Company package's workbook set:

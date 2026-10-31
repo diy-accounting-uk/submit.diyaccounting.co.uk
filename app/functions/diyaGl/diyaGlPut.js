@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-17 Upload a diya-gl book
+// - **Use when:** a ledger package must be validated and stored as a versioned diya-gl book.
+// - **Does:** The diyaGlPut.js ingestHandler validates a ledger package's product id and provenance fields. It uses zipMembers.js's isDiyaGlPackage to check the upload is a well-formed zip carrying the expected members. It checks the caller's retention entitlement, then writes the book and metadata to S3 with versioning.
+// - **Run:** `PUT /api/v1/diya-gl/books/:bookId`
+// - **Entry:** `app/functions/diyaGl/diyaGlPut.js:ingestHandler`; `app/lib/zipMembers.js:isDiyaGlPackage`
+// - **Files:** app/functions/diyaGl/diyaGlPut.js, app/unit-tests/functions/diyaGlPut.test.js, app/lib/zipMembers.js, app/unit-tests/lib/zipMembers.test.js, app/lib/diyaGlCors.js, app/unit-tests/functions/diyaGlCorsHeaders.test.js
+// - **Keywords:** diya-gl, ledger book, upload book, zip package, isDiyaGlPackage, versioning, retention
+// - **Related:** BILL-18, BILL-22, BILL-23, SS-27
+// @end-capability
+
 // app/functions/diyaGl/diyaGlPut.js
 
 import { createLogger } from "../../lib/logger.js";

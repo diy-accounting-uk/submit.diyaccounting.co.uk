@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-15 Catalogue workflow, probe and agent run data
+// - **Use when:** a new DORA, probe or agent-run view must read GitHub Actions data the dora-row action writes.
+// - **Does:** WorkflowRunTables.java provisions three Glue tables over data the dora-row composite action writes from GitHub Actions. dora_runs holds every deploy or destroy run; probe_runs holds every probe suite in probe-test.yml. agent_runs holds every unattended agent workflow run, each table with dt partition projection.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/WorkflowRunTables.java:WorkflowRunTables`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/WorkflowRunTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/WorkflowRunTablesTest.java
+// - **Keywords:** dora runs, probe runs, agent runs, dora-row action, dt partition projection, deploy destroy run, unattended agent workflow
+// - **Related:** DATA-32
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.util.LinkedHashMap;

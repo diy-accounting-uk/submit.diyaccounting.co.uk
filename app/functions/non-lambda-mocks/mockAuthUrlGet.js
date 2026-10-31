@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-07 Simulate the public demo's billing and OAuth
+// - **Use when:** the public demo app needs a mock OAuth authorize URL, a mock token exchange, or fake Stripe billing.
+// - **Does:** mockAuthUrlGet.js builds a mock OAuth authorize URL at GET /api/v1/mock/authUrl. mockTokenPost.js proxies POST /api/v1/mock/token to the mock server's token endpoint to avoid browser CORS and PNA restrictions. mockBilling.js fakes Stripe checkout, checkout-session lookup and the billing portal, auto-granting a bundle when Stripe is unconfigured.
+// - **Run:** `import { apiEndpoint, ingestHandler } from "app/functions/non-lambda-mocks/mockAuthUrlGet.js"`; `import { apiEndpoint } from "app/functions/non-lambda-mocks/mockTokenPost.js"`; `import { apiEndpoint } from "app/functions/non-lambda-mocks/mockBilling.js"`
+// - **Entry:** `app/functions/non-lambda-mocks/mockAuthUrlGet.js:ingestHandler`; `app/functions/non-lambda-mocks/mockTokenPost.js:apiEndpoint`; `app/functions/non-lambda-mocks/mockBilling.js:apiEndpoint`
+// - **Files:** app/functions/non-lambda-mocks/mockAuthUrlGet.js, app/functions/non-lambda-mocks/mockTokenPost.js, app/functions/non-lambda-mocks/mockBilling.js
+// - **Keywords:** public demo, mock billing, mock stripe, mock oauth, cors, pna, bundle auto-grant, non-lambda mocks
+// @end-capability
+
 // app/functions/non-lambda-mocks/mockAuthUrlGet.js
 
 import { createLogger } from "../../lib/logger.js";

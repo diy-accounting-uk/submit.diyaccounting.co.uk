@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-51 Crawl the deployed site blind every Sunday
+// - **Use when:** you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
+// - **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
+// - **Run:** `gh workflow run test.yml --ref main -f runExploratoryCrawl=true`; locally `node scripts/exploratory-crawl.mjs --lane simulator --base-url http://localhost:3000 --roles visitor --viewports desktop --themes light`
+// - **Entry:** `scripts/exploratory-crawl.mjs`
+// - **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
+// - **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
+// - **Related:** DEV-46, DEV-49, DEV-50
+// @end-capability
+
 // scripts/exploratory-crawl.mjs
 //
 // A blind crawl of the site. It follows every same-origin link and submits every form empty, as

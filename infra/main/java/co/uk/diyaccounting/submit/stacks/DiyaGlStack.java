@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-39 CDK: diya-gl stack
+// - **Use when:** tracing or changing the infrastructure behind diya-gl endpoints.
+// - **Does:** The DiyaGlStack.java construct wires the diya-gl list, version, put and delete Lambdas. It also wires the practice client book-move Lambda. It grants their S3 bucket and DynamoDB access. The bucket's expire-sandbox lifecycle rule, in DataStack.java, expires sandbox books.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/DiyaGlStackTest.java
+// - **Keywords:** cdk, diya-gl stack, s3 bucket grant, book-move lambda, expire-sandbox lifecycle
+// - **Related:** BILL-15, BILL-17, BILL-21, BILL-23, SS-27
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -113,7 +125,7 @@ public class DiyaGlStack extends Stack {
         ITable bundlesTable = Table.fromTableName(
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlesTableName);
+                props.sharedNames().data.bundlesTableName);
 
         // Lookup existing DynamoDB Practice Clients Table: every books route here takes an
         // optional clientId and checks it belongs to the caller via getClient before resolving
@@ -121,7 +133,7 @@ public class DiyaGlStack extends Stack {
         ITable practiceClientsTable = Table.fromTableName(
                 this,
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().practiceClientsTableName);
+                props.sharedNames().data.practiceClientsTableName);
 
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
@@ -149,21 +161,21 @@ public class DiyaGlStack extends Stack {
         var diyaGlListGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().diyaGlListGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().diyaGl.diyaGlListGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().diyaGlListGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().diyaGlListGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().diyaGlListGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().diyaGl.diyaGlListGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.diyaGlListGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.diyaGlListGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().diyaGlListGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().diyaGl.diyaGlListGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().diyaGlListGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().diyaGlListGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().diyaGlListGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().diyaGlListGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().diyaGl.diyaGlListGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.diyaGlListGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.diyaGlListGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.diyaGlListGetLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
                         .environment(entitlementReadEnv)
@@ -172,8 +184,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlListGetLambda = diyaGlListGetApiLambda.ingestLambda;
         this.diyaGlListGetLambdaLogGroup = diyaGlListGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlListGetLambdaProps);
-        this.lambdaFunctionProps.add(
-                onSecondPublishedPath(this.diyaGlListGetLambdaProps, props.sharedNames().diyaGlListGetBooksUrlPath));
+        this.lambdaFunctionProps.add(onSecondPublishedPath(
+                this.diyaGlListGetLambdaProps, props.sharedNames().diyaGl.diyaGlListGetBooksUrlPath));
         this.diyaGlListGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -199,21 +211,21 @@ public class DiyaGlStack extends Stack {
         var diyaGlVersionGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().diyaGlVersionGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().diyaGl.diyaGlVersionGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().diyaGlVersionGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().diyaGlVersionGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().diyaGlVersionGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().diyaGl.diyaGlVersionGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.diyaGlVersionGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.diyaGlVersionGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().diyaGlVersionGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().diyaGl.diyaGlVersionGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().diyaGlVersionGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().diyaGlVersionGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().diyaGlVersionGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().diyaGlVersionGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().diyaGl.diyaGlVersionGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.diyaGlVersionGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.diyaGlVersionGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.diyaGlVersionGetLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
                         .environment(commonEnv)
@@ -223,7 +235,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlVersionGetLambdaLogGroup = diyaGlVersionGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlVersionGetLambdaProps);
         this.lambdaFunctionProps.add(onSecondPublishedPath(
-                this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetBooksUrlPath));
+                this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGl.diyaGlVersionGetBooksUrlPath));
         this.diyaGlVersionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
@@ -255,21 +267,21 @@ public class DiyaGlStack extends Stack {
         var diyaGlPutApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().diyaGlPutIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().diyaGl.diyaGlPutIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().diyaGlPutIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().diyaGlPutIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().diyaGlPutIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().diyaGl.diyaGlPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.diyaGlPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.diyaGlPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().diyaGlPutIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().diyaGl.diyaGlPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().diyaGlPutLambdaHttpMethod)
-                        .urlPath(props.sharedNames().diyaGlPutLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().diyaGlPutLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().diyaGlPutLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().diyaGl.diyaGlPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.diyaGlPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.diyaGlPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.diyaGlPutLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
                         .environment(diyaGlPutLambdaEnv)
@@ -279,7 +291,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlPutLambdaLogGroup = diyaGlPutApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlPutLambdaProps);
         this.lambdaFunctionProps.add(
-                onSecondPublishedPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGlPutBooksUrlPath));
+                onSecondPublishedPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGl.diyaGlPutBooksUrlPath));
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:PutObjectTagging"))
@@ -304,21 +316,21 @@ public class DiyaGlStack extends Stack {
         var diyaGlDeleteApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().diyaGlDeleteIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().diyaGl.diyaGlDeleteIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().diyaGlDeleteIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().diyaGlDeleteIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().diyaGlDeleteIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().diyaGl.diyaGlDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.diyaGlDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.diyaGlDeleteIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().diyaGlDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().diyaGl.diyaGlDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().diyaGlDeleteLambdaHttpMethod)
-                        .urlPath(props.sharedNames().diyaGlDeleteLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().diyaGlDeleteLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().diyaGlDeleteLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().diyaGl.diyaGlDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.diyaGlDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.diyaGlDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.diyaGlDeleteLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
                         .environment(commonEnv)
@@ -327,8 +339,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlDeleteLambda = diyaGlDeleteApiLambda.ingestLambda;
         this.diyaGlDeleteLambdaLogGroup = diyaGlDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlDeleteLambdaProps);
-        this.lambdaFunctionProps.add(
-                onSecondPublishedPath(this.diyaGlDeleteLambdaProps, props.sharedNames().diyaGlDeleteBooksUrlPath));
+        this.lambdaFunctionProps.add(onSecondPublishedPath(
+                this.diyaGlDeleteLambdaProps, props.sharedNames().diyaGl.diyaGlDeleteBooksUrlPath));
         this.diyaGlDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -355,21 +367,23 @@ public class DiyaGlStack extends Stack {
         var practiceClientBookMovePostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientBookMovePostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().diyaGl.practiceClientBookMovePostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientBookMovePostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().practiceClientBookMovePostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientBookMovePostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().diyaGl.practiceClientBookMovePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.practiceClientBookMovePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.practiceClientBookMovePostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .diyaGl
                                 .practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientBookMovePostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientBookMovePostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().diyaGl.practiceClientBookMovePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.practiceClientBookMovePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.practiceClientBookMovePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.practiceClientBookMovePostLambdaCustomAuthorizer)
                         .environment(new PopulatedMap<String, String>(commonEnv)
                                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName()))
                         .build());

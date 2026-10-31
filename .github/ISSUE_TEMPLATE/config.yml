@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-56 Structure GitHub issues, PRs and funding links
+# - **Use when:** opening a PR needs the repository's standard structured template, or the issue chooser needs its contact link.
+# - **Does:** The issue chooser config turns off blank issues and links to the help page. The PR template captures origin, human or agent or machine or external, a summary, and issue-closing checkboxes. FUNDING.yml lists the GitHub Sponsors and PayPal donation links shown on the repository sidebar.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/ISSUE_TEMPLATE/config.yml`; `.github/PULL_REQUEST_TEMPLATE.md`
+# - **Files:** .github/FUNDING.yml, .github/ISSUE_TEMPLATE/config.yml, .github/PULL_REQUEST_TEMPLATE.md
+# - **Keywords:** issue template, pr template, funding links, origin label, issue chooser
+# @end-capability
+
 blank_issues_enabled: false
 contact_links:
   - name: Get help with DIY Accounting Submit

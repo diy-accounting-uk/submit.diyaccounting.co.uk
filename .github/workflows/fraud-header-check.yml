@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-47 Check fraud-prevention header record freshness
+# - **Use when:** checking whether this month's fraud-prevention-header compliance record has landed.
+# - **Does:** fraud-header-check.yml checks that the current month's HMRC fraud-prevention-header compliance record has landed on the branch. A laptop-only launchd agent writes that record from the private mail mirror. GitHub Actions cannot reach that mirror, so this workflow turns a silent local failure into a red CI run.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/fraud-header-check.yml`
+# - **Files:** .github/workflows/fraud-header-check.yml
+# - **Keywords:** fraud prevention header, hmrc compliance record, launchd agent, monthly record, silent local failure
+# - **Related:** OPS-40
+# @end-capability
+
 name: fraud-header-check
 run-name: "Fraud prevention header record freshness check"
 

@@ -6,6 +6,16 @@ description: Slow the flow of new work and settle what is already in flight, the
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-35 Cool down an overloaded batch
+- **Use when:** the operator says cool down, or a batch is stacking problems faster than it lands them.
+- **Does:** cool-down is a mode, not a one-shot pass, that stays on until the operator lifts it. It slows new work while settling what is in flight, driving PRs and workflows green one branch at a time. It also holds the revival notes that wake reads from.
+- **Run:** `/cool-down`
+- **Entry:** `.claude/skills/cool-down/SKILL.md`
+- **Files:** .claude/skills/cool-down/SKILL.md
+- **Keywords:** cool-down, slow the flow, settle in-flight work, overloaded batch, mode not one-shot, revival notes
+- **Related:** DEV-36, DEV-30
+@end-capability -->
+
 # cool-down — stop adding, start settling
 
 Cool-down is a **mode**, not a one-shot pass. It stays on until the operator lifts it in their

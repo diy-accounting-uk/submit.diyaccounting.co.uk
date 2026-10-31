@@ -39,19 +39,20 @@ class OperatorSnapshotPublishTest {
                                 .build())
                         .build());
 
-        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analyticsLakeBucketName);
-        var resultsBucket = Bucket.fromBucketName(stack, "ResultsBucket", sharedNames.analyticsResultsBucketName);
+        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analytics.analyticsLakeBucketName);
+        var resultsBucket =
+                Bucket.fromBucketName(stack, "ResultsBucket", sharedNames.analytics.analyticsResultsBucketName);
 
         var props = OperatorSnapshotPublish.OperatorSnapshotPublishProps.builder()
                 .idPrefix(sharedNames.envResourceNamePrefix)
                 .envName(envName)
                 .baseImageTag("test-tag")
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                 .resultsBucket(resultsBucket)
                 .lakeBucket(lakeBucket)
-                .glueDatabaseName(sharedNames.glueDatabaseName)
-                .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                 .build();
 
         new OperatorSnapshotPublish(stack, props);

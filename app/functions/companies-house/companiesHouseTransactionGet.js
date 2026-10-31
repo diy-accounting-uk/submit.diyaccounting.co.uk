@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-09 Query and submit document transactions
+// - **Use when:** a filing (office address, email address, accounts) needs a Companies House transaction created, read or updated.
+// - **Does:** companiesHouseTransactionGet.js, companiesHouseTransactionPost.js and companiesHouseTransactionPut.js each call companiesHouseFilingRequest with GET, POST or PUT. companiesHouseFilingApi.js resolves the filing and identity base URLs and the presenter client secret. It is a separate client from companiesHouseApi.js, which serves search and company-profile lookups.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseTransactionGet.js:ingestHandler`; `app/functions/companies-house/companiesHouseTransactionPost.js:ingestHandler`; `app/services/companiesHouseFilingApi.js:companiesHouseFilingRequest`
+// - **Files:** app/functions/companies-house/companiesHouseTransactionGet.js, app/functions/companies-house/companiesHouseTransactionPost.js, app/functions/companies-house/companiesHouseTransactionPut.js, app/unit-tests/functions/companiesHouseTransactionGet.test.js, app/unit-tests/functions/companiesHouseTransactionPost.test.js, app/unit-tests/functions/companiesHouseTransactionPut.test.js, app/services/companiesHouseFilingApi.js, app/unit-tests/services/companiesHouseFilingApi.test.js
+// - **Keywords:** companies house, transaction, filing api, document submission, presenter secret, identity base url, filing base url
+// - **Related:** CH-05, CH-06, CH-08
+// @end-capability
+
 // app/functions/companies-house/companiesHouseTransactionGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -6,6 +6,16 @@ description: Build, verify and hand over DIY Accounting Limited's own diya-gl bo
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability MCP-17 Build and hand over the company's own book
+- **Use when:** the operator asks for DIY Accounting Limited's accounts, P&L or book, or wants Cowork to read the finances.
+- **Does:** The company-book skill builds the book from bank, Stripe, PayPal and supplier sources with the finance parsers. It writes VERIFICATION.md and a zip the spreadsheets MCP loads. It tells Cowork through INBOX.md how to read it with diya-gl-mcp.
+- **Run:** `/company-book`
+- **Entry:** `.claude/skills/company-book/SKILL.md`
+- **Files:** .claude/skills/company-book/SKILL.md, mcp/lib/finance/book-from-workbook.js, mcp/lib/finance/bank-lines.js, mcp/lib/finance/stripe-lines.js, mcp/lib/finance/paypal-statement-lines.js, mcp/lib/finance/mail-invoices.js
+- **Keywords:** company accounts, book, bookkeeping, p&l, verification, cowork, diya-gl-mcp, spreadsheets mcp, staging
+- **Related:** MCP-13, MCP-16
+@end-capability -->
+
 # company-book
 
 DIY Accounting Limited keeps its own books as a diya-gl book: `book.toml` (the entity, chart of

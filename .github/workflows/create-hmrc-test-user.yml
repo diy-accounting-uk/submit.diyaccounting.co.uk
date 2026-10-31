@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-66 Create an HMRC sandbox test user
+# - **Use when:** a fresh HMRC MTD sandbox test user is needed for VAT or Income Tax testing.
+# - **Does:** create-hmrc-test-user.yml calls HMRC's sandbox create-test-user API to mint a fresh MTD test user.
+# - **Run:** `gh workflow run create-hmrc-test-user.yml -f service-names=<mtd-vat|mtd-income-tax|mtd-vat,mtd-income-tax>`
+# - **Entry:** `.github/workflows/create-hmrc-test-user.yml`
+# - **Files:** .github/workflows/create-hmrc-test-user.yml
+# - **Keywords:** hmrc sandbox, mtd test user, create-test-user api, mtd-vat, mtd-income-tax
+# - **Related:** OPS-67
+# @end-capability
+
 name: create-hmrc-test-user
 run-name: "Create HMRC Sandbox test user"
 #

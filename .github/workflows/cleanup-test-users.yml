@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-12 Clean up expired test users
+# - **Use when:** a lane's test user has outlived its credential expiry window, or needs manual cleanup.
+# - **Does:** cleanup-test-users.yml deletes or rotates Cognito test-user credentials once their lane's expiry window has passed. It runs daily on a schedule and also accepts a manual dispatch.
+# - **Run:** `gh workflow run cleanup-test-users.yml -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/cleanup-test-users.yml`
+# - **Files:** .github/workflows/cleanup-test-users.yml
+# - **Keywords:** cleanup test users, cognito test user, expiry window, synthetic user, lane user
+# - **Related:** OPS-16, OPS-67
+# @end-capability
+
 name: Cleanup Test Users
 run-name: "cleanup test users for ${{ inputs.environment-name || 'ci' }}"
 

@@ -45,8 +45,8 @@ class ApiStackTest {
                         "arn:aws:lambda:eu-west-2:111111111111:function:test-regular-fn:pc")
                 .provisionedConcurrencyAliasName("pc")
                 .baseImageTag("latest")
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                 .httpMethod(HttpMethod.GET)
                 .urlPath("/api/v1/regular")
                 .jwtAuthorizer(true)
@@ -62,8 +62,8 @@ class ApiStackTest {
                         "arn:aws:lambda:eu-west-2:111111111111:function:test-books-put-fn:pc")
                 .provisionedConcurrencyAliasName("pc")
                 .baseImageTag("latest")
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                 .httpMethod(HttpMethod.PUT)
                 .urlPath("/api/v1/books/{bookId}")
                 .jwtAuthorizer(false)
@@ -81,8 +81,8 @@ class ApiStackTest {
                         "arn:aws:lambda:eu-west-2:111111111111:function:test-books-delete-fn:pc")
                 .provisionedConcurrencyAliasName("pc")
                 .baseImageTag("latest")
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                 .httpMethod(HttpMethod.DELETE)
                 .urlPath("/api/v1/books/{bookId}")
                 .jwtAuthorizer(false)
@@ -100,8 +100,8 @@ class ApiStackTest {
                         "arn:aws:lambda:eu-west-2:111111111111:function:test-billing-checkout-fn:pc")
                 .provisionedConcurrencyAliasName("pc")
                 .baseImageTag("latest")
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                 .httpMethod(HttpMethod.POST)
                 .urlPath("/api/v1/billing/checkout")
                 .jwtAuthorizer(false)
@@ -118,8 +118,8 @@ class ApiStackTest {
                         "arn:aws:lambda:eu-west-2:111111111111:function:test-session-sign-out-fn:pc")
                 .provisionedConcurrencyAliasName("pc")
                 .baseImageTag("latest")
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                 .httpMethod(HttpMethod.POST)
                 .urlPath("/api/v1/session/sign-out")
                 .jwtAuthorizer(false)
@@ -354,7 +354,7 @@ class ApiStackTest {
                                 "arn:",
                                 Map.of("Ref", "AWS::Partition"),
                                 ":logs:eu-west-2:111111111111:log-group:"
-                                        + SubmitSharedNames.forDocs().apiAccessLogGroupName)));
+                                        + SubmitSharedNames.forDocs().observability.apiAccessLogGroupName)));
 
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Stage",

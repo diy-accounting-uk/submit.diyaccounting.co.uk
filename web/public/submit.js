@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-18 Bootstrap the frontend module bundle
+// - **Use when:** a new utils, services or widgets module needs wiring into the site's single entry point.
+// - **Does:** submit.js is the site's single entry point. It imports every utils, services and widgets module and assigns them onto window for scripts that still call them as globals.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `web/public/submit.js`
+// - **Files:** web/public/submit.js, web/unit-tests/submit.helpers.test.js
+// - **Keywords:** entry point, module bundle, window globals, submit.js, bundling
+// - **Related:** SITE-14, SITE-16
+// @end-capability
+
 // Main entry point for submit application
 // Imports all modules and exposes them on window for backward compatibility
 

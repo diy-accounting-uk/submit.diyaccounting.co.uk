@@ -5,6 +5,16 @@ description: Refine every open row on NEXT.md in the main context before a wave 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-29 Refine NEXT.md before a wave
+- **Use when:** the operator asks for a readiness, feasibility or context pass over the board, or says refine the board.
+- **Does:** refine runs four passes over NEXT.md in the main context, with no sub-agents. It checks each reference against origin/main, and completes each brief for its sub-agent at the lowest model that fits. It shares facts across rows that need them, and splits any human step out of a mixed row.
+- **Run:** `/refine`
+- **Entry:** `.claude/skills/refine/SKILL.md`
+- **Files:** .claude/skills/refine/SKILL.md
+- **Keywords:** refine, next.md readiness, brief preparation, model selection, reference check, human step split
+- **Related:** DEV-27, DEV-28
+@end-capability -->
+
 # refine
 
 Five passes over `NEXT.md`, in the main context and with no sub-agents, then the write-back and

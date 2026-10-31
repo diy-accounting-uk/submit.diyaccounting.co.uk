@@ -1,6 +1,16 @@
 -- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
+-- @capability DATA-28 SQL views: revenue and subscription
+-- - **Use when:** a question is about Stripe revenue, subscription renewals/cancellations, purchase reconciliation or pass redemptions.
+-- - **Does:** Five Athena views answer money questions. They cover daily Stripe revenue by product, and subscription renewals and cancellations from the change log. They also cover a daily GA4/Stripe/activity-event purchase reconciliation, and passes issued versus redeemed.
+-- - **Run:** no command; see Does and Entry
+-- - **Entry:** `infra/main/resources/analytics/views/v_revenue_daily.sql:`
+-- - **Files:** infra/main/resources/analytics/views/v_revenue_daily.sql, infra/main/resources/analytics/views/v_subscription_renewals_daily.sql, infra/main/resources/analytics/views/v_subscription_cancellations_daily.sql, infra/main/resources/analytics/views/v_purchase_reconciliation_daily.sql, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql
+-- - **Keywords:** revenue daily, subscription renewals, subscription cancellations, purchase reconciliation, pass redemptions, stripe revenue
+-- - **Related:** DATA-09, DATA-10
+-- @end-capability
+
 -- How much money arrived each day, by product, from Stripe and PayPal?
 --
 -- Stripe: reads the charges table directly rather than balance transactions: charges carry

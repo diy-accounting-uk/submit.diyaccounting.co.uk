@@ -2,6 +2,26 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-38 Run the weekly compliance-test check
+// - **Use when:** a compliance commitment's status needs re-checking, or a new commitment needs adding to compliance.toml.
+// - **Does:** compliance.yml runs on a Monday schedule, and on demand, against a chosen environment. It is driven by the standing commitments in compliance.toml, each with an owner and a due date. generate-compliance-report.js turns the accessibility and penetration test output into that report.
+// - **Run:** `gh workflow run compliance.yml -f environment-name=<ci|prod>`; `npm run compliance:ci-report-md`; `npm run compliance:prod-report-md`
+// - **Entry:** `scripts/generate-compliance-report.js:parseNpmAudit`; `scripts/generate-compliance-report.js:parsePa11yReport`
+// - **Files:** .github/workflows/compliance.yml, compliance.toml, scripts/generate-compliance-report.js
+// - **Keywords:** compliance check, compliance.toml, weekly schedule, compliance panel, accessibility report, penetration report
+// - **Related:** OPS-61
+// @end-capability
+
+// @capability OPS-97 Compile the compliance audit report
+// - **Use when:** WCAG, fraud-header and VAT-logic test results need aggregating into one pass/fail compliance report.
+// - **Does:** generate-compliance-report.js aggregates WCAG, fraud-header and VAT-logic test results into one pass/fail compliance report with evidence links. The behaviour test proves the HMRC MTD privacy-and-terms compliance journey.
+// - **Run:** `node scripts/generate-compliance-report.js --target <url> [--output FILE]`; `npm run compliance:proxy-report-md`; `npm run compliance:ci-report-md`; `npm run compliance:prod-report-md`; `npm run test:complianceBehaviour-proxy`
+// - **Entry:** `scripts/generate-compliance-report.js`
+// - **Files:** scripts/generate-compliance-report.js, behaviour-tests/compliance.behaviour.test.js
+// - **Keywords:** compliance report, wcag, fraud headers, vat logic, evidence links, hmrc mtd journey
+// - **Related:** OPS-95, OPS-96
+// @end-capability
+
 /**
  * Generate Compliance Report
  *

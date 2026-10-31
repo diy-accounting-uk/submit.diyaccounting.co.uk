@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-10 Retrieve ITSA obligations
+// - **Use when:** quarterly, annual or final-declaration ITSA obligations must be listed for a business.
+// - **Does:** hmrcItsaObligationsGet.js's ingestHandler calls HMRC's Obligations API for a business. obligations.html displays due dates and status.
+// - **Run:** `GET /api/v1/hmrc/itsa/obligations`
+// - **Entry:** `app/functions/hmrc/hmrcItsaObligationsGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaObligationsGet.js:getItsaObligations`
+// - **Files:** app/functions/hmrc/hmrcItsaObligationsGet.js, app/unit-tests/functions/hmrcItsaObligationsGet.test.js, web/public/hmrc/itsa/obligations.html, web/browser-tests/obligations.browser.test.js, behaviour-tests/itsaObligations.behaviour.test.js
+// - **Keywords:** itsa obligations, quarterly update, final declaration, due dates, mtd for itsa
+// - **Related:** HMRC-09, HMRC-20
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaObligationsGet.js
 
 import { createLogger } from "../../lib/logger.js";

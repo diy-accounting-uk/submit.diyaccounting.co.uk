@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-12 Submit and manage self-employment periodic updates
+// - **Use when:** quarterly or cumulative self-employment income and expense updates must be filed or read.
+// - **Does:** Four Lambdas create, read, amend and list self-employment periodic updates against HMRC's Self Employment Business API. itsaSubmissionModel.js picks dated-quarter or cumulative-total behaviour by tax year on the client.
+// - **Run:** `POST /api/v1/hmrc/itsa/self-employment/period`; `GET /api/v1/hmrc/itsa/self-employment/period`; `PUT /api/v1/hmrc/itsa/self-employment/period`; `GET /api/v1/hmrc/itsa/self-employment/periods`
+// - **Entry:** `app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js:ingestHandler`; `web/public/lib/itsaSubmissionModel.js:resolveItsaSubmissionModel`
+// - **Files:** app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js, app/functions/hmrc/hmrcItsaSelfEmploymentPeriodGet.js, app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js, app/functions/hmrc/hmrcItsaSelfEmploymentPeriodsGet.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodPost.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodPost.activity.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodGet.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodPut.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodPut.activity.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodsGet.test.js, app/unit-tests/http-simulator/routes/itsa-self-employment-period.test.js, web/public/hmrc/itsa/selfEmploymentPeriod.html, web/public/hmrc/itsa/selfEmploymentPeriodAmend.html, web/public/hmrc/itsa/selfEmploymentPeriodView.html, web/public/hmrc/itsa/selfEmploymentPeriods.html, web/browser-tests/selfEmploymentPeriod.browser.test.js, web/browser-tests/itsaCumulativeModel.browser.test.js, behaviour-tests/itsaSelfEmploymentPeriod.behaviour.test.js, web/public/lib/itsaSubmissionModel.js
+// - **Keywords:** self-employment period, quarterly update, cumulative model, dated quarters, itsa periods, tax year 2025-26
+// - **Related:** HMRC-14, HMRC-27
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js
 
 import { createLogger } from "../../lib/logger.js";

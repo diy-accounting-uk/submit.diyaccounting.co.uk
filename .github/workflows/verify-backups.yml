@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-48 Verify backup health daily
+# - **Use when:** checking whether daily backups and their cross-account copy completed.
+# - **Does:** verify-backups.yml checks PITR status, the local backup vault, and backup and copy job outcomes, daily. It includes the cross-account copy to the backup account.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/verify-backups.yml`
+# - **Files:** .github/workflows/verify-backups.yml
+# - **Keywords:** backup health, pitr status, backup vault, cross-account copy, daily check
+# - **Related:** OPS-50
+# @end-capability
+
 name: verify backups
 run-name: "Verify backups for ${{ inputs.environment-name }}"
 

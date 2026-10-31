@@ -6,6 +6,16 @@ description: Come out of cool-down and resume normal work. Thin by design; the r
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-36 Resume normal work from cool-down
+- **Use when:** the operator lifts cool-down in their own words, such as carry on or resume.
+- **Does:** wake reads the cool-down skill's Waking notes and follows them. Only the operator wakes a session; an idle hour or a green branch is not consent.
+- **Run:** `/wake`
+- **Entry:** `.claude/skills/wake/SKILL.md`
+- **Files:** .claude/skills/wake/SKILL.md
+- **Keywords:** wake, resume work, exit cool-down, operator consent, revival
+- **Related:** DEV-35
+@end-capability -->
+
 # wake — come back up
 
 **Read `.claude/skills/cool-down/SKILL.md` and follow its "Waking up" section.** That is this

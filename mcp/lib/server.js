@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-01 Expose the submission MCP server and tools
+// - **Use when:** a session needs the submission MCP's tool set, over stdio or one call across every practice client.
+// - **Does:** createServer in mcp/lib/server.js builds an McpServer and registers every tool in its TOOLS table. mcp/bin/diya-submit-mcp.js connects that server to stdio, or runs one tool for every practice client with --all-clients. The session (createSession in mcp/lib/book-tools.js) holds the loaded book, the cloud book pointer and the HMRC grant id that request_hmrc_authorisation sets (MCP-21).
+// - **Run:** `node mcp/bin/diya-submit-mcp.js`; `node mcp/bin/diya-submit-mcp.js --all-clients <tool> [--arg key=value ...]`; `npm --prefix mcp start`
+// - **Entry:** `mcp/lib/server.js:createServer`; `mcp/bin/diya-submit-mcp.js`
+// - **Files:** mcp/lib/server.js, mcp/bin/diya-submit-mcp.js, mcp/vitest.config.js
+// - **Keywords:** mcp server, mcp tools, stdio, model context protocol, diya-submit-mcp, all-clients, tool registry
+// - **Related:** MCP-02, MCP-09, MCP-21
+// @end-capability
+
 // server.js -- the submission MCP server, written once over the MCP SDK's
 // transport abstraction so the stdio surface (bin/diya-submit-mcp.js) and
 // the hosted streamable-HTTP surface register the same tools against the

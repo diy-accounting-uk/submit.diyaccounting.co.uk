@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-12 Invite a client to authorise agent access
+// - **Use when:** a practice must ask a client to authorise HMRC agent access for MTD-VAT or MTD-IT.
+// - **Does:** The practiceClientAuthorisationInvitePost.js ingestHandler creates an HMRC agent-authorisation invitation via hmrcAgentAuthorisation.createInvitation for one HMRC service. It stores the invitation id on the client record.
+// - **Run:** `POST /api/v1/practice/clients/:clientId/authorisation/invitations`
+// - **Entry:** `app/functions/practice/practiceClientAuthorisationInvitePost.js:ingestHandler`; `app/lib/hmrcAgentAuthorisation.js:createInvitation`
+// - **Files:** app/functions/practice/practiceClientAuthorisationInvitePost.js, app/unit-tests/functions/practiceClientAuthorisationInvitePost.test.js
+// - **Keywords:** practice, client, hmrc, agent authorisation, invitation, mtd-vat, mtd-it, createInvitation
+// - **Related:** BILL-13, BILL-14
+// @end-capability
+
 // app/functions/practice/practiceClientAuthorisationInvitePost.js
 
 import { validateEnv } from "../../lib/env.js";

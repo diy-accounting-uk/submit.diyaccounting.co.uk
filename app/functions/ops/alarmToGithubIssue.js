@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-71 Create GitHub issues from CloudWatch alarms
+// - **Use when:** a CloudWatch alarm fires and needs a tracked GitHub issue instead of a one-off notification.
+// - **Does:** alarmToGithubIssue.js is the EventBridge target Lambda for aws.cloudwatch Alarm State Change events. It opens one [ALARM] GitHub issue per alarm family, keyed by alarmName.js with the deployment slug removed, or comments on the existing issue. dynamoDbAlarmIssueLockRepository.js claims each transition with a conditional put so two deployments never both raise an issue.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/ops/alarmToGithubIssue.js:handler`; `app/lib/alarmName.js:alarmFamilyKey`; `app/data/dynamoDbAlarmIssueLockRepository.js:claimAlarmStateChange`
+// - **Files:** app/functions/ops/alarmToGithubIssue.js, app/unit-tests/functions/alarmToGithubIssue.test.js, app/data/dynamoDbAlarmIssueLockRepository.js, app/lib/alarmName.js, app/unit-tests/lib/alarmName.test.js
+// - **Keywords:** cloudwatch alarm, github issue, alarm family, alarm state change, dedupe, lock, alert routing, [ALARM]
+// - **Related:** OPS-76, OPS-78, OPS-79
+// @end-capability
+
 // app/functions/ops/alarmToGithubIssue.js
 //
 // EventBridge target Lambda: receives raw CloudWatch Alarm State Change

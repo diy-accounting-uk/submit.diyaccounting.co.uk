@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-05 Simulate HMRC Agent Authorisation and fraud-prevention headers
+// - **Use when:** a test needs an agent-client invitation flow or must check Gov-Client/Gov-Vendor headers.
+// - **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID, VALID_WITH_WARNINGS or INVALID.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/agent-authorisation.js"`; `import { apiEndpoint } from "app/http-simulator/routes/fraud-headers.js"`
+// - **Entry:** `app/http-simulator/routes/agent-authorisation.js:apiEndpoint`; `app/http-simulator/routes/fraud-headers.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/agent-authorisation.js, app/http-simulator/routes/fraud-headers.js
+// - **Keywords:** agent authorisation, invitation, client relationship, fraud prevention headers, gov-client, gov-vendor, header validation
+// - **Related:** DEV-03
+// @end-capability
+
 // app/http-simulator/routes/agent-authorisation.js
 // HMRC Agent Authorisation API
 // Handles: POST /agents/{arn}/invitations, GET and DELETE /agents/{arn}/invitations/{invitationId},

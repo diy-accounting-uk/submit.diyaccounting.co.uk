@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability DATA-60 Replay one analytics nightly by dispatch
+# - **Use when:** a night of the analytics nightly did not run or failed, and it must run again for an explicit date.
+# - **Does:** run-nightly.yml validates the date (format, calendar day, not in the future). It chains into the deployment role and starts the environment's analytics-nightly state machine with the input `{"date": "<date>"}`. Every task reads `date` from that input. The job polls the execution for up to 30 minutes and fails unless it ends `SUCCEEDED`. The `prod-env-analytics-nightly-missed` remedy row dispatches it with the day before the alarm fired.
+# - **Run:** `gh workflow run run-nightly.yml -f environment-name=prod -f date=YYYY-MM-DD`
+# - **Entry:** `.github/workflows/run-nightly.yml:run-nightly`
+# - **Files:** .github/workflows/run-nightly.yml, app/data/alarm-remedies.json, .github/workflows/alarm-triage.yml
+# - **Keywords:** replay nightly, missed night, backfill, state machine execution, start execution, analytics nightly missed, explicit date
+# - **Related:** DATA-22, OPS-18
+# @end-capability
+
 name: run-nightly
 run-name: "run the ${{ inputs.environment-name }} analytics nightly for ${{ inputs.date }}"
 

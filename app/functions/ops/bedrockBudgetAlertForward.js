@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-72 Forward Bedrock budget alerts
+// - **Use when:** an AWS Bedrock cost or token-limit alert must reach the operations channel.
+// - **Does:** bedrockBudgetAlertForward.js relays AWS Bedrock cost and token-limit SNS alerts to the operations Telegram channel. parseBudgetSnsRecord extracts the alert fields and summarizeBudgetAlert formats the summary.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/ops/bedrockBudgetAlertForward.js:handler`
+// - **Files:** app/functions/ops/bedrockBudgetAlertForward.js, app/unit-tests/functions/bedrockBudgetAlertForward.test.js
+// - **Keywords:** bedrock, budget alert, cost alert, token limit, sns, telegram, ops channel
+// - **Related:** OPS-70
+// @end-capability
+
 // app/functions/ops/bedrockBudgetAlertForward.js
 //
 // Subscribed directly to ObservabilityUE1Stack's bedrockBudgetAlertsTopic (the Bedrock daily

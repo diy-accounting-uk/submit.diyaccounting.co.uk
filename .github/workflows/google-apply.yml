@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-67 Apply Google Cloud / GA4 infrastructure
+# - **Use when:** Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
+# - **Does:** google-apply.yml runs the infra/google/** scripts in dependency order. The order is API enablement, workload identity, IAM roles, billing, GA4, the GA4-in-BigQuery dataset, then the OAuth client check. It plans on a pull request and applies on a push to main or a manual dispatch with apply true.
+# - **Run:** `gh workflow run google-apply.yml -f apply=<true|false>`
+# - **Entry:** `.github/workflows/google-apply.yml`
+# - **Files:** .github/workflows/google-apply.yml
+# - **Keywords:** google cloud apply, ga4 infrastructure, workload identity, bigquery dataset, oauth client check
+# - **Related:** OPS-42
+# @end-capability
+
 name: google apply
 run-name: "google apply (${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
 

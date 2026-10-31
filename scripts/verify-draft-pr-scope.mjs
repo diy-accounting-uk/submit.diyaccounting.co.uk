@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-22 Verify a triage draft-PR stays in scope
+// - **Use when:** a triage agent's draft PR must be checked before it leaves draft state.
+// - **Does:** verify-draft-pr-scope.mjs decides whether a triage-generated draft PR may be marked ready for review. Every changed file must be one of the alarm family's own remedy row paths. It fails closed on an empty diff, an unknown family, or a family whose remedy is not draft-pr.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/verify-draft-pr-scope.mjs:evaluate`; `scripts/verify-draft-pr-scope.mjs:touchesOnlyAllowedPaths`
+// - **Files:** scripts/verify-draft-pr-scope.mjs, app/unit-tests/scripts/verifyDraftPrScope.test.js
+// - **Keywords:** draft pr scope, remedy row, alarm family, fail closed, triage-generated pr
+// - **Related:** OPS-19, OPS-25
+// @end-capability
+
 // scripts/verify-draft-pr-scope.mjs
 //
 // Decides whether a triage draft PR may be marked ready for review under

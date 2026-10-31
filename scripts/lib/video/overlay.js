@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-89 Overlay pointer and caption cues on video
+// - **Use when:** a recorded scene needs an on-screen pointer, trail, caption or timer overlay that survives page navigation.
+// - **Does:** overlay-runtime.js is a self-contained in-page script, with no imports and no bundler, installed via page.addInitScript so the pointer, trail, caption and timer overlay survives every navigation in the tour. overlay.js is the Node-side wrapper that reads it as text and installs it.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/lib/video/overlay.js`; `scripts/lib/video/overlay-runtime.js`
+// - **Files:** scripts/lib/video/overlay.js, scripts/lib/video/overlay-runtime.js
+// - **Keywords:** overlay, pointer cue, caption overlay, timer pill, in-page script, addinitscript
+// - **Related:** OPS-88
+// @end-capability
+
 // scripts/lib/video/overlay.js
 //
 // Node-side wrapper around scripts/lib/video/overlay-runtime.js — design section 5.1. The

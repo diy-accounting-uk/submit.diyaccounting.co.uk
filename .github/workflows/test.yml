@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-26 Run the automated test suite in CI
+# - **Use when:** checking which test tiers run on every push and pull request.
+# - **Does:** test.yml runs the unit, system, browser and behaviour test tiers, triggered on every push and pull request.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/test.yml`
+# - **Files:** .github/workflows/test.yml
+# - **Keywords:** test suite, unit tests, system tests, browser tests, behaviour tests, push and pr trigger
+# - **Related:** OPS-33
+# @end-capability
+
 name: test
 run-name: "test from ${{ github.ref_name }}"
 
@@ -215,6 +225,20 @@ jobs:
 
       - name: Validate nested workflow_call permissions
         run: node scripts/check-workflow-permissions.mjs
+
+  capabilities:
+    name: 'capabilities report is current'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Check that REPORT_CAPABILITIES.md is what the headers generate
+        run: node scripts/capabilities-generate.mjs --check
 
   lint-js:
     if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-js') }}

@@ -189,7 +189,7 @@
         </p>
         <!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->
         <div class="table-scroll">
-          <table class="deadline-table stacked-table">
+          <table class="deadline-table stacked-table availability-table">
             <caption class="calendar-date">
               Availability by filing and channel
             </caption>
@@ -208,14 +208,14 @@
             <tbody>
               <tr>
                 <th scope="row">HMRC VAT return</th>
-                <td data-label="Web form">production</td>
-                <td data-label="diya-gl book drop">production</td>
-                <td data-label="Spreadsheets drop">production</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">
+                <td class="avail-production" data-label="Web form">production</td>
+                <td class="avail-production" data-label="diya-gl book drop">production</td>
+                <td class="avail-production" data-label="Spreadsheets drop">production</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-production" data-label="MCP">
                   production <span class="calendar-date">local server; the hosted connector derives figures only</span>
                 </td>
-                <td data-label="API">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
@@ -223,12 +223,14 @@
               </tr>
               <tr>
                 <th scope="row">HMRC Income Tax (MTD)</th>
-                <td data-label="Web form">sandbox <span class="calendar-date">self-employment, UK and foreign property</span></td>
-                <td data-label="diya-gl book drop">sandbox</td>
-                <td data-label="Spreadsheets drop">sandbox</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">sandbox <span class="calendar-date">figures only</span></td>
-                <td data-label="API">not offered</td>
+                <td class="avail-sandbox" data-label="Web form">
+                  sandbox <span class="calendar-date">self-employment, UK and foreign property</span>
+                </td>
+                <td class="avail-sandbox" data-label="diya-gl book drop">sandbox</td>
+                <td class="avail-sandbox" data-label="Spreadsheets drop">sandbox</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-sandbox" data-label="MCP">sandbox <span class="calendar-date">figures only</span></td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
@@ -236,12 +238,12 @@
               </tr>
               <tr>
                 <th scope="row">HMRC Company Tax Return (CT600)</th>
-                <td data-label="Web form">preview</td>
-                <td data-label="diya-gl book drop">preview <span class="calendar-date">book export file</span></td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">not offered</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-preview" data-label="Web form">preview</td>
+                <td class="avail-preview" data-label="diya-gl book drop">preview <span class="calendar-date">book export file</span></td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-not-offered" data-label="MCP">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Web form</a>,
                   <a href="guide.html">Guide</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Video</a>
@@ -249,12 +251,12 @@
               </tr>
               <tr>
                 <th scope="row">HMRC Assist check on a VAT return</th>
-                <td data-label="Web form">preview</td>
-                <td data-label="diya-gl book drop">not offered</td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">not offered</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-preview" data-label="Web form">preview</td>
+                <td class="avail-not-offered" data-label="diya-gl book drop">not offered</td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-not-offered" data-label="MCP">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=cyOZsF9qe28" rel="noopener">Video</a>
@@ -262,12 +264,12 @@
               </tr>
               <tr>
                 <th scope="row">Companies House accounts (micro-entity, small company, dormant)</th>
-                <td data-label="Web form">sandbox</td>
-                <td data-label="diya-gl book drop">not offered</td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">sandbox <span class="calendar-date">micro-entity</span></td>
-                <td data-label="API">not offered</td>
+                <td class="avail-sandbox" data-label="Web form">sandbox</td>
+                <td class="avail-not-offered" data-label="diya-gl book drop">not offered</td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-sandbox" data-label="MCP">sandbox <span class="calendar-date">micro-entity</span></td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Web form</a>,
                   <a href="guide.html">Guide</a>, <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Video</a>,
@@ -276,12 +278,12 @@
               </tr>
               <tr>
                 <th scope="row">Companies House confirmation statement</th>
-                <td data-label="Web form">sandbox</td>
-                <td data-label="diya-gl book drop">not offered</td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">sandbox</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-sandbox" data-label="Web form">sandbox</td>
+                <td class="avail-not-offered" data-label="diya-gl book drop">not offered</td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-sandbox" data-label="MCP">sandbox</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Web form</a>,
                   <a href="guide.html">Guide</a>, <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Video</a>,
@@ -290,24 +292,24 @@
               </tr>
               <tr>
                 <th scope="row">Companies House PSC verification statement</th>
-                <td data-label="Web form">sandbox</td>
-                <td data-label="diya-gl book drop">not offered</td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">not offered</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-sandbox" data-label="Web form">sandbox</td>
+                <td class="avail-not-offered" data-label="diya-gl book drop">not offered</td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-not-offered" data-label="MCP">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="guide.html">Guide</a>, <a href="https://www.youtube.com/watch?v=zyo32coCwso" rel="noopener">Video</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">Companies House registered office and registered email</th>
-                <td data-label="Web form">production</td>
-                <td data-label="diya-gl book drop">not offered</td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">not offered</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-production" data-label="Web form">production</td>
+                <td class="avail-not-offered" data-label="diya-gl book drop">not offered</td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-not-offered" data-label="MCP">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Web form</a>,
                   <a href="guide.html">Guide</a>, <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Video</a>
@@ -315,12 +317,12 @@
               </tr>
               <tr>
                 <th scope="row">Accounts at Companies House and CT600 at HMRC together</th>
-                <td data-label="Web form">preview</td>
-                <td data-label="diya-gl book drop">preview <span class="calendar-date">book export file</span></td>
-                <td data-label="Spreadsheets drop">not offered</td>
-                <td data-label="iXBRL drop">not offered</td>
-                <td data-label="MCP">not offered</td>
-                <td data-label="API">not offered</td>
+                <td class="avail-preview" data-label="Web form">preview</td>
+                <td class="avail-preview" data-label="diya-gl book drop">preview <span class="calendar-date">book export file</span></td>
+                <td class="avail-not-offered" data-label="Spreadsheets drop">not offered</td>
+                <td class="avail-not-offered" data-label="iXBRL drop">not offered</td>
+                <td class="avail-not-offered" data-label="MCP">not offered</td>
+                <td class="avail-not-offered" data-label="API">not offered</td>
                 <td data-label="Docs and video">
                   <a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Web form</a>,
                   <a href="guide.html">Guide</a>

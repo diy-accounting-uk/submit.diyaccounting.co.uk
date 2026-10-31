@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-31 Configure Stripe account policies
+// - **Use when:** Stripe account-level payout and dispute policies must be set for a customer-first stance.
+// - **Does:** The stripe-configure-policies.js script sets Stripe account-level policies. It sets a weekly payout schedule with minimum delay, and the dispute auto-accept stance billingWebhookPost.js implements.
+// - **Run:** `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-configure-policies.js --dry-run`; `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-configure-policies.js --show-current`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-configure-policies.js`
+// - **Entry:** `scripts/stripe-configure-policies.js`
+// - **Files:** scripts/stripe-configure-policies.js
+// - **Keywords:** stripe, account policies, payout schedule, dispute auto-accept, no-quibble
+// - **Related:** BILL-28, BILL-30
+// @end-capability
+
 // scripts/stripe-configure-policies.js
 //
 // Configures Stripe account-level policies for a no-quibble, customer-first approach:

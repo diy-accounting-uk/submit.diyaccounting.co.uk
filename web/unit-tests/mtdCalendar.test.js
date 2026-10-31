@@ -39,10 +39,23 @@ describe("MTD calendar page", () => {
     expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*\.stacked-table td\[data-label\]::before/);
     for (const id of ["business-types", "availability"]) {
       const section = html.slice(html.indexOf(`id="${id}"`)).split("</table>")[0];
-      expect(section).toContain('class="deadline-table stacked-table"');
+      expect(section).toContain('class="deadline-table stacked-table');
       const cells = section.match(/<td[^>]*>/g);
       expect(cells.length).toBeGreaterThan(0);
       for (const c of cells) expect(c).toContain("data-label=");
+    }
+  });
+
+  test("every availability cell carries the state class of its first word", () => {
+    const html = readFileSync(PAGE_PATH, "utf8");
+    const section = html.slice(html.indexOf('id="availability"')).split("</table>")[0];
+    const cells = [...section.matchAll(/<td class="(avail-[a-z-]+)" data-label="[^"]+">\s*([a-z ]+?)(?: <span|\s*<\/td>)/g)];
+    const stateCells = section.match(/<td[^>]*data-label="(?!Docs and video")[^"]*"[^>]*>/g);
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.length).toBe(stateCells.length);
+    for (const [, cls, text] of cells) {
+      expect(["production", "sandbox", "preview", "not offered"]).toContain(text);
+      expect(cls).toBe(`avail-${text.replace(" ", "-")}`);
     }
   });
 });

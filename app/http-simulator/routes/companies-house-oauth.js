@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-04 Simulate Companies House identity and filing
+// - **Use when:** a test needs Companies House sign-in, company lookup or accounts filing without the real API.
+// - **Does:** apiEndpoint in companies-house-oauth.js answers the sign-in-and-permission screen at /oauth2/authorise and /oauth2/token. apiEndpoint in companies-house.js serves the API-key read endpoints and the OAuth-authorised transaction lifecycle. apiEndpoint in companies-house-xmlgw.js answers the XML Gateway's single POST /v1-0/xmlgw/Gateway endpoint for Accounts submissions and status polls.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/companies-house-oauth.js"`; `import { apiEndpoint } from "app/http-simulator/routes/companies-house.js"`; `import { apiEndpoint } from "app/http-simulator/routes/companies-house-xmlgw.js"`
+// - **Entry:** `app/http-simulator/routes/companies-house-oauth.js:apiEndpoint`; `app/http-simulator/routes/companies-house.js:apiEndpoint`; `app/http-simulator/routes/companies-house-xmlgw.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/companies-house-oauth.js, app/http-simulator/routes/companies-house.js, app/http-simulator/routes/companies-house-xmlgw.js, app/http-simulator/scenarios/companies.js, app/http-simulator/scenarios/accounts-filing.js, app/http-simulator/scenarios/business-details.js, app/http-simulator/scenarios/filings.js, app/unit-tests/http-simulator/scenarios/accounts-filing.test.js
+// - **Keywords:** companies house, xml gateway, govtalk, accounts filing, registered office, registered email, transaction lifecycle, company search
+// - **Related:** DEV-01, DEV-03
+// @end-capability
+
 // app/http-simulator/routes/companies-house-oauth.js
 // Replaces the Companies House identity service for tests.
 // Handles: GET /oauth2/authorise (permission page), POST /oauth2/authorise (grant), POST /oauth2/token

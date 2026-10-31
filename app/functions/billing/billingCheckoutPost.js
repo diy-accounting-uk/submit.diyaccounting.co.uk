@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-24 Create a Stripe checkout session
+// - **Use when:** a caller must pay for a subscription bundle by Stripe Checkout.
+// - **Does:** The billingCheckoutPost.js ingestHandler resolves the bundle and interval to a Stripe price id, then creates a Checkout session. The session carries the caller's hashed sub and bundle id as metadata, so billingWebhookPost.js can grant the bundle on payment. billingReturnUrl.js's resolveAllowedReturnTo validates the post-checkout return URL against an allow-list.
+// - **Run:** `POST /api/v1/billing/checkout`
+// - **Entry:** `app/functions/billing/billingCheckoutPost.js:ingestHandler`; `app/functions/billing/billingReturnUrl.js:resolveAllowedReturnTo`
+// - **Files:** app/functions/billing/billingCheckoutPost.js, app/unit-tests/functions/billingCheckoutPost.test.js, app/system-tests/billingCheckout.system.test.js, behaviour-tests/payment.behaviour.test.js, app/lib/stripeClient.js, app/test-support/stripeSimulator.js, app/functions/billing/billingReturnUrl.js
+// - **Keywords:** stripe, checkout, billing, subscription payment, price id, return url allow-list
+// - **Related:** BILL-25, BILL-26, BILL-28
+// @end-capability
+
 // app/functions/billing/billingCheckoutPost.js
 
 import { createLogger } from "../../lib/logger.js";

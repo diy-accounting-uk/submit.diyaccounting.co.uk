@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-29 Assert the PayPal donate button configuration
+// - **Use when:** the PayPal classic hosted donate button's live configuration must be checked, not a webhook.
+// - **Does:** The paypal-assert.js script reads paypal.toml's classic hosted Donate button id. It checks that id by live HTTP request against the rendered spreadsheets.diyaccounting.co.uk donate page and PayPal's own donate link. No PayPal webhook handler exists in this repository; the button belongs to the spreadsheets site, not this app.
+// - **Run:** `node infra/paypal/paypal-assert.js`
+// - **Entry:** `infra/paypal/paypal-assert.js`
+// - **Files:** infra/paypal/paypal-assert.js, infra/paypal/paypal.toml, app/unit-tests/scripts/paypalAssert.test.js
+// - **Keywords:** paypal, donate button, assert configuration, declare and verify, no webhook
+// - **Related:** BILL-28
+// @end-capability
+
 /**
  *
  * Assert infra/paypal/paypal.toml's hosted Donate button against the live donate page and

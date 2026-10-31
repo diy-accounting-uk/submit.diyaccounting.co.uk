@@ -6,6 +6,15 @@ description: List everyone who donated through Stripe or PayPal, subscribed to s
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-45 Match donors to submit accounts and their submissions
+- **Use when:** the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
+- **Does:** reads Stripe donation charges and PayPal donation receipts, matches them by email or name to the prod Cognito pool, hashes the matched subs with the salt, and reads VAT returns from the receipts table and other submissions from the activity lake. Writes one private file at the workspace root.
+- **Run:** `/donor-usage`
+- **Entry:** `.claude/skills/donor-usage/SKILL.md`
+- **Files:** .claude/skills/donor-usage/SKILL.md, app/services/subHasher.js, scripts/finance/stripe-stage.js, scripts/finance/paypal-stage.js
+- **Keywords:** donor, donation, donors who submit, cross reference, Stripe donor, PayPal donor, usage by donor
+@end-capability -->
+
 # donor-usage
 
 Joins payment identity to usage, which is personal data. The result goes to one file at the

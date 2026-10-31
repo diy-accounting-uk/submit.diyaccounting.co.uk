@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-25 Maintain the specialist agent prompt library
+- **Use when:** a Claude session needs a reusable role prompt, or a one-off analysis prompt.
+- **Does:** prompts/*.md are reusable prompt files for specialist AI agent roles and one-off analyses. They cover an AWS CDK specialist, a behaviour-test master, a clean-code guardian, an HMRC API expert and a security reviewer. Other prompts cover alarm and support triage, CI board and do-next variants, and test-coverage and FAQ-update tasks.
+- **Run:** no command; see Does and Entry
+- **Entry:** `prompts/aws-cdk-java-specialist.md`; `prompts/behavior-test-master.md`; `prompts/alarm-triage.md`
+- **Files:** prompts/abstract-libraries.md, prompts/alarm-triage.md, prompts/auto-select.md, prompts/aws-cdk-java-specialist.md, prompts/behavior-test-master.md, prompts/board-ci.md, prompts/clean-code-guardian.md, prompts/create-new-prompt.md, prompts/do-next-ci.md, prompts/entitlement-subscription-specialist.md, prompts/expand-capabilities.md, prompts/hmrc-api-expert.md, prompts/improve-test-coverage.md, prompts/increase-consistency.md, prompts/prune-focus.md, prompts/security-review.md, prompts/support-triage.md, prompts/todo-inator.md, prompts/update-faqs-help-and-guide.md
+- **Keywords:** prompt library, specialist agent, role prompt, alarm triage, support triage, security review prompt, board-ci, do-next-ci
+- **Related:** DEV-32, DEV-33
+@end-capability -->
+
 # Infrastructure-as-Code Architect: AWS CDK Java Specialist
 
 Purpose: Guide the development and maintenance of the project's infrastructure using AWS CDK v2 in Java. This agent ensures that the serverless architecture is consistent, secure, and well-integrated with the application code.

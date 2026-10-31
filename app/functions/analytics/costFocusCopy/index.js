@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-08 Copy the AWS FOCUS cost export
+// - **Use when:** the management account's FOCUS cost export must land in this account's lake for cost views.
+// - **Does:** costFocusCopy/index.js is a standalone zip Lambda for the management account's cost export bucket. Its handler lists Parquet objects modified in the last 48 hours and cross-account CopyObjects them into curated/cost/focus/dt=<today>/. It runs independent of the nightly chain; CostFocusIngestion.java provisions it and its schedule, CostFocusTables.java the Glue table.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/costFocusCopy/index.js:handler`
+// - **Files:** app/functions/analytics/costFocusCopy/index.js, app/unit-tests/analytics/costFocusCopy.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CostFocusIngestion.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/CostFocusIngestionTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CostFocusTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/CostFocusTablesTest.java
+// - **Keywords:** focus cost export, cross-account copyobject, cost allocation tags, management account, eventbridge scheduler, curated cost
+// - **Related:** DATA-24, DATA-25, DATA-31
+// @end-capability
+
 // Nightly copy of new FOCUS 1.2 export objects from the management account's cost bucket into
 // this account's own analytics lake, at curated/cost/focus/dt=<today>/<basename>. A zip Lambda of
 // its own rather than a fourth branch on IngestionStack's Docker-bundled jobs, so this stays

@@ -1,6 +1,16 @@
 -- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
+-- @capability DATA-58 Count paid landings from CloudFront access logs
+-- - **Use when:** paid landing page requests must be counted per day, landing page, utm_source and utm_campaign.
+-- - **Does:** v_paid_landings_daily counts successful GET requests to pages whose query string carries a gclid (Google Ads click id), msclkid (Microsoft Advertising click id) or utm_source parameter, read from the CloudFront access log's cs_uri_query field. Only page requests for site pages (/ or *.html) count; crawlers and synthetic traffic are filtered by user agent. The click id itself is never selected, so no lake row contains a value gclid sends to Google. Consent does not gate the count because nothing is stored on the visitor's device. BusinessViews.java registers the view. operatorSnapshotPublish.js measures paid-landings and ads-cost-per-paid-landing-gbp observations from it.
+-- - **Run:** no command; see Does and Entry
+-- - **Entry:** `infra/main/resources/analytics/views/v_paid_landings_daily.sql:`
+-- - **Files:** infra/main/resources/analytics/views/v_paid_landings_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java, app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
+-- - **Keywords:** paid landings, gclid, utm_source, utm_campaign, cloudfront access log, page requests, no consent needed, operator objective
+-- - **Related:** DATA-59, DATA-32
+-- @end-capability
+
 -- Page requests each day whose query string carries an advertising click id (gclid for Google,
 -- msclkid for Microsoft) or a utm_source, by landing page, utm_source and utm_campaign. The
 -- query string is read from the CloudFront access log's own record of the request; nothing is

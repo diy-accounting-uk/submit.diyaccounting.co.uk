@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-21 Submit the ITSA final declaration
+// - **Use when:** a taxpayer is ready to crystallise their ITSA liability for a tax year.
+// - **Does:** hmrcItsaFinalDeclarationPost.js's ingestHandler submits the taxpayer's final declaration to HMRC. finalDeclaration.html carries the legal declaration checkboxes and confirmation.
+// - **Run:** `POST /api/v1/hmrc/itsa/final-declaration`
+// - **Entry:** `app/functions/hmrc/hmrcItsaFinalDeclarationPost.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaFinalDeclarationPost.js, app/unit-tests/functions/hmrcItsaFinalDeclarationPost.test.js, app/unit-tests/functions/hmrcItsaFinalDeclarationPost.activity.test.js, web/public/hmrc/itsa/finalDeclaration.html, web/browser-tests/finalDeclaration.browser.test.js, behaviour-tests/itsaFinalDeclaration.behaviour.test.js
+// - **Keywords:** final declaration, crystallisation, itsa liability, tax year, legal declaration
+// - **Related:** HMRC-19, HMRC-20
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaFinalDeclarationPost.js
 
 import { createLogger } from "../../lib/logger.js";

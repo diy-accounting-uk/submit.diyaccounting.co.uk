@@ -5,6 +5,16 @@ description: Judge screenshots as a reader sees them — the LLM look pass in th
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-46 Judge screenshots as a reader sees them
+- **Use when:** a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
+- **Does:** visual-review reads each screenshot with the Read tool and scores it pass or fail on ten criteria (realistic data, not a bug, clean edges, space used, readable, current, nothing in the way, safe, alt text, consistent). It refreshes the guide and site screenshots and the videos after a major change, runs ui-ux-pro-max over the guide, fixes the fails the change caused and raises NEXT.md rows for bugs with their screenshots.
+- **Run:** `/visual-review`
+- **Entry:** `.claude/skills/visual-review/SKILL.md`
+- **Files:** .claude/skills/visual-review/SKILL.md
+- **Keywords:** visual review, screenshot review, look pass, llm as judge, definition of done, realistic data, clipping, guide screenshots, ux review
+- **Related:** DEV-19, OPS-139
+@end-capability -->
+
 # visual-review
 
 A test proves what the DOM holds. This pass proves what a person sees. The session or sub-agent

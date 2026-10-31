@@ -140,8 +140,8 @@ public class SecurityLakeStack extends Stack {
         // Imports: the analytics lake bucket, the Glue database (by name only - see class doc)
         // and the security-findings SNS topic ObservabilityStack creates
         // ============================================================================
-        IBucket lakeBucket =
-                Bucket.fromBucketName(this, prefix + "-SecurityLakeBucketRef", sharedNames.analyticsLakeBucketName);
+        IBucket lakeBucket = Bucket.fromBucketName(
+                this, prefix + "-SecurityLakeBucketRef", sharedNames.analytics.analyticsLakeBucketName);
 
         String securityFindingsTopicArn =
                 "arn:aws:sns:%s:%s:%s-security-findings".formatted(this.getRegion(), this.getAccount(), prefix);
@@ -155,8 +155,8 @@ public class SecurityLakeStack extends Stack {
                 this,
                 SecurityLakeTables.SecurityLakeTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
 
         // ============================================================================
@@ -173,7 +173,7 @@ public class SecurityLakeStack extends Stack {
 
         var environment = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
                 .with("GITHUB_REPO", props.githubRepo());
         // PopulatedMap rejects a blank value outright, and cdk.json's default for both is "" (the
         // operator sets the real values as GitHub Actions variables - see deploy-cdk-stack.yml),
@@ -194,8 +194,8 @@ public class SecurityLakeStack extends Stack {
                 LambdaProps.builder()
                         .idPrefix(functionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
                         .ingestFunctionName(functionName)
                         .ingestHandler("app/functions/security/securityLakeNightly.handler")
                         .ingestLambdaArn("arn:aws:lambda:%s:%s:function:%s"
@@ -327,6 +327,6 @@ public class SecurityLakeStack extends Stack {
         infof(
                 "SecurityLakeStack %s created: nightly Lambda %s, seven Glue tables under %s, and two alarms wired to"
                         + " the security-findings topic",
-                this.getNode().getId(), functionName, sharedNames.glueDatabaseName);
+                this.getNode().getId(), functionName, sharedNames.analytics.glueDatabaseName);
     }
 }

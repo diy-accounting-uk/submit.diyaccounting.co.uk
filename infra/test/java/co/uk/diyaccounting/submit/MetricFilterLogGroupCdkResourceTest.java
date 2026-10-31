@@ -214,7 +214,8 @@ class MetricFilterLogGroupCdkResourceTest {
             String stackName = entry.getKey();
             // The self-destruct Lambda's log group is created by ObservabilityStack /
             // ObservabilityUE1Stack in the environment CDK app, not by SelfDestructStack itself
-            // (see SubmitApplication.java: .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)),
+            // (see SubmitApplication.java:
+            // .selfDestructLogGroupName(sharedNames.observability.ew2SelfDestructLogGroupName)),
             // so a synth of the application stacks alone can never see it.
             if (stackName.endsWith("-SelfDestructStack")) continue;
             Map<String, Map<String, Object>> filters = entry.getValue().findResources("AWS::Logs::MetricFilter");

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-92 Redact secrets from video artefacts
+// - **Use when:** a recorded logged-in scene may have typed real credentials into captions, transcript or overlay logs.
+// - **Does:** secrets.js scans every text artefact a recording produces, including captions, the .vtt file, transcript, timeline and overlay event log, for the real credentials a logged-in scene typed. A hit is a hard failure, not a post-hoc redaction, so none of it reaches the shipped video.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/lib/video/secrets.js`
+// - **Files:** scripts/lib/video/secrets.js, app/unit-tests/video/secrets.test.js
+// - **Keywords:** secret scan, video artefacts, credential leak, hard failure, captions, transcript
+// - **Related:** OPS-88, OPS-90
+// @end-capability
+
 // scripts/lib/video/secrets.js
 //
 // A logged-in scene script types real credentials into a real browser. Those values must never

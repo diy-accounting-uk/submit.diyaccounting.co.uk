@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-05 Retrieve VAT payments
+// - **Use when:** a customer needs payments HMRC has recorded against the VAT account.
+// - **Does:** hmrcVatPaymentsGet.js's ingestHandler calls HMRC's VAT Payments API for a date range. vatPayments.html displays the recorded payments.
+// - **Run:** `GET /api/v1/hmrc/vat/payment`
+// - **Entry:** `app/functions/hmrc/hmrcVatPaymentsGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatPaymentsGet.js:getVatPayments`
+// - **Files:** app/functions/hmrc/hmrcVatPaymentsGet.js, app/unit-tests/functions/hmrcVatPaymentsGet.test.js, behaviour-tests/getVatPayments.behaviour.test.js, web/public/hmrc/vat/vatPayments.html
+// - **Keywords:** vat payments, payment history, vat account, date range, hmrc vat api
+// - **Related:** HMRC-04, HMRC-06
+// @end-capability
+
 // app/functions/hmrc/hmrcVatPaymentsGet.js
 
 import { createLogger } from "../../lib/logger.js";

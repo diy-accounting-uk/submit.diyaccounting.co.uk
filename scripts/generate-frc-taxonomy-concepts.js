@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-13 Map the FRC iXBRL taxonomy and validate accounts
+// - **Use when:** the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
+// - **Does:** generate-frc-taxonomy-concepts.js fetches the FRS 102 entry-point schema from the FRC taxonomy site and writes the flat concept-name list to fixtures/frc-taxonomy/frs-102-2026-concepts.json. loadFrcTaxonomyConcepts loads and caches that list for the iXBRL generator to check every emitted concept against. validate-accounts-ixbrl.js posts a generated micro-entity iXBRL document to Companies House's public XBRL test validator over the network.
+// - **Run:** `node scripts/generate-frc-taxonomy-concepts.js`; `npm run validate:accounts-ixbrl`; `node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>`
+// - **Entry:** `scripts/generate-frc-taxonomy-concepts.js:main`; `scripts/validate-accounts-ixbrl.js:main`; `app/services/accountsIxbrlCommon.js:loadFrcTaxonomyConcepts`
+// - **Files:** scripts/generate-frc-taxonomy-concepts.js, scripts/validate-accounts-ixbrl.js
+// - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
+// - **Related:** CH-08, CH-07
+// @end-capability
+
 /**
  *
  * One-off script: fetch the FRS 102 entry point the Companies House accounts TIS points micro-

@@ -62,6 +62,11 @@ export function recordStyleFromStylesheet(css) {
   return `\n${rules.join("\n")}\n`;
 }
 
+// The browser copy carries no capability header: the source's header is the one entry of the report.
+function withoutCapabilityHeaders(source) {
+  return source.replace(/\n\/\/ @capability [\s\S]*?\n\/\/ @end-capability\n/g, "");
+}
+
 /**
  * The generated files and the contents each should have, from the sources in root.
  * @param {string} [root]
@@ -80,7 +85,7 @@ export function generatedFiles(root = ROOT) {
     },
     {
       path: BROWSER_HELPER,
-      contents: `${LICENCE}\n${generatedNote(HELPER)}${helperSource.slice(LICENCE.length)}`,
+      contents: `${LICENCE}\n${generatedNote(HELPER)}${withoutCapabilityHeaders(helperSource.slice(LICENCE.length))}`,
     },
   ];
 }

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-06 File a change of registered email address
+// - **Use when:** a company needs to register or change its registered email address with Companies House.
+// - **Does:** companiesHouseRegisteredEmailEligibilityGet.js checks whether a company is eligible for email registration. companiesHouseRegisteredEmailAddressPost.js validates and files a new registered email address via putRegisteredEmailAddress.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js:ingestHandler`; `app/functions/companies-house/companiesHouseRegisteredEmailAddressPost.js:ingestHandler`
+// - **Files:** app/functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js, app/functions/companies-house/companiesHouseRegisteredEmailAddressPost.js, app/unit-tests/functions/companiesHouseRegisteredEmailEligibilityGet.test.js, app/unit-tests/functions/companiesHouseRegisteredEmailAddressPost.test.js, web/public/companies-house/changeRegisteredEmail.html, behaviour-tests/changeRegisteredEmail.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-accounts-steps.js
+// - **Keywords:** companies house, registered email, eligibility, change of email, filing, transaction
+// - **Related:** CH-05, CH-09
+// @end-capability
+
 // app/functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js
 // Checks whether a company can have its registered email address changed before the page lets
 // the user go any further. This API changes an existing address, it does not set the first one,

@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-14a Wait for a CI slot, then sweep stale stacks
+# - **Use when:** a branch deploy needs to clean up stale stacks while slots are claimed.
+# - **Does:** ci-claim-check-proof.sh polls the SSO slot parameters until one is claimed by a running deployment with standing stacks, then dispatches destroy-ci.yml with forced sweep and prints the "Skipping" results.
+# - **Run:** `scripts/ci-claim-check-proof.sh [--timeout-minutes N] [--set ci-set1|ci-set2]`
+# - **Entry:** `scripts/ci-claim-check-proof.sh`
+# - **Files:** scripts/ci-claim-check-proof.sh
+# - **Keywords:** ci slot, wait for slot, destroy stale stacks, sweep-min-age-hours, ci-set, claim check
+# - **Related:** OPS-10, OPS-13
+# @end-capability
+
 set -euo pipefail
 
 TIMEOUT_MINUTES=60

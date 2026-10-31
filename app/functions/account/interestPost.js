@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-03 Capture feedback interest
+// - **Use when:** a signed-in user clicks the homepage join button to register feedback interest.
+// - **Does:** interestPost.js publishes a feedback engagement notification to an SNS topic. It reads the email from the JWT authorizer context. It does not calculate or charge any interest.
+// - **Run:** `POST /api/v1/interest`
+// - **Entry:** `app/functions/account/interestPost.js:ingestHandler`
+// - **Files:** app/functions/account/interestPost.js, app/unit-tests/functions/interestPost.test.js
+// - **Keywords:** interest, feedback, engagement, sns, join button, homepage cta
+// - **Related:** SITE-04
+// @end-capability
+
 // app/functions/account/interestPost.js
 
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";

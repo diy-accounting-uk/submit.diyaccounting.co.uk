@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-12 Provision the analytics lake and Athena workgroup
+// - **Use when:** a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
+// - **Does:** AnalyticsStack.java is the environment-scoped stack that outlives any one deployment. It owns the activity-event delivery stream, the lake's S3 buckets and the Glue catalog database. It also owns the Athena workgroup every other analytics construct queries or writes into.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java:AnalyticsStack`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/AnalyticsStackTest.java
+// - **Keywords:** analytics lake, glue database, athena workgroup, environment-scoped stack, lake bucket, s3 lake
+// - **Related:** DATA-13
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -28,6 +40,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
+import co.uk.diyaccounting.submit.stacks.analytics.PassFiguresPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.PayPalDonationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
@@ -153,7 +166,7 @@ public class AnalyticsStack extends Stack {
         // receipts and bundles stay in DynamoDB with PITR, so nothing here is a system of
         // record and everything can be destroyed with the stack.
         this.lakeBucket = Bucket.Builder.create(this, prefix + "-AnalyticsLake")
-                .bucketName(sharedNames.analyticsLakeBucketName)
+                .bucketName(sharedNames.analytics.analyticsLakeBucketName)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .enforceSsl(true)
@@ -163,7 +176,7 @@ public class AnalyticsStack extends Stack {
                 .build();
 
         this.resultsBucket = Bucket.Builder.create(this, prefix + "-AnalyticsResults")
-                .bucketName(sharedNames.analyticsResultsBucketName)
+                .bucketName(sharedNames.analytics.analyticsResultsBucketName)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .enforceSsl(true)
@@ -181,15 +194,15 @@ public class AnalyticsStack extends Stack {
         var transformLambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(sharedNames.activityEventTransformLambdaFunctionName)
+                        .idPrefix(sharedNames.analytics.activityEventTransformLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ingestFunctionName(sharedNames.activityEventTransformLambdaFunctionName)
-                        .ingestHandler(sharedNames.activityEventTransformLambdaHandler)
-                        .ingestLambdaArn(sharedNames.activityEventTransformLambdaArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.analytics.activityEventTransformLambdaFunctionName)
+                        .ingestHandler(sharedNames.analytics.activityEventTransformLambdaHandler)
+                        .ingestLambdaArn(sharedNames.analytics.activityEventTransformLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.activityEventTransformProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.analytics.activityEventTransformProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.seconds(60))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
@@ -202,13 +215,13 @@ public class AnalyticsStack extends Stack {
         // Created explicitly so the Firehose role's logs grant can name one log group rather
         // than the whole account.
         var streamLogGroup = LogGroup.Builder.create(this, prefix + "-ActivityEventsStreamLogGroup")
-                .logGroupName(sharedNames.activityEventsDeliveryStreamLogGroupName)
+                .logGroupName(sharedNames.analytics.activityEventsDeliveryStreamLogGroupName)
                 .retention(RetentionDays.ONE_MONTH)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         var firehoseRole = Role.Builder.create(this, prefix + "-ActivityEventsFirehoseRole")
-                .roleName(sharedNames.activityEventsDeliveryStreamName + "-firehose-role")
+                .roleName(sharedNames.analytics.activityEventsDeliveryStreamName + "-firehose-role")
                 .assumedBy(new ServicePrincipal("firehose.amazonaws.com"))
                 .build();
 
@@ -245,14 +258,14 @@ public class AnalyticsStack extends Stack {
                 .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"))
                 .resources(List.of(
                         glueCatalogArn(),
-                        glueDatabaseArn(sharedNames.glueDatabaseName),
-                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME)))
+                        glueDatabaseArn(sharedNames.analytics.glueDatabaseName),
+                        glueTableArn(sharedNames.analytics.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME)))
                 .build());
 
         // Buffering at 900s and 128 MiB: Parquet's per-file overhead makes many small files
         // actively bad, and fifteen-minute latency is irrelevant to a daily dashboard.
         this.activityEventsStream = CfnDeliveryStream.Builder.create(this, prefix + "-ActivityEventsStream")
-                .deliveryStreamName(sharedNames.activityEventsDeliveryStreamName)
+                .deliveryStreamName(sharedNames.analytics.activityEventsDeliveryStreamName)
                 .deliveryStreamType("DirectPut")
                 .extendedS3DestinationConfiguration(
                         CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
@@ -270,7 +283,7 @@ public class AnalyticsStack extends Stack {
                                 .compressionFormat("UNCOMPRESSED")
                                 .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
                                         .enabled(true)
-                                        .logGroupName(sharedNames.activityEventsDeliveryStreamLogGroupName)
+                                        .logGroupName(sharedNames.analytics.activityEventsDeliveryStreamLogGroupName)
                                         .logStreamName("S3Delivery")
                                         .build())
                                 .processingConfiguration(CfnDeliveryStream.ProcessingConfigurationProperty.builder()
@@ -316,7 +329,7 @@ public class AnalyticsStack extends Stack {
                                                 .schemaConfiguration(
                                                         CfnDeliveryStream.SchemaConfigurationProperty.builder()
                                                                 .catalogId(this.getAccount())
-                                                                .databaseName(sharedNames.glueDatabaseName)
+                                                                .databaseName(sharedNames.analytics.glueDatabaseName)
                                                                 .tableName(ACTIVITY_EVENTS_CURATED_TABLE_NAME)
                                                                 .roleArn(firehoseRole.getRoleArn())
                                                                 .versionId("LATEST")
@@ -331,7 +344,7 @@ public class AnalyticsStack extends Stack {
         // EventBridge rule: activity bus to the lake
         // ============================================================================
         IEventBus activityBus = software.amazon.awscdk.services.events.EventBus.fromEventBusName(
-                this, "ActivityBus", sharedNames.activityBusName);
+                this, "ActivityBus", sharedNames.activity.activityBusName);
 
         var importedStream = DeliveryStream.fromDeliveryStreamArn(
                 this, "ActivityEventsStreamRef", this.activityEventsStream.getAttrArn());
@@ -354,7 +367,7 @@ public class AnalyticsStack extends Stack {
         this.glueDatabase = CfnDatabase.Builder.create(this, prefix + "-GlueDatabase")
                 .catalogId(this.getAccount())
                 .databaseInput(CfnDatabase.DatabaseInputProperty.builder()
-                        .name(sharedNames.glueDatabaseName)
+                        .name(sharedNames.analytics.glueDatabaseName)
                         .description("Usage analytics for " + props.envName())
                         .build())
                 .build();
@@ -363,9 +376,9 @@ public class AnalyticsStack extends Stack {
                 this,
                 CloudFrontAccessLogs.CloudFrontAccessLogsProps.builder()
                         .envResourceNamePrefix(prefix)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .glueDatabase(this.glueDatabase)
                         .build());
 
@@ -374,14 +387,14 @@ public class AnalyticsStack extends Stack {
                 prefix + "-TableChangeDelivery",
                 TableChangeDelivery.TableChangeDeliveryProps.builder()
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .glueDatabaseDependency(Optional.of(this.glueDatabase))
                         .sharedNames(sharedNames)
                         .envName(props.envName())
                         .resourceNamePrefix(prefix)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         var alarmStateChangeDelivery = new AlarmStateChangeDelivery(
@@ -389,14 +402,14 @@ public class AnalyticsStack extends Stack {
                 prefix + "-AlarmStateChangeDelivery",
                 AlarmStateChangeDelivery.AlarmStateChangeDeliveryProps.builder()
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .glueDatabaseDependency(Optional.of(this.glueDatabase))
                         .sharedNames(sharedNames)
                         .envName(props.envName())
                         .resourceNamePrefix(prefix)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         Lambda.stackHealthAlarm(
@@ -412,8 +425,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 StripeReconciliationTables.StripeReconciliationTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         stripeTables.balanceTransactionsTable.addResourceDependency(this.glueDatabase);
         stripeTables.chargesTable.addResourceDependency(this.glueDatabase);
@@ -423,8 +436,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 PayPalDonationTables.PayPalDonationTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         paypalTables.donationsTable.addResourceDependency(this.glueDatabase);
 
@@ -432,8 +445,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 AdsCostTables.AdsCostTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         adsCostTables.costTable.addResourceDependency(this.glueDatabase);
 
@@ -441,8 +454,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 FxRateTables.FxRateTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         fxRateTables.ratesTable.addResourceDependency(this.glueDatabase);
 
@@ -450,8 +463,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 Ga4Tables.Ga4TablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
@@ -462,8 +475,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 Ga4DailyTables.Ga4DailyTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         ga4DailyTables.sessionsByHostSourceTable.addResourceDependency(this.glueDatabase);
         ga4DailyTables.funnelStepsTable.addResourceDependency(this.glueDatabase);
@@ -475,8 +488,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 WorkflowRunTables.WorkflowRunTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         workflowRunTables.doraRunsTable.addResourceDependency(this.glueDatabase);
         workflowRunTables.probeRunsTable.addResourceDependency(this.glueDatabase);
@@ -486,8 +499,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 OperatorEffortTables.OperatorEffortTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         operatorEffortTables.workflowRunsTable.addResourceDependency(this.glueDatabase);
         operatorEffortTables.issueEventsTable.addResourceDependency(this.glueDatabase);
@@ -497,8 +510,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 CompanyBookTables.CompanyBookTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         companyBookTables.companyAccountsTable.addResourceDependency(this.glueDatabase);
 
@@ -506,8 +519,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 ComplianceTables.ComplianceTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         complianceTables.accessibilityTable.addResourceDependency(this.glueDatabase);
         complianceTables.fraudHeadersTable.addResourceDependency(this.glueDatabase);
@@ -516,13 +529,13 @@ public class AnalyticsStack extends Stack {
                 this,
                 CostFocusTables.CostFocusTablesProps.builder()
                         .idPrefix(prefix)
-                        .databaseName(sharedNames.glueDatabaseName)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .build());
         costFocusTables.costFocusTable.addResourceDependency(this.glueDatabase);
 
         var curatedLocation =
-                "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_CURATED_PREFIX);
+                "s3://%s/%s".formatted(sharedNames.analytics.analyticsLakeBucketName, ACTIVITY_EVENTS_CURATED_PREFIX);
 
         var curatedTableParameters = new LinkedHashMap<String, String>();
         curatedTableParameters.put("classification", "parquet");
@@ -537,7 +550,7 @@ public class AnalyticsStack extends Stack {
 
         var curatedActivityEventsTable = CfnTable.Builder.create(this, prefix + "-ActivityEventsCuratedTable")
                 .catalogId(this.getAccount())
-                .databaseName(sharedNames.glueDatabaseName)
+                .databaseName(sharedNames.analytics.glueDatabaseName)
                 .tableInput(CfnTable.TableInputProperty.builder()
                         .name(ACTIVITY_EVENTS_CURATED_TABLE_NAME)
                         .description("Activity events converted to Parquet by Firehose, typed columns")
@@ -570,7 +583,7 @@ public class AnalyticsStack extends Stack {
                 DataQuality.DataQualityProps.builder()
                         .envName(props.envName())
                         .resourceNamePrefix(prefix)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .glueDatabaseDependency(Optional.of(this.glueDatabase))
                         .targetTableDependencies(Map.of(
                                 "activity_events", curatedActivityEventsTable,
@@ -580,8 +593,8 @@ public class AnalyticsStack extends Stack {
                                 "compliance_fraud_headers", complianceTables.fraudHeadersTable))
                         .lakeBucket(this.lakeBucket)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // ============================================================================
@@ -590,7 +603,7 @@ public class AnalyticsStack extends Stack {
         // recursiveDeleteOption matters for teardown: deleting a workgroup that still holds
         // named queries fails without it.
         this.workGroup = CfnWorkGroup.Builder.create(this, prefix + "-AnalyticsWorkGroup")
-                .name(sharedNames.athenaWorkGroupName)
+                .name(sharedNames.analytics.athenaWorkGroupName)
                 .description("Usage analytics queries for " + props.envName())
                 .state("ENABLED")
                 .recursiveDeleteOption(true)
@@ -599,7 +612,8 @@ public class AnalyticsStack extends Stack {
                         .publishCloudWatchMetricsEnabled(true)
                         .bytesScannedCutoffPerQuery(isProd ? 10_000_000_000L : 1_000_000_000L)
                         .resultConfiguration(CfnWorkGroup.ResultConfigurationProperty.builder()
-                                .outputLocation("s3://%s/athena/".formatted(sharedNames.analyticsResultsBucketName))
+                                .outputLocation(
+                                        "s3://%s/athena/".formatted(sharedNames.analytics.analyticsResultsBucketName))
                                 .encryptionConfiguration(CfnWorkGroup.EncryptionConfigurationProperty.builder()
                                         .encryptionOption("SSE_S3")
                                         .build())
@@ -614,8 +628,8 @@ public class AnalyticsStack extends Stack {
         var eventsPerDayQuery = CfnNamedQuery.Builder.create(this, prefix + "-ActivityEventsPerDayQuery")
                 .name("activity-events-per-day")
                 .description("Activity event counts per day, event name and actor")
-                .database(sharedNames.glueDatabaseName)
-                .workGroup(sharedNames.athenaWorkGroupName)
+                .database(sharedNames.analytics.glueDatabaseName)
+                .workGroup(sharedNames.analytics.athenaWorkGroupName)
                 .queryString(
                         """
                         SELECT date(from_iso8601_timestamp(event_ts)) AS day,
@@ -627,7 +641,7 @@ public class AnalyticsStack extends Stack {
                         GROUP  BY 1, 2, 3
                         ORDER  BY 1 DESC, 4 DESC
                         """
-                                .formatted(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME))
+                                .formatted(sharedNames.analytics.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME))
                 .build();
         eventsPerDayQuery.addResourceDependency(this.workGroup);
         eventsPerDayQuery.addResourceDependency(this.glueDatabase);
@@ -645,8 +659,8 @@ public class AnalyticsStack extends Stack {
                 .name("activity-events-all-view-definition")
                 .description("Definition of the " + ACTIVITY_EVENTS_UNION_VIEW_NAME
                         + " view, kept here for reference; the custom resource below is what actually runs it")
-                .database(sharedNames.glueDatabaseName)
-                .workGroup(sharedNames.athenaWorkGroupName)
+                .database(sharedNames.analytics.glueDatabaseName)
+                .workGroup(sharedNames.analytics.athenaWorkGroupName)
                 .queryString(unionViewSql)
                 .build();
         unionViewDefinitionQuery.addResourceDependency(this.workGroup);
@@ -659,9 +673,9 @@ public class AnalyticsStack extends Stack {
                         "QueryString",
                         unionViewSql,
                         "QueryExecutionContext",
-                        Map.of("Database", sharedNames.glueDatabaseName),
+                        Map.of("Database", sharedNames.analytics.glueDatabaseName),
                         "WorkGroup",
-                        sharedNames.athenaWorkGroupName))
+                        sharedNames.analytics.athenaWorkGroupName))
                 .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
                 .build();
 
@@ -671,7 +685,7 @@ public class AnalyticsStack extends Stack {
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
                                 .actions(List.of("athena:StartQueryExecution"))
-                                .resources(List.of(athenaWorkGroupArn(sharedNames.athenaWorkGroupName)))
+                                .resources(List.of(athenaWorkGroupArn(sharedNames.analytics.athenaWorkGroupName)))
                                 .build(),
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
@@ -683,9 +697,13 @@ public class AnalyticsStack extends Stack {
                                         "glue:UpdateTable"))
                                 .resources(List.of(
                                         glueCatalogArn(),
-                                        glueDatabaseArn(sharedNames.glueDatabaseName),
-                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME),
-                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_UNION_VIEW_NAME)))
+                                        glueDatabaseArn(sharedNames.analytics.glueDatabaseName),
+                                        glueTableArn(
+                                                sharedNames.analytics.glueDatabaseName,
+                                                ACTIVITY_EVENTS_CURATED_TABLE_NAME),
+                                        glueTableArn(
+                                                sharedNames.analytics.glueDatabaseName,
+                                                ACTIVITY_EVENTS_UNION_VIEW_NAME)))
                                 .build(),
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
@@ -708,8 +726,8 @@ public class AnalyticsStack extends Stack {
                 this,
                 BusinessViews.BusinessViewsProps.builder()
                         .resourceNamePrefix(prefix)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
-                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .resultsBucket(this.resultsBucket)
                         .build());
         businessViews.namedQueries.forEach(q -> {
@@ -805,12 +823,12 @@ public class AnalyticsStack extends Stack {
                         .envName(props.envName())
                         .sharedNames(sharedNames)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
-                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());
 
         new OperatorSnapshotPublish(
@@ -819,12 +837,27 @@ public class AnalyticsStack extends Stack {
                         .idPrefix(prefix)
                         .envName(props.envName())
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
-                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .build());
+
+        new PassFiguresPublish(
+                this,
+                PassFiguresPublish.PassFiguresPublishProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .passesTableName(sharedNames.data.passesTableName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());
 
         new RawExport(
@@ -833,12 +866,12 @@ public class AnalyticsStack extends Stack {
                         .idPrefix(prefix)
                         .envName(props.envName())
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
-                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());
 
         // ============================================================================
@@ -862,7 +895,7 @@ public class AnalyticsStack extends Stack {
                         .idPrefix(prefix)
                         .envName(props.envName())
                         .monthlyBudgetUsd(isProd ? 120 : 30)
-                        .telegramForwarderLambdaArn(sharedNames.activityTelegramForwarderLambdaArn)
+                        .telegramForwarderLambdaArn(sharedNames.activity.activityTelegramForwarderLambdaArn)
                         .createAnomalyMonitor(isProd)
                         .build());
 
@@ -877,7 +910,8 @@ public class AnalyticsStack extends Stack {
                 .metric(Metric.Builder.create()
                         .namespace("AWS/Firehose")
                         .metricName("DeliveryToS3.DataFreshness")
-                        .dimensionsMap(Map.of("DeliveryStreamName", sharedNames.activityEventsDeliveryStreamName))
+                        .dimensionsMap(
+                                Map.of("DeliveryStreamName", sharedNames.analytics.activityEventsDeliveryStreamName))
                         .statistic("Maximum")
                         .period(Duration.minutes(5))
                         .build())
@@ -893,7 +927,8 @@ public class AnalyticsStack extends Stack {
                 .metric(Metric.Builder.create()
                         .namespace("AWS/Firehose")
                         .metricName("ThrottledRecords")
-                        .dimensionsMap(Map.of("DeliveryStreamName", sharedNames.activityEventsDeliveryStreamName))
+                        .dimensionsMap(
+                                Map.of("DeliveryStreamName", sharedNames.analytics.activityEventsDeliveryStreamName))
                         .statistic("Sum")
                         .period(Duration.minutes(15))
                         .build())
@@ -908,9 +943,9 @@ public class AnalyticsStack extends Stack {
         // ============================================================================
         cfnOutput(this, "AnalyticsLakeBucketName", this.lakeBucket.getBucketName());
         cfnOutput(this, "AnalyticsResultsBucketName", this.resultsBucket.getBucketName());
-        cfnOutput(this, "ActivityEventsDeliveryStreamName", sharedNames.activityEventsDeliveryStreamName);
-        cfnOutput(this, "GlueDatabaseName", sharedNames.glueDatabaseName);
-        cfnOutput(this, "AthenaWorkGroupName", sharedNames.athenaWorkGroupName);
+        cfnOutput(this, "ActivityEventsDeliveryStreamName", sharedNames.analytics.activityEventsDeliveryStreamName);
+        cfnOutput(this, "GlueDatabaseName", sharedNames.analytics.glueDatabaseName);
+        cfnOutput(this, "AthenaWorkGroupName", sharedNames.analytics.athenaWorkGroupName);
 
         infof("AnalyticsStack %s created successfully for %s", this.getNode().getId(), prefix);
     }

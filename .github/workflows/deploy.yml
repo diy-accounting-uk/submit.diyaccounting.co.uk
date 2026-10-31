@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-06 Run the full deployment pipeline
+# - **Use when:** a change on main must reach production, or a named deployment must be redeployed by hand.
+# - **Does:** deploy.yml is the main pipeline, triggered by a push to main. It synths CDK, runs tests, deploys infrastructure and app code, then validates the result. Once validation passes it atomically moves the prod apex domain to the new deployment.
+# - **Run:** `git push origin main`; `gh workflow run deploy.yml -f deployment-name=<name>`
+# - **Entry:** `.github/workflows/deploy.yml`
+# - **Files:** .github/workflows/deploy.yml
+# - **Keywords:** deploy pipeline, prod apex, cdk synth, push to main, deployment-name, full deploy
+# - **Related:** OPS-04, OPS-09
+# @end-capability
+
 # deploy: force a clean prod deployment after the EdgeStack WAF fix (bump 02)
 name: deploy
 run-name: "deploy from ${{ github.ref_name }}"

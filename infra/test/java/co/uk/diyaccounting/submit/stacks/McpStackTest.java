@@ -86,7 +86,7 @@ class McpStackTest {
                         "Type",
                         "AWS::SSM::Parameter::Value<String>",
                         "Default",
-                        SubmitSharedNames.forDocs().mcpOauthBlobKeySecretArnParameterName)));
+                        SubmitSharedNames.forDocs().mcp.mcpOauthBlobKeySecretArnParameterName)));
     }
 
     @Test
@@ -299,7 +299,7 @@ class McpStackTest {
         assertEquals("docs-env-mcp-sessions", variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
         assertEquals(sharedNames.baseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
         assertTrue(variables.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
-        assertEquals(sharedNames.practiceClientsTableName, variables.get("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"));
+        assertEquals(sharedNames.data.practiceClientsTableName, variables.get("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"));
         var statements = iamStatementsForFunction(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());
         assertTrue(
                 statements.stream()

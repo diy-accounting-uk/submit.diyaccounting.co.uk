@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability SITE-01 Sign customers in via Cognito
+// - **Use when:** a page must start, complete or refresh a Cognito hosted-UI login.
+// - **Does:** auth-url-builder.js builds the Cognito hosted-UI authorization URL. login.html and the callback pages redirect and complete the exchange. cognitoTokenPost.js exchanges the code or refresh token for tokens. auth-service.js tracks token expiry and refreshes the session. auth-status.js renders logged-in state and sends a logout beacon.
+// - **Run:** `POST /api/v1/cognito/token`; `import { buildCognitoAuthUrl } from "web/public/lib/auth-url-builder.js"`
+// - **Entry:** `web/public/lib/auth-url-builder.js:buildCognitoAuthUrl`; `app/functions/auth/cognitoTokenPost.js:ingestHandler`; `web/public/lib/services/auth-service.js`
+// - **Files:** web/public/auth/login.html, web/public/auth/loginWithCognitoCallback.html, web/public/auth/loginWithMockCallback.html, web/public/auth/login-mock-addon.js, web/public/auth/signed-out.html, web/public/widgets/auth-status.js, web/public/lib/auth-url-builder.js, web/public/lib/services/auth-service.js, web/public/lib/utils/jwt-utils.js, app/functions/auth/cognitoTokenPost.js, app/functions/auth/preTokenGeneration/index.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IdentityStackTest.java, app/system-tests/cognitoAuth.system.test.js, app/unit-tests/functions/cognitoTokenPost.test.js, app/unit-tests/functions/preTokenGeneration.test.js, behaviour-tests/auth.behaviour.test.js, behaviour-tests/helpers/hosted-ui-navigation.js, behaviour-tests/steps/behaviour-login-steps.js, web/unit-tests/hosted-ui-navigation.test.js, web/unit-tests/auth-url-generation.test.js, web/unit-tests/auth-logout-sign-out.test.js
+// - **Keywords:** cognito, login, logout, hosted ui, oauth, token refresh, auth-status, sign in, callback, mfa claim, user pool
+// - **Related:** SITE-02
+// @end-capability
+
 // web/public/lib/auth-url-builder.js
 (function () {
   "use strict";

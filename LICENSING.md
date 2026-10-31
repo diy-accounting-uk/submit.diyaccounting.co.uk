@@ -1,6 +1,15 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability SITE-20 Document business governance and positioning
+- **Use when:** a question needs the licensing terms, trademark rules, product strategy or marketing rules.
+- **Does:** LICENSING.md sets out the PolyForm Internal Use License plus the hosted-service grant. TRADEMARKS.md covers trademark usage. ../private.diyaccounting.co.uk/strategy/STRATEGY.md covers product strategy. ../private.diyaccounting.co.uk/strategy/REPORT_COMPETITOR_ANALYSIS.md surveys the UK MTD market. ../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md covers HMRC and advertising-standards marketing copy rules.
+- **Run:** no command; see Does and Entry
+- **Entry:** `LICENSING.md`; `../private.diyaccounting.co.uk/strategy/STRATEGY.md`
+- **Files:** LICENSING.md, TRADEMARKS.md, ../private.diyaccounting.co.uk/strategy/STRATEGY.md, ../private.diyaccounting.co.uk/strategy/REPORT_COMPETITOR_ANALYSIS.md, ../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md
+- **Keywords:** licensing, polyform, trademarks, strategy, competitor analysis, marketing guidance, hmrc marketing rules, advertising standards
+@end-capability -->
+
 # Licensing
 
 

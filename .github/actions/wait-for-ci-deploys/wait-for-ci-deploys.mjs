@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-11 Queue CI branch deploys in creation order
+// - **Use when:** a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
+// - **Does:** wait-for-ci-deploys.mjs polls the GitHub API for older, still-running deploy.yml, deploy-app.yml, destroy-ci.yml or video-capture.yml runs on non-main branches. It blocks until they finish, or, in its alternative mode, waits for any unfinished run resolved to the same environment.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs:main`
+// - **Files:** .github/actions/wait-for-ci-deploys/action.yml, .github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs
+// - **Keywords:** queue deploys, wait for ci deploys, creation order, non-main branch, race condition, same slot
+// - **Related:** OPS-10, OPS-13
+// @end-capability
+
 // Waits until other in-progress or queued workflow runs that could race this one have finished.
 // Polls the GitHub API instead of relying on a concurrency group, because GitHub keeps only the
 // latest queued run per group and drops an older one the moment a third run arrives — the exact

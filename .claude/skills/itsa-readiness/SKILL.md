@@ -6,6 +6,16 @@ description: Say whether DIY Accounting Submit is ready to send HMRC the Income 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability HMRC-38 Check readiness for the ITSA recognition email
+- **Use when:** the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
+- **Does:** The itsa-readiness skill checks each minimum standard in the approvals checklist against the code and tests. It checks the sandbox year ran within HMRC's 14-day log window and the fraud header validation is clean. It reports ready, ready after named actions, or the blockers.
+- **Run:** `/itsa-readiness`
+- **Entry:** `.claude/skills/itsa-readiness/SKILL.md`
+- **Files:** .claude/skills/itsa-readiness/SKILL.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, ../private.diyaccounting.co.uk/hmrc/itsa/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, ../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
+- **Keywords:** itsa readiness, recognition email, production approval, sdst, minimum functionality standards, evidence, send day, 14-day window
+- **Related:** HMRC-34, HMRC-37
+@end-capability -->
+
 # itsa-readiness
 
 Answer one question: can the recognition email (`../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md`)

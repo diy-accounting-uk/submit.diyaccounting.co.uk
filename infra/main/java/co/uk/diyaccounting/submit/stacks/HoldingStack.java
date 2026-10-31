@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-116 Provision the holding-page stack
+// - **Use when:** the submit service's own holding page needs its own CloudFront distribution for a failover retarget.
+// - **Does:** HoldingStack serves the submit service's holding page from its own CloudFront distribution. It is tagged OriginFor=<holding fqdn> so a failover can retarget the live aliases onto it.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/HoldingStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/HoldingStack.java
+// - **Keywords:** holding page stack, failover, cloudfront distribution, originfor tag
+// - **Related:** OPS-133
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -241,7 +253,7 @@ public class HoldingStack extends Stack {
         ILogGroup distributionAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-HoldingDistributionAccessLogGroup",
-                        props.sharedNames().distributionAccessLogGroupName)
+                        props.sharedNames().observability.distributionAccessLogGroupName)
                 .logGroup();
 
         // During a failover requests arrive on every path the live site ever published, so map the
@@ -284,7 +296,7 @@ public class HoldingStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsDestination",
                 CfnDeliveryDestinationProps.builder()
-                        .name(props.sharedNames().distributionAccessLogDeliveryHoldingDestinationName)
+                        .name(props.sharedNames().observability.distributionAccessLogDeliveryHoldingDestinationName)
                         .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                         .outputFormat("json")
                         .build());
@@ -294,7 +306,7 @@ public class HoldingStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsSource",
                 CfnDeliverySourceProps.builder()
-                        .name(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)
+                        .name(props.sharedNames().observability.distributionAccessLogDeliveryHoldingSourceName)
                         .logType("ACCESS_LOGS") // required for CloudFront
                         .resourceArn(distributionArn)
                         .build());
@@ -305,7 +317,8 @@ public class HoldingStack extends Stack {
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsDelivery",
                 CfnDeliveryProps.builder()
                         // *** IMPORTANT: must exactly match the Name above ***
-                        .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)
+                        .deliverySourceName(
+                                props.sharedNames().observability.distributionAccessLogDeliveryHoldingSourceName)
                         .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                         .build());
 

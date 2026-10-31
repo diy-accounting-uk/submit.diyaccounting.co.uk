@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-19 Calculate ITSA tax liability
+// - **Use when:** HMRC's tax calculation for a tax year must be triggered or its result retrieved.
+// - **Does:** hmrcItsaCalculationTriggerPost.js triggers HMRC's tax calculation for a tax year. hmrcItsaCalculationGet.js retrieves the result and taxCalculation.html shows income, relief and liability.
+// - **Run:** `POST /api/v1/hmrc/itsa/calculation/trigger`; `GET /api/v1/hmrc/itsa/calculation`
+// - **Entry:** `app/functions/hmrc/hmrcItsaCalculationTriggerPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaCalculationGet.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaCalculationTriggerPost.js, app/functions/hmrc/hmrcItsaCalculationGet.js, app/unit-tests/functions/hmrcItsaCalculationTriggerPost.test.js, app/unit-tests/functions/hmrcItsaCalculationGet.test.js, web/public/hmrc/itsa/taxCalculation.html, web/browser-tests/taxCalculation.browser.test.js
+// - **Keywords:** itsa calculation, tax liability, tax year, income and relief, intent to crystallise
+// - **Related:** HMRC-16, HMRC-18, HMRC-20, HMRC-21
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaCalculationTriggerPost.js
 
 import { createLogger } from "../../lib/logger.js";

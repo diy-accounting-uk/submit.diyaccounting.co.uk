@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-141 Look up the customer behind a submission-failure alarm
+// - **Use when:** a prod-env-hmrc-submission-failure or prod-env-itsa-submission-failure alarm needs the customer, what HMRC answered and their entitlement.
+// - **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. The customer-lookup job in alarm-triage.yml commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
+// - **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file>`
+// - **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-triage.yml:customer-lookup`
+// - **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
+// - **Keywords:** customer lookup, submission failure, hashed sub, private repository, deploy key, telegram ping, athena, support alarms
+// - **Related:** OPS-18, OPS-76
+// @end-capability
+
 // scripts/alarm-customer-lookup.mjs
 //
 // From a prod submission-failure alarm, finds the customer behind each failed submission in the

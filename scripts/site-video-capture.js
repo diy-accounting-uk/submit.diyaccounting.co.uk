@@ -2,6 +2,25 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-52 Auto-record demo videos on prod deploy
+// - **Use when:** a prod deploy changes a page and its demo video needs re-recording.
+// - **Does:** video-capture-on-deploy.yml runs after deploy.yml. It dispatches video-capture.yml to re-record the scene videos for whichever pages changed. video-capture.yml records one scene script from videos/*.json against a running deployment, using site-video-capture.js.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `scripts/site-video-capture.js`
+// - **Files:** .github/workflows/video-capture-on-deploy.yml, .github/workflows/video-capture.yml
+// - **Keywords:** video capture, demo video, scene script, post-deploy recording, site-video-capture
+// @end-capability
+
+// @capability OPS-88 Orchestrate demo-video recording journeys
+// - **Use when:** a new or changed product journey needs a recorded demo video driven end to end by Playwright.
+// - **Does:** site-video-capture.js drives Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. localApp.js starts a scene script's declared `localApp` instead — a command, the url its web UI serves, and a readiness pattern — for a script whose target is a different local tool entirely rather than the submit site (videos/mcp-diya-gl.json records MCP Inspector driving diya-gl's MCP server this way). behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
+// - **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:record -- <scene> <simulator|proxy|ci|prod>`; `npm run video:record -- tour proxy`; `npm run video:record -- view-obligations ci`; `npm run video:mcp-diya-gl`; `npm run video:accounting-diya-gl-profit`
+// - **Entry:** `scripts/site-video-capture.js`; `scripts/lib/video/journey.js`
+// - **Files:** scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/localApp.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/localApp.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js
+// - **Keywords:** video capture, playwright, scene script, demo video, journey, hmrc sandbox test user, recording, mcp inspector, local app
+// - **Related:** OPS-89, OPS-90, OPS-91, OPS-92
+// @end-capability
+
 // scripts/site-video-capture.js
 //
 // Records a scene script (videos/*.json) against a running instance of the site and produces a

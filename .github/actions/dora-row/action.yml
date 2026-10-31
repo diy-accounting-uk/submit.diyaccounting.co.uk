@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-25 Record DORA and probe metrics
+# - **Use when:** a deploy or probe workflow step must record a metrics row for the dashboard.
+# - **Does:** dora-row writes one JSON row to the S3 analytics bucket per deploy or probe run. The row feeds the DORA and probe panels on the one-stop dashboard.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/dora-row/action.yml`
+# - **Files:** .github/actions/dora-row/action.yml
+# - **Keywords:** dora metrics, probe metrics, analytics lake, one-stop dashboard, deploy metrics row
+# - **Related:** OPS-26, OPS-27
+# @end-capability
+
 name: "Write a DORA or probe row to the lake"
 description: "Writes one JSON row to the analytics lake, for the DORA and probe panels on the one-stop dashboard"
 

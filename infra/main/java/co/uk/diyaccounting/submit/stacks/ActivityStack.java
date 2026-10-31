@@ -97,7 +97,7 @@ public class ActivityStack extends Stack {
         // EventBridge Custom Activity Bus
         // ============================================================================
         this.activityBus = EventBus.Builder.create(this, props.resourceNamePrefix() + "-ActivityBus")
-                .eventBusName(props.sharedNames().activityBusName)
+                .eventBusName(props.sharedNames().activity.activityBusName)
                 .build();
 
         cfnOutput(this, "ActivityBusName", this.activityBus.getEventBusName());
@@ -127,15 +127,16 @@ public class ActivityStack extends Stack {
         this.telegramForwarderLambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
+                        .idPrefix(props.sharedNames().activity.activityTelegramForwarderLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().activityTelegramForwarderLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().activityTelegramForwarderLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().activity.activityTelegramForwarderLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().activity.activityTelegramForwarderLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().activity.activityTelegramForwarderLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .activity
+                                .activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.seconds(10))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -198,19 +199,19 @@ public class ActivityStack extends Stack {
         var signInActivityPublishEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("ACTIVITY_BUS_NAME", this.activityBus.getEventBusName())
-                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", props.sharedNames().securityStateTableName);
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", props.sharedNames().data.securityStateTableName);
         this.signInActivityPublishLambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(props.sharedNames().signInActivityPublishLambdaFunctionName)
+                        .idPrefix(props.sharedNames().activity.signInActivityPublishLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().signInActivityPublishLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().signInActivityPublishLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().signInActivityPublishLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().activity.signInActivityPublishLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().activity.signInActivityPublishLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().activity.signInActivityPublishLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().signInActivityPublishProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().activity.signInActivityPublishProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.seconds(10))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -235,8 +236,8 @@ public class ActivityStack extends Stack {
                 .build());
 
         // Read and write the session#{hashedSub}#{appClient} item the session rule keeps.
-        ITable securityStateTable =
-                Table.fromTableName(this, "ImportedSecurityStateTable", props.sharedNames().securityStateTableName);
+        ITable securityStateTable = Table.fromTableName(
+                this, "ImportedSecurityStateTable", props.sharedNames().data.securityStateTableName);
         securityStateTable.grant(this.signInActivityPublishLambda.ingestLambda, "dynamodb:GetItem", "dynamodb:PutItem");
 
         // Hash the user's sub the same way every other activity publisher does.

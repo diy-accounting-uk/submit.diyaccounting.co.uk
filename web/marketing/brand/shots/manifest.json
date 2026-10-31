@@ -1,0 +1,131 @@
+{
+  "capturedAt": "2026-10-31",
+  "shots": [
+    {
+      "section": "submit",
+      "fragment": "header",
+      "theme": "light",
+      "width": 1280,
+      "file": "submit/header-light.png"
+    },
+    {
+      "section": "submit",
+      "fragment": "header",
+      "theme": "dark",
+      "width": 1280,
+      "file": "submit/header-dark.png"
+    },
+    {
+      "section": "submit",
+      "fragment": "features",
+      "theme": "light",
+      "width": 1280,
+      "file": "submit/features-light.png"
+    },
+    {
+      "section": "submit",
+      "fragment": "features",
+      "theme": "dark",
+      "width": 1280,
+      "file": "submit/features-dark.png"
+    },
+    {
+      "section": "submit",
+      "fragment": "vat-form",
+      "theme": "light",
+      "width": 390,
+      "file": "submit/vat-form-light.png"
+    },
+    {
+      "section": "submit",
+      "fragment": "vat-form",
+      "theme": "dark",
+      "width": 390,
+      "file": "submit/vat-form-dark.png"
+    },
+    {
+      "section": "spreadsheets",
+      "fragment": "nav",
+      "theme": "light",
+      "width": 1280,
+      "file": "spreadsheets/nav-light.png"
+    },
+    {
+      "section": "spreadsheets",
+      "fragment": "product-card",
+      "theme": "light",
+      "width": 1280,
+      "file": "spreadsheets/product-card-light.png"
+    },
+    {
+      "section": "spreadsheets",
+      "fragment": "reviews",
+      "theme": "light",
+      "width": 1280,
+      "file": "spreadsheets/reviews-light.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "products",
+      "theme": "light",
+      "width": 1280,
+      "file": "diya-gl/products-light.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "products",
+      "theme": "dark",
+      "width": 1280,
+      "file": "diya-gl/products-dark.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "topbar",
+      "theme": "light",
+      "width": 1280,
+      "file": "diya-gl/topbar-light.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "topbar",
+      "theme": "dark",
+      "width": 1280,
+      "file": "diya-gl/topbar-dark.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "book",
+      "theme": "light",
+      "width": 390,
+      "file": "diya-gl/book-light.png"
+    },
+    {
+      "section": "diya-gl",
+      "fragment": "book",
+      "theme": "dark",
+      "width": 390,
+      "file": "diya-gl/book-dark.png"
+    },
+    {
+      "section": "limited",
+      "fragment": "buttons",
+      "theme": "light",
+      "width": 1280,
+      "file": "limited/buttons-light.png"
+    },
+    {
+      "section": "limited",
+      "fragment": "summary",
+      "theme": "light",
+      "width": 1280,
+      "file": "limited/summary-light.png"
+    },
+    {
+      "section": "limited",
+      "fragment": "buttons-phone",
+      "theme": "light",
+      "width": 390,
+      "file": "limited/buttons-phone-light.png"
+    }
+  ]
+}

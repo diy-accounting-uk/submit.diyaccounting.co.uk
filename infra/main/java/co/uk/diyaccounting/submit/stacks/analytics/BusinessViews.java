@@ -254,6 +254,16 @@ public class BusinessViews extends Construct {
                     "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
                     List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")),
             new ViewDefinition(
+                    "v_pass_performance",
+                    "Per referral pass: uses, new accounts, accounts that filed, subscribers, paid charges, last used",
+                    List.of(
+                            "dynamo_passes",
+                            "dynamo_bundles",
+                            "dynamo_subscriptions",
+                            "stripe_subscriptions",
+                            "stripe_charges",
+                            "activity_events_all")),
+            new ViewDefinition(
                     "v_usd_gbp_daily",
                     "Pounds per dollar on each day from the European Central Bank reference rate, carried over"
                             + " days the bank does not publish",

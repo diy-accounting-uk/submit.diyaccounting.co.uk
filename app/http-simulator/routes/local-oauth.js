@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-02 Simulate local app OAuth
+// - **Use when:** the proxy variant needs a login flow without the Docker mock-oauth2-server.
+// - **Does:** apiEndpoint registers an interactive login form at GET /oauth/authorize for client_id=debugger. POST /default/token issues unsigned JWTs. The route also serves a debugger page and an OpenID discovery document.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/local-oauth.js"`
+// - **Entry:** `app/http-simulator/routes/local-oauth.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/local-oauth.js
+// - **Keywords:** oauth, local login, debugger client, unsigned jwt, openid discovery, mock-oauth2-server replacement
+// - **Related:** DEV-01, DEV-14
+// @end-capability
+
 // app/http-simulator/routes/local-oauth.js
 // Replaces Docker mock-oauth2-server for local app authentication
 // Handles: GET /oauth/authorize, POST /default/token

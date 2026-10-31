@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-22 Orchestrate the nightly ingestion workflow
+// - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
+// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs five ingestion jobs, then data quality, metrics publish and raw export publish. There is no Catch: any failure stops the chain, not a false zero.
+// - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
+// - **Keywords:** step functions, nightly ingestion, parallel branch, eventbridge scheduler, lambda errors alarm, verify pipeline, verify ingestion jobs
+// - **Related:** DATA-05, DATA-06, DATA-07, DATA-09, DATA-11, DATA-21
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.util.List;
@@ -50,7 +62,7 @@ import software.constructs.Construct;
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
  * once, since they share no data; then the data quality run; then the metrics publish; then the
- * raw export publish; then the operator snapshot publish; then {@code Succeed}. In prod it runs
+ * raw export publish; then the operator snapshot publish; then the pass figures publish; then {@code Succeed}. In prod it runs
  * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
@@ -151,6 +163,12 @@ public class NightlyIngestionWorkflow {
          */
         IFunction operatorSnapshotPublishLambda();
 
+        /**
+         * Imported by name from {@code AnalyticsStack}: {@code PassFiguresPublish.figuresPublishLambda}.
+         * Runs after the snapshot, so the figures read what the same night's ingestion landed.
+         */
+        IFunction passFiguresPublishLambda();
+
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
         }
@@ -225,6 +243,11 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-OperatorSnapshotPublish",
                 "operator snapshot publish",
                 props.operatorSnapshotPublishLambda());
+        var passFiguresTask = buildTask(
+                scope,
+                prefix + "-Nightly-PassFiguresPublish",
+                "pass figures publish",
+                props.passFiguresPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
         var definition = Chain.start(ingestionParallel)
@@ -232,6 +255,7 @@ public class NightlyIngestionWorkflow {
                 .next(metricsPublishTask)
                 .next(rawExportTask)
                 .next(operatorSnapshotTask)
+                .next(passFiguresTask)
                 .next(succeed);
 
         // ============================================================================

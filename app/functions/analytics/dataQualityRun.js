@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-11 Run Glue Data Quality checks
+// - **Use when:** new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
+// - **Does:** dataQualityRun.js registers missing S3 partitions in the Glue catalog before checks run. Its handler starts one Glue Data Quality ruleset run per configured target table, without waiting. Glue publishes its own pass/fail metric; DataQuality.java provisions the ruleset, alarm and runner Lambda.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/dataQualityRun.js:handler`
+// - **Files:** app/functions/analytics/dataQualityRun.js, app/unit-tests/analytics/dataQualityRun.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/DataQuality.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/DataQualityTest.java
+// - **Keywords:** glue data quality, ruleset evaluation, partition registration, failed rules metric, activity_events, alarm_state_changes, dora_runs
+// - **Related:** DATA-14
+// @end-capability
+
 // app/functions/analytics/dataQualityRun.js
 //
 // Daily job that starts one Glue Data Quality evaluation run per target table (activity_events,

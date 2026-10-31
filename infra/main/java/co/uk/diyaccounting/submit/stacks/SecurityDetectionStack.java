@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-122 Provision the Security Detection stack
+// - **Use when:** environment-level CloudWatch alarms for scan detection and data-theft detection need synthesizing.
+// - **Does:** SecurityDetectionStack creates environment-level CloudWatch alarms for scan detection and data-theft detection, built on the CloudTrail DynamoDB data events ObservabilityStack already collects. It imports, rather than creates, that stack's CloudTrail log group and security-findings SNS topic by naming convention, so it deploys and destroys independently.
+// - **Run:** `npm run cdk:synth-environment`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStackTest.java
+// - **Keywords:** security detection stack, scan detection alarm, data theft alarm, cloudtrail data events
+// - **Related:** OPS-117, OPS-121, OPS-73
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -111,11 +123,11 @@ public class SecurityDetectionStack extends Stack {
         // the async-request and bundle-capacity tables, which hold operational state rather than
         // customer records.
         List<String> customerTableNames = List.of(
-                props.sharedNames().receiptsTableName,
-                props.sharedNames().bundlesTableName,
-                props.sharedNames().passesTableName,
-                props.sharedNames().subscriptionsTableName,
-                props.sharedNames().hmrcApiRequestsTableName);
+                props.sharedNames().data.receiptsTableName,
+                props.sharedNames().data.bundlesTableName,
+                props.sharedNames().data.passesTableName,
+                props.sharedNames().data.subscriptionsTableName,
+                props.sharedNames().data.hmrcApiRequestsTableName);
 
         String tableNameClause = customerTableNames.stream()
                 .map(tableName -> "$.requestParameters.tableName = \"%s\"".formatted(tableName))

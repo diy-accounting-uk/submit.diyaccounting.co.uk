@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-02 Authenticate MCP sessions via Cognito
+// - **Use when:** the MCP's own tools (cloud book open/save) need a signed-in DIY Accounting Submit session.
+// - **Does:** signIn in mcp/lib/auth.js opens the Cognito hosted UI and catches the redirect on a loopback listener, ports 49152 to 49159. It exchanges the code at the token endpoint and caches the refresh and id tokens under ~/.config/diya-submit/credentials.json, mode 600. accessToken refreshes the cached id token silently once it nears expiry.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/auth.js:signIn`; `mcp/lib/auth.js:accessToken`
+// - **Files:** mcp/lib/auth.js, mcp/test/auth.test.js
+// - **Keywords:** mcp auth, cognito, pkce, oauth, loopback, credentials.json, sign in, access token
+// - **Related:** MCP-01, MCP-03
+// @end-capability
+
 // auth.js -- the submission MCP's own stdio sign-in: authorization code with PKCE on a loopback
 // redirect, the flow every CLI uses. signIn() opens the pool's hosted UI with a code challenge,
 // catches the code on the first free port of the loopback listener's range (IdentityStack.java's

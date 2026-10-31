@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-05 Pull GA4 daily BigQuery aggregate tables
+// - **Use when:** GA4's scheduled-query aggregate tables must land in the lake as daily NDJSON.
+// - **Does:** ga4DailyPull.js copies one D-2 day of each of BigQuery's four one-stop-dashboard aggregate tables into the lake as gzipped NDJSON. Those tables are maintained by scheduled queries declared in bigquery.toml. Ga4DailyTables.java provisions the matching Glue tables with dt partition projection.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/ga4DailyPull.js:handler`
+// - **Files:** app/functions/analytics/ga4DailyPull.js, app/unit-tests/analytics/ga4DailyPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTablesTest.java
+// - **Keywords:** ga4 bigquery, one-stop dashboard, aggregate tables, sessions by host source, funnel steps, key events, downloads by product, dt partition
+// - **Related:** DATA-06, DATA-43
+// @end-capability
+
 // app/functions/analytics/ga4DailyPull.js
 //
 // Nightly job that copies the four one-stop-dashboard aggregate tables infra/google/gcp/bigquery.toml

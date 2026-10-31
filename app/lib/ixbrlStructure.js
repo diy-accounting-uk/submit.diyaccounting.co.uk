@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-16 Check an accounts iXBRL document as a reader sees it
+// - **Use when:** an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
+// - **Does:** ixbrlStructureProblems lists the structural problems in an iXBRL document without a taxonomy. It checks that the document is well-formed and the ix:header is hidden with one schemaRef. It checks that every context and unit reference resolves and every context is used. It checks the ixt2 transforms, duplicate facts, and the absence of scripts, links and images. The browser test opens each accounts case and the computations as XHTML. It asserts that no header text is visible, the balance sheet reads in order and nothing follows the last note. It saves each render under target/accounts-documents/.
+// - **Run:** `npx vitest run app/unit-tests/lib/ixbrlStructure.test.js`; `npx playwright test --project=browser-tests web/browser-tests/accountsDocumentRendering.browser.test.js`
+// - **Entry:** `app/lib/ixbrlStructure.js:ixbrlStructureProblems`; `app/test-helpers/accountsDocumentCases.js:accountsDocumentCases`
+// - **Files:** app/lib/ixbrlStructure.js, app/test-helpers/accountsDocumentCases.js, app/unit-tests/lib/ixbrlStructure.test.js, web/browser-tests/accountsDocumentRendering.browser.test.js
+// - **Keywords:** ixbrl, inline xbrl, accounts document, rendering, screenshot, header hidden, context, unit, transform, xhtml, validation
+// - **Related:** CH-07, CH-08, CH-13, CH-15
+// @end-capability
+
 // app/lib/ixbrlStructure.js
 // The structural checks an Inline XBRL validator runs first, without a taxonomy: the document is
 // well-formed XML, the ix:header is hidden and carries a schemaRef, every fact names a context

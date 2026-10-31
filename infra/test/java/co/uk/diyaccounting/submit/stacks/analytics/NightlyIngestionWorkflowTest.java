@@ -59,6 +59,7 @@ class NightlyIngestionWorkflowTest {
         var rawExportPublishLambda = testLambda(stack, "RawExportPublishLambda", "docs-env-raw-export-publish");
         var operatorSnapshotPublishLambda =
                 testLambda(stack, "OperatorSnapshotPublishLambda", "docs-env-operator-snapshot-publish");
+        var passFiguresPublishLambda = testLambda(stack, "PassFiguresPublishLambda", "docs-env-pass-figures-publish");
 
         var props = NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
                 .idPrefix("docs-env")
@@ -73,7 +74,8 @@ class NightlyIngestionWorkflowTest {
                 .dataQualityRunLambda(dataQualityRunLambda)
                 .metricsPublishLambda(metricsPublishLambda)
                 .rawExportPublishLambda(rawExportPublishLambda)
-                .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda);
+                .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda)
+                .passFiguresPublishLambda(passFiguresPublishLambda);
         if (withOptionalJobs) {
             props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
                     .paypalDonationsPullLambda(
@@ -138,6 +140,7 @@ class NightlyIngestionWorkflowTest {
         int metricsPublishIndex = definitionText.indexOf("\"metrics publish\":{");
         int rawExportIndex = definitionText.indexOf("\"raw export publish\":{");
         int operatorSnapshotIndex = definitionText.indexOf("\"operator snapshot publish\":{");
+        int passFiguresIndex = definitionText.indexOf("\"pass figures publish\":{");
 
         assertTrue(parallelIndex >= 0, "expected the parallel branch state");
         assertTrue(stripeIndex > parallelIndex, "Stripe task should be nested inside the parallel branch");
@@ -157,6 +160,9 @@ class NightlyIngestionWorkflowTest {
         assertTrue(
                 operatorSnapshotIndex > rawExportIndex,
                 "the operator snapshot should publish after every ingestion job and export has finished");
+        assertTrue(
+                passFiguresIndex > operatorSnapshotIndex,
+                "the pass figures should publish after the operator snapshot");
 
         // Exactly five LambdaInvoke tasks named as the ingestion jobs sit in the parallel
         // branch: the definition contains no sixth job's state key between the parallel
@@ -180,11 +186,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Ten tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Eleven tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                10,
+                11,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),

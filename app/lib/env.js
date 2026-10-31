@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-84 Validate required environment variables at startup
+// - **Use when:** a Lambda should fail immediately on a missing environment variable instead of partway through a request.
+// - **Does:** env.js checks that the environment variables a Lambda needs are set before it starts handling events. validateEnv throws at startup rather than letting the Lambda fail partway through a request.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/env.js:validateEnv`
+// - **Files:** app/lib/env.js
+// - **Keywords:** environment variables, fail fast, lambda startup, config validation, required vars
+// @end-capability
+
 // app/lib/env.js
 
 import dotenv from "dotenv";

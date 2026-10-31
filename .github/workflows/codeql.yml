@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-30 Run CodeQL security scanning
+# - **Use when:** checking what CodeQL scans, or excluding a new non-production path from the scan.
+# - **Does:** codeql.yml runs CodeQL against main on its schedule. codeql-config.yml excludes test code, mock infrastructure and other non-production files from the scan.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/codeql.yml`
+# - **Files:** .github/codeql/codeql-config.yml, .github/workflows/codeql.yml
+# - **Keywords:** codeql, static analysis, security scan, scheduled scan, exclude paths
+# - **Related:** OPS-36
+# @end-capability
+
 name: "CodeQL"
 
 on:

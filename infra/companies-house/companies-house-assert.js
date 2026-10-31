@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-02 Verify the Companies House OAuth app configuration
+// - **Use when:** checking that a deployed environment's Companies House OAuth app and API key still authorise.
+// - **Does:** companies-house-assert.js reads companies-house.toml and calls the live Companies House identity and REST endpoints. It confirms the client id and redirect pair authorise without a 400. It confirms the REST API key answers a public-data call and the client id matches the deployed .env.
+// - **Run:** `node infra/companies-house/companies-house-assert.js --environment ci`; `node infra/companies-house/companies-house-assert.js --environment prod`
+// - **Entry:** `infra/companies-house/companies-house-assert.js:main`; `infra/companies-house/companies-house.toml`
+// - **Files:** infra/companies-house/companies-house.toml, infra/companies-house/companies-house-assert.js, app/unit-tests/scripts/companiesHouseAssert.test.js
+// - **Keywords:** companies house, oauth, assert, developer hub, client id, redirect uri, api key, identity-sandbox, infra-apply
+// - **Related:** CH-01
+// @end-capability
+
 /**
  *
  * Assert infra/companies-house/companies-house.toml against what a live call can prove: each

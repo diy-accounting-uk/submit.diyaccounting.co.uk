@@ -1,0 +1,835 @@
+{
+  "version": 1,
+  "disclosure": "#ad",
+  "generatePassUrl": "https://submit.diyaccounting.co.uk/passes/generate-digital.html",
+  "passUrlTemplate": "https://submit.diyaccounting.co.uk/bundles.html?pass={code}",
+  "passHosts": [
+    "submit.diyaccounting.co.uk",
+    "ci-submit.diyaccounting.co.uk"
+  ],
+  "passCodePattern": "^[a-z]{3,7}(-[a-z]{3,7}){3}$",
+  "passCodeExample": "tiger-happy-maple-river",
+  "submitHosts": [
+    "submit.diyaccounting.co.uk"
+  ],
+  "offers": {
+    "withPass": "7 days of free VAT submissions",
+    "withoutPass": "a free day pass"
+  },
+  "lengths": [
+    {
+      "id": "headline",
+      "label": "Headline",
+      "max": 80
+    },
+    {
+      "id": "short",
+      "label": "Short",
+      "max": 240
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "max": 800
+    },
+    {
+      "id": "long",
+      "label": "Long",
+      "max": 1600
+    }
+  ],
+  "networks": [
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "urlTemplate": "https://www.linkedin.com/sharing/share-offsite/?url={url}",
+      "utmMedium": "social",
+      "copiesText": true
+    },
+    {
+      "id": "x",
+      "label": "X",
+      "urlTemplate": "https://x.com/intent/post?text={text}",
+      "utmMedium": "social",
+      "copiesText": false,
+      "maxWeightedLength": 280
+    },
+    {
+      "id": "facebook",
+      "label": "Facebook",
+      "urlTemplate": "https://www.facebook.com/sharer/sharer.php?u={url}",
+      "utmMedium": "social",
+      "copiesText": true
+    },
+    {
+      "id": "whatsapp",
+      "label": "WhatsApp",
+      "urlTemplate": "https://wa.me/?text={text}",
+      "utmMedium": "social",
+      "copiesText": false
+    },
+    {
+      "id": "reddit",
+      "label": "Reddit",
+      "urlTemplate": "https://www.reddit.com/submit?url={url}&title={title}",
+      "utmMedium": "social",
+      "copiesText": true
+    },
+    {
+      "id": "email",
+      "label": "Email",
+      "urlTemplate": "mailto:?subject={subject}&body={text}",
+      "utmMedium": "email",
+      "copiesText": false
+    }
+  ],
+  "imageSizes": [
+    {
+      "id": "og",
+      "width": 1200,
+      "height": 630,
+      "label": "Link preview",
+      "use": "LinkedIn, Facebook, X and WhatsApp link previews; Reddit link posts"
+    },
+    {
+      "id": "square",
+      "width": 1080,
+      "height": 1080,
+      "label": "Square post",
+      "use": "LinkedIn, Facebook and Instagram feed posts"
+    },
+    {
+      "id": "portrait",
+      "width": 1080,
+      "height": 1350,
+      "label": "Portrait post",
+      "use": "Instagram and Facebook feed posts (4:5)"
+    },
+    {
+      "id": "story",
+      "width": 1080,
+      "height": 1920,
+      "label": "Story",
+      "use": "Instagram and Facebook Stories, Reels, YouTube Shorts, TikTok (9:16)"
+    },
+    {
+      "id": "x",
+      "width": 1600,
+      "height": 900,
+      "label": "X image",
+      "use": "X in-stream image (16:9)"
+    },
+    {
+      "id": "display-landscape",
+      "width": 1200,
+      "height": 628,
+      "label": "Display ad, landscape",
+      "use": "Google Ads and Microsoft Advertising responsive display ads"
+    },
+    {
+      "id": "display-square",
+      "width": 1200,
+      "height": 1200,
+      "label": "Display ad, square",
+      "use": "Google Ads and Microsoft Advertising responsive display ads"
+    },
+    {
+      "id": "mrec",
+      "width": 300,
+      "height": 250,
+      "label": "Medium rectangle",
+      "use": "IAB display banner"
+    },
+    {
+      "id": "leaderboard",
+      "width": 728,
+      "height": 90,
+      "label": "Leaderboard",
+      "use": "IAB display banner"
+    },
+    {
+      "id": "mobile-banner",
+      "width": 320,
+      "height": 50,
+      "label": "Mobile banner",
+      "use": "IAB display banner"
+    },
+    {
+      "id": "skyscraper",
+      "width": 160,
+      "height": 600,
+      "label": "Wide skyscraper",
+      "use": "IAB display banner"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "submit-vat",
+      "label": "Post Submit VAT",
+      "target": "submit-vat",
+      "start": "2026-11-01",
+      "end": "2027-10-31"
+    },
+    {
+      "id": "submit",
+      "label": "Post DIY Accounting Submit",
+      "target": "submit-all",
+      "start": "2026-11-01",
+      "end": "2027-10-31"
+    }
+  ],
+  "sections": [
+    {
+      "id": "submit",
+      "name": "DIY Accounting Submit",
+      "summary": "DIY Accounting Submit™ sends your VAT return to HMRC under Making Tax Digital, from the figures you already keep.",
+      "site": "https://submit.diyaccounting.co.uk/",
+      "brand": "submit",
+      "hasDark": true,
+      "swatches": [
+        {
+          "token": "--c-canvas",
+          "label": "Canvas"
+        },
+        {
+          "token": "--c-paper",
+          "label": "Paper"
+        },
+        {
+          "token": "--c-ink",
+          "label": "Ink"
+        },
+        {
+          "token": "--c-ink-muted",
+          "label": "Muted ink"
+        },
+        {
+          "token": "--c-brand",
+          "label": "Brand"
+        },
+        {
+          "token": "--c-brand-strong",
+          "label": "Brand, hover"
+        },
+        {
+          "token": "--c-ok",
+          "label": "Success"
+        },
+        {
+          "token": "--c-error",
+          "label": "Error"
+        },
+        {
+          "token": "--c-warn",
+          "label": "Warning"
+        },
+        {
+          "token": "--c-focus",
+          "label": "Focus"
+        }
+      ],
+      "fragments": [
+        {
+          "id": "header",
+          "source": "submit",
+          "page": "index.html",
+          "selector": "header",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The DIY Accounting Submit header: the blue band, the menu and the page title"
+        },
+        {
+          "id": "features",
+          "source": "submit",
+          "page": "about.html",
+          "selector": "section.about-features",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "What DIY Accounting Submit does: the nine-box form, HMRC's confirmation, obligations and past returns"
+        },
+        {
+          "id": "vat-form",
+          "source": "submit",
+          "page": "hmrc/vat/submitVat.html",
+          "selector": "#vatSubmissionForm",
+          "width": 390,
+          "signedIn": true,
+          "alt": "The VAT return form on a phone"
+        }
+      ],
+      "products": [
+        {
+          "id": "submit-vat",
+          "name": "Submit VAT"
+        }
+      ],
+      "sets": [
+        {
+          "id": "submit-vat-price",
+          "product": "submit-vat",
+          "title": "99p a month",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "VAT returns to HMRC for 99p a month",
+          "image": {
+            "headline": "VAT returns to HMRC",
+            "subline": "99p a month. Cancel any time."
+          },
+          "posts": {
+            "headline": "Send your VAT return to HMRC for 99p a month",
+            "short": "DIY Accounting Submit™ sends your VAT return to HMRC under Making Tax Digital. 99p a month, cancel any time. Start with {offer}: {link}",
+            "medium": "Making Tax Digital means your VAT return goes to HMRC from software. DIY Accounting Submit™ is that software, and it costs 99p a month.\n\nYou fill in the nine boxes, or drop your DIY Accounting spreadsheet on the page, and we send the return to HMRC. HMRC's receipt comes back with its Form Bundle Number, and we keep it with your account.\n\nCancel any time. Start with {offer}: {link}",
+            "long": "Making Tax Digital means your VAT return goes to HMRC from software. DIY Accounting Submit™ is that software, and it costs 99p a month.\n\nYou fill in the nine boxes, or drop your DIY Accounting spreadsheet or a DIYA-GL™ book on the page to fill them in. Boxes 3 and 5 add up for you. We send the return to HMRC, and HMRC's receipt comes back with its Form Bundle Number. We keep it with your account.\n\nYou can also see which VAT periods are due, and look up any return you have already sent.\n\nDIY Accounting Submit is listed on HMRC's software finder for Making Tax Digital VAT. We are DIY Accounting Limited, a family company. Our founder, Terry Cartwright, started designing our accounting spreadsheets in 2006.\n\nCancel any time. Start with {offer}: {link}"
+          }
+        },
+        {
+          "id": "submit-vat-spreadsheet",
+          "product": "submit-vat",
+          "title": "Keep your spreadsheet",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "Keep your spreadsheet for Making Tax Digital VAT",
+          "image": {
+            "headline": "Keep your spreadsheet",
+            "subline": "Send the VAT return from its figures."
+          },
+          "posts": {
+            "headline": "Keep your spreadsheet. Send the VAT return from it.",
+            "short": "Making Tax Digital doesn't mean giving up your spreadsheet. Put its figures into DIY Accounting Submit™ and we send the VAT return to HMRC. Start with {offer}: {link}",
+            "medium": "If you keep your books in a spreadsheet, you can carry on under Making Tax Digital for VAT. You need bridging software to send the return, and DIY Accounting Submit™ is bridging software.\n\nType your final figures into the nine boxes, or drop a DIY Accounting spreadsheet or a DIYA-GL™ book on the page to fill them in. Check them, then send. HMRC's receipt comes straight back.\n\n99p a month. Start with {offer}: {link}",
+            "long": "If you keep your books in a spreadsheet, you can carry on under Making Tax Digital for VAT. You need bridging software to send the return, and DIY Accounting Submit™ is bridging software.\n\nIf you use our spreadsheets, drop the workbook on the VAT return page and the boxes fill in. A DIYA-GL™ book works the same way. If your spreadsheet is your own, type the final figures into the nine boxes. Boxes 3 and 5 add up for you.\n\nCheck the figures, then send. HMRC's receipt comes back with its Form Bundle Number, and we keep it with your account. You can look up any return you have sent, straight from HMRC.\n\n99p a month, cancel any time. Start with {offer}: {link}"
+          }
+        },
+        {
+          "id": "submit-vat-free",
+          "product": "submit-vat",
+          "title": "Try it free",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "Try DIY Accounting Submit™ free",
+          "image": {
+            "headline": "Try it free",
+            "subline": "Send a real VAT return to HMRC."
+          },
+          "posts": {
+            "headline": "Try DIY Accounting Submit™ free",
+            "short": "Try DIY Accounting Submit™ with {offer}. Sign in with Google, connect to HMRC and send your VAT return. {link}",
+            "medium": "You can send a real VAT return to HMRC with DIY Accounting Submit™ without paying. Start with {offer}.\n\nSign in with your Google account, then connect to HMRC with your Government Gateway details. Pick the VAT period that is due, fill in the nine boxes and send. You get HMRC's receipt with its Form Bundle Number.\n\nIf you want to keep going, it is 99p a month. {link}",
+            "long": "You can send a real VAT return to HMRC with DIY Accounting Submit™ without paying. Start with {offer}.\n\nSign in with your Google account, then connect to HMRC with your Government Gateway details. We show the VAT periods HMRC has open for you. Pick the one that is due, fill in the nine boxes, or drop your DIY Accounting spreadsheet on the page, and send.\n\nHMRC's receipt comes back with its Form Bundle Number, and we keep it with your account.\n\nIf you want to keep going, it is 99p a month, and you can cancel any time. {link}"
+          }
+        },
+        {
+          "id": "submit-vat-mtd",
+          "product": "submit-vat",
+          "title": "Making Tax Digital for VAT",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "Making Tax Digital for VAT covers every VAT-registered business",
+          "image": {
+            "headline": "Making Tax Digital for VAT",
+            "subline": "Every VAT-registered business, whatever its turnover."
+          },
+          "posts": {
+            "headline": "Every VAT-registered business sends VAT returns through Making Tax Digital",
+            "short": "Every VAT-registered business sends its VAT return through Making Tax Digital software, whatever its turnover. DIY Accounting Submit™ is 99p a month. {link}",
+            "medium": "Making Tax Digital for VAT covers every VAT-registered business, whatever its turnover. Your first VAT period that started on or after 1 April 2022 was the first one under the rule.\n\nIt means your VAT return goes to HMRC from software. DIY Accounting Submit™ is HMRC recognised software for it, and it is listed on HMRC's software finder.\n\n99p a month. Start with {offer}: {link}",
+            "long": "Making Tax Digital for VAT covers every VAT-registered business, whatever its turnover. Your first VAT period that started on or after 1 April 2022 was the first one under the rule.\n\nIt means your VAT return goes to HMRC from software. DIY Accounting Submit™ is HMRC recognised software for it, and it is listed on HMRC's software finder for Making Tax Digital VAT.\n\nYou fill in the nine boxes, or drop your DIY Accounting spreadsheet on the page. We send the return, and HMRC's receipt comes back with its Form Bundle Number. You can see which VAT periods are due, and look up any return you have sent.\n\n99p a month, cancel any time. Start with {offer}: {link}"
+          }
+        },
+        {
+          "id": "submit-vat-receipt",
+          "product": "submit-vat",
+          "title": "HMRC's receipt",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "HMRC's receipt for every VAT return",
+          "image": {
+            "headline": "HMRC's receipt, kept for you",
+            "subline": "Proof of every VAT return you send."
+          },
+          "posts": {
+            "headline": "HMRC's receipt for every VAT return, kept with your account",
+            "short": "Send a VAT return with DIY Accounting Submit™ and HMRC's receipt comes back with its Form Bundle Number. We keep it with your account. {link}",
+            "medium": "A VAT return is done when HMRC says so. With DIY Accounting Submit™ you see HMRC's answer on the page: the receipt with its Form Bundle Number, your proof that you sent it.\n\nYou can also see which VAT periods are open and which are done, and look up any return you have sent before, straight from HMRC.\n\n99p a month. Start with {offer}: {link}",
+            "long": "A VAT return is done when HMRC says so. With DIY Accounting Submit™ you see HMRC's answer on the page: the receipt with its Form Bundle Number, your proof that you sent it. We keep it with your account.\n\nYou can also see which VAT periods are open and which are done, in words as well as colour, and look up any return you have sent before, straight from HMRC.\n\nThe site is built to WCAG 2.2 Level AA, and it works with screen readers and the keyboard.\n\n99p a month, cancel any time. Start with {offer}: {link}"
+          }
+        },
+        {
+          "id": "submit-all",
+          "product": "",
+          "title": "DIY Accounting Submit",
+          "link": "https://submit.diyaccounting.co.uk/",
+          "emailSubject": "DIY Accounting Submit™: VAT returns to HMRC",
+          "image": {
+            "headline": "DIY Accounting Submit™",
+            "subline": "VAT returns to HMRC under Making Tax Digital."
+          },
+          "posts": {
+            "headline": "DIY Accounting Submit™: VAT returns to HMRC under Making Tax Digital",
+            "short": "DIY Accounting Submit™ is our Making Tax Digital software. Send your VAT return to HMRC for 99p a month. Start with {offer}: {link}",
+            "medium": "DIY Accounting Submit™ is our Making Tax Digital software, from the family company behind DIY Accounting Spreadsheets™.\n\nIt sends your VAT return to HMRC from the figures you already keep: type them into the nine boxes, or drop your DIY Accounting spreadsheet on the page. HMRC's receipt comes back with its Form Bundle Number.\n\n99p a month, cancel any time. Start with {offer}: {link}",
+            "long": "DIY Accounting Submit™ is our Making Tax Digital software, from the family company behind DIY Accounting Spreadsheets™.\n\nIt sends your VAT return to HMRC from the figures you already keep. Type them into the nine boxes, or drop your DIY Accounting spreadsheet or a DIYA-GL™ book on the page. HMRC's receipt comes back with its Form Bundle Number, and we keep it with your account. You can see which VAT periods are due, and look up any return you have sent.\n\nIt is listed on HMRC's software finder for Making Tax Digital VAT.\n\n99p a month, cancel any time. Start with {offer}: {link}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spreadsheets",
+      "name": "DIY Accounting Spreadsheets",
+      "summary": "DIY Accounting Spreadsheets™ are Excel bookkeeping and accounts workbooks for UK small businesses, free to download.",
+      "site": "https://spreadsheets.diyaccounting.co.uk/",
+      "brand": "spreadsheets",
+      "hasDark": false,
+      "swatches": [
+        {
+          "token": "--color-brand-primary",
+          "label": "Teal"
+        },
+        {
+          "token": "--color-brand-primary-dark",
+          "label": "Teal, hover"
+        },
+        {
+          "token": "--color-brand-primary-light",
+          "label": "Teal, light"
+        },
+        {
+          "token": "--color-text-primary",
+          "label": "Text"
+        },
+        {
+          "token": "--color-text-secondary",
+          "label": "Secondary text"
+        },
+        {
+          "token": "--color-background",
+          "label": "Background"
+        },
+        {
+          "token": "--color-surface",
+          "label": "Surface"
+        },
+        {
+          "token": "--color-border",
+          "label": "Border"
+        },
+        {
+          "token": "--color-accent-green",
+          "label": "Feature tick"
+        }
+      ],
+      "fragments": [
+        {
+          "id": "nav",
+          "source": "spreadsheets",
+          "page": "index.html",
+          "selector": "nav.top-nav",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The DIY Accounting Spreadsheets menu bar"
+        },
+        {
+          "id": "product-card",
+          "source": "spreadsheets",
+          "page": "index.html",
+          "selector": ".product-cards .product-card",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The Basic Sole Trader product card with its feature list and Download button"
+        },
+        {
+          "id": "reviews",
+          "source": "spreadsheets",
+          "page": "index.html",
+          "selector": ".reviews-section",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "Customer reviews on the DIY Accounting Spreadsheets home page"
+        }
+      ],
+      "products": [
+        {
+          "id": "spreadsheets-basic-sole-trader",
+          "name": "Basic Sole Trader"
+        },
+        {
+          "id": "spreadsheets-self-employed",
+          "name": "Self Employed"
+        },
+        {
+          "id": "spreadsheets-company",
+          "name": "Company Accounts"
+        },
+        {
+          "id": "spreadsheets-taxi-driver",
+          "name": "Taxi Driver"
+        },
+        {
+          "id": "spreadsheets-payslips",
+          "name": "Payslips"
+        }
+      ],
+      "sets": [
+        {
+          "id": "spreadsheets-basic-sole-trader",
+          "product": "spreadsheets-basic-sole-trader",
+          "title": "Basic Sole Trader",
+          "link": "https://spreadsheets.diyaccounting.co.uk/download.html?product=BasicSoleTrader",
+          "emailSubject": "Free bookkeeping spreadsheets for sole traders",
+          "image": {
+            "headline": "Basic Sole Trader",
+            "subline": "Free bookkeeping spreadsheets for sole traders."
+          },
+          "posts": {
+            "headline": "Free bookkeeping spreadsheets for sole traders",
+            "short": "Not VAT registered, no employees? Our Basic Sole Trader spreadsheets give you sales, purchases, profit and loss and your self-employed tax return figures. Free to download: {link}",
+            "medium": "Our Basic Sole Trader package is the simplest set of DIY Accounting Spreadsheets™. It is for sole traders who are not VAT registered and have no employees.\n\nYou get a sales spreadsheet and a purchases spreadsheet. The accounts add them up into a profit and loss account and the figures for the short self-employed tax return.\n\nIt works in Microsoft Excel and OpenOffice Calc, comes with a step-by-step guide, and is free to download: {link}"
+          }
+        },
+        {
+          "id": "spreadsheets-self-employed",
+          "product": "spreadsheets-self-employed",
+          "title": "Self Employed",
+          "link": "https://spreadsheets.diyaccounting.co.uk/download.html?product=SelfEmployed",
+          "emailSubject": "Free accounts spreadsheets for the self-employed",
+          "image": {
+            "headline": "Self Employed",
+            "subline": "Free accounts spreadsheets, with or without VAT."
+          },
+          "posts": {
+            "headline": "Free accounts spreadsheets for the self-employed",
+            "short": "Self-employed, VAT registered or not? Our Self Employed spreadsheets cover sales, purchases, VAT returns, bank reconciliation and your tax return figures. Free: {link}",
+            "medium": "Our Self Employed package of DIY Accounting Spreadsheets™ is for anyone self-employed, whether VAT registered or not, with or without employees.\n\nIt covers sales and purchases, cash and bank reconciliation, VAT returns, and the profit and loss account. It produces the figures for both the short and the full self-employed tax return.\n\nIt works in Microsoft Excel and OpenOffice Calc, and it is free to download: {link}"
+          }
+        },
+        {
+          "id": "spreadsheets-company",
+          "product": "spreadsheets-company",
+          "title": "Company Accounts",
+          "link": "https://spreadsheets.diyaccounting.co.uk/download.html?product=Company",
+          "emailSubject": "Free company accounts spreadsheets",
+          "image": {
+            "headline": "Company Accounts",
+            "subline": "Free spreadsheets for limited companies."
+          },
+          "posts": {
+            "headline": "Free accounts spreadsheets for limited companies",
+            "short": "Run a limited company? Our Company Accounts spreadsheets do double-entry bookkeeping, VAT returns, year-end accounts and CT600 figures. Free to download: {link}",
+            "medium": "Our Company Accounts package of DIY Accounting Spreadsheets™ is for limited companies, VAT registered or not, with or without employees.\n\nIt uses double-entry bookkeeping and works with our payroll spreadsheets. It produces VAT returns, the profit and loss account, the balance sheet, year-end accounts for Companies House, and the CT600 Corporation Tax figures.\n\nIt works in Microsoft Excel and OpenOffice Calc, and it is free to download: {link}"
+          }
+        },
+        {
+          "id": "spreadsheets-taxi-driver",
+          "product": "spreadsheets-taxi-driver",
+          "title": "Taxi Driver",
+          "link": "https://spreadsheets.diyaccounting.co.uk/download.html?product=TaxiDriver",
+          "emailSubject": "Free accounts spreadsheets for taxi drivers",
+          "image": {
+            "headline": "Taxi Driver",
+            "subline": "Free accounts spreadsheets for taxi and private hire."
+          },
+          "posts": {
+            "headline": "Free accounts spreadsheets for taxi and private hire drivers",
+            "short": "Drive a taxi or private hire car? Our Taxi Driver spreadsheets have the income and expense headings you need, and give you your tax return figures. Free: {link}",
+            "medium": "Our Taxi Driver package of DIY Accounting Spreadsheets™ is made for taxi and private hire work.\n\nIt has the income and expense headings a driver needs, and it produces the figures for your self assessment tax return.\n\nIt works in Microsoft Excel and OpenOffice Calc, and it is free to download: {link}"
+          }
+        },
+        {
+          "id": "spreadsheets-payslips",
+          "product": "spreadsheets-payslips",
+          "title": "Payslips",
+          "link": "https://spreadsheets.diyaccounting.co.uk/download.html?product=Payslip05",
+          "emailSubject": "Free payslip spreadsheets",
+          "image": {
+            "headline": "Payslips",
+            "subline": "Free payslip spreadsheets for up to 20 employees."
+          },
+          "posts": {
+            "headline": "Free payslip spreadsheets for small employers",
+            "short": "Our Payslips spreadsheets produce your employees' payslips, in versions for up to 5, 10 or 20 employees. Free to download: {link}",
+            "medium": "Our Payslips package of DIY Accounting Spreadsheets™ produces payslips for your employees. There are versions for up to 5, 10 or 20 employees.\n\nIt works with our Company Accounts spreadsheets, in Microsoft Excel and OpenOffice Calc, and it is free to download: {link}"
+          }
+        },
+        {
+          "id": "spreadsheets-all",
+          "product": "",
+          "title": "DIY Accounting Spreadsheets",
+          "link": "https://spreadsheets.diyaccounting.co.uk/",
+          "emailSubject": "Free bookkeeping and accounts spreadsheets",
+          "image": {
+            "headline": "DIY Accounting Spreadsheets™",
+            "subline": "Bookkeeping and accounts in Excel. Free to download."
+          },
+          "posts": {
+            "headline": "Free bookkeeping and accounts spreadsheets for UK small businesses",
+            "short": "DIY Accounting Spreadsheets™: Excel bookkeeping and accounts for sole traders, the self-employed, limited companies and taxi drivers. Free to download: {link}",
+            "medium": "DIY Accounting Spreadsheets™ are Excel workbooks for UK small business bookkeeping and accounts, designed by a Chartered Management Accountant.\n\nThere is a package for sole traders, the self-employed, limited companies and taxi drivers, and one for payslips. Each covers sales, purchases, profit and loss and the tax figures for that kind of business.\n\nThey work in Microsoft Excel and OpenOffice Calc, come with step-by-step guides, and are free to download: {link}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "diya-gl",
+      "name": "DIYA-GL",
+      "summary": "DIYA-GL™ opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser.",
+      "site": "https://diya-gl.co.uk/",
+      "brand": "diya-gl",
+      "hasDark": true,
+      "swatches": [
+        {
+          "token": "--paper",
+          "label": "Paper"
+        },
+        {
+          "token": "--paper-raised",
+          "label": "Raised paper"
+        },
+        {
+          "token": "--ink",
+          "label": "Ink"
+        },
+        {
+          "token": "--ink-faint",
+          "label": "Faint ink"
+        },
+        {
+          "token": "--pencil",
+          "label": "Pencil"
+        },
+        {
+          "token": "--rule",
+          "label": "Rule"
+        },
+        {
+          "token": "--rule-dark",
+          "label": "Rule, hover"
+        },
+        {
+          "token": "--tint",
+          "label": "Tint"
+        },
+        {
+          "token": "--correction",
+          "label": "Correction"
+        },
+        {
+          "token": "--caution",
+          "label": "Caution"
+        }
+      ],
+      "fragments": [
+        {
+          "id": "products",
+          "source": "diya-gl",
+          "page": "index.html",
+          "selector": "section.home-strip",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The DIYA-GL home strip: the four kinds of books and where they are kept"
+        },
+        {
+          "id": "topbar",
+          "source": "diya-gl",
+          "page": "ltd.html",
+          "selector": "header.app-topbar",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The DIYA-GL top bar over a Limited Company book"
+        },
+        {
+          "id": "book",
+          "source": "diya-gl",
+          "page": "ltd.html",
+          "selector": "#view-root",
+          "width": 390,
+          "signedIn": false,
+          "alt": "A Limited Company book open in DIYA-GL on a phone"
+        }
+      ],
+      "products": [
+        {
+          "id": "diya-gl-basic-sole-trader",
+          "name": "Basic Sole Trader books"
+        },
+        {
+          "id": "diya-gl-self-employed",
+          "name": "Self Employed books"
+        },
+        {
+          "id": "diya-gl-taxi-driver",
+          "name": "Taxi Driver books"
+        },
+        {
+          "id": "diya-gl-limited-company",
+          "name": "Limited Company books"
+        }
+      ],
+      "sets": [
+        {
+          "id": "diya-gl-basic-sole-trader",
+          "product": "diya-gl-basic-sole-trader",
+          "title": "Basic Sole Trader books",
+          "link": "https://diya-gl.co.uk/bst.html",
+          "emailSubject": "Sole trader books, free in your browser",
+          "image": {
+            "headline": "Sole trader books",
+            "subline": "Free in your browser."
+          },
+          "posts": {
+            "headline": "Sole trader books, free in your browser",
+            "short": "Keep your Basic Sole Trader books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}",
+            "medium": "DIYA-GL™ opens Basic Sole Trader books in your browser, free.\n\nWith no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.\n\n{link}"
+          }
+        },
+        {
+          "id": "diya-gl-self-employed",
+          "product": "diya-gl-self-employed",
+          "title": "Self Employed books",
+          "link": "https://diya-gl.co.uk/se.html",
+          "emailSubject": "Self-employed books, free in your browser",
+          "image": {
+            "headline": "Self-employed books",
+            "subline": "Free in your browser."
+          },
+          "posts": {
+            "headline": "Self-employed books, free in your browser",
+            "short": "Keep your Self Employed books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}",
+            "medium": "DIYA-GL™ opens Self Employed books in your browser, free.\n\nWith no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.\n\n{link}"
+          }
+        },
+        {
+          "id": "diya-gl-taxi-driver",
+          "product": "diya-gl-taxi-driver",
+          "title": "Taxi Driver books",
+          "link": "https://diya-gl.co.uk/taxi.html",
+          "emailSubject": "Taxi driver books, free in your browser",
+          "image": {
+            "headline": "Taxi driver books",
+            "subline": "Free in your browser."
+          },
+          "posts": {
+            "headline": "Taxi driver books, free in your browser",
+            "short": "Keep your Taxi Driver books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}",
+            "medium": "DIYA-GL™ opens Taxi Driver books in your browser, free.\n\nWith no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.\n\n{link}"
+          }
+        },
+        {
+          "id": "diya-gl-limited-company",
+          "product": "diya-gl-limited-company",
+          "title": "Limited Company books",
+          "link": "https://diya-gl.co.uk/ltd.html",
+          "emailSubject": "Limited company books, free in your browser",
+          "image": {
+            "headline": "Limited company books",
+            "subline": "Free in your browser."
+          },
+          "posts": {
+            "headline": "Limited company books, free in your browser",
+            "short": "Keep your Limited Company books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}",
+            "medium": "DIYA-GL™ opens Limited Company books in your browser, free.\n\nWith no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.\n\n{link}"
+          }
+        },
+        {
+          "id": "diya-gl-all",
+          "product": "",
+          "title": "DIYA-GL",
+          "link": "https://diya-gl.co.uk/",
+          "emailSubject": "Your books, free in the browser",
+          "image": {
+            "headline": "DIYA-GL™",
+            "subline": "Your books, free in the browser."
+          },
+          "posts": {
+            "headline": "DIYA-GL™: your books, free in the browser",
+            "short": "DIYA-GL™ opens Basic Sole Trader, Self Employed, Taxi Driver and Limited Company books, free in your browser. {link}",
+            "medium": "DIYA-GL™ is bookkeeping in your browser, from the makers of DIY Accounting Spreadsheets™. It opens Basic Sole Trader, Self Employed, Taxi Driver and Limited Company books, free.\n\nWith no account, your books stay on your device, and you can download the file to keep it. Sign in and the 35-day sandbox keeps them for 35 days after each save, on any device.\n\n{link}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "limited",
+      "name": "DIY Accounting Limited",
+      "summary": "DIY Accounting Limited is the family company behind DIY Accounting Spreadsheets™, DIYA-GL™ and DIY Accounting Submit™.",
+      "site": "https://diyaccounting.co.uk/",
+      "brand": "limited",
+      "hasDark": false,
+      "swatches": [
+        {
+          "token": "--color-brand-primary",
+          "label": "Blue"
+        },
+        {
+          "token": "--color-brand-primary-dark",
+          "label": "Blue, hover"
+        },
+        {
+          "token": "--color-text-primary",
+          "label": "Text"
+        },
+        {
+          "token": "--color-text-secondary",
+          "label": "Secondary text"
+        },
+        {
+          "token": "--color-background",
+          "label": "Background"
+        },
+        {
+          "token": "--color-surface",
+          "label": "Surface"
+        },
+        {
+          "token": "--color-border",
+          "label": "Border"
+        },
+        {
+          "token": "--color-focus",
+          "label": "Focus"
+        }
+      ],
+      "fragments": [
+        {
+          "id": "buttons",
+          "source": "limited",
+          "page": "index.html",
+          "selector": "nav.gateway-buttons",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The product buttons on diyaccounting.co.uk"
+        },
+        {
+          "id": "summary",
+          "source": "limited",
+          "page": "index.html",
+          "selector": ".company-summary",
+          "width": 1280,
+          "signedIn": false,
+          "alt": "The company summary on diyaccounting.co.uk"
+        },
+        {
+          "id": "buttons-phone",
+          "source": "limited",
+          "page": "index.html",
+          "selector": "nav.gateway-buttons",
+          "width": 390,
+          "signedIn": false,
+          "alt": "The product buttons on diyaccounting.co.uk on a phone"
+        }
+      ],
+      "sets": [
+        {
+          "id": "limited-all",
+          "product": "",
+          "title": "DIY Accounting Limited",
+          "link": "https://diyaccounting.co.uk/",
+          "emailSubject": "DIY Accounting™: accounting software from a family company",
+          "image": {
+            "headline": "DIY Accounting™",
+            "subline": "Accounting software from a family company."
+          },
+          "posts": {
+            "headline": "DIY Accounting™: accounting software from a family company",
+            "short": "DIY Accounting™ is a family company. Our founder, Terry Cartwright, a Chartered Management Accountant, started designing our accounting spreadsheets in 2006. {link}",
+            "medium": "DIY Accounting™ is a family company. Our founder, Terry Cartwright, was a Chartered Management Accountant and Chartered Company Secretary. He started designing payroll and accounting spreadsheets in 2006.\n\nTerry died in December 2009, and his children have run the company since. We make DIY Accounting Spreadsheets™, DIYA-GL™ for books in the browser, and DIY Accounting Submit™ for Making Tax Digital.\n\n{link}"
+          }
+        }
+      ]
+    }
+  ]
+}

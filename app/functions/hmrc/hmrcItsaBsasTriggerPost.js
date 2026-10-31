@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-16 Trigger and adjust the Business Source Adjustable Summary
+// - **Use when:** a year-end BSAS calculation must be triggered, read or adjusted for a business.
+// - **Does:** hmrcItsaBsasTriggerPost.js triggers HMRC's BSAS calculation for either income type. The get and adjust-post Lambdas per income type (self-employment, UK property, foreign property) read HMRC's figures and submit an adjustment.
+// - **Run:** `POST /api/v1/hmrc/itsa/bsas/trigger`; `GET /api/v1/hmrc/itsa/bsas/self-employment`; `POST /api/v1/hmrc/itsa/bsas/self-employment/adjust`; `GET /api/v1/hmrc/itsa/bsas/uk-property`; `POST /api/v1/hmrc/itsa/bsas/uk-property/adjust`; `GET /api/v1/hmrc/itsa/bsas/foreign-property`; `POST /api/v1/hmrc/itsa/bsas/foreign-property/adjust`
+// - **Entry:** `app/functions/hmrc/hmrcItsaBsasTriggerPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaBsasTriggerPost.js, app/functions/hmrc/hmrcItsaBsasSelfEmploymentGet.js, app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js, app/functions/hmrc/hmrcItsaBsasUkPropertyGet.js, app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js, app/unit-tests/functions/hmrcItsaBsasTriggerPost.test.js, app/unit-tests/functions/hmrcItsaBsasSelfEmploymentGet.test.js, app/unit-tests/functions/hmrcItsaBsasSelfEmploymentAdjustPost.test.js, app/unit-tests/functions/hmrcItsaBsasUkPropertyGet.test.js, app/unit-tests/functions/hmrcItsaBsasUkPropertyAdjustPost.test.js, web/public/hmrc/itsa/adjustments.html, web/public/hmrc/itsa/ukPropertyAdjustments.html, web/browser-tests/adjustments.browser.test.js
+// - **Keywords:** bsas, business source adjustable summary, typeofbusiness, adjustments, year-end calculation, self-employment bsas, uk property bsas
+// - **Related:** HMRC-19, HMRC-12, HMRC-14
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaBsasTriggerPost.js
 
 import { createLogger } from "../../lib/logger.js";

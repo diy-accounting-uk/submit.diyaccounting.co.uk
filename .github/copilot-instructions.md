@@ -1,6 +1,15 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability OPS-55 Configure GitHub Copilot review and workspace setup
+- **Use when:** checking or changing what Copilot's review agent or coding-agent workspace knows about this repository.
+- **Does:** copilot-instructions.md steers Copilot's PR review agent toward this repository's architecture and npm scripts. copilot-setup-steps.yml runs the equivalent setup steps for a Copilot coding-agent workspace.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/copilot-instructions.md`
+- **Files:** .github/copilot-instructions.md, .github/workflows/copilot-setup-steps.yml
+- **Keywords:** copilot instructions, copilot review, copilot workspace setup, coding agent, github copilot
+@end-capability -->
+
 # DIY Accounting Submit - GitHub Copilot Code Review Instructions
 
 **Last Updated:** 2026-01-05

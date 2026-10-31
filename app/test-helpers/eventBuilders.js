@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-18 Provide shared unit/system-test fixtures
+// - **Use when:** a unit or system test needs a Lambda event, ID token, fetch mock or DynamoDB double.
+// - **Does:** eventBuilders.js builds Lambda API Gateway events, ID tokens and authorizer contexts, and cloudFrontEventBuilders.js builds CloudFront origin-response, 404 and 500 events. mockHelpers.js sets up fetch mocks and canned HMRC responses, and dynamoDbMock.js and primableMockServer.js add further test-double infrastructure. govClientTestHeader.js supplies the Gov-Client-* header constants used across tests.
+// - **Run:** `import { ... } from "app/test-helpers/eventBuilders.js"`; `import { ... } from "app/test-helpers/mockHelpers.js"`; `import { startHmrcMockServer } from "app/test-helpers/primableMockServer.js"`
+// - **Entry:** `app/test-helpers/eventBuilders.js`; `app/test-helpers/mockHelpers.js`; `app/test-helpers/primableMockServer.js:startHmrcMockServer`
+// - **Files:** app/test-helpers/eventBuilders.js, app/test-helpers/cloudFrontEventBuilders.js, app/test-helpers/mockHelpers.js, app/test-helpers/dynamoDbMock.js, app/test-helpers/primableMockServer.js, app/unit-tests/lib/govClientTestHeader.js, app/unit-tests/test-helpers/eventBuilders.test.js, app/unit-tests/test-helpers/mockHelpers.test.js, app/unit-tests/helpers/waitForSuccessOrError.test.js
+// - **Keywords:** test helpers, event builders, fetch mock, dynamodb mock, mock server, gov-client header, cloudfront event, id token
+// - **Related:** DEV-19, DEV-21
+// @end-capability
+
 // app/test-helpers/eventBuilders.js
 // Reusable test helpers for building Lambda events
 

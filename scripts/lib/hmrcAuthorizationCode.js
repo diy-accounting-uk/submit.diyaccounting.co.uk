@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-33 Drive HMRC's sandbox authorisation flow for test scripts
+// - **Use when:** a test script needs a user-restricted HMRC sandbox authorisation code with no headless route.
+// - **Does:** hmrcAuthorizationCode.js's getAuthorizationCode drives HMRC's sandbox /oauth/authorize sign-in page with Playwright. It is shared by the ITSA sandbox scripts and the behaviour suites.
+// - **Run:** `import { getAuthorizationCode } from "scripts/lib/hmrcAuthorizationCode.js"`
+// - **Entry:** `scripts/lib/hmrcAuthorizationCode.js:getAuthorizationCode`
+// - **Files:** scripts/lib/hmrcAuthorizationCode.js
+// - **Keywords:** oauth authorize, sandbox authorisation, playwright, user-restricted api, authorisation code, headless
+// - **Related:** HMRC-23, HMRC-34, HMRC-35
+// @end-capability
+
 import { writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 

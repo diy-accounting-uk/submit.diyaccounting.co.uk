@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-09 Run a client-scoped tool across every practice client
+// - **Use when:** one submission or book tool must run once per client in a practice's list.
+// - **Does:** runForClients in mcp/lib/batch-tools.js runs one allow-listed, client-scoped tool for every client in the practice's list. It merges each client's id into the call arguments and records each client's result or error in its own row. It backs the run_for_clients tool and the CLI's --all-clients mode.
+// - **Run:** `node mcp/bin/diya-submit-mcp.js --all-clients <tool> [--arg key=value ...]`
+// - **Entry:** `mcp/lib/batch-tools.js:runForClients`
+// - **Files:** mcp/lib/batch-tools.js, mcp/test/batch-tools.test.js
+// - **Keywords:** run_for_clients, batch tools, all-clients, per-client loop, practice batch run
+// - **Related:** MCP-01, MCP-08
+// @end-capability
+
 // batch-tools.js -- run_for_clients: one client-scoped tool, run once per client in the
 // practice's own list (practice-tools.js's listClients), collecting one result row per client.
 // The allow-list is exactly the tools that take a clientId to act on one client at a time --

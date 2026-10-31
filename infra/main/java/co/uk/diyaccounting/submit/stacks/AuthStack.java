@@ -108,13 +108,13 @@ public class AuthStack extends Stack {
         ITable securityStateTable = Table.fromTableName(
                 this,
                 "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().securityStateTableName);
+                props.sharedNames().data.securityStateTableName);
 
         // Lookup existing DynamoDB HMRC API requests Table
         ITable hmrcApiRequestsTable = Table.fromTableName(
                 this,
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().hmrcApiRequestsTableName);
+                props.sharedNames().data.hmrcApiRequestsTableName);
 
         // Lambdas
 
@@ -126,16 +126,16 @@ public class AuthStack extends Stack {
 
         // Construct EventBridge activity bus ARN for IAM policies
         var activityBusArn = String.format(
-                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activity.activityBusName);
 
         // exchangeToken - Google via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
@@ -145,23 +145,23 @@ public class AuthStack extends Stack {
         var exchangeCognitoTokenLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().auth.cognitoTokenPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().auth.cognitoTokenPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames().auth.cognitoTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().auth.cognitoTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().auth.cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().cognitoTokenPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().auth.cognitoTokenPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().auth.cognitoTokenPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().auth.cognitoTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().auth.cognitoTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .build());
         this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;
@@ -170,7 +170,8 @@ public class AuthStack extends Stack {
         this.lambdaFunctionProps.add(this.cognitoTokenPostLambdaProps);
         infof(
                 "Created Lambda %s for Cognito exchange token with ingestHandler %s",
-                this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostIngestLambdaHandler);
+                this.cognitoTokenPostLambda.getNode().getId(),
+                props.sharedNames().auth.cognitoTokenPostIngestLambdaHandler);
 
         // No bundles grant: cognitoTokenPost exchanges a Cognito code for tokens and touches no bundle.
 
@@ -193,7 +194,7 @@ public class AuthStack extends Stack {
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             customAuthorizerLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
@@ -201,15 +202,15 @@ public class AuthStack extends Stack {
         var customAuthorizerLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().auth.customAuthorizerIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().customAuthorizerIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().customAuthorizerIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().auth.customAuthorizerIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().auth.customAuthorizerIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().auth.customAuthorizerIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().auth.customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -224,7 +225,8 @@ public class AuthStack extends Stack {
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
         infof(
                 "Created Custom Authorizer Lambda %s with ingestHandler %s",
-                this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerIngestLambdaHandler);
+                this.customAuthorizerLambda.getNode().getId(),
+                props.sharedNames().auth.customAuthorizerIngestLambdaHandler);
 
         // No bundles grant: the authorizer validates the JWT and loads the salt, and reads no table.
 

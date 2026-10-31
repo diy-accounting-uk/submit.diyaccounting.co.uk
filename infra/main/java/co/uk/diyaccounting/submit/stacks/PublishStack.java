@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-120 Provision the Publish stack
+// - **Use when:** the main website's S3 asset deployment and CloudFront invalidation need synthesizing.
+// - **Does:** PublishStack creates the S3 bucket deployment for the main website's web assets. It invalidates every path when the set has published before and nothing on a set's first publish (`PUBLISH_INVALIDATES_DISTRIBUTION`, set by `deploy.yml`). It imports the CloudFront distribution by attributes rather than owning it.
+// - **Run:** `npm run cdk:synth-application`
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java
+// - **Keywords:** publish stack, s3 deployment, cloudfront invalidation, web assets
+// - **Related:** OPS-115
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;

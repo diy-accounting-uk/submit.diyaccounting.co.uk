@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-13 Submit and manage the self-employment annual summary
+// - **Use when:** the year-end self-employment allowances and adjustments summary must be read or filed.
+// - **Does:** hmrcItsaSelfEmploymentAnnualGet.js and hmrcItsaSelfEmploymentAnnualPut.js read and submit the annual summary to HMRC. annualSubmission.html edits it and can import figures from a prior year.
+// - **Run:** `GET /api/v1/hmrc/itsa/self-employment/annual`; `PUT /api/v1/hmrc/itsa/self-employment/annual`
+// - **Entry:** `app/functions/hmrc/hmrcItsaSelfEmploymentAnnualGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js:ingestHandler`
+// - **Files:** app/functions/hmrc/hmrcItsaSelfEmploymentAnnualGet.js, app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js, app/unit-tests/functions/hmrcItsaSelfEmploymentAnnualGet.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentAnnualPut.test.js, app/unit-tests/functions/hmrcItsaSelfEmploymentAnnualPut.activity.test.js, web/public/hmrc/itsa/annualSubmission.html, web/browser-tests/annualSubmission.browser.test.js, web/browser-tests/annualSubmission.import.browser.test.js, behaviour-tests/itsaAnnualSubmission.behaviour.test.js
+// - **Keywords:** annual summary, self-employment allowances, adjustments, year-end, itsa annual submission, import prior year
+// - **Related:** HMRC-12, HMRC-19
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaSelfEmploymentAnnualGet.js
 
 import { createLogger } from "../../lib/logger.js";

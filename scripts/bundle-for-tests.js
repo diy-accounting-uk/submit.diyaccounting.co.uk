@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-43 Build the frontend test bundle
+// - **Use when:** unit or browser tests need the frontend bundled before they run.
+// - **Does:** The bundle-for-tests.js script concatenates the frontend's ES modules into one submit.bundle.js file. Unit and browser tests load that file without a module bundler. This is unrelated to product or subscription bundles despite the shared name.
+// - **Run:** `npm run bundle`
+// - **Entry:** `scripts/bundle-for-tests.js`
+// - **Files:** scripts/bundle-for-tests.js
+// - **Keywords:** frontend bundle, submit.bundle.js, test bundle, concatenate modules, pretest
+// @end-capability
+
 /**
  * Bundle frontend ES modules for testing
  *

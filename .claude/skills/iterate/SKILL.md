@@ -6,6 +6,16 @@ description: Run the delivery cycle unattended until the board has no machine-on
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-30 Run the delivery cycle unattended
+- **Use when:** the operator says iterate, run the cycle, or keep going until the board is clear.
+- **Does:** iterate runs the cycle board, do-next, watch, auto-merge, watch, board, again, until no machine-only row can start. It runs under loop in dynamic mode, self-pacing between rounds. It carries the SSO login window and the lessons of prior session reports.
+- **Run:** `/iterate`
+- **Entry:** `.claude/skills/iterate/SKILL.md`
+- **Files:** .claude/skills/iterate/SKILL.md
+- **Keywords:** iterate, delivery cycle, unattended loop, board do-next watch auto-merge, self-pacing, sso window
+- **Related:** DEV-27, DEV-28, DEV-33, DEV-35
+@end-capability -->
+
 # iterate
 
 The cycle this repository has settled on, run under `/loop` in dynamic mode:

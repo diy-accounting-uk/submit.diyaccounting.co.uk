@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-83 Emit CloudWatch EMF metrics
+// - **Use when:** a Lambda needs to publish a custom CloudWatch metric without a separate PutMetricData API call.
+// - **Does:** emfMetrics.js formats and writes structured metrics in Embedded Metric Format. CloudWatch extracts the metrics from the Lambda's own log lines, so emitMetric needs no separate PutMetricData call.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/emfMetrics.js:emitMetric`
+// - **Files:** app/lib/emfMetrics.js, app/unit-tests/lib/emfMetrics.test.js
+// - **Keywords:** emf, embedded metric format, cloudwatch metrics, putmetricdata, structured logging
+// - **Related:** OPS-86
+// @end-capability
+
 // app/lib/emfMetrics.js
 
 /**

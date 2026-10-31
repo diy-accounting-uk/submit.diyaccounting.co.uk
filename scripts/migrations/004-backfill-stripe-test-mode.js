@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-41 Backfill the Stripe test-mode qualifier
+// - **Use when:** bundles created by a Stripe subscription need their own stripeTestMode qualifier separated from sandbox.
+// - **Does:** The 004-backfill-stripe-test-mode.js pre-deploy migration copies qualifiers.sandbox to a new qualifiers.stripeTestMode field. It applies this to every bundle a Stripe subscription created, is idempotent, and honours a MIGRATION_DRY_RUN flag.
+// - **Run:** `ENVIRONMENT_NAME=<ci|prod> node scripts/migrations/runner.js --phase pre-deploy`; `MIGRATION_DRY_RUN=true ENVIRONMENT_NAME=<ci|prod> node scripts/migrations/runner.js --phase pre-deploy`; `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=pre-deploy`
+// - **Entry:** `scripts/migrations/004-backfill-stripe-test-mode.js`; `scripts/migrations/runner.js`
+// - **Files:** scripts/migrations/004-backfill-stripe-test-mode.js, app/unit-tests/migrations/004-backfill-stripe-test-mode.test.js
+// - **Keywords:** migration, stripe test mode, backfill, qualifier, sandbox, dry run, pre-deploy
+// - **Related:** BILL-40
+// @end-capability
+
 // scripts/migrations/004-backfill-stripe-test-mode.js
 // Pre-deploy migration: gives the Stripe test-mode flag its own qualifier.
 // Copies qualifiers.sandbox to qualifiers.stripeTestMode on every bundle a Stripe

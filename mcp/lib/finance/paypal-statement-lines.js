@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-16 Parse PayPal statements into diya-gl lines
+// - **Use when:** PayPal activity must become book lines from the monthly statement PDFs, or a PayPal month must be reconciled.
+// - **Does:** paypalLinesFromStatementPdf renders transactions.PDF with pdftotext and posts settled receipts and payments, gross and fee apart. chooseReleaseRows picks hold releases that sum to the statement's Releases figure. reconcilePaypalMonth checks a month against statement.PDF.
+// - **Run:** `import { paypalLinesFromStatementPdf, reconcilePaypalMonth } from "mcp/lib/finance/paypal-statement-lines.js"`
+// - **Entry:** `mcp/lib/finance/paypal-statement-lines.js:paypalLinesFromStatementPdf`; `mcp/lib/finance/paypal-statement-lines.js:reconcilePaypalMonth`
+// - **Files:** mcp/lib/finance/paypal-statement-lines.js, mcp/test/paypal-statement-lines.test.js, mcp/test/fixtures/finance/paypal-statement.txt
+// - **Keywords:** paypal, statement, pdf, pdftotext, holds, releases, reconcile, cash account
+// - **Related:** MCP-13, MCP-17
+// @end-capability
+
 // paypal-statement-lines.js -- PayPal's monthly "Transaction History" PDF
 // (poppler's pdftotext -layout text) turned into validated diya-gl lines.
 // This is the statement route: it reads what PayPal already sent, rather

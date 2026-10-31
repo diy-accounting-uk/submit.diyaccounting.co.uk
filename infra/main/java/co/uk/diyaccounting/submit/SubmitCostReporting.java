@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-17 Export AWS billing data in FOCUS format
+// - **Use when:** the management account's billing export must be created or changed for downstream cost copy.
+// - **Does:** SubmitCostReporting.java is a fourth, standalone CDK app deployed into the management account. It runs under separate credentials from the environment and application apps. CostExportStack.java deploys the export bucket and the BCMDataExports::Export resource, in FOCUS 1.2 Parquet format.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/SubmitCostReporting.java:main`; `infra/main/java/co/uk/diyaccounting/submit/stacks/CostExportStack.java:CostExportStack`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/SubmitCostReporting.java, infra/test/java/co/uk/diyaccounting/submit/SubmitCostReportingTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CostExportStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/CostExportStackTest.java
+// - **Keywords:** focus format, bcmdataexports, management account, standalone cdk app, cost export bucket, cost-copy role
+// - **Related:** DATA-08
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;

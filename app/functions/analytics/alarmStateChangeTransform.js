@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-03 Transform alarm state changes into lake rows
+// - **Use when:** CloudWatch alarm state changes must be flattened into lake rows for the DORA/alarms views.
+// - **Does:** alarmStateChangeTransform.js is the Firehose transformation Lambda for the alarm-state-change delivery stream. Its handler flattens each CloudWatch Alarm State Change envelope into one row: name, family, slug, state, reason. AlarmStateChangeDelivery.java provisions the EventBridge rule, delivery stream and Glue table.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/alarmStateChangeTransform.js:handler`
+// - **Files:** app/functions/analytics/alarmStateChangeTransform.js, app/unit-tests/analytics/alarmStateChangeTransform.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AlarmStateChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/AlarmStateChangeDeliveryTest.java
+// - **Keywords:** alarm state change, cloudwatch alarm, firehose transform, alarm family, deployment slug, alarms view
+// - **Related:** DATA-32
+// @end-capability
+
 // app/functions/analytics/alarmStateChangeTransform.js
 //
 // Firehose transformation for the alarm-state-change delivery stream: AlarmToLakeRule in

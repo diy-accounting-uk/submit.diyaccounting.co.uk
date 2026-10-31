@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-03 Retrieve VAT obligations
+// - **Use when:** a session needs open or fulfilled VAT filing periods for a date range.
+// - **Does:** hmrcVatObligationGet.js's getVatObligations lists VAT filing periods from HMRC. hmrcVatReturnPost.js also calls it to resolve a period key before filing.
+// - **Run:** `GET /api/v1/hmrc/vat/obligation`
+// - **Entry:** `app/functions/hmrc/hmrcVatObligationGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatObligationGet.js:getVatObligations`
+// - **Files:** app/functions/hmrc/hmrcVatObligationGet.js, app/unit-tests/functions/hmrcVatObligationGet.test.js, app/system-tests/hmrcVatObligationJourney.system.test.js, behaviour-tests/getVatObligations.behaviour.test.js, web/public/hmrc/vat/vatObligations.html, web/browser-tests/vatObligations.error403.browser.test.js, web/public/prefetch/prefetch-hmrc-vat-obligation-head.js
+// - **Keywords:** vat obligations, filing periods, due dates, period key, hmrc token expired, 403
+// - **Related:** HMRC-01, HMRC-28
+// @end-capability
+
 // app/functions/hmrc/hmrcVatObligationGet.js
 
 import { createLogger } from "../../lib/logger.js";

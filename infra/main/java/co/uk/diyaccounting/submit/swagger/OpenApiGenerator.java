@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DEV-13 Generate the OpenAPI spec from CDK route definitions
+// - **Use when:** the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
+// - **Does:** OpenApiGenerator introspects SubmitSharedNames to discover API Gateway routes, methods and paths from the CDK code. It emits an OpenAPI 3.0.3 document from that introspection, with the paths in sorted order.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java:OpenApiGenerator`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java, infra/main/java/co/uk/diyaccounting/submit/swagger/CHANGES.md, infra/test/java/co/uk/diyaccounting/submit/swagger/OpenApiGeneratorTest.java
+// - **Keywords:** openapi generator, api gateway routes, cdk introspection, swagger spec, openapi 3.0.3, SubmitSharedNames
+// - **Related:** DEV-06
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.swagger;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -144,7 +156,8 @@ public class OpenApiGenerator {
 
         // Group lambdas by path for easier processing
         Map<String, List<SubmitSharedNames.PublishedLambda>> pathToLambdas = sharedNames.publishedApiLambdas.stream()
-                .collect(Collectors.groupingBy(pl -> pl.urlPath.replaceFirst("^/api/v1", "")));
+                .collect(Collectors.groupingBy(
+                        pl -> pl.urlPath.replaceFirst("^/api/v1", ""), TreeMap::new, Collectors.toList()));
 
         // Build base operations from discovered lambdas in CDK code
         for (Map.Entry<String, List<SubmitSharedNames.PublishedLambda>> entry : pathToLambdas.entrySet()) {

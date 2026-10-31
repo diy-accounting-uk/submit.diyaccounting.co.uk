@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-37 CDK: billing app stack
+// - **Use when:** tracing or changing the per-deployment billing checkout, session, portal or recover Lambdas.
+// - **Does:** The BillingStack.java construct wires the per-deployment billing Lambdas: checkout create, checkout-session get, portal get, and the recover stub. It grants each its Stripe secret and DynamoDB access.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java
+// - **Keywords:** cdk, billing stack, checkout lambda, portal lambda, stripe secret grant
+// - **Related:** BILL-24, BILL-26, BILL-27, BILL-38
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -177,19 +189,19 @@ public class BillingStack extends Stack {
         ITable subscriptionsTable = Table.fromTableName(
                 this,
                 "ImportedSubscriptionsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().subscriptionsTableName);
+                props.sharedNames().data.subscriptionsTableName);
 
         // Lookup existing DynamoDB Bundles Table
         ITable bundlesTable = Table.fromTableName(
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlesTableName);
+                props.sharedNames().data.bundlesTableName);
 
         // Lookup existing DynamoDB Activity Charges Table
         ITable activityChargesTable = Table.fromTableName(
                 this,
                 "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().activityChargesTableName);
+                props.sharedNames().data.activityChargesTableName);
 
         // Lambdas
 
@@ -201,7 +213,7 @@ public class BillingStack extends Stack {
 
         // Construct EventBridge activity bus ARN for IAM policies
         var activityBusArn = String.format(
-                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activity.activityBusName);
 
         // ============================================================================
         // Billing Checkout POST Lambda (JWT auth)
@@ -209,7 +221,7 @@ public class BillingStack extends Stack {
         var billingCheckoutPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
@@ -275,22 +287,23 @@ public class BillingStack extends Stack {
         var billingCheckoutPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingCheckoutPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.billingCheckoutPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingCheckoutPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billing.billingCheckoutPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().billingCheckoutPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingCheckoutPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().billingCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().billing.billingCheckoutPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.billingCheckoutPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billing
+                                .billingCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingCheckoutPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingCheckoutPostLambdaUrlPath)
+                        .httpMethod(props.sharedNames().billing.billingCheckoutPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billing.billingCheckoutPostLambdaUrlPath)
                         .jwtAuthorizer(false)
-                        .customAuthorizer(props.sharedNames().billingCheckoutPostLambdaCustomAuthorizer)
+                        .customAuthorizer(props.sharedNames().billing.billingCheckoutPostLambdaCustomAuthorizer)
                         .billingJwtAuthorizer(true)
                         .environment(billingCheckoutPostLambdaEnv)
                         .build());
@@ -344,7 +357,7 @@ public class BillingStack extends Stack {
         var billingActivityCheckoutPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingActivityCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
@@ -374,22 +387,24 @@ public class BillingStack extends Stack {
         var billingActivityCheckoutPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingActivityCheckoutPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.billingActivityCheckoutPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingActivityCheckoutPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().billing.billingActivityCheckoutPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().billingActivityCheckoutPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingActivityCheckoutPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames().billing.billingActivityCheckoutPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.billingActivityCheckoutPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billing
                                 .billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingActivityCheckoutPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingActivityCheckoutPostLambdaUrlPath)
+                        .httpMethod(props.sharedNames().billing.billingActivityCheckoutPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billing.billingActivityCheckoutPostLambdaUrlPath)
                         .jwtAuthorizer(false)
-                        .customAuthorizer(props.sharedNames().billingActivityCheckoutPostLambdaCustomAuthorizer)
+                        .customAuthorizer(props.sharedNames().billing.billingActivityCheckoutPostLambdaCustomAuthorizer)
                         .billingJwtAuthorizer(true)
                         .environment(billingActivityCheckoutPostLambdaEnv)
                         .build());
@@ -448,22 +463,24 @@ public class BillingStack extends Stack {
         var billingCheckoutSessionGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.billingCheckoutSessionGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().billing.billingCheckoutSessionGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().billingCheckoutSessionGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingCheckoutSessionGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().billing.billingCheckoutSessionGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.billingCheckoutSessionGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billing
+                                .billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingCheckoutSessionGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingCheckoutSessionGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().billingCheckoutSessionGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().billingCheckoutSessionGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().billing.billingCheckoutSessionGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billing.billingCheckoutSessionGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().billing.billingCheckoutSessionGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().billing.billingCheckoutSessionGetLambdaCustomAuthorizer)
                         .environment(billingCheckoutSessionGetLambdaEnv)
                         .build());
         this.billingCheckoutSessionGetLambdaProps = billingCheckoutSessionGetApiLambda.apiProps;
@@ -509,7 +526,7 @@ public class BillingStack extends Stack {
         var billingPortalGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingPortalGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
@@ -528,22 +545,22 @@ public class BillingStack extends Stack {
         var billingPortalGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingPortalGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.billingPortalGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingPortalGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billing.billingPortalGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().billingPortalGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingPortalGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames().billing.billingPortalGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.billingPortalGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().billingPortalGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().billing.billingPortalGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingPortalGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingPortalGetLambdaUrlPath)
+                        .httpMethod(props.sharedNames().billing.billingPortalGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billing.billingPortalGetLambdaUrlPath)
                         .jwtAuthorizer(false)
-                        .customAuthorizer(props.sharedNames().billingPortalGetLambdaCustomAuthorizer)
+                        .customAuthorizer(props.sharedNames().billing.billingPortalGetLambdaCustomAuthorizer)
                         .billingJwtAuthorizer(true)
                         .environment(billingPortalGetLambdaEnv)
                         .build());
@@ -596,26 +613,27 @@ public class BillingStack extends Stack {
         var billingRecoverPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var billingRecoverPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingRecoverPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.billingRecoverPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingRecoverPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().billingRecoverPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingRecoverPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().billingRecoverPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billing.billingRecoverPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().billing.billingRecoverPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.billingRecoverPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billing
+                                .billingRecoverPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingRecoverPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingRecoverPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().billingRecoverPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().billingRecoverPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().billing.billingRecoverPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billing.billingRecoverPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().billing.billingRecoverPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().billing.billingRecoverPostLambdaCustomAuthorizer)
                         .environment(billingRecoverPostLambdaEnv)
                         .build());
         this.billingRecoverPostLambdaProps = billingRecoverPostApiLambda.apiProps;

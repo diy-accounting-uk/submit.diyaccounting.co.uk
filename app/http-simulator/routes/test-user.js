@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-06 Simulate HMRC test-user provisioning and API docs
+// - **Use when:** a test needs a fresh HMRC sandbox-style test user, or a session needs the simulator's own API docs.
+// - **Does:** apiEndpoint in test-user.js answers POST /create-test-user/organisations with a random VRN, user ID, password and group identifier. It adds a NINO when the service is mtd-income-tax. apiEndpoint in openapi.js serves an index page, the raw OpenAPI specs, and a Swagger UI at /docs/{spec}.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/test-user.js"`; `import { apiEndpoint } from "app/http-simulator/routes/openapi.js"`
+// - **Entry:** `app/http-simulator/routes/test-user.js:apiEndpoint`; `app/http-simulator/routes/openapi.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/test-user.js, app/http-simulator/routes/openapi.js
+// - **Keywords:** test user, create-test-user, vrn, nino, openapi spec, swagger ui, api docs
+// - **Related:** DEV-01, DEV-13
+// @end-capability
+
 // app/http-simulator/routes/test-user.js
 // HMRC Create Test User endpoint
 // Handles: POST /create-test-user/organisations, POST /create-test-user/agents

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-52 Diff two weekly crawls page by page
+// - **Use when:** you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
+// - **Does:** `scripts/exploratory-diff.mjs` pairs the PNGs of two crawl folders by lane, role, viewport, theme and page name. It compares each pair with the pixelmatch comparator of Playwright. It writes `target/exploratory-diff/contact-sheet.html` with before, diff and after for each pair that differs, and `summary.json` with the counts.
+// - **Run:** `npm run exploratory:diff -- --before <old-crawl-dir> --after <new-crawl-dir>`; fetch a crawl with `gh run download <run-id> -n exploratory-crawl -D <dir>`
+// - **Entry:** `scripts/exploratory-diff.mjs:runDiff`
+// - **Files:** scripts/exploratory-diff.mjs, app/unit-tests/scripts/exploratoryDiff.test.js
+// - **Keywords:** crawl diff, week on week, image diff, pixelmatch, screenshot comparison, regression, contact sheet
+// - **Related:** DEV-51, DEV-46
+// @end-capability
+
 // scripts/exploratory-diff.mjs
 //
 // The week-on-week pass over two crawls. It pairs the PNGs of two `exploratory-crawl` folders by

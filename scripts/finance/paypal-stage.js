@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-48 Stage PayPal transactions for reconciliation
+// - **Use when:** one month's PayPal transactions must be pulled and staged for reconciliation.
+// - **Does:** paypal-stage.js pulls one month's PayPal Transaction Search API results, as raw objects. It keeps transaction_status and writes results to the workspace's staging tree. It reads its OAuth client id and secret from Secrets Manager only, never an environment variable.
+// - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/finance/paypal-stage.js --month 2026-03`
+// - **Entry:** `scripts/finance/paypal-stage.js:`
+// - **Files:** scripts/finance/paypal-stage.js, app/unit-tests/scripts/finance/paypalStage.test.js
+// - **Keywords:** paypal transaction search, accounts staging, reconciliation, secrets manager oauth, transaction_status
+// - **Related:** DATA-49, DATA-50
+// @end-capability
+
 /**
  * Stages a month's PayPal transactions to the workspace's staging tree, as the raw Transaction
  * Search API objects with each one's transaction_status field kept. Holds and their reversals

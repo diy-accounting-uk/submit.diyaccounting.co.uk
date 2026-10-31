@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-07 Lean-deploy app code to Lambda and S3
+// - **Use when:** a fast iteration deploy of app or web code is needed, without a full CDK deploy.
+// - **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
+// - **Run:** `gh workflow run deploy-app.yml -f environment-name=<ci|prod> -f deployment-name=<name>`; `npm run deploy:app-ci`; `npm run deploy:app-prod`; `node scripts/deploy-app.js`
+// - **Entry:** `scripts/deploy-app.js:resolveDeployment`; `scripts/deploy-app.js:dockerBuildAndPush`
+// - **Files:** .github/workflows/deploy-app.yml, scripts/deploy-app.js
+// - **Keywords:** lean deploy, deploy-app, lambda update, s3 sync, cloudfront invalidation, rum injection, cloudformation drift
+// - **Related:** OPS-06
+// @end-capability
+
 //
 // Lean app deployment: updates Lambda function code (Docker image) and static web assets
 // without running CDK. Bypasses full deploy.yml for rapid iteration.

@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-49 Request and renew the holding-page certificate
+# - **Use when:** the holding-page domain needs a new or renewed ACM certificate.
+# - **Does:** request-holding-cert.yml requests an ACM certificate for the holding-page domain, or renews the existing one.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/request-holding-cert.yml`
+# - **Files:** .github/workflows/request-holding-cert.yml
+# - **Keywords:** holding page certificate, acm certificate, certificate renewal, request-holding-cert.yml, holding page domain
+# - **Related:** OPS-30
+# @end-capability
+
 name: request holding cert
 run-name: "request holding cert for ${{ inputs.environment-name }}"
 

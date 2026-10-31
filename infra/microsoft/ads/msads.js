@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-62 Read and forecast the Microsoft Advertising account
+// - **Use when:** a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
+// - **Does:** msads.js is a client for the Bing Ads API v13 REST endpoints, signed in with Google OAuth and the IdentityProvider header. It reads the user, customer and account, the full campaign inventory with spend to date, a campaign report by date range, and Ad Insight traffic estimates. Its export, plan and apply modes (msads-sync.js) keep the account equal to infra/microsoft/ads/ads.toml: the UET tag, conversion goals, the Search campaign with its ad groups, keywords, negatives and ads, and the MSCLKIDAutoTaggingEnabled account property; apply never deletes. msads-apply.yml applies on a push to main that touches infra/microsoft/** and plans on a dispatch. msads-conversions-upload.js sends paid Stripe charges with a stored msclkid to the offline goal, and prints them without --apply. The consent mode stores the Google refresh token in Secrets Manager.
+// - **Run:** `npm run msads:consent`; `npm run msads:whoami`; `npm run msads:inventory`; `npm run msads:forecast`; `npm run msads:report -- --from 2026-10-29 --to 2026-11-12`; `node infra/microsoft/ads/msads.js --plan` (or `--export`, `--apply`); `gh workflow run msads-apply.yml`; `node infra/microsoft/ads/msads-conversions-upload.js [--apply]`; `gh workflow run msads-conversions-upload.yml` (daily at 05:20 UTC)
+// - **Entry:** `infra/microsoft/ads/msads.js:main`
+// - **Files:** infra/microsoft/ads/msads.js, infra/microsoft/ads/msads.toml, infra/microsoft/ads/ads.toml, infra/microsoft/ads/msads-sync.js, infra/microsoft/ads/msads-conversions-upload.js, .github/workflows/msads-apply.yml, .github/workflows/msads-conversions-upload.yml, app/lib/microsoftAdsReporting.js, app/unit-tests/scripts/msads.test.js, app/unit-tests/scripts/msadsSync.test.js, app/unit-tests/scripts/msadsConversionsUpload.test.js
+// - **Keywords:** microsoft advertising, bing ads, msads, bing forecast, ad insight, traffic estimates, identityprovider google, developer token, bing campaign as code, uet tag, msclkid, offline conversion
+// - **Related:** DATA-33, DATA-34, DATA-35, DATA-63
+// @end-capability
+
 // infra/microsoft/ads/msads.js
 //
 // Client for the Microsoft Advertising account named in infra/microsoft/ads/msads.toml (Bing Ads

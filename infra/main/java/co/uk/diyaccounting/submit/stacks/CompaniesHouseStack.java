@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability CH-14 Provision the Companies House CDK stack
+// - **Use when:** adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
+// - **Does:** CompaniesHouseStack.java creates all thirteen Companies House Lambda functions as ApiLambda origins. It wires each function's API Gateway route.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStackTest.java
+// - **Keywords:** cdk, companies house, lambda, api gateway, infrastructure, stack, ApiLambda
+// - **Related:** CH-08, CH-09
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -220,28 +232,28 @@ public class CompaniesHouseStack extends Stack {
         ITable bundlesTable = Table.fromTableName(
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlesTableName);
+                props.sharedNames().data.bundlesTableName);
 
         // Lookup existing DynamoDB Receipts Table - only the accounts poll Lambda writes to it,
         // for the accepted filing receipt.
         ITable receiptsTable = Table.fromTableName(
                 this,
                 "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().receiptsTableName);
+                props.sharedNames().data.receiptsTableName);
 
         // Lookup existing DynamoDB Companies House accounts async-requests table - the submit and
         // poll Lambdas read and write it; allocateSubmissionNumber()'s counter item lives there too.
         ITable companiesHouseAccountsAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedCompaniesHouseAccountsAsyncRequestsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName);
+                props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName);
 
         // Lookup existing DynamoDB Practice Clients Table - the accounts submit Lambda reads it
         // when enforceBundles resolves a client-scoped request's client row.
         ITable practiceClientsTable = Table.fromTableName(
                 this,
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().practiceClientsTableName);
+                props.sharedNames().data.practiceClientsTableName);
 
         // Lookup existing DynamoDB Activity Charges Table - the confirmation statement submit
         // Lambda checks and marks a per-filing Stripe charge before it accepts a fee-due
@@ -249,7 +261,7 @@ public class CompaniesHouseStack extends Stack {
         ITable activityChargesTable = Table.fromTableName(
                 this,
                 "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().activityChargesTableName);
+                props.sharedNames().data.activityChargesTableName);
 
         // Lookup existing DynamoDB MCP sessions table and the key that seals the codes held in it:
         // the three Lambdas that read the codes a user typed on the codes page take their entry
@@ -257,12 +269,12 @@ public class CompaniesHouseStack extends Stack {
         ITable mcpSessionsTable = Table.fromTableName(
                 this,
                 "ImportedMcpSessionsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().mcpSessionsTableName);
+                props.sharedNames().data.mcpSessionsTableName);
         ISecret codesSealKeySecret = Secret.fromSecretCompleteArn(
                 this,
                 props.resourceNamePrefix() + "-CodesSealKey",
                 StringParameter.valueForStringParameter(
-                        this, props.sharedNames().mcpOauthBlobKeySecretArnParameterName));
+                        this, props.sharedNames().mcp.mcpOauthBlobKeySecretArnParameterName));
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
@@ -272,13 +284,13 @@ public class CompaniesHouseStack extends Stack {
 
         // Construct EventBridge activity bus ARN for IAM policies
         var activityBusArn = String.format(
-                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activity.activityBusName);
 
         // Companies House search
         var companiesHouseSearchGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseSearchGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
@@ -287,22 +299,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseSearchGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseSearchGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseSearchGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseSearchGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseSearchGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseSearchGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseSearchGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHouseSearchGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseSearchGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseSearchGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseSearchGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseSearchGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseSearchGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseSearchGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseSearchGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseSearchGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseSearchGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseSearchGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseSearchGetLambdaCustomAuthorizer)
                         .environment(companiesHouseSearchGetLambdaEnv)
                         .build());
         this.companiesHouseSearchGetLambdaProps = companiesHouseSearchGetLambdaUrlOrigin.apiProps;
@@ -312,7 +327,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House search with ingestHandler %s",
                 this.companiesHouseSearchGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseSearchGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseSearchGetIngestLambdaHandler);
 
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseSearchGetLambda, bundlesTable, region, account, props, activityBusArn, true);
@@ -320,8 +335,8 @@ public class CompaniesHouseStack extends Stack {
         // Companies House company profile
         var companiesHouseCompanyGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseCompanyGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
@@ -330,22 +345,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseCompanyGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseCompanyGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseCompanyGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseCompanyGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseCompanyGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseCompanyGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHouseCompanyGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseCompanyGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseCompanyGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseCompanyGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseCompanyGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseCompanyGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseCompanyGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseCompanyGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseCompanyGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseCompanyGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseCompanyGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyGetLambdaCustomAuthorizer)
                         .environment(companiesHouseCompanyGetLambdaEnv)
                         .build());
         this.companiesHouseCompanyGetLambdaProps = companiesHouseCompanyGetLambdaUrlOrigin.apiProps;
@@ -355,7 +373,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House company profile with ingestHandler %s",
                 this.companiesHouseCompanyGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseCompanyGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseCompanyGetIngestLambdaHandler);
 
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseCompanyGetLambda, bundlesTable, region, account, props, activityBusArn, true);
@@ -366,8 +384,8 @@ public class CompaniesHouseStack extends Stack {
         // PopulatedMap rejects a blank value outright.
         var companiesHouseTokenPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseIdentityBaseUri())) {
             companiesHouseTokenPostLambdaEnv.with(
@@ -384,22 +402,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseTokenPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseTokenPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseTokenPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseTokenPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseTokenPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseTokenPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseTokenPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseTokenPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseTokenPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseTokenPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseTokenPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseTokenPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseTokenPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseTokenPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTokenPostLambdaCustomAuthorizer)
                         .environment(companiesHouseTokenPostLambdaEnv)
                         .build());
         this.companiesHouseTokenPostLambdaProps = companiesHouseTokenPostLambdaUrlOrigin.apiProps;
@@ -409,7 +430,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House token exchange with ingestHandler %s",
                 this.companiesHouseTokenPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseTokenPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseTokenPostIngestLambdaHandler);
 
         // Its own grant, not grantCompaniesHouseLambdaAccess: the token exchange authenticates
         // with the OAuth client secret, not the public data API key, and does not gate on a
@@ -426,22 +447,31 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseTransactionPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseTransactionPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseTransactionPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseTransactionPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseTransactionPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseTransactionPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseTransactionPostIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseTransactionPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseTransactionPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseTransactionPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseTransactionPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseTransactionPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseTransactionPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseTransactionPostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPostLambdaCustomAuthorizer)
                         .environment(companiesHouseTransactionPostLambdaEnv)
                         .build());
         this.companiesHouseTransactionPostLambdaProps = companiesHouseTransactionPostLambdaUrlOrigin.apiProps;
@@ -451,7 +481,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House transaction open with ingestHandler %s",
                 this.companiesHouseTransactionPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseTransactionPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseTransactionPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionPostLambda, bundlesTable, region, account, props, activityBusArn, false);
 
@@ -459,22 +489,28 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseTransactionGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseTransactionGetIngestLambdaFunctionName)
+                        .idPrefix(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseTransactionGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseTransactionGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseTransactionGetIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseTransactionGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseTransactionGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseTransactionGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseTransactionGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseTransactionGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseTransactionGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseTransactionGetLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionGetLambdaCustomAuthorizer)
                         .environment(companiesHouseTransactionGetLambdaEnv)
                         .build());
         this.companiesHouseTransactionGetLambdaProps = companiesHouseTransactionGetLambdaUrlOrigin.apiProps;
@@ -484,7 +520,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House transaction get with ingestHandler %s",
                 this.companiesHouseTransactionGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseTransactionGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionGetLambda, bundlesTable, region, account, props, activityBusArn, false);
 
@@ -492,22 +528,28 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseTransactionPutLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseTransactionPutIngestLambdaFunctionName)
+                        .idPrefix(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseTransactionPutIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseTransactionPutIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseTransactionPutIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseTransactionPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseTransactionPutLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseTransactionPutLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseTransactionPutLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseTransactionPutLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseTransactionPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseTransactionPutLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPutLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseTransactionPutLambdaCustomAuthorizer)
                         .environment(companiesHouseTransactionPutLambdaEnv)
                         .build());
         this.companiesHouseTransactionPutLambdaProps = companiesHouseTransactionPutLambdaUrlOrigin.apiProps;
@@ -517,7 +559,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House transaction close with ingestHandler %s",
                 this.companiesHouseTransactionPutLambda.getNode().getId(),
-                props.sharedNames().companiesHouseTransactionPutIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionPutLambda, bundlesTable, region, account, props, activityBusArn, false);
 
@@ -534,8 +576,8 @@ public class CompaniesHouseStack extends Stack {
                 : props.companiesHouseApiKeyArn();
         var companiesHouseRegisteredOfficeAddressGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", officeReadBaseUri)
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(officeReadApiKeyArn)) {
             companiesHouseRegisteredOfficeAddressGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", officeReadApiKeyArn);
@@ -543,24 +585,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseRegisteredOfficeAddressGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseRegisteredOfficeAddressGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseRegisteredOfficeAddressGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseRegisteredOfficeAddressGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseRegisteredOfficeAddressGetLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseRegisteredOfficeAddressGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressGetLambdaCustomAuthorizer)
                         .environment(companiesHouseRegisteredOfficeAddressGetLambdaEnv)
                         .build());
         this.companiesHouseRegisteredOfficeAddressGetLambdaProps =
@@ -573,7 +630,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House registered office address read with ingestHandler %s",
                 this.companiesHouseRegisteredOfficeAddressGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseRegisteredOfficeAddressGetLambda,
                 bundlesTable,
@@ -588,24 +645,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseRegisteredOfficeAddressPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseRegisteredOfficeAddressPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseRegisteredOfficeAddressPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseRegisteredOfficeAddressPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseRegisteredOfficeAddressPostLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseRegisteredOfficeAddressPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredOfficeAddressPostLambdaCustomAuthorizer)
                         .environment(companiesHouseRegisteredOfficeAddressPostLambdaEnv)
                         .build());
         this.companiesHouseRegisteredOfficeAddressPostLambdaProps =
@@ -618,7 +690,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House registered office address filing with ingestHandler %s",
                 this.companiesHouseRegisteredOfficeAddressPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseRegisteredOfficeAddressPostLambda,
                 bundlesTable,
@@ -632,27 +704,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseRegisteredEmailEligibilityGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(
-                                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(
-                                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseRegisteredEmailEligibilityGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseRegisteredEmailEligibilityGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseRegisteredEmailEligibilityGetLambdaUrlPath)
-                        .jwtAuthorizer(
-                                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailEligibilityGetLambdaCustomAuthorizer)
                         .environment(companiesHouseRegisteredEmailEligibilityGetLambdaEnv)
                         .build());
         this.companiesHouseRegisteredEmailEligibilityGetLambdaProps =
@@ -665,7 +749,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House registered email eligibility with ingestHandler %s",
                 this.companiesHouseRegisteredEmailEligibilityGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseRegisteredEmailEligibilityGetLambda,
                 bundlesTable,
@@ -679,24 +763,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseRegisteredEmailAddressPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseRegisteredEmailAddressPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseRegisteredEmailAddressPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseRegisteredEmailAddressPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseRegisteredEmailAddressPostLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseRegisteredEmailAddressPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseRegisteredEmailAddressPostLambdaCustomAuthorizer)
                         .environment(companiesHouseRegisteredEmailAddressPostLambdaEnv)
                         .build());
         this.companiesHouseRegisteredEmailAddressPostLambdaProps =
@@ -709,7 +808,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House registered email address filing with ingestHandler %s",
                 this.companiesHouseRegisteredEmailAddressPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseRegisteredEmailAddressPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseRegisteredEmailAddressPostLambda,
                 bundlesTable,
@@ -726,22 +825,31 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseAccountsRenderPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseAccountsRenderPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseAccountsRenderPostIngestLambdaFunctionName)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseAccountsRenderPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseAccountsRenderPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseAccountsRenderPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsRenderPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseAccountsRenderPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseAccountsRenderPostLambdaCustomAuthorizer)
                         .environment(companiesHouseAccountsRenderPostLambdaEnv)
                         .build());
         this.companiesHouseAccountsRenderPostLambdaProps = companiesHouseAccountsRenderPostLambdaUrlOrigin.apiProps;
@@ -751,7 +859,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House accounts render with ingestHandler %s",
                 this.companiesHouseAccountsRenderPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseAccountsRenderPostIngestLambdaHandler);
         // No presenter secret grant: render never reaches the gateway.
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsRenderPostLambda,
@@ -777,22 +885,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseAccountsPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseAccountsPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseAccountsPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseAccountsPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseAccountsPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseAccountsPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseAccountsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseAccountsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseAccountsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsPostLambdaCustomAuthorizer)
                         .environment(companiesHouseAccountsPostLambdaEnv)
                         .build());
         this.companiesHouseAccountsPostLambdaProps = companiesHouseAccountsPostLambdaUrlOrigin.apiProps;
@@ -802,7 +913,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House accounts submit with ingestHandler %s",
                 this.companiesHouseAccountsPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseAccountsPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
@@ -822,22 +933,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseAccountsGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseAccountsGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseAccountsGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseAccountsGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseAccountsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseAccountsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseAccountsGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseAccountsGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseAccountsGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseAccountsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseAccountsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseAccountsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseAccountsGetLambdaCustomAuthorizer)
                         .environment(companiesHouseAccountsGetLambdaEnv)
                         .build());
         this.companiesHouseAccountsGetLambdaProps = companiesHouseAccountsGetLambdaUrlOrigin.apiProps;
@@ -847,7 +961,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House accounts poll with ingestHandler %s",
                 this.companiesHouseAccountsGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseAccountsGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseAccountsGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
@@ -862,21 +976,24 @@ public class CompaniesHouseStack extends Stack {
         var hmrcCtReturnPreviewPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(512)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().hmrcCtReturnPreviewPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().hmrcCtReturnPreviewPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnPreviewPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcCtReturnPreviewPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostLambdaCustomAuthorizer)
                         .environment(hmrcCtReturnPreviewPostLambdaEnv)
                         .build());
         this.hmrcCtReturnPreviewPostLambdaProps = hmrcCtReturnPreviewPostLambdaUrlOrigin.apiProps;
@@ -886,7 +1003,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC Company Tax Return preview with ingestHandler %s",
                 this.hmrcCtReturnPreviewPostLambda.getNode().getId(),
-                props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.hmrcCtReturnPreviewPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnPreviewPostLambda, bundlesTable, region, account, props, activityBusArn, false);
 
@@ -901,22 +1018,23 @@ public class CompaniesHouseStack extends Stack {
         var hmrcCtReturnPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcCtReturnPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcCtReturnPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().hmrcCtReturnPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(512)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().hmrcCtReturnPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().hmrcCtReturnPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcCtReturnPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.hmrcCtReturnPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.hmrcCtReturnPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.hmrcCtReturnPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouse.hmrcCtReturnPostLambdaCustomAuthorizer)
                         .environment(hmrcCtReturnPostLambdaEnv)
                         .build());
         this.hmrcCtReturnPostLambdaProps = hmrcCtReturnPostLambdaUrlOrigin.apiProps;
@@ -925,7 +1043,8 @@ public class CompaniesHouseStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcCtReturnPostLambdaProps);
         infof(
                 "Created Lambda %s for HMRC Company Tax Return submit with ingestHandler %s",
-                this.hmrcCtReturnPostLambda.getNode().getId(), props.sharedNames().hmrcCtReturnPostIngestLambdaHandler);
+                this.hmrcCtReturnPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         companiesHouseAccountsAsyncRequestsTable.grant(
@@ -939,22 +1058,23 @@ public class CompaniesHouseStack extends Stack {
         var hmrcCtReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcCtReturnGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcCtReturnGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().hmrcCtReturnGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(512)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().hmrcCtReturnGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().hmrcCtReturnGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcCtReturnGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.hmrcCtReturnGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.hmrcCtReturnGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.hmrcCtReturnGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouse.hmrcCtReturnGetLambdaCustomAuthorizer)
                         .environment(hmrcCtReturnGetLambdaEnv)
                         .build());
         this.hmrcCtReturnGetLambdaProps = hmrcCtReturnGetLambdaUrlOrigin.apiProps;
@@ -963,7 +1083,8 @@ public class CompaniesHouseStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcCtReturnGetLambdaProps);
         infof(
                 "Created Lambda %s for HMRC Company Tax Return poll with ingestHandler %s",
-                this.hmrcCtReturnGetLambda.getNode().getId(), props.sharedNames().hmrcCtReturnGetIngestLambdaHandler);
+                this.hmrcCtReturnGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         receiptsTable.grant(this.hmrcCtReturnGetLambda, "dynamodb:PutItem");
@@ -978,8 +1099,8 @@ public class CompaniesHouseStack extends Stack {
         // space serves every form.
         var companiesHouseOfficersGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseOfficersGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
@@ -987,22 +1108,25 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseOfficersGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseOfficersGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHouseOfficersGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseOfficersGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseOfficersGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseOfficersGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseOfficersGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHouseOfficersGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHouseOfficersGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseOfficersGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficersGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseOfficersGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseOfficersGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseOfficersGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseOfficersGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseOfficersGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseOfficersGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHouseOfficersGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseOfficersGetLambdaCustomAuthorizer)
                         .environment(companiesHouseOfficersGetLambdaEnv)
                         .build());
         this.companiesHouseOfficersGetLambdaProps = companiesHouseOfficersGetLambdaUrlOrigin.apiProps;
@@ -1012,14 +1136,14 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House officers lookup with ingestHandler %s",
                 this.companiesHouseOfficersGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseOfficersGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseOfficersGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseOfficersGetLambda, bundlesTable, region, account, props, activityBusArn, true);
 
         var companiesHousePscGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHousePscGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
@@ -1027,22 +1151,24 @@ public class CompaniesHouseStack extends Stack {
         var companiesHousePscGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHousePscGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouse.companiesHousePscGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHousePscGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHousePscGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHousePscGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHousePscGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().companiesHousePscGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestHandler(props.sharedNames().companiesHouse.companiesHousePscGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHousePscGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHousePscGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHousePscGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHousePscGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHousePscGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHousePscGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHousePscGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouse.companiesHousePscGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouse.companiesHousePscGetLambdaCustomAuthorizer)
                         .environment(companiesHousePscGetLambdaEnv)
                         .build());
         this.companiesHousePscGetLambdaProps = companiesHousePscGetLambdaUrlOrigin.apiProps;
@@ -1052,7 +1178,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House PSC lookup with ingestHandler %s",
                 this.companiesHousePscGetLambda.getNode().getId(),
-                props.sharedNames().companiesHousePscGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHousePscGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHousePscGetLambda, bundlesTable, region, account, props, activityBusArn, true);
 
@@ -1063,22 +1189,28 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseFilingDataPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseFilingDataPostIngestLambdaFunctionName)
+                        .idPrefix(
+                                props.sharedNames().companiesHouse.companiesHouseFilingDataPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().companiesHouseFilingDataPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseFilingDataPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseFilingDataPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseFilingDataPostIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseFilingDataPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseFilingDataPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseFilingDataPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseFilingDataPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseFilingDataPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseFilingDataPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseFilingDataPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseFilingDataPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseFilingDataPostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseFilingDataPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseFilingDataPostLambdaCustomAuthorizer)
                         .environment(companiesHouseFilingDataPostLambdaEnv)
                         .build());
         this.companiesHouseFilingDataPostLambdaProps = companiesHouseFilingDataPostLambdaUrlOrigin.apiProps;
@@ -1088,7 +1220,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House confirmation statement filing data with ingestHandler %s",
                 this.companiesHouseFilingDataPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseFilingDataPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseFilingDataPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseFilingDataPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseFilingDataPostLambda, props);
@@ -1099,27 +1231,38 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 ApiLambdaProps.builder()
                         .idPrefix(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseConfirmationStatementRenderPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseConfirmationStatementRenderPostIngestLambdaFunctionName)
-                        .ingestHandler(
-                                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaHandler)
-                        .ingestLambdaArn(
-                                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames()
+                                        .companiesHouse
                                         .companiesHouseConfirmationStatementRenderPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaUrlPath)
-                        .jwtAuthorizer(
-                                props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementRenderPostLambdaCustomAuthorizer)
                         .environment(companiesHouseConfirmationStatementRenderPostLambdaEnv)
                         .build());
         this.companiesHouseConfirmationStatementRenderPostLambdaProps =
@@ -1134,7 +1277,7 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseConfirmationStatementRenderPostLambda
                         .getNode()
                         .getId(),
-                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseConfirmationStatementRenderPostIngestLambdaHandler);
         // No presenter secret grant: render never reaches the gateway.
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseConfirmationStatementRenderPostLambda,
@@ -1166,24 +1309,38 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseConfirmationStatementPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseConfirmationStatementPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseConfirmationStatementPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseConfirmationStatementPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseConfirmationStatementPostLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseConfirmationStatementPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostLambdaHttpMethod)
+                        .urlPath(
+                                props.sharedNames().companiesHouse.companiesHouseConfirmationStatementPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementPostLambdaCustomAuthorizer)
                         .environment(companiesHouseConfirmationStatementPostLambdaEnv)
                         .build());
         this.companiesHouseConfirmationStatementPostLambdaProps =
@@ -1196,7 +1353,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House confirmation statement submit with ingestHandler %s",
                 this.companiesHouseConfirmationStatementPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseConfirmationStatementPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseConfirmationStatementPostLambda,
                 bundlesTable,
@@ -1222,24 +1379,37 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseConfirmationStatementGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHouseConfirmationStatementGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseConfirmationStatementGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseConfirmationStatementGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseConfirmationStatementGetLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHouseConfirmationStatementGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseConfirmationStatementGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseConfirmationStatementGetLambdaCustomAuthorizer)
                         .environment(companiesHouseConfirmationStatementGetLambdaEnv)
                         .build());
         this.companiesHouseConfirmationStatementGetLambdaProps =
@@ -1252,7 +1422,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House confirmation statement poll with ingestHandler %s",
                 this.companiesHouseConfirmationStatementGetLambda.getNode().getId(),
-                props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHouseConfirmationStatementGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseConfirmationStatementGetLambda,
                 bundlesTable,
@@ -1279,27 +1449,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHousePscVerificationStatementPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(
-                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(
-                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHousePscVerificationStatementPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHousePscVerificationStatementPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHousePscVerificationStatementPostLambdaUrlPath)
-                        .jwtAuthorizer(
-                                props.sharedNames().companiesHousePscVerificationStatementPostLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHousePscVerificationStatementPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementPostLambdaCustomAuthorizer)
                         .environment(companiesHousePscVerificationStatementPostLambdaEnv)
                         .build());
         this.companiesHousePscVerificationStatementPostLambdaProps =
@@ -1312,7 +1494,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House PSC verification statement submit with ingestHandler %s",
                 this.companiesHousePscVerificationStatementPostLambda.getNode().getId(),
-                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHousePscVerificationStatementPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHousePscVerificationStatementPostLambda,
                 bundlesTable,
@@ -1335,24 +1517,39 @@ public class CompaniesHouseStack extends Stack {
         var companiesHousePscVerificationStatementGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
                                 .companiesHousePscVerificationStatementGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHousePscVerificationStatementGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHousePscVerificationStatementGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHousePscVerificationStatementGetLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().companiesHousePscVerificationStatementGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscVerificationStatementGetLambdaCustomAuthorizer)
                         .environment(companiesHousePscVerificationStatementGetLambdaEnv)
                         .build());
         this.companiesHousePscVerificationStatementGetLambdaProps =
@@ -1365,7 +1562,7 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for Companies House PSC verification statement poll with ingestHandler %s",
                 this.companiesHousePscVerificationStatementGetLambda.getNode().getId(),
-                props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaHandler);
+                props.sharedNames().companiesHouse.companiesHousePscVerificationStatementGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHousePscVerificationStatementGetLambda,
                 bundlesTable,
@@ -1552,8 +1749,8 @@ public class CompaniesHouseStack extends Stack {
     // configured, the same guard the token Lambda's OAuth settings use above.
     private static PopulatedMap<String, String> filingLambdaEnv(CompaniesHouseStackProps props) {
         var env = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())) {
             env.with("COMPANIES_HOUSE_FILING_BASE_URI", props.companiesHouseFilingBaseUri());
@@ -1601,8 +1798,8 @@ public class CompaniesHouseStack extends Stack {
     // set only when configured.
     private static PopulatedMap<String, String> xmlGatewayFilingLambdaEnv(CompaniesHouseStackProps props) {
         var env = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseXmlGatewayUri())) {
             env.with("COMPANIES_HOUSE_XMLGW_URI", props.companiesHouseXmlGatewayUri());
@@ -1615,8 +1812,8 @@ public class CompaniesHouseStack extends Stack {
     // when configured.
     private static PopulatedMap<String, String> hmrcCtLambdaEnv(CompaniesHouseStackProps props) {
         return new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
     }
 

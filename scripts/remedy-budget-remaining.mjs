@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-79 Track an alarm family's daily remedy budget
+// - **Use when:** auto-remediation for an alarm family must stop once its daily budget of remedies is spent.
+// - **Does:** remedy-budget-remaining.mjs counts how many remedy:* labels an alarm family already had applied today against its declared budgetPerDay. alarm-triage.yml stops auto-remediating, such as dispatching a workflow or marking a draft PR ready, once a family's daily budget is spent. It fails closed toward giving budget back, never toward denying it.
+// - **Run:** `node scripts/remedy-budget-remaining.mjs --family <family> --budget <n> --repo <owner/name>`
+// - **Entry:** `scripts/remedy-budget-remaining.mjs`
+// - **Files:** scripts/remedy-budget-remaining.mjs, app/unit-tests/scripts/remedyBudgetRemaining.test.js, app/unit-tests/data/alarmRemedies.test.js
+// - **Keywords:** remedy budget, auto-remediate, daily budget, alarm family, triage workflow, rate limit
+// - **Related:** OPS-71, OPS-78
+// @end-capability
+
 // scripts/remedy-budget-remaining.mjs
 //
 // Counts how many remedy actions an alarm family has already spent today,

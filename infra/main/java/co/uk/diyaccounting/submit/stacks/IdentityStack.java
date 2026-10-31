@@ -225,7 +225,8 @@ public class IdentityStack extends Stack {
                 .memorySize(128)
                 .logGroup(preTokenGenLogGroup.logGroup())
                 .environment(Map.of(
-                        "SIGN_IN_ACTIVITY_FUNCTION_NAME", props.sharedNames().signInActivityPublishLambdaFunctionName))
+                        "SIGN_IN_ACTIVITY_FUNCTION_NAME",
+                        props.sharedNames().activity.signInActivityPublishLambdaFunctionName))
                 .build();
         preTokenGenFunction.getNode().addDependency(preTokenGenLogGroup.ensureResource());
         this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
@@ -242,7 +243,7 @@ public class IdentityStack extends Stack {
         // on ActivityStack for the function's ARN.
         preTokenGenFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("lambda:InvokeFunction"))
-                .resources(List.of(props.sharedNames().signInActivityPublishLambdaArn))
+                .resources(List.of(props.sharedNames().activity.signInActivityPublishLambdaArn))
                 .build());
 
         // Google IdP
@@ -356,7 +357,7 @@ public class IdentityStack extends Stack {
         // environment, so a destroyed and recreated deployment finds it again; McpStack reads the
         // ARN from SSM.
         var mcpOauthBlobKeySecret = Secret.Builder.create(this, props.resourceNamePrefix() + "-McpOauthBlobKey")
-                .secretName(props.sharedNames().mcpOauthBlobKeySecretName)
+                .secretName(props.sharedNames().mcp.mcpOauthBlobKeySecretName)
                 .description("Signs the hosted MCP authorization facade's consent, code and refresh blobs")
                 .generateSecretString(SecretStringGenerator.builder()
                         .passwordLength(64)
@@ -365,7 +366,7 @@ public class IdentityStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
         StringParameter.Builder.create(this, props.resourceNamePrefix() + "-McpOauthBlobKeyArnParameter")
-                .parameterName(props.sharedNames().mcpOauthBlobKeySecretArnParameterName)
+                .parameterName(props.sharedNames().mcp.mcpOauthBlobKeySecretArnParameterName)
                 .stringValue(mcpOauthBlobKeySecret.getSecretArn())
                 .build();
 
@@ -488,14 +489,14 @@ public class IdentityStack extends Stack {
         // scripts/delete-user-data.js purges the eight tables it queries by hashedSub: a Query on
         // each, then a delete on seven and, on receipts, an anonymizing update before the delete.
         var purgedTableNames = List.of(
-                props.sharedNames().receiptsTableName,
-                props.sharedNames().bundlesTableName,
-                props.sharedNames().hmrcApiRequestsTableName,
-                props.sharedNames().bundlePostAsyncRequestsTableName,
-                props.sharedNames().bundleDeleteAsyncRequestsTableName,
-                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
-                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
-                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+                props.sharedNames().data.receiptsTableName,
+                props.sharedNames().data.bundlesTableName,
+                props.sharedNames().data.hmrcApiRequestsTableName,
+                props.sharedNames().data.bundlePostAsyncRequestsTableName,
+                props.sharedNames().data.bundleDeleteAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatObligationGetAsyncRequestsTableName);
         var purgedTableArns = purgedTableNames.stream()
                 .map(tableName -> String.format(
                         "arn:aws:dynamodb:%s:%s:table/%s",
@@ -515,7 +516,7 @@ public class IdentityStack extends Stack {
                         "arn:aws:dynamodb:%s:%s:table/%s",
                         props.getEnv().getRegion(),
                         props.getEnv().getAccount(),
-                        props.sharedNames().receiptsTableName)))
+                        props.sharedNames().data.receiptsTableName)))
                 .build());
 
         cfnOutput(this, "SpreadsheetsBehaviourRoleArn", spreadsheetsBehaviourRole.getRoleArn());

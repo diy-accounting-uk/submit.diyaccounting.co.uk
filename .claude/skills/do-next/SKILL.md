@@ -6,6 +6,16 @@ description: Work NEXT.md top to bottom as waves of concurrent worktree sub-agen
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-28 Work NEXT.md as dispatched sub-agents
+- **Use when:** the operator says do next, work the backlog, clear NEXT.md, or a landed batch leaves items still open.
+- **Does:** do-next works NEXT.md top to bottom as waves of concurrent worktree sub-agents. It lands them on one branch, pushes in batches, raises one PR, and hands over to watch. It is the coordinator: it plans, dispatches, merges and pushes, and does not write the code.
+- **Run:** `/do-next`
+- **Entry:** `.claude/skills/do-next/SKILL.md`
+- **Files:** .claude/skills/do-next/SKILL.md
+- **Keywords:** do-next, next.md, worktree sub-agents, batch branch, wave dispatch, coordinator model, backlog work
+- **Related:** DEV-27, DEV-29, DEV-32
+@end-capability -->
+
 # do-next — work `NEXT.md` with the coordinator model
 
 You are the coordinator. You plan, dispatch, merge, push and answer the operator. You do not

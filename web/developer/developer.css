@@ -150,11 +150,14 @@ pre {
 
 code {
   padding: 0.1em 0.3em;
+  overflow-wrap: anywhere;
 }
 
 pre {
   padding: var(--spacing-md);
   overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   margin-bottom: var(--spacing-md);
 }
 

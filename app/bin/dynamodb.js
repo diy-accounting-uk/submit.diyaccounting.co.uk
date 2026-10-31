@@ -433,6 +433,47 @@ export async function ensurePassesTableExists(tableName, endpoint) {
   }
 }
 
+// Create commissions table if it doesn't exist. Key schema matches dynamoDbCommissionRepository.js.
+export async function ensureCommissionsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring commissions table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "pk", KeyType: "HASH" },
+            { AttributeName: "sk", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "pk", AttributeType: "S" },
+            { AttributeName: "sk", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Create bundle capacity counter table if it doesn't exist
 export async function ensureCapacityTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring capacity table: '${tableName}' exists on endpoint '${endpoint}'`);
@@ -476,6 +517,7 @@ const CONFIGURED_TABLES = [
   ["HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", ensureHmrcApiRequestsTableExists],
   ["RECEIPTS_DYNAMODB_TABLE_NAME", ensureReceiptsTableExists],
   ["PASSES_DYNAMODB_TABLE_NAME", ensurePassesTableExists],
+  ["COMMISSIONS_DYNAMODB_TABLE_NAME", ensureCommissionsTableExists],
   ["BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", ensureCapacityTableExists],
   ["PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", ensurePracticeClientsTableExists],
   ["MCP_SESSIONS_DYNAMODB_TABLE_NAME", ensureMcpSessionsTableExists],

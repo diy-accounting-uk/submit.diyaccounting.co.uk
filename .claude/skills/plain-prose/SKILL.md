@@ -6,6 +6,16 @@ description: Holds this repo's writing rules for plain, human prose and the LLM-
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-38 Write plain, human prose
+- **Use when:** writing any human-facing text: docs, code comments, reports, runbooks, site copy or chat.
+- **Does:** plain-prose holds this repo's standing style guide: base rules from the Plain English Campaign, plus the LLM-voice tells to cut. It applies to README.md, site pages, PLAN and REPORT documents, other skill docs, code comments and chat responses.
+- **Run:** `/plain-prose`
+- **Entry:** `.claude/skills/plain-prose/SKILL.md`
+- **Files:** .claude/skills/plain-prose/SKILL.md
+- **Keywords:** plain prose, writing style, plain english, llm voice tells, human-facing text, style guide
+- **Related:** DEV-37, DEV-24
+@end-capability -->
+
 # plain-prose — write plain, human prose; keep the proof out of the shop window
 
 The stock LLM writing voice reads as generic and machine-made. This skill is the standing style

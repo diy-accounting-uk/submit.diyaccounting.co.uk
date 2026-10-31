@@ -37,6 +37,7 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
     @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "DEVELOPER_DOC_ROOT_PATH", value = "./web/developer"),
+    @SetEnvironmentVariable(key = "MARKETING_DOC_ROOT_PATH", value = "./web/marketing"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1"),
 })
@@ -100,6 +101,9 @@ class SubmitEnvironmentCdkResourceTest {
         ctx.put(
                 "developerCertificateArn",
                 "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "marketingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
 
         App app = new App(AppProps.builder().context(ctx).build());
 
@@ -118,6 +122,10 @@ class SubmitEnvironmentCdkResourceTest {
         // The developer site is one more such stack, with its own bucket and distribution
         Template.fromStack(env.developerSiteStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
 
+        // The marketing site is a third such stack, with its own bucket and distribution
+        Template.fromStack(env.marketingSiteStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+        Template.fromStack(env.marketingSiteStack).resourceCountIs("AWS::S3::Bucket", 1);
+
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
@@ -126,10 +134,10 @@ class SubmitEnvironmentCdkResourceTest {
         // hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
-        // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
+        // Streams: receipts, bundles, passes, subscriptions, commissions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 133);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 64);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 136);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 65);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -240,7 +248,7 @@ class SubmitEnvironmentCdkResourceTest {
                         "test-env-activity-telegram",
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
 
         // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
         // mid-teardown's ALARM events are dropped instead of forwarded.
@@ -257,14 +265,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
-        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 7);
+        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 5);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 32);
+        analytics.resourceCountIs("AWS::Glue::Table", 33);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 52);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 53);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -291,7 +299,7 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull, GA4 BigQuery event
         // export pull and GA4 daily aggregate pull jobs, each with an Errors alarm only, invoked
@@ -315,7 +323,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
+            SubmitApplicationCdkSupport.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,

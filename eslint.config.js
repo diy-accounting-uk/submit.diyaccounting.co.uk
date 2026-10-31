@@ -88,7 +88,7 @@ export default [
   },
   // Browser environment for web scripts (submit site)
   {
-    files: ["web/public/**/*.js", "web/browser-tests/**/*.js", "web/unit-tests/**/*.js"],
+    files: ["web/public/**/*.js", "web/marketing/**/*.js", "web/browser-tests/**/*.js", "web/unit-tests/**/*.js"],
     languageOptions: {
       globals: {
         ...globals.browser,

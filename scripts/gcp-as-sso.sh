@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability DATA-53 Reach Google Cloud from a local session via AWS SSO
+# - **Use when:** a read-only Google Cloud or BigQuery script must run from a local session with no service-account key on disk.
+# - **Does:** gcp-as-sso.sh runs a command with the AWS SSO session's credentials, from `aws configure export-credentials`, exported only into that child process, plus GOOGLE_APPLICATION_CREDENTIALS pointing at the matching committed external-account config. identity.toml's submit-prod provider accepts the operator's AWSReservedSSO_AdministratorAccess role alongside the analytics Lambdas' roles.
+# - **Run:** `scripts/gcp-as-sso.sh node scripts/<read-only-script>.js`; `scripts/gcp-as-sso.sh --profile diya-submit-ci node scripts/<script>.js`
+# - **Entry:** `scripts/gcp-as-sso.sh:`
+# - **Files:** scripts/gcp-as-sso.sh, infra/google/gcp/identity.toml, infra/google/gcp/credentials/aws-prod.json
+# - **Keywords:** aws sso, no key file, google application credentials, workload identity federation, local session, bigquery
+# - **Related:** DATA-37, DATA-42
+# @end-capability
+
 # scripts/gcp-as-sso.sh
 #
 # Runs a command with Google Cloud credentials federated through the operator's AWS SSO role,

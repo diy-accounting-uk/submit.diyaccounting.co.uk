@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-41 Export a customer's GDPR subject-access data
+// - **Use when:** a customer has made a GDPR subject-access request.
+// - **Does:** export-user-data.js compiles a customer's personal data into one subject-access package. It reads DynamoDB records, S3 receipts, Athena-queried activity and email records.
+// - **Run:** `gh workflow run export-user-data.yml -f email=<email> -f environment-name=<ci|prod> -f confirm=<true|false>`
+// - **Entry:** `scripts/export-user-data.js:main`
+// - **Files:** .github/workflows/export-user-data.yml, scripts/export-user-data.js
+// - **Keywords:** gdpr subject access, export user data, sar, data export, personal data package
+// - **Related:** OPS-40, OPS-49
+// @end-capability
+
 /**
  * Export all data for a specific user (GDPR Right of Access / Data Portability)
  *

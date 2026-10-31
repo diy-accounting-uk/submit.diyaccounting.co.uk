@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-49 Mint the signed-in browser state for the MCP server
+// - **Use when:** the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
+// - **Does:** mint-exploratory-state.mjs reads cognito-native-test-credentials.json. It opens the host the ci site names in submit.env. It signs in through the Cognito Hosted UI with the password and the TOTP code. It writes the context's storage state to ci-state.json, and an empty visitor-state.json.
+// - **Run:** `export AWS_PROFILE=diya-submit-ci; npm run test:enableCognitoNative && node scripts/mint-exploratory-state.mjs [--base-url <url>] [--out <dir>]; npm run test:disableCognitoNative`
+// - **Entry:** `scripts/mint-exploratory-state.mjs:main`
+// - **Files:** scripts/mint-exploratory-state.mjs, app/unit-tests/scripts/mintExploratoryState.test.js
+// - **Keywords:** storage state, mint state, cognito native sign-in, totp, ci-state.json, visitor-state.json
+// - **Related:** DEV-48, DEV-50, SITE-01
+// @end-capability
+
 // scripts/mint-exploratory-state.mjs
 //
 // Sign in once as the ci lane's durable Cognito user and write the browser context's storage

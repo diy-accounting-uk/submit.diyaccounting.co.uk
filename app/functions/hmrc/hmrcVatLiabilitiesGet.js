@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-04 Retrieve VAT liabilities
+// - **Use when:** a customer needs the VAT amount owed or refunded over a date range.
+// - **Does:** hmrcVatLiabilitiesGet.js's ingestHandler calls HMRC's VAT Liabilities API for the requested date range. vatLiabilities.html displays the returned figures.
+// - **Run:** `GET /api/v1/hmrc/vat/liability`
+// - **Entry:** `app/functions/hmrc/hmrcVatLiabilitiesGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatLiabilitiesGet.js:getVatLiabilities`
+// - **Files:** app/functions/hmrc/hmrcVatLiabilitiesGet.js, app/unit-tests/functions/hmrcVatLiabilitiesGet.test.js, behaviour-tests/getVatLiabilities.behaviour.test.js, web/public/hmrc/vat/vatLiabilities.html
+// - **Keywords:** vat liabilities, amount owed, vat refund, date range, hmrc vat api
+// - **Related:** HMRC-05, HMRC-06
+// @end-capability
+
 // app/functions/hmrc/hmrcVatLiabilitiesGet.js
 
 import { createLogger } from "../../lib/logger.js";

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-16 Run DynamoDB data migrations
+// - **Use when:** a stored data shape must change across a deploy boundary, or a migration needs a manual re-run.
+// - **Does:** runner.js applies numbered migration scripts under scripts/migrations/. Each script exports an up() function and a phase, pre-deploy or post-deploy. Applied migrations are tracked in the bundles table; migrations 005 and 006 renamed qualifiers.sandbox to qualifiers.synthetic across a deploy boundary.
+// - **Run:** `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=<all|pre-deploy|post-deploy> -f dry-run=<true|false>`
+// - **Entry:** `scripts/migrations/runner.js:runMigrations`
+// - **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
+// - **Keywords:** data migration, migration runner, pre-deploy, post-deploy, bundles table, dry run, schema change
+// - **Related:** OPS-09
+// @end-capability
+
 // scripts/migrations/runner.js
 // Data migration runner — EF Migrations-style framework for DynamoDB.
 //

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-06 Generate a token-charged pass
+// - **Use when:** a signed-in user pays tokens to generate a digital or physical pass.
+// - **Does:** The passGeneratePost.js ingestHandler charges the caller's tokens via tokenEnforcement.consumeTokenForActivity. It then creates a pass through passService.createPass. app/lib/qrCodeGenerator.js renders the pass's redemption URL as a QR code.
+// - **Run:** `POST /api/v1/pass/generate`
+// - **Entry:** `app/functions/account/passGeneratePost.js:ingestHandler`
+// - **Files:** app/functions/account/passGeneratePost.js, app/unit-tests/functions/passGeneratePost.test.js, web/public/passes/generate-digital.html, web/public/passes/generate-physical.html, behaviour-tests/generatePassActivity.behaviour.test.js, behaviour-tests/steps/behaviour-pass-generation-steps.js, app/lib/qrCodeGenerator.js, app/unit-tests/lib/qrCodeGenerator.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/docs/QR_CODE_GENERATION.md, app/system-tests/qrCodeGeneration.system.test.js
+// - **Keywords:** pass, generate pass, qr code, token charge, digital pass, physical pass, createPass
+// - **Related:** BILL-07, BILL-10, BILL-35
+// @end-capability
+
 // app/functions/account/passGeneratePost.js
 
 import { validateEnv } from "../../lib/env.js";

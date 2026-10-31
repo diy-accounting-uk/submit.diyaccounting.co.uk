@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-01 Grant a bundle to a user
+// - **Use when:** a user must receive a catalogue bundle, by API or by an ops shortcut script.
+// - **Does:** The bundlePost.js ingestHandler checks the bundle against the catalogue qualifiers. It enforces the bundle capacity cap with an atomic DynamoDB counter, deletes any allocation, and writes the new bundle record. scripts/add-bundle.sh writes a bundle record directly to DynamoDB, bypassing the API.
+// - **Run:** `POST /api/v1/bundle`; `scripts/add-bundle.sh <hashed-sub> <bundle-id> [environment]`
+// - **Entry:** `app/functions/account/bundlePost.js:ingestHandler`; `app/functions/account/bundlePost.js:grantBundle`
+// - **Files:** app/functions/account/bundlePost.js, app/unit-tests/functions/bundlePost.handler.test.js, app/system-tests/bundlePost.system.test.js, app/system-tests/accountBundles.system.test.js, app/system-tests/bundleManagement.journeys.system.test.js, app/system-tests/dynamoDbBundleStore.system.test.js, app/data/dynamoDbBundleRepository.js, app/unit-tests/data/dynamoDbBundleRepository.putBundle.test.js, scripts/add-bundle.sh, behaviour-tests/bundles.behaviour.test.js, behaviour-tests/steps/behaviour-bundle-steps.js, web/browser-tests/bundles.filtering.browser.test.js, web/browser-tests/bundles.mobileSubscription.browser.test.js, web/browser-tests/bundles.restrictedPass.browser.test.js, web/browser-tests/bundles.subscription.browser.test.js, web/public/bundles.html, web/public/lib/bundle-cache.js, web/unit-tests/bundle-cache.test.js, web/public/prefetch/prefetch-bundle-head.js
+// - **Keywords:** bundle, grant, entitlement, subscription, capacity cap, allocation, add-bundle, grantBundle
+// - **Related:** BILL-02, BILL-03, BILL-04, BILL-05
+// @end-capability
+
 // app/functions/bundlePost.js
 
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";

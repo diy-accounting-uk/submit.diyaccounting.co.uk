@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-07 Admin-issue a pass
+// - **Use when:** an operator or admin must create a pass of any catalogue type with no token charge.
+// - **Does:** The passAdminPost.js ingestHandler creates a pass directly via passService.createPass for an operator or a synthetic test user (test users: five bundles, always test passes). It accepts caller-supplied validity, max uses, email restriction (operators only) and notes, with no token charge.
+// - **Run:** `POST /api/v1/pass/admin`
+// - **Entry:** `app/functions/account/passAdminPost.js:ingestHandler`
+// - **Files:** app/functions/account/passAdminPost.js
+// - **Keywords:** pass, admin pass, issue pass, operator, createPass, no charge
+// - **Related:** BILL-06, BILL-11
+// @end-capability
+
 // app/functions/account/passAdminPost.js
 
 import { validateEnv } from "../../lib/env.js";

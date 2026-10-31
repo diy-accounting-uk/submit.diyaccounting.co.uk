@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-105 Copy production data to backup for migration
+# - **Use when:** production DynamoDB tables need copying into the backup account ahead of an account migration.
+# - **Does:** backup-prod-for-migration.sh creates on-demand DynamoDB backups and exports salt metadata for account migration, as part of the account-separation plan's preparation step.
+# - **Run:** `./scripts/aws-accounts/backup-prod-for-migration.sh --profile <profile> [--env <environment>]`
+# - **Entry:** `scripts/aws-accounts/backup-prod-for-migration.sh`
+# - **Files:** scripts/aws-accounts/backup-prod-for-migration.sh
+# - **Keywords:** backup migration, dynamodb backup, salt metadata, account separation, on-demand backup
+# - **Related:** OPS-106, OPS-108
+# @end-capability
+
 #
 # scripts/aws-accounts/backup-prod-for-migration.sh
 #

@@ -6,6 +6,16 @@ description: Catalogue worktrees, branches, uncommitted work, PRs and review thr
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-32 Merge every PR that is ready
+- **Use when:** the operator says auto-merge, merge what's ready, or asks for the repository's merge state.
+- **Does:** auto-merge catalogues worktrees, branches, uncommitted work, PRs and review threads, then renders the state. It merges every PR that passes all of its gates, then hands over to watch. It is the only sanctioned path by which a session merges a pull request here.
+- **Run:** `/auto-merge`
+- **Entry:** `.claude/skills/auto-merge/SKILL.md`
+- **Files:** .claude/skills/auto-merge/SKILL.md
+- **Keywords:** auto-merge, pr merge gate, review thread check, worktree catalogue, branch audit, merge state
+- **Related:** DEV-33, DEV-31, DEV-30
+@end-capability -->
+
 # auto-merge
 
 Gather the whole picture, show it, merge only what is unambiguously ready, and hand the result to

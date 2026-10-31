@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-01 Submit a VAT return
+// - **Use when:** a customer must file a 9-box or legacy VAT return with HMRC for a period.
+// - **Does:** hmrcVatReturnPost.js's ingestHandler resolves the HMRC period key and posts the return through the async SQS worker submitVat. It records a DynamoDB receipt, publishes activity events, and blocks resubmission of a filed period.
+// - **Run:** `POST /api/v1/hmrc/vat/return`
+// - **Entry:** `app/functions/hmrc/hmrcVatReturnPost.js:ingestHandler`; `app/functions/hmrc/hmrcVatReturnPost.js:submitVat`
+// - **Files:** app/functions/hmrc/hmrcVatReturnPost.js, app/unit-tests/functions/hmrcVatReturnPost.test.js, app/unit-tests/functions/hmrcVatReturnPost.activity.test.js, app/unit-tests/functions/hmrcVatReturnPost.worker.test.js, app/system-tests/hmrcVatJourney.system.test.js, app/system-tests/hmrcVatScenarios.system.test.js, app/system-tests/vatValidation.test.js, behaviour-tests/postVatReturn.behaviour.test.js, behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js, behaviour-tests/vatSchemes.behaviour.test.js, behaviour-tests/vatValidation.behaviour.test.js, behaviour-tests/submitVat.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-vat-steps.js, web/public/hmrc/vat/submitVat.html, web/unit-tests/vatFlow.frontend.test.js, web/public/prefetch/prefetch-hmrc-vat-return-head.js
+// - **Keywords:** vat return, submit vat, mtd vat, 9-box, period key, vat obligations, submitvat worker, vat scheme, fraud prevention headers, receipt
+// - **Related:** HMRC-03, HMRC-07, HMRC-22, HMRC-25
+// @end-capability
+
 // app/functions/hmrcVatReturnPost.js
 
 import { createLogger, context } from "../../lib/logger.js";

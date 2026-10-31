@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-93 Publish demo videos to YouTube
+// - **Use when:** a recorded demo video is ready to upload to YouTube, unlisted or public, or its manifest needs syncing.
+// - **Does:** youtube-upload.js uploads a local video file to YouTube, unlisted or public. It reads title, description, tags and caption file per video from videos/publish.json, documented in videos/PUBLISH.md, and uses selectPendingUploads to skip videos already published. copy-videos-manifest.js keeps the video manifest in sync between source and destination directories.
+// - **Run:** `npm run video:publish`; `npm run video:publish -- --public`; `npm run video:publish -- --check`; `npm run videos:manifest`; `npm run video:stale`; `npm run video:stale -- --dispatch`
+// - **Entry:** `scripts/youtube-upload.js`; `scripts/copy-videos-manifest.js`; `scripts/video-stale.js`
+// - **Files:** scripts/youtube-upload.js, scripts/video-stale.js, scripts/lib/video/pipelineVersion.js, app/unit-tests/video/pipelineVersion.test.js, app/unit-tests/scripts/youtubeUpload.test.js, scripts/copy-videos-manifest.js, videos/PUBLISH.md, web/unit-tests/videos-manifest.test.js
+// - **Keywords:** youtube upload, publish video, unlisted, public video, publish.json, video manifest, pipelineVersion, stale video, re-record
+// - **Related:** OPS-88, OPS-94
+// @end-capability
+
 //
 // Upload the videos drafted in videos/publish.json to https://www.youtube.com/@DIYAccountingSubmit.
 //

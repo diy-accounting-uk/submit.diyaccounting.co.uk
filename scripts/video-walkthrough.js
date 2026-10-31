@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-139 Build the walkthrough panel under each video
+// - **Use when:** a video was published or re-recorded and its page needs the scene screenshots, text and share links.
+// - **Does:** video-walkthrough.js reads each published video's capture artifact (downloading it with gh when missing), takes one frame per captioned scene from the recording with ffmpeg-static, writes a thumbnail and a full-size WebP under web/public/videos/<id>/, and writes the scene list (headline, caption, start second, image paths) into the entry's `walkthrough` array in publish.json and its web/public copy. video-walkthrough.js in web/public/widgets renders it under the embed as a twistie of thumbnails with a lights-down overlay, previous and next, and a share action that carries the scene text, a link to the scene and the YouTube link at that second.
+// - **Run:** `npm run video:walkthrough`; `npm run video:walkthrough -- --id <video id>`
+// - **Entry:** `scripts/video-walkthrough.js`; `web/public/widgets/video-walkthrough.js`
+// - **Files:** scripts/video-walkthrough.js, app/unit-tests/scripts/videoWalkthrough.test.js, web/public/widgets/video-walkthrough.js, web/public/widgets/video-pages.js, web/public/submit.css, web/browser-tests/videos.browser.test.js, videos/publish.json
+// - **Keywords:** walkthrough, screenshots, thumbnails, lights down, share link, scene frames, marketing assets, twistie, webp
+// - **Related:** OPS-93, OPS-94, OPS-138
+// @end-capability
+
 //
 // Build the walkthrough shown under each embedded video: one frame per scene taken from the
 // recording, a thumbnail and a full-size WebP of it, and the scene's text and start time,

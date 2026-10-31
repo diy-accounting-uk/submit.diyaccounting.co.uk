@@ -141,6 +141,7 @@ class HelpPage {
       return;
     }
 
+    // eslint-disable-next-line no-unsanitized/property -- each FAQ's text goes through escapeHtml; the id comes from the site's own faqs.toml
     this.faqList.innerHTML = faqs
       .map(
         (faq) => `

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-01 Exchange a Companies House OAuth token
+// - **Use when:** a filing journey has an authorization code and needs an access token for the session.
+// - **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It returns the token, its expiry and its type. It does not store the token server side.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseTokenPost.js:ingestHandler`; `web/public/companies-house/filingCallback.html`
+// - **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
+// - **Keywords:** oauth, token exchange, authorization code, companies house, filing callback, session storage, access token, identity
+// - **Related:** CH-02, CH-09
+// @end-capability
+
 // app/functions/companies-house/companiesHouseTokenPost.js
 
 import { createLogger } from "../../lib/logger.js";

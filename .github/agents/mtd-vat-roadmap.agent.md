@@ -5,6 +5,16 @@ description: Strategic plan to reach HMRC approval and production readiness for 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability HMRC-37 Plan the HMRC MTD VAT and ITSA rollout
+- **Use when:** the path to HMRC production approval or the ITSA phase 2 build needs a plan.
+- **Does:** mtd-vat-roadmap.agent.md defines a repository agent persona that audits VAT-submission readiness for HMRC production approval. ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md is the operator-approved plan for the ITSA annual submission, BSAS, calculation and final-declaration build.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/agents/mtd-vat-roadmap.agent.md`; `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`
+- **Files:** .github/agents/mtd-vat-roadmap.agent.md, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md
+- **Keywords:** hmrc production approval, mtd vat roadmap, agent persona, itsa phase 2 plan, gap analysis
+- **Related:** HMRC-01, HMRC-21
+@end-capability -->
+
 # MTD VAT Roadmap Agent
 
 Purpose: Plan the path to HMRC approval and real customer VAT submissions. This agent identifies gaps in quality, accuracy, and completeness and proposes a structured plan to reach production readiness.

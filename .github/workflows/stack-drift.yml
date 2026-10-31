@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-32 Detect CloudFormation drift
+# - **Use when:** checking whether deployed stacks have drifted from their CDK definition.
+# - **Does:** stack-drift.yml runs CloudFormation drift detection across the deployed stacks, on a schedule. It surfaces manual changes made outside CDK.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/workflows/stack-drift.yml`
+# - **Files:** .github/workflows/stack-drift.yml
+# - **Keywords:** cloudformation drift, drift detection, manual change, outside cdk, scheduled check
+# - **Related:** OPS-08
+# @end-capability
+
 name: stack-drift
 run-name: "stack drift check for ${{ github.ref_name }}"
 
@@ -282,7 +292,8 @@ jobs:
             "${ENV_NAME}-env-ObservabilityUE1Stack" \
             "${ENV_NAME}-env-EcrUE1Stack" \
             "${ENV_NAME}-env-HoldingStack" \
-            "${ENV_NAME}-env-DeveloperSiteStack"; do
+            "${ENV_NAME}-env-DeveloperSiteStack" \
+            "${ENV_NAME}-env-MarketingSiteStack"; do
             detect_drift "$STACK" "us-east-1"
           done
 

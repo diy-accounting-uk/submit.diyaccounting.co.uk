@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-96 Scan pages for accessibility violations
+// - **Use when:** a page set needs an axe-core accessibility scan or a WCAG 1.4.12 text-spacing check.
+// - **Does:** axe-quickscan.mjs injects axe-core into Playwright-driven pages from the CDN allowlist and runs it, working around a broken local npx axe CLI. text-spacing-test.js checks WCAG 1.4.12 text-spacing compliance, such as line height and letter and word spacing, across the same page set.
+// - **Run:** `node scripts/axe-quickscan.mjs <baseUrl> <tags>`; `npm run accessibility:text-spacing-proxy`; `npm run accessibility:text-spacing-ci`; `npm run accessibility:text-spacing-prod`; `npm run accessibility:axe-ci`; `npm run accessibility:axe-wcag22-ci-report`
+// - **Entry:** `scripts/axe-quickscan.mjs`; `scripts/text-spacing-test.js`
+// - **Files:** scripts/axe-quickscan.mjs, scripts/text-spacing-test.js
+// - **Keywords:** axe-core, accessibility scan, wcag 1.4.12, text spacing, playwright, cdn allowlist
+// - **Related:** OPS-95, OPS-97
+// @end-capability
+
 // Ad-hoc axe-core scan (npx axe CLI is broken on this machine — chromedriver/Chrome
 // version mismatch unrelated to the app). Injects axe-core from the local install via
 // Playwright instead — the app's own Content-Security-Policy script-src has no CDN host on

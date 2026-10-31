@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-06 Derive ITSA quarterly and annual submission figures
+// - **Use when:** a self-employed book's quarterly update or annual submission figures are needed for HMRC's Self Employment Business API.
+// - **Does:** deriveItsaQuarterlyUpdate and deriveItsaAnnualSubmission in mcp/lib/itsa-tools.js call the diya-gl package's se-derivations module. registerItsaTools registers both against an MCP server and session. Each answer is restricted to the field set sa103-mtd-mapping.json allows for that tax year, omitting fields the book cannot source.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/itsa-tools.js:deriveItsaQuarterlyUpdate`; `mcp/lib/itsa-tools.js:deriveItsaAnnualSubmission`; `mcp/lib/itsa-tools.js:registerItsaTools`
+// - **Files:** mcp/lib/itsa-tools.js, mcp/test/itsa-tools.test.js, mcp/test/fixtures/brickwork-pro-se-vat/book.toml
+// - **Keywords:** itsa, self employment business api, quarterly update, annual submission, se-derivations, sa103, mtd it
+// - **Related:** MCP-03
+// @end-capability
+
 // itsa-tools.js -- the ITSA derivations over the session's loaded book:
 // derive_itsa_quarterly_update answers one period of HMRC's Self Employment
 // Business API (a period's own figures in a tax year filed as dated period

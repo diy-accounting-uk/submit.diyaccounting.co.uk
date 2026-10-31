@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-42 Sync GCP workload identity and org policy
+// - **Use when:** a Lambda's federated access to Google Cloud must be granted, or an org policy must match identity.toml.
+// - **Does:** gcp-identity-sync.js makes the workload identity pool, its providers, the service account's roles/iam.workloadIdentityUser bindings and every declared org policy match identity.toml. It diffs live IAM and Org Policy API state and applies the difference. --write-cred-configs writes the external-account credential configuration files googleWorkloadIdentity.js's Lambdas build at runtime.
+// - **Run:** `node infra/google/gcp/gcp-identity-sync.js`; `node infra/google/gcp/gcp-identity-sync.js --apply`; `node infra/google/gcp/gcp-identity-sync.js --apply --write-cred-configs`
+// - **Entry:** `infra/google/gcp/gcp-identity-sync.js:`
+// - **Files:** infra/google/gcp/gcp-identity-sync.js, app/unit-tests/scripts/gcpIdentitySync.test.js, infra/google/gcp/identity.toml
+// - **Keywords:** workload identity pool, org policy, iam workloadidentityuser, write-cred-configs, identity.toml, federated access
+// - **Related:** DATA-37, DATA-40
+// @end-capability
+
 // infra/google/gcp/gcp-identity-sync.js
 //
 // Makes the workload identity pool, its providers, the service account's

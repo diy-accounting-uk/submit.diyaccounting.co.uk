@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-127 Upsert Route53 alias records via custom resource
+// - **Use when:** a Route53 alias record pointing at a CloudFront distribution needs an idempotent UPSERT that CDK's L2 constructs don't provide.
+// - **Does:** Route53AliasUpsert provides an idempotent UPSERT of a Route53 alias record pointing at a CloudFront distribution. It is implemented as an AwsCustomResource, since CDK's L2 constructs expose no such operation.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java
+// - **Keywords:** route53 alias, upsert record, awscustomresource, cloudfront alias
+// - **Related:** OPS-126
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.utils;
 
 import java.util.List;

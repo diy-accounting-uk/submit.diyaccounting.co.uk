@@ -1,0 +1,241 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* brand/submit.css: the DIY Accounting Submit rules the brand guide shows, from web/public/submit.css,
+   scoped to .brand-submit. Colours, type and spacing come from tokens.css. */
+
+@font-face {
+  font-family: "Plain Zero";
+  src: url("fonts/plain-zero-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plain Zero";
+  src: url("fonts/plain-zero-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.brand-submit {
+  background: var(--c-canvas);
+  color: var(--c-ink);
+  font-family: var(--font-text);
+  font-size: var(--step-0);
+  line-height: var(--leading-text);
+}
+
+.brand-submit .spec-h1,
+.brand-submit .spec-h2 {
+  line-height: var(--leading-head);
+  color: var(--c-ink);
+  font-weight: var(--weight-strong);
+}
+.brand-submit .spec-h1 {
+  font-size: var(--step-4);
+  letter-spacing: -0.01em;
+}
+.brand-submit .spec-h2 {
+  font-size: var(--step-2);
+}
+.brand-submit .spec-body {
+  font-size: var(--step-0);
+  line-height: var(--leading-text);
+}
+.brand-submit .spec-caption {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.brand-submit .band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  height: var(--band-height);
+  border-bottom: 3px double var(--c-ink);
+}
+.brand-submit .brand-name {
+  color: var(--c-brand);
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  font-size: var(--step-1);
+  white-space: nowrap;
+}
+.brand-submit .band-link {
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
+
+.brand-submit .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius-control);
+  background-color: var(--c-brand);
+  color: var(--c-on-brand);
+  font: inherit;
+  font-size: var(--step-1);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-head);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.brand-submit .btn:hover {
+  background-color: var(--c-brand-strong);
+  border-color: var(--c-brand-strong);
+}
+.brand-submit .btn.btn-outline {
+  background-color: var(--c-paper);
+  color: var(--c-brand);
+}
+.brand-submit .btn.btn-outline:hover {
+  background-color: var(--c-brand-tint);
+  color: var(--c-brand-strong);
+}
+
+.brand-submit .form-group {
+  margin-bottom: var(--space-3);
+}
+.brand-submit label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: var(--weight-strong);
+  color: var(--c-ink);
+}
+.brand-submit .hint {
+  font-size: var(--step-0);
+  color: var(--c-ink-muted);
+  margin-bottom: var(--space-2);
+  max-width: var(--measure);
+}
+.brand-submit input[type="text"] {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-control);
+  background-color: var(--c-paper);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: var(--step-0);
+}
+.brand-submit input::placeholder {
+  color: var(--c-ink-muted);
+  opacity: 1;
+}
+
+.brand-submit .status-message {
+  --message-ink: var(--c-info);
+  --message-tint: var(--c-info-tint);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-3);
+  border: 1px solid var(--message-ink);
+  border-left-width: 4px;
+  border-radius: var(--radius-control);
+  background-color: var(--message-tint);
+  color: var(--c-ink);
+}
+.brand-submit .status-success {
+  --message-ink: var(--c-ok);
+  --message-tint: var(--c-ok-tint);
+}
+.brand-submit .status-error {
+  --message-ink: var(--c-error);
+  --message-tint: var(--c-error-tint);
+}
+.brand-submit .status-warning {
+  --message-ink: var(--c-warn);
+  --message-tint: var(--c-warn-tint);
+}
+.brand-submit .status-info {
+  --message-ink: var(--c-info);
+  --message-tint: var(--c-info-tint);
+}
+
+.brand-submit .receipt {
+  background: var(--c-paper);
+  padding: var(--space-5);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.brand-submit .receipt h3 {
+  color: var(--c-ok);
+  margin: 0 0 var(--space-3);
+  font-size: var(--step-2);
+  line-height: var(--leading-head);
+}
+.brand-submit .receipt-details {
+  background: var(--c-canvas);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+}
+.brand-submit .receipt-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+.brand-submit .receipt-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.brand-submit .receipt-figure {
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.brand-submit .status-tag {
+  display: inline-block;
+  color: var(--status-ink);
+  background: var(--status-tint);
+  border: 1px solid var(--status-ink);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-2);
+  margin-right: var(--space-1);
+  font-size: var(--step--1);
+  font-weight: var(--weight-strong);
+  line-height: 1.6;
+}
+.brand-submit .status-tag[data-status="production"] {
+  --status-ink: var(--c-ok);
+  --status-tint: var(--c-ok-tint);
+}
+.brand-submit .status-tag[data-status="sandbox"] {
+  --status-ink: var(--c-warn);
+  --status-tint: var(--c-warn-tint);
+}
+.brand-submit .status-tag[data-status="preview"] {
+  --status-ink: var(--c-info);
+  --status-tint: var(--c-info-tint);
+}

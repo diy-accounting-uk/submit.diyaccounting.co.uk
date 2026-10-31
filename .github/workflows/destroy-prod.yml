@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-14 Destroy a named prod deployment on demand
+# - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
+# - **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of.
+# - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
+# - **Entry:** `.github/workflows/destroy-prod.yml`
+# - **Files:** .github/workflows/destroy-prod.yml
+# - **Keywords:** destroy prod, teardown prod deployment, manual destroy, prod stacks, destroy-prod.yml, tear down deployment
+# - **Related:** OPS-13
+# @end-capability
+
 name: destroy-prod
 run-name: "destroy prod from ${{ github.ref_name }}"
 

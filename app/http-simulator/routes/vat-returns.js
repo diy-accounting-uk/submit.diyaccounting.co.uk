@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DEV-08 Simulate HMRC VAT MTD API
+// - **Use when:** a test needs VAT returns, obligations, liabilities, payments or penalties without a real HMRC call.
+// - **Does:** apiEndpoint in vat-returns.js handles POST and GET /organisations/vat/{vrn}/returns. It validates the 9-box body with validateVatReturnBody, then stores the return and returns a mock receipt. Companion route files answer VAT obligations, liabilities, payments and penalties, each keyed by the Gov-Test-Scenario header.
+// - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/vat-returns.js"`; `import { apiEndpoint } from "app/http-simulator/routes/vat-obligations.js"`
+// - **Entry:** `app/http-simulator/routes/vat-returns.js:apiEndpoint`; `app/http-simulator/routes/vat-obligations.js:apiEndpoint`
+// - **Files:** app/http-simulator/routes/vat-returns.js, app/http-simulator/routes/vat-obligations.js, app/http-simulator/routes/vat-liabilities.js, app/http-simulator/routes/vat-payments.js, app/http-simulator/routes/vat-penalties.js, app/http-simulator/scenarios/returns.js, app/http-simulator/scenarios/obligations.js, app/http-simulator/scenarios/liabilities.js, app/http-simulator/scenarios/payments.js, app/http-simulator/scenarios/penalties.js, app/unit-tests/http-simulator/scenarios/liabilities.test.js, app/unit-tests/http-simulator/scenarios/obligations.test.js, app/unit-tests/http-simulator/scenarios/payments.test.js, app/unit-tests/http-simulator/scenarios/penalties.test.js
+// - **Keywords:** vat mtd, vat return, 9-box, gov-test-scenario, obligations, liabilities, payments, penalties, form bundle number, charge reference
+// - **Related:** DEV-01, DEV-03
+// @end-capability
+
 // app/http-simulator/routes/vat-returns.js
 // HMRC VAT Return endpoints
 // Handles: POST /organisations/vat/{vrn}/returns

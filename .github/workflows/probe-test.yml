@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-27 Run probe tests against deployed environments
+# - **Use when:** a deployed environment's behaviour must be confirmed after a deploy, outside the full deploy.yml pipeline.
+# - **Does:** probe-test.yml runs end-to-end probe tests against a live ci or prod deployment. It confirms the deployment is working after a deploy, or on demand.
+# - **Run:** `gh workflow run probe-test.yml -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/probe-test.yml`
+# - **Files:** .github/workflows/probe-test.yml
+# - **Keywords:** probe test, end-to-end, deployed environment, post-deploy validation, smoke test
+# - **Related:** OPS-24, OPS-26
+# @end-capability
+
 name: probe-test
 run-name: "probe test of ${{ github.ref_name }}"
 

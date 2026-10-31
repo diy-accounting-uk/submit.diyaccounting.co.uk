@@ -6,6 +6,16 @@ description: Answer Microsoft Advertising (Bing) questions — how the account i
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DATA-63 Answer Microsoft Advertising questions from live data
+- **Use when:** asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
+- **Does:** the microsoft-ads skill, the twin of ads-advisor, says how to read the account, report, forecast and propose changes with the msads commands.
+- **Run:** `/microsoft-ads`
+- **Entry:** `.claude/skills/microsoft-ads/SKILL.md`
+- **Files:** .claude/skills/microsoft-ads/SKILL.md
+- **Keywords:** microsoft advertising skill, bing advisor, bing performance, bing budget
+- **Related:** DATA-62, DATA-36
+@end-capability -->
+
 # microsoft-ads
 
 Answer questions about DIY Accounting Submit's Microsoft Advertising account G1202SF9 (account

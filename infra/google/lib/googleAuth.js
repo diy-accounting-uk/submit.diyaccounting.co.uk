@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-47 Authenticate Google Cloud scripts via federated credentials
+// - **Use when:** any infra/google script needs a Google Cloud client without a stored service-account key.
+// - **Does:** googleAuth.js is the shared helper every infra/google script builds a GoogleAuth client from. It asserts GOOGLE_APPLICATION_CREDENTIALS is set, left behind by google-github-actions/auth's OIDC exchange, and wraps it with the requested scopes. It needs no service-account key.
+// - **Run:** `import { getGoogleAuthClient } from "infra/google/lib/googleAuth.js"`
+// - **Entry:** `infra/google/lib/googleAuth.js:`
+// - **Files:** infra/google/lib/googleAuth.js, app/unit-tests/scripts/googleAuth.test.js
+// - **Keywords:** google auth helper, google_application_credentials, oidc exchange, no service account key, shared auth client
+// - **Related:** DATA-37
+// @end-capability
+
 // infra/google/lib/googleAuth.js
 //
 // Shared helper for scripts that call Google Cloud REST APIs. There is no service-account key:

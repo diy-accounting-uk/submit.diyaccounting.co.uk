@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-09 Deploy environment stacks and populate secrets
+# - **Use when:** environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
+# - **Does:** deploy-environment.yml synths and deploys the environment-level CDK stacks: ObservabilityStack, DataStack and the rest. Its create-secrets job writes the environment's GitHub Environment secret values into AWS Secrets Manager, tagged by put-secret-with-rotation-tag.sh.
+# - **Run:** `gh workflow run deploy-environment.yml -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/deploy-environment.yml`
+# - **Files:** .github/workflows/deploy-environment.yml, app/unit-tests/deployEnvironmentWorkflowPaths.test.js
+# - **Keywords:** deploy environment, environment stacks, create-secrets, observabilitystack, datastack
+# - **Related:** OPS-42
+# @end-capability
+
 # deploy-environment: public-url fix for probe test (bump)
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
@@ -85,11 +95,14 @@ on:
       - 'web/holding/**'
       # Developer site source
       - 'web/developer/**'
+      # Marketing site source
+      - 'web/marketing/**'
       # Shared utilities and entry point
       - 'infra/main/java/co/uk/diyaccounting/submit/constructs/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/names/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitStackProps.java'
   schedule:
     - cron: '51 3 * * *'
@@ -172,6 +185,18 @@ jobs:
             echo "SUBMIT_DEVELOPER_CERTIFICATE_ARN is unset; skipping the developer site deployment"
             echo "developer-certificate-set=false" | tee -a "$GITHUB_OUTPUT"
           fi
+      - name: Check whether the marketing site certificate has been issued
+        id: marketing-certificate
+        env:
+          MARKETING_CERTIFICATE_ARN: ${{ vars.SUBMIT_MARKETING_CERTIFICATE_ARN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MARKETING_CERTIFICATE_ARN:-}" ]; then
+            echo "marketing-certificate-set=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "SUBMIT_MARKETING_CERTIFICATE_ARN is unset; skipping the marketing site deployment"
+            echo "marketing-certificate-set=false" | tee -a "$GITHUB_OUTPUT"
+          fi
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -183,6 +208,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
       holding-certificate-set: ${{ steps.holding-certificate.outputs.holding-certificate-set }}
       developer-certificate-set: ${{ steps.developer-certificate.outputs.developer-certificate-set }}
+      marketing-certificate-set: ${{ steps.marketing-certificate.outputs.marketing-certificate-set }}
 
   create-secrets:
     name: create secrets
@@ -1311,6 +1337,26 @@ jobs:
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
 
+  deploy-marketing-site:
+    name: deploy marketing site
+    if: ${{ needs.names.outputs.marketing-certificate-set == 'true' }}
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-MarketingSiteStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
   verify-certificate:
     name: 'verify certificate'
     needs:
@@ -1515,6 +1561,7 @@ jobs:
     needs:
       - names
       - create-secrets
+      - deploy-data
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:

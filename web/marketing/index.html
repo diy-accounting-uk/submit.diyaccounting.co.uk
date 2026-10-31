@@ -1,0 +1,360 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marketing - DIY Accounting</title>
+    <meta
+      name="description"
+      content="Brand guides and ready-to-share posts for DIY Accounting Submit, DIY Accounting Spreadsheets, DIYA-GL and DIY Accounting Limited."
+    />
+    <meta property="og:title" content="Marketing - DIY Accounting" />
+    <meta property="og:description" content="Brand guides and ready-to-share posts for the DIY Accounting products." />
+    <meta property="og:image" content="https://marketing.diyaccounting.co.uk/images/submit-all/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="brand/tokens.css" />
+    <link rel="stylesheet" href="brand/submit.css" />
+    <link rel="stylesheet" href="brand/spreadsheets.css" />
+    <link rel="stylesheet" href="brand/diya-gl.css" />
+    <link rel="stylesheet" href="brand/limited.css" />
+    <link rel="stylesheet" href="marketing.css" />
+    <script type="module" src="marketing.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
+    <header>
+      <h1>DIY Accounting marketing</h1>
+      <p class="subtitle">Brand guides and posts to share</p>
+      <nav class="nav" aria-label="Sections">
+        <a href="#affiliate">Affiliate pass</a>
+        <a href="#submit">Submit</a>
+        <a href="#spreadsheets">Spreadsheets</a>
+        <a href="#diya-gl">DIYA-GL</a>
+        <a href="#limited">Limited</a>
+      </nav>
+    </header>
+    <main id="mainContent">
+      <section id="affiliate" class="panel" aria-labelledby="affiliate-title">
+        <h2 id="affiliate-title" tabindex="-1">Affiliate pass</h2>
+        <p>
+          Paste a pass code or a pass link from
+          <a href="https://submit.diyaccounting.co.uk/passes/generate-digital.html">Generate a pass</a>. Generating a pass uses 10 of your
+          tokens. Every DIY Accounting Submit link below then carries your pass, and posts that carry it start with #ad.
+        </p>
+        <div class="pass-fields">
+          <div class="field">
+            <label for="passCode">Pass code</label>
+            <input
+              type="text"
+              id="passCode"
+              placeholder="tiger-happy-maple-river"
+              autocomplete="off"
+              spellcheck="false"
+              autocapitalize="none"
+            />
+          </div>
+          <div class="field">
+            <label for="passUrl">Pass link</label>
+            <input
+              type="url"
+              id="passUrl"
+              placeholder="https://submit.diyaccounting.co.uk/bundles.html?pass=..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="pass-actions">
+          <button type="button" id="passClear">Clear</button>
+          <button type="button" id="postButton" aria-expanded="false" aria-controls="campaignList" hidden>Post</button>
+        </div>
+        <ul id="campaignList" class="campaign-list" hidden></ul>
+        <p id="passStatus" class="pass-status" role="status"></p>
+      </section>
+
+      <section id="submit" class="product-section" aria-labelledby="submit-title">
+        <h2 id="submit-title" tabindex="-1">DIY Accounting Submit</h2>
+        <p class="section-summary" data-summary></p>
+        <section id="submit-brand" class="brand-guide" aria-labelledby="submit-brand-title">
+          <h3 id="submit-brand-title" tabindex="-1">Brand guide</h3>
+          <div class="scheme-switch" role="group" aria-label="Brand guide colour scheme">
+            <button type="button" data-scheme="light" aria-pressed="true">Light</button>
+            <button type="button" data-scheme="dark" aria-pressed="false">Dark</button>
+          </div>
+          <p class="scheme-note" hidden>This site has a light scheme only.</p>
+          <div class="brand-submit brand-frame" data-brand="submit">
+            <h4>Pages</h4>
+            <div class="brand-shots" data-shots></div>
+            <h4>Colours</h4>
+            <ul class="swatches" data-swatches></ul>
+            <h4>Type</h4>
+            <dl class="specimen" data-specimen>
+              <div>
+                <dt data-spec="spec-h1"></dt>
+                <dd class="spec-h1">Heading one</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-h2"></dt>
+                <dd class="spec-h2">Heading two</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-body"></dt>
+                <dd class="spec-body">Body text reads at this size and weight.</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-caption"></dt>
+                <dd class="spec-caption">Caption text sits under things.</dd>
+              </div>
+            </dl>
+            <h4>Parts</h4>
+            <div class="furniture">
+              <div class="band">
+                <span class="brand-name">DIY Accounting Submit</span><a class="band-link" href="#submit-brand">Help</a>
+              </div>
+              <p class="spec-caption sample-label">Buttons</p>
+              <p class="sample-row">
+                <button type="button" class="btn">Submit return</button> <button type="button" class="btn btn-outline">Save draft</button>
+              </p>
+              <p class="spec-caption sample-label">Field</p>
+              <div class="form-group">
+                <label for="submit-sample-vrn">VAT registration number</label>
+                <p class="hint" id="submit-sample-hint">Nine digits, as on your VAT registration certificate.</p>
+                <input type="text" id="submit-sample-vrn" inputmode="numeric" aria-describedby="submit-sample-hint" />
+              </div>
+              <p class="spec-caption sample-label">Messages</p>
+              <div class="status-message status-success"><div>Your return was received by HMRC.</div></div>
+              <div class="status-message status-error"><div>Enter a nine digit VAT registration number.</div></div>
+              <div class="status-message status-warning"><div>This period ends in two days.</div></div>
+              <div class="status-message status-info"><div>HMRC sends your receipt in a few seconds.</div></div>
+              <p class="spec-caption sample-label">Receipt</p>
+              <div class="receipt">
+                <h3>Return received</h3>
+                <div class="receipt-details">
+                  <div class="receipt-item"><span>Form Bundle Number</span><span class="receipt-figure">123456789012</span></div>
+                  <div class="receipt-item"><span>Processing date</span><span class="receipt-figure">2026-11-15</span></div>
+                </div>
+              </div>
+              <p class="spec-caption sample-label">Status tags</p>
+              <p class="sample-row">
+                <span class="status-tag" data-status="production">Production</span>
+                <span class="status-tag" data-status="sandbox">Sandbox</span> <span class="status-tag" data-status="preview">Preview</span>
+              </p>
+            </div>
+          </div>
+          <p class="captured" data-captured></p>
+        </section>
+        <div class="set-list" data-sets></div>
+      </section>
+      <section id="spreadsheets" class="product-section" aria-labelledby="spreadsheets-title">
+        <h2 id="spreadsheets-title" tabindex="-1">DIY Accounting Spreadsheets</h2>
+        <p class="section-summary" data-summary></p>
+        <section id="spreadsheets-brand" class="brand-guide" aria-labelledby="spreadsheets-brand-title">
+          <h3 id="spreadsheets-brand-title" tabindex="-1">Brand guide</h3>
+          <div class="scheme-switch" role="group" aria-label="Brand guide colour scheme">
+            <button type="button" data-scheme="light" aria-pressed="true">Light</button>
+            <button type="button" data-scheme="dark" aria-pressed="false">Dark</button>
+          </div>
+          <p class="scheme-note" hidden>This site has a light scheme only.</p>
+          <div class="brand-spreadsheets brand-frame" data-brand="spreadsheets">
+            <h4>Pages</h4>
+            <div class="brand-shots" data-shots></div>
+            <h4>Colours</h4>
+            <ul class="swatches" data-swatches></ul>
+            <h4>Type</h4>
+            <dl class="specimen" data-specimen>
+              <div>
+                <dt data-spec="spec-h1"></dt>
+                <dd class="spec-h1">Heading one</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-h2"></dt>
+                <dd class="spec-h2">Heading two</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-body"></dt>
+                <dd class="spec-body">Body text reads at this size and weight.</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-caption"></dt>
+                <dd class="spec-caption">Caption text sits under things.</dd>
+              </div>
+            </dl>
+            <h4>Parts</h4>
+            <div class="furniture">
+              <nav class="top-nav" aria-label="Sample navigation">
+                <a href="#spreadsheets-brand" class="nav-current">Home</a><a href="#spreadsheets-brand">Products</a
+                ><a href="#spreadsheets-brand">Guides</a><a href="#spreadsheets-brand">Help</a>
+              </nav>
+              <div class="product-card">
+                <h2><a href="#spreadsheets-brand">Basic Sole Trader</a></h2>
+                <p class="product-description">An Excel workbook for the income and expenses of a sole trader.</p>
+                <ul class="feature-list">
+                  <li>Monthly summaries</li>
+                  <li>Year totals</li>
+                  <li>Free to download</li>
+                </ul>
+                <a class="btn-download" href="#spreadsheets-brand">Download</a>
+              </div>
+              <div class="reviews-quotes">
+                <blockquote>
+                  <p>Simple to use and it did exactly what I needed at tax time.</p>
+                  <cite>A customer review</cite>
+                </blockquote>
+              </div>
+            </div>
+          </div>
+          <p class="captured" data-captured></p>
+        </section>
+        <div class="set-list" data-sets></div>
+      </section>
+      <section id="diya-gl" class="product-section" aria-labelledby="diya-gl-title">
+        <h2 id="diya-gl-title" tabindex="-1">DIYA-GL</h2>
+        <p class="section-summary" data-summary></p>
+        <section id="diya-gl-brand" class="brand-guide" aria-labelledby="diya-gl-brand-title">
+          <h3 id="diya-gl-brand-title" tabindex="-1">Brand guide</h3>
+          <div class="scheme-switch" role="group" aria-label="Brand guide colour scheme">
+            <button type="button" data-scheme="light" aria-pressed="true">Light</button>
+            <button type="button" data-scheme="dark" aria-pressed="false">Dark</button>
+          </div>
+          <p class="scheme-note" hidden>This site has a light scheme only.</p>
+          <div class="brand-diya-gl brand-frame" data-brand="diya-gl">
+            <h4>Pages</h4>
+            <div class="brand-shots" data-shots></div>
+            <h4>Colours</h4>
+            <ul class="swatches" data-swatches></ul>
+            <h4>Type</h4>
+            <dl class="specimen" data-specimen>
+              <div>
+                <dt data-spec="spec-h1"></dt>
+                <dd class="spec-h1">Heading one</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-h2"></dt>
+                <dd class="spec-h2">Heading two</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-body"></dt>
+                <dd class="spec-body">Body text reads at this size and weight.</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-caption"></dt>
+                <dd class="spec-caption">Caption text sits under things.</dd>
+              </div>
+            </dl>
+            <h4>Parts</h4>
+            <div class="furniture">
+              <div class="app-topbar">
+                <span class="app-mark">DIYA-GL</span><span class="app-title">Sample Ltd</span
+                ><button type="button" class="icon-btn">
+                  <span aria-hidden="true">&#128190;</span><span class="btn-label">Save</span>
+                </button>
+              </div>
+              <div class="sheet-tabs" role="tablist" aria-label="Sample sheets">
+                <button type="button" class="tab-btn" role="tab" aria-selected="true">Year</button
+                ><button type="button" class="tab-btn" role="tab" aria-selected="false">Bank</button
+                ><button type="button" class="tab-btn" role="tab" aria-selected="false">Sales</button
+                ><button type="button" class="tab-btn" role="tab" aria-selected="false">VAT</button>
+              </div>
+              <div class="year-table-scroll">
+                <table class="year-table">
+                  <caption class="sr-only">
+                    Sample year table
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Month</th>
+                      <th scope="col">Income</th>
+                      <th scope="col" class="col-computed">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row" class="month-cell">April</th>
+                      <td>1,200.00</td>
+                      <td class="col-computed">740.00</td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="month-cell">May</th>
+                      <td>1,450.00</td>
+                      <td class="col-computed">910.00</td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="month-cell">June</th>
+                      <td>1,310.00</td>
+                      <td class="col-computed">820.00</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="spec-caption sample-label">Pencil correction</p>
+              <p>
+                <span class="pencil-correction"
+                  ><span class="computed-value">910.00</span><span class="as-read">900.00</span
+                  ><span class="drift-amount">+10.00</span></span
+                >
+              </p>
+            </div>
+          </div>
+          <p class="captured" data-captured></p>
+        </section>
+        <div class="set-list" data-sets></div>
+      </section>
+      <section id="limited" class="product-section" aria-labelledby="limited-title">
+        <h2 id="limited-title" tabindex="-1">DIY Accounting Limited</h2>
+        <p class="section-summary" data-summary></p>
+        <section id="limited-brand" class="brand-guide" aria-labelledby="limited-brand-title">
+          <h3 id="limited-brand-title" tabindex="-1">Brand guide</h3>
+          <div class="scheme-switch" role="group" aria-label="Brand guide colour scheme">
+            <button type="button" data-scheme="light" aria-pressed="true">Light</button>
+            <button type="button" data-scheme="dark" aria-pressed="false">Dark</button>
+          </div>
+          <p class="scheme-note" hidden>This site has a light scheme only.</p>
+          <div class="brand-limited brand-frame" data-brand="limited">
+            <h4>Pages</h4>
+            <div class="brand-shots" data-shots></div>
+            <h4>Colours</h4>
+            <ul class="swatches" data-swatches></ul>
+            <h4>Type</h4>
+            <dl class="specimen" data-specimen>
+              <div>
+                <dt data-spec="spec-h1"></dt>
+                <dd class="spec-h1">Heading one</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-h2"></dt>
+                <dd class="spec-h2">Heading two</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-body"></dt>
+                <dd class="spec-body">Body text reads at this size and weight.</dd>
+              </div>
+              <div>
+                <dt data-spec="spec-caption"></dt>
+                <dd class="spec-caption">Caption text sits under things.</dd>
+              </div>
+            </dl>
+            <h4>Parts</h4>
+            <div class="furniture">
+              <nav class="gateway-buttons" aria-label="Sample products">
+                <a class="gateway-btn" href="#limited-brand"
+                  ><span class="btn-title">DIY Accounting Submit</span><span class="btn-subtitle">Send your VAT return to HMRC.</span></a
+                ><a class="gateway-btn gateway-btn-spreadsheets" href="#limited-brand"
+                  ><span class="btn-title">DIY Accounting Spreadsheets</span
+                  ><span class="btn-subtitle">Excel workbooks for UK small businesses.</span></a
+                >
+              </nav>
+              <div class="company-summary">
+                <p>DIY Accounting Limited is a family company. We have made accounting spreadsheets since 2006.</p>
+              </div>
+            </div>
+          </div>
+          <p class="captured" data-captured></p>
+        </section>
+        <div class="set-list" data-sets></div>
+      </section>
+    </main>
+  </body>
+</html>

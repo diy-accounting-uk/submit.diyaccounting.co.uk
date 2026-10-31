@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-26 Monitor HMRC fraud-prevention header compliance
+// - **Use when:** HMRC's monthly fraud-prevention header feedback email must be checked or tracked.
+// - **Does:** fraudPreventionHeaderReport.js parses HMRC's monthly fraud-prevention header feedback email for a reported month. scripts/fraud-header-email-check.js reads that email on a laptop launchd schedule and alerts Telegram when a month needs review. scripts/compliance-fraud-headers-rows.js turns the resulting decision records into compliance-dashboard rows.
+// - **Run:** `node scripts/fraud-header-email-check.js`; `node scripts/compliance-fraud-headers-rows.js <checkedAt> [directory]`
+// - **Entry:** `app/lib/fraudPreventionHeaderReport.js:parseFraudPreventionHeaderReport`; `scripts/fraud-header-email-check.js:checkFraudPreventionHeaders`; `scripts/compliance-fraud-headers-rows.js:toRow`
+// - **Files:** app/lib/fraudPreventionHeaderReport.js, app/unit-tests/lib/fraudPreventionHeaderReport.test.js, scripts/fraud-header-email-check.js, app/unit-tests/scripts/fraudHeaderEmailCheck.test.js, scripts/compliance-fraud-headers-rows.js, app/unit-tests/scripts/complianceFraudHeadersRows.test.js, hmrc-fraud-prevention.md
+// - **Keywords:** fraud prevention compliance, monthly feedback email, launchd, telegram alert, compliance dashboard, gyb mail mirror
+// - **Related:** HMRC-25
+// @end-capability
+
 // app/lib/fraudPreventionHeaderReport.js
 //
 // Parses HMRC's monthly fraud prevention header feedback email (from HMRC's Transaction

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-27 Recover an abandoned checkout
+// - **Use when:** checking whether checkout recovery is implemented; the endpoint returns 501 today.
+// - **Does:** The billingRecoverPost.js ingestHandler always returns HTTP 501 Not implemented.
+// - **Run:** `POST /api/v1/billing/recover`
+// - **Entry:** `app/functions/billing/billingRecoverPost.js:ingestHandler`
+// - **Files:** app/functions/billing/billingRecoverPost.js
+// - **Keywords:** stripe, abandoned checkout, recover checkout, not implemented, 501
+// - **Related:** BILL-24
+// @end-capability
+
 // app/functions/billing/billingRecoverPost.js
 
 import { createLogger } from "../../lib/logger.js";

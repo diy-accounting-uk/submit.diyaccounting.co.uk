@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-44 Hash and rotate the subject-ID salt
+// - **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
+// - **Does:** subHasher.js computes salted HMAC hashes of Cognito subject IDs for analytics and fraud-header anonymisation, backed by SubHashSaltHelper. put-salt-secret-resource-policy.sh reasserts the salt secret's resource policy on every environment deploy. This runs before any per-deployment Lambda role exists; backup-salts.sh and restore-salt.sh export and re-apply the salt for disaster recovery.
+// - **Run:** `./scripts/backup-salts.sh`; `./scripts/aws-accounts/restore-salt.sh --source-profile <profile> --target-profile <profile> [--env <env>]`; `gh workflow run manage-secrets.yml -f action=backup-salt -f environment-name=<ci|prod>`
+// - **Entry:** `app/services/subHasher.js:hashSub`; `infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java`
+// - **Files:** app/services/subHasher.js, app/unit-tests/services/subHasher.test.js, infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java, scripts/put-salt-secret-resource-policy.sh, scripts/backup-salts.sh, scripts/aws-accounts/restore-salt.sh, scripts/migrations/001-convert-salt-to-registry.js, scripts/migrations/002-backfill-salt-version-v1.js
+// - **Keywords:** subject id salt, subhasher, salt rotation, resource policy, backup salt, restore salt, hmac hash
+// - **Related:** OPS-44, OPS-16
+// @end-capability
+
 // app/services/subHasher.js
 
 import crypto from "crypto";

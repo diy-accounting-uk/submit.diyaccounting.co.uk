@@ -5,6 +5,16 @@ description: Walk the deployed ci site as a person would, one role at a time (vi
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DEV-50 Explore the deployed site role by role
+- **Use when:** the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
+- **Does:** The explore skill mints the state, then dispatches one Opus sub-agent per role: visitor, customer, practice, operator. A Sonnet sub-agent verifies each finding against the oracle. The coordinator writes one review with screenshots in the private repository and lists proposed rows.
+- **Run:** `/explore`
+- **Entry:** `.claude/skills/explore/SKILL.md`
+- **Files:** .claude/skills/explore/SKILL.md, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
+- **Keywords:** explore skill, exploratory qa, judgement pass, role pass, review document, findings with screenshots
+- **Related:** DEV-46, DEV-48, DEV-49
+@end-capability -->
+
 # explore
 
 A test checks what its author thought of. This pass follows a link that looked promising, resizes

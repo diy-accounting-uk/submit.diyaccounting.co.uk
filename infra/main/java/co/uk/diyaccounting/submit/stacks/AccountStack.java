@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability BILL-36 CDK: account stack
+// - **Use when:** tracing or changing the infrastructure behind bundle, pass, practice-client and capacity-reconcile endpoints.
+// - **Does:** The AccountStack.java construct wires the Lambdas behind bundle get, post and delete. It also wires the pass endpoints, the practice-client endpoints, the operator snapshot, and the bundle-capacity-reconcile schedule. It builds their API Gateway routes and DynamoDB table grants.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/AccountStackTest.java
+// - **Keywords:** cdk, account stack, api gateway, dynamodb grants, lambda wiring
+// - **Related:** BILL-01, BILL-06, BILL-12, BILL-05
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -32,6 +44,7 @@ import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.events.CronOptions;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
@@ -112,6 +125,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passAdminPostLambdaProps;
     public Function passAdminPostLambda;
     public ILogGroup passAdminPostLambdaLogGroup;
+    public AbstractApiLambdaProps passReleasePostLambdaProps;
+    public Function passReleasePostLambda;
+    public ILogGroup passReleasePostLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -124,6 +140,9 @@ public class AccountStack extends Stack {
     public Function bundleCapacityReconcileLambda;
     public ILogGroup bundleCapacityReconcileLambdaLogGroup;
     public Rule bundleCapacityReconcileSchedule;
+    public Function commissionReleaseLambda;
+    public ILogGroup commissionReleaseLambdaLogGroup;
+    public Rule commissionReleaseSchedule;
 
     public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
     public Function sessionBeaconPostLambda;
@@ -241,44 +260,58 @@ public class AccountStack extends Stack {
 
         // Lookup existing DynamoDB Passes Table
         ITable passesTable = Table.fromTableName(
-                this, "ImportedPassesTable-%s".formatted(props.deploymentName()), props.sharedNames().passesTableName);
+                this,
+                "ImportedPassesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.passesTableName);
 
         // Lookup existing DynamoDB Bundle Capacity Table
         ITable bundleCapacityTable = Table.fromTableName(
                 this,
                 "ImportedBundleCapacityTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundleCapacityTableName);
+                props.sharedNames().data.bundleCapacityTableName);
 
         // Lookup existing DynamoDB Bundles Table
         ITable bundlesTable = Table.fromTableName(
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlesTableName);
+                props.sharedNames().data.bundlesTableName);
+
+        // Lookup existing DynamoDB Commissions Table
+        ITable commissionsTable = Table.fromTableName(
+                this,
+                "ImportedCommissionsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.commissionsTableName);
+
+        // Lookup existing DynamoDB Subscriptions Table
+        ITable subscriptionsTable = Table.fromTableName(
+                this,
+                "ImportedSubscriptionsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.subscriptionsTableName);
 
         // Lookup existing DynamoDB Practice Clients Table
         ITable practiceClientsTable = Table.fromTableName(
                 this,
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().practiceClientsTableName);
+                props.sharedNames().data.practiceClientsTableName);
 
         // Lookup existing DynamoDB Bundle POST Async Requests Table
         ITable bundlePostAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedBundlePostAsyncRequestsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlePostAsyncRequestsTableName);
+                props.sharedNames().data.bundlePostAsyncRequestsTableName);
 
         // Lookup existing DynamoDB Bundle DELETE Async Requests Table
         ITable bundleDeleteAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedBundleDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundleDeleteAsyncRequestsTableName);
+                props.sharedNames().data.bundleDeleteAsyncRequestsTableName);
 
         // Lookup existing DynamoDB Security State Table (issue #10 data-theft detection: bundle
         // burst counters and, once AuthStack's customAuthorizer uses it, mid-session geo state)
         ITable securityStateTable = Table.fromTableName(
                 this,
                 "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().securityStateTableName);
+                props.sharedNames().data.securityStateTableName);
 
         // Lambdas
 
@@ -295,35 +328,35 @@ public class AccountStack extends Stack {
 
         // Construct EventBridge activity bus ARN for IAM policies
         var activityBusArn = String.format(
-                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activity.activityBusName);
 
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.bundleGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().bundleGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().bundleGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().bundleGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.bundleGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.bundleGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.bundleGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().bundleGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.bundleGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.bundleGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.bundleGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.bundleGetLambdaCustomAuthorizer)
                         .environment(getBundlesLambdaEnv)
                         .build());
 
@@ -334,7 +367,7 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
                 "Created Async API Lambda %s for get bundles with ingestHandler %s",
-                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetIngestLambdaHandler);
+                this.bundleGetLambda.getNode().getId(), props.sharedNames().account.bundleGetIngestLambdaHandler);
 
         // Grant the GetBundlesLambda permission to access Cognito User Pool
         var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
@@ -384,34 +417,34 @@ public class AccountStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundlePostAsyncRequestsTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesAsyncLambda = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundlePostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.bundlePostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().bundlePostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().bundlePostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().bundlePostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.bundlePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.bundlePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.bundlePostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundlePostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().bundlePostWorkerLambdaFunctionName)
-                        .workerHandler(props.sharedNames().bundlePostWorkerLambdaHandler)
-                        .workerLambdaArn(props.sharedNames().bundlePostWorkerLambdaArn)
+                                props.sharedNames().account.bundlePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().account.bundlePostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().account.bundlePostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().account.bundlePostWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundlePostWorkerProvisionedConcurrencyLambdaAliasArn)
-                        .workerQueueName(props.sharedNames().bundlePostLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().bundlePostLambdaDeadLetterQueueName)
+                                props.sharedNames().account.bundlePostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().account.bundlePostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().account.bundlePostLambdaDeadLetterQueueName)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().bundlePostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.bundlePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.bundlePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.bundlePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.bundlePostLambdaCustomAuthorizer)
                         .environment(requestBundlesLambdaEnv)
                         .build());
 
@@ -426,8 +459,8 @@ public class AccountStack extends Stack {
         infof(
                 "Created Async API Lambda %s for request bundles with ingestHandler %s and worker %s",
                 this.bundlePostLambda.getNode().getId(),
-                props.sharedNames().bundlePostIngestLambdaHandler,
-                props.sharedNames().bundlePostWorkerLambdaHandler);
+                props.sharedNames().account.bundlePostIngestLambdaHandler,
+                props.sharedNames().account.bundlePostWorkerLambdaHandler);
 
         // Grant permissions to both API and Worker Lambdas
         List.of(this.bundlePostLambda, requestBundlesAsyncLambda.workerLambda).forEach(fn -> {
@@ -467,34 +500,34 @@ public class AccountStack extends Stack {
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundleDeleteAsyncRequestsTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var bundleDeleteAsyncLambda = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.bundleDeleteIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.bundleDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.bundleDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.bundleDeleteIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
-                        .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
-                        .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
+                                props.sharedNames().account.bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().account.bundleDeleteWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().account.bundleDeleteWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().account.bundleDeleteWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
-                        .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
+                                props.sharedNames().account.bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().account.bundleDeleteLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().account.bundleDeleteLambdaDeadLetterQueueName)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
-                        .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.bundleDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.bundleDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.bundleDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.bundleDeleteLambdaCustomAuthorizer)
                         .environment(bundleDeleteLambdaEnv)
                         .build());
 
@@ -509,33 +542,33 @@ public class AccountStack extends Stack {
 
         // Also expose a second route for deleting a bundle by path parameter {id}
         this.lambdaFunctionProps.add(AsyncApiLambdaProps.builder()
-                .idPrefix(props.sharedNames().bundleDeleteIngestLambdaFunctionName + "-ByIdRoute")
+                .idPrefix(props.sharedNames().account.bundleDeleteIngestLambdaFunctionName + "-ByIdRoute")
                 .baseImageTag(props.baseImageTag())
-                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
-                .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
-                .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
+                .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                .ingestFunctionName(props.sharedNames().account.bundleDeleteIngestLambdaFunctionName)
+                .ingestHandler(props.sharedNames().account.bundleDeleteIngestLambdaHandler)
+                .ingestLambdaArn(props.sharedNames().account.bundleDeleteIngestLambdaArn)
                 .ingestProvisionedConcurrencyAliasArn(
-                        props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
-                .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
-                .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
-                .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
+                        props.sharedNames().account.bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                .workerFunctionName(props.sharedNames().account.bundleDeleteWorkerLambdaFunctionName)
+                .workerHandler(props.sharedNames().account.bundleDeleteWorkerLambdaHandler)
+                .workerLambdaArn(props.sharedNames().account.bundleDeleteWorkerLambdaArn)
                 .workerProvisionedConcurrencyAliasArn(
-                        props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
-                .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
-                .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
+                        props.sharedNames().account.bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                .workerQueueName(props.sharedNames().account.bundleDeleteLambdaQueueName)
+                .workerDeadLetterQueueName(props.sharedNames().account.bundleDeleteLambdaDeadLetterQueueName)
                 .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
+                .httpMethod(props.sharedNames().account.bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
-                .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
-                .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
+                .jwtAuthorizer(props.sharedNames().account.bundleDeleteLambdaJwtAuthorizer)
+                .customAuthorizer(props.sharedNames().account.bundleDeleteLambdaCustomAuthorizer)
                 .build());
         infof(
                 "Created Async API Lambda %s for delete bundles with ingestHandler %s and worker %s",
                 this.bundleDeleteLambda.getNode().getId(),
-                props.sharedNames().bundleDeleteIngestLambdaHandler,
-                props.sharedNames().bundleDeleteWorkerLambdaHandler);
+                props.sharedNames().account.bundleDeleteIngestLambdaHandler,
+                props.sharedNames().account.bundleDeleteWorkerLambdaHandler);
 
         // Grant permissions to both API and Worker Lambdas
         List.of(this.bundleDeleteLambda, bundleDeleteAsyncLambda.workerLambda).forEach(fn -> {
@@ -575,29 +608,30 @@ public class AccountStack extends Stack {
         // what actually keeps this route closed to everyone else). Reads the nightly snapshot
         // AnalyticsStack's OperatorSnapshotPublish construct writes; never queries Athena
         // itself.
-        var analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        var analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
         var operatorSnapshotGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", props.sharedNames().analyticsLakeBucketName)
+                .with("ANALYTICS_LAKE_BUCKET_NAME", props.sharedNames().analytics.analyticsLakeBucketName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var operatorSnapshotGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().operatorSnapshotGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.operatorSnapshotGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().operatorSnapshotGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().operatorSnapshotGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().operatorSnapshotGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().operatorSnapshotGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.operatorSnapshotGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.operatorSnapshotGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.operatorSnapshotGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .operatorSnapshotGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().operatorSnapshotGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().operatorSnapshotGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().operatorSnapshotGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().operatorSnapshotGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.operatorSnapshotGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.operatorSnapshotGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.operatorSnapshotGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.operatorSnapshotGetLambdaCustomAuthorizer)
                         .environment(operatorSnapshotGetLambdaEnv)
                         .build());
 
@@ -621,7 +655,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for the operator snapshot with ingestHandler %s",
                 this.operatorSnapshotGetLambda.getNode().getId(),
-                props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
+                props.sharedNames().account.operatorSnapshotGetIngestLambdaHandler);
 
         // Practice clients: four single-Lambda routes, same JWT authoriser and shape as
         // bundleGet above. Each reads or writes only the caller's own hashedSub partition.
@@ -633,21 +667,22 @@ public class AccountStack extends Stack {
         var practiceClientsListGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientsListGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.practiceClientsListGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientsListGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().practiceClientsListGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientsListGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().practiceClientsListGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.practiceClientsListGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.practiceClientsListGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.practiceClientsListGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .practiceClientsListGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientsListGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientsListGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientsListGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientsListGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientsListGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientsListGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.practiceClientsListGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.practiceClientsListGetLambdaCustomAuthorizer)
                         .environment(new PopulatedMap<String, String>()
                                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
@@ -665,26 +700,27 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for listing practice clients with ingestHandler %s",
                 this.practiceClientsListGetLambda.getNode().getId(),
-                props.sharedNames().practiceClientsListGetIngestLambdaHandler);
+                props.sharedNames().account.practiceClientsListGetIngestLambdaHandler);
 
         var practiceClientsPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientsPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.practiceClientsPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientsPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().practiceClientsPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientsPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().practiceClientsPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.practiceClientsPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.practiceClientsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.practiceClientsPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .practiceClientsPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientsPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientsPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientsPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientsPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.practiceClientsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.practiceClientsPostLambdaCustomAuthorizer)
                         .environment(practiceClientsLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientsPostApiLambda);
@@ -698,26 +734,26 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for creating a practice client with ingestHandler %s",
                 this.practiceClientsPostLambda.getNode().getId(),
-                props.sharedNames().practiceClientsPostIngestLambdaHandler);
+                props.sharedNames().account.practiceClientsPostIngestLambdaHandler);
 
         var practiceClientGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.practiceClientGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().practiceClientGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.practiceClientGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.practiceClientGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.practiceClientGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().practiceClientGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.practiceClientGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.practiceClientGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.practiceClientGetLambdaCustomAuthorizer)
                         .environment(practiceClientsLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientGetApiLambda);
@@ -731,26 +767,27 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for reading a practice client with ingestHandler %s",
                 this.practiceClientGetLambda.getNode().getId(),
-                props.sharedNames().practiceClientGetIngestLambdaHandler);
+                props.sharedNames().account.practiceClientGetIngestLambdaHandler);
 
         var practiceClientDeleteApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientDeleteIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.practiceClientDeleteIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientDeleteIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().practiceClientDeleteIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientDeleteIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().practiceClientDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.practiceClientDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.practiceClientDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.practiceClientDeleteIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .practiceClientDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientDeleteLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientDeleteLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientDeleteLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientDeleteLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.practiceClientDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.practiceClientDeleteLambdaCustomAuthorizer)
                         .environment(practiceClientsLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientDeleteApiLambda);
@@ -764,7 +801,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for archiving a practice client with ingestHandler %s",
                 this.practiceClientDeleteLambda.getNode().getId(),
-                props.sharedNames().practiceClientDeleteIngestLambdaHandler);
+                props.sharedNames().account.practiceClientDeleteIngestLambdaHandler);
 
         // Practice client authorisation: three single-Lambda routes calling out to HMRC's Agent
         // Authorisation API. Each still reads or writes only the caller's own hashedSub partition,
@@ -778,24 +815,31 @@ public class AccountStack extends Stack {
         var practiceClientAuthorisationInvitePostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .account
+                                .practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .account
+                                .practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().account.practiceClientAuthorisationInvitePostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().account.practiceClientAuthorisationInvitePostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
                                 .practiceClientAuthorisationInvitePostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientAuthorisationInvitePostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientAuthorisationInvitePostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationInvitePostLambdaJwtAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientAuthorisationInvitePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientAuthorisationInvitePostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().account.practiceClientAuthorisationInvitePostLambdaJwtAuthorizer)
                         .customAuthorizer(
-                                props.sharedNames().practiceClientAuthorisationInvitePostLambdaCustomAuthorizer)
+                                props.sharedNames().account.practiceClientAuthorisationInvitePostLambdaCustomAuthorizer)
                         .environment(practiceClientAuthorisationLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientAuthorisationInvitePostApiLambda);
@@ -815,27 +859,30 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for inviting a practice client with ingestHandler %s",
                 this.practiceClientAuthorisationInvitePostLambda.getNode().getId(),
-                props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaHandler);
+                props.sharedNames().account.practiceClientAuthorisationInvitePostIngestLambdaHandler);
 
         var practiceClientAuthorisationGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientAuthorisationGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.practiceClientAuthorisationGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().practiceClientAuthorisationGetIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().account.practiceClientAuthorisationGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().practiceClientAuthorisationGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationGetIngestLambdaArn)
+                        .ingestHandler(props.sharedNames().account.practiceClientAuthorisationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.practiceClientAuthorisationGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
                                 .practiceClientAuthorisationGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientAuthorisationGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientAuthorisationGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().practiceClientAuthorisationGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientAuthorisationGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientAuthorisationGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.practiceClientAuthorisationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().account.practiceClientAuthorisationGetLambdaCustomAuthorizer)
                         .environment(practiceClientAuthorisationLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientAuthorisationGetApiLambda);
@@ -850,29 +897,37 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for reading a practice client's authorisation with ingestHandler %s",
                 this.practiceClientAuthorisationGetLambda.getNode().getId(),
-                props.sharedNames().practiceClientAuthorisationGetIngestLambdaHandler);
+                props.sharedNames().account.practiceClientAuthorisationGetIngestLambdaHandler);
 
         var practiceClientAuthorisationInviteDeleteApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames()
+                                .account
+                                .practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(
-                                props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .account
+                                .practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaArn)
+                        .ingestHandler(
+                                props.sharedNames().account.practiceClientAuthorisationInviteDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().account.practiceClientAuthorisationInviteDeleteIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
                                 .practiceClientAuthorisationInviteDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaHttpMethod)
-                        .urlPath(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer)
-                        .customAuthorizer(
-                                props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.practiceClientAuthorisationInviteDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.practiceClientAuthorisationInviteDeleteLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().account.practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .account
+                                .practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer)
                         .environment(practiceClientAuthorisationLambdaEnv)
                         .build());
         healthCheckedFunctions.add(practiceClientAuthorisationInviteDeleteApiLambda);
@@ -891,7 +946,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created API Lambda %s for cancelling a practice client's invitation with ingestHandler %s",
                 this.practiceClientAuthorisationInviteDeleteLambda.getNode().getId(),
-                props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaHandler);
+                props.sharedNames().account.practiceClientAuthorisationInviteDeleteIngestLambdaHandler);
 
         // Support Ticket POST Lambda - only create if the diya-ops GitHub App is configured.
         if (props.githubAppId() != null
@@ -905,7 +960,7 @@ public class AccountStack extends Stack {
             var githubAppPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                     .with("GITHUB_APP_ID", props.githubAppId())
                     .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
                     .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId)
@@ -914,22 +969,23 @@ public class AccountStack extends Stack {
             var supportTicketPostApiLambda = new ApiLambda(
                     this,
                     ApiLambdaProps.builder()
-                            .idPrefix(props.sharedNames().supportTicketPostIngestLambdaFunctionName)
+                            .idPrefix(props.sharedNames().account.supportTicketPostIngestLambdaFunctionName)
                             .baseImageTag(props.baseImageTag())
-                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                            .ingestFunctionName(props.sharedNames().supportTicketPostIngestLambdaFunctionName)
+                            .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().account.supportTicketPostIngestLambdaFunctionName)
                             .callsExternalApi(true)
-                            .ingestHandler(props.sharedNames().supportTicketPostIngestLambdaHandler)
-                            .ingestLambdaArn(props.sharedNames().supportTicketPostIngestLambdaArn)
-                            .ingestProvisionedConcurrencyAliasArn(
-                                    props.sharedNames().supportTicketPostIngestProvisionedConcurrencyLambdaAliasArn)
+                            .ingestHandler(props.sharedNames().account.supportTicketPostIngestLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().account.supportTicketPostIngestLambdaArn)
+                            .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                    .account
+                                    .supportTicketPostIngestProvisionedConcurrencyLambdaAliasArn)
                             .ingestProvisionedConcurrency(0)
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                            .httpMethod(props.sharedNames().supportTicketPostLambdaHttpMethod)
-                            .urlPath(props.sharedNames().supportTicketPostLambdaUrlPath)
-                            .jwtAuthorizer(props.sharedNames().supportTicketPostLambdaJwtAuthorizer)
-                            .customAuthorizer(props.sharedNames().supportTicketPostLambdaCustomAuthorizer)
+                            .httpMethod(props.sharedNames().account.supportTicketPostLambdaHttpMethod)
+                            .urlPath(props.sharedNames().account.supportTicketPostLambdaUrlPath)
+                            .jwtAuthorizer(props.sharedNames().account.supportTicketPostLambdaJwtAuthorizer)
+                            .customAuthorizer(props.sharedNames().account.supportTicketPostLambdaCustomAuthorizer)
                             .environment(supportTicketPostLambdaEnv)
                             .build());
 
@@ -964,7 +1020,7 @@ public class AccountStack extends Stack {
             infof(
                     "Created Support Ticket POST Lambda %s with handler %s",
                     this.supportTicketPostLambda.getNode().getId(),
-                    props.sharedNames().supportTicketPostIngestLambdaHandler);
+                    props.sharedNames().account.supportTicketPostIngestLambdaHandler);
 
             cfnOutput(this, "SupportTicketPostLambdaArn", this.supportTicketPostLambda.getFunctionArn());
         } else {
@@ -984,26 +1040,26 @@ public class AccountStack extends Stack {
 
             var interestPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                     .with("FEEDBACK_TOPIC_ARN", feedbackTopic.getTopicArn());
             var interestPostApiLambda = new ApiLambda(
                     this,
                     ApiLambdaProps.builder()
-                            .idPrefix(props.sharedNames().interestPostIngestLambdaFunctionName)
+                            .idPrefix(props.sharedNames().account.interestPostIngestLambdaFunctionName)
                             .baseImageTag(props.baseImageTag())
-                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                            .ingestFunctionName(props.sharedNames().interestPostIngestLambdaFunctionName)
-                            .ingestHandler(props.sharedNames().interestPostIngestLambdaHandler)
-                            .ingestLambdaArn(props.sharedNames().interestPostIngestLambdaArn)
+                            .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().account.interestPostIngestLambdaFunctionName)
+                            .ingestHandler(props.sharedNames().account.interestPostIngestLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().account.interestPostIngestLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
-                                    props.sharedNames().interestPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                    props.sharedNames().account.interestPostIngestProvisionedConcurrencyLambdaAliasArn)
                             .ingestProvisionedConcurrency(0)
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                            .httpMethod(props.sharedNames().interestPostLambdaHttpMethod)
-                            .urlPath(props.sharedNames().interestPostLambdaUrlPath)
-                            .jwtAuthorizer(props.sharedNames().interestPostLambdaJwtAuthorizer)
-                            .customAuthorizer(props.sharedNames().interestPostLambdaCustomAuthorizer)
+                            .httpMethod(props.sharedNames().account.interestPostLambdaHttpMethod)
+                            .urlPath(props.sharedNames().account.interestPostLambdaUrlPath)
+                            .jwtAuthorizer(props.sharedNames().account.interestPostLambdaJwtAuthorizer)
+                            .customAuthorizer(props.sharedNames().account.interestPostLambdaCustomAuthorizer)
                             .environment(interestPostLambdaEnv)
                             .build());
 
@@ -1028,7 +1084,8 @@ public class AccountStack extends Stack {
 
             infof(
                     "Created Interest POST Lambda %s with handler %s",
-                    this.interestPostLambda.getNode().getId(), props.sharedNames().interestPostIngestLambdaHandler);
+                    this.interestPostLambda.getNode().getId(),
+                    props.sharedNames().account.interestPostIngestLambdaHandler);
 
             cfnOutput(this, "InterestPostLambdaArn", this.interestPostLambda.getFunctionArn());
             cfnOutput(this, "FeedbackEngagementTopicArn", feedbackTopic.getTopicArn());
@@ -1040,26 +1097,27 @@ public class AccountStack extends Stack {
         // Activity Started POST Lambda (JWT auth - an activity's primary button was clicked)
         // ============================================================================
         var activityStartedPostLambdaEnv = new PopulatedMap<String, String>()
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var activityStartedPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().activityStartedPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.activityStartedPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().activityStartedPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().activityStartedPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().activityStartedPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().activityStartedPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.activityStartedPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.activityStartedPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.activityStartedPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .activityStartedPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().activityStartedPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().activityStartedPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().activityStartedPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().activityStartedPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.activityStartedPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.activityStartedPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.activityStartedPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.activityStartedPostLambdaCustomAuthorizer)
                         .environment(activityStartedPostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(activityStartedPostApiLambda);
@@ -1103,26 +1161,26 @@ public class AccountStack extends Stack {
         // ============================================================================
         var passGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().passGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.passGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().passGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().passGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().passGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().passGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.passGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().passGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().passGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().passGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().passGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.passGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passGetLambdaCustomAuthorizer)
                         .environment(passGetLambdaEnv)
                         .build());
         healthCheckedFunctions.add(passGetApiLambda);
@@ -1148,26 +1206,26 @@ public class AccountStack extends Stack {
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().passPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.passPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().passPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().passPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().passPostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().passPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.passPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().passPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().passPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().passPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().passPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.passPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passPostLambdaCustomAuthorizer)
                         .environment(passPostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(passPostApiLambda);
@@ -1194,26 +1252,26 @@ public class AccountStack extends Stack {
         // ============================================================================
         var passAdminPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passAdminPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().passAdminPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.passAdminPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().passAdminPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().passAdminPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().passAdminPostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passAdminPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passAdminPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passAdminPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().passAdminPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.passAdminPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().passAdminPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().passAdminPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().passAdminPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().passAdminPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.passAdminPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passAdminPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passAdminPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passAdminPostLambdaCustomAuthorizer)
                         .environment(passAdminPostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(passAdminPostApiLambda);
@@ -1237,32 +1295,70 @@ public class AccountStack extends Stack {
                 this.passAdminPostLambda.getNode().getId());
 
         // ============================================================================
+        // Pass Release POST Lambda (JWT auth - an operator changes a pass's review limit)
+        // ============================================================================
+        var passReleasePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passReleasePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passReleasePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passReleasePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passReleasePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passReleasePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passReleasePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passReleasePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passReleasePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passReleasePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passReleasePostLambdaCustomAuthorizer)
+                        .environment(passReleasePostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passReleasePostApiLambda);
+        this.passReleasePostLambdaProps = passReleasePostApiLambda.apiProps;
+        this.passReleasePostLambda = passReleasePostApiLambda.ingestLambda;
+        this.passReleasePostLambdaLogGroup = passReleasePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passReleasePostLambdaProps);
+        passesTable.grant(this.passReleasePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // passReleasePost admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passReleasePostLambda, region, account, props.envName());
+        infof(
+                "Created Pass Release POST Lambda %s",
+                this.passReleasePostLambda.getNode().getId());
+
+        // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         // ============================================================================
         var passGeneratePostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passGeneratePostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().passGeneratePostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.passGeneratePostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().passGeneratePostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().passGeneratePostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().passGeneratePostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passGeneratePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passGeneratePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passGeneratePostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().passGeneratePostIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.passGeneratePostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().passGeneratePostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().passGeneratePostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().passGeneratePostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().passGeneratePostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.passGeneratePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passGeneratePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passGeneratePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passGeneratePostLambdaCustomAuthorizer)
                         .environment(passGeneratePostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(passGeneratePostApiLambda);
@@ -1289,26 +1385,26 @@ public class AccountStack extends Stack {
         // ============================================================================
         var passMyPassesGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passMyPassesGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().passMyPassesGetIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.passMyPassesGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().passMyPassesGetIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().passMyPassesGetIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().passMyPassesGetIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passMyPassesGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passMyPassesGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passMyPassesGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().passMyPassesGetIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.passMyPassesGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().passMyPassesGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().passMyPassesGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().passMyPassesGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().passMyPassesGetLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.passMyPassesGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passMyPassesGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passMyPassesGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passMyPassesGetLambdaCustomAuthorizer)
                         .environment(passMyPassesGetLambdaEnv)
                         .build());
         healthCheckedFunctions.add(passMyPassesGetApiLambda);
@@ -1317,8 +1413,8 @@ public class AccountStack extends Stack {
         this.passMyPassesGetLambdaLogGroup = passMyPassesGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passMyPassesGetLambdaProps);
         // Listing a user's own passes queries issuedBy-index. The index needs its own grant: an
-        // imported table's ARN does not cover it.
-        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query");
+        // imported table's ARN does not cover it. Each pass's figures item is read by key in a batch.
+        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query", "dynamodb:BatchGetItem");
         grantTableIndexActions(passesTable, this.passMyPassesGetLambda, "issuedBy-index", "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.passMyPassesGetLambda, region, account, props.envName());
         this.passMyPassesGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1336,20 +1432,20 @@ public class AccountStack extends Stack {
         var reconcileLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var reconcileLambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleCapacityReconcileLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.bundleCapacityReconcileLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().bundleCapacityReconcileLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().bundleCapacityReconcileLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().bundleCapacityReconcileLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.bundleCapacityReconcileLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.bundleCapacityReconcileLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.bundleCapacityReconcileLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.minutes(5))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -1371,8 +1467,8 @@ public class AccountStack extends Stack {
 
         // EventBridge Rule: trigger reconciliation every hour
         this.bundleCapacityReconcileSchedule = Rule.Builder.create(
-                        this, props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-Schedule")
-                .ruleName(props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-schedule")
+                        this, props.sharedNames().account.bundleCapacityReconcileLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.bundleCapacityReconcileLambdaFunctionName + "-schedule")
                 .description("Reconcile bundle capacity counters every hour")
                 .schedule(Schedule.rate(Duration.hours(1)))
                 .targets(List.of(LambdaFunction.Builder.create(this.bundleCapacityReconcileLambda)
@@ -1383,29 +1479,83 @@ public class AccountStack extends Stack {
                 this.bundleCapacityReconcileLambda.getNode().getId());
 
         // ============================================================================
+        // Commission Release Lambda (EventBridge scheduled, once a day)
+        // ============================================================================
+        var commissionReleaseLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var commissionReleaseLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionReleaseLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionReleaseLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionReleaseLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionReleaseLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionReleaseProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(commissionReleaseLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionReleaseLambdaConstruct);
+        this.commissionReleaseLambda = commissionReleaseLambdaConstruct.ingestLambda;
+        this.commissionReleaseLambdaLogGroup = commissionReleaseLambdaConstruct.logGroup;
+        commissionsTable.grant(
+                this.commissionReleaseLambda,
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:ConditionCheckItem");
+        subscriptionsTable.grant(this.commissionReleaseLambda, "dynamodb:GetItem");
+        bundlesTable.grant(this.commissionReleaseLambda, "dynamodb:Query");
+        passesTable.grant(this.commissionReleaseLambda, "dynamodb:GetItem");
+
+        this.commissionReleaseSchedule = Rule.Builder.create(
+                        this, props.sharedNames().account.commissionReleaseLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.commissionReleaseLambdaFunctionName + "-schedule")
+                .description("Release held commission lines once a day")
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("15").hour("3").build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.commissionReleaseLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Commission Release Lambda %s with daily schedule",
+                this.commissionReleaseLambda.getNode().getId());
+
+        // ============================================================================
         // Session Beacon POST Lambda (public, no auth)
         // ============================================================================
         var sessionBeaconPostLambdaEnv = new PopulatedMap<String, String>()
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var sessionBeaconPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().sessionBeaconPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.sessionBeaconPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().sessionBeaconPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().sessionBeaconPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().sessionBeaconPostIngestLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.sessionBeaconPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.sessionBeaconPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.sessionBeaconPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().account.sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().sessionBeaconPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().sessionBeaconPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().sessionBeaconPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().sessionBeaconPostLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.sessionBeaconPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.sessionBeaconPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.sessionBeaconPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.sessionBeaconPostLambdaCustomAuthorizer)
                         .environment(sessionBeaconPostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(sessionBeaconPostApiLambda);
@@ -1426,26 +1576,27 @@ public class AccountStack extends Stack {
         // Session Sign-Out POST Lambda (all-clients JWT auth, see ApiStack)
         // ============================================================================
         var sessionSignOutPostLambdaEnv = new PopulatedMap<String, String>()
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins());
         var sessionSignOutPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().sessionSignOutPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.sessionSignOutPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().sessionSignOutPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().sessionSignOutPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().sessionSignOutPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().sessionSignOutPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.sessionSignOutPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.sessionSignOutPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.sessionSignOutPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .sessionSignOutPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().sessionSignOutPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().sessionSignOutPostLambdaUrlPath)
+                        .httpMethod(props.sharedNames().account.sessionSignOutPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.sessionSignOutPostLambdaUrlPath)
                         .jwtAuthorizer(false)
                         .customAuthorizer(false)
                         .allClientsJwtAuthorizer(true)
@@ -1497,21 +1648,22 @@ public class AccountStack extends Stack {
         var accountSettingsPutApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().accountSettingsPutIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().account.accountSettingsPutIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().accountSettingsPutIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().accountSettingsPutIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().accountSettingsPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().accountSettingsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.accountSettingsPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.accountSettingsPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.accountSettingsPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .accountSettingsPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().accountSettingsPutLambdaHttpMethod)
-                        .urlPath(props.sharedNames().accountSettingsPutLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().accountSettingsPutLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().accountSettingsPutLambdaCustomAuthorizer)
+                        .httpMethod(props.sharedNames().account.accountSettingsPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.accountSettingsPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.accountSettingsPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.accountSettingsPutLambdaCustomAuthorizer)
                         .environment(accountSettingsPutLambdaEnv)
                         .build());
         healthCheckedFunctions.add(accountSettingsPutApiLambda);
@@ -1537,6 +1689,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassGetLambdaArn", this.passGetLambda.getFunctionArn());
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
+        cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());

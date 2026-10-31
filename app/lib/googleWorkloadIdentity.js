@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-37 Federate Lambda credentials to Google Cloud
+// - **Use when:** an analytics Lambda must call a Google Cloud or GA4 API without a stored service-account key.
+// - **Does:** googleWorkloadIdentity.js lets an analytics Lambda reach Google Cloud with no stored key. It builds a google-auth-library AwsClient whose AwsSecurityCredentialsSupplier reads the Lambda's own execution-role environment variables. That is presented to Google's STS, through the pool identity.toml declares, to impersonate the GA4 service account.
+// - **Run:** `import { buildGoogleAuthClient } from "app/lib/googleWorkloadIdentity.js"`
+// - **Entry:** `app/lib/googleWorkloadIdentity.js:`
+// - **Files:** app/lib/googleWorkloadIdentity.js, app/unit-tests/lib/googleWorkloadIdentity.test.js
+// - **Keywords:** workload identity federation, aws security credentials supplier, google sts, no stored key, ga4 service account, identity.toml
+// - **Related:** DATA-05, DATA-06, DATA-40
+// @end-capability
+
 // app/lib/googleWorkloadIdentity.js
 //
 // How the analytics Lambdas reach Google without a key. Google's workload identity federation

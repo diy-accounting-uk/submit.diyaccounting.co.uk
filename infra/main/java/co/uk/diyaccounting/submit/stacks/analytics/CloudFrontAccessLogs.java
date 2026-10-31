@@ -3,6 +3,17 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability DATA-13 Catalogue CloudFront access logs for Athena
+// - **Use when:** CloudFront access logs must be queryable by Athena for the traffic views.
+// - **Does:** CloudFrontAccessLogs.java is environment-scoped, unlike the per-deployment app stacks it serves. It holds the Glue table and lake-bucket policy that let Athena query the Parquet objects CloudWatch Logs v2 delivery writes. Each deployment's own EdgeStack creates the delivery subscription that points at this table.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CloudFrontAccessLogs.java:CloudFrontAccessLogs`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CloudFrontAccessLogs.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/CloudFrontAccessLogsTest.java
+// - **Keywords:** cloudfront access logs, cloudwatch logs v2 delivery, glue table, athena query, edgestack, traffic views
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -101,7 +112,7 @@ public class CloudFrontAccessLogs {
         /** {@code sharedNames.envResourceNamePrefix}, e.g. {@code ci-env}. Used for logical ids. */
         String envResourceNamePrefix();
 
-        /** The lake bucket's literal physical name, e.g. {@code sharedNames.analyticsLakeBucketName}. */
+        /** The lake bucket's literal physical name, e.g. {@code sharedNames.analytics.analyticsLakeBucketName}. */
         String lakeBucketName();
 
         /** The real lake bucket construct, so a resource-policy statement can be attached to it. */

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-09 Retrieve ITSA business details
+// - **Use when:** a taxpayer's self-employment or UK property businesses must be listed by NINO.
+// - **Does:** hmrcItsaBusinessDetailsGet.js's ingestHandler calls HMRC's Business Details API by NINO. dashboard.html runs this lookup to build a business picker for the ITSA journey.
+// - **Run:** `GET /api/v1/hmrc/itsa/business/details`
+// - **Entry:** `app/functions/hmrc/hmrcItsaBusinessDetailsGet.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBusinessDetailsGet.js:getItsaBusinessDetails`
+// - **Files:** app/functions/hmrc/hmrcItsaBusinessDetailsGet.js, app/unit-tests/functions/hmrcItsaBusinessDetailsGet.test.js, web/public/hmrc/itsa/businessDetails.html, web/public/hmrc/itsa/dashboard.html, web/browser-tests/itsaDashboard.browser.test.js, web/browser-tests/businessDetails.browser.test.js, web/browser-tests/usageItsaYearCost.browser.test.js, behaviour-tests/itsaBusinessDetails.behaviour.test.js
+// - **Keywords:** itsa business details, nino, self-employment, uk property business, business picker, dashboard
+// - **Related:** HMRC-10, HMRC-11
+// @end-capability
+
 // app/functions/hmrc/hmrcItsaBusinessDetailsGet.js
 
 import { createLogger } from "../../lib/logger.js";

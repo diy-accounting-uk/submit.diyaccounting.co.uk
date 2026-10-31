@@ -43,7 +43,7 @@ const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
-const diyaGlBaseUrl = getEnvVarAndLog("diyaGlBaseUrl", "DIYA_GL_BASE_URL", "http://localhost:3001/");
+const diyaGlBaseUrl = getEnvVarAndLog("diyaGlBaseUrl", "DIYA_GL_BASE_URL", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -80,6 +80,14 @@ test.afterAll(async () => {
 });
 
 test("create, read latest, 412 on a stale ETag, then delete a book from the diya-gl.co.uk origin", async ({ page }) => {
+  test.skip(
+    runTestServer === "run",
+    "the local server has no DIYA-GL storage routes, so the books API exists only on a deployed environment; skipping.",
+  );
+  if (!diyaGlBaseUrl) {
+    throw new Error("Environment variable DIYA_GL_BASE_URL is not set; the env file for a deployed lane must name the diya-gl host.");
+  }
+
   addOnPageLogging(page);
 
   /* ******* */

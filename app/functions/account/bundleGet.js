@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-02 List a user's bundles and token balance
+// - **Use when:** a page or check must show a user's allocated and available bundles with remaining tokens.
+// - **Does:** The bundleGet.js retrieveUserBundles function returns allocated bundles plus unallocated catalogue bundles. It refreshes any bundle whose token window elapsed. It folds in the operator bundle for listed operator emails and reports capacity.
+// - **Run:** `GET /api/v1/bundle`
+// - **Entry:** `app/functions/account/bundleGet.js:retrieveUserBundles`; `app/functions/account/bundleGet.js:ingestHandler`
+// - **Files:** app/functions/account/bundleGet.js, app/unit-tests/functions/bundleGet.handler.test.js, app/system-tests/bundleCapacity.system.test.js, app/data/dynamoDbCapacityRepository.js
+// - **Keywords:** bundle, list bundles, token balance, capacity, burst counter, operator bundle, retrieveUserBundles
+// - **Related:** BILL-01, BILL-05
+// @end-capability
+
 // app/functions/account/bundleGet.js
 
 import { validateEnv } from "../../lib/env.js";

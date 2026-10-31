@@ -3,6 +3,18 @@
  * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
+// spotless:off
+// @capability OPS-125 Name and tag CDK resources consistently
+// - **Use when:** a stack needs an IAM-safe resource name derived from a deployment identifier, or consistent cost-allocation tags.
+// - **Does:** SubmitSharedNames (with one class per stack in `names/`), LambdaNames and ResourceNameUtils derive consistent, IAM-safe, max 64 character, AWS resource names from a domain and deployment identifier. CostAllocationTags applies cost-allocation tags across every stack. RetentionDaysConverter maps an integer day count onto the CloudWatch Logs RetentionDays enum.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/ResourceNameUtils.java`; `infra/main/java/co/uk/diyaccounting/submit/CostAllocationTags.java`; `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/CostAllocationTags.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNameProps.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNames.java, infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java, infra/main/java/co/uk/diyaccounting/submit/names/, infra/main/java/co/uk/diyaccounting/submit/utils/ResourceNameUtils.java, infra/test/java/co/uk/diyaccounting/submit/utils/ResourceNameUtilsTest.java, infra/main/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverter.java, infra/test/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverterTest.java
+// - **Keywords:** resource naming, cost allocation tags, iam-safe name, retention days, lambda names
+// - **Related:** OPS-124
+// @end-capability
+// spotless:on
+
 package co.uk.diyaccounting.submit.utils;
 
 import java.util.AbstractMap;

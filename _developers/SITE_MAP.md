@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability SITE-12 Map the site structure
+- **Use when:** adding or moving a page and its place in the header, nav or footer needs checking.
+- **Does:** SITE_MAP.md diagrams the page layout, including the header, main nav and footer, and where each page fits.
+- **Run:** no command; see Does and Entry
+- **Entry:** `_developers/SITE_MAP.md`
+- **Files:** _developers/SITE_MAP.md
+- **Keywords:** site map, page layout, navigation structure, header footer diagram
+- **Related:** SITE-10, SITE-13
+@end-capability -->
+
 # Navigation Structure Plan
 
 This document describes the navigation structure for DIY Accounting Submit.

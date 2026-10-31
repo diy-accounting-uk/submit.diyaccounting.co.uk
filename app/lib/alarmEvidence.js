@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-76 Gather alarm evidence for investigation
+// - **Use when:** an operator investigating a firing alarm needs the right log groups, X-Ray filters and console links fast.
+// - **Does:** alarmEvidence.js maps a CloudWatch alarm to the log groups, X-Ray filters, DynamoDB tables and console links an operator needs, via an ordered rule list with unconditional fallbacks so every alarm resolves to something. alarmWindow.js derives the absolute time window for those queries, floored at five minutes and capped at one hour to cover log delivery lag. resolve-alarm-evidence.mjs runs this mapping from the command line.
+// - **Run:** `node scripts/resolve-alarm-evidence.mjs --alarm-name <name> --region <region> --from-alarm`; `node scripts/resolve-alarm-evidence.mjs --alarm-name <name> --deployment <deployment> --namespace <namespace> --metric-name <metric> --dimensions '<json>' --start <iso> --end <iso> --region <region>`
+// - **Entry:** `app/lib/alarmEvidence.js:resolveAlarmEvidence`; `app/lib/alarmWindow.js:resolveAlarmWindow`; `scripts/resolve-alarm-evidence.mjs`
+// - **Files:** app/lib/alarmEvidence.js, app/unit-tests/lib/alarmEvidence.test.js, app/lib/alarmWindow.js, app/unit-tests/lib/alarmWindow.test.js, scripts/resolve-alarm-evidence.mjs, app/unit-tests/scripts/resolveAlarmEvidence.test.js
+// - **Keywords:** alarm evidence, log groups, x-ray, console links, investigation, triage, time window
+// - **Related:** OPS-71, OPS-80
+// @end-capability
+
 // app/lib/alarmEvidence.js
 //
 // Maps a CloudWatch alarm to the evidence an operator needs: which log

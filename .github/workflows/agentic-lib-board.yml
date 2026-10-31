@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-57 Dispatch agentic-lib board, backlog and PR agents
+# - **Use when:** the board, the NEXT.md backlog, or an issue-described change needs an agent dispatched from the shared agentic-lib library.
+# - **Does:** agentic-lib-board.yml renders the /board open-work board, with optional write-back to NEXT.md. agentic-lib-code.yml runs /do-next over NEXT.md under a time budget. agentic-lib-pr.yml runs an agent that implements a change described in an issue or PR.
+# - **Run:** `gh workflow run agentic-lib-board.yml`; `gh workflow run agentic-lib-code.yml`; `gh workflow run agentic-lib-pr.yml`
+# - **Entry:** `.github/workflows/agentic-lib-board.yml`; `.github/workflows/agentic-lib-code.yml`; `.github/workflows/agentic-lib-pr.yml`
+# - **Files:** .github/workflows/agentic-lib-board.yml, .github/workflows/agentic-lib-code.yml, .github/workflows/agentic-lib-pr.yml
+# - **Keywords:** agentic-lib, board agent, do-next agent, pr agent, next.md, time budget
+# - **Related:** OPS-54
+# @end-capability
+
 name: agentic-lib-board
 
 run-name: "board${{ inputs.write-back == 'false' && ' (render only)' || '' }}"

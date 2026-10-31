@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-18 Publish the nightly operator dashboard snapshot
+// - **Use when:** the eight one-stop objectives must be precomputed so the dashboard route never queries Athena directly.
+// - **Does:** operatorSnapshotPublish.js reads the analytics views behind the eight one-stop objectives. Its handler writes one JSON snapshot per environment, with trailing 30/90-day windows, value, trend and deep link, to s3://<lake>/snapshots/<env>/latest.json. OperatorSnapshotPublish.java provisions the Lambda and its own EventBridge rule inside AnalyticsStack.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/operatorSnapshotPublish.js:handler`
+// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
+// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot
+// - **Related:** DATA-19, DATA-24
+// @end-capability
+
 // app/functions/analytics/operatorSnapshotPublish.js
 //
 // Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that

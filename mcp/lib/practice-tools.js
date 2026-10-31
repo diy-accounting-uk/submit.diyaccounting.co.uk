@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-08 Manage practice clients and HMRC agent authorisation
+// - **Use when:** a practice's client list must be read or grown, or an HMRC Agent Authorisation invitation sent or checked.
+// - **Does:** mcp/lib/practice-tools.js implements listClients and addClient for the client list. inviteClient and clientAuthorisationStatus drive the HMRC Agent Authorisation flow, and moveBookToClient moves a book to a client's book set. All but moveBookToClient share submit-tools.js's callSubmitApi.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/practice-tools.js:listClients`; `mcp/lib/practice-tools.js:inviteClient`; `mcp/lib/practice-tools.js:moveBookToClient`
+// - **Files:** mcp/lib/practice-tools.js, mcp/test/practice-tools.test.js
+// - **Keywords:** list_clients, add_client, invite_client, client_authorisation_status, move_book_to_client, agent authorisation, practice clients
+// - **Related:** MCP-07, MCP-09
+// @end-capability
+
 // practice-tools.js -- the practice's own client operations: the client list itself
 // (list_clients, add_client), the HMRC Agent Authorisation flow (invite_client,
 // client_authorisation_status), and moving a book to a client's book set. Unlike the rest of

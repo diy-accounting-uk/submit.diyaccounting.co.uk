@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-04 Stream DynamoDB table changes into the lake
+// - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
+// - **Does:** dynamoStreamToFirehose.js serves five DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes and commissions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
+// - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
+// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions
+// @end-capability
+
 // app/functions/analytics/dynamoStreamToFirehose.js
 //
-// One Lambda, four DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
-// passes). Each stream record is redacted down to a per-table whitelist and forwarded to that
+// One Lambda, five DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
+// passes, commissions). Each stream record is redacted down to a per-table whitelist and forwarded to that
 // table's own Firehose delivery stream.
 //
 // This is a whitelist, not a blacklist: only the fields named in PROJECTORS below leave the
@@ -26,6 +35,8 @@ const PUT_RECORD_BATCH_LIMIT = 500;
 
 const STRIPE_SUBSCRIPTION_PK_PREFIX = "stripe#";
 const REDEMPTION_PK_PREFIX = "redemption#";
+const COMMISSION_PK_PREFIX = "commission#";
+const COMMISSION_LINE_SK_PREFIX = "line#";
 
 /**
  * The receipt item stores HMRC's submission *response*, never the request body that carries
@@ -116,11 +127,55 @@ function projectPass(image) {
   };
 }
 
+/**
+ * The commissions table holds several item kinds. Only a ledger line ("commission#<referrerHash>"
+ * with sort key "line#<invoiceId>", or its "#reversal" twin) reaches the lake; anchors, counters,
+ * totals and pointer items project to null and the handler skips them. The card fingerprint, the
+ * customer's creation time and the redemption time stay in the table.
+ */
+function projectCommission(image) {
+  const pk = image.pk;
+  const sk = image.sk;
+  if (typeof pk !== "string" || !pk.startsWith(COMMISSION_PK_PREFIX)) return null;
+  if (typeof sk !== "string" || !sk.startsWith(COMMISSION_LINE_SK_PREFIX)) return null;
+  const holdReasons = Array.isArray(image.holdReasons) && image.holdReasons.length > 0 ? image.holdReasons.join(",") : null;
+  return {
+    referrer_hash: pk.slice(COMMISSION_PK_PREFIX.length),
+    line_id: sk,
+    invoice_id: image.invoiceId ?? null,
+    charge_id: image.chargeId ?? null,
+    subscription_id: image.subscriptionId ?? null,
+    redeemer_hash: image.redeemerHash ?? null,
+    referral_code: image.referralCode ?? null,
+    tier: image.tier ?? null,
+    form: image.form ?? null,
+    payout: image.payout ?? null,
+    rate_bps: image.rateBps ?? null,
+    gross_pence: image.grossPence ?? null,
+    net_pence: image.netPence ?? null,
+    amount_pence: image.amountPence ?? null,
+    currency: image.currency ?? null,
+    eligible_months: image.eligibleMonths ?? null,
+    line_months: image.lineMonths ?? null,
+    state: image.state ?? null,
+    hold_reasons: holdReasons,
+    charged_at: image.chargedAt ?? null,
+    release_at: image.releaseAt ?? null,
+    payable_at: image.payableAt ?? null,
+    paid_at: image.paidAt ?? null,
+    reversed_at: image.reversedAt ?? null,
+    reversal_reason: image.reversalReason ?? null,
+    reversal_of: image.reversalOf ?? null,
+    livemode: image.livemode ?? null,
+  };
+}
+
 const PROJECTORS = {
   receipts: projectReceipt,
   bundles: projectBundle,
   subscriptions: projectSubscription,
   passes: projectPass,
+  commissions: projectCommission,
 };
 
 /**
@@ -149,7 +204,7 @@ export function resolveTableKind(tableName) {
  * @param {object|null} newImage - unmarshalled NewImage, or null
  * @param {object|null} oldImage - unmarshalled OldImage, or null
  * @param {string} eventName - INSERT | MODIFY | REMOVE
- * @returns {object}
+ * @returns {object|null}
  */
 export function projectFields(tableKind, newImage, oldImage, eventName) {
   const projector = PROJECTORS[tableKind];
@@ -181,7 +236,7 @@ export function resolveTableName(eventSourceArn) {
  *
  * @param {string} tableKind
  * @param {object} record - one entry of event.Records
- * @returns {object}
+ * @returns {object|null} null when the record's item is not one the table projects
  */
 export function buildRow(tableKind, record) {
   const eventName = record.eventName;
@@ -191,12 +246,15 @@ export function buildRow(tableKind, record) {
   const changeTs =
     typeof approximateCreationDateTime === "number" ? toParquetTimestamp(new Date(approximateCreationDateTime * 1000).toISOString()) : null;
 
+  const projected = projectFields(tableKind, newImage, oldImage, eventName);
+  if (projected === null) return null;
+
   return {
     change_ts: changeTs,
     change_type: eventName ?? null,
     source_table: tableKind,
     env: process.env.ENVIRONMENT_NAME ?? null,
-    ...projectFields(tableKind, newImage, oldImage, eventName),
+    ...projected,
   };
 }
 
@@ -239,10 +297,10 @@ async function putRecordBatch(deliveryStreamName, entries) {
 }
 
 /**
- * DynamoDB Streams handler: four event source mappings share this one function.
+ * DynamoDB Streams handler: five event source mappings share this one function.
  *
  * `STREAM_TARGETS` is a JSON map of physical table name to delivery stream name, so the same
- * code serves all four tables without a table-specific Lambda each.
+ * code serves all five tables without a table-specific Lambda each.
  *
  * A record that fails to project (unrecognised table, bad image) or fails to deliver comes back
  * in `batchItemFailures` by its stream sequence number, which tells the event source mapping to
@@ -268,6 +326,7 @@ export async function handler(event) {
       }
       const tableKind = resolveTableKind(tableName);
       const row = buildRow(tableKind, record);
+      if (row === null) continue;
       if (!entriesByStream.has(deliveryStreamName)) {
         entriesByStream.set(deliveryStreamName, []);
       }

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-30 Persist async HMRC API request state
+// - **Use when:** a long-running HMRC API call needs its async request/poll state stored.
+// - **Does:** dynamoDbHmrcApiRequestRepository.js is the DynamoDB repository behind the async request/poll pattern. hmrcApi.js and the write-side Lambdas use it for long-running HMRC calls.
+// - **Run:** `import { putHmrcApiRequest } from "app/data/dynamoDbHmrcApiRequestRepository.js"`
+// - **Entry:** `app/data/dynamoDbHmrcApiRequestRepository.js:putHmrcApiRequest`
+// - **Files:** app/data/dynamoDbHmrcApiRequestRepository.js, app/unit-tests/data/dynamoDbHmrcApiRequestStore.test.js
+// - **Keywords:** async request state, poll pattern, dynamodb, hmrc api request, worker handler
+// - **Related:** HMRC-29
+// @end-capability
+
 // app/data/dynamoDbHmrcApiRequestRepository.js
 
 import { createLogger, context } from "../lib/logger.js";

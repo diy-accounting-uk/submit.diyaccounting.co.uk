@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-09 Reconcile Stripe payments into the lake
+// - **Use when:** the previous day's Stripe balance transactions, charges or subscriptions must land in the lake.
+// - **Does:** stripeReconcile.js pulls the previous day's Stripe balance transactions, charges and subscriptions. Its handler hashes customer ids with the shared salt, so no lake row carries a raw Stripe identifier. It writes gzipped NDJSON under curated/stripe/; StripeReconciliationTables.java provisions the three Glue tables behind the revenue views.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/stripeReconcile.js:handler`
+// - **Files:** app/functions/analytics/stripeReconcile.js, app/unit-tests/analytics/stripeReconcile.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/StripeReconciliationTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/StripeReconciliationTablesTest.java
+// - **Keywords:** stripe reconciliation, balance transactions, charges, subscriptions snapshot, customer id hashing, revenue view, curated stripe
+// - **Related:** DATA-40
+// @end-capability
+
 // app/functions/analytics/stripeReconcile.js
 //
 // Nightly job that pulls the previous day's Stripe balance transactions and charges, plus a

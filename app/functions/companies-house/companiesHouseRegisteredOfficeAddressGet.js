@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability CH-05 File a change of registered office address
+// - **Use when:** a company needs to change its registered office address on the public register.
+// - **Does:** companiesHouseRegisteredOfficeAddressGet.js retrieves the current registered office address. companiesHouseRegisteredOfficeAddressPost.js validates a new address, builds the XML submission and files it via putRegisteredOfficeAddress.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/companies-house/companiesHouseRegisteredOfficeAddressGet.js:ingestHandler`; `app/functions/companies-house/companiesHouseRegisteredOfficeAddressPost.js:ingestHandler`
+// - **Files:** app/functions/companies-house/companiesHouseRegisteredOfficeAddressGet.js, app/functions/companies-house/companiesHouseRegisteredOfficeAddressPost.js, app/unit-tests/functions/companiesHouseRegisteredOfficeAddressGet.test.js, app/unit-tests/functions/companiesHouseRegisteredOfficeAddressPost.test.js, web/public/companies-house/changeRegisteredOffice.html, web/browser-tests/changeRegisteredOffice.browser.test.js, behaviour-tests/changeRegisteredOffice.behaviour.test.js
+// - **Keywords:** companies house, registered office, change of address, filing, transaction, XML submission
+// - **Related:** CH-06, CH-09
+// @end-capability
+
 // app/functions/companies-house/companiesHouseRegisteredOfficeAddressGet.js
 // Reads the current registered office address from the public register with the API key, the
 // same client the read-only company profile lookup uses. The `etag` this returns is the point of

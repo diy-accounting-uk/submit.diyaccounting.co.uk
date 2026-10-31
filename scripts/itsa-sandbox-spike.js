@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-35 Spike-test the ITSA sandbox OAuth and business-details flow
+// - **Use when:** the sandbox registration, OAuth redirect and fraud-prevention headers need a standalone Business Details proof.
+// - **Does:** itsa-sandbox-spike.js drives the authorisation code flow, then calls the sandbox Business Details endpoint with buildFraudHeaders.js's headers. It is a standalone harness, not part of any test suite.
+// - **Run:** `scripts/proxy-secrets.sh node scripts/itsa-sandbox-spike.js`
+// - **Entry:** `scripts/itsa-sandbox-spike.js:main`
+// - **Files:** scripts/itsa-sandbox-spike.js
+// - **Keywords:** itsa sandbox spike, business details, oauth redirect, fraud prevention headers, read:self-assessment, standalone harness
+// - **Related:** HMRC-33, HMRC-34, HMRC-09
+// @end-capability
+
 /**
  *
  * Spike harness. Not production code and not part of any test suite.

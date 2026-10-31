@@ -65,12 +65,14 @@ class DataStackTest {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
 
-        // The four tables usage analytics reads from: receipts, bundles, subscriptions, passes.
+        // The five tables usage analytics reads from: receipts, bundles, subscriptions, passes,
+        // commissions.
         for (String tableName : new String[] {
             dataStack.receiptsTable.getTableName(),
             dataStack.bundlesTable.getTableName(),
             dataStack.subscriptionsTable.getTableName(),
             dataStack.passesTable.getTableName(),
+            dataStack.commissionsTable.getTableName(),
         }) {
             template.hasResourceProperties(
                     "Custom::AWS",
@@ -232,6 +234,7 @@ class DataStackTest {
             dataStack.subscriptionsTable.getTableName(),
             dataStack.activityChargesTable.getTableName(),
             dataStack.practiceClientsTable.getTableName(),
+            dataStack.commissionsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
             dataStack.mcpSessionsTable.getTableName(),
@@ -461,7 +464,7 @@ class DataStackTest {
     void diyaGlBucketHasATagKeyedLifecycleRuleForTheSandboxRetention() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
-        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().diyaGlBucketName;
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().data.diyaGlBucketName;
 
         template.hasResourceProperties(
                 "AWS::S3::Bucket",
@@ -486,7 +489,7 @@ class DataStackTest {
     void diyaGlBucketIsVersionedEncryptedAndDestroyable() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
-        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().diyaGlBucketName;
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().data.diyaGlBucketName;
 
         template.hasResourceProperties(
                 "AWS::S3::Bucket",

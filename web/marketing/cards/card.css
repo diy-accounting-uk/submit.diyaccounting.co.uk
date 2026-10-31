@@ -1,0 +1,169 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* card.css: one social image per page load. card.js sets the brand class, the shape class and --u,
+   one hundredth of the shorter side, so every size is the same design scaled. */
+
+@font-face {
+  font-family: "Plain Zero";
+  src: url("../brand/fonts/plain-zero-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Plain Zero";
+  src: url("../brand/fonts/plain-zero-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../brand/fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../brand/fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+.brand-submit {
+  --card-bg: var(--c-brand);
+  --card-ink: var(--c-on-brand);
+  --card-accent: var(--c-brand-tint);
+  --card-font: var(--font-text);
+}
+.brand-spreadsheets {
+  --card-bg: var(--color-brand-primary);
+  --card-ink: var(--color-text-inverse);
+  --card-accent: var(--color-brand-primary-light);
+  --card-font: var(--font-family-base);
+}
+.brand-diya-gl {
+  --card-bg: var(--rule);
+  --card-ink: var(--on-rule);
+  --card-accent: var(--tint);
+  --card-font: var(--font-ui);
+}
+.brand-limited {
+  --card-bg: var(--color-brand-primary);
+  --card-ink: var(--color-text-inverse);
+  --card-accent: var(--color-surface);
+  --card-font: var(--font-family-base);
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.card {
+  --u: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: calc(var(--u) * 7);
+  background: var(--card-bg);
+  color: var(--card-ink);
+  font-family: var(--card-font);
+}
+
+.card-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--u) * 2);
+  background: var(--card-accent);
+}
+
+.card p,
+.card h1 {
+  margin: 0;
+}
+
+.card-wordmark {
+  font-size: calc(var(--u) * 3.6);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.card-headline {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  font-size: calc(var(--u) * 11);
+  line-height: 1.08;
+  font-weight: 700;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  hyphens: manual;
+}
+
+.card-subline {
+  font-size: calc(var(--u) * 4.4);
+  line-height: 1.25;
+  padding-bottom: calc(var(--u) * 4);
+}
+
+.card-host {
+  font-size: calc(var(--u) * 3.2);
+  font-weight: 700;
+  color: var(--card-ink);
+}
+
+/* tall and tower: smaller type and less padding */
+.card--tall .card-headline {
+  font-size: calc(var(--u) * 10);
+}
+.card--tower {
+  padding: calc(var(--u) * 8) calc(var(--u) * 10) calc(var(--u) * 8) calc(var(--u) * 14);
+}
+.card--tower .card-wordmark {
+  font-size: calc(var(--u) * 12);
+}
+.card--tower .card-headline {
+  font-size: calc(var(--u) * 17);
+  align-items: flex-start;
+  padding-top: calc(var(--u) * 10);
+}
+.card--tower .card-subline {
+  font-size: calc(var(--u) * 11);
+}
+.card--tower .card-host {
+  font-size: calc(var(--u) * 9);
+}
+
+/* banner: one row, headline first, host and subline only where they fit */
+.card--banner {
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--u) * 6);
+  padding: 0 calc(var(--u) * 12) 0 calc(var(--u) * 20);
+}
+.card--banner .card-accent {
+  width: calc(var(--u) * 8);
+}
+.card--banner .card-wordmark {
+  order: 3;
+  font-size: calc(var(--u) * 20);
+  white-space: nowrap;
+}
+.card--banner .card-headline {
+  order: 1;
+  font-size: calc(var(--u) * 34);
+  height: 100%;
+  min-width: 0;
+  align-items: center;
+}
+.card--banner .card-subline,
+.card--banner .card-host {
+  display: none;
+}

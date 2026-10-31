@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-22 Check diya-gl retention entitlement
+// - **Use when:** code must decide whether a caller's books get resident or sandbox retention.
+// - **Does:** The diyaGlEntitlement.js entitlementFor function decides retention tier. An active unexpired resident bundle gives resident retention for the caller's own books. A practice's active resident-pro subscription plus a matching client row gives resident retention for a client-scoped request.
+// - **Run:** `import { entitlementFor } from "app/services/diyaGlEntitlement.js"`
+// - **Entry:** `app/services/diyaGlEntitlement.js:entitlementFor`
+// - **Files:** app/services/diyaGlEntitlement.js, app/unit-tests/services/diyaGlEntitlement.test.js, behaviour-tests/diyaGlStorage.behaviour.test.js, app/system-tests/diyaGlStorage.system.test.js
+// - **Keywords:** diya-gl, retention, entitlement, resident tier, sandbox tier, resident-pro, entitlementFor
+// - **Related:** BILL-17, BILL-21
+// @end-capability
+
 // app/services/diyaGlEntitlement.js
 //
 // Decides a DIYA-GL book's retention tier: "resident" for an active subscriber to the resident

@@ -215,6 +215,7 @@
                         <removeUnusedImports></removeUnusedImports>
                         <importOrder></importOrder>
                         <endWithNewline></endWithNewline>
+                        <toggleOffOn></toggleOffOn>
                     </java>
                     <pom>
                         <includes>

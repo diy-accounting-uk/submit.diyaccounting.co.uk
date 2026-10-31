@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-26 Open the Stripe customer billing portal
+// - **Use when:** a subscriber must manage or cancel their subscription in the Stripe-hosted portal.
+// - **Does:** The billingPortalGet.js ingestHandler creates a Stripe billing-portal session for the caller's Stripe customer id, read from their stored bundle. It redirects to it, using the same allow-listed return URL as checkout.
+// - **Run:** `GET /api/v1/billing/portal`
+// - **Entry:** `app/functions/billing/billingPortalGet.js:ingestHandler`
+// - **Files:** app/functions/billing/billingPortalGet.js, app/unit-tests/functions/billingPortalGet.test.js
+// - **Keywords:** stripe, billing portal, manage subscription, customer portal, cancel subscription
+// - **Related:** BILL-24, BILL-28
+// @end-capability
+
 // app/functions/billing/billingPortalGet.js
 
 import { createLogger } from "../../lib/logger.js";

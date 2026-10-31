@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-82 Provide a shared DynamoDB client
+// - **Use when:** a Lambda or repository needs a DynamoDB document client instead of constructing its own AWS SDK client.
+// - **Does:** dynamoDbClient.js centralizes AWS SDK DynamoDB client construction, configuration and resource-name resolution. getDynamoDbDocClient returns the shared client and getResourceName resolves a table name from its environment variable.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/lib/dynamoDbClient.js:getDynamoDbDocClient`; `app/lib/dynamoDbClient.js:getResourceName`
+// - **Files:** app/lib/dynamoDbClient.js
+// - **Keywords:** dynamodb client, aws sdk, shared client, resource name, document client
+// @end-capability
+
 // app/lib/dynamoDbClient.js
 // Shared DynamoDB client with caching and endpoint switching support for tests
 

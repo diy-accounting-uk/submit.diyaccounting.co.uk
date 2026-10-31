@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability OPS-60 Guide GitHub repository configuration
+- **Use when:** setting up or checking a repository's branch protection, OIDC trust or webhook configuration.
+- **Does:** GITHUB_SETUP.md lists the GitHub-side setup: OIDC roles, repository settings, the main ruleset, environments, variables, secrets, labels and the order to create them.
+- **Run:** no command; see Does and Entry
+- **Entry:** `GITHUB_SETUP.md`
+- **Files:** GITHUB_SETUP.md
+- **Keywords:** github setup, branch protection, oidc trust, required status checks, webhooks
+- **Related:** OPS-42
+@end-capability -->
+
 # GITHUB_SETUP.md: what a fresh GitHub org needs
 
 The GitHub-side configuration `diy-accounting-uk/submit.diyaccounting.co.uk` depends on. Names only; no value appears here. The live state is declared in `infra/github/github.toml`. Compare it with `node infra/github/github-sync.js` (plan only) and write it back with `--apply` using a token that can administer the repository.

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-14 Cancel a pending client authorisation invite
+// - **Use when:** a practice's HMRC invitation to a client must be withdrawn before it is accepted.
+// - **Does:** The practiceClientAuthorisationInviteDelete.js ingestHandler cancels a client's pending HMRC invitation. It never touches an already-accepted relationship, only an invitation still held on the client row.
+// - **Run:** `DELETE /api/v1/practice/clients/:clientId/authorisation/invitations`
+// - **Entry:** `app/functions/practice/practiceClientAuthorisationInviteDelete.js:ingestHandler`
+// - **Files:** app/functions/practice/practiceClientAuthorisationInviteDelete.js, app/unit-tests/functions/practiceClientAuthorisationInviteDelete.test.js
+// - **Keywords:** practice, client, hmrc, cancel invitation, withdraw invite, pending
+// - **Related:** BILL-12, BILL-13
+// @end-capability
+
 // app/functions/practice/practiceClientAuthorisationInviteDelete.js
 
 import { validateEnv } from "../../lib/env.js";

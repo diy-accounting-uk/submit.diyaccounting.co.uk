@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability SITE-21 Log growth experiments
+# - **Use when:** a growth experiment needs recording so the operator dashboard can annotate its metrics.
+# - **Does:** experiments.toml is a log of growth experiments. Each entry has an id, objective, hypothesis, lever, metric, start and end dates, and a result. It carries no API credentials or sync configuration.
+# - **Run:** `node scripts/publish-experiments.mjs web/public` (the deploy workflow and `scripts/deploy-app.js` run it to serve the file at `/experiments.toml`)
+# - **Entry:** `experiments.toml`
+# - **Files:** experiments.toml, scripts/publish-experiments.mjs
+# - **Keywords:** growth experiments, experiment log, operator dashboard annotations, ab test log, hypothesis lever metric
+# - **Related:** SITE-20
+# @end-capability
+
 version = "1.0.0"
 
 # One row per experiment against an objective on the operator dashboard. The dashboard draws

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-10 Claim, release and track a CI deployment slot
+// - **Use when:** a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
+// - **Does:** claim-ci-slot.mjs claims one of a fixed pool of ci-setN names, keyed by github.ref. release-ci-slot.mjs frees the slot when deploy.yml finishes, pass or fail. slot-claim-active.mjs and slot-for-ref.mjs let destroy-ci.yml check a slot before tearing it down.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `.github/actions/claim-ci-slot/claim-ci-slot.mjs:main`; `.github/actions/claim-ci-slot/release-ci-slot.mjs:main`; `.github/actions/claim-ci-slot/slot-claim-active.mjs:main`
+// - **Files:** .github/actions/claim-ci-slot/action.yml, .github/actions/claim-ci-slot/claim-ci-slot.mjs, .github/actions/claim-ci-slot/release-ci-slot.mjs, .github/actions/claim-ci-slot/slot-claim-active.mjs, .github/actions/claim-ci-slot/slot-for-ref.mjs, app/unit-tests/actions/releaseCiSlot.test.js, app/unit-tests/actions/slotClaimActive.test.js, app/unit-tests/actions/slotForRef.test.js
+// - **Keywords:** ci slot, ci-set, slot pool, claim slot, release slot, hmrc-registered host, cognito-registered host
+// - **Related:** OPS-11, OPS-13
+// @end-capability
+
 // Claims one of a fixed pool of ci deployment names so deploy.yml's `names` job can hand a
 // branch deploy a host already registered with HMRC, Companies House and Cognito. Runs on plain Node with no
 // npm dependencies, shelling out to the `aws` CLI already on the runner and already

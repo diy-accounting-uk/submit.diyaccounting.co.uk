@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability BILL-15 Move a book to a client
+// - **Use when:** a practice must transfer one of its own diya-gl books to a named client's book set.
+// - **Does:** The practiceClientBookMovePost.js ingestHandler transfers a practice's own diya-gl book to a client's book set via s3DiyaGlRepository.moveBookToClient. It refuses a book already under a client or a destination that already exists.
+// - **Run:** `POST /api/v1/practice/clients/:clientId/books/:bookId/move`
+// - **Entry:** `app/functions/practice/practiceClientBookMovePost.js:ingestHandler`; `app/data/s3DiyaGlRepository.js:moveBookToClient`
+// - **Files:** app/functions/practice/practiceClientBookMovePost.js, app/unit-tests/functions/practiceClientBookMovePost.test.js
+// - **Keywords:** practice, client, diya-gl, move book, book ownership, moveBookToClient
+// - **Related:** BILL-16, BILL-23
+// @end-capability
+
 // app/functions/practice/practiceClientBookMovePost.js
 
 import { validateEnv } from "../../lib/env.js";

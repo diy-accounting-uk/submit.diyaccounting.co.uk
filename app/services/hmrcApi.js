@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability HMRC-29 Call the HMRC API
+// - **Use when:** a Lambda or browser page must call an HMRC endpoint and classify the response.
+// - **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
+// - **Run:** `import { hmrcHttpGet, hmrcHttpPost } from "app/services/hmrcApi.js"`; `import from "web/public/lib/services/hmrc-service.js"`
+// - **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
+// - **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
+// - **Keywords:** hmrc http client, error classification, access token validation, authorizedfetch, hmrc-service
+// - **Related:** HMRC-25, HMRC-30
+// @end-capability
+
 // app/services/hmrcApi.js
 
 import { v4 as uuidv4 } from "uuid";

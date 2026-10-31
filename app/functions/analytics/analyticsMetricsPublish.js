@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-21 Publish nightly business metrics to CloudWatch
+// - **Use when:** a business figure (active users, submissions, revenue, HMRC failures, cost) needs a CloudWatch metric for the dashboard.
+// - **Does:** analyticsMetricsPublish.js runs one Athena query per entry in METRIC_DEFINITIONS against the prior day's data. Its handler publishes each result as a CloudWatch custom metric, batched at 20, in the fixed Submit/Analytics namespace. A query failure throws and stops the run, rather than publish a false zero; AnalyticsDashboard.java provisions the Lambda and dashboard.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/analyticsMetricsPublish.js:handler`
+// - **Files:** app/functions/analytics/analyticsMetricsPublish.js, app/unit-tests/analytics/analyticsMetricsPublish.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboardTest.java
+// - **Keywords:** cloudwatch custom metric, submit/analytics namespace, metric_definitions, putmetricdata, business metrics, cloudwatch dashboard
+// - **Related:** DATA-22
+// @end-capability
+
 // app/functions/analytics/analyticsMetricsPublish.js
 //
 // Nightly job that turns yesterday's row from each WP-6 Athena view into a CloudWatch custom

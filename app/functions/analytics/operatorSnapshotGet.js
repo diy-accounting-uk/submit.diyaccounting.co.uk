@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-19 Serve the operator dashboard snapshot via the API
+// - **Use when:** the operator dashboard page needs its snapshot data over HTTP.
+// - **Does:** operatorSnapshotGet.js is the GET /api/v1/operator/snapshot Lambda. Its ingestHandler enforces the operator bundle entitlement and reads snapshots/<env>/latest.json from the lake. It returns that snapshot, or 404 when the nightly job has not run yet.
+// - **Run:** `GET /api/v1/operator/snapshot`
+// - **Entry:** `app/functions/analytics/operatorSnapshotGet.js:ingestHandler`
+// - **Files:** app/functions/analytics/operatorSnapshotGet.js, app/unit-tests/analytics/operatorSnapshotGet.test.js
+// - **Keywords:** operator snapshot api, bundle entitlement, get snapshot, operator dashboard route, 404 not run
+// - **Related:** DATA-18, DATA-24
+// @end-capability
+
 // app/functions/analytics/operatorSnapshotGet.js
 //
 // Serves the latest snapshot operatorSnapshotPublish.js wrote to the analytics lake. Never

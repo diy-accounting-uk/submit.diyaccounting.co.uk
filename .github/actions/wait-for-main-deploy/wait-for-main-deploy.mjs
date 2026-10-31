@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-24 Gate probes on the main apex deploy
+// - **Use when:** a probe test or other check must wait until the main apex deploy has finished moving.
+// - **Does:** wait-for-main-deploy.mjs polls for deploy.yml runs in progress or queued on main, for up to 40 minutes. It reports whether one is still gating, so probe tests never navigate against an apex that is mid-move.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs:runStillGatesProbes`; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs:decidePollOutcome`
+// - **Files:** .github/actions/wait-for-main-deploy/action.yml, .github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs, app/unit-tests/actions/waitForMainDeploy.test.js
+// - **Keywords:** gate probes, wait for main deploy, apex mid-move, main deploy in progress, poll deploy status
+// - **Related:** OPS-27
+// @end-capability
+
 // Waits for a deploy.yml run on main to clear the window where it could move the shared ci apex
 // alias, so a probe doesn't navigate the apex mid-promotion. Runs on plain Node, not gh/jq: one
 // call site is probe-test.yml's behaviour-test job, which runs inside the Playwright container,

@@ -6,6 +6,16 @@ description: Answer Google Ads questions — how the account is doing, what a bu
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
+<!-- @capability DATA-36 Answer Google Ads questions from live data
+- **Use when:** asked how the Google Ads account is doing, what a budget would buy, or how to optimise spend.
+- **Does:** The ads-advisor skill answers Google Ads questions from live data and live code in infra/google/ads/, never a guessed number. It runs ads:report for performance, and ads:forecast for click estimates. It judges cost per session against the £0.36 break-even, and checks spend against the 20% reinvestment ceiling.
+- **Run:** `/ads-advisor`
+- **Entry:** `.claude/skills/ads-advisor/SKILL.md:`
+- **Files:** .claude/skills/ads-advisor/SKILL.md
+- **Keywords:** ads advisor skill, cost per session, break-even, reinvestment ceiling, bidding optimisation, budget forecast question
+- **Related:** DATA-34, DATA-35, DATA-32
+@end-capability -->
+
 # ads-advisor
 
 Answer questions about DIY Accounting Submit's Google Ads account: current performance, what a

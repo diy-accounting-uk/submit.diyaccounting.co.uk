@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-46 Query and persist per-consumer security-state records
+// - **Use when:** a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
+// - **Does:** dynamoDbSecurityStateRepository.js is the repository for the {env}-env-security-state table's three short-TTL item shapes. rate# holds bundle-endpoint burst counters and supportticket# holds rate limiting. geo# holds mid-session country state used by the data-theft detection Lambdas.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/data/dynamoDbSecurityStateRepository.js:incrementRateCounter`; `app/data/dynamoDbSecurityStateRepository.js:getSessionGeo`; `app/data/dynamoDbSecurityStateRepository.js:putSessionGeo`
+// - **Files:** app/data/dynamoDbSecurityStateRepository.js, app/unit-tests/data/dynamoDbSecurityStateRepository.test.js
+// - **Keywords:** security state, rate counter, geo state, data-theft detection, short ttl, burst counter
+// - **Related:** OPS-44
+// @end-capability
+
 // app/data/dynamoDbSecurityStateRepository.js
 //
 // Repository for the {env}-env-security-state table (issue #10 data-theft detection).

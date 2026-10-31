@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-40 Enable required Google Cloud APIs
+// - **Use when:** a fresh GA4 project needs its required services enabled with no console click.
+// - **Does:** gcp-enable-apis.js idempotently enables every service listed in project.toml's apis.services table on the GA4 project and each apis.other_projects entry on its own project. It runs first in google-apply.yml so a fresh project needs no manual step.
+// - **Run:** `node infra/google/gcp/gcp-enable-apis.js`; `node infra/google/gcp/gcp-enable-apis.js --apply`; `node infra/google/gcp/gcp-enable-apis.js --apply --project diy-accounting-submit`
+// - **Entry:** `infra/google/gcp/gcp-enable-apis.js:main`
+// - **Files:** infra/google/gcp/gcp-enable-apis.js, app/unit-tests/scripts/gcpEnableApis.test.js
+// - **Keywords:** enable gcp apis, idempotent enable, project.toml services, fresh project bootstrap, google-apply workflow
+// - **Related:** DATA-41, DATA-43, DATA-44
+// @end-capability
+
 // infra/google/gcp/gcp-enable-apis.js
 //
 // Makes sure the Google APIs the analytics scripts and the YouTube quota project need, listed

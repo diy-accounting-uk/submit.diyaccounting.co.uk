@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability MCP-07 File VAT returns and accounts via API
+// - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
+// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcAccessTokenFor reads it from the session's HMRC grant (MCP-21) for each call, and fails with a message naming request_hmrc_authorisation when the session holds none.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcAccessTokenFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
+// - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
+// - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+// - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
+// @end-capability
+
 // submit-tools.js -- the Submit-facing tools over the deployed REST API: the figures
 // derive_vat_return and derive_micro_entity_accounts answered, filed or fetched through this
 // service's own HMRC and Companies House routes. Like practice-tools.js, these reach DIY

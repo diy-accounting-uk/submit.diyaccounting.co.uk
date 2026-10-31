@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability OPS-138 Check every public video is embedded on the site
+// - **Use when:** a video was published, replaced or deleted, or a new `publish.json` shipped, and every public channel video must still play from a page linked off videos.html.
+// - **Does:** video-embed-check.js lists the YouTube channel's public uploads, loads the site's videos.html with Playwright, follows its area-page links and collects the embedded video ids. It fails, one line per problem, when a public channel video or a live publish.json video is embedded nowhere, a publish.json group has no linked area page, or oEmbed does not answer 200 for an embedded id.
+// - **Run:** `AWS_PROFILE=diya-submit-prod npm run video:embed-check`; `AWS_PROFILE=diya-submit-prod npm run video:embed-check -- --base <url>`
+// - **Entry:** `scripts/video-embed-check.js`
+// - **Files:** scripts/video-embed-check.js, app/unit-tests/scripts/videoEmbedCheck.test.js, scripts/youtube-upload.js, web/public/videos.html
+// - **Keywords:** video embed check, embedded videos, oembed, public videos, area pages, channel uploads, videos.html
+// - **Related:** OPS-93, OPS-94
+// @end-capability
+
 //
 // Check that every public video on the DIY Accounting Submit YouTube channel is embedded on a
 // page linked from <base>videos.html, that every video in the live publish.json is embedded,

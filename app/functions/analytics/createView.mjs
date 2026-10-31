@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// @capability DATA-10 Create or replace Athena business views
+// - **Use when:** a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
+// - **Does:** createView.mjs is a CDK custom-resource handler pair, onEvent and isComplete, that submits a view's CREATE OR REPLACE VIEW to Athena. It polls GetQueryExecution to a terminal state before CloudFormation reports success, so a bad view definition fails the stack. BusinessViews.java wires one Provider-backed CustomResource per SQL file for the operator-facing views.
+// - **Run:** no command; see Does and Entry
+// - **Entry:** `app/functions/analytics/createView.mjs:onEvent`; `app/functions/analytics/createView.mjs:isComplete`
+// - **Files:** app/functions/analytics/createView.mjs, app/unit-tests/analytics/createView.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
+// - **Keywords:** athena view, create or replace view, cdk custom resource, getqueryexecution, cfnnamedquery, business views
+// - **Related:** DATA-27, DATA-28, DATA-29, DATA-30, DATA-31
+// @end-capability
+
 // app/functions/analytics/createView.mjs
 //
 // Custom resource handler pair for a CDK Provider that creates (or replaces) one Athena

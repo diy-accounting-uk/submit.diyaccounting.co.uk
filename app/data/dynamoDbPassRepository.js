@@ -168,6 +168,41 @@ export async function revokePass(code, now) {
 }
 
 /**
+ * Set a pass's reviewLimit, or remove it when reviewLimit is null. Returns the updated pass, or
+ * null when the pass does not exist.
+ */
+export async function setReviewLimit(code, reviewLimit, now) {
+  logger.info({ message: `setReviewLimit [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]`, reviewLimit });
+
+  try {
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+    const removing = reviewLimit === null;
+
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+          UpdateExpression: removing ? "REMOVE reviewLimit SET updatedAt = :now" : "SET reviewLimit = :limit, updatedAt = :now",
+          ConditionExpression: "attribute_exists(pk)",
+          ExpressionAttributeValues: removing ? { ":now": now } : { ":limit": reviewLimit, ":now": now },
+          ReturnValues: "ALL_NEW",
+        }),
+    );
+
+    logger.info({ message: "Pass review limit updated in DynamoDB", pk: `pass#${code}` });
+    return result.Attributes;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Pass review limit update refused, pass not found", code });
+      return null;
+    }
+    logger.error({ message: "Error updating pass review limit in DynamoDB", error: error.message });
+    throw error;
+  }
+}
+
+/**
  * Claim the one referral redemption an account may ever make. Returns false when the account has
  * already claimed one.
  */
@@ -224,4 +259,90 @@ export async function putRedemption({ code, hashedSub, issuedBy, passTypeId, red
       }),
   );
   logger.info({ message: "Redemption recorded", passTypeId });
+}
+
+/**
+ * The one referral claim an account holds: the pass code it redeemed, or null.
+ */
+export async function getReferralClaim(hashedSub) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `referral#${hashedSub}` },
+      }),
+  );
+  return result.Item || null;
+}
+
+/**
+ * The record of one redemption, or null.
+ */
+export async function getRedemption(code, hashedSub) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `redemption#${code}#${hashedSub}` },
+      }),
+  );
+  return result.Item || null;
+}
+
+/**
+ * The affiliate item of a referrer (tier and state), or null.
+ */
+export async function getAffiliate(referrerHash) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `affiliate#${referrerHash}` },
+      }),
+  );
+  return result.Item || null;
+}
+
+const FIGURES_BATCH_SIZE = 100;
+
+function figuresKey(code) {
+  return `figures#${code}`;
+}
+
+/**
+ * Read the nightly figures items for some pass codes, by key. Returns a map from code to its
+ * figures item. A code with no item yet is absent from the map.
+ */
+export async function getPassFigures(codes) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const figuresByCode = new Map();
+  for (let start = 0; start < codes.length; start += FIGURES_BATCH_SIZE) {
+    let keys = codes.slice(start, start + FIGURES_BATCH_SIZE).map((code) => ({ pk: figuresKey(code) }));
+    while (keys.length > 0) {
+      const result = await executeDynamoDbCommand(
+        (module) => new module.BatchGetCommand({ RequestItems: { [tableName]: { Keys: keys } } }),
+      );
+      for (const item of result.Responses?.[tableName] || []) figuresByCode.set(item.code, item);
+      keys = result.UnprocessedKeys?.[tableName]?.Keys || [];
+    }
+  }
+  return figuresByCode;
+}
+
+/**
+ * Store the figures item of one pass. The item has no issuedBy, so it stays out of the
+ * issuedBy-index.
+ */
+export async function putPassFigures({ code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: { pk: figuresKey(code), code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt },
+      }),
+  );
 }

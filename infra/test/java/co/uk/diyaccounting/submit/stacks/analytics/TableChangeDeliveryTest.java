@@ -43,17 +43,17 @@ class TableChangeDeliveryTest {
                                 .build())
                         .build());
 
-        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analyticsLakeBucketName);
+        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analytics.analyticsLakeBucketName);
 
         var props = TableChangeDelivery.TableChangeDeliveryProps.builder()
                 .lakeBucket(lakeBucket)
-                .glueDatabaseName(sharedNames.glueDatabaseName)
+                .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .sharedNames(sharedNames)
                 .envName("docs")
                 .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                 .baseImageTag("test-tag")
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                 .build();
 
         new TableChangeDelivery(stack, "TableChangeDelivery", props);
@@ -65,9 +65,9 @@ class TableChangeDeliveryTest {
     void createsOneDeliveryStreamAndGlueTablePerStreamedTable() {
         Template template = synthTableChangeDelivery();
 
-        template.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 4);
-        template.resourceCountIs("AWS::Glue::Table", 4);
-        template.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
+        template.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
+        template.resourceCountIs("AWS::Glue::Table", 5);
+        template.resourceCountIs("AWS::Lambda::EventSourceMapping", 5);
     }
 
     @Test
@@ -75,7 +75,7 @@ class TableChangeDeliveryTest {
         Template template = synthTableChangeDelivery();
 
         // The consumer Lambda gets its own named log group via the shared Lambda construct; the
-        // four describeTableStreamArn AwsCustomResource calls (one per streamed table) share one
+        // five describeTableStreamArn AwsCustomResource calls (one per streamed table) share one
         // singleton provider Lambda, which needs exactly one more. (Each Firehose delivery stream
         // gets its own log group too, but those aren't Lambda functions.)
         template.resourceCountIs("AWS::Lambda::Function", 2);
@@ -123,7 +123,7 @@ class TableChangeDeliveryTest {
         Template template = synthTableChangeDelivery();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertTrue(tables.size() == 4, "expected exactly four Glue tables: " + tables.keySet());
+        assertTrue(tables.size() == 5, "expected exactly five Glue tables: " + tables.keySet());
         for (var resource : tables.values()) {
             var properties = (Map<String, Object>) resource.get("Properties");
             var tableInput = (Map<String, Object>) properties.get("TableInput");
@@ -159,7 +159,7 @@ class TableChangeDeliveryTest {
     }
 
     @Test
-    void consumerLambdaCarriesStreamTargetsForAllFourTables() throws Exception {
+    void consumerLambdaCarriesStreamTargetsForAllFiveTables() throws Exception {
         Template template = synthTableChangeDelivery();
         var sharedNames = SubmitSharedNames.forDocs();
 
@@ -179,11 +179,12 @@ class TableChangeDeliveryTest {
             found = true;
             String json = String.valueOf(variables.get("STREAM_TARGETS"));
             JsonNode targets = new ObjectMapper().readTree(json);
-            assertEquals(4, targets.size());
-            assertTrue(targets.has(sharedNames.receiptsTableName));
-            assertTrue(targets.has(sharedNames.bundlesTableName));
-            assertTrue(targets.has(sharedNames.subscriptionsTableName));
-            assertTrue(targets.has(sharedNames.passesTableName));
+            assertEquals(5, targets.size());
+            assertTrue(targets.has(sharedNames.data.receiptsTableName));
+            assertTrue(targets.has(sharedNames.data.bundlesTableName));
+            assertTrue(targets.has(sharedNames.data.subscriptionsTableName));
+            assertTrue(targets.has(sharedNames.data.passesTableName));
+            assertTrue(targets.has(sharedNames.data.commissionsTableName));
         }
         assertTrue(found, "Expected one Lambda function with a STREAM_TARGETS environment variable");
     }
