@@ -307,14 +307,88 @@ function syncRangeSwitch(state) {
   });
 }
 
+const DEFAULT_REFRESH_MINUTES = 15;
+const MAX_REFRESH_MINUTES = 1440;
+
+// The refresh period in minutes from the page's query string, or null when the parameter is
+// absent or is not a whole number from 1 to 1440.
+function parseRefreshMinutes(search) {
+  const value = new URLSearchParams(search).get("refresh");
+  if (value === null || !/^\d+$/.test(value)) return null;
+  const minutes = Number(value);
+  return minutes >= 1 && minutes <= MAX_REFRESH_MINUTES ? minutes : null;
+}
+
+// Replaces a section heading with a row holding the heading, a "#" link to the section's own
+// id, and the extra links given (each [label, href, className]); the last one sits at the right.
+function decorateSectionHeading(heading, id, extraLinks) {
+  const row = document.createElement("div");
+  row.className = "section-heading-row";
+  heading.replaceWith(row);
+  row.appendChild(heading);
+
+  const anchor = document.createElement("a");
+  anchor.className = "anchor-link";
+  anchor.href = "#" + id;
+  anchor.textContent = "#";
+  anchor.setAttribute("aria-label", "Link to " + heading.textContent);
+  row.appendChild(anchor);
+
+  const current = parseRefreshMinutes(window.location.search);
+  const links = (extraLinks || []).concat([
+    ["Auto-refresh", "?refresh=" + (current || DEFAULT_REFRESH_MINUTES) + "#" + id, "refresh-link"],
+  ]);
+  links.forEach(([label, href, className], index) => {
+    const link = document.createElement("a");
+    link.className = className;
+    link.href = href;
+    link.textContent = label;
+    if (index === 0) link.classList.add("section-heading-first-action");
+    row.appendChild(link);
+  });
+  return row;
+}
+
+// Conversion to paid first and full width, then the others in reading order; a chart not
+// listed follows in the order the server sent it.
+const CHART_ORDER = [
+  "conversion-to-paid",
+  "visitors",
+  "conversion-to-submission",
+  "activity-started-and-completed",
+  "hmrc-failures",
+  "low-running-cost",
+  "retention",
+];
+
+function sortCharts(charts) {
+  const rank = (chart) => {
+    const index = CHART_ORDER.indexOf(chart.id);
+    return index === -1 ? CHART_ORDER.length : index;
+  };
+  return charts
+    .map((chart, position) => ({ chart, position }))
+    .sort((a, b) => rank(a.chart) - rank(b.chart) || a.position - b.position)
+    .map(({ chart }) => chart);
+}
+
+// The id of the table section that backs a chart.
+function chartTableId(chart) {
+  if (chart.id === "visitors") return "visitorsPanel";
+  if (chart.id === "activity-started-and-completed") return "activitiesPanel";
+  return "table-" + chart.objectiveId;
+}
+
 function renderChartCard(chart, days, hours) {
   const card = document.createElement("article");
   card.className = "chart-card";
+  card.id = "chart-" + chart.id;
   card.dataset.chartId = chart.id;
 
   const heading = document.createElement("h3");
   heading.textContent = chart.title;
   card.appendChild(heading);
+  decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
 
   const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: new Set(), card };
 
@@ -407,7 +481,7 @@ function renderDailyCharts(snapshot) {
     return;
   }
   panel.hidden = false;
-  daily.charts.forEach((chart) => {
+  sortCharts(daily.charts).forEach((chart) => {
     const state = renderChartCard(chart, daily.days, daily.hours || []);
     grid.appendChild(state.card);
     renderedCharts.push(state);
@@ -416,4 +490,6 @@ function renderDailyCharts(snapshot) {
 }
 
 window.renderDailyCharts = renderDailyCharts;
+window.decorateSectionHeading = decorateSectionHeading;
+window.parseRefreshMinutes = parseRefreshMinutes;
 window.addEventListener("resize", redrawAllCharts);

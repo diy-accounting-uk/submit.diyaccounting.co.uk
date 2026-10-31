@@ -5466,48 +5466,48 @@ table.observations th {
 }
 
 /* The eight objectives share one column grid so figures line up from panel to panel. */
-#objectivesContainer table.observations {
+#objectivesContainer [data-objective-slot] table.observations {
   table-layout: fixed;
   width: 100%;
 }
 
 /* Eight columns: Observation, Today, Previous day, Last 7 days, Last 30 days, 30 day trend,
    Last 90 days, Where to look. */
-#objectivesContainer table.observations th:nth-child(1) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(1) {
   width: 24%;
 }
 
-#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7) {
   width: 9%;
 }
 
-#objectivesContainer table.observations th:nth-child(8) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(8) {
   width: 22%;
 }
 
-#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7),
-#objectivesContainer table.observations td:nth-child(n + 2):nth-child(-n + 7) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7),
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(n + 2):nth-child(-n + 7) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#objectivesContainer table.observations td:nth-child(8) {
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(8) {
   overflow-wrap: anywhere;
 }
 
-#objectivesContainer table.observations th {
+#objectivesContainer [data-objective-slot] table.observations th {
   white-space: normal;
 }
 
 @media (max-width: 600px) {
-  #objectivesContainer table.observations {
+  #objectivesContainer [data-objective-slot] table.observations {
     min-width: 36rem;
   }
 }
 
 /* The "Last updated" subtitles under the window columns. */
 table.observations thead tr.last-updated th.last-updated-cell,
-#objectivesContainer table.observations thead tr.last-updated th.last-updated-cell {
+#objectivesContainer [data-objective-slot] table.observations thead tr.last-updated th.last-updated-cell {
   padding-top: 0;
   font-size: var(--step--1);
   font-weight: normal;
@@ -5519,15 +5519,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
 .trend-flat,
 .trend-unknown {
   color: var(--c-ink-muted);
-}
-
-#experimentsPanel ul {
-  margin: 0;
-  padding-left: var(--space-5);
-}
-
-#experimentsPanel li {
-  margin-bottom: var(--space-3);
 }
 
 /* Activity column: wide enough that a long catalogue name sits on one or two lines. */
@@ -5558,12 +5549,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
-.side-panels {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-5);
-}
-
 /* The containers below are empty until the snapshot arrives. Each reserves the height
    measured on a full snapshot so the fill does not push what sits below; a failed load
    or a rendered snapshot releases the reservation. */
@@ -5580,21 +5565,13 @@ table.observations thead tr.last-updated th.last-updated-cell,
   min-height: 440px;
 }
 
-#experimentsPanel {
-  min-height: 200px;
-}
-
 @media (max-width: 900px) {
   #objectivesContainer {
     min-height: 6600px;
   }
 
   #visitorsPanel {
-    min-height: 510px;
-  }
-
-  #experimentsPanel {
-    min-height: 260px;
+    min-height: 640px;
   }
 }
 
@@ -5609,11 +5586,7 @@ table.observations thead tr.last-updated th.last-updated-cell,
   }
 
   #visitorsPanel {
-    min-height: 560px;
-  }
-
-  #experimentsPanel {
-    min-height: 300px;
+    min-height: 670px;
   }
 }
 
@@ -5638,8 +5611,41 @@ table.observations thead tr.last-updated th.last-updated-cell,
 }
 
 .chart-card h3 {
-  margin: 0 0 var(--space-2) 0;
+  margin: 0;
   font-size: var(--step-0);
+}
+
+.chart-card[data-chart-id="conversion-to-paid"] {
+  grid-column: 1 / -1;
+}
+
+/* A section heading with its "#" link and, at the right, its table and auto-refresh links. */
+.section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.section-heading-row > h2,
+.section-heading-row > h3 {
+  margin: 0;
+}
+
+.section-heading-row .anchor-link,
+.section-heading-row .chart-table-link,
+.section-heading-row .refresh-link {
+  font-size: var(--step--1);
+}
+
+.section-heading-row .anchor-link {
+  text-decoration: none;
+  color: var(--c-ink-muted);
+}
+
+.section-heading-row .section-heading-first-action {
+  margin-left: auto;
 }
 
 .chart-svg {

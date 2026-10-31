@@ -276,28 +276,6 @@ const FIXTURE_SNAPSHOT_NO_COMPANY_BOOK = {
   ),
 };
 
-const FIXTURE_EXPERIMENTS = {
-  experiments: [
-    {
-      id: "exp-2026-09-uptime-baseline",
-      objective: "uptime",
-      hypothesis: "",
-      lever: "baseline",
-      metric: "probe-pass-rate",
-      start: "2026-09-01",
-      end: "2026-09-30",
-    },
-    {
-      id: "exp-2026-09-resident-price",
-      objective: "conversion-to-paid",
-      hypothesis: "",
-      lever: "price",
-      metric: "purchases-per-human-session",
-      start: "2026-09-22",
-    },
-  ],
-};
-
 const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
   const day = new Date(Date.UTC(2026, 8, 8));
   day.setUTCDate(day.getUTCDate() - (89 - index));
@@ -497,6 +475,7 @@ function fullShapeSnapshot() {
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
 // that handler's message so this fixture proves what the page does with the server's own words,
 // not a placeholder.
+
 const FORBIDDEN_BODY = {
   message: "Not authorised to view the operator dashboard. Ask the operator to issue you the operator pass for your sign-in email.",
   code: "BUNDLE_ENTITLEMENT_REQUIRED",
@@ -515,10 +494,7 @@ test.describe("Operator Dashboard", () => {
     submitCssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
   });
 
-  async function setupRoutes(
-    page,
-    { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT, experimentsStatus = 200, experimentsBody = FIXTURE_EXPERIMENTS } = {},
-  ) {
+  async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
     await page.route("**/dashboard.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: dashboardHtmlContent });
     });
@@ -528,9 +504,6 @@ test.describe("Operator Dashboard", () => {
         contentType: "application/json",
         body: JSON.stringify(snapshotBody),
       });
-    });
-    await page.route("**/experiments.toml*", async (route) => {
-      await route.fulfill({ status: experimentsStatus, contentType: "application/json", body: JSON.stringify(experimentsBody) });
     });
     await page.route("**/auth/login.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>login stub</body></html>" });
@@ -579,10 +552,118 @@ test.describe("Operator Dashboard", () => {
 
     const sections = page.locator(".objective[data-objective-id]");
     await expect(sections).toHaveCount(8);
-    await expect(sections.nth(0)).toHaveAttribute("data-objective-id", "uptime");
+    await expect(sections.nth(0)).toHaveAttribute("data-objective-id", "conversion-to-paid");
     await expect(sections.nth(1)).toHaveAttribute("data-objective-id", "conversion-to-submission");
-    await expect(sections.nth(2)).toHaveAttribute("data-objective-id", "conversion-to-paid");
-    await expect(sections.nth(7)).toHaveAttribute("data-objective-id", "compliance");
+    await expect(sections.nth(2)).toHaveAttribute("data-objective-id", "retention");
+    await expect(sections.nth(7)).toHaveAttribute("data-objective-id", "operator-effort");
+  });
+
+  test("orders the table sections from conversion to paid down to reinvestment", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString() } });
+    await loadDashboard(page);
+
+    await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
+      13,
+    );
+    const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
+    expect(ids).toEqual([
+      "table-conversion-to-paid",
+      "visitorsPanel",
+      "table-conversion-to-submission",
+      "table-retention",
+      "activitiesPanel",
+      "table-low-running-cost",
+      "table-uptime",
+      "table-compliance",
+      "table-security",
+      "table-operator-effort",
+      "companyAccountsPanel",
+      "reservePanel",
+      "reinvestmentPanel",
+    ]);
+    const headings = await page.locator("#objectivesContainer .objective > .section-heading-row > h2").allTextContents();
+    expect(headings.slice(0, 3)).toEqual(["Conversion to paid", "Visitors", "Conversion to submission"]);
+    const chartsBefore = await page.evaluate(
+      () =>
+        document.getElementById("chartsPanel").compareDocumentPosition(document.getElementById("objectivesContainer")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(chartsBefore).toBeTruthy();
+  });
+
+  test("links every table section heading to its own id and offers auto-refresh", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString() } });
+    await loadDashboard(page);
+
+    const sections = await page.evaluate(() =>
+      [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => ({
+        id: section.id,
+        anchor: section.querySelector(".anchor-link")?.getAttribute("href"),
+        refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
+      })),
+    );
+    expect(sections).toHaveLength(13);
+    for (const section of sections) {
+      expect(section.anchor).toBe("#" + section.id);
+      expect(section.refresh).toBe("?refresh=15#" + section.id);
+    }
+  });
+
+  test("scrolls to the section named in the hash once the snapshot has rendered", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 600 });
+    await setupRoutes(page, { snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString() } });
+    await page.addInitScript(() => {
+      history.replaceState(null, "", "#table-compliance");
+    });
+    await loadDashboard(page);
+
+    await expect(page.locator("#table-compliance")).toBeInViewport();
+  });
+
+  test.describe("auto-refresh", () => {
+    async function recordTimers(page) {
+      await page.addInitScript(() => {
+        window.__timers = [];
+        const original = window.setTimeout;
+        window.setTimeout = (fn, delay, ...rest) => {
+          window.__timers.push(delay);
+          return original(fn, delay, ...rest);
+        };
+      });
+    }
+
+    test("arms a reload every 15 minutes and says so, with a link that turns it off", async ({ page }) => {
+      await recordTimers(page);
+      await setupRoutes(page);
+      await page.addInitScript(() => history.replaceState(null, "", "?refresh=15#table-uptime"));
+      await loadDashboard(page);
+
+      await expect(page.locator("#refreshNote")).toBeVisible();
+      await expect(page.locator("#refreshNote")).toContainText("Reloads every 15 minutes");
+      await expect(page.locator("#refreshNote a")).toHaveAttribute("href", "/operator/dashboard.html#table-uptime");
+      expect(await page.evaluate(() => window.__timers)).toContain(15 * 60000);
+    });
+
+    test("keeps the chosen period in each section's auto-refresh link", async ({ page }) => {
+      await setupRoutes(page);
+      await page.addInitScript(() => history.replaceState(null, "", "?refresh=5"));
+      await loadDashboard(page);
+
+      await expect(page.locator("#table-uptime .refresh-link")).toHaveAttribute("href", "?refresh=5#table-uptime");
+      await expect(page.locator("#refreshNote")).toContainText("Reloads every 5 minutes");
+    });
+
+    for (const value of ["0", "1441", "abc", "1.5", "-3", ""]) {
+      test(`ignores refresh=${value || "(empty)"}`, async ({ page }) => {
+        await recordTimers(page);
+        await setupRoutes(page);
+        await page.addInitScript((v) => history.replaceState(null, "", "?refresh=" + v), value);
+        await loadDashboard(page);
+
+        await expect(page.locator("#refreshNote")).toBeHidden();
+        expect(await page.evaluate(() => window.__timers.filter((delay) => delay >= 60000))).toEqual([]);
+      });
+    }
   });
 
   test("shows each observation's value, trend and deep link", async ({ page }) => {
@@ -1019,30 +1100,12 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#snapshotError")).toHaveText("No snapshot has been published yet.");
   });
 
-  test("renders the first experiment with its baseline hypothesis placeholder", async ({ page }) => {
+  test("has no Experiments panel", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const experiment = page.locator('.experiment[data-experiment-id="exp-2026-09-uptime-baseline"]');
-    await expect(experiment).toContainText("(no hypothesis yet)");
-    await expect(experiment).toContainText("2026-09-01");
-    await expect(experiment).toContainText("2026-09-30");
-  });
-
-  test("says no experiments are published when the file lists none", async ({ page }) => {
-    await setupRoutes(page, { experimentsBody: {} });
-    await loadDashboard(page);
-
-    await expect(page.locator("#experimentsPanel")).toBeVisible();
-    await expect(page.locator("#experimentsList")).toHaveText("No experiments published");
-  });
-
-  test("keeps the experiments panel and says so when the file does not load", async ({ page }) => {
-    await setupRoutes(page, { experimentsStatus: 404, experimentsBody: {} });
-    await loadDashboard(page);
-
-    await expect(page.locator("#experimentsPanel")).toBeVisible();
-    await expect(page.locator("#experimentsList")).toHaveText("Experiments did not load.");
+    await expect(page.locator("#experimentsPanel")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Experiments" })).toHaveCount(0);
   });
 
   test.describe("daily charts", () => {
@@ -1053,17 +1116,93 @@ test.describe("Operator Dashboard", () => {
       await expect(page.locator("#chartsPanel")).toBeVisible();
       await expect(page.locator(".chart-card")).toHaveCount(6);
       await expect(page.locator(".chart-card h3")).toHaveText([
-        "Activity started and completed",
-        "Conversion to submission",
         "Conversion to paid",
+        "Visitors",
+        "Conversion to submission",
+        "Activity started and completed",
         "AWS costs",
         "Retention",
-        "Visitors",
       ]);
       const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
+    });
+
+    test("puts Conversion to paid across the full width of the grid, ahead of the others", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const ids = await page.locator(".chart-card").evaluateAll((cards) => cards.map((card) => card.dataset.chartId));
+      expect(ids).toEqual([
+        "conversion-to-paid",
+        "visitors",
+        "conversion-to-submission",
+        "activity-started-and-completed",
+        "low-running-cost",
+        "retention",
+      ]);
+      const grid = await page.locator("#chartsGrid").boundingBox();
+      const first = await page.locator('.chart-card[data-chart-id="conversion-to-paid"]').boundingBox();
+      const second = await page.locator('.chart-card[data-chart-id="visitors"]').boundingBox();
+      expect(first.width).toBeGreaterThan(grid.width - 2);
+      expect(second.width).toBeLessThan(grid.width * 0.6);
+      expect(second.y).toBeGreaterThan(first.y);
+    });
+
+    test("puts a chart that is not in the list after the listed ones, and sorts HMRC failures before AWS costs", async ({ page }) => {
+      const extra = chartWithSeries("hmrc-failures", "uptime", "HMRC submission failures", "count", ["Failures"]);
+      const unlisted = chartWithSeries("zzz-extra", "security", "Extra", "count", ["Things"]);
+      await setupRoutes(page, {
+        snapshotBody: {
+          ...FIXTURE_SNAPSHOT,
+          dailyCharts: { ...FIXTURE_DAILY_CHARTS, charts: [unlisted, ...FIXTURE_DAILY_CHARTS.charts, extra] },
+        },
+      });
+      await loadDashboard(page);
+
+      const ids = await page.locator(".chart-card").evaluateAll((cards) => cards.map((card) => card.dataset.chartId));
+      expect(ids).toEqual([
+        "conversion-to-paid",
+        "visitors",
+        "conversion-to-submission",
+        "activity-started-and-completed",
+        "hmrc-failures",
+        "low-running-cost",
+        "retention",
+        "zzz-extra",
+      ]);
+    });
+
+    test("links each chart to an existing table section and to its own id", async ({ page }) => {
+      const extra = chartWithSeries("hmrc-failures", "uptime", "HMRC submission failures", "count", ["Failures"]);
+      await setupRoutes(page, {
+        snapshotBody: {
+          ...fullShapeSnapshot(),
+          generatedAt: new Date().toISOString(),
+          dailyCharts: { ...FIXTURE_DAILY_CHARTS, charts: [...FIXTURE_DAILY_CHARTS.charts, extra] },
+        },
+      });
+      await loadDashboard(page);
+
+      const expected = {
+        "conversion-to-paid": "table-conversion-to-paid",
+        "visitors": "visitorsPanel",
+        "conversion-to-submission": "table-conversion-to-submission",
+        "activity-started-and-completed": "activitiesPanel",
+        "hmrc-failures": "table-uptime",
+        "low-running-cost": "table-low-running-cost",
+        "retention": "table-retention",
+      };
+      for (const [chartId, tableId] of Object.entries(expected)) {
+        const card = page.locator(`.chart-card[data-chart-id="${chartId}"]`);
+        await expect(card).toHaveAttribute("id", "chart-" + chartId);
+        await expect(card.locator(".chart-table-link")).toHaveAttribute("href", "#" + tableId);
+        await expect(card.locator(".anchor-link")).toHaveAttribute("href", "#chart-" + chartId);
+        await expect(card.locator(".refresh-link")).toHaveAttribute("href", "?refresh=15#chart-" + chartId);
+        await expect(page.locator("#" + tableId)).toHaveCount(1);
+      }
     });
 
     test("hides and shows a line from its legend button", async ({ page }) => {
@@ -1261,7 +1400,6 @@ test.describe("Operator Dashboard", () => {
         const heights = await page.evaluate(() => {
           const panels = {
             visitorsPanel: document.getElementById("visitorsPanel"),
-            experimentsPanel: document.getElementById("experimentsPanel"),
           };
           const result = {};
           for (const [name, element] of Object.entries(panels)) {
@@ -1277,24 +1415,6 @@ test.describe("Operator Dashboard", () => {
         for (const [name, { reserved, rendered }] of Object.entries(heights)) {
           expect(reserved, `${name} reserves ${reserved}px for ${rendered}px of content`).toBeGreaterThanOrEqual(rendered);
         }
-      });
-    }
-  });
-
-  test.describe("released objectives reservation", () => {
-    for (const width of [390, 700, 900, 1280]) {
-      test(`leaves under 80px between the last objective and the Visitors panel at ${width}px wide`, async ({ page }) => {
-        await page.setViewportSize({ width, height: 900 });
-        await setupRoutes(page, { snapshotBody: fullShapeSnapshot() });
-        await loadDashboard(page);
-        await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
-
-        const gap = await page.evaluate(() => {
-          const objectives = document.querySelectorAll(".objective[data-objective-id]");
-          const lastBottom = objectives[objectives.length - 1].getBoundingClientRect().bottom;
-          return document.getElementById("visitorsPanel").getBoundingClientRect().top - lastBottom;
-        });
-        expect(gap).toBeLessThan(80);
       });
     }
   });
@@ -1339,7 +1459,7 @@ test.describe("Operator Dashboard", () => {
         await setupRoutes(page);
         await loadDashboard(page);
 
-        const tables = page.locator("#objectivesContainer table.observations");
+        const tables = page.locator("[data-objective-slot] table.observations");
         const tableCount = await tables.count();
         expect(tableCount).toBeGreaterThan(0);
         for (let t = 0; t < tableCount; t++) {
