@@ -22,7 +22,11 @@
 //
 // --signed-in captures every selected page after the mock sign-in, not only the ones that redirect.
 //
-// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>[,<substring>]] [--signed-in]
+// --scene <name>[,<name>] captures only the named signed-in scenes (see SCENES) and writes
+// <out>/<name>/<width>-<theme>.png, in place of the page sweep. A scene answers one API call with a
+// fixed, realistic body, for a state no seeded simulator account reaches.
+//
+// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>[,<substring>]] [--signed-in] [--scene <name>[,<name>]]
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -57,13 +61,90 @@ export function screenshotName(width, theme, state) {
   return `${width}-${theme}${state ? `-${state}` : ""}.png`;
 }
 
+const GENERATED_PASSES_BODY = {
+  passes: [
+    {
+      code: "maple-river-quiet-harbour",
+      passTypeId: "digital-pass",
+      bundleId: "resident-vat",
+      validFrom: "2026-08-01T00:00:00.000Z",
+      validUntil: "2027-08-01T00:00:00.000Z",
+      maxUses: 25,
+      useCount: 14,
+      heldForReview: false,
+      createdAt: "2026-08-01T09:30:00.000Z",
+      notes: "Bookkeepers' meet-up",
+      revokedAt: null,
+      figures: {
+        uses: 14,
+        newAccounts: 11,
+        filed: 6,
+        subscribers: 4,
+        paidCharges: 3,
+        fewerThanThree: false,
+        lastUsed: "2026-10-28T16:05:00.000Z",
+      },
+    },
+    {
+      code: "amber-field-tall-lantern",
+      passTypeId: "physical-pass",
+      bundleId: "resident-vat",
+      validFrom: "2026-09-10T00:00:00.000Z",
+      validUntil: null,
+      maxUses: 50,
+      useCount: 7,
+      heldForReview: false,
+      createdAt: "2026-09-10T11:00:00.000Z",
+      notes: "Market stall flyers",
+      revokedAt: null,
+      figures: {
+        uses: 7,
+        newAccounts: 5,
+        filed: 2,
+        subscribers: 1,
+        paidCharges: 1,
+        fewerThanThree: false,
+        lastUsed: "2026-10-25T10:40:00.000Z",
+      },
+    },
+  ],
+  count: 2,
+  totals: {
+    passes: 2,
+    countedPasses: 2,
+    uses: 21,
+    newAccounts: 16,
+    filed: 8,
+    subscribers: 5,
+    paidCharges: 4,
+    fewerThanThree: false,
+    lastUsed: "2026-10-28T16:05:00.000Z",
+  },
+};
+
+export const SCENES = {
+  "bundles-my-generated-passes": {
+    page: "bundles.html",
+    apiRoute: { url: "**/api/v1/pass/my-passes*", body: GENERATED_PASSES_BODY },
+    waitFor: "#generatedPassesList .pass-figures",
+    clip: "#myGeneratedPasses",
+  },
+};
+
 function parseArgs(argv) {
-  const args = { baseUrl: process.env.SITE_SCREENSHOTS_BASE_URL || null, out: "target/site-screenshots", only: null, signedIn: false };
+  const args = {
+    baseUrl: process.env.SITE_SCREENSHOTS_BASE_URL || null,
+    out: "target/site-screenshots",
+    only: null,
+    signedIn: false,
+    scene: null,
+  };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--base-url") args.baseUrl = argv[++i];
     else if (argv[i] === "--out") args.out = argv[++i];
     else if (argv[i] === "--only") args.only = argv[++i];
     else if (argv[i] === "--signed-in") args.signedIn = true;
+    else if (argv[i] === "--scene") args.scene = argv[++i];
   }
   return args;
 }
@@ -208,6 +289,30 @@ async function capturePage(browser, { pageOrigin, outDir, page: pagePath, storag
   await context.close();
 }
 
+async function captureScene(browser, { pageOrigin, outDir, name, scene, storageState, width, theme }) {
+  const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, storageState });
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem("consent.rum", "declined");
+      localStorage.setItem("consent.analytics", "declined");
+    } catch {
+      // storage is blocked: the banner shows and the capture goes on
+    }
+  });
+  const page = await context.newPage();
+  await page.route(scene.apiRoute.url, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(scene.apiRoute.body) }),
+  );
+  await page.goto(`${pageOrigin}/${scene.page}`, { waitUntil: "load", timeout: 30000 });
+  await page.locator(scene.waitFor).first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(800);
+  const file = path.join(outDir, name, screenshotName(width, theme, null));
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  await page.locator(scene.clip).screenshot({ path: file });
+  await context.close();
+  return file;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const outDir = path.resolve(args.out);
@@ -222,13 +327,25 @@ async function main() {
       args.baseUrl = simulator.url;
     }
     console.log(`Capturing ${pages.length} pages from ${args.baseUrl}`);
-    fs.rmSync(outDir, { recursive: true, force: true });
+    if (!args.scene) fs.rmSync(outDir, { recursive: true, force: true });
     fs.mkdirSync(outDir, { recursive: true });
     const pageOrigin = configuredOrigin();
     const mapped = new URL(args.baseUrl);
     browser = await chromium.launch({ args: [`--host-resolver-rules=MAP ${new URL(pageOrigin).host} ${mapped.host}`] });
 
     const storageState = await signIn(browser, { pageOrigin });
+    if (args.scene) {
+      for (const name of args.scene.split(",")) {
+        const scene = SCENES[name];
+        if (!scene) throw new Error(`unknown scene ${name}; known: ${Object.keys(SCENES).join(", ")}`);
+        for (const width of WIDTHS) {
+          console.log(
+            `Scene ${name}: ${await captureScene(browser, { pageOrigin, outDir, name, scene, storageState, width, theme: "light" })}`,
+          );
+        }
+      }
+      return;
+    }
     const entries = [];
     const redirected = new Set();
     for (const width of WIDTHS) {
