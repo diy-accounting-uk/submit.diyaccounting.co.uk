@@ -22,8 +22,10 @@ const STACKS_DIR = "infra/main/java/co/uk/diyaccounting/submit/stacks/";
 // SubmitEnvironment.java and SubmitSharedNames.java) -- it has no EcrUE1Stack.java of its own, so
 // its watched source is EcrStack.java. SecurityLakeStack.java sits under the stacks/security/
 // subdirectory rather than directly under stacks/, unlike every other stack here.
+// DeveloperSiteStack is an instance of the shared StaticSiteStack, so its source is StaticSiteStack.java.
 const SOURCE_FILE_OVERRIDES = {
   EcrUE1Stack: "EcrStack.java",
+  DeveloperSiteStack: "StaticSiteStack.java",
   SecurityLakeStack: "security/SecurityLakeStack.java",
 };
 
