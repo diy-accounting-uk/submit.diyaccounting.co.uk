@@ -306,9 +306,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 bundleGetUpdateItemPolicies);
 
         // Scan and BatchGetItem read a whole table at once, so they are the cheapest way to walk off
-        // with customer data. One function genuinely uses them: bundleGet reads several capacity
-        // counters at once. Any other role holding either action has been granted more than it calls.
-        List<String> rolesThatReadInBulk = List.of("bundle-get");
+        // with customer data. Two functions use BatchGetItem by key: bundleGet reads several capacity
+        // counters at once, and passMyPassesGet reads the figures item of each of the caller's own
+        // passes. Any other role holding either action has been granted more than it calls.
+        List<String> rolesThatReadInBulk = List.of("bundle-get", "pass-my-passes-get");
         List<String> unexpectedBulkReaders = findRolesGrantedBulkReads(accountStackTemplate, rolesThatReadInBulk);
         if (!unexpectedBulkReaders.isEmpty()) {
             dumpIamPolicies(accountStackTemplate);
