@@ -116,7 +116,7 @@ body {
 .card-host {
   font-size: calc(var(--u) * 3.2);
   font-weight: 700;
-  color: var(--card-accent);
+  color: var(--card-ink);
 }
 
 /* tall and tower: smaller type and less padding */

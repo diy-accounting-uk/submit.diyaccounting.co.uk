@@ -14,7 +14,10 @@ import {
   JSON_FILE,
   MARKETING_DIR,
   TOKEN_SOURCES,
+  IMAGES_DIR,
+  SHOTS_DIR,
   findSiblings,
+  imageHash,
   readMarketingData,
   renderMarketingJson,
   renderSiteTokens,
@@ -249,6 +252,64 @@ describe("brand tokens and fonts", () => {
       const copy = fs.readFileSync(path.join(MARKETING_DIR, "brand", "fonts", name));
       expect(copy.equals(fs.readFileSync(path.join(publicDir, "fonts", name))), name).toBe(true);
     }
+  });
+});
+
+describe("social images", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(IMAGES_DIR, "manifest.json"), "utf-8"));
+
+  it.each(sets.map(({ section, set }) => [set.id, section, set]))(
+    "%s has every size at the right dimensions and hash",
+    (_id, section, set) => {
+      for (const size of data.imageSizes) {
+        const file = path.join(IMAGES_DIR, set.id, `${size.id}.png`);
+        expect(fs.existsSync(file), `${set.id} ${size.id}`).toBe(true);
+        const png = fs.readFileSync(file);
+        expect(png.readUInt32BE(16), `${set.id} ${size.id} width`).toBe(size.width);
+        expect(png.readUInt32BE(20), `${set.id} ${size.id} height`).toBe(size.height);
+        expect(manifest[set.id][size.id], `${set.id} ${size.id} hash`).toEqual({
+          width: size.width,
+          height: size.height,
+          hash: imageHash({ section, set, size }),
+        });
+      }
+    },
+  );
+
+  it("keeps the images folder within 20 MB and each IAB banner within 150 KB", () => {
+    let total = 0;
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else total += fs.statSync(full).size;
+      }
+    };
+    walk(IMAGES_DIR);
+    expect(total).toBeLessThanOrEqual(20 * 1024 * 1024);
+    for (const { set } of sets) {
+      for (const id of ["mrec", "leaderboard", "mobile-banner", "skyscraper"]) {
+        expect(fs.statSync(path.join(IMAGES_DIR, set.id, `${id}.png`)).size, `${set.id} ${id}`).toBeLessThanOrEqual(150 * 1024);
+      }
+    }
+  });
+});
+
+describe("brand shots", () => {
+  it("has a light shot per fragment and a dark shot only where the site has a dark scheme", () => {
+    for (const section of data.sections) {
+      for (const fragment of section.fragments) {
+        const shot = (theme) => path.join(SHOTS_DIR, section.id, `${fragment.id}-${theme}.png`);
+        expect(fs.existsSync(shot("light")), `${section.id} ${fragment.id} light`).toBe(true);
+        expect(fs.existsSync(shot("dark")), `${section.id} ${fragment.id} dark`).toBe(section.hasDark);
+      }
+    }
+  });
+
+  it("lists every shot in the manifest with the date it was captured", () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(SHOTS_DIR, "manifest.json"), "utf-8"));
+    expect(manifest.capturedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const shot of manifest.shots) expect(fs.existsSync(path.join(SHOTS_DIR, shot.file)), shot.file).toBe(true);
   });
 });
 
