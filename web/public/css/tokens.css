@@ -173,7 +173,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+  src: url("../fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
 }
 
 @font-face {
@@ -181,7 +181,7 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url("fonts/atkinson-hyperlegible-latin-400-italic.woff2") format("woff2");
+  src: url("../fonts/atkinson-hyperlegible-latin-400-italic.woff2") format("woff2");
 }
 
 @font-face {
@@ -189,7 +189,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+  src: url("../fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
 }
 
 /* Running text draws the digit zero without the slash; ledger cells and tables keep the slashed zero. */
@@ -199,7 +199,7 @@
   font-weight: 400;
   font-display: swap;
   unicode-range: U+0030;
-  src: url("fonts/plain-zero-400-normal.woff2") format("woff2");
+  src: url("../fonts/plain-zero-400-normal.woff2") format("woff2");
 }
 
 @font-face {
@@ -208,7 +208,7 @@
   font-weight: 400;
   font-display: swap;
   unicode-range: U+0030;
-  src: url("fonts/plain-zero-400-italic.woff2") format("woff2");
+  src: url("../fonts/plain-zero-400-italic.woff2") format("woff2");
 }
 
 @font-face {
@@ -217,7 +217,7 @@
   font-weight: 700;
   font-display: swap;
   unicode-range: U+0030;
-  src: url("fonts/plain-zero-700-normal.woff2") format("woff2");
+  src: url("../fonts/plain-zero-700-normal.woff2") format("woff2");
 }
 
 /* Arial scaled to Atkinson Hyperlegible's metrics, so the swap moves no line. */
