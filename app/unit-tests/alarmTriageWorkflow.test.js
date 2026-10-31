@@ -123,4 +123,17 @@ describe("alarm-triage.yml", () => {
   it("matches a mirror issue by a whole marker line", () => {
     expect(text).not.toContain("contains($marker)");
   });
+
+  it("reads the evidence only after the alarm window closes, with CloudTrail's delivery lag", () => {
+    const runTriage = jobBlock("run-triage");
+    const wait = stepBlock(runTriage, "Wait for the alarm window to close");
+    expect(wait).toContain(`/aws/cloudtrail*) DELIVERY_LAG_SECONDS=600`);
+    expect(wait).toContain(`sleep "$WAIT_SECONDS"`);
+    expect(runTriage.indexOf("- name: Resolve the evidence links for this alarm")).toBeLessThan(
+      runTriage.indexOf("- name: Wait for the alarm window to close"),
+    );
+    expect(runTriage.indexOf("- name: Wait for the alarm window to close")).toBeLessThan(
+      runTriage.indexOf("- name: Prove the triage credentials against the alarm's telemetry"),
+    );
+  });
 });

@@ -168,6 +168,41 @@ export async function revokePass(code, now) {
 }
 
 /**
+ * Set a pass's reviewLimit, or remove it when reviewLimit is null. Returns the updated pass, or
+ * null when the pass does not exist.
+ */
+export async function setReviewLimit(code, reviewLimit, now) {
+  logger.info({ message: `setReviewLimit [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]`, reviewLimit });
+
+  try {
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+    const removing = reviewLimit === null;
+
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+          UpdateExpression: removing ? "REMOVE reviewLimit SET updatedAt = :now" : "SET reviewLimit = :limit, updatedAt = :now",
+          ConditionExpression: "attribute_exists(pk)",
+          ExpressionAttributeValues: removing ? { ":now": now } : { ":limit": reviewLimit, ":now": now },
+          ReturnValues: "ALL_NEW",
+        }),
+    );
+
+    logger.info({ message: "Pass review limit updated in DynamoDB", pk: `pass#${code}` });
+    return result.Attributes;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Pass review limit update refused, pass not found", code });
+      return null;
+    }
+    logger.error({ message: "Error updating pass review limit in DynamoDB", error: error.message });
+    throw error;
+  }
+}
+
+/**
  * Claim the one referral redemption an account may ever make. Returns false when the account has
  * already claimed one.
  */

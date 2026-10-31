@@ -31,7 +31,8 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
-const { putReferralClaim, deleteReferralClaim, putRedemption, redeemPass } = await import("@app/data/dynamoDbPassRepository.js");
+const { putReferralClaim, deleteReferralClaim, putRedemption, redeemPass, setReviewLimit } =
+  await import("@app/data/dynamoDbPassRepository.js");
 
 describe("data/dynamoDbPassRepository - referral claim, redemption record and review limit", () => {
   beforeEach(() => {
@@ -76,5 +77,27 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
     const condition = mockSend.mock.calls[0][0].params.ConditionExpression;
     expect(condition).toContain("(attribute_not_exists(maxUses) OR useCount < maxUses)");
     expect(condition).toContain("(attribute_not_exists(reviewLimit) OR useCount < reviewLimit)");
+  });
+  test("setReviewLimit sets the limit on an existing pass", async () => {
+    mockSend.mockResolvedValue({ Attributes: { reviewLimit: 2000 } });
+    expect(await setReviewLimit("code-1", 2000, "2026-01-01T00:00:00.000Z")).toEqual({ reviewLimit: 2000 });
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.Key).toEqual({ pk: "pass#code-1" });
+    expect(params.UpdateExpression).toBe("SET reviewLimit = :limit, updatedAt = :now");
+    expect(params.ExpressionAttributeValues[":limit"]).toBe(2000);
+    expect(params.ConditionExpression).toBe("attribute_exists(pk)");
+  });
+
+  test("setReviewLimit with null removes the limit", async () => {
+    mockSend.mockResolvedValue({ Attributes: {} });
+    await setReviewLimit("code-1", null, "2026-01-01T00:00:00.000Z");
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.UpdateExpression).toBe("REMOVE reviewLimit SET updatedAt = :now");
+    expect(params.ExpressionAttributeValues).toEqual({ ":now": "2026-01-01T00:00:00.000Z" });
+  });
+
+  test("setReviewLimit returns null when the pass does not exist", async () => {
+    mockSend.mockRejectedValue(Object.assign(new Error("missing"), { name: "ConditionalCheckFailedException" }));
+    expect(await setReviewLimit("code-1", 2000, "2026-01-01T00:00:00.000Z")).toBeNull();
   });
 });

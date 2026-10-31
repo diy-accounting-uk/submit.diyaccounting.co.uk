@@ -119,6 +119,7 @@ import { apiEndpoint as companiesHousePscVerificationStatementGetApiEndpoint } f
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
+import { apiEndpoint as passReleasePostApiEndpoint } from "../functions/account/passReleasePost.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
@@ -420,6 +421,7 @@ companiesHousePscVerificationStatementGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
+passReleasePostApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);

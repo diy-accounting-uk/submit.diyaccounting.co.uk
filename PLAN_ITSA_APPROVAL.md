@@ -6,7 +6,7 @@
 The build is done and proven in the sandbox; its plan is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. This plan carries what
 stands between that build and real customers: HMRC's production access for Income Tax (MTD), the
 software finder listing, and the three things that follow the approval. It took these items from
-`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the recognition track and T10), `NEXT.md` (O11, B10) and `BACKLOG.md`
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the recognition track and T10), `NEXT.md` (O11, B10)
 (rows 10 and 11) on 2026-10-03.
 
 ## Operator assertions (verbatim)
@@ -355,7 +355,7 @@ years, 328b44d3a). IA3 and IA6 are the edits it still takes.
 
 ## Backlog rows this plan carries
 
-Moved from `BACKLOG.md` Tier 2 on 2026-10-03; their tier and value stay as written here.
+Moved from the backlog's Tier 2 on 2026-10-03; their tier and value stay as written here.
 
 ### 10. ITSA phase 1 sandbox integration
 
@@ -383,7 +383,7 @@ time is HMRC's; being ready when the 2027-28 window opens is the only control we
 
 ### 17d. Walkthrough video test-data review
 
-Moved from `BACKLOG.md` Tier 3 and `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
+Moved from the backlog's Tier 3 and `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
 
 **Source**: Operator, 2026-09-15. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window and, since the 2026-10-03 note to SDST, part of the application's evidence; a result on screen and shorter runs make them worth watching.
 

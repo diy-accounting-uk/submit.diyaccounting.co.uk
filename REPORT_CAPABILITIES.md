@@ -135,6 +135,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass: use when an operator or admin must create a pass of any catalogue type with no token charge.
     - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity: use when a pass code must be checked before login, without consuming a use.
     - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes: use when a page must show up to 50 passes a caller has issued.
+    - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review: use when an operator must let a digital pass that reached its review limit be used again.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
@@ -1601,7 +1602,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1677,6 +1678,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass
 - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity
 - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes
+- [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 <!-- /generated:group passes-bill -->
@@ -1720,6 +1722,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
 - **Keywords:** pass, my passes, issued passes, list passes, getPassesByIssuer
 - **Related:** BILL-06, BILL-07
+
+#### BILL-45 Release a pass held for review
+
+- **Use when:** an operator must let a digital pass that reached its review limit be used again.
+- **Does:** The passReleasePost.js ingestHandler raises a pass's reviewLimit by an amount, sets it to a value, or removes it, for an operator only. It calls passService.releasePass and answers the pass's new limit and use count.
+- **Run:** `POST /api/v1/pass/release`
+- **Entry:** `app/functions/account/passReleasePost.js:ingestHandler`
+- **Files:** app/functions/account/passReleasePost.js, app/unit-tests/functions/passReleasePost.test.js
+- **Keywords:** pass, release, held for review, reviewLimit, operator
+- **Related:** BILL-07, BILL-09
 
 #### BILL-10 Redeem a pass
 
@@ -7020,6 +7032,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
+- held for review: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -7438,7 +7451,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -7492,7 +7505,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
-- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
@@ -7728,6 +7741,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
+- release: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7791,6 +7805,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - review document: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
+- reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)

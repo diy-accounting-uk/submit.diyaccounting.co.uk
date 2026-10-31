@@ -46,109 +46,7 @@
       <p id="snapshotMeta" class="snapshot-meta"></p>
       <p id="snapshotSource" class="snapshot-meta"></p>
       <p id="snapshotAge" class="status-message status-warning" role="status" hidden></p>
-
-      <section id="reinvestmentPanel" class="objective" hidden>
-        <h2>Reinvestment</h2>
-        <p class="subtitle">The budget is the reinvestment fraction of trailing 30-day income</p>
-        <table class="observations data-table" id="reinvestmentTable">
-          <thead>
-            <tr>
-              <th>Figure</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody id="reinvestmentBody"></tbody>
-        </table>
-      </section>
-
-      <section id="reservePanel" class="objective" hidden>
-        <h2>Reserve</h2>
-        <p class="subtitle">Cash at bank in the company book against the reserve floor</p>
-        <p id="reserveState" class="status-message" role="status"></p>
-        <table class="observations data-table" id="reserveTable">
-          <thead>
-            <tr>
-              <th>Figure</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody id="reserveBody"></tbody>
-        </table>
-      </section>
-
-      <section id="companyAccountsPanel" class="objective" hidden>
-        <h2>Company accounts</h2>
-        <p class="subtitle">The company's own resident diya-gl book, derived nightly</p>
-        <table class="observations data-table" id="companyProfitAndLossTable">
-          <thead>
-            <tr>
-              <th>Profit and loss</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody id="companyProfitAndLossBody"></tbody>
-        </table>
-        <table class="observations data-table" id="companyBalanceSheetTable">
-          <thead>
-            <tr>
-              <th>Balance sheet</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody id="companyBalanceSheetBody"></tbody>
-        </table>
-        <table class="observations data-table" id="companyContributionTable">
-          <thead>
-            <tr>
-              <th>Contribution and runway</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody id="companyContributionBody"></tbody>
-        </table>
-      </section>
-
-      <section id="activitiesPanel" class="objective" hidden>
-        <h2>Activity started and completed</h2>
-        <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
-        <p class="subtitle" id="activitiesDataSince" hidden></p>
-        <table class="observations data-table activities-table" id="activitiesStartedTable">
-          <caption title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table.">
-            Started
-          </caption>
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th title="Since midnight UK time">Today</th>
-              <th>Previous day</th>
-              <th>Last 7 days</th>
-              <th>Last 30 days</th>
-              <th title="Last 30 days against the 30 days before them">30 day trend</th>
-              <th>Last 90 days</th>
-            </tr>
-          </thead>
-          <tbody id="activitiesStartedBody"></tbody>
-        </table>
-        <table class="observations data-table activities-table" id="activitiesCompletedTable">
-          <caption
-            title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
-          >
-            Completed
-          </caption>
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th title="Since midnight UK time">Today</th>
-              <th>Previous day</th>
-              <th>Last 7 days</th>
-              <th>Last 30 days</th>
-              <th title="Last 30 days against the 30 days before them">30 day trend</th>
-              <th>Last 90 days</th>
-            </tr>
-          </thead>
-          <tbody id="activitiesCompletedBody"></tbody>
-        </table>
-      </section>
+      <p id="refreshNote" class="status-message" role="status" hidden></p>
 
       <section id="chartsPanel" class="objective" hidden>
         <h2>Daily trends, last 90 days</h2>
@@ -159,9 +57,8 @@
         <div id="chartsGrid" class="charts-grid"></div>
       </section>
 
-      <div id="objectivesContainer"></div>
-
-      <div class="side-panels">
+      <div id="objectivesContainer">
+        <div data-objective-slot="conversion-to-paid"></div>
         <section id="visitorsPanel" class="objective">
           <h2>Visitors</h2>
           <p class="subtitle">
@@ -183,10 +80,113 @@
             <tbody id="visitorsBody"></tbody>
           </table>
         </section>
-
-        <section id="experimentsPanel" class="objective">
-          <h2>Experiments</h2>
-          <ul id="experimentsList"></ul>
+        <div data-objective-slot="conversion-to-submission"></div>
+        <div data-objective-slot="retention"></div>
+        <section id="activitiesPanel" class="objective" hidden>
+          <h2>Activity started and completed</h2>
+          <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
+          <p class="subtitle" id="activitiesDataSince" hidden></p>
+          <table class="observations data-table activities-table" id="activitiesStartedTable">
+            <caption
+              title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table."
+            >
+              Started
+            </caption>
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="activitiesStartedBody"></tbody>
+          </table>
+          <table class="observations data-table activities-table" id="activitiesCompletedTable">
+            <caption
+              title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
+            >
+              Completed
+            </caption>
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="activitiesCompletedBody"></tbody>
+          </table>
+        </section>
+        <div data-objective-slot="low-running-cost"></div>
+        <div data-objective-slot="uptime"></div>
+        <div data-objective-slot="compliance"></div>
+        <div data-objective-slot="security"></div>
+        <div data-objective-slot="operator-effort"></div>
+        <section id="companyAccountsPanel" class="objective" hidden>
+          <h2>Company accounts</h2>
+          <p class="subtitle">The company's own resident diya-gl book, derived nightly</p>
+          <table class="observations data-table" id="companyProfitAndLossTable">
+            <thead>
+              <tr>
+                <th>Profit and loss</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="companyProfitAndLossBody"></tbody>
+          </table>
+          <table class="observations data-table" id="companyBalanceSheetTable">
+            <thead>
+              <tr>
+                <th>Balance sheet</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="companyBalanceSheetBody"></tbody>
+          </table>
+          <table class="observations data-table" id="companyContributionTable">
+            <thead>
+              <tr>
+                <th>Contribution and runway</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="companyContributionBody"></tbody>
+          </table>
+        </section>
+        <section id="reservePanel" class="objective" hidden>
+          <h2>Reserve</h2>
+          <p class="subtitle">Cash at bank in the company book against the reserve floor</p>
+          <p id="reserveState" class="status-message" role="status"></p>
+          <table class="observations data-table" id="reserveTable">
+            <thead>
+              <tr>
+                <th>Figure</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="reserveBody"></tbody>
+          </table>
+        </section>
+        <section id="reinvestmentPanel" class="objective" hidden>
+          <h2>Reinvestment</h2>
+          <p class="subtitle">The budget is the reinvestment fraction of trailing 30-day income</p>
+          <table class="observations data-table" id="reinvestmentTable">
+            <thead>
+              <tr>
+                <th>Figure</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="reinvestmentBody"></tbody>
+          </table>
         </section>
       </div>
     </main>

@@ -58,11 +58,28 @@ public class OperatorEmailsHelper {
      */
     public static void grantWhenPublishingActivity(Function lambda, Map<String, String> environment) {
         if (!environment.containsKey("ACTIVITY_BUS_NAME")) return;
+        grantFromLambdaEnvironment(lambda, environment, "A Lambda that publishes activity events");
+    }
+
+    /**
+     * Grant the operator emails secret to a Lambda behind an authorizer, because
+     * extractUserFromAuthorizerContext loads the operator list on every signed-in request. The
+     * environment name comes from the Lambda's own ENVIRONMENT_NAME.
+     *
+     * @param lambda      The Lambda function
+     * @param environment The Lambda's environment variables
+     */
+    public static void grantWhenAuthenticatingCallers(Function lambda, Map<String, String> environment) {
+        grantFromLambdaEnvironment(lambda, environment, "A Lambda behind an authorizer");
+    }
+
+    private static void grantFromLambdaEnvironment(
+            Function lambda, Map<String, String> environment, String lambdaDescription) {
         String envName = environment.get("ENVIRONMENT_NAME");
         if (envName == null) {
-            throw new IllegalArgumentException(
-                    "A Lambda that publishes activity events needs ENVIRONMENT_NAME to read the operator list: "
-                            + lambda.getNode().getPath());
+            throw new IllegalArgumentException(lambdaDescription
+                    + " needs ENVIRONMENT_NAME to read the operator list: "
+                    + lambda.getNode().getPath());
         }
         var stack = Stack.of(lambda);
         grantOperatorEmailsAccess(lambda, stack.getRegion(), stack.getAccount(), envName);

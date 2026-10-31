@@ -18,17 +18,6 @@ document.addEventListener("click", function (event) {
   }
 });
 
-const OBJECTIVE_ORDER = [
-  "uptime",
-  "conversion-to-submission",
-  "conversion-to-paid",
-  "low-running-cost",
-  "security",
-  "retention",
-  "operator-effort",
-  "compliance",
-];
-
 // Not one of the eight above: operatorSnapshotPublish.js still queries these through the
 // same buildSnapshot loop, so they arrive in snapshot.objectives under "company-accounts",
 // but renderCompanyAccounts reads them into their own block instead of a generic trend
@@ -226,11 +215,13 @@ function renderObservationRow(observation) {
 function renderObjective(objective, generatedAt) {
   const section = document.createElement("section");
   section.className = "objective";
+  section.id = "table-" + objective.id;
   section.dataset.objectiveId = objective.id;
 
   const heading = document.createElement("h2");
   heading.textContent = objective.name;
   section.appendChild(heading);
+  window.decorateSectionHeading(heading, section.id);
 
   const guidance = [
     ["What it measures", objective.sli],
@@ -607,20 +598,18 @@ function renderSnapshot(snapshot) {
   meta.textContent = "Generated " + formatTimestamp(snapshot.generatedAt) + " for " + snapshot.environment + ".";
   renderSnapshotNotices(snapshot);
 
-  const container = document.getElementById("objectivesContainer");
-  container.innerHTML = "";
-
   const objectivesById = {};
   (snapshot.objectives || []).forEach((objective) => {
     objectivesById[objective.id] = objective;
   });
 
-  OBJECTIVE_ORDER.forEach((objectiveId) => {
+  document.querySelectorAll("[data-objective-slot]").forEach((slot) => {
+    const objectiveId = slot.dataset.objectiveSlot;
     const objective = objectivesById[objectiveId] || { id: objectiveId, name: objectiveId, observations: [] };
     const section = renderObjective(objective, snapshot.generatedAt);
     if (objectiveId === "low-running-cost") section.appendChild(renderCostDrivers(snapshot.costDrivers));
     if (objectiveId === "conversion-to-paid") section.appendChild(renderPaidSubscribers(snapshot.paidSubscribers));
-    container.appendChild(section);
+    slot.replaceChildren(section);
   });
 }
 
@@ -720,42 +709,6 @@ function renderPaidSubscribers(paidSubscribers) {
   return wrapper;
 }
 
-function renderExperiments(experiments) {
-  const list = document.getElementById("experimentsList");
-  list.innerHTML = "";
-  if (!experiments || experiments.length === 0) {
-    showExperimentsMessage("No experiments published");
-    return;
-  }
-  experiments.forEach((experiment) => {
-    const item = document.createElement("li");
-    item.className = "experiment";
-    item.dataset.experimentId = experiment.id;
-    const hypothesis = experiment.hypothesis && experiment.hypothesis.length > 0 ? experiment.hypothesis : "(no hypothesis yet)";
-    item.textContent =
-      experiment.id +
-      " — " +
-      experiment.objective +
-      ": " +
-      hypothesis +
-      " (" +
-      experiment.start +
-      " to " +
-      (experiment.end || "open") +
-      ")";
-    list.appendChild(item);
-  });
-}
-
-function showExperimentsMessage(message) {
-  const list = document.getElementById("experimentsList");
-  list.innerHTML = "";
-  const item = document.createElement("li");
-  item.className = "experiments-empty";
-  item.textContent = message;
-  list.appendChild(item);
-}
-
 async function fetchJson(path) {
   const idToken = window.localStorage ? window.localStorage.getItem("cognitoIdToken") : null;
   const init = idToken ? { headers: { Authorization: "Bearer " + idToken } } : {};
@@ -775,20 +728,15 @@ async function fetchJson(path) {
   return response.json();
 }
 
-async function fetchToml(path) {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error("request-failed");
-  const text = await response.text();
-  return window.TOML ? window.TOML.parse(text) : JSON.parse(text);
-}
-
 // A null message leaves the explanation to the shared status message that the API client
 // already raised, so the reader sees it once.
 function showError(message) {
   const container = document.getElementById("objectivesContainer");
-  container.innerHTML = "";
   container.classList.add("objectives-failed");
-  document.getElementById("visitorsPanel").hidden = true;
+  container.querySelectorAll("[data-objective-slot]").forEach((slot) => slot.replaceChildren());
+  container.querySelectorAll(":scope > .objective").forEach((panel) => {
+    panel.hidden = true;
+  });
   document.getElementById("chartsPanel").hidden = true;
   if (message === null) return;
   const notice = document.createElement("p");
@@ -799,7 +747,42 @@ function showError(message) {
   container.appendChild(notice);
 }
 
+const STATIC_TABLE_PANELS = ["visitorsPanel", "activitiesPanel", "companyAccountsPanel", "reservePanel", "reinvestmentPanel"];
+
+function decorateStaticPanels() {
+  STATIC_TABLE_PANELS.forEach((id) => {
+    const heading = document.querySelector("#" + id + " > h2");
+    if (heading) window.decorateSectionHeading(heading, id);
+  });
+}
+
+// With ?refresh=N the page reloads every N minutes; the hash is kept, so the reader returns to
+// the same section.
+function armAutoRefresh() {
+  const minutes = window.parseRefreshMinutes(window.location.search);
+  if (minutes === null) return;
+  setTimeout(() => window.location.reload(), minutes * 60000);
+  const note = document.getElementById("refreshNote");
+  note.textContent = "Reloads every " + (minutes === 1 ? "1 minute" : minutes + " minutes") + ". ";
+  const off = document.createElement("a");
+  off.className = "refresh-off-link";
+  off.href = window.location.pathname + window.location.hash;
+  off.textContent = "Turn off";
+  note.appendChild(off);
+  note.hidden = false;
+}
+
+// The sections are built after the snapshot arrives, so the browser's own jump to the hash
+// finds nothing; scroll once they exist.
+function scrollToHash() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  if (target && !target.hidden) target.scrollIntoView();
+}
+
 async function initPage() {
+  armAutoRefresh();
+  decorateStaticPanels();
   try {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
@@ -819,13 +802,7 @@ async function initPage() {
       showError("The operator snapshot did not load. Reload the page to try again.");
     }
   }
-
-  try {
-    const parsed = await fetchToml("/experiments.toml");
-    renderExperiments(parsed.experiments);
-  } catch {
-    showExperimentsMessage("Experiments did not load.");
-  }
+  scrollToHash();
 }
 
 document.addEventListener("DOMContentLoaded", initPage);
