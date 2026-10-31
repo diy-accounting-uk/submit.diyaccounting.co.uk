@@ -867,7 +867,8 @@ public class AccountNames {
                 "%s-%s".formatted(root.appResourceNamePrefix, affiliateApplicationPostLambdaHandlerDashed);
         this.affiliateApplicationPostIngestLambdaHandler =
                 "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateApplicationPostLambdaHandlerName);
-        this.affiliateApplicationPostIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationPostLambdaHandlerDashed);
+        this.affiliateApplicationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationPostLambdaHandlerDashed);
         this.affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.affiliateApplicationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
         root.publishedApiLambdas.add(new PublishedLambda(
@@ -888,7 +889,8 @@ public class AccountNames {
                 "%s-%s".formatted(root.appResourceNamePrefix, affiliateApplicationGetLambdaHandlerDashed);
         this.affiliateApplicationGetIngestLambdaHandler =
                 "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateApplicationGetLambdaHandlerName);
-        this.affiliateApplicationGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationGetLambdaHandlerDashed);
+        this.affiliateApplicationGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationGetLambdaHandlerDashed);
         this.affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.affiliateApplicationGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
         root.publishedApiLambdas.add(new PublishedLambda(

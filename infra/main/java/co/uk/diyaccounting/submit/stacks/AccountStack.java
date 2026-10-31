@@ -1471,11 +1471,13 @@ public class AccountStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().account.affiliateApplicationPostIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().account.affiliateApplicationPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().account.affiliateApplicationPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().account.affiliateApplicationPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().account.affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().account.affiliateApplicationPostLambdaHttpMethod)
@@ -1518,8 +1520,9 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().account.affiliateApplicationGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().account.affiliateApplicationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().account.affiliateApplicationGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().account.affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().account.affiliateApplicationGetLambdaHttpMethod)
