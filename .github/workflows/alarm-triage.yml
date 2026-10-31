@@ -32,6 +32,14 @@ on:
         description: the alarm issue to triage again
         required: true
         type: string
+      mode:
+        description: first-pass runs the Haiku pass; escalate runs the Sonnet pass when the issue has no maintainer-review label
+        required: false
+        default: first-pass
+        type: choice
+        options:
+          - first-pass
+          - escalate
 
 permissions:
   id-token: write
@@ -92,7 +100,8 @@ jobs:
     steps:
       # first-pass: the Haiku pass, held for the operator when it needs Sonnet. escalate: the
       # operator approved the hold, so the Sonnet pass runs. blocked: a dispatch on an issue that
-      # is still waiting for the operator starts nothing.
+      # is still waiting for the operator starts nothing. A dispatch asks for escalate with its
+      # mode input; the label check below still applies and the escalate job's gate runs again.
       - name: Decide the mode
         id: mode
         env:
@@ -100,6 +109,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_ACTION: ${{ github.event.action }}
           ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+          REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           MODE=first-pass
@@ -108,6 +118,8 @@ jobs:
               MODE=blocked
               gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
                 --body "Escalation to Sonnet already waits for the operator: remove \`maintainer-review\` to run it. No triage ran."
+            elif [ "$REQUESTED_MODE" = "escalate" ]; then
+              MODE=escalate
             fi
           elif [ "$EVENT_ACTION" = "unlabeled" ]; then
             MODE=escalate
@@ -373,7 +385,15 @@ jobs:
           proof alarmHistory aws cloudwatch describe-alarm-history --region "$ALARM_REGION" \
             --alarm-name "$ALARM_NAME" --history-item-type StateUpdate \
             --start-date "$WINDOW_START" --end-date "$WINDOW_END" \
-            --query 'AlarmHistoryItems[].{at:Timestamp,summary:HistorySummary}' --output json
+            --query 'AlarmHistoryItems[].{at:Timestamp,summary:HistorySummary,data:HistoryData}' --output json
+          # HistoryData is a JSON string that carries newState.stateReason; HistorySummary does not.
+          # The reason is the only record of a state set by hand (set-alarm-state). The text is
+          # cut to 300 characters and stays data for the model, never an instruction.
+          if jq -e '.alarmHistory | type == "array"' /tmp/proof-alarmHistory.json > /dev/null 2>&1; then
+            jq -c '{alarmHistory: [.alarmHistory[] | {at, summary, newState: ((.data | fromjson? // {}) | {value: .newState.stateValue, stateReason: ((.newState.stateReason // "") | .[0:300])})}]}' \
+              /tmp/proof-alarmHistory.json > /tmp/proof-alarmHistory.flat.json
+            mv /tmp/proof-alarmHistory.flat.json /tmp/proof-alarmHistory.json
+          fi
           jq -s '.[0] + {credentialProof: (.[1] + .[2] + .[3] + {provedAt: (now | todate)})}' \
             /tmp/evidence.json /tmp/proof-identity.json /tmp/proof-logGroups.json /tmp/proof-alarmHistory.json \
             > /tmp/evidence.proved.json
