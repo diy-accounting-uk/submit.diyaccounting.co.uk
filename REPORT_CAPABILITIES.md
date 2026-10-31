@@ -205,6 +205,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job: use when a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
     - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role: use when a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
     - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment: use when reading or changing the order in which the application stacks of one deployment deploy.
+    - [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id: use when a `deploy-cdk-stack.yml` job sits in `cdk deploy` for an hour with one resource CREATE_IN_PROGRESS and the log shows nothing.
     - [OPS-149](#ops-149-finish-a-deployment) Finish a deployment: use when reading or changing what a deployment does after its tests pass: the last-known-good record, the ci apex promotion, the DORA row and the destroy of the previous prod set.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
@@ -2226,7 +2227,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2263,6 +2264,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job
 - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
 - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment
+- [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id
 - [OPS-149](#ops-149-finish-a-deployment) Finish a deployment
 <!-- /generated:group deploy-pipeline-ops -->
 
@@ -2463,6 +2465,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/deploy-stacks.yml
 - **Keywords:** deploy stacks, application stacks, stack order, workflow_call, deploy phase
 - **Related:** OPS-06, OPS-08
+
+#### OPS-148 Stop a stack deploy when one resource stalls with no physical id
+
+- **Use when:** a `deploy-cdk-stack.yml` job sits in `cdk deploy` for an hour with one resource CREATE_IN_PROGRESS and the log shows nothing.
+- **Does:** polls `aws cloudformation list-stack-resources` every 60 s while `cdk deploy` runs. When one resource has been CREATE_IN_PROGRESS or UPDATE_IN_PROGRESS with no PhysicalResourceId for 15 minutes and no resource changed state in that time, it prints the resource and its type to the log and the step summary and stops the deploy process group, so the job fails with the resource named.
+- **Run:** `node scripts/ci/stack-stall-watchdog.mjs --stack <name> --regions "eu-west-2 us-east-1" --kill-group <pid> --marker <file>`
+- **Entry:** `scripts/ci/stack-stall-watchdog.mjs`; `.github/workflows/deploy-cdk-stack.yml`
+- **Files:** scripts/ci/stack-stall-watchdog.mjs, app/unit-tests/scripts/stackStallWatchdog.test.js, .github/workflows/deploy-cdk-stack.yml
+- **Keywords:** stall, watchdog, CREATE_IN_PROGRESS, PhysicalResourceId, cdk deploy, ExpiredToken, alarm stall
+- **Related:** OPS-124
 
 #### OPS-149 Finish a deployment
 
@@ -6219,6 +6231,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alarm issues: [DEV-27](#dev-27-render-the-open-work-board)
 - alarm lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - alarm silence: [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
+- alarm stall: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - alarm state change: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - alarm state changes daily: [DATA-31](#data-31-sql-views-dora-and-operations)
 - alarm triage: [OPS-18](#ops-18-run-alarm-and-support-triage), [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -6471,7 +6484,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdk application logging: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
 - cdk config: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - cdk custom resource: [DATA-10](#data-10-create-or-replace-athena-business-views)
-- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
+- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - cdk diff: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - cdk entrypoint: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - cdk introspection: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
@@ -6683,6 +6696,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - create-secrets: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - create-test-user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - create-test-user api: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
+- create_in_progress: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - createinvitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - createpass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass)
 - creation order: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
@@ -6987,6 +7001,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expire records: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - expire-sandbox: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - expire-sandbox lifecycle: [BILL-39](#bill-39-cdk-diya-gl-stack)
+- expiredtoken: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
 - explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
@@ -7722,6 +7737,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - phone width: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
+- physicalresourceid: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - pii redaction: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - pino logger: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - pipelineversion: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -8203,6 +8219,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stale branches: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
+- stall: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
@@ -8516,6 +8533,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
+- watchdog: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)

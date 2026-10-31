@@ -343,6 +343,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-144 -->
 <!-- capability OPS-145 -->
 <!-- capability OPS-147 -->
+<!-- capability OPS-148 -->
 <!-- capability OPS-149 -->
 ### ci slot pool and sweep (OPS)
 

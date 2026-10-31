@@ -138,4 +138,13 @@ describe("alarm-triage.yml", () => {
       runTriage.indexOf("- name: Prove the triage credentials against the alarm's telemetry"),
     );
   });
+
+  it("caps the window wait inside the job's timeout, so a daily alarm's hour of margin cannot cancel the job", () => {
+    const runTriage = jobBlock("run-triage");
+    const wait = stepBlock(runTriage, "Wait for the alarm window to close");
+    const maxWaitSeconds = Number(wait.match(/MAX_WAIT_SECONDS=(\d+)/)[1]);
+    const timeoutMinutes = Number(runTriage.match(/timeout-minutes: (\d+)/)[1]);
+    expect(maxWaitSeconds).toBeLessThanOrEqual(timeoutMinutes * 60 - 20 * 60);
+    expect(wait).toContain(`WAIT_SECONDS=$MAX_WAIT_SECONDS`);
+  });
 });

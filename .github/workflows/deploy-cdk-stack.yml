@@ -402,7 +402,11 @@ jobs:
           fi
           cd cdk-${{ needs.params.outputs.cdk-application }}
           cat ../.env.${{ needs.names.outputs.environment-name }}
-          npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+          # The deploy runs in its own process group so the stall watchdog can stop it. The
+          # watchdog fails the step when one resource sits in progress with no physical id.
+          STALL_MARKER="$RUNNER_TEMP/stack-stall-marker"
+          rm -f "$STALL_MARKER"
+          setsid npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
             npx cdk deploy \
               ${{ needs.params.outputs.stackName }} \
               --require-approval never \
@@ -410,7 +414,28 @@ jobs:
               --no-notices \
               --concurrency 4 \
               --asset-parallelism \
-              --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json
+              --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json &
+          CDK_PID=$!
+          node ../scripts/ci/stack-stall-watchdog.mjs \
+            --stack "${{ needs.names.outputs.deployment-name }}-app-${{ needs.params.outputs.stackName }}" \
+            --regions "$AWS_REGION us-east-1" \
+            --kill-group "$CDK_PID" \
+            --marker "$STALL_MARKER" &
+          WATCHDOG_PID=$!
+          set +e
+          wait "$CDK_PID"
+          CDK_EXIT=$?
+          kill "$WATCHDOG_PID" 2>/dev/null
+          wait "$WATCHDOG_PID" 2>/dev/null
+          set -e
+          if [ -s "$STALL_MARKER" ]; then
+            echo "::error::cdk deploy stopped by the stall watchdog"
+            cat "$STALL_MARKER"
+            exit 1
+          fi
+          if [ "$CDK_EXIT" -ne 0 ]; then
+            exit "$CDK_EXIT"
+          fi
           cd ..
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
