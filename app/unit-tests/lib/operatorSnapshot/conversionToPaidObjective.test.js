@@ -37,4 +37,17 @@ describe("conversionToPaidObjective", () => {
       expect(observation.deepLink(context), observation.id).toEqual(expect.stringMatching(/^https:\/\//));
     }
   });
+
+  test("the commission observations read each state's pence from the monthly view in pounds", () => {
+    const byId = Object.fromEntries(conversionToPaidObjective.observations.map((observation) => [observation.id, observation]));
+    for (const state of ["held", "payable", "paid", "reversed"]) {
+      const observation = byId[`affiliate-commission-${state}-gbp`];
+      expect(observation, state).toBeDefined();
+      expect(observation.view).toBe("v_affiliate_commissions_monthly");
+      expect(observation.dayColumn).toBe("month");
+      expect(observation.unit).toBe("gbp");
+      expect(observation.valueExpr).toBe(`${state}_pence / 100.0`);
+      expect(observation.aggregation).toBe("sum");
+    }
+  });
 });
