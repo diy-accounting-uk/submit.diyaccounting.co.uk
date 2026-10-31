@@ -40,7 +40,8 @@ const FIXTURE_SNAPSHOT = {
           better: "up",
           last30: { value: 0.999, trend: 0.001 },
           last90: { value: 0.998, trend: null },
-          deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
         },
         {
           id: "alarms-fired",
@@ -68,7 +69,8 @@ const FIXTURE_SNAPSHOT = {
           unit: "ratio",
           last30: { value: 0.42, trend: 0 },
           last90: { value: 0.4, trend: 0.05 },
-          deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-analytics",
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
         },
         {
           id: "sessions-human",
@@ -757,7 +759,7 @@ test.describe("Operator Dashboard", () => {
     await expect(row).toContainText("0.1%");
     await expect(row.locator("a.deep-link")).toHaveAttribute(
       "href",
-      "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
+      "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
     );
   });
 
@@ -791,7 +793,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator('.observation[data-observation-id="probe-pass-rate"] a.deep-link')).toHaveText(
-      "CloudWatch dashboard prod-env-operations",
+      "Athena saved queries (v_availability_sli_daily)",
     );
     await expect(page.locator('.observation[data-observation-id="alarms-fired"] a.deep-link')).toHaveText("CloudWatch alarms");
     await expect(page.locator("#visitorsPanel")).toBeVisible();

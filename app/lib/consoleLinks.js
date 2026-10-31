@@ -52,10 +52,6 @@ export function buildXRayTraceSearchLink({ region, startIso, endIso, filterExpre
   return `https://${region}.console.aws.amazon.com/xray/home?region=${region}#/traces?timeRange=${encodeURIComponent(startIso)}~${encodeURIComponent(endIso)}&filter=${encodeURIComponent(filterExpression)}`;
 }
 
-export function buildCloudWatchDashboardLink(region, dashboardName) {
-  return `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#dashboards:name=${encodeURIComponent(dashboardName)}`;
-}
-
 export function buildCloudWatchAlarmsOverviewLink(region) {
   return `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:`;
 }

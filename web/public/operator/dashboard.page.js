@@ -156,10 +156,6 @@ function linkLabel(observation) {
   const url = observation.deepLink || "";
   const host = linkHost(url);
   if (url.includes("cloudwatch/home") && url.includes("#alarmsV2")) return "CloudWatch alarms";
-  if (url.includes("cloudwatch/home")) {
-    const match = url.match(/dashboards:name=([^&]+)/);
-    return match ? "CloudWatch dashboard " + decodeURIComponent(match[1]) : "CloudWatch dashboards";
-  }
   if (url.includes("/athena/")) return "Athena saved queries" + (observation.source ? " (" + observation.source + ")" : "");
   if (host === "github.com" && url.includes("/workflows/")) return "GitHub workflow " + url.split("/workflows/")[1];
   if (host === "analytics.google.com") return "Google Analytics reports";
