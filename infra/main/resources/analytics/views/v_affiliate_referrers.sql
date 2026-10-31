@@ -36,7 +36,7 @@ SELECT referrer_hash,
        coalesce(sum(CASE WHEN state = 'payable' AND reversal_of IS NULL THEN amount_pence END), 0) AS payable_pence,
        coalesce(sum(CASE WHEN state = 'paid' THEN amount_pence END), 0) AS paid_pence,
        coalesce(sum(CASE WHEN state = 'payable' AND reversal_of IS NULL
-                          AND date_trunc('month', from_iso8601_timestamp(charged_at)) = date_trunc('month', current_timestamp)
+                          AND date_trunc('month', date(from_iso8601_timestamp(charged_at))) = date_trunc('month', current_date)
                          THEN amount_pence END), 0) AS payable_this_month_pence
 FROM   latest_lines
 WHERE  livemode = true AND charged_at IS NOT NULL
