@@ -10,6 +10,16 @@ const OAUTH_TOKEN_URL = "https://api-m.paypal.com/v1/oauth2/token";
 const TRANSACTIONS_URL = "https://api-m.paypal.com/v1/reporting/transactions";
 const PAGE_SIZE = 500;
 const RATE_LIMIT_BACKOFF_MS = [5000, 15000, 45000];
+const DATA_NOT_AVAILABLE_MESSAGE = "Data for the given start date is not available.";
+
+/** PayPal has no Transaction Search data yet for the start date: it answers 404 INVALID_REQUEST. */
+export class PayPalDataNotAvailableError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "PayPalDataNotAvailableError";
+  }
+}
+
 export const MIN_CALL_INTERVAL_MS = 1000;
 
 export const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -106,7 +116,11 @@ export async function fetchTransactionsPage(
       await sleep(retryAfterMs(response) ?? RATE_LIMIT_BACKOFF_MS[attempt]);
       continue;
     }
-    throw new Error(`PayPal Transaction Search request failed with ${response.status}: ${JSON.stringify(body)}`);
+    const message = `PayPal Transaction Search request failed with ${response.status}: ${JSON.stringify(body)}`;
+    if (response.status === 404 && body?.name === "INVALID_REQUEST" && body?.message === DATA_NOT_AVAILABLE_MESSAGE) {
+      throw new PayPalDataNotAvailableError(message);
+    }
+    throw new Error(message);
   }
 }
 

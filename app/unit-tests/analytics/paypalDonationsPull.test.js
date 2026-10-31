@@ -34,7 +34,9 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
 
 const mockFetchAccessToken = vi.fn();
 const mockFetchAllTransactions = vi.fn();
+class MockDataNotAvailableError extends Error {}
 vi.mock("@app/services/paypalTransactionSearch.js", () => ({
+  PayPalDataNotAvailableError: MockDataNotAvailableError,
   fetchAccessToken: (...args) => mockFetchAccessToken(...args),
   fetchAllTransactions: (...args) => mockFetchAllTransactions(...args),
   createPacer: () => async () => {},
@@ -274,6 +276,39 @@ describe("handler", () => {
       "curated/paypal/paypal_donations/dt=2026-09-14/donations.json.gz",
       "curated/paypal/paypal_donations/dt=2026-09-15/donations.json.gz",
     ]);
+  });
+
+  test("skips today when PayPal has no data yet and still writes yesterday", async () => {
+    mockFetchAllTransactions.mockImplementation(async (_token, start) => {
+      if (start.toISOString().startsWith("2026-09-15")) throw new MockDataNotAvailableError("not available");
+      return RECORDED_DAY;
+    });
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-15T00:16:00Z"));
+    let result;
+    try {
+      result = await handler({});
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(result.days).toEqual([
+      { date: "2026-09-14", key: objectKey("2026-09-14"), count: 3 },
+      { date: "2026-09-15", key: null, count: 0, skipped: true },
+    ]);
+    expect(mockS3Send).toHaveBeenCalledTimes(1);
+  });
+
+  test("fails when yesterday has no data", async () => {
+    mockFetchAllTransactions.mockRejectedValue(new MockDataNotAvailableError("not available"));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-15T00:16:00Z"));
+    try {
+      await expect(handler({})).rejects.toBeInstanceOf(MockDataNotAvailableError);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(mockS3Send).not.toHaveBeenCalled();
   });
 
   test("writes the day's receipts to the curated PayPal prefix as gzipped NDJSON", async () => {
