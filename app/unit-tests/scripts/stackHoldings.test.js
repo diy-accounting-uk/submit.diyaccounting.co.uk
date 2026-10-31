@@ -36,6 +36,18 @@ describe("deploymentNameOfRun", () => {
     expect(deploymentNameOfRun(jobs)).toBe("ci-set1");
   });
 
+  test("reads the deployment name from a 3-segment job name under the stack phase caller", () => {
+    const jobs = [
+      {
+        name: "deploy stacks / deploy SelfDestructStack via deploy-cdk-stack.yml / deploy ci-set1-app-SelfDestructStack",
+        conclusion: "success",
+      },
+      { name: "deploy stacks / deploy AuthStack via deploy-cdk-stack.yml / deploy ci-set1-app-AuthStack", conclusion: "success" },
+      { name: "deploy stacks / deploy api", conclusion: "success" },
+    ];
+    expect(deploymentNameOfRun(jobs)).toBe("ci-set1");
+  });
+
   test("gives no name when the run deployed nothing", () => {
     expect(deploymentNameOfRun([{ name: "deploy AuthStack via deploy-cdk-stack.yml / params", conclusion: "success" }])).toBe("");
   });

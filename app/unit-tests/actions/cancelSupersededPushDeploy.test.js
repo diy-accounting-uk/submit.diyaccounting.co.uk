@@ -27,6 +27,20 @@ describe("hasStartedStackJob", () => {
     expect(hasStartedStackJob([{ name: "deploy AuthStack", status: "in_progress" }])).toBe(true);
     expect(hasStartedStackJob([{ name: "deploy AuthStack", status: "queued" }])).toBe(false);
   });
+
+  test("finds a stack job under the stack phase caller, in a 2- or 3-segment name", () => {
+    expect(hasStartedStackJob([{ name: "deploy stacks / deploy api", status: "in_progress" }])).toBe(true);
+    expect(
+      hasStartedStackJob([
+        { name: "deploy stacks / deploy AuthStack via deploy-cdk-stack.yml / deploy ci-set1-app-AuthStack", status: "in_progress" },
+      ]),
+    ).toBe(true);
+  });
+
+  test("ignores the stack phase caller itself and its wait job", () => {
+    expect(hasStartedStackJob([{ name: "deploy stacks", status: "in_progress" }])).toBe(false);
+    expect(hasStartedStackJob([{ name: "deploy stacks / wait for environment edge inputs", status: "in_progress" }])).toBe(false);
+  });
 });
 
 describe("jobsForRun", () => {

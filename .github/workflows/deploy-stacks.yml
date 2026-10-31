@@ -1,0 +1,873 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-147 Deploy the application stacks of a deployment
+# - **Use when:** reading or changing the order in which the application stacks of one deployment deploy.
+# - **Does:** deploy-stacks.yml is called by deploy.yml. It deploys the Lambda stacks, the API, the edge, the web publish and the ops stack, and reports each result to the caller.
+# - **Run:** no command; deploy.yml calls it (see OPS-06)
+# - **Entry:** `.github/workflows/deploy-stacks.yml`
+# - **Files:** .github/workflows/deploy-stacks.yml
+# - **Keywords:** deploy stacks, application stacks, stack order, workflow_call, deploy phase
+# - **Related:** OPS-06, OPS-08
+# @end-capability
+
+name: deploy-stacks
+run-name: "deploy stacks from ${{ github.ref_name }}"
+
+on:
+  workflow_call:
+    inputs:
+      github-environment:
+        type: string
+        required: true
+      is-skipping-deploy:
+        type: string
+        required: true
+      force-all-stack-deployment:
+        type: string
+        required: true
+      environment-name:
+        type: string
+        required: true
+      deployment-name:
+        type: string
+        required: true
+      package-json-scripts-only:
+        type: string
+        required: true
+      self-destruct-start-datetime:
+        type: string
+        required: true
+      self-destruct-delay-hours:
+        type: string
+        required: true
+      public-url:
+        type: string
+        required: true
+      base-url:
+        type: string
+        required: true
+      cognito-user-pool-arn:
+        type: string
+        required: true
+      cognito-client-id:
+        type: string
+        required: true
+      cognito-diya-gl-client-id:
+        type: string
+        required: true
+      cognito-mcp-client-id:
+        type: string
+        required: true
+      skip-json:
+        type: string
+        required: true
+      base-image-tag:
+        type: string
+        required: true
+      mvn-package-result:
+        type: string
+        required: true
+      validate-secrets-result:
+        type: string
+        required: true
+    outputs:
+      deploy-api-result:
+        value: ${{ jobs.results.outputs.deploy-api-result }}
+      deploy-auth-result:
+        value: ${{ jobs.results.outputs.deploy-auth-result }}
+      deploy-hmrc-result:
+        value: ${{ jobs.results.outputs.deploy-hmrc-result }}
+      deploy-hmrc-itsa-result:
+        value: ${{ jobs.results.outputs.deploy-hmrc-itsa-result }}
+      deploy-hmrc-itsa-property-result:
+        value: ${{ jobs.results.outputs.deploy-hmrc-itsa-property-result }}
+      deploy-account-result:
+        value: ${{ jobs.results.outputs.deploy-account-result }}
+      deploy-edge-result:
+        value: ${{ jobs.results.outputs.deploy-edge-result }}
+      deploy-ops-result:
+        value: ${{ jobs.results.outputs.deploy-ops-result }}
+      deploy-publish-result:
+        value: ${{ jobs.results.outputs.deploy-publish-result }}
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+  pages: write
+  actions: read
+
+env:
+  JAVA_VERSION: '25'
+  AWS_REGION: 'eu-west-2'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ github.event.inputs.selfDestructDelayHours || '4' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_ALL_STACK_DEPLOYMENT: ${{ github.event.inputs.forceAllStackDeployment || 'true' }}
+  COMMIT_HASH: ${{ github.sha }}
+  BUILD_NUMBER: ${{ github.run_number }}
+  GITHUB_REF: ${{ github.ref }}
+  ENV_JOBS_READ_BY_EDGE_AND_OPS: 'deploy activity,deploy analytics'
+
+jobs:
+
+  # EdgeStack reads the activity bus and the analytics lake bucket, and OpsStack reads the
+  # activity bus. Both start long after those jobs end, so this gate states the order that timing
+  # already gives.
+  wait-for-environment-edge-inputs:
+    name: 'wait for environment edge inputs'
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Wait for the activity and analytics jobs of an in-progress deploy-environment.yml run
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+          workflows: 'deploy-environment.yml'
+          match-mode: 'environment'
+          target-environment: ${{ inputs.github-environment }}
+          jobs: ${{ env.ENV_JOBS_READ_BY_EDGE_AND_OPS }}
+
+  deploy-application-self-destruct:
+    name: 'deploy SelfDestructStack via deploy-cdk-stack.yml'
+    if: ${{ inputs.mvn-package-result == 'success' && inputs.is-skipping-deploy != 'true' && inputs.package-json-scripts-only != 'true' && github.ref != 'refs/heads/main' && inputs.environment-name != 'prod' }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-SelfDestructStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      self-destruct-start-datetime: ${{ inputs.self-destruct-start-datetime }}
+      self-destruct-delay-hours: ${{ inputs.self-destruct-delay-hours }}
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-auth:
+    name: 'deploy AuthStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-AuthStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-hmrc:
+    name: 'deploy HmrcStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-HmrcStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-hmrc-itsa:
+    name: 'deploy HmrcItsaStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-HmrcItsaStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-hmrc-itsa-property:
+    name: 'deploy HmrcItsaPropertyStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-HmrcItsaPropertyStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-companies-house:
+    name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-companies-house')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-CompaniesHouseStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-account:
+    name: 'deploy AccountStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-AccountStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-billing:
+    name: 'deploy BillingStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-billing')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-BillingStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-diya-gl:
+    name: 'deploy DiyaGlStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-diya-gl')) }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-DiyaGlStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+
+  deploy-mcp:
+    name: 'deploy McpStack via deploy-cdk-stack.yml'
+    if: ${{ inputs.validate-secrets-result == 'success' }}
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-McpStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+
+  deploy-api:
+    name: 'deploy api'
+    if: >-
+      ${{ !cancelled() && needs.deploy-mcp.result == 'success'
+      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')))
+      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')))
+      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
+      && (needs.deploy-companies-house.result == 'success' || (needs.deploy-companies-house.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-companies-house')))
+      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')))
+      && (needs.deploy-billing.result == 'success' || (needs.deploy-billing.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-billing')))
+      && (needs.deploy-diya-gl.result == 'success' || (needs.deploy-diya-gl.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-diya-gl')))
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')) }}
+    needs:
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
+      - deploy-companies-house
+      - deploy-account
+      - deploy-billing
+      - deploy-diya-gl
+      - deploy-mcp
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+        with:
+          java: 'true'
+
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download Maven build artifact
+        id: download-maven-api
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
+      - name: Cache Maven build output
+        if: steps.download-maven-api.outcome != 'success'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
+      - name: Deploy API stack (CDK)
+        run: |
+          if [ ! -f target/submit-application.jar ]; then
+            echo "Maven output not cached, building with profile cdk-application..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3 \
+              -P cdk-application
+          else
+            echo "Maven output cached (target/submit-application.jar exists), skipping build"
+          fi
+          cd cdk-application
+          cat ../.env.${{ inputs.environment-name }}
+          npx dotenv -e ../.env.${{ inputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ inputs.deployment-name }}-app-ApiStack \
+              ${{ inputs.deployment-name }}-app-ApiRoutesStack \
+              --exclusively \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-application.out/cdk-outputs-api.json
+          cd ..
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ inputs.base-image-tag }}
+          # Looked up from Cognito domain convention in names job
+          COGNITO_USER_POOL_ARN: ${{ inputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ inputs.cognito-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ inputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ inputs.cognito-mcp-client-id }}
+          # ApiStack builds its routes from the AccountStack's Lambda list, and AccountStack
+          # builds the support ticket Lambda only when the diya-ops GitHub App id is set, so this
+          # synth needs the same two values deploy-cdk-stack.yml gives AccountStack.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
+
+      - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
+
+      - name: Resolve stack outputs
+        id: api-outputs
+        run: |
+          HTTP_API_URL=$(jq -r '.["${{ inputs.deployment-name }}-app-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
+          echo "HTTP_API_URL=$HTTP_API_URL"
+          echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
+          HTTP_API_ID=$(jq -r '.["${{ inputs.deployment-name }}-app-ApiStack"].HttpApiId' cdk-submit-application.out/cdk-outputs-api.json)
+          echo "HTTP_API_ID=$HTTP_API_ID"
+          echo "HTTP_API_ID=$HTTP_API_ID" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Force API Gateway re-deployment
+        id: force-redeploy
+        run: |
+          API_ID="${{ steps.api-outputs.outputs.HTTP_API_ID }}"
+          echo "API_ID=$API_ID"
+          if [ -z "$API_ID" ] || [ "$API_ID" = "null" ]; then
+            echo "ERROR: Could not resolve HttpApiId from CDK outputs"
+            exit 1
+          fi
+
+          echo "Creating new API Gateway deployment for API: $API_ID"
+          DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
+            --api-id "$API_ID" \
+            --description "Forced deployment from build ${{ env.BUILD_NUMBER }}" \
+            --query 'DeploymentId' \
+            --output text)
+          echo "Created deployment: $DEPLOYMENT_ID"
+
+          echo "Disabling AutoDeploy to allow manual stage update"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --no-auto-deploy
+
+          echo "Updating \$default stage to use deployment: $DEPLOYMENT_ID"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --deployment-id "$DEPLOYMENT_ID"
+
+          echo "Re-enabling AutoDeploy"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --auto-deploy
+
+          echo "API Gateway re-deployment complete"
+        shell: bash
+    outputs:
+      httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
+      httpApiId: ${{ steps.api-outputs.outputs.HTTP_API_ID }}
+
+  deploy-edge:
+    name: 'deploy EdgeStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.mvn-package-result == 'success'
+      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')))
+      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')))
+      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
+      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')))
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')))
+      && needs.wait-for-environment-edge-inputs.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')) }}
+    needs:
+      - wait-for-environment-edge-inputs
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
+      - deploy-account
+      - deploy-api
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-EdgeStack
+      force-stack-deployment: ${{ inputs.force-all-stack-deployment }}
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      lookup-api-gateway: 'true'
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  deploy-publish:
+    name: 'deploy publish'
+    if: >-
+      ${{ !cancelled() && inputs.mvn-package-result == 'success'
+      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')))
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api'))) }}
+    needs:
+      - deploy-edge
+      - deploy-api
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+        with:
+          java: 'true'
+
+      - name: Assume the AWS actions and deploy roles (for RUM outputs)
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Lookup API Gateway from domain convention
+        id: lookup-api
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ inputs.environment-name }}
+          deployment-name: ${{ inputs.deployment-name }}
+          lookup-cognito: 'false'
+          lookup-api-gateway: 'true'
+
+      - name: Resolve RUM config from ObservabilityStack
+        id: rum-config
+        shell: bash
+        run: |
+          set -euo pipefail
+          STACK_NAME="${{ inputs.environment-name }}-env-ObservabilityStack"
+          echo "Resolving RUM outputs from $STACK_NAME in region ${{ env.AWS_REGION }}"
+          JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
+          RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')
+          RUM_IDENTITY_POOL_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumIdentityPoolId") | .OutputValue')
+          RUM_GUEST_ROLE_ARN=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumGuestRoleArn") | .OutputValue')
+          RUM_REGION=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumRegion") | .OutputValue' 2>/dev/null || echo "${{ env.AWS_REGION }}")
+          echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID"
+          echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID"
+          echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN"
+          echo "RUM_REGION=$RUM_REGION"
+          echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID" >> $GITHUB_OUTPUT
+          echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID" >> $GITHUB_OUTPUT
+          echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN" >> $GITHUB_OUTPUT
+          echo "RUM_REGION=$RUM_REGION" >> $GITHUB_OUTPUT
+
+      - name: Inject RUM placeholders into HTML files
+        shell: bash
+        env:
+          RUM_APP_MONITOR_ID: ${{ steps.rum-config.outputs.RUM_APP_MONITOR_ID }}
+          RUM_IDENTITY_POOL_ID: ${{ steps.rum-config.outputs.RUM_IDENTITY_POOL_ID }}
+          RUM_GUEST_ROLE_ARN: ${{ steps.rum-config.outputs.RUM_GUEST_ROLE_ARN }}
+          AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION || env.AWS_REGION }}
+        run: |
+          set -euo pipefail
+
+          echo 'Injecting RUM config into HTML files under web/public'
+          echo '----------------------------------------------------'
+
+          # Fail early if required variables are missing
+            : "${RUM_APP_MONITOR_ID:?Missing RUM_APP_MONITOR_ID}"
+            : "${RUM_IDENTITY_POOL_ID:?Missing RUM_IDENTITY_POOL_ID}"
+            : "${RUM_GUEST_ROLE_ARN:?Missing RUM_GUEST_ROLE_ARN}"
+            : "${AWS_REGION:?Missing AWS_REGION}"
+
+          # Escape sed replacement strings safely
+            escape_sed_replacement() {
+            printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
+          }
+
+          RUM_APP_MONITOR_ID_ESCAPED="$(escape_sed_replacement "${RUM_APP_MONITOR_ID}")"
+          RUM_IDENTITY_POOL_ID_ESCAPED="$(escape_sed_replacement "${RUM_IDENTITY_POOL_ID}")"
+          RUM_GUEST_ROLE_ARN_ESCAPED="$(escape_sed_replacement "${RUM_GUEST_ROLE_ARN}")"
+          AWS_REGION_ESCAPED="$(escape_sed_replacement "${AWS_REGION}")"
+
+          # Find and process HTML files safely (null-delimited)
+          find web/public -type f -name '*.html' -print0 |
+          while IFS= read -r -d '' html_file; do
+            echo "Processing ${html_file}"
+
+            # Perform in-place replacements (case-insensitive placeholders)
+            sed -i \
+            -e "s|\${RUM_APP_MONITOR_ID}|${RUM_APP_MONITOR_ID_ESCAPED}|gI" \
+            -e "s|\${RUM_IDENTITY_POOL_ID}|${RUM_IDENTITY_POOL_ID_ESCAPED}|gI" \
+            -e "s|\${RUM_GUEST_ROLE_ARN}|${RUM_GUEST_ROLE_ARN_ESCAPED}|gI" \
+            -e "s|\${AWS_REGION}|${AWS_REGION_ESCAPED}|gI" \
+            "${html_file}"
+          done
+
+          echo 'RUM placeholder injection complete'
+
+      - name: Generate web/public/submit.env for client auth config
+        shell: bash
+        env:
+          # The browser builds its Cognito, HMRC and Companies House redirect URIs from this, so
+          # it has to be the host the site is served at: the apex on prod, the deployment's own
+          # host on ci, where the probes now navigate the set and the .env file's apex value
+          # would send every sign-in back to a host that holds no OAuth state.
+          DIY_SUBMIT_BASE_URL: ${{ inputs.public-url }}
+        run: |
+          set -euo pipefail
+          # Load variables from the environment-specific .env file and write to web/public/submit.env
+          npx dotenv -e .env.${{ inputs.environment-name }} -- bash -c 'cat > web/public/submit.env <<EOF
+          COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-${{ inputs.cognito-client-id }}}
+          COGNITO_BASE_URI=https://${{ inputs.environment-name }}-auth.diyaccounting.co.uk
+
+          HMRC_CLIENT_ID=${HMRC_CLIENT_ID}
+          HMRC_BASE_URI=${HMRC_BASE_URI}
+
+          HMRC_SANDBOX_CLIENT_ID=${HMRC_SANDBOX_CLIENT_ID}
+          HMRC_SANDBOX_BASE_URI=${HMRC_SANDBOX_BASE_URI}
+
+          COMPANIES_HOUSE_CLIENT_ID=${COMPANIES_HOUSE_CLIENT_ID}
+          COMPANIES_HOUSE_IDENTITY_BASE_URI=${COMPANIES_HOUSE_IDENTITY_BASE_URI}
+          COMPANIES_HOUSE_FILING_BASE_URI=${COMPANIES_HOUSE_FILING_BASE_URI}
+
+          DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}
+          GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-${{ vars.SUBMIT_GA4_MEASUREMENT_ID }}}
+          UET_TAG_ID=${UET_TAG_ID:-}
+
+          GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID}
+          GOOGLE_DRIVE_PICKER_API_KEY=${GOOGLE_DRIVE_PICKER_API_KEY:-${{ vars.GOOGLE_DRIVE_PICKER_API_KEY }}}
+          EOF'
+
+      - name: Publish experiments.toml into the web root
+        shell: bash
+        run: node scripts/publish-experiments.mjs web/public
+
+      - name: Remove the pages this environment does not list from sitemap.xml
+        shell: bash
+        run: node scripts/publish-sitemap.mjs web/public ${{ inputs.environment-name }}
+
+      - name: Compute hash of static website content
+        id: publish-hash
+        shell: bash
+        run: |
+          WEBSITE_HASH=$(find 'web/public' -type f -exec sha256sum {} + | sort -k 2 | sha256sum | awk '{print $1}')
+          echo "WEBSITE_HASH=$WEBSITE_HASH"
+          echo "WEBSITE_HASH=$WEBSITE_HASH" >> $GITHUB_OUTPUT
+
+      - name: Compare current submit.commit-hash.txt with computed hash
+        id: publish-compare
+        shell: bash
+        run: |
+          EDGE_HASH_URL="${{ inputs.base-url }}/submit.commit-hash.txt"
+          echo "Fetching existing hash from $EDGE_HASH_URL"
+          EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
+          echo "EXISTING_HASH=$EXISTING_HASH"
+          echo "EXISTING_HASH=$EXISTING_HASH" >> $GITHUB_OUTPUT
+          if [ "$EXISTING_HASH" == "${{ steps.publish-hash.outputs.WEBSITE_HASH }}" ]; then
+            echo "skipPublishStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipPublishStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assume the AWS actions and deploy roles
+        if: ${{ inputs.environment-name == 'prod' || inputs.force-all-stack-deployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download Maven build artifact
+        if: ${{ inputs.environment-name == 'prod' || inputs.force-all-stack-deployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: download-maven-publish
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
+      - name: Cache Maven build output
+        if: ${{ steps.download-maven-publish.outcome != 'success' && (inputs.environment-name == 'prod' || inputs.force-all-stack-deployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true') }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
+      # CloudFront bills each invalidation path. A set whose PublishStack does not exist yet is
+      # publishing to a new distribution that has cached nothing, so it invalidates nothing;
+      # a set that has published before invalidates /* once.
+      - name: Decide whether this publish invalidates the distribution
+        if: ${{ inputs.environment-name == 'prod' || inputs.force-all-stack-deployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: publish-invalidation
+        shell: bash
+        env:
+          PUBLISH_STACK_NAME: ${{ inputs.deployment-name }}-app-PublishStack
+        run: |
+          set -euo pipefail
+          if ERROR=$(aws cloudformation describe-stacks --stack-name "$PUBLISH_STACK_NAME" --region us-east-1 2>&1 >/dev/null); then
+            echo "$PUBLISH_STACK_NAME exists; this publish invalidates /*."
+            echo "invalidate=true" >> "$GITHUB_OUTPUT"
+          elif echo "$ERROR" | grep -q 'does not exist'; then
+            echo "$PUBLISH_STACK_NAME does not exist; first publish onto a new distribution, no invalidation."
+            echo "invalidate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Cannot read $PUBLISH_STACK_NAME: $ERROR"
+            exit 1
+          fi
+
+      - name: Build CDK and synthesize and deploy the PublishStack in the Application
+        if: ${{ inputs.environment-name == 'prod' || inputs.force-all-stack-deployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: |
+          if [ ! -f target/submit-application.jar ]; then
+            echo "Maven output not cached, building with profile cdk-application..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3 \
+              -P cdk-application
+          else
+            echo "Maven output cached (target/submit-application.jar exists), skipping build"
+          fi
+          cd cdk-application
+          cat ../.env.${{ inputs.environment-name }}
+          npx dotenv -e ../.env.${{ inputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ inputs.deployment-name }}-app-PublishStack \
+              --exclusively \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json
+          cd ..
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ inputs.base-image-tag }}
+          WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          PUBLISH_INVALIDATES_DISTRIBUTION: ${{ steps.publish-invalidation.outputs.invalidate }}
+          HTTP_API_URL: ${{ steps.lookup-api.outputs.http-api-url }}
+          DIY_SUBMIT_APEX_URL: ${{ inputs.public-url }}
+          # Looked up from Cognito domain convention in names job
+          COGNITO_USER_POOL_ARN: ${{ inputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ inputs.cognito-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ inputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ inputs.cognito-mcp-client-id }}
+
+  deploy-ops:
+    name: 'deploy OpsStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && inputs.mvn-package-result == 'success'
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')))
+      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')))
+      && needs.wait-for-environment-edge-inputs.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-ops')) }}
+    needs:
+      - wait-for-environment-edge-inputs
+      - deploy-api
+      - deploy-edge
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ inputs.deployment-name }}-app-OpsStack
+      force-stack-deployment: ${{ inputs.force-all-stack-deployment }}
+      environment-name: ${{ inputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ inputs.base-image-tag }}
+      lookup-api-gateway: 'true'
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
+  results:
+    name: 'report stack results'
+    if: ${{ always() }}
+    needs:
+      - deploy-api
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
+      - deploy-account
+      - deploy-edge
+      - deploy-ops
+      - deploy-publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - run: ':'
+    outputs:
+      deploy-api-result: ${{ needs.deploy-api.result }}
+      deploy-auth-result: ${{ needs.deploy-auth.result }}
+      deploy-hmrc-result: ${{ needs.deploy-hmrc.result }}
+      deploy-hmrc-itsa-result: ${{ needs.deploy-hmrc-itsa.result }}
+      deploy-hmrc-itsa-property-result: ${{ needs.deploy-hmrc-itsa-property.result }}
+      deploy-account-result: ${{ needs.deploy-account.result }}
+      deploy-edge-result: ${{ needs.deploy-edge.result }}
+      deploy-ops-result: ${{ needs.deploy-ops.result }}
+      deploy-publish-result: ${{ needs.deploy-publish.result }}
