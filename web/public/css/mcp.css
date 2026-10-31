@@ -1,0 +1,166 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* MCP page */
+.mcp-intro,
+.mcp-links {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.mcp-intro h2,
+.mcp-links h2 {
+  margin-top: 0;
+}
+
+.mcp-intro > :last-child,
+.mcp-links > :last-child {
+  margin-bottom: 0;
+}
+
+.mcp-intro code {
+  overflow-wrap: anywhere;
+}
+
+.mcp-intro pre {
+  background: var(--c-canvas);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.mcp-intro dl {
+  display: block;
+  margin: 0 0 var(--space-4);
+}
+
+.mcp-intro dd {
+  margin: 0 0 var(--space-3);
+  color: var(--c-ink-muted);
+}
+
+.mcp-links .btn {
+  width: auto;
+}
+
+.mcp-status {
+  display: inline-block;
+  font-size: var(--step--1);
+  font-weight: var(--weight-strong);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  margin-bottom: var(--space-3);
+}
+
+.mcp-status-available {
+  background: var(--c-ok-tint);
+  color: var(--c-ok);
+}
+
+/* MCP harness */
+body.page-wide {
+  max-width: none;
+}
+
+.harness-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .harness-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.harness-panel {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  min-width: 0;
+}
+
+.harness-config {
+  margin-top: var(--space-4);
+}
+
+.harness-panel h2 {
+  margin-top: 0;
+  font-size: var(--step-1);
+}
+
+.harness-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 18rem;
+  max-height: 32rem;
+  overflow-y: auto;
+}
+
+.harness-turn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  max-width: 90%;
+}
+
+.harness-turn[data-role="user"] {
+  align-self: flex-end;
+  background: var(--c-brand-tint);
+}
+
+.harness-turn[data-role="assistant"] {
+  align-self: flex-start;
+  background: var(--c-canvas);
+  border: 1px solid var(--c-rule-subtle);
+}
+
+.harness-turn[data-role="tool"] {
+  align-self: stretch;
+  max-width: 100%;
+  background: var(--c-warn-tint);
+  color: var(--c-warn);
+  font-size: var(--step--1);
+}
+
+.harness-turn pre {
+  margin: var(--space-1) 0 0;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.harness-controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.harness-frame {
+  width: 100%;
+  height: 26rem;
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-control);
+  background: var(--c-paper);
+}
+
+.harness-config pre {
+  background: var(--c-canvas);
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.harness-copy {
+  margin-bottom: var(--space-3);
+}
+
+.harness-script-choice {
+  margin-bottom: var(--space-2);
+}

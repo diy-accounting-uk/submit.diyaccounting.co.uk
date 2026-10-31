@@ -61,7 +61,7 @@ const LIVE_BASES = {
 };
 
 export const TOKEN_SOURCES = [
-  { id: "submit", own: true, file: "web/public/submit.css" },
+  { id: "submit", own: true, file: "web/public/css/tokens.css" },
   { id: "spreadsheets", repo: "spreadsheets.diyaccounting.co.uk", file: "web/spreadsheets.diyaccounting.co.uk/public/spreadsheets.css" },
   { id: "diya-gl", repo: "spreadsheets.diyaccounting.co.uk", file: "web/diya-gl.co.uk/public/diya-gl.css" },
   { id: "limited", repo: "www.diyaccounting.co.uk", file: "web/www.diyaccounting.co.uk/public/gateway.css" },

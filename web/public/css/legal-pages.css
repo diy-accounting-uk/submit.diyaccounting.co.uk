@@ -1,0 +1,95 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Legal and policy pages */
+.legal-meta {
+  color: var(--c-ink-muted);
+  margin-bottom: var(--space-3);
+}
+
+.legal p,
+.legal li {
+  max-width: var(--measure);
+}
+
+.legal section {
+  margin: var(--space-5) 0;
+}
+
+.legal section > h2 {
+  margin-top: 0;
+  scroll-margin-top: var(--space-4);
+}
+
+.legal li + li {
+  margin-top: var(--space-2);
+}
+
+.legal code {
+  background: var(--c-canvas);
+  padding: 0 var(--space-1);
+}
+
+.legal-contents {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.legal-contents h2 {
+  margin-top: 0;
+  font-size: var(--step-1);
+}
+
+.legal-contents ol {
+  margin: 0;
+  columns: 2 16rem;
+  column-gap: var(--space-5);
+}
+
+.legal-box,
+.conformance-statement {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-5);
+  margin: var(--space-4) 0;
+}
+
+.legal-box > :last-child,
+.conformance-statement > :last-child {
+  margin-bottom: 0;
+}
+
+.conformance-statement {
+  background: var(--c-ok-tint);
+  border: 2px solid var(--c-ok);
+}
+
+.conformance-statement h3 {
+  margin-top: 0;
+  color: var(--c-ok);
+}
+
+.conformance-badge {
+  display: inline-block;
+  background: var(--c-ok);
+  color: var(--c-paper);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  font-weight: var(--weight-strong);
+  margin-bottom: var(--space-3);
+}
+
+.legal .pass {
+  color: var(--c-ok);
+}
+
+/* WCAG 2.5.8: a link that is the only content of a cell or list item gets padding to reach 24px. */
+.legal table td a,
+.legal li > a:only-child {
+  display: inline-block;
+  padding: var(--space-1) 2px;
+}

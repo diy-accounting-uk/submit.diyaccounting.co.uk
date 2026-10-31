@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Indicators - synthetic mode
+   ============================================ */
+
+.synthetic-indicator {
+  background-color: var(--c-warn-tint);
+  border: 1px solid var(--c-warn);
+  border-left-width: 4px;
+  color: var(--c-warn);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  margin-bottom: var(--space-4);
+  font-weight: var(--weight-strong);
+  display: none;
+}
+
+.synthetic-indicator.visible {
+  display: block;
+}
+
+.test-data-link {
+  display: none;
+  text-align: right;
+  margin-bottom: var(--space-4);
+  font-size: var(--step--1);
+}
+
+.test-data-link.visible {
+  display: block;
+}
+
+.test-data-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  color: var(--c-brand);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius-control);
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.test-data-link a:hover {
+  background-color: var(--c-brand);
+  color: var(--c-on-brand);
+}

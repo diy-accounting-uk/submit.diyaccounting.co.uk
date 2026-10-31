@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Practice clients */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.btn-danger,
+.btn-danger:hover {
+  background-color: var(--c-error);
+  border-color: var(--c-error);
+  color: var(--c-on-brand);
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.auth-hint {
+  font-size: var(--step--1);
+  color: var(--c-warn);
+  margin: var(--space-1) 0 0;
+}
+
+.invite-panel {
+  margin-top: var(--space-2);
+}
+
+.invite-panel[hidden] {
+  display: none;
+}

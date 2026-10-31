@@ -1,0 +1,213 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Source quotes, the MTD calendar and the rates tables (generated pages) */
+.source-quote {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--c-canvas);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.source-quote p {
+  margin: 0 0 var(--space-1);
+}
+
+.source-quote footer {
+  overflow-wrap: anywhere;
+}
+
+.retrieved {
+  color: var(--c-ink-muted);
+  white-space: nowrap;
+}
+
+.calendar {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+main ol.calendar {
+  padding-left: 0;
+}
+
+.calendar-entry {
+  border-left: 4px solid var(--c-brand);
+  padding: var(--space-1) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.calendar-entry h3 {
+  margin: 0 0 var(--space-1);
+}
+
+.calendar-date {
+  display: block;
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  font-weight: var(--weight-text);
+}
+
+.deadline-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--space-2) 0;
+}
+
+.deadline-table caption,
+.rates-table caption {
+  display: table-caption;
+  caption-side: top;
+  text-align: left;
+  font-weight: var(--weight-strong);
+  color: var(--c-ink);
+  font-size: var(--step-0);
+  margin-bottom: var(--space-1);
+}
+
+.deadline-table th,
+.deadline-table td {
+  border-bottom: 1px solid var(--c-rule-subtle);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.deadline-table thead th {
+  border-bottom: 2px solid var(--c-rule);
+}
+
+@media (max-width: 600px) {
+  .stacked-table,
+  .stacked-table tbody,
+  .stacked-table tr,
+  .stacked-table th,
+  .stacked-table td {
+    display: block;
+  }
+
+  .stacked-table thead {
+    position: absolute;
+    left: -9999px;
+  }
+
+  .stacked-table tr {
+    border: 1px solid var(--c-rule-subtle);
+    border-radius: var(--radius-control);
+    margin-bottom: var(--space-2);
+  }
+
+  .stacked-table th,
+  .stacked-table td {
+    border: 0;
+  }
+
+  .stacked-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: var(--weight-strong);
+  }
+}
+
+/* Eight columns fit the card at desktop width without a hidden column. */
+.availability-table th,
+.availability-table td {
+  padding: var(--space-1);
+}
+
+/* Availability cells: the state shades the cell; a production cell also carries a tick after its text. */
+.avail-production {
+  background-color: var(--c-ok-tint);
+}
+
+.avail-preview {
+  background-color: var(--c-warn-tint);
+}
+
+.avail-sandbox {
+  background-color: var(--c-sandbox-tint);
+}
+
+.avail-not-offered {
+  background-color: var(--c-unavailable-tint);
+}
+
+.avail-production::after {
+  content: "\2713" / "";
+  color: var(--c-ok);
+  font-weight: var(--weight-strong);
+  margin-inline-start: var(--space-1);
+}
+
+.rates-table-scroll {
+  overflow-x: auto;
+  margin-bottom: var(--space-5);
+}
+
+.rates-table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+
+.rates-table th,
+.rates-table td {
+  border-bottom: 1px solid var(--c-rule-subtle);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rates-table thead th {
+  border-bottom: 2px solid var(--c-rule);
+}
+
+.rate-sources {
+  padding-left: var(--space-5);
+}
+
+.rate-sources li {
+  margin-bottom: var(--space-4);
+}
+
+#ratesCalculator [hidden],
+#ratesResults [hidden] {
+  display: none;
+}
+
+.rates-choice label {
+  display: inline;
+  font-weight: var(--weight-text);
+  margin-right: var(--space-4);
+}
+
+.rates-hint {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin: 0 0 var(--space-4);
+}
+
+#ratesResults dl {
+  display: block;
+  margin: 0;
+}
+
+.rates-result {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--c-rule-subtle);
+  padding: var(--space-1) 0;
+}
+
+.rates-result dt,
+.rates-result dd {
+  margin: 0;
+}
+
+.rates-result dd {
+  font-weight: var(--weight-strong);
+  text-align: right;
+}

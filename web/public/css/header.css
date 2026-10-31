@@ -1,0 +1,439 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Header: one band, the nav below it, then the page title
+
+   The band ends in a double rule, the line a ledger draws under a total.
+   ============================================ */
+
+header {
+  margin-bottom: var(--space-5);
+  position: relative;
+  /* body is a column flex container; keep the header at its content size. */
+  flex-shrink: 0;
+}
+
+/* page-chrome.js removes the static ".chrome-fallback" link and, in the same
+   step, inserts the band (.header-nav) and the main nav (nav.main-nav) before
+   the <h1>. The fallback takes the band's height and the header's top padding
+   takes the nav's, so the insertion replaces the reserved space exactly and
+   the title does not move. Pages that never load page-chrome.js carry no
+   fallback and get no padding. */
+header:has(> .chrome-fallback) {
+  padding-top: calc(var(--nav-height) + var(--space-1));
+}
+
+/* A spreadsheet grid receding behind the header into the horizon: ruled rows
+   and columns, a tinted top row like a sheet's column header, and two shaded
+   cells, tilted back and faded out. It sits behind the band and the nav. */
+header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 11%;
+  --grid-cell-b: 8%;
+}
+
+header::after {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 2em;
+  height: 20em;
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent)
+      )
+      2em 1.8em / 5em 1.5em no-repeat,
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent)
+      )
+      14em 3.3em / 5em 1.5em no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 0,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 1.5em,
+      transparent 1.5em
+    ),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--c-brand) var(--grid-column), transparent) 0 3px, transparent 3px 5em),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--c-brand) var(--grid-line), transparent) 0 1px, transparent 1px 1.5em);
+  transform: perspective(600px) rotateX(50deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* The tilt fans the grid out towards the bottom. Where the margins beside the
+   content column are narrower than the fan, the header clips it so the page does not scroll sideways. */
+@media (max-width: 1100px) {
+  header {
+    overflow-x: clip;
+  }
+}
+
+@media (max-width: 600px) {
+  header::after {
+    height: 12em;
+  }
+}
+
+/* On the dark canvas the light brand blue is brighter, so the same low contrast needs less of it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header {
+    --grid-line: 11%;
+    --grid-column: 7%;
+    --grid-tint: 7%;
+    --grid-cell-a: 10%;
+    --grid-cell-b: 7%;
+  }
+}
+
+:root[data-theme="dark"] header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 10%;
+  --grid-cell-b: 7%;
+}
+
+.chrome-fallback {
+  display: flex;
+  align-items: center;
+  height: var(--band-height);
+  border-bottom: 3px double var(--c-ink);
+  font-weight: var(--weight-strong);
+}
+
+.chrome-fallback a {
+  color: var(--c-ink);
+  text-decoration: none;
+}
+
+/* The band: home and help on the left, the account row on the right. */
+.header-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--band-height);
+  border-bottom: 3px double var(--c-ink);
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.home-link,
+.info-link,
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  justify-content: center;
+  color: var(--c-ink);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  text-decoration: none;
+  transition: background-color 150ms;
+}
+
+/* The home icon lines up with the content edge below it. When the account
+   row is wide, the signed-in line wraps and the brand name keeps its width. */
+.home-link {
+  padding-left: 0;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.home-link:hover,
+.info-link:hover,
+.theme-toggle:hover {
+  background-color: var(--c-brand-tint);
+  color: var(--c-ink);
+}
+
+.home-link .home-icon,
+.info-link .info-icon,
+.theme-toggle .theme-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.info-link .info-icon,
+.theme-toggle .theme-icon {
+  fill: var(--c-brand);
+}
+
+.theme-toggle {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.brand-name {
+  color: var(--c-brand);
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  font-size: var(--step-1);
+  white-space: nowrap;
+}
+
+/* Three controls share the left of the band; the name steps down to fit the narrowest phones. */
+@media (max-width: 360px) {
+  .header-left .brand-name {
+    font-size: 0.8rem;
+  }
+
+  .header-left .home-link {
+    gap: var(--space-1);
+  }
+}
+
+/* Home icon used outside the band */
+.home-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+.home-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+/* Header title with home link */
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================
+   Header - account row
+   ============================================ */
+
+.auth-section {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.entitlement-status {
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.auth-section > .entitlement-status {
+  display: none;
+}
+
+.entitlement-status.status-granted {
+  color: var(--c-ok);
+}
+
+.entitlement-status.status-requires {
+  color: var(--c-error);
+}
+
+.login-status {
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+  line-height: 1.2;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.token-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  white-space: nowrap;
+}
+
+.token-count {
+  white-space: nowrap;
+}
+
+.token-balance a:hover .token-count {
+  text-decoration: underline;
+}
+
+.token-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--c-ink-muted);
+  border-radius: var(--radius-control);
+  transition: color 150ms;
+}
+
+.token-refresh-btn:hover {
+  color: var(--c-brand);
+}
+
+.settings-cog {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px;
+  color: var(--c-ink-muted);
+  border-radius: var(--radius-control);
+  transition: color 150ms;
+}
+
+.settings-cog:hover {
+  color: var(--c-brand);
+}
+
+/* Settings page */
+.settings-group {
+  margin-bottom: var(--space-6);
+}
+
+.setting-row {
+  margin-bottom: var(--space-4);
+}
+
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-group .setting-row:last-child {
+  margin-bottom: 0;
+}
+
+.setting-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+}
+
+.setting-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.setting-switch-track {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--c-rule-subtle);
+  border: 1px solid var(--c-ink-muted);
+  transition: background 150ms;
+}
+
+.setting-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--c-paper);
+  border: 1px solid var(--c-ink-muted);
+  transition: transform 150ms;
+}
+
+.setting-switch input:checked + .setting-switch-track {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+}
+
+.setting-switch input:checked + .setting-switch-track::after {
+  transform: translateX(1.25rem);
+}
+
+.setting-switch input:focus-visible + .setting-switch-track {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.setting-switch input:disabled + .setting-switch-track {
+  opacity: 0.5;
+}
+
+.login-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  color: var(--c-brand);
+  text-decoration: none;
+  font-weight: var(--weight-strong);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius-control);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.login-link:hover {
+  background-color: var(--c-brand);
+  color: var(--c-on-brand);
+}
+
+/* Page title block */
+header h1 {
+  margin-top: var(--space-5);
+}
+
+.subtitle {
+  font-size: var(--step-1);
+  color: var(--c-ink-muted);
+  max-width: var(--measure);
+}
