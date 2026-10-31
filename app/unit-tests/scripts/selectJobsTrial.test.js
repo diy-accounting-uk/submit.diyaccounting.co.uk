@@ -6,6 +6,7 @@
 import { describe, test, expect } from "vitest";
 import {
   jobDisplayNames,
+  readMatrixEntries,
   jobDurationSeconds,
   tallyAdvisedSkips,
   renderMarkdownTable,
@@ -38,6 +39,39 @@ describe("jobDisplayNames", () => {
   test("falls back to the job's own id when the job is missing from the workflow entirely", () => {
     const names = jobDisplayNames(FIXTURE_WORKFLOW_YAML, ["some-removed-job"]);
     expect(names).toEqual({ "some-removed-job": "some-removed-job" });
+  });
+});
+
+describe("jobDisplayNames with matrix entries", () => {
+  const MATRIX_WORKFLOW_YAML = `
+jobs:
+  lint-js:
+    runs-on: ubuntu-24.04
+  behaviour-test-simulator:
+    name: 'simulator - \${{ matrix.suite }}'
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include: \${{ fromJSON(needs.simulator-suites.outputs.include) }}
+`;
+  const entries = [{ id: "behaviour-test-simulator-submit-vat", suite: "submitVatBehaviour" }];
+
+  test("fills the matrix job's name template from the entry", () => {
+    const names = jobDisplayNames(MATRIX_WORKFLOW_YAML, ["behaviour-test-simulator-submit-vat", "lint-js"], entries);
+    expect(names).toEqual({ "behaviour-test-simulator-submit-vat": "simulator - submitVatBehaviour", "lint-js": "lint-js" });
+  });
+
+  test("names every simulator catalogue id as the check the old job had", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/test.yml", "utf8");
+    const { JOB_ID_CATALOGUES } = await import("../../../scripts/ci/select-jobs.mjs");
+    const matrixEntries = readMatrixEntries("test.yml");
+    const simulatorIds = [...JOB_ID_CATALOGUES["test.yml"]].filter((id) => id.startsWith("behaviour-test-simulator-"));
+    expect(matrixEntries.map((entry) => entry.id).sort()).toEqual(simulatorIds.sort());
+    const names = jobDisplayNames(workflowText, simulatorIds, matrixEntries);
+    for (const entry of matrixEntries) {
+      expect(names[entry.id]).toBe(`simulator - ${entry.suite}`);
+    }
   });
 });
 
