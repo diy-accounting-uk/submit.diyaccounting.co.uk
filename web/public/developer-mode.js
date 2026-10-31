@@ -43,6 +43,14 @@
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
   </svg>`;
 
+  // The label is set as text and the icon is parsed from the fixed markup above.
+  function setFloatContent(element, label) {
+    element.replaceChildren(
+      document.createTextNode(label + " "),
+      ...new DOMParser().parseFromString(copyIconSvg, "text/html").body.childNodes,
+    );
+  }
+
   // Copy to clipboard helper
   function copyToClipboard(text, element) {
     navigator.clipboard
@@ -93,7 +101,7 @@
       body.appendChild(deploymentEl);
     }
     const deployment = getDeploymentName();
-    deploymentEl.innerHTML = `deploy: ${deployment} ${copyIconSvg}`;
+    setFloatContent(deploymentEl, `deploy: ${deployment}`);
     deploymentEl.onclick = () => copyToClipboard(deployment, deploymentEl);
 
     // Traceparent float
@@ -107,7 +115,7 @@
     }
     const traceparent = sessionStorage.getItem("traceparent") || window.__correlation?.getTraceparent?.() || "-";
     const tpShort = traceparent.length > 20 ? traceparent.substring(0, 20) + "..." : traceparent;
-    traceparentEl.innerHTML = `trace: ${tpShort} ${copyIconSvg}`;
+    setFloatContent(traceparentEl, `trace: ${tpShort}`);
     traceparentEl.title = traceparent;
     traceparentEl.onclick = () => copyToClipboard(traceparent, traceparentEl);
 
@@ -122,7 +130,7 @@
     }
     const requestId = window.__correlation?.getLastXRequestId?.() || window.getLastXRequestId?.() || "-";
     const ridShort = requestId.length > 20 ? requestId.substring(0, 20) + "..." : requestId;
-    requestIdEl.innerHTML = `req-id: ${ridShort} ${copyIconSvg}`;
+    setFloatContent(requestIdEl, `req-id: ${ridShort}`);
     requestIdEl.title = requestId;
     requestIdEl.onclick = () => copyToClipboard(requestId, requestIdEl);
 
@@ -130,7 +138,7 @@
     window.addEventListener("correlation:update", () => {
       const rid = window.__correlation?.getLastXRequestId?.() || window.getLastXRequestId?.() || "-";
       const short = rid.length > 20 ? rid.substring(0, 20) + "..." : rid;
-      requestIdEl.innerHTML = `req-id: ${short} ${copyIconSvg}`;
+      setFloatContent(requestIdEl, `req-id: ${short}`);
       requestIdEl.title = rid;
       requestIdEl.onclick = () => copyToClipboard(rid, requestIdEl);
     });

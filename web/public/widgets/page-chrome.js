@@ -233,6 +233,7 @@
     const fallback = header.querySelector(".chrome-fallback");
     if (fallback) fallback.remove();
 
+    // eslint-disable-next-line no-unsanitized/method -- both strings are built from the fixed NAV_LINKS table and the page-relative root prefix
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
 
@@ -293,6 +294,7 @@
   }
 
   function renderFooter(footer, rootPrefix) {
+    // eslint-disable-next-line no-unsanitized/property -- the footer markup is fixed text plus the page-relative root prefix
     footer.innerHTML = buildFooterHtml(rootPrefix);
   }
 

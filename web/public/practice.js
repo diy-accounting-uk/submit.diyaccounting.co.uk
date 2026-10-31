@@ -392,6 +392,7 @@
 
     empty.style.display = "none";
     table.style.display = "table";
+    // eslint-disable-next-line no-unsanitized/property -- clientRowHtml passes every client value through escapeHtml
     tbody.innerHTML = __clients.map(clientRowHtml).join("");
   }
 
