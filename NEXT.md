@@ -70,6 +70,10 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **DASH1. Replace the CloudWatch dashboards with saved queries and deep links on the operator dashboard.** CloudWatch dashboards cost $3 a month each (submit-prod `prod-env-analytics`, `prod-env-operations`; submit-ci `ci-env-analytics`; the other accounts to be checked). Inventory every widget, name what the operator dashboard already shows, keep what is unique as `AWS::Logs::QueryDefinition` saved queries (free) and console deep links in an "AWS links" section at the end of `web/public/operator/dashboard.html`, and remove the CloudWatch dashboards from CDK; dashboards in the sibling repositories go to their sessions as change requests. **Now**: an agent works it on `claude/raven-dash1` for batch `claude/raven-dash`. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
+- [ ] **SJ0. select-jobs is off.** Advisory since 2026-09-28: it skipped no job and no job waits on it, while its `claude -p` session cost $30.03 of Bedrock in 7 days (216 runs). **Now**: `SELECT_JOBS_MODE: 'off'` in `test.yml` and `deploy.yml` makes every ref ineligible, on batch `claude/pebble-deploy` (638052cb3), not pushed. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
+
+- [ ] **SJ1. What enforce mode would have skipped, and whether any of it was wrong.** Read select-jobs' recorded advice for every advisory run from 2026-09-28 to 2026-10-31 against the jobs' results with `scripts/ci/select-jobs-trial.mjs`: per job, advised skips, how many then passed and how many FAILED (a hidden failure), the runner and wall-clock minutes enforce would have saved, the false-skip rate, and the Bedrock cost per saved minute. **Now**: an agent reads it (read-only). Unblocks OSJ2. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
 ## Machine-only
 
 - [ ] **ADS1. Google's live ad groups match `infra/google/ads/ads.toml`.** The live account holds 3 paused ad groups that the code does not: "Submit VAT return online free", "Free MTD VAT software" and "File VAT return without accountant", each with an enabled ad, the first two with an exact and a phrase keyword. Decide per group from its history (`ad_group` and `keyword_view` metrics since 2026-09-29) whether it belongs in the code (add it, paused) or goes (the sync removes it), so `ads-sync.js` and the account agree. Read through the `ads-advisor` skill; the write goes through `google-apply.yml` on the PR. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
@@ -94,10 +98,14 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
+- [ ] **OSJ2. Remove select-jobs, or give it control.** From SJ1's figures: remove the job, its scripts and tests (SJ2a), or set `SELECT_JOBS_MODE: 'enforcing'` with a cheaper call (one direct `invoke-model` on a short prompt in place of `claude -p`) (SJ2b). Blocked on SJ1. **Owner**: Operator. **Model**: none.
+
 - [ ] **OAFF7. Name the family affiliates.** After AFF7 merges: `gh secret set FAMILY_AFFILIATE_EMAILS --repo diy-accounting-uk/submit.diyaccounting.co.uk --body 'antonyccartwright@gmail.com,<nephew email>'` (a repository secret, as `OPERATOR_EMAILS` is), then `gh workflow run deploy-environment.yml --ref main` so Secrets Manager holds `{env}/submit/family-affiliate-emails`. Each listed person then generates a pass once, which writes their family marker; a referral through it accrues at the family tier. **Owner**: Operator. **Model**: none.
 
 
 ## Blocked
+
+- [ ] **SJ2. Carry out OSJ2's choice.** SJ2a: remove the `select-jobs` jobs from `test.yml` and `deploy.yml`, `scripts/ci/select-jobs.mjs`, `scripts/ci/select-jobs-trial.mjs`, their tests and capability entries, and every `needs.select-jobs` reference. SJ2b: replace the `claude -p` session with one `bedrock-runtime invoke-model` call on a short prompt, then set `SELECT_JOBS_MODE: 'enforcing'`, keeping main and malformed answers on "skip nothing". Blocked on OSJ2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
 - [ ] **TD21. One reference to the moved paid-search plan.** The two plans are now `../private.diyaccounting.co.uk/strategy/PLAN_PAID_CLICK_MEASUREMENT.md` and `../private.diyaccounting.co.uk/strategy/PLAN_PAID_GOOGLE_SEARCH.md`. `../private.diyaccounting.co.uk/operator/NEXT_OPERATOR_RUNBOOK.md` line 173 still names `PLAN_PAID_GOOGLE_SEARCH.md` at the root. That file has an uncommitted edit another session made, so change that line only once the edit is committed. **Source**: the tech-debt audit. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file (private).
 
