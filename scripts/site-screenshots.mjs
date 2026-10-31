@@ -80,7 +80,7 @@ async function answers(baseUrl) {
 // Starts `npm run start:simulator` in its own process group and reads the site URL from the
 // server's own "Listening at" line. stop() signals the whole group so dynalite and the HTTP
 // simulator go down with it.
-async function startSimulator() {
+export async function startSimulator() {
   console.log("Starting the simulator lane (npm run start:simulator)...");
   const child = spawn("npm", ["run", "start:simulator"], { detached: true, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
@@ -120,13 +120,13 @@ async function startSimulator() {
 // the server listens on an ephemeral port. Pages open on that configured origin, and the browser
 // maps that origin to the port the server bound, so the server sees the host it expects and its
 // content security policy holds.
-function configuredOrigin() {
+export function configuredOrigin() {
   const text = fs.readFileSync(".env.simulator", "utf8");
   const match = text.match(/^DIY_SUBMIT_BASE_URL=(\S+)/m);
   return new URL(match ? match[1] : "http://localhost:3000/").origin;
 }
 
-async function signIn(browser, { pageOrigin }) {
+export async function signIn(browser, { pageOrigin }) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(`${pageOrigin}/auth/login.html`, { waitUntil: "domcontentloaded" });

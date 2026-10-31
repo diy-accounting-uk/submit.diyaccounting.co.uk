@@ -58,6 +58,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-11 -->
 <!-- capability SITE-12 -->
 <!-- capability SITE-22 -->
+<!-- capability SITE-25 -->
 ### Frontend infrastructure (SITE)
 
 <!-- generated:group frontend-infrastructure-site -->

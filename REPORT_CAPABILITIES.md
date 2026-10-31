@@ -36,6 +36,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners: use when adding or changing a cross-sell page for a sibling product or an affiliate.
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
     - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+    - [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots: use when web/marketing/marketing.toml changes, a brand stylesheet changes, or the social images or brand shots of marketing.diyaccounting.co.uk need to be made again.
   - [Frontend infrastructure](#frontend-infrastructure-site)
     - [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts: use when a page must pre-warm a Lambda or route before its own script needs the real response.
     - [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets: use when a page needs the shared header, nav and footer, or a small shared UI widget.
@@ -556,7 +557,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -693,6 +694,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
 - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
+- [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 <!-- /generated:group site-pages-and-content-site -->
 
 #### SITE-10 Serve general site pages
@@ -734,6 +736,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
 - **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
 - **Related:** SITE-10, SITE-12
+
+#### SITE-25 Build the marketing site data, social images and brand shots
+
+- **Use when:** web/marketing/marketing.toml changes, a brand stylesheet changes, or the social images or brand shots of marketing.diyaccounting.co.uk need to be made again.
+- **Does:** build-marketing-site.mjs parses marketing.toml into marketing.json. It copies each site's colour tokens into brand/tokens.css and the fonts into brand/fonts. It renders every set at all 11 sizes into images/ through cards/card.html, and keeps a hash per image so a stale one shows. It captures the brand fragments of the four sites into brand/shots/, Submit through the simulator lane and the others from their live sites. It screenshots the finished page at two widths and two colour schemes.
+- **Run:** `npm run marketing:build` (data, then tokens); `npm run marketing:build -- images`; `npm run marketing:build -- brand`; `npm run marketing:build -- screens`
+- **Entry:** `scripts/build-marketing-site.mjs:main`
+- **Files:** scripts/build-marketing-site.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
+- **Keywords:** marketing, social images, og image, brand guide, brand shots, design tokens, banners, share posts
+- **Related:** DEV-47, SITE-11
 
 ### Frontend infrastructure (SITE)
 
@@ -6151,6 +6163,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - bankcode: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
+- banners: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - batch branch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - batch check: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -6221,6 +6234,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - branch audit: [DEV-27](#dev-27-render-the-open-work-board), [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - branch hash: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - branch protection: [OPS-60](#ops-60-guide-github-repository-configuration)
+- brand guide: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- brand shots: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - brief completeness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
@@ -6622,6 +6637,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - derive_vat_return: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - describe-alarm-history: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - design document: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
+- design tokens: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - destroy prod: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - destroy stale deployments: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - destroy stale stacks: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
@@ -7265,6 +7281,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - manual destroy: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - manual review: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - manual stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- marketing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
 - marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
@@ -7404,6 +7421,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
+- og image: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
@@ -7917,6 +7935,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
 - share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
+- share posts: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - shared auth client: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - shared client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - shared construct: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
@@ -7945,6 +7964,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - sns findings topic: [OPS-117](#ops-117-provision-the-observability-stack)
 - sns notification: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans), [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
+- social images: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)

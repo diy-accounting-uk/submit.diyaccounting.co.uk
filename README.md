@@ -129,7 +129,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## npm scripts
 
 <!-- scripts-table:start -->
-371 scripts in package.json. A group is the text before the first colon; a name below follows it.
+372 scripts in package.json. A group is the text before the first colon; a name below follows it.
 
 | Group | Scripts | Names |
 |-------|---------|-------|
@@ -170,6 +170,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run lint:` | 1 | `workflows` |
 | `npm run linting:` | 1 | `linting` |
 | `npm run linting-fix:` | 1 | `linting-fix` |
+| `npm run marketing:` | 1 | `build` |
 | `npm run playwright:` | 1 | `install` |
 | `npm run pretest:` | 1 | `pretest` |
 | `npm run scripts:` | 1 | `table` |

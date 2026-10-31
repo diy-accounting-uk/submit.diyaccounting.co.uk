@@ -11,6 +11,7 @@
     "build": "./mvnw clean verify && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
     "start": "./scripts/start-simulator.sh",
     "site:screenshots": "node scripts/site-screenshots.mjs",
+    "marketing:build": "node scripts/build-marketing-site.mjs",
     "start:simulator": "./scripts/start-simulator.sh",
     "start:proxy": "./scripts/start-proxy.sh",
     "mcp:vat-sandbox-proof": "bash -c 'set -o pipefail; scripts/proxy-secrets.sh npx dotenv -e .env.proxy -- node mcp/scripts/vat-sandbox-proof.js'",
