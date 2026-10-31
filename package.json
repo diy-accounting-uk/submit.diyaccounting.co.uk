@@ -472,6 +472,12 @@
     "proxy-addr": "^2.0.8",
     "source-map-js": "^1.2.2",
     "typescript": "6.0.3",
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    },
     "@microsoft/eslint-formatter-sarif": {
       "eslint": "$eslint"
     },
