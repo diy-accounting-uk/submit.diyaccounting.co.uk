@@ -197,8 +197,9 @@ jobs:
     runs-on: ubuntu-24.04
     # Two agent passes can run in this job: the Haiku first pass, and the Sonnet escalation
     # when Haiku's answer is unusable or unsure. The longest single pass observed is 155s, so
-    # 20 minutes covers two worst-case passes plus the AWS/npm setup steps that run once.
-    timeout-minutes: 20
+    # 20 minutes covers two worst-case passes plus the AWS/npm setup steps that run once. The
+    # wait for the alarm window and CloudTrail's delivery lag adds up to 16 minutes.
+    timeout-minutes: 36
     environment: ${{ needs.triage.outputs.environment-name }}
     env:
       ENV_NAME: ${{ needs.triage.outputs.environment-name }}
@@ -334,6 +335,25 @@ jobs:
             --alarm-name "$ALARM_NAME" --deployment "$DEPLOYMENT_NAME" \
             --region "$ALARM_REGION" --from-alarm \
             2>&1 | tee /tmp/evidence.json
+
+      # The issue opens when the alarm fires, before its window has closed, and CloudTrail
+      # reaches CloudWatch Logs up to about ten minutes after the call. A triage that read the
+      # logs at once found no event for the denied call behind #607, which was in the log by
+      # then. So the evidence waits until the window ends, and ten minutes more when the
+      # alarm's logs come from CloudTrail.
+      - name: Wait for the alarm window to close
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          WINDOW_END=$(printf '%s' "$ALARM_WINDOW" | sed -E 's/^[^ ]+ to ([^ ]+).*/\1/')
+          LOG_GROUP_PREFIX=$(jq -r '.logGroupNamePrefixes[0] // empty' /tmp/evidence.json)
+          DELIVERY_LAG_SECONDS=0
+          case "$LOG_GROUP_PREFIX" in /aws/cloudtrail*) DELIVERY_LAG_SECONDS=600 ;; esac
+          READY_AT=$(( $(date -u -d "$WINDOW_END" +%s) + DELIVERY_LAG_SECONDS ))
+          WAIT_SECONDS=$(( READY_AT - $(date -u +%s) ))
+          if [ "$WAIT_SECONDS" -gt 0 ]; then
+            echo "Waiting ${WAIT_SECONDS}s for the window ending ${WINDOW_END} (delivery lag ${DELIVERY_LAG_SECONDS}s)"
+            sleep "$WAIT_SECONDS"
+          fi
 
       # The agent has answered "without being able to query CloudWatch Logs" without making one
       # aws call (#229, run 35030341835). So the same credentials it will hold make the three calls

@@ -66,7 +66,22 @@ class SubmitApplicationCdkResourceTest {
         app.synth();
 
         var result = ActivityPublisherGrants.check(app);
-        assertTrue(result.publishers() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertTrue(result.checked() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertEquals(List.of(), result.ungranted());
+    }
+
+    @Test
+    void everyLambdaBehindAnAuthorizerCanReadTheOperatorList() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+
+        var result = ActivityPublisherGrants.checkAuthenticatedApiLambdas(app, submitApplication);
+        assertTrue(result.checked() > 0, "no ApiLambda sits behind an authorizer");
         assertEquals(List.of(), result.ungranted());
     }
 

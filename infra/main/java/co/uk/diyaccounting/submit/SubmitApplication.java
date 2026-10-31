@@ -48,6 +48,9 @@ public class SubmitApplication {
     public final McpStack mcpStack;
     public final ApiStack apiStack;
     public final ApiRoutesStack apiRoutesStack;
+    /** Every Lambda that ApiStack or ApiRoutesStack routes to. */
+    public final List<AbstractApiLambdaProps> routedLambdaFunctions;
+
     public final OpsStack opsStack;
     public final EdgeStack edgeStack;
     public final PublishStack publishStack;
@@ -641,6 +644,9 @@ public class SubmitApplication {
         routesStackLambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         routesStackLambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
         if (this.mcpStack != null) routesStackLambdaFunctions.addAll(this.mcpStack.lambdaFunctionProps);
+        var routedLambdaFunctions = new java.util.ArrayList<AbstractApiLambdaProps>(lambdaFunctions);
+        routedLambdaFunctions.addAll(routesStackLambdaFunctions);
+        this.routedLambdaFunctions = List.copyOf(routedLambdaFunctions);
 
         this.apiStack = new ApiStack(
                 app,
