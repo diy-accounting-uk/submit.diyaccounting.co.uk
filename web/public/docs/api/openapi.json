@@ -35,6 +35,18 @@
         "operationId" : "recordActivityStarted"
       }
     },
+    "/affiliate" : {
+      "post" : {
+        "summary" : "Set an affiliate",
+        "description" : "Sets the tier and state of a referrer's affiliate record (operator only)",
+        "operationId" : "setAffiliate"
+      },
+      "get" : {
+        "summary" : "Read an affiliate",
+        "description" : "Reads the tier and state of a referrer's affiliate record (operator only)",
+        "operationId" : "getAffiliate"
+      }
+    },
     "/billing/activity-checkout" : {
       "post" : {
         "summary" : "Create activity checkout session",
@@ -4082,6 +4094,13 @@
         "summary" : "Generate a pass using tokens",
         "description" : "Generates a new pass code using the authenticated user's token balance",
         "operationId" : "generatePassWithTokens"
+      }
+    },
+    "/pass/held" : {
+      "get" : {
+        "summary" : "List held passes",
+        "description" : "Lists the passes held for review, with their issuer hash, use count, review limit and held time (operator only)",
+        "operationId" : "listHeldPasses"
       }
     },
     "/pass/my-passes" : {

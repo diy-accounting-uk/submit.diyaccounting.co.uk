@@ -12,6 +12,8 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const AWS_ROLE_STEP = /configure-aws-credentials|\.\/\.github\/actions\/aws-role/;
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 const text = readFileSync(resolve(ROOT, ".github/workflows/alarm-triage.yml"), "utf8");
@@ -63,7 +65,7 @@ describe("alarm-triage.yml", () => {
   it("checks the maintainer-review gate before any AWS credentials in escalate mode", () => {
     const runTriage = jobBlock("run-triage");
     expect(runTriage.indexOf("maintainer-review-gate.mjs")).toBeGreaterThan(-1);
-    expect(runTriage.indexOf("maintainer-review-gate.mjs")).toBeLessThan(runTriage.indexOf("configure-aws-credentials"));
+    expect(runTriage.indexOf("maintainer-review-gate.mjs")).toBeLessThan(runTriage.search(AWS_ROLE_STEP));
     expect(stepBlock(runTriage, "Check the maintainer-review gate")).toContain("env.MODE == 'escalate'");
   });
 
@@ -93,7 +95,7 @@ describe("alarm-triage.yml", () => {
 
   it("gives the hold job no AWS credentials and adds the label with an App token", () => {
     const hold = jobBlock("hold");
-    expect(hold).not.toContain("configure-aws-credentials");
+    expect(hold).not.toMatch(AWS_ROLE_STEP);
     expect(hold).not.toContain("id-token");
     expect(hold).toContain("labels[]=maintainer-review");
     expect(hold).toContain("quarantine-reader-check.mjs --kind alarm");

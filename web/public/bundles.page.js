@@ -1257,6 +1257,62 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// Affiliates: an operator sets the tier and state of a referrer
+async function initAffiliateSection() {
+  if (!getIdToken()) return;
+  const viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
+  const bundleResponse = await (await import("/lib/services/viewer-settings.js")).fetchBundleResponse();
+  const viewerIsOperator =
+    viewer.operatorFeatures && (bundleResponse?.bundles ?? []).some((bundle) => bundle.bundleId === "operator" && bundle.allocated);
+  if (!viewerIsOperator) return;
+  document.getElementById("affiliateSection").hidden = false;
+}
+
+function showAffiliate(affiliate) {
+  document.getElementById("affiliateTier").value = affiliate.tier;
+  document.getElementById("affiliateState").value = affiliate.state;
+  document.getElementById("affiliateResult").textContent =
+    `Tier ${affiliate.tier}, state ${affiliate.state}` + (affiliate.approvedAt ? `, approved ${affiliate.approvedAt}` : "");
+}
+
+document.getElementById("affiliateLookupBtn")?.addEventListener("click", async () => {
+  const referrerHash = document.getElementById("affiliateReferrerHash").value.trim();
+  const result = document.getElementById("affiliateResult");
+  try {
+    const res = await window.fetchWithIdToken(`/api/v1/affiliate?referrerHash=${encodeURIComponent(referrerHash)}`);
+    if (res.status === 404) {
+      result.textContent = "No affiliate for that referrer";
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showAffiliate(await res.json());
+  } catch (err) {
+    result.textContent = `The lookup failed (${err.message})`;
+  }
+});
+
+document.getElementById("affiliateSaveBtn")?.addEventListener("click", async () => {
+  const saveButton = document.getElementById("affiliateSaveBtn");
+  const referrerHash = document.getElementById("affiliateReferrerHash").value.trim();
+  const tier = document.getElementById("affiliateTier").value;
+  const state = document.getElementById("affiliateState").value;
+  saveButton.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/affiliate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ referrerHash, tier, state }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showAffiliate(await res.json());
+    showStatus("Affiliate saved", "success");
+  } catch (err) {
+    showStatus(`The affiliate was not saved (${err.message})`, "error");
+  } finally {
+    saveButton.disabled = false;
+  }
+});
+
 // Load more button
 document.getElementById("loadMorePassesBtn")?.addEventListener("click", () => {
   fetchMyGeneratedPasses(true);
@@ -1272,6 +1328,7 @@ function initPage() {
   checkAuthStatus();
   initFeedbackEngagementSection();
   fetchMyGeneratedPasses(false);
+  initAffiliateSection();
 
   // Handle checkout result from Stripe redirect
   const urlParams = new URLSearchParams(window.location.search);

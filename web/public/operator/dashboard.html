@@ -57,6 +57,25 @@
         <div id="chartsGrid" class="charts-grid"></div>
       </section>
 
+      <section id="heldPassesPanel" class="objective" hidden>
+        <h2>Passes held for review</h2>
+        <p class="subtitle">Every pass at its review limit, whoever issued it. Release lets a pass run for another thousand uses.</p>
+        <p id="heldPassesEmpty" class="status-message" role="status" hidden>No pass is held for review.</p>
+        <table class="observations data-table" id="heldPassesTable" hidden>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Issuer</th>
+              <th>Uses</th>
+              <th>Review limit</th>
+              <th>Held since</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="heldPassesBody"></tbody>
+        </table>
+      </section>
+
       <div id="objectivesContainer">
         <div data-objective-slot="conversion-to-paid"></div>
         <section id="visitorsPanel" class="objective">

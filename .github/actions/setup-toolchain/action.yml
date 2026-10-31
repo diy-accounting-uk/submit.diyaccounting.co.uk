@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-144 Set up Node, npm dependencies and optionally Java for a job
+# - **Use when:** a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
+# - **Does:** setup-toolchain installs Node with the npm cache, runs npm ci with one retry after a pause, and installs Temurin Java with the Maven cache when `java` is `'true'`. It holds the one copy of the Node and Java versions. The calling job runs actions/checkout first.
+# - **Run:** no command; see Does and Entry
+# - **Entry:** `.github/actions/setup-toolchain/action.yml`
+# - **Files:** .github/actions/setup-toolchain/action.yml
+# - **Keywords:** setup node, npm ci, retry, setup java, temurin, toolchain, node version, java version
+# - **Related:** OPS-145
+# @end-capability
+
+name: "Set up the toolchain"
+description: "Node with npm cache, npm ci with one retry, and optionally Temurin Java with the Maven cache"
+
+inputs:
+  node-version:
+    description: "Node version"
+    required: false
+    default: "24"
+  npm-install:
+    description: "ignore-scripts (npm ci --ignore-scripts), scripts (full npm ci) or none"
+    required: false
+    default: "ignore-scripts"
+  npm-cache:
+    description: "true caches npm on setup-node"
+    required: false
+    default: "true"
+  registry-url:
+    description: "npm registry URL for publishing"
+    required: false
+    default: ""
+  java:
+    description: "true adds setup-java"
+    required: false
+    default: "false"
+  java-version:
+    description: "Java version"
+    required: false
+    default: "25"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.npm-cache == 'true' && 'npm' || '' }}
+        registry-url: ${{ inputs.registry-url }}
+
+    - name: Install dependencies
+      if: ${{ inputs.npm-install != 'none' }}
+      shell: bash
+      env:
+        NPM_CONFIG_FETCH_RETRIES: "3"
+        NPM_INSTALL_MODE: ${{ inputs.npm-install }}
+      run: |
+        FLAGS=""
+        if [ "$NPM_INSTALL_MODE" = "ignore-scripts" ]; then FLAGS="--ignore-scripts"; fi
+        timeout 120 npm ci --prefer-offline $FLAGS || { sleep 30; timeout 180 npm ci $FLAGS; }
+
+    - name: Setup Java
+      if: ${{ inputs.java == 'true' }}
+      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+        cache: maven

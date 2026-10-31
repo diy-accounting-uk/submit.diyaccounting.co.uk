@@ -780,8 +780,82 @@ function scrollToHash() {
   if (target && !target.hidden) target.scrollIntoView();
 }
 
+// The held passes are listed apart from the snapshot: a held pass needs the operator whether or
+// not a snapshot has been published. A caller who is not an operator gets 403 and sees no panel.
+const RELEASE_RAISE_BY = 1000;
+
+function renderHeldPasses(passes) {
+  const panel = document.getElementById("heldPassesPanel");
+  const table = document.getElementById("heldPassesTable");
+  const body = document.getElementById("heldPassesBody");
+  panel.hidden = false;
+  document.getElementById("heldPassesEmpty").hidden = passes.length > 0;
+  table.hidden = passes.length === 0;
+  body.replaceChildren();
+  passes.forEach((pass) => {
+    const row = document.createElement("tr");
+    row.setAttribute("data-held-code", pass.code);
+    const cell = (text, title) => {
+      const td = document.createElement("td");
+      td.textContent = text;
+      if (title) td.title = title;
+      row.appendChild(td);
+      return td;
+    };
+    cell(pass.code);
+    cell(pass.issuedBy ? pass.issuedBy.slice(0, 12) : "operator", pass.issuedBy || "");
+    cell(numberFormat.format(pass.useCount));
+    cell(numberFormat.format(pass.reviewLimit));
+    cell(pass.heldAt ? timestampFormat.format(new Date(pass.heldAt)) : "unknown");
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-small btn-primary held-pass-release";
+    button.textContent = "Release";
+    button.setAttribute("data-pass-code", pass.code);
+    actionCell.appendChild(button);
+    row.appendChild(actionCell);
+    body.appendChild(row);
+  });
+}
+
+async function loadHeldPasses() {
+  try {
+    const answer = await fetchJson("/api/v1/pass/held");
+    renderHeldPasses(answer.passes || []);
+  } catch (error) {
+    if (error.status !== 403) {
+      const notice = document.getElementById("heldPassesEmpty");
+      document.getElementById("heldPassesPanel").hidden = false;
+      notice.textContent = "The held passes did not load. Reload the page to try again.";
+      notice.hidden = false;
+    }
+  }
+}
+
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest(".held-pass-release");
+  if (!button) return;
+  button.disabled = true;
+  const code = button.getAttribute("data-pass-code");
+  try {
+    const fetcher = window.fetchWithIdToken || window.fetch;
+    const response = await fetcher("/api/v1/pass/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, raiseBy: RELEASE_RAISE_BY }),
+    });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    await loadHeldPasses();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "Release failed, try again";
+  }
+});
+
 async function initPage() {
   armAutoRefresh();
+  loadHeldPasses();
   decorateStaticPanels();
   try {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");

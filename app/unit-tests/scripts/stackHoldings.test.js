@@ -4,7 +4,7 @@
 // app/unit-tests/scripts/stackHoldings.test.js
 
 import { describe, test, expect } from "vitest";
-import { deploymentNameOfRun, heldStackJobs, STACK_JOB_STACKS } from "../../../scripts/ci/stack-holdings.mjs";
+import { deploymentNameOfRun, heldStackJobs, readGreenRun, STACK_JOB_STACKS } from "../../../scripts/ci/stack-holdings.mjs";
 
 const SHA = "acc4f353b89129621ed31f6d1ac34d60a875beef";
 const GREEN = { headSha: SHA, deploymentName: "ci-set1", completedAt: "2026-10-26T02:15:24Z" };
@@ -115,5 +115,27 @@ describe("heldStackJobs", () => {
   test("runs every job when no green run is found", () => {
     const result = heldStackJobs({ ...base, greenRun: null, advised: ["deploy-auth"], stacksByRegion: {} });
     expect(result.skip).toEqual([]);
+  });
+});
+
+describe("readGreenRun", () => {
+  // A 205-job run read through gh api --paginate: the stand-in answers one page without the flag
+  // and every page with it. The inner stack job that names the deployment is job 190.
+  const jobs = Array.from({ length: 205 }, (_, i) => ({
+    name: i === 189 ? "stacks / deploy ci-set1-app-AuthStack" : `job ${i + 1}`,
+    conclusion: "success",
+  }));
+
+  function fakeGh(command, args) {
+    if (args.some((arg) => arg.includes("/workflows/deploy.yml/runs"))) {
+      return JSON.stringify([{ id: 9, headSha: SHA, completedAt: "2026-10-26T02:15:24Z" }]);
+    }
+    const lines = args.includes("--paginate") ? jobs : jobs.slice(0, 100);
+    return lines.map((job) => JSON.stringify(job)).join("\n");
+  }
+
+  test("finds the deployment name on job 190 of a 205-job run", () => {
+    const green = readGreenRun({ repo: "o/r", branch: "claude/x", comparedFrom: SHA }, fakeGh);
+    expect(green.deploymentName).toBe("ci-set1");
   });
 });

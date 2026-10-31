@@ -136,6 +136,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity: use when a pass code must be checked before login, without consuming a use.
     - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes: use when a page must show up to 50 passes a caller has issued.
     - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review: use when an operator must let a digital pass that reached its review limit be used again.
+    - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
+    - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
+    - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
@@ -198,6 +201,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
     - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
+    - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job: use when a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
+    - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role: use when a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
     - [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order: use when a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
@@ -205,6 +210,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments: use when a stale or finished ci deployment must be torn down, or a live one's self-destruct timer needs resetting.
     - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand: use when a superseded prod deployment's stacks must be torn down by hand.
     - [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks: use when a branch deploy needs to clean up stale stacks while slots are claimed.
+    - [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves: use when a ci or prod deployment's `{deployment}-app-*` CloudFormation stacks must be deleted in dependency order, as fast as the order allows.
     - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs: use when a new workflow job rotates a lane's durable test user, to avoid two jobs racing it.
     - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations: use when a stored data shape must change across a deploy boundary, or a migration needs a manual re-run.
   - [Alarms, triage and probes](#alarms-triage-and-probes-ops)
@@ -1605,7 +1611,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1682,6 +1688,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity
 - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes
 - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review
+- [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
+- [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
+- [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 <!-- /generated:group passes-bill -->
@@ -1735,6 +1744,36 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/passReleasePost.js, app/unit-tests/functions/passReleasePost.test.js
 - **Keywords:** pass, release, held for review, reviewLimit, operator
 - **Related:** BILL-07, BILL-09
+
+#### BILL-48 Set an affiliate's tier and state
+
+- **Use when:** an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
+- **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt.
+- **Run:** `POST /api/v1/affiliate`
+- **Entry:** `app/functions/account/affiliatePost.js:ingestHandler`
+- **Files:** app/functions/account/affiliatePost.js, app/unit-tests/functions/affiliatePost.test.js, web/public/bundles.page.js
+- **Keywords:** affiliate, approve, tier, referrer, operator, referrals.toml
+- **Related:** BILL-46, BILL-49
+
+#### BILL-49 Read an affiliate's tier and state
+
+- **Use when:** an operator must see the tier and state of a referrer before or after changing them.
+- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. It answers the tier, the state and the times, or 404 when the referrer has no affiliate item.
+- **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
+- **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
+- **Files:** app/functions/account/affiliateGet.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
+- **Keywords:** affiliate, tier, state, referrer, operator
+- **Related:** BILL-46, BILL-48
+
+#### BILL-50 List the passes held for review
+
+- **Use when:** an operator must see every pass held for review, whoever issued it, and release one.
+- **Does:** The passHeldGet.js ingestHandler lists the passes held for review, for an operator only. It calls passService.listHeldPasses, which Queries the issuedBy-index under the constant key "held". passService writes a held pointer item when a redemption brings a pass's useCount up to its reviewLimit and deletes it when a release lifts the hold. Each row carries code, issuer hash, use count, review limit and held time. The operator dashboard lists them with a Release button that posts to passReleasePost.js.
+- **Run:** `GET /api/v1/pass/held`
+- **Entry:** `app/functions/account/passHeldGet.js:ingestHandler`
+- **Files:** app/functions/account/passHeldGet.js, app/unit-tests/functions/passHeldGet.test.js, web/public/operator/dashboard.page.js, web/browser-tests/operatorHeldPasses.browser.test.js
+- **Keywords:** pass, held for review, held pointer, operator, release, issuedBy-index
+- **Related:** BILL-45, BILL-10, DATA-26
 
 #### BILL-10 Redeem a pass
 
@@ -2173,8 +2212,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
-- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
+- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
@@ -2207,6 +2246,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
+- [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job
+- [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
 <!-- /generated:group deploy-pipeline-ops -->
 
 #### OPS-01 Cancel superseded push-triggered deploys
@@ -2377,6 +2418,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
 - **Related:** OPS-01
 
+#### OPS-144 Set up Node, npm dependencies and optionally Java for a job
+
+- **Use when:** a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
+- **Does:** setup-toolchain installs Node with the npm cache, runs npm ci with one retry after a pause, and installs Temurin Java with the Maven cache when `java` is `'true'`. It holds the one copy of the Node and Java versions. The calling job runs actions/checkout first.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/actions/setup-toolchain/action.yml`
+- **Files:** .github/actions/setup-toolchain/action.yml
+- **Keywords:** setup node, npm ci, retry, setup java, temurin, toolchain, node version, java version
+- **Related:** OPS-145
+
+#### OPS-145 Assume an AWS role by OIDC, with an optional chained deploy role
+
+- **Use when:** a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
+- **Does:** aws-role assumes the actions role by GitHub OIDC, then assumes the deploy role through it when `deploy-role-arn` is set. The credentials go to the job environment. The calling job grants `id-token: write`.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/actions/aws-role/action.yml`
+- **Files:** .github/actions/aws-role/action.yml
+- **Keywords:** aws credentials, oidc, role chaining, actions role, deploy role, configure-aws-credentials
+- **Related:** OPS-144
+
 ### ci slot pool and sweep (OPS)
 
 <!-- generated:group ci-slot-pool-and-sweep-ops -->
@@ -2386,6 +2447,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments
 - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand
 - [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks
+- [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves
 - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs
 - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 <!-- /generated:group ci-slot-pool-and-sweep-ops -->
@@ -2433,7 +2495,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-14 Destroy a named prod deployment on demand
 
 - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of.
+- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
 - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 - **Entry:** `.github/workflows/destroy-prod.yml`
 - **Files:** .github/workflows/destroy-prod.yml
@@ -2449,6 +2511,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/ci-claim-check-proof.sh
 - **Keywords:** ci slot, wait for slot, destroy stale stacks, sweep-min-age-hours, ci-set, claim check
 - **Related:** OPS-10, OPS-13
+
+#### OPS-146 Delete a deployment's app stacks in parallel waves
+
+- **Use when:** a ci or prod deployment's `{deployment}-app-*` CloudFormation stacks must be deleted in dependency order, as fast as the order allows.
+- **Does:** delete-deployment-stacks.sh deletes the stacks in four phases and waits for each phase before the next. SelfDestruct, Ops and Publish go together in phase 1. Edge is phase 2, ApiRoutes then Api phase 3, and the nine Lambda stacks go together in phase 4. Before a parallel wave it reads the CloudFormation exports and imports, and deletes the wave one stack at a time when a stack in it imports an export of another stack in it. A stack in DELETE_FAILED is deleted again with FORCE_DELETE_STACK. Each stack writes its own log, printed when its wave ends.
+- **Run:** `scripts/delete-deployment-stacks.sh <deployment-name>`; called by `destroy-ci.yml` and `destroy-prod.yml`
+- **Entry:** `scripts/delete-deployment-stacks.sh`
+- **Files:** scripts/delete-deployment-stacks.sh, app/unit-tests/scripts/deleteDeploymentStacks.test.js, .github/workflows/destroy-ci.yml, .github/workflows/destroy-prod.yml
+- **Keywords:** delete stacks, destroy deployment, parallel delete, dependency order, FORCE_DELETE_STACK, list-imports, wave, teardown
+- **Related:** OPS-13, OPS-14
 
 #### OPS-15 Serialize lane test-user rotation jobs
 
@@ -6067,6 +6139,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
 - acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- actions role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - active users daily: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - activity bus: [DATA-01](#data-01-publish-activity-events-to-the-bus)
@@ -6090,7 +6163,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6145,6 +6218,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- approve: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
 - architecture rationale: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - architecture report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - archive client: [BILL-16](#bill-16-manage-practice-clients)
@@ -6188,6 +6262,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
+- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
@@ -6514,6 +6589,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - concurrency group: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
+- configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
@@ -6651,6 +6727,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
 - delete packages: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- delete stacks: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - delete tax data: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - deletebook: [BILL-18](#bill-18-delete-a-diya-gl-book)
@@ -6659,6 +6736,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
+- dependency order: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - dependency tracking: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - dependency update: [DEV-22](#dev-22-clean-and-update-local-build-state), [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dependency updates: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
@@ -6667,6 +6745,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
+- deploy role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - deploy validation failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - deploy workflow: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - deploy-app: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
@@ -6690,6 +6769,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - describe-alarm-history: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - design document: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - design tokens: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- destroy deployment: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - destroy prod: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - destroy stale deployments: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - destroy stale stacks: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
@@ -6925,6 +7005,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - force logout: [OPS-64](#ops-64-runbook-information-security-operations), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
+- force_delete_stack: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - foreign property adjustments: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - foreign property annual: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - foreign property bsas: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
@@ -7072,8 +7153,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
-- held for review: [BILL-45](#bill-45-release-a-pass-held-for-review)
+- held for review: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review)
 - held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- held pointer: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -7191,6 +7273,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issue pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - issue template: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - issued passes: [BILL-09](#bill-09-list-a-users-issued-passes)
+- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - iterate skill: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
@@ -7214,6 +7297,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
+- java version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
 - journey: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
@@ -7284,6 +7368,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list secrets: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
+- list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
@@ -7445,6 +7530,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - no-op verdict: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - no-quibble: [BILL-31](#bill-31-configure-stripe-account-policies)
+- node version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - node-qrcode: [SITE-19](#site-19-generate-qr-codes)
 - node_modules reset: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -7453,6 +7539,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - nova lite: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - nova pro: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - npm audit: [SS-45](#ss-45-run-compliance-checks)
+- npm ci: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - npm package: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - npm publish: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - npm-check-updates: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -7478,6 +7565,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - og image: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- oidc: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
@@ -7494,7 +7582,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -7543,12 +7631,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - paid without activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - parallel branch: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
+- parallel delete: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
-- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -7773,6 +7862,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- referrals.toml: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
+- referrer: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - refresh token: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
@@ -7788,7 +7879,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
-- release: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- release: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7840,6 +7931,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - retire.js: [SS-45](#ss-45-run-compliance-checks)
 - retrieved: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
+- retry: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - retry navigation: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - retryable error: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - return url allow-list: [BILL-24](#bill-24-create-a-stripe-checkout-session)
@@ -7857,6 +7949,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
+- role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - role pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - role prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -7996,6 +8089,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - settings page: [SITE-24](#site-24-change-an-account-setting)
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- setup java: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
+- setup node: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
 - share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - share posts: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
@@ -8063,6 +8158,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- state: [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - state machine execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - statement table: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -8170,13 +8266,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - tear down deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
-- teardown: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
+- teardown: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - teardown prod deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - telegram: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-72](#ops-72-forward-bedrock-budget-alerts), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - telegram alert: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - telegram forwarder: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - telegram ping: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - template: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
+- temurin: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - terms: [SITE-10](#site-10-serve-general-site-pages)
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
@@ -8203,7 +8300,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - thumbnails: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
-- tier: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- tier: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - time window: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
@@ -8221,6 +8318,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - tool registry: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- toolchain: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
@@ -8370,6 +8468,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
+- wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - wcag 1.4.12: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)

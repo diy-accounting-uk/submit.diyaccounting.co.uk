@@ -14,6 +14,9 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   redeemPass: vi.fn().mockResolvedValue(null),
   revokePass: vi.fn().mockResolvedValue(null),
   setReviewLimit: vi.fn().mockResolvedValue(null),
+  putHeldPointer: vi.fn().mockResolvedValue(undefined),
+  deleteHeldPointer: vi.fn().mockResolvedValue(undefined),
+  getHeldPasses: vi.fn().mockResolvedValue({ items: [] }),
   putReferralClaim: vi.fn().mockResolvedValue(true),
   deleteReferralClaim: vi.fn().mockResolvedValue(undefined),
   putRedemption: vi.fn().mockResolvedValue(undefined),
@@ -27,6 +30,9 @@ const {
   deleteReferralClaim,
   putRedemption,
   setReviewLimit,
+  putHeldPointer,
+  deleteHeldPointer,
+  getHeldPasses,
 } = await import("@app/data/dynamoDbPassRepository.js");
 const {
   buildPassRecord,
@@ -39,6 +45,7 @@ const {
   releaseReferral,
   recordRedemption,
   releasePass,
+  listHeldPasses,
 } = await import("../../services/passService.js");
 
 describe("passService", () => {
@@ -469,6 +476,48 @@ describe("passService", () => {
       expect(result).toMatchObject({ valid: false, reason: "held_for_review" });
     });
 
+    it("the redemption that brings useCount up to reviewLimit writes the held pointer", async () => {
+      redeemPassRepo.mockResolvedValueOnce({
+        code: "code",
+        bundleId: "b",
+        issuedBy: "issuer-hash",
+        useCount: 10,
+        reviewLimit: 10,
+        updatedAt: "2026-10-30T09:00:00.000Z",
+        ttl: 123,
+      });
+      const result = await redeemPass("code");
+      expect(result.valid).toBe(true);
+      expect(putHeldPointer).toHaveBeenCalledWith({
+        code: "code",
+        passIssuedBy: "issuer-hash",
+        useCount: 10,
+        reviewLimit: 10,
+        heldAt: "2026-10-30T09:00:00.000Z",
+        ttl: 123,
+      });
+    });
+
+    it("a redemption below the review limit writes no held pointer", async () => {
+      redeemPassRepo.mockResolvedValueOnce({ code: "code", bundleId: "b", useCount: 9, reviewLimit: 10 });
+      await redeemPass("code");
+      expect(putHeldPointer).not.toHaveBeenCalled();
+    });
+
+    it("a failure to write the held pointer does not fail the redemption", async () => {
+      redeemPassRepo.mockResolvedValueOnce({ code: "code", bundleId: "b", useCount: 10, reviewLimit: 10 });
+      putHeldPointer.mockRejectedValueOnce(new Error("throttled"));
+      const result = await redeemPass("code");
+      expect(result.valid).toBe(true);
+    });
+
+    it("a redemption refused at the limit writes the held pointer again", async () => {
+      redeemPassRepo.mockResolvedValueOnce(null);
+      getPass.mockResolvedValue(heldPass);
+      await redeemPass("code");
+      expect(putHeldPointer).toHaveBeenCalledWith(expect.objectContaining({ code: heldPass.code }));
+    });
+
     it("diagnoseFailure returns held_for_review at the limit", async () => {
       getPass.mockResolvedValueOnce(heldPass);
       expect(await diagnoseFailure("code")).toBe("held_for_review");
@@ -524,6 +573,29 @@ describe("passService", () => {
       getPass.mockResolvedValue(held);
       await releasePass("c", { remove: true });
       expect(setReviewLimit).toHaveBeenCalledWith("c", null, expect.any(String));
+    });
+
+    it("deletes the held pointer when the release lifts the hold", async () => {
+      getPass.mockResolvedValue(held);
+      setReviewLimit.mockResolvedValue({ ...held, reviewLimit: 2000 });
+      await releasePass("c", { raiseBy: 1000 });
+      expect(deleteHeldPointer).toHaveBeenCalledWith("c");
+      expect(putHeldPointer).not.toHaveBeenCalled();
+    });
+
+    it("keeps the held pointer when the new limit is still at the use count", async () => {
+      getPass.mockResolvedValue(held);
+      setReviewLimit.mockResolvedValue({ ...held, reviewLimit: 1000 });
+      await releasePass("c", { reviewLimit: 1000 });
+      expect(putHeldPointer).toHaveBeenCalled();
+      expect(deleteHeldPointer).not.toHaveBeenCalled();
+    });
+
+    it("lists the held passes with issuer hash, use count, review limit and held time", async () => {
+      getHeldPasses.mockResolvedValue({
+        items: [{ pk: "held#c", code: "c", issuedBy: "held", passIssuedBy: "hash-1", useCount: 5, reviewLimit: 5, createdAt: "t1" }],
+      });
+      expect(await listHeldPasses()).toEqual([{ code: "c", issuedBy: "hash-1", useCount: 5, reviewLimit: 5, heldAt: "t1" }]);
     });
 
     it("returns null and writes nothing for a missing pass", async () => {

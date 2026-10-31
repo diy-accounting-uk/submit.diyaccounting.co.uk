@@ -29,6 +29,12 @@
 //    deploy.yml can wait for deploy-environment.yml: both are triggered by the same push and can
 //    be created in either order a few hundred milliseconds apart, so "older than me" isn't a
 //    reliable filter for this pairing the way it is for same-workflow ci branch races.
+//    WAIT_FOR_CI_DEPLOYS_JOBS narrows this mode: a comma-separated list of job-name prefixes. A
+//    run then stops gating once every prefix matches at least one job of the run and every
+//    matched job is completed, so a caller waits only for the jobs whose output it reads. A
+//    prefix that matches no job keeps the wait, because GitHub creates a job only when its needs
+//    resolve; a renamed job or a typo therefore waits for the whole run. An empty list waits for
+//    the whole run.
 //
 // 'older' mode also excludes an older run whose only unfinished job is itself a queued call into
 // destroy-ci.yml (deploy.yml's "sweep ci for a stale set" job). That job cannot start until it
@@ -76,6 +82,10 @@ const workflows = (process.env.WAIT_FOR_CI_DEPLOYS_WORKFLOWS || DEFAULT_WORKFLOW
   .map((workflow) => workflow.trim())
   .filter(Boolean);
 const targetEnvironment = process.env.WAIT_FOR_CI_DEPLOYS_TARGET_ENVIRONMENT || "";
+const jobPrefixes = (process.env.WAIT_FOR_CI_DEPLOYS_JOBS || "")
+  .split(",")
+  .map((prefix) => prefix.trim())
+  .filter(Boolean);
 
 // GitHub's API answers 5xx now and then; a wait that fails on one would fail the whole destroy.
 export async function github(path, { attempts = 3, retrySeconds = 10 } = {}) {
@@ -97,9 +107,27 @@ export async function github(path, { attempts = 3, retrySeconds = 10 } = {}) {
   }
 }
 
-async function fetchJobs(runId) {
-  const page = await github(`/actions/runs/${runId}/jobs?per_page=100`);
-  return page.jobs || [];
+const JOBS_PER_PAGE = 100;
+
+// Every job of a run. A deploy.yml run has more than 200 jobs, so one page misses most of them.
+export async function fetchJobs(runId) {
+  const jobs = [];
+  for (let page = 1; ; page += 1) {
+    const body = await github(`/actions/runs/${runId}/jobs?per_page=${JOBS_PER_PAGE}&page=${page}`);
+    const pageJobs = body.jobs || [];
+    jobs.push(...pageJobs);
+    if (pageJobs.length < JOBS_PER_PAGE) return jobs;
+  }
+}
+
+// True when every prefix matches at least one job and every matched job is completed. An empty
+// prefix list answers false, so a caller that names no jobs waits for the whole run.
+export function namedJobsCompleted(jobs, prefixes) {
+  if (prefixes.length === 0) return false;
+  return prefixes.every((prefix) => {
+    const matched = (jobs || []).filter((job) => (job.name || "").startsWith(prefix));
+    return matched.length > 0 && matched.every((job) => job.status === "completed");
+  });
 }
 
 export async function olderUnfinishedRuns(runs, currentCreatedAt, currentId) {
@@ -126,12 +154,31 @@ export function environmentResolvedFromBranch(headBranch) {
   return headBranch === "main" ? "prod" : "ci";
 }
 
-export function sameEnvironmentUnfinishedRuns(runs, targetEnv, currentId) {
+function sameEnvironmentUnfinishedRunList(runs, targetEnv, currentId) {
   return runs
     .filter((run) => UNFINISHED.has(run.status))
     .filter((run) => String(run.id) !== String(currentId))
-    .filter((run) => environmentResolvedFromBranch(run.head_branch) === targetEnv)
-    .map((run) => `${run.name}#${run.id} (${run.head_branch}, created ${run.created_at})`);
+    .filter((run) => environmentResolvedFromBranch(run.head_branch) === targetEnv);
+}
+
+const describeRun = (run) => `${run.name}#${run.id} (${run.head_branch}, created ${run.created_at})`;
+
+export function sameEnvironmentUnfinishedRuns(runs, targetEnv, currentId) {
+  return sameEnvironmentUnfinishedRunList(runs, targetEnv, currentId).map(describeRun);
+}
+
+// Like sameEnvironmentUnfinishedRuns, but a run whose named jobs are all completed no longer
+// gates. loadJobs(runId) returns the run's jobs.
+export async function environmentGatingRuns(runs, targetEnv, currentId, prefixes, loadJobs) {
+  const gating = [];
+  for (const run of sameEnvironmentUnfinishedRunList(runs, targetEnv, currentId)) {
+    if (prefixes.length > 0 && namedJobsCompleted(await loadJobs(run.id), prefixes)) {
+      console.log(`${describeRun(run)}: ${prefixes.length} named jobs completed, not gating.`);
+      continue;
+    }
+    gating.push(describeRun(run));
+  }
+  return gating;
 }
 
 async function listUnfinishedRuns(currentCreatedAt) {
@@ -140,7 +187,7 @@ async function listUnfinishedRuns(currentCreatedAt) {
     const page = await github(`/actions/workflows/${workflow}/runs?per_page=100`);
     const runs = page.workflow_runs || [];
     if (matchMode === "environment") {
-      found.push(...sameEnvironmentUnfinishedRuns(runs, targetEnvironment, currentRunId));
+      found.push(...(await environmentGatingRuns(runs, targetEnvironment, currentRunId, jobPrefixes, fetchJobs)));
     } else {
       found.push(...(await olderUnfinishedRuns(runs, currentCreatedAt, currentRunId)));
     }
@@ -164,7 +211,8 @@ async function main() {
   console.log(`This run (id ${currentRunId}) was created at ${currentCreatedAt}.`);
   if (matchMode === "environment") {
     console.log(
-      `Waiting for any unfinished ${workflows.join(", ")} run resolved to environment '${targetEnvironment}' to finish first.`,
+      `Waiting for any unfinished ${workflows.join(", ")} run resolved to environment '${targetEnvironment}' to finish first` +
+        (jobPrefixes.length > 0 ? `, or to complete the jobs named ${jobPrefixes.join(", ")}.` : "."),
     );
   } else {
     console.log("Waiting for any ci deploy run created earlier than that to finish first.");
