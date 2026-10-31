@@ -161,8 +161,8 @@ table.observations thead tr.last-updated th.last-updated-cell,
   text-align: left;
 }
 
-#reinvestmentTable th:nth-child(2),
-#reinvestmentTable td:nth-child(2),
+#monthlyMarketingBudgetTable th:nth-child(2),
+#monthlyMarketingBudgetTable td:nth-child(2),
 #companyProfitAndLossTable th:nth-child(2),
 #companyProfitAndLossTable td:nth-child(2),
 #companyBalanceSheetTable th:nth-child(2),

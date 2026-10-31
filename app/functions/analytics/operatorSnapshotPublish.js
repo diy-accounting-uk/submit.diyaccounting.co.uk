@@ -37,6 +37,7 @@ import { retentionObjective } from "../../lib/operatorSnapshot/retentionObjectiv
 import { operatorEffortObjective } from "../../lib/operatorSnapshot/operatorEffortObjective.js";
 import { complianceObjective } from "../../lib/operatorSnapshot/complianceObjective.js";
 import { companyAccountsObjective } from "../../lib/operatorSnapshot/companyAccountsObjective.js";
+import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
@@ -44,8 +45,13 @@ import { getFamilyAffiliateByEmailKey } from "../../data/dynamoDbPassRepository.
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
-// The share of trailing 30-day income the operator dashboard offers as the paid-traffic budget.
-export const REINVESTMENT_FRACTION = 0.2;
+// The company's monthly marketing budget rule: share x max(0, income used - costs used), held
+// to the cash at bank above the reserve.
+export const FULL_SHARE_PAID_BASE_LIMIT = 1000;
+export const SHARE_UP_TO_PAID_BASE_LIMIT = 1;
+export const SHARE_ABOVE_PAID_BASE_LIMIT = 0.5;
+export const CASH_RESERVE_GBP = 2000;
+export const SEARCH_FLOOR_GBP_PER_DAY = 1;
 
 /**
  * Every observation names a view under infra/main/resources/analytics/views (security's
@@ -95,6 +101,7 @@ const BETTER_UP_IDS = [
   "sessions-by-channel",
   "sessions-human",
   "revenue-gbp",
+  "revenue-net-gbp",
   "revenue-donations-gbp",
   "donations-count",
   "revenue-paypal-donations-gbp",
@@ -669,19 +676,165 @@ const nullObservationWindows = {
   last90: { value: null, trend: null },
 };
 
+const cashAtBankOf = (objectives) =>
+  objectives.flatMap((objective) => objective.observations).find((observation) => observation.id === "company-cash-at-bank")?.last30
+    ?.value ?? null;
+const sumOf = (values) => values.reduce((total, value) => total + value, 0);
+const daysInUtcMonth = (year, monthIndex) => new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+const isoMonth = (year, monthIndex) => new Date(Date.UTC(year, monthIndex, 1)).toISOString().slice(0, 7);
+
 /**
- * The reinvestment loop's figures: trailing 30-day income (the revenue-gbp observation's
- * last30 window) and the budget that income gives at REINVESTMENT_FRACTION. Both are null
- * while the revenue query has no figure, so the page shows no budget rather than a false zero.
- *
- * @param {Array<{id: string, observations: Array<object>}>} objectives
- * @returns {{fraction: number, trailing30IncomeGbp: number|null, budgetGbp: number|null}}
+ * AWS cost this month projected to month end, in pounds: the month's cost excluding charges dated
+ * the 1st (monthly fixed items, tax, Route 53), spread over the days elapsed to the newest day
+ * with cost data, scaled to the month's length, plus the charges dated the 1st.
  */
-export function buildReinvestment(objectives) {
-  const revenue = objectives.flatMap((objective) => objective.observations).find((observation) => observation.id === "revenue-gbp");
-  const trailing30IncomeGbp = revenue?.last30?.value ?? null;
-  const budgetGbp = trailing30IncomeGbp === null ? null : trailing30IncomeGbp * REINVESTMENT_FRACTION;
-  return { fraction: REINVESTMENT_FRACTION, trailing30IncomeGbp, budgetGbp };
+function projectAwsMonthGbp(dailyGbp, monthPrefix, daysInMonth) {
+  const days = dailyGbp.filter((entry) => entry.day.startsWith(monthPrefix));
+  if (days.length === 0) return null;
+  const daysElapsed = Math.max(...days.map((entry) => Number(entry.day.slice(8, 10))));
+  const dayOneGbp = sumOf(days.filter((entry) => entry.day.endsWith("-01")).map((entry) => entry.gbp));
+  const restGbp = sumOf(days.filter((entry) => !entry.day.endsWith("-01")).map((entry) => entry.gbp));
+  return (restGbp / daysElapsed) * daysInMonth + dayOneGbp;
+}
+
+/**
+ * The monthly marketing budget, set from the previous calendar month (UTC) and checked daily.
+ * Income used is the lower of last month's net income and the mean of the last three full months.
+ * Costs used are the higher of last month's running costs and this month's, projected to month end
+ * (AWS converted at each day's rate from v_usd_gbp_daily, plus the fixed suppliers). Marketing is not a running
+ * cost. Budget before the cash guard is share x max(0, income used - costs used); the guard holds
+ * it to the cash at bank above CASH_RESERVE_GBP and is not applied while cash is not measured.
+ * Every figure is null while an input it needs is null.
+ *
+ * @param {{lastThreeNetIncomeGbp: number[]|null, awsDailyGbp: Array<{day: string, gbp: number}>|null, gbpPerUsd: number|null, adsSpentGbp: number|null}} inputs
+ *   lastThreeNetIncomeGbp is oldest first, ending with last month
+ * @param {{cashAtBankGbp: number|null, activePaidBase: number|null, fixedSuppliersMonthlyGbp: number, now: Date}} context
+ */
+export function buildMonthlyMarketingBudget(inputs, { cashAtBankGbp, activePaidBase, fixedSuppliersMonthlyGbp, now }) {
+  const { lastThreeNetIncomeGbp, awsDailyGbp, gbpPerUsd, adsSpentGbp } = inputs;
+  const year = now.getUTCFullYear();
+  const monthIndex = now.getUTCMonth();
+  const thisMonth = isoMonth(year, monthIndex);
+  const lastMonthDate = new Date(Date.UTC(year, monthIndex - 1, 1));
+  const lastMonth = isoMonth(lastMonthDate.getUTCFullYear(), lastMonthDate.getUTCMonth());
+  const daysInMonth = daysInUtcMonth(year, monthIndex);
+
+  const netIncomeLastMonthGbp = lastThreeNetIncomeGbp ? lastThreeNetIncomeGbp.at(-1) : null;
+  const netIncomeThreeMonthMeanGbp = lastThreeNetIncomeGbp ? sumOf(lastThreeNetIncomeGbp) / lastThreeNetIncomeGbp.length : null;
+  const incomeUsedGbp = lastThreeNetIncomeGbp ? Math.min(netIncomeLastMonthGbp, netIncomeThreeMonthMeanGbp) : null;
+
+  let runningCostsLastMonthGbp = null;
+  let runningCostsThisMonthProjectedGbp = null;
+  if (awsDailyGbp) {
+    const lastMonthAwsGbp = sumOf(awsDailyGbp.filter((entry) => entry.day.startsWith(lastMonth)).map((entry) => entry.gbp));
+    runningCostsLastMonthGbp = lastMonthAwsGbp + fixedSuppliersMonthlyGbp;
+    const projectedAwsGbp = projectAwsMonthGbp(awsDailyGbp, thisMonth, daysInMonth);
+    runningCostsThisMonthProjectedGbp = projectedAwsGbp === null ? null : projectedAwsGbp + fixedSuppliersMonthlyGbp;
+  }
+  const costsUsedGbp =
+    runningCostsLastMonthGbp === null || runningCostsThisMonthProjectedGbp === null
+      ? null
+      : Math.max(runningCostsLastMonthGbp, runningCostsThisMonthProjectedGbp);
+
+  let share = null;
+  if (activePaidBase !== null) {
+    share = activePaidBase <= FULL_SHARE_PAID_BASE_LIMIT ? SHARE_UP_TO_PAID_BASE_LIMIT : SHARE_ABOVE_PAID_BASE_LIMIT;
+  }
+  const budgetBeforeCashGuardGbp =
+    incomeUsedGbp === null || costsUsedGbp === null || share === null ? null : share * Math.max(0, incomeUsedGbp - costsUsedGbp);
+  const cashAboveReserveGbp = cashAtBankGbp === null ? null : cashAtBankGbp - CASH_RESERVE_GBP;
+  let budgetGbp = budgetBeforeCashGuardGbp;
+  if (budgetBeforeCashGuardGbp !== null && cashAboveReserveGbp !== null) {
+    budgetGbp = Math.min(budgetBeforeCashGuardGbp, Math.max(0, cashAboveReserveGbp));
+  }
+  const leftToSpendGbp = budgetGbp === null || adsSpentGbp === null ? null : budgetGbp - adsSpentGbp;
+
+  return {
+    netIncomeLastMonthGbp,
+    netIncomeThreeMonthMeanGbp,
+    incomeUsedGbp,
+    gbpPerUsd,
+    fixedSuppliersMonthlyGbp,
+    runningCostsLastMonthGbp,
+    runningCostsThisMonthProjectedGbp,
+    costsUsedGbp,
+    share,
+    activePaidBase,
+    budgetBeforeCashGuardGbp,
+    cashAboveReserveGbp,
+    budgetGbp,
+    spentThisMonthGbp: adsSpentGbp,
+    leftToSpendGbp,
+    searchFloorMonthGbp: daysInMonth * SEARCH_FLOOR_GBP_PER_DAY,
+  };
+}
+
+function finiteFigures(figures) {
+  if (figures.some((figure) => !Number.isFinite(figure))) throw new Error("a marketing budget figure is not a number");
+  return figures;
+}
+
+async function queryOrNull({ workGroup, database, sql, label, read }) {
+  try {
+    return read(await runAthenaQuery({ workGroup, database, sql }));
+  } catch (error) {
+    logger.warn({ message: `Marketing budget ${label} query failed, publishing it as not measured`, error: error.message });
+    return null;
+  }
+}
+
+/**
+ * The lake figures the monthly marketing budget reads: net income for each of the last three full
+ * months (net revenue less cash commission paid that month), AWS cost by day since the start of
+ * last month, and this month's ads spend. A query that fails
+ * answers null for its figure.
+ */
+export async function buildMarketingBudgetInputs({ workGroup, database }) {
+  const [lastThreeNetIncomeGbp, awsDailyGbp, gbpPerUsd, adsSpentGbp] = await Promise.all([
+    queryOrNull({
+      workGroup,
+      database,
+      label: "net income",
+      sql:
+        `WITH months AS (SELECT date_trunc('month', date_add('month', -n, current_date)) AS month FROM UNNEST(sequence(1, 3)) AS t(n)),\n` +
+        `revenue AS (SELECT date_trunc('month', day) AS month, sum(net_revenue_gbp) AS net_gbp FROM v_revenue_daily GROUP BY 1),\n` +
+        `commission AS (SELECT month, sum(cash_paid_pence) / 100.0 AS cash_gbp FROM v_affiliate_cash_paid_monthly GROUP BY 1)\n` +
+        `SELECT cast(months.month AS varchar) AS month,\n` +
+        `       cast(coalesce(revenue.net_gbp, 0) - coalesce(commission.cash_gbp, 0) AS double) AS net_income_gbp\n` +
+        `FROM   months\nLEFT JOIN revenue ON revenue.month = months.month\nLEFT JOIN commission ON commission.month = months.month\nORDER  BY months.month`,
+      read: (rows) => finiteFigures(rows.map((row) => Number(row.net_income_gbp))),
+    }),
+    queryOrNull({
+      workGroup,
+      database,
+      label: "AWS cost",
+      sql:
+        `SELECT cast(c.day AS varchar) AS day, cast(sum(c.billed_cost_usd * r.gbp_per_usd) AS double) AS gbp\n` +
+        `FROM   v_cost_daily c\nLEFT JOIN v_usd_gbp_daily r ON r.day = c.day\n` +
+        `WHERE  c.day >= date_trunc('month', date_add('month', -1, current_date))\nGROUP  BY c.day`,
+      read: (rows) =>
+        rows.map((row) => {
+          if (typeof row.day !== "string" || row.gbp === null || row.gbp === undefined || !Number.isFinite(Number(row.gbp)))
+            throw new Error("AWS cost row without a day and a rate-converted figure");
+          return { day: row.day, gbp: Number(row.gbp) };
+        }),
+    }),
+    queryOrNull({
+      workGroup,
+      database,
+      label: "exchange rate",
+      sql: `SELECT cast(gbp_per_usd AS double) AS gbp_per_usd FROM v_usd_gbp_daily WHERE gbp_per_usd IS NOT NULL ORDER BY day DESC LIMIT 1`,
+      read: (rows) => (rows.length === 0 ? null : finiteFigures([Number(rows[0].gbp_per_usd)])[0]),
+    }),
+    queryOrNull({
+      workGroup,
+      database,
+      label: "ads spend",
+      sql: `SELECT cast(coalesce(sum(cost_gbp), 0) AS double) AS spent_gbp FROM v_ads_cost_daily WHERE day >= date_trunc('month', current_date)`,
+      read: (rows) => finiteFigures([Number(rows[0].spent_gbp)])[0],
+    }),
+  ]);
+  return { lastThreeNetIncomeGbp, awsDailyGbp, gbpPerUsd, adsSpentGbp };
 }
 
 /**
@@ -779,7 +932,6 @@ export async function buildSnapshot({ workGroup, database, context }) {
     generatedAt: new Date().toISOString(),
     environment: context.envName,
     objectives,
-    reinvestment: buildReinvestment(objectives),
     failedObservationCount: failedIds.size,
   };
 }
@@ -2029,8 +2181,15 @@ export async function handler() {
     failedAffiliateGroups = 1;
     logger.warn({ message: "Affiliate groups query failed, publishing none", error: error.message });
   }
+  const monthlyMarketingBudget = buildMonthlyMarketingBudget(await buildMarketingBudgetInputs({ workGroup, database }), {
+    cashAtBankGbp: cashAtBankOf(built.objectives),
+    activePaidBase: paidSubscribers ? paidSubscribers.totals.subscribers : null,
+    fixedSuppliersMonthlyGbp: loadFixedRunningCosts().monthlyTotalGbp,
+    now: new Date(),
+  });
   const snapshot = {
     ...built,
+    monthlyMarketingBudget,
     dailyCharts,
     ...(costDrivers ? { costDrivers } : {}),
     ...(paidSubscribers ? { paidSubscribers } : {}),

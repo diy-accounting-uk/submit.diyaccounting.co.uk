@@ -420,20 +420,33 @@ function renderReserve(snapshot) {
   state.dataset.state = below ? "below-floor" : "above-floor";
 }
 
-function renderReinvestment(snapshot) {
-  const panel = document.getElementById("reinvestmentPanel");
-  const reinvestment = snapshot.reinvestment;
-  if (!reinvestment) {
+function renderMonthlyMarketingBudget(snapshot) {
+  const panel = document.getElementById("monthlyMarketingBudgetPanel");
+  const budget = snapshot.monthlyMarketingBudget;
+  if (!budget) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
   const rows = [
-    ["reinvestment-fraction", "Reinvestment fraction", formatValue("ratio", reinvestment.fraction)],
-    ["trailing-30-income", "Trailing 30-day income", formatValue("gbp", reinvestment.trailing30IncomeGbp)],
-    ["reinvestment-budget", "Budget", formatValue("gbp", reinvestment.budgetGbp)],
+    ["net-income-last-month", "Net income last month", formatValue("gbp", budget.netIncomeLastMonthGbp)],
+    ["net-income-three-month-mean", "3-month mean", formatValue("gbp", budget.netIncomeThreeMonthMeanGbp)],
+    ["income-used", "Income used", formatValue("gbp", budget.incomeUsedGbp)],
+    ["running-costs-last-month", "Running costs last month", formatValue("gbp", budget.runningCostsLastMonthGbp)],
+    ["running-costs-this-month", "Running costs this month (projected)", formatValue("gbp", budget.runningCostsThisMonthProjectedGbp)],
+    ["costs-used", "Costs used", formatValue("gbp", budget.costsUsedGbp)],
+    ["exchange-rate", "Exchange rate (GBP per USD)", formatValue("rate", budget.gbpPerUsd)],
+    ["fixed-suppliers", "Fixed suppliers, monthly", formatValue("gbp", budget.fixedSuppliersMonthlyGbp)],
+    ["share", "Share", formatValue("ratio", budget.share)],
+    ["active-paid-base", "Active paid base", formatValue("count", budget.activePaidBase)],
+    ["budget-before-cash-guard", "Budget before cash guard", formatValue("gbp", budget.budgetBeforeCashGuardGbp)],
+    ["cash-above-reserve", "Cash at bank less £2,000 reserve", formatValue("gbp", budget.cashAboveReserveGbp)],
+    ["budget", "Budget", formatValue("gbp", budget.budgetGbp)],
+    ["spent-this-month", "Spent this month", formatValue("gbp", budget.spentThisMonthGbp)],
+    ["left-to-spend", "Left to spend", formatValue("gbp", budget.leftToSpendGbp)],
+    ["search-floor", "Search floor (outside the budget)", formatValue("gbp", budget.searchFloorMonthGbp)],
   ];
-  const body = document.getElementById("reinvestmentBody");
+  const body = document.getElementById("monthlyMarketingBudgetBody");
   body.innerHTML = "";
   rows.forEach(([id, label, text]) => {
     const row = document.createElement("tr");
@@ -867,7 +880,7 @@ const STATIC_TABLE_PANELS = [
   "activitiesPanel",
   "companyAccountsPanel",
   "reservePanel",
-  "reinvestmentPanel",
+  "monthlyMarketingBudgetPanel",
   "operatorsPanel",
   "familyAffiliatesPanel",
   "affiliateGroupsPanel",
@@ -985,7 +998,7 @@ async function initPage() {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
     document.getElementById("objectivesContainer").classList.add("objectives-settled");
-    renderReinvestment(snapshot);
+    renderMonthlyMarketingBudget(snapshot);
     renderReserve(snapshot);
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);

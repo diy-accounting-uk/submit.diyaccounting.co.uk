@@ -94,8 +94,8 @@ public class BusinessViews extends Construct {
                     List.of("activity_events_all", "dynamo_passes")),
             new ViewDefinition(
                     "v_revenue_daily",
-                    "Stripe and PayPal revenue each day, by product",
-                    List.of("stripe_charges", "paypal_donations")),
+                    "Stripe and PayPal revenue each day, by product, gross and net of payment fees",
+                    List.of("stripe_charges", "stripe_balance_transactions", "paypal_donations")),
             new ViewDefinition(
                     "v_hmrc_failures_by_class",
                     "HMRC submission failures each day, by failure class",
@@ -266,6 +266,10 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_affiliate_commissions_monthly",
                     "Commission held, payable, paid and reversed in pence, by month and tier, live mode only",
+                    List.of("dynamo_commissions")),
+            new ViewDefinition(
+                    "v_affiliate_cash_paid_monthly",
+                    "Cash commission paid out in pence, by calendar month of payment, live mode only",
                     List.of("dynamo_commissions")),
             new ViewDefinition(
                     "v_affiliate_referrers",
