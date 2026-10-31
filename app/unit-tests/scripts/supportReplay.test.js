@@ -24,10 +24,11 @@ const answer = (resolution, reply, article = "none") =>
   `## Matched article\n\n${article}\n\n## Resolution\n\n${resolution}\n\n## Drafted reply\n\n${reply}\n`;
 
 describe("support replay fixtures", () => {
-  it("holds the six triage shapes", () => {
+  it("holds the seven triage shapes", () => {
     expect(triage.map((fixture) => fixture.name).sort()).toEqual([
       "change-request-accept",
       "change-request-decline",
+      "change-request-faq-phrase",
       "complaint",
       "malicious-script",
       "question-faq",

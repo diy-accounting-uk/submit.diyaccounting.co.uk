@@ -1,0 +1,19 @@
+{
+  "kind": "triage",
+  "description": "A change request to reword a phrase quoted from a help entry: the phrase is correct, so the resolution is answer and no help entry is cited.",
+  "handlingInput": {
+    "issueNumber": 9010,
+    "category": "other",
+    "faqId": "submitted-wrong-figures",
+    "summary": "The customer asks for 'You cannot amend a submitted VAT return through this app' to be reworded as 'You can not amend a submitted VAT return through this app' on the help page.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "requiredPhrases": ["cannot"],
+    "forbiddenPhrases": ["answers your question", "help page entry", "already answers", "Dear ", "close this ticket"]
+  }
+}
