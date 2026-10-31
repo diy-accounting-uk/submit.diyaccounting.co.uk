@@ -21,11 +21,12 @@
 # --- logging / environment feature flags (bucket a) ---
 LOG_TO_CONSOLE     app/lib/logger.js:54, `!== "false"` -- defaults to console logging on
 LOG_TO_FILE        app/lib/logger.js:55, `=== "true"` -- defaults to file logging off
-NODE_ENV           `!== "test"` guard in app/lib/operators.js, app/services/subHasher.js, app/lib/emailHash.js
+NODE_ENV           `!== "test"` guard in app/lib/operators.js, app/lib/familyAffiliates.js, app/lib/emailList.js, app/services/subHasher.js, app/lib/emailHash.js
 
 # --- local-dev/test overrides whose real path is Secrets Manager or a coded default (bucket a) ---
 USER_SUB_HASH_SALT         app/services/subHasher.js:79 truthy guard; prod path reads Secrets Manager via ENVIRONMENT_NAME
-OPERATOR_EMAILS            app/lib/operators.js truthy guard; prod path reads Secrets Manager via ENVIRONMENT_NAME
+OPERATOR_EMAILS            app/lib/emailList.js truthy guard (operators.js); prod path reads Secrets Manager via ENVIRONMENT_NAME
+FAMILY_AFFILIATE_EMAILS    app/lib/emailList.js truthy guard (familyAffiliates.js); prod path reads Secrets Manager via ENVIRONMENT_NAME
 COGNITO_CLIENT_ID          app/lib/appClientResolver.js:32 truthy guard, local-lane map only
 COGNITO_MCP_CLIENT_ID      app/lib/appClientResolver.js:33 and app/lib/buildFraudHeaders.js:196, both truthy-guarded; wired only on the 4 functions the SubmitApplication*StackCdkTest MCP-client-id tests cover
 MCP_OAUTH_BLOB_KEY        app/functions/mcp/mcpOauth.js:63 truthy guard, local-lane raw key; the deployed path reads MCP_OAUTH_BLOB_KEY_SECRET_ARN

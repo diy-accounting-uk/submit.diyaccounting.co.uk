@@ -841,6 +841,7 @@ public class AnalyticsStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
+                        .passesTableName(sharedNames.data.passesTableName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());

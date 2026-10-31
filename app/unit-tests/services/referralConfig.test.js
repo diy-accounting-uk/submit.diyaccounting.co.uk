@@ -75,4 +75,12 @@ describe("services/referralConfig", () => {
     expect(resolveTierId(config, { state: "applied", tier: "casual" })).toBe("customer");
     expect(resolveTierId(config, { state: "ended", tier: "casual" })).toBe("customer");
   });
+
+  test("resolveTierId gives a family affiliate the family tier unless its affiliate item has ended", () => {
+    const config = valid();
+    expect(resolveTierId(config, null, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "approved", tier: "casual" }, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "applied", tier: "casual" }, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "ended", tier: "family" }, { family: true })).toBe("customer");
+  });
 });

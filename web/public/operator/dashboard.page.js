@@ -571,6 +571,125 @@ function renderActivities(snapshot) {
   });
 }
 
+// The operator list. The emails come from the authenticated snapshot only.
+function renderOperators(snapshot) {
+  const panel = document.getElementById("operatorsPanel");
+  const operators = snapshot.operators;
+  const body = document.getElementById("operatorsBody");
+  body.innerHTML = "";
+  if (!operators) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  operators.emails.forEach((email) => {
+    const row = document.createElement("tr");
+    row.className = "operator-row";
+    const cell = document.createElement("td");
+    cell.textContent = email;
+    row.appendChild(cell);
+    body.appendChild(row);
+  });
+}
+
+// One table per measure, one row per email on the family affiliate list, the standard windows.
+function renderFamilyAffiliates(snapshot) {
+  const panel = document.getElementById("familyAffiliatesPanel");
+  const family = snapshot.familyAffiliates;
+  if (!family) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  family.measures.forEach((measure) => {
+    const suffix = measure.key.charAt(0).toUpperCase() + measure.key.slice(1);
+    const table = document.getElementById("familyAffiliates" + suffix + "Table");
+    const body = document.getElementById("familyAffiliates" + suffix + "Body");
+    body.innerHTML = "";
+    const observations = family.affiliates.map((affiliate) => affiliate[measure.key]);
+    setLastUpdated(table, observations, snapshot.generatedAt, 0);
+    family.affiliates.forEach((affiliate) => {
+      const observation = affiliate[measure.key];
+      const row = document.createElement("tr");
+      row.className = "family-affiliate-row";
+      row.dataset.affiliateEmail = affiliate.email;
+      const labelCell = document.createElement("td");
+      labelCell.textContent = affiliate.email;
+      if (!affiliate.issuerFound) labelCell.title = "This account has not generated a pass yet.";
+      row.appendChild(labelCell);
+      ["today", "previousDay", "last7", "last30"].forEach((key) => row.appendChild(windowCell(observation, key)));
+      row.appendChild(activityTrendCell(observation));
+      row.appendChild(windowCell(observation, "last90"));
+      body.appendChild(row);
+    });
+  });
+}
+
+function poundsFromPence(pence) {
+  return gbpFormat.format((pence || 0) / 100);
+}
+
+// Referrers grouped by tier: a header row for each group, then a row for each referrer.
+function renderAffiliateGroups(snapshot) {
+  const panel = document.getElementById("affiliateGroupsPanel");
+  const affiliates = snapshot.affiliateGroups;
+  if (!affiliates) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+
+  const figureBody = document.getElementById("affiliateFamilyPayableBody");
+  figureBody.innerHTML = "";
+  const figureRow = document.createElement("tr");
+  figureRow.dataset.figureId = "family-payable-this-month";
+  const figureLabel = document.createElement("td");
+  figureLabel.textContent = "Family payable this month, to transfer";
+  const figureValue = document.createElement("td");
+  figureValue.textContent = poundsFromPence(affiliates.familyPayableThisMonthPence);
+  figureRow.appendChild(figureLabel);
+  figureRow.appendChild(figureValue);
+  figureBody.appendChild(figureRow);
+
+  const body = document.getElementById("affiliateGroupsBody");
+  body.innerHTML = "";
+  affiliates.groups.forEach((group) => {
+    const header = document.createElement("tr");
+    header.className = "affiliate-group-row";
+    header.dataset.groupId = group.id;
+    const title = document.createElement("th");
+    title.colSpan = 9;
+    title.scope = "colgroup";
+    title.textContent = group.label + " (" + group.referrers.length + ")";
+    header.appendChild(title);
+    body.appendChild(header);
+    group.referrers.forEach((referrer) => {
+      const row = document.createElement("tr");
+      row.className = "affiliate-referrer-row";
+      row.dataset.groupId = group.id;
+      const hashCell = document.createElement("td");
+      hashCell.textContent = referrer.referrerHash.slice(0, 8);
+      hashCell.title = referrer.referrerHash;
+      row.appendChild(hashCell);
+      [
+        referrer.tier,
+        referrer.latestLineState,
+        formatValue("count", referrer.referrals),
+        formatValue("count", referrer.payingAccounts),
+        poundsFromPence(referrer.heldPence),
+        poundsFromPence(referrer.payablePence),
+        poundsFromPence(referrer.paidPence),
+        poundsFromPence(referrer.payableThisMonthPence),
+      ].forEach((text) => {
+        const cell = document.createElement("td");
+        cell.textContent = text;
+        row.appendChild(cell);
+      });
+      body.appendChild(row);
+    });
+  });
+}
+
 const STALE_SNAPSHOT_HOURS = 36;
 
 function snapshotAgeHours(generatedAt) {
@@ -747,7 +866,16 @@ function showError(message) {
   container.appendChild(notice);
 }
 
-const STATIC_TABLE_PANELS = ["visitorsPanel", "activitiesPanel", "companyAccountsPanel", "reservePanel", "reinvestmentPanel"];
+const STATIC_TABLE_PANELS = [
+  "visitorsPanel",
+  "activitiesPanel",
+  "companyAccountsPanel",
+  "reservePanel",
+  "reinvestmentPanel",
+  "operatorsPanel",
+  "familyAffiliatesPanel",
+  "affiliateGroupsPanel",
+];
 
 function decorateStaticPanels() {
   STATIC_TABLE_PANELS.forEach((id) => {
@@ -867,6 +995,9 @@ async function initPage() {
     renderActivities(snapshot);
     window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
+    renderOperators(snapshot);
+    renderFamilyAffiliates(snapshot);
+    renderAffiliateGroups(snapshot);
   } catch (error) {
     if (error.status === 403) {
       showError(null);

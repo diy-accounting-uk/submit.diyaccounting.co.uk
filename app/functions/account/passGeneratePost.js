@@ -26,6 +26,8 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createPass } from "../../services/passService.js";
+import { putFamilyAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { isFamilyAffiliateEmail } from "../../lib/familyAffiliates.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
@@ -118,6 +120,13 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "User pass created", passTypeId, code: pass.code });
+    if (await isFamilyAffiliateEmail(decodedToken?.email)) {
+      await putFamilyAffiliate({
+        hashedSub,
+        emailKey: hashSub(decodedToken.email.trim().toLowerCase()),
+        now: new Date().toISOString(),
+      });
+    }
     await publishActivityEvent({
       event: "pass-generated",
       summary: `User pass generated: ${passTypeId}`,

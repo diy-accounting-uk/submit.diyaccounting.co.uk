@@ -207,6 +207,119 @@
             <tbody id="reinvestmentBody"></tbody>
           </table>
         </section>
+        <section id="operatorsPanel" class="objective" hidden>
+          <h2>Operators</h2>
+          <p class="subtitle">The accounts on the operator list</p>
+          <table class="observations data-table" id="operatorsTable">
+            <thead>
+              <tr>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody id="operatorsBody"></tbody>
+          </table>
+        </section>
+        <section id="familyAffiliatesPanel" class="objective" hidden>
+          <h2>Family affiliates</h2>
+          <p class="subtitle">One row for each email on the family affiliate list, over the same windows</p>
+          <table class="observations data-table family-affiliates-table" id="familyAffiliatesPassesGeneratedTable">
+            <caption title="Passes the affiliate generated, from the pass-generated events.">
+              Passes generated
+            </caption>
+            <thead>
+              <tr>
+                <th>Affiliate</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="familyAffiliatesPassesGeneratedBody"></tbody>
+          </table>
+          <table class="observations data-table family-affiliates-table" id="familyAffiliatesLinkClicksTable">
+            <caption title="Opens of one of the affiliate's pass links on the bundles page, whether or not the visitor then signed in.">
+              Pass link clicks
+            </caption>
+            <thead>
+              <tr>
+                <th>Affiliate</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="familyAffiliatesLinkClicksBody"></tbody>
+          </table>
+          <table class="observations data-table family-affiliates-table" id="familyAffiliatesPassesRedeemedTable">
+            <caption title="Accounts that redeemed one of the affiliate's passes.">
+              Passes redeemed
+            </caption>
+            <thead>
+              <tr>
+                <th>Affiliate</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="familyAffiliatesPassesRedeemedBody"></tbody>
+          </table>
+          <table class="observations data-table family-affiliates-table" id="familyAffiliatesPassesConvertedTable">
+            <caption title="Redeemers who went on to a paid subscription charge, counted on the day of their first charge.">
+              Passes converted to paid
+            </caption>
+            <thead>
+              <tr>
+                <th>Affiliate</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="familyAffiliatesPassesConvertedBody"></tbody>
+          </table>
+        </section>
+        <section id="affiliateGroupsPanel" class="objective" hidden>
+          <h2>Affiliates by group</h2>
+          <p class="subtitle">Every referrer with a charged referral, by group, in pence converted to pounds. Live charges only</p>
+          <table class="observations data-table" id="affiliateFamilyPayableTable">
+            <thead>
+              <tr>
+                <th>Figure</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="affiliateFamilyPayableBody"></tbody>
+          </table>
+          <table class="observations data-table" id="affiliateGroupsTable">
+            <thead>
+              <tr>
+                <th>Referrer</th>
+                <th>Tier</th>
+                <th title="State of the referrer's newest commission line">State</th>
+                <th>Referrals</th>
+                <th title="Referred accounts with a charge that is not reversed">Paying accounts</th>
+                <th>Held</th>
+                <th>Payable</th>
+                <th>Paid</th>
+                <th title="Payable on charges made in the current UTC month">Payable this month</th>
+              </tr>
+            </thead>
+            <tbody id="affiliateGroupsBody"></tbody>
+          </table>
+        </section>
       </div>
     </main>
 

@@ -7,7 +7,10 @@ package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
+import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -67,6 +70,9 @@ public class OperatorSnapshotPublish extends Construct {
          * directly for the snapshot itself under {@code snapshots/<env>/}. */
         IBucket lakeBucket();
 
+        /** The passes table the family affiliate lookup items are read from, by key. */
+        String passesTableName();
+
         String glueDatabaseName();
 
         String athenaWorkGroupName();
@@ -93,6 +99,7 @@ public class OperatorSnapshotPublish extends Construct {
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("ATHENA_WORK_GROUP_NAME", props.athenaWorkGroupName())
                 .with("GLUE_DATABASE_NAME", props.glueDatabaseName())
+                .with("PASSES_DYNAMODB_TABLE_NAME", props.passesTableName())
                 .with("ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName());
 
         IRepository repository = Repository.fromRepositoryAttributes(
@@ -175,6 +182,20 @@ public class OperatorSnapshotPublish extends Construct {
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(props.lakeBucket().getBucketArn() + "/snapshots/*"))
+                .build());
+
+        // The Operators and Family affiliates sections: the snapshot reads the operator list and the
+        // family affiliate list, and finds each family affiliate's hashed sub by a keyed hash of
+        // the email, so it reads the two lists, the salt and the lookup items by key.
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.snapshotPublishLambda, region, account, props.envName());
+        FamilyAffiliateEmailsHelper.grantFamilyAffiliateEmailsAccess(
+                this.snapshotPublishLambda, region, account, props.envName());
+        SubHashSaltHelper.grantSaltAccess(this.snapshotPublishLambda, region, account, props.envName());
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:GetItem"))
+                .resources(
+                        List.of("arn:aws:dynamodb:%s:%s:table/%s".formatted(region, account, props.passesTableName())))
                 .build());
 
         // ============================================================================

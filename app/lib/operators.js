@@ -8,82 +8,26 @@
 // deterministic-per-environment-name pattern app/services/subHasher.js uses for the user sub
 // hash salt; OPERATOR_EMAILS is a raw env var override for local development and tests.
 
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import { createLogger } from "./logger.js";
+import { createEmailList } from "./emailList.js";
 
-const logger = createLogger({ source: "app/lib/operators.js" });
+const operatorList = createEmailList({ envVar: "OPERATOR_EMAILS", secretSuffix: "operator-emails", label: "operator emails" });
 
-const secretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-
-let cachedOperators = null;
-
-function parseOperatorEmails(raw) {
-  return raw
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email.length > 0);
-}
-
-async function fetchOperatorEmails() {
-  if (process.env.OPERATOR_EMAILS) {
-    logger.info({ message: "Using OPERATOR_EMAILS from environment (local dev/test)" });
-    return parseOperatorEmails(process.env.OPERATOR_EMAILS);
-  }
-
-  const envName = process.env.ENVIRONMENT_NAME;
-  if (!envName) {
-    throw new Error(
-      "ENVIRONMENT_NAME environment variable is required for Secrets Manager access. This must be set by the CDK stack (e.g., 'ci' or 'prod').",
-    );
-  }
-  const secretName = `${envName}/submit/operator-emails`;
-
-  logger.info({ message: "Fetching operator emails from Secrets Manager", secretName });
-  const result = await secretsManagerClient.send(new GetSecretValueCommand({ SecretId: secretName }));
-  if (!result.SecretString) {
-    throw new Error(`Secret ${secretName} exists but has no SecretString value`);
-  }
-
-  return parseOperatorEmails(result.SecretString);
-}
-
-// Cached per process: the operator list is fetched once and does not change while the
-// process/container is running.
-export async function loadOperators() {
-  if (cachedOperators === null) {
-    cachedOperators = await fetchOperatorEmails();
-  }
-  return cachedOperators;
-}
+export const loadOperators = operatorList.load;
 
 // Load the operator list so a later synchronous check (isOperatorEmailLoaded) has it when a
 // submission is classified. Callers that cannot wait start it and carry on; the returned promise
 // never rejects. A failed load leaves the list unloaded and the next call tries again.
-export async function warmOperators() {
-  if (cachedOperators !== null) return;
-  try {
-    await loadOperators();
-  } catch (error) {
-    logger.warn({ message: "Could not warm the operator list", error: error.message });
-  }
-}
+export const warmOperators = operatorList.warm;
 
 // True only when the operator list is already loaded and holds the email; false while it is
 // not loaded, so an unwarmed process classifies the account as a customer.
-export function isOperatorEmailLoaded(email) {
-  if (cachedOperators === null || !email || typeof email !== "string") return false;
-  return cachedOperators.includes(email.trim().toLowerCase());
-}
+export const isOperatorEmailLoaded = operatorList.isLoadedEmail;
 
-export async function isOperatorEmail(email) {
-  if (!email || typeof email !== "string") return false;
-  const operators = await loadOperators();
-  return operators.includes(email.trim().toLowerCase());
-}
+export const isOperatorEmail = operatorList.isEmail;
 
 export function _clearOperatorsCache() {
   if (process.env.NODE_ENV !== "test") {
     throw new Error("_clearOperatorsCache can only be used in test environment");
   }
-  cachedOperators = null;
+  operatorList.clearCache();
 }

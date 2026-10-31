@@ -51,6 +51,7 @@ class OperatorSnapshotPublishTest {
                 .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                 .resultsBucket(resultsBucket)
                 .lakeBucket(lakeBucket)
+                .passesTableName(sharedNames.data.passesTableName)
                 .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                 .build();
@@ -122,6 +123,48 @@ class OperatorSnapshotPublishTest {
         assertTrue(
                 found.size() == 1,
                 "expected exactly one s3:PutObject statement scoped to /snapshots/*, found: " + found);
+    }
+
+    @Test
+    void lambdaReadsBothEmailListsTheSaltAndTheLookupItemsByKeyOnly() {
+        Template template = synthOperatorSnapshotPublish("prod");
+
+        var secretArns = new java.util.ArrayList<String>();
+        var dynamoActions = new java.util.ArrayList<Object>();
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.get("Properties");
+            @SuppressWarnings("unchecked")
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (java.util.List<Map<String, Object>>) document.get("Statement");
+            for (Map<String, Object> statement : statements) {
+                if ("secretsmanager:GetSecretValue".equals(statement.get("Action"))) {
+                    secretArns.add(String.valueOf(statement.get("Resource")));
+                }
+                if (String.valueOf(statement.get("Resource")).contains("arn:aws:dynamodb")) {
+                    dynamoActions.add(statement.get("Action"));
+                }
+            }
+        }
+        assertTrue(
+                secretArns.stream().anyMatch(arn -> arn.contains("/submit/operator-emails*")),
+                "operator list not granted: " + secretArns);
+        assertTrue(
+                secretArns.stream().anyMatch(arn -> arn.contains("/submit/family-affiliate-emails*")),
+                "family affiliate list not granted: " + secretArns);
+        assertTrue(
+                secretArns.stream().anyMatch(arn -> arn.contains("/submit/user-sub-hash-salt*")),
+                "salt not granted: " + secretArns);
+        assertEquals(java.util.List.of("dynamodb:GetItem"), dynamoActions);
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of("PASSES_DYNAMODB_TABLE_NAME", "docs-env-passes")))))));
     }
 
     /**

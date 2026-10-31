@@ -15,7 +15,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { loadReferralConfig, getTier, resolveTierId } from "./referralConfig.js";
-import { getReferralClaim, getRedemption, getAffiliate } from "../data/dynamoDbPassRepository.js";
+import { getReferralClaim, getRedemption, getAffiliate, getFamilyAffiliate } from "../data/dynamoDbPassRepository.js";
 import {
   getAnchor,
   getChargePointer,
@@ -110,7 +110,8 @@ export async function accrueCommission({ invoice, subscriptionId, subRecord, str
 
   let anchor = await getAnchor(referrerHash, hashedSub);
   if (!anchor) {
-    const tier = getTier(config, resolveTierId(config, await getAffiliate(referrerHash)));
+    const [affiliate, familyMarker] = await Promise.all([getAffiliate(referrerHash), getFamilyAffiliate(referrerHash)]);
+    const tier = getTier(config, resolveTierId(config, affiliate, { family: Boolean(familyMarker) }));
     const candidate = {
       referralCode,
       tier: tier.id,

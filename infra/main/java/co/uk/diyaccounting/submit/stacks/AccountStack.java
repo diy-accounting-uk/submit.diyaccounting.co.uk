@@ -30,6 +30,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
+import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -1623,6 +1624,9 @@ public class AccountStack extends Stack {
         bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passGeneratePostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passGeneratePostLambda, region, account, props.envName());
+        // passGeneratePost marks a family affiliate, so it reads the family affiliate list
+        FamilyAffiliateEmailsHelper.grantFamilyAffiliateEmailsAccess(
+                this.passGeneratePostLambda, region, account, props.envName());
         this.passGeneratePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))

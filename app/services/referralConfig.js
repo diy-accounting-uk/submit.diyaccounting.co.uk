@@ -59,9 +59,13 @@ export function getTier(config, id) {
   return tier;
 }
 
+export const FAMILY_TIER_ID = "family";
+
 /**
- * The tier an approved affiliate item names; every other referrer earns the default tier.
+ * The family tier for a referrer marked as a family affiliate, unless the affiliate item has ended;
+ * otherwise the tier an approved affiliate item names; every other referrer earns the default tier.
  */
-export function resolveTierId(config, affiliateItem) {
+export function resolveTierId(config, affiliateItem, { family = false } = {}) {
+  if (family && affiliateItem?.state !== "ended") return FAMILY_TIER_ID;
   return affiliateItem?.state === "approved" ? affiliateItem.tier : config.ledger.defaultTier;
 }

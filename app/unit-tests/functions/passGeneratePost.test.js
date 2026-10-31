@@ -11,6 +11,12 @@ vi.mock("@app/services/passService.js", () => ({
   createPass: (...args) => mockCreatePass(...args),
 }));
 
+// Mock the pass repository: only the family marker write is reached from the handler
+const mockPutFamilyAffiliate = vi.fn();
+vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
+  putFamilyAffiliate: (...args) => mockPutFamilyAffiliate(...args),
+}));
+
 // Mock tokenEnforcement
 const mockConsumeTokenForActivity = vi.fn();
 vi.mock("@app/services/tokenEnforcement.js", () => ({
@@ -46,6 +52,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 import { ingestHandler } from "@app/functions/account/passGeneratePost.js";
+import { _clearFamilyAffiliatesCache } from "@app/lib/familyAffiliates.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -54,6 +61,7 @@ describe("passGeneratePost", () => {
 
   beforeEach(() => {
     mockCreatePass.mockReset();
+    mockPutFamilyAffiliate.mockReset();
     mockConsumeTokenForActivity.mockReset();
     mockGetUserBundles.mockReset();
     mockGetUserBundles.mockResolvedValue([]);
@@ -247,5 +255,32 @@ describe("passGeneratePost", () => {
     const detail = JSON.parse(rawDetail);
     expect(detail.event).toBe("pass-generated");
     expect(detail.hashedSub).toBe("hashed_test-user-sub");
+  });
+
+  describe("family affiliate marker", () => {
+    const generate = async (email) => {
+      mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
+      mockCreatePass.mockResolvedValue({ code: "c-1", passTypeId: "digital-pass", bundleId: "day-guest", maxUses: 20 });
+      return ingestHandler(buildEventWithToken(makeIdToken("family-sub", { email }), { passTypeId: "digital-pass" }));
+    };
+
+    test("an account whose email is on the family list is marked, keyed by hashed sub and hashed email", async () => {
+      process.env.FAMILY_AFFILIATE_EMAILS = "Family@Example.com, other@example.com";
+      _clearFamilyAffiliatesCache();
+      const result = await generate("family@example.com");
+      expect(result.statusCode).toBe(200);
+      expect(mockPutFamilyAffiliate).toHaveBeenCalledTimes(1);
+      expect(mockPutFamilyAffiliate.mock.calls[0][0]).toMatchObject({
+        hashedSub: "hashed_family-sub",
+        emailKey: "hashed_family@example.com",
+      });
+    });
+
+    test("an account whose email is not on the family list is not marked", async () => {
+      process.env.FAMILY_AFFILIATE_EMAILS = "family@example.com";
+      _clearFamilyAffiliatesCache();
+      await generate("someone@example.com");
+      expect(mockPutFamilyAffiliate).not.toHaveBeenCalled();
+    });
   });
 });

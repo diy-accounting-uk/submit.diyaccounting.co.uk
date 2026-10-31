@@ -423,6 +423,17 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
+      - name: Create secret in AWS from secrets.FAMILY_AFFILIATE_EMAILS
+        env:
+          FAMILY_AFFILIATE_EMAILS: ${{ secrets.FAMILY_AFFILIATE_EMAILS }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          # An unset GitHub secret writes a single comma, which parses to an empty list: Secrets
+          # Manager refuses an empty value, and the app reads no family affiliates from it.
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/family-affiliate-emails" \
+            "${FAMILY_AFFILIATE_EMAILS:-,}"
+
       - name: Create user sub hash salt (if not exists)
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/user-sub-hash-salt"
