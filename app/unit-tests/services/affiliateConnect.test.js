@@ -15,7 +15,7 @@ vi.mock("@app/lib/stripeClient.js", () => ({
   getStripeClient: (...args) => mockGetStripeClient(...args),
 }));
 
-import { refreshAffiliateAccount, toAffiliateView } from "@app/services/affiliateConnect.js";
+import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "@app/services/affiliateConnect.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -64,5 +64,14 @@ describe("services/affiliateConnect", () => {
       detailsSubmitted: true,
       transfersActive: false,
     });
+  });
+
+  test("needsAccountRefresh asks Stripe while applied, and while approved until transfers are active", () => {
+    expect(needsAccountRefresh({ state: "applied", stripeAccountId: "acct_1" })).toBe(true);
+    expect(needsAccountRefresh({ state: "approved", stripeAccountId: "acct_1", transfersActive: false })).toBe(true);
+    expect(needsAccountRefresh({ state: "approved", stripeAccountId: "acct_1", transfersActive: true })).toBe(false);
+    expect(needsAccountRefresh({ state: "ended", stripeAccountId: "acct_1" })).toBe(false);
+    expect(needsAccountRefresh({ state: "applied" })).toBe(false);
+    expect(needsAccountRefresh(null)).toBe(false);
   });
 });

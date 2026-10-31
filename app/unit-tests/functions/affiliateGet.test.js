@@ -77,6 +77,15 @@ describe("affiliateGet", () => {
     expect(JSON.parse(result.body)).toMatchObject({ hasConnectAccount: true, detailsSubmitted: true, transfersActive: false });
   });
 
+  test("an approved affiliate whose transfers are not yet active is read from Stripe first", async () => {
+    const item = { pk: `affiliate#${referrerHash}`, tier: "casual", state: "approved", stripeAccountId: "acct_1", transfersActive: false };
+    mockGetAffiliate.mockResolvedValue(item);
+    mockRefresh.mockResolvedValue({ ...item, detailsSubmitted: true, transfersActive: true });
+    const result = await ingestHandler(eventFor(tokenFor(operatorEmail), { referrerHash }));
+    expect(mockRefresh).toHaveBeenCalledWith({ referrerHash, item });
+    expect(JSON.parse(result.body)).toMatchObject({ state: "approved", transfersActive: true });
+  });
+
   test("a Stripe read failure answers the stored values", async () => {
     mockGetAffiliate.mockResolvedValue({ tier: "casual", state: "applied", stripeAccountId: "acct_1" });
     mockRefresh.mockRejectedValue(new Error("stripe down"));

@@ -66,6 +66,15 @@ export async function refreshAffiliateAccount({ referrerHash, item, nowIso = new
   return stored;
 }
 
+/**
+ * Whether a read of the affiliate should ask Stripe for the account first: while the application is
+ * open, and after approval until the transfers capability is active.
+ */
+export function needsAccountRefresh(item) {
+  if (!item?.stripeAccountId) return false;
+  return item.state === "applied" || (item.state === "approved" && item.transfersActive !== true);
+}
+
 /** The fields of an affiliate item that the applicant and the operator may see. */
 export function toAffiliateView(referrerHash, item) {
   return {

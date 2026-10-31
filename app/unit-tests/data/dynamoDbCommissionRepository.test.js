@@ -246,14 +246,90 @@ describe("data/dynamoDbCommissionRepository", () => {
     expect(items[1].Delete.Key).toEqual({ pk: "payable", sk: "ref-1#line#in_1" });
   });
 
-  test("queryPayablePointers reads the payable partition by key", async () => {
+  test("queryPayablePointers reads the named pointer partition by key", async () => {
     mockSend.mockResolvedValue({ Items: [{ sk: "a" }] });
-    expect(await repo.queryPayablePointers()).toEqual([{ sk: "a" }]);
+    expect(await repo.queryPayablePointers("payable")).toEqual([{ sk: "a" }]);
     expect(mockSend.mock.calls[0][0].params.ExpressionAttributeValues).toEqual({ ":payable": "payable" });
+    await repo.queryPayablePointers(repo.PAYABLE_CONNECT_PARTITION);
+    expect(mockSend.mock.calls[1][0].params.ExpressionAttributeValues).toEqual({ ":payable": "payable#connect" });
+  });
+
+  test("payablePointerPartition gives credit and Connect cash lines a pointer and bank-transfer lines none", () => {
+    expect(repo.payablePointerPartition({ form: "credit", payout: "customer-balance" })).toBe("payable");
+    expect(repo.payablePointerPartition({ form: "cash", payout: "connect" })).toBe("payable#connect");
+    expect(repo.payablePointerPartition({ form: "cash", payout: "bank-transfer" })).toBeNull();
+  });
+
+  test("releaseLine of a Connect cash line writes the Connect payable pointer", async () => {
+    await repo.releaseLine(
+      { ...heldLine, form: "cash", payout: "connect" },
+      { now: "n", payableMonth: "m", payableTaxYear: "t", totals: [] },
+    );
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[2].Put.Item).toEqual({ pk: "payable#connect", sk: "ref-1#line#in_1", linePk: "commission#ref-1", lineSk: "line#in_1" });
+  });
+
+  test("releaseLine of a bank-transfer cash line writes no payable pointer", async () => {
+    await repo.releaseLine(
+      { ...heldLine, form: "cash", payout: "bank-transfer" },
+      { now: "n", payableMonth: "m", payableTaxYear: "t", totals: [] },
+    );
+    expect(mockSend.mock.calls[0][0].params.TransactItems).toHaveLength(2);
+  });
+
+  test("putReversalLine of a Connect cash line writes the Connect payable pointer", async () => {
+    await repo.putReversalLine({ pk: "commission#r", sk: "line#in_1#reversal", form: "cash", payout: "connect" });
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[1].Put.Item.pk).toBe("payable#connect");
+  });
+
+  test("reversePayableLine of a Connect cash line deletes the Connect payable pointer", async () => {
+    await repo.reversePayableLine({ ...heldLine, form: "cash", payout: "connect" }, { reason: "refund", now: "n", totals: [] });
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[1].Delete.Key).toEqual({ pk: "payable#connect", sk: "ref-1#line#in_1" });
+  });
+
+  test("markLinePaid of a Connect cash line deletes the Connect payable pointer", async () => {
+    await repo.markLinePaid({ ...heldLine, form: "cash", payout: "connect" }, { now: "n", fields: { transferId: "tr_1" } });
+    const items = mockSend.mock.calls[0][0].params.TransactItems;
+    expect(items[1].Delete.Key).toEqual({ pk: "payable#connect", sk: "ref-1#line#in_1" });
+  });
+
+  test("queryPayouts reads the payout items of one referrer", async () => {
+    mockSend.mockResolvedValue({ Items: [{ sk: "payout#2026-11" }] });
+    expect(await repo.queryPayouts("ref-1")).toEqual([{ sk: "payout#2026-11" }]);
+    expect(mockSend.mock.calls[0][0].params.ExpressionAttributeValues).toEqual({ ":pk": "commission#ref-1", ":prefix": "payout#" });
+  });
+
+  test("putPendingPayout writes one item per month and refuses a second", async () => {
+    const payout = {
+      referrerHash: "ref-1",
+      month: "2026-11",
+      taxYear: "2026-27",
+      amountPence: 2500,
+      lineSks: ["line#in_1"],
+      stripeAccountId: "acct_1",
+      now: "n",
+    };
+    expect(await repo.putPendingPayout(payout)).toBe(true);
+    const params = mockSend.mock.calls[0][0].params;
+    expect(params.Item).toMatchObject({ pk: "commission#ref-1", sk: "payout#2026-11", state: "pending", amountPence: 2500 });
+    expect(params.ConditionExpression).toBe("attribute_not_exists(pk)");
+    mockSend.mockRejectedValue(Object.assign(new Error("exists"), { name: "ConditionalCheckFailedException" }));
+    expect(await repo.putPendingPayout(payout)).toBe(false);
+  });
+
+  test("markPayoutPaid conditions on pending and records the transfer", async () => {
+    expect(await repo.markPayoutPaid({ referrerHash: "ref-1", month: "2026-11", transferId: "tr_1", now: "n" })).toBe(true);
+    const params = mockSend.mock.calls[0][0].params;
+    expect(params.Key).toEqual({ pk: "commission#ref-1", sk: "payout#2026-11" });
+    expect(params.ExpressionAttributeValues[":transferId"]).toBe("tr_1");
+    mockSend.mockRejectedValue(Object.assign(new Error("not pending"), { name: "ConditionalCheckFailedException" }));
+    expect(await repo.markPayoutPaid({ referrerHash: "ref-1", month: "2026-11", transferId: "tr_1", now: "n" })).toBe(false);
   });
 
   test("markLinePaid conditions on payable, records the fields and deletes the pointer", async () => {
-    expect(await repo.markLinePaid(heldLine, { now: "n", fields: { balanceTransactionId: "cbtxn_1" } })).toBe(true);
+    expect(await repo.markLinePaid({ ...heldLine, form: "credit" }, { now: "n", fields: { balanceTransactionId: "cbtxn_1" } })).toBe(true);
     const items = mockSend.mock.calls[0][0].params.TransactItems;
     expect(items[0].Update.ConditionExpression).toBe("#state = :payable");
     expect(items[0].Update.ExpressionAttributeValues[":f0"]).toBe("cbtxn_1");

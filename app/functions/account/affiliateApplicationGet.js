@@ -3,7 +3,7 @@
 
 // @capability BILL-53 Read the caller's affiliate application
 // - **Use when:** a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
-// - **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
+// - **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
 // - **Run:** `GET /api/v1/affiliate/application`
 // - **Entry:** `app/functions/account/affiliateApplicationGet.js:ingestHandler`
 // - **Files:** app/functions/account/affiliateApplicationGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationGet.test.js, web/public/bundles.page.js
@@ -24,7 +24,7 @@ import {
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
-import { refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
+import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
 import { getAffiliate } from "../../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationGet.js" });
@@ -60,7 +60,7 @@ export async function ingestHandler(event) {
     if (!item) {
       return http200OkResponse({ request, headers: responseHeaders, data: { state: null } });
     }
-    if (item.stripeAccountId && item.state === "applied") {
+    if (needsAccountRefresh(item)) {
       try {
         item = await refreshAffiliateAccount({ referrerHash, item });
       } catch (error) {
