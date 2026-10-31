@@ -105,6 +105,14 @@ describe("passGeneratePost", () => {
     expect(body.message).toContain("not user-issuable");
   });
 
+  test("refuses a campaign pass request without charging tokens", async () => {
+    const event = buildEventWithToken(validToken, { passTypeId: "campaign-pass" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(400);
+    expect(mockConsumeTokenForActivity).not.toHaveBeenCalled();
+    expect(mockCreatePass).not.toHaveBeenCalled();
+  });
+
   test("returns 403 when tokens are exhausted", async () => {
     mockConsumeTokenForActivity.mockResolvedValue({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 

@@ -198,7 +198,7 @@ userIssuable = true
 # campaign → unlocks "invited-guest" bundle
 # Grants: 3 tokens refreshing monthly per redeemer, 3 day validity
 # Tokens: 3 per month per redeemer
-# Tokens: the issuer pays the token cost of the generating activity.
+# Issued by the operator; no generate activity exists for it.
 [[passTypes]]
 id = "campaign-pass"
 name = "Campaign Pass"
@@ -207,5 +207,5 @@ bundleId = "invited-guest"
 defaultValidityPeriod = "P3D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
-userIssuable = true
+userIssuable = false
 

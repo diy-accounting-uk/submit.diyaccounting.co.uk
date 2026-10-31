@@ -42,6 +42,11 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/passGeneratePost.js" });
 
+const GENERATE_ACTIVITY_BY_PASS_TYPE = {
+  "digital-pass": "generate-pass-digital",
+  "physical-pass": "generate-pass-physical",
+};
+
 /* v8 ignore start */
 export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/pass/generate", ingestHandler);
@@ -91,7 +96,10 @@ export async function ingestHandler(event) {
   }
 
   // Determine which activity this maps to
-  const activityId = passTypeId === "digital-pass" ? "generate-pass-digital" : "generate-pass-physical";
+  const activityId = GENERATE_ACTIVITY_BY_PASS_TYPE[passTypeId];
+  if (!activityId) {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: `Pass type ${passTypeId} has no generate activity` });
+  }
 
   // Consume tokens via tokenEnforcement
   const catalog = loadCatalogFromRoot();

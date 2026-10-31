@@ -44,7 +44,7 @@ A bundle with `enable = "on-pass"` needs a pass:
 | `resident-pro-pass`      | `resident-pro`      | 1              | 1 day     | No             | Operator              |
 | `digital-pass`           | `day-guest`         | No cap, held at 1000 | 90 days | No        | User, 10 tokens       |
 | `physical-pass`          | `day-guest`         | 1              | Unlimited | No             | User, 10 tokens       |
-| `campaign-pass`          | `invited-guest`     | 1              | 3 days    | No             | User type, no generate page |
+| `campaign-pass`          | `invited-guest`     | 1              | 3 days    | No             | Operator, no generate page |
 
 ### Test and production pass types
 
