@@ -153,6 +153,9 @@ public class BillingWebhookStack extends Stack {
                 Table.fromTableName(this, "ActivityChargesTable", props.sharedNames().data.activityChargesTableName);
         ITable practiceClientsTable =
                 Table.fromTableName(this, "PracticeClientsTable", props.sharedNames().data.practiceClientsTableName);
+        ITable commissionsTable =
+                Table.fromTableName(this, "CommissionsTable", props.sharedNames().data.commissionsTableName);
+        ITable passesTable = Table.fromTableName(this, "PassesTable", props.sharedNames().data.passesTableName);
         String activityBusArn = "arn:aws:events:%s:%s:event-bus/%s"
                 .formatted(region, account, props.sharedNames().activity.activityBusName);
 
@@ -168,6 +171,8 @@ public class BillingWebhookStack extends Stack {
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("DIYA_GL_BUCKET_NAME", props.sharedNames().data.diyaGlBucketName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
@@ -224,6 +229,17 @@ public class BillingWebhookStack extends Stack {
         // Query only - listClientsByHashedSub, to find a practice's clients on a resident-pro
         // lapse or reactivation.
         practiceClientsTable.grant(webhookFunction, "dynamodb:Query");
+        // The commission ledger: accrual reads the referral claim and redemption in passes and
+        // writes lines, anchors, counters and pointers in commissions; a refund or dispute
+        // updates a line and deletes its held pointer.
+        commissionsTable.grant(
+                webhookFunction,
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:ConditionCheckItem");
+        passesTable.grant(webhookFunction, "dynamodb:GetItem");
 
         // Grant diya-gl book retention moves: retagBookObjects (CopyObject, self to self) needs
         // GetObject on the source and PutObject/PutObjectTagging on the destination, which are

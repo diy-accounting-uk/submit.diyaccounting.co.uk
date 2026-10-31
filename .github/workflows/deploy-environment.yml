@@ -1561,6 +1561,7 @@ jobs:
     needs:
       - names
       - create-secrets
+      - deploy-data
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:

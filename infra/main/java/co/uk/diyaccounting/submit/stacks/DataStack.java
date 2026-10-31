@@ -105,6 +105,7 @@ public class DataStack extends Stack {
     public ITable subscriptionsTable;
     public ITable activityChargesTable;
     public ITable practiceClientsTable;
+    public ITable commissionsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
     public ITable mcpSessionsTable;
@@ -147,7 +148,7 @@ public class DataStack extends Stack {
     }
 
     /**
-     * Turns on a stream on one of the four tables usage analytics reads from.
+     * Turns on a stream on one of the five tables usage analytics reads from.
      *
      * @param tableConstructIdPrefix The construct ID prefix passed to ensureTable for this table,
      *     e.g. "{resourceNamePrefix}-Receipts" for a table created with id "{prefix}-ReceiptsTable"
@@ -1155,6 +1156,19 @@ public class DataStack extends Stack {
                 "Ensured practice clients DynamoDB table with name %s",
                 props.sharedNames().data.practiceClientsTableName);
 
+        // Commissions table: partition key names the owner of the item (commission#<referrerHash>,
+        // held, charge#<chargeId>, card#<fingerprint>), sort key names the item within it. Pointer
+        // items do the work of indexes, so the table has no secondary index.
+        this.commissionsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-CommissionsTable",
+                props.sharedNames().data.commissionsTableName,
+                "pk",
+                "sk");
+        String commissionsStreamArn = ensureTableStream(
+                props.resourceNamePrefix() + "-Commissions", props.sharedNames().data.commissionsTableName);
+        infof("Ensured commissions DynamoDB table with name %s", props.sharedNames().data.commissionsTableName);
+
         // Security state table for issue #10 data-theft detection: bundle-endpoint burst
         // counters (rate#{hashedSub}#{minute}) and mid-session country-change state
         // (geo#{hashedSub}). PK-only table (no sort key) - both item shapes are looked up by
@@ -1658,6 +1672,9 @@ public class DataStack extends Stack {
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
         cfnOutput(this, "PracticeClientsTableName", this.practiceClientsTable.getTableName());
         cfnOutput(this, "PracticeClientsTableArn", this.practiceClientsTable.getTableArn());
+        cfnOutput(this, "CommissionsTableName", this.commissionsTable.getTableName());
+        cfnOutput(this, "CommissionsTableArn", this.commissionsTable.getTableArn());
+        cfnOutput(this, "CommissionsTableStreamArn", commissionsStreamArn);
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
         cfnOutput(this, "ActivityChargesTableName", this.activityChargesTable.getTableName());
         cfnOutput(this, "ActivityChargesTableArn", this.activityChargesTable.getTableArn());

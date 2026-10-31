@@ -134,10 +134,10 @@ class SubmitEnvironmentCdkResourceTest {
         // hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
-        // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
+        // Streams: receipts, bundles, passes, subscriptions, commissions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 133);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 64);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 136);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 65);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -265,12 +265,12 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
-        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 7);
+        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 5);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 32);
+        analytics.resourceCountIs("AWS::Glue::Table", 33);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 53);
         // The lake and the Athena results bucket

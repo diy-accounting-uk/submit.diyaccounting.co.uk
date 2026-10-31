@@ -160,6 +160,7 @@ class BackupStackCdkResourceTest {
                                         selectedTable("prod-env-hmrc-api-requests"),
                                         selectedTable("prod-env-passes"),
                                         selectedTable("prod-env-subscriptions"),
+                                        selectedTable("prod-env-commissions"),
                                         "arn:aws:s3:::prod-env-diya-gl-972912397388")))))));
     }
 

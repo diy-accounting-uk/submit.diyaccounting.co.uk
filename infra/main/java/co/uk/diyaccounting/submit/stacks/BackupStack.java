@@ -374,6 +374,8 @@ public class BackupStack extends Stack {
         ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().data.passesTableName);
         ITable subscriptionsTable =
                 importTable("ImportedSubscriptionsTable", props.sharedNames().data.subscriptionsTableName);
+        ITable commissionsTable =
+                importTable("ImportedCommissionsTable", props.sharedNames().data.commissionsTableName);
         String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().data.diyaGlBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
@@ -385,6 +387,7 @@ public class BackupStack extends Stack {
                         BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
                         BackupResource.fromDynamoDbTable(passesTable),
                         BackupResource.fromDynamoDbTable(subscriptionsTable),
+                        BackupResource.fromDynamoDbTable(commissionsTable),
                         BackupResource.fromArn(diyaGlBucketArn)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();

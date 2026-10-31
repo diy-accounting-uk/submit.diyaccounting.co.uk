@@ -59,6 +59,7 @@ describe("resolveTableKind", () => {
     expect(resolveTableKind("ci-env-bundles")).toBe("bundles");
     expect(resolveTableKind("ci-env-subscriptions")).toBe("subscriptions");
     expect(resolveTableKind("ci-env-passes")).toBe("passes");
+    expect(resolveTableKind("ci-env-commissions")).toBe("commissions");
   });
 
   test("throws rather than passing an unrecognised table through", () => {
@@ -271,6 +272,64 @@ describe("projectFields whitelists", () => {
     expect(Object.values(row)).not.toContain("secret-code");
   });
 
+  test("commissions: a ledger line projects its whitelisted fields and nothing else", () => {
+    const image = {
+      pk: "commission#referrer-hash",
+      sk: "line#in_1",
+      invoiceId: "in_1",
+      chargeId: "ch_1",
+      subscriptionId: "sub_1",
+      redeemerHash: "redeemer-hash",
+      referralCode: "CODE1",
+      tier: "customer",
+      form: "credit",
+      payout: "customer-balance",
+      rateBps: 3000,
+      grossPence: 1200,
+      feePence: 40,
+      netPence: 1160,
+      amountPence: 348,
+      currency: "gbp",
+      eligibleMonths: 1,
+      lineMonths: 1,
+      state: "held",
+      holdReasons: ["volume", "card_shared"],
+      chargedAt: "2026-10-01T00:00:00.000Z",
+      releaseAt: "2026-10-31T00:00:00.000Z",
+      livemode: true,
+      cardFingerprint: "fp_secret",
+      customerCreatedAt: "2026-09-01T00:00:00.000Z",
+      redeemedAt: "2026-09-02T00:00:00.000Z",
+    };
+    const row = projectFields("commissions", image, null, "INSERT");
+    expect(row.referrer_hash).toBe("referrer-hash");
+    expect(row.line_id).toBe("line#in_1");
+    expect(row.amount_pence).toBe(348);
+    expect(row.net_pence).toBe(1160);
+    expect(row.hold_reasons).toBe("volume,card_shared");
+    expect(row.payable_at).toBeNull();
+    expect(row.livemode).toBe(true);
+    expect(Object.values(row)).not.toContain("fp_secret");
+    expect(Object.keys(row)).not.toContain("card_fingerprint");
+    expect(Object.keys(row)).not.toContain("redeemed_at");
+  });
+
+  test("commissions: a line with no hold reasons projects hold_reasons as null", () => {
+    const row = projectFields("commissions", { pk: "commission#r", sk: "line#in_2", holdReasons: [] }, null, "MODIFY");
+    expect(row.hold_reasons).toBeNull();
+  });
+
+  test.each([
+    ["anchor", { pk: "commission#r", sk: "redeemer#x" }],
+    ["conversion counter", { pk: "commission#r", sk: "conversions#CODE#2026-10-01", conversions: 2 }],
+    ["cap totals", { pk: "commission#r", sk: "totals#credit", creditPence: 100 }],
+    ["held pointer", { pk: "held", sk: "2026-10-31T00:00:00.000Z#r#in_1" }],
+    ["charge pointer", { pk: "charge#ch_1", sk: "line" }],
+    ["card payer", { pk: "card#fp", sk: "payer#h" }],
+  ])("commissions: a %s item projects to null", (_name, image) => {
+    expect(projectFields("commissions", image, null, "INSERT")).toBeNull();
+  });
+
   test("a REMOVE event projects from OldImage, not NewImage", () => {
     const oldImage = { hashedSub: "hash-old", bundleId: "resident-pro", createdAt: "t1", expiry: "t2", ttl: 1 };
     const newImage = { hashedSub: "hash-new", bundleId: "should-not-be-used" };
@@ -325,6 +384,35 @@ describe("buildRow", () => {
       if (originalEnv === undefined) delete process.env.ENVIRONMENT_NAME;
       else process.env.ENVIRONMENT_NAME = originalEnv;
     }
+  });
+});
+
+describe("buildRow for commissions", () => {
+  test("returns null for an item that is not a ledger line", () => {
+    const record = streamRecord({
+      tableName: "ci-env-commissions",
+      eventName: "INSERT",
+      sequenceNumber: "1",
+      newImage: { pk: marshalledString("held"), sk: marshalledString("2026-10-31T00:00:00.000Z#r#in_1") },
+    });
+    expect(buildRow("commissions", record)).toBeNull();
+  });
+
+  test("returns a stamped row for a ledger line", () => {
+    const record = streamRecord({
+      tableName: "ci-env-commissions",
+      eventName: "INSERT",
+      sequenceNumber: "2",
+      newImage: {
+        pk: marshalledString("commission#r1"),
+        sk: marshalledString("line#in_1"),
+        amountPence: marshalledNumber(348),
+      },
+    });
+    const row = buildRow("commissions", record);
+    expect(row.source_table).toBe("commissions");
+    expect(row.referrer_hash).toBe("r1");
+    expect(row.amount_pence).toBe(348);
   });
 });
 
@@ -396,6 +484,53 @@ describe("handler", () => {
     const result = await handler(event);
 
     expect(result.batchItemFailures).toEqual([{ itemIdentifier: "10" }]);
+  });
+
+  test("commission pointer and anchor items are skipped without a batch failure or a delivery", async () => {
+    process.env.STREAM_TARGETS = JSON.stringify({ "ci-env-commissions": "ci-env-stream-commissions" });
+
+    const event = {
+      Records: [
+        streamRecord({
+          tableName: "ci-env-commissions",
+          eventName: "INSERT",
+          sequenceNumber: "30",
+          newImage: { pk: marshalledString("held"), sk: marshalledString("2026-10-31T00:00:00.000Z#r#in_1") },
+        }),
+        streamRecord({
+          tableName: "ci-env-commissions",
+          eventName: "INSERT",
+          sequenceNumber: "31",
+          newImage: { pk: marshalledString("commission#r"), sk: marshalledString("redeemer#x") },
+        }),
+      ],
+    };
+
+    const result = await handler(event);
+
+    expect(result.batchItemFailures).toEqual([]);
+    expect(mockFirehoseSend).not.toHaveBeenCalled();
+  });
+
+  test("a commission ledger line is delivered to the commissions stream", async () => {
+    process.env.STREAM_TARGETS = JSON.stringify({ "ci-env-commissions": "ci-env-stream-commissions" });
+
+    const event = {
+      Records: [
+        streamRecord({
+          tableName: "ci-env-commissions",
+          eventName: "INSERT",
+          sequenceNumber: "32",
+          newImage: { pk: marshalledString("commission#r"), sk: marshalledString("line#in_1") },
+        }),
+      ],
+    };
+
+    const result = await handler(event);
+
+    expect(result.batchItemFailures).toEqual([]);
+    expect(mockFirehoseSend).toHaveBeenCalledTimes(1);
+    expect(mockFirehoseSend.mock.calls[0][0].input.DeliveryStreamName).toBe("ci-env-stream-commissions");
   });
 
   test("a record for an unconfigured table reports itself as a batch item failure", async () => {
