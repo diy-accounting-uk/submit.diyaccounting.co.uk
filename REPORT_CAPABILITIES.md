@@ -481,6 +481,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
     - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page: use when you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
     - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation: use when the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
+    - [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report: use when a behaviour suite runs with the synthetic HMRC account, or writes and publishes its test report after the run.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -3003,7 +3004,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a new or changed product journey needs a recorded demo video driven end to end by Playwright.
 - **Does:** site-video-capture.js drives Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. localApp.js starts a scene script's declared `localApp` instead — a command, the url its web UI serves, and a readiness pattern — for a script whose target is a different local tool entirely rather than the submit site (videos/mcp-diya-gl.json records MCP Inspector driving diya-gl's MCP server this way). behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
-- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:tour-proxy`; `npm run video:view-obligations-ci`; `npm run video:submit-return-prod`; `npm run video:itsa-business-details-ci`; `npm run video:mcp-diya-gl`; `npm run video:accounting-diya-gl-profit`
+- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:record -- <scene> <simulator|proxy|ci|prod>`; `npm run video:record -- tour proxy`; `npm run video:record -- view-obligations ci`; `npm run video:mcp-diya-gl`; `npm run video:accounting-diya-gl-profit`
 - **Entry:** `scripts/site-video-capture.js`; `scripts/lib/video/journey.js`
 - **Files:** scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/localApp.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/localApp.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js
 - **Keywords:** video capture, playwright, scene script, demo video, journey, hmrc sandbox test user, recording, mcp inspector, local app
@@ -4458,7 +4459,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
 - **Does:** mcp-harness.html is a dev page that plays a scripted conversation from web/public/mcp-harness/<name>.json, chosen by `?script=`. Each tool turn posts to `/api/v1/dev/mcp-harness/call`. mcpHarness.js answers it in the local Express process and returns 404 when ENVIRONMENT_NAME is prod. mcp/lib/harness.js runs one tool of the full server over an in-memory MCP client. A tool that returns a link opens it in the page's browser-step frame. A string argument written `${turnId.path}` takes its value from that earlier tool turn's answer (`[*]` collects a field from every array item), so `file-accounts-for-clients` passes the clients' ids and the codes entry id from one tool to the next. The page also shows the MCP configuration for Claude Code, stdio and a claude.ai connector.
-- **Run:** open `/mcp-harness.html` on the local server (`npm run start:proxy` or `npm run start:simulator`); `?script=list-vat-obligations` is the default script and `?script=file-accounts-for-clients` adds two clients, shows the one codes link in the iframe and files for both through `run_for_clients`. `npx playwright test --project=browser-tests web/browser-tests/mcpHarnessBatchFiling.browser.test.js` plays that script against stubbed endpoints. The call endpoint exists only on the local Express server, not on a deployed ci set. `?script=business-year` plays a company's year: open a book, derive and file a VAT return, ask HMRC for liabilities, payments and a past return, then file accounts, with the HMRC consent walk and the codes page inside the iframe (a scene target with `frame` reaches into it). On the simulator lane the page may frame the simulator's HMRC stand-in. A `${turnId.path}` inside a longer string is written into the text. Record it with `AWS_PROFILE=diya-submit-prod npm run video:mcp-harness-simulator` (Polly narration needs the profile).
+- **Run:** open `/mcp-harness.html` on the local server (`npm run start:proxy` or `npm run start:simulator`); `?script=list-vat-obligations` is the default script and `?script=file-accounts-for-clients` adds two clients, shows the one codes link in the iframe and files for both through `run_for_clients`. `npx playwright test --project=browser-tests web/browser-tests/mcpHarnessBatchFiling.browser.test.js` plays that script against stubbed endpoints. The call endpoint exists only on the local Express server, not on a deployed ci set. `?script=business-year` plays a company's year: open a book, derive and file a VAT return, ask HMRC for liabilities, payments and a past return, then file accounts, with the HMRC consent walk and the codes page inside the iframe (a scene target with `frame` reaches into it). On the simulator lane the page may frame the simulator's HMRC stand-in. A `${turnId.path}` inside a longer string is written into the text. Record it with `AWS_PROFILE=diya-submit-prod npm run video:record -- mcp-harness simulator` (Polly narration needs the profile).
 - **Entry:** `web/public/mcp-harness.page.js`; `app/functions/mcp/mcpHarness.js:apiEndpoint`; `mcp/lib/harness.js:callHarnessTool`
 - **Files:** web/public/mcp-harness.html, web/public/mcp-harness.page.js, web/public/mcp-harness/list-vat-obligations.json, web/public/mcp-harness/file-accounts-for-clients.json, web/public/mcp-harness/business-year.json, web/browser-tests/mcpHarnessBatchFiling.browser.test.js, app/functions/mcp/mcpHarness.js, mcp/lib/harness.js, videos/mcp-harness.json, app/bin/server.js
 - **Keywords:** mcp harness, chat harness, scripted chat, mcp demo, list vat obligations demo, mcp-harness, harness endpoint, mcp recording
@@ -4679,7 +4680,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5004,6 +5005,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
 - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
 - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
+- [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5139,7 +5141,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** asked to make, update or re-record a product demo or training video.
 - **Does:** site-video-capture drives a real browser through a scene script (videos/<name>.json) with Playwright. It draws a pointer, trail and captions with an in-page overlay, and captures the session with CDP screencast. It encodes a constant-60fps H.264 mp4 with ffmpeg, and writes a vtt, a transcript and per-scene stills.
-- **Run:** `/site-video-capture`; `npm run video:tour-proxy`
+- **Run:** `/site-video-capture`; `npm run video:record -- tour proxy`
 - **Entry:** `.claude/skills/site-video-capture/SKILL.md`; `scripts/site-video-capture.js`
 - **Files:** .claude/skills/site-video-capture/SKILL.md
 - **Keywords:** video capture, scene script, playwright recording, cdp screencast, ffmpeg, demo video, training video
@@ -5272,6 +5274,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/paid-without-activation/SKILL.md, app/functions/analytics/analyticsMetricsPublish.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, app/functions/billing/billingWebhookPost.js
 - **Keywords:** paid without activation, charge no activation, webhook failed, bundle not granted, stripe events resend, customer paid no bundle, reconciliation alarm
 - **Related:** DEV-42, DEV-45
+
+#### DEV-54 Run a behaviour suite with synthetic account or report
+
+- **Use when:** a behaviour suite runs with the synthetic HMRC account, or writes and publishes its test report after the run.
+- **Does:** run-behaviour.mjs runs `npm run test:<suite>-<lane>` for any suite, sets HMRC_ACCOUNT=synthetic on `--synthetic`, and on `--report` runs `test-report` for the suite's behaviour-tests file and publishes the result to web-test-local. The lane scripts stay one per suite and lane.
+- **Run:** `npm run test:behaviour -- <suite> <simulator|proxy|proxyRunning|ci|prod> [--synthetic] [--report]`; `npm run test:behaviour -- getVatObligationsBehaviour proxy --synthetic --report`
+- **Entry:** `scripts/run-behaviour.mjs`
+- **Files:** scripts/run-behaviour.mjs
+- **Keywords:** behaviour test, synthetic account, test report, lane, suite
+- **Related:** DEV-19
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -6148,7 +6160,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - batchitemfailure: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bcmdataexports: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - bedrock: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-18](#ops-18-run-alarm-and-support-triage), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
-- behaviour test: [CH-12](#ch-12-generate-synthetic-test-companies)
+- behaviour test: [CH-12](#ch-12-generate-synthetic-test-companies), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - behaviour test helpers: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - behaviour test master: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
@@ -7172,6 +7184,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda warming: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - lambda wiring: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [BILL-36](#bill-36-cdk-account-stack)
 - lambda worker: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - lapse: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - last-known-good: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
@@ -8035,6 +8048,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subscription updated: [BILL-28](#bill-28-process-stripe-webhook-events)
 - subscriptions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - subscriptions snapshot: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- suite: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - sunday job: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - superseded deploy: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
@@ -8053,6 +8067,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - swagger ui: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - sweep: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - sweep-min-age-hours: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
+- synthetic account: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - synthetic bundle toggle: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - synthetic data: [CH-12](#ch-12-generate-synthetic-test-companies)
 - synthetic period key: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
@@ -8086,7 +8101,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
-- test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
+- test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test step: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)

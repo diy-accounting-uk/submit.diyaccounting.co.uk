@@ -126,6 +126,68 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 
 ---
 
+## npm scripts
+
+<!-- scripts-table:start -->
+371 scripts in package.json. A group is the text before the first colon; a name below follows it.
+
+| Group | Scripts | Names |
+|-------|---------|-------|
+| `npm run test:` | 211 | `test` `all` `app-unit` `web-unit` `unit` `coverage` `system` `system-coverage` `browser` `enableCognitoNative` `disableCognitoNative` `totpCode` `behaviour` `allBehaviour` `allBehaviour-proxy` `allBehaviour-simulator` `allBehaviour-ci` `allBehaviour-prod` `authBehaviour` `authBehaviour-proxy` `authBehaviour-simulator` `authBehaviour-ci` `authBehaviour-prod` `bundleBehaviour` `bundleBehaviour-proxy` `bundleBehaviour-simulator` `bundleBehaviour-ci` `bundleBehaviour-prod` `tokenRefreshBehaviour` `tokenRefreshBehaviour-proxy` `tokenRefreshBehaviour-simulator` `tokenRefreshBehaviour-ci` `tokenRefreshBehaviour-prod` `submitVatBehaviour` `submitVatBehaviour-proxy` `submitVatBehaviour-ci` `submitVatBehaviour-prod` `submitVatBehaviour-simulator` `postVatReturnFraudPreventionHeadersBehaviour` `postVatReturnFraudPreventionHeadersBehaviour-proxy` `postVatReturnFraudPreventionHeadersBehaviour-ci` `postVatReturnFraudPreventionHeadersBehaviour-prod` `postVatReturnFraudPreventionHeadersBehaviour-simulator` `getVatObligationsBehaviour` `getVatObligationsBehaviour-proxy` `getVatObligationsBehaviour-ci` `getVatObligationsBehaviour-prod` `getVatObligationsBehaviour-simulator` `getVatLiabilitiesBehaviour` `getVatLiabilitiesBehaviour-proxy` `getVatLiabilitiesBehaviour-ci` `getVatLiabilitiesBehaviour-prod` `getVatLiabilitiesBehaviour-simulator` `getVatPaymentsBehaviour` `getVatPaymentsBehaviour-proxy` `getVatPaymentsBehaviour-ci` `getVatPaymentsBehaviour-prod` `getVatPaymentsBehaviour-simulator` `getVatPenaltiesBehaviour` `getVatPenaltiesBehaviour-proxy` `getVatPenaltiesBehaviour-ci` `getVatPenaltiesBehaviour-prod` `getVatPenaltiesBehaviour-simulator` `itsaBusinessDetailsBehaviour` `itsaBusinessDetailsBehaviour-proxy` `itsaBusinessDetailsBehaviour-ci` `itsaBusinessDetailsBehaviour-prod` `itsaBusinessDetailsBehaviour-simulator` `itsaObligationsBehaviour` `itsaObligationsBehaviour-proxy` `itsaObligationsBehaviour-ci` `itsaObligationsBehaviour-prod` `itsaObligationsBehaviour-simulator` `itsaSelfEmploymentPeriodBehaviour` `itsaSelfEmploymentPeriodBehaviour-proxy` `itsaSelfEmploymentPeriodBehaviour-ci` `itsaSelfEmploymentPeriodBehaviour-prod` `itsaSelfEmploymentPeriodBehaviour-simulator` `itsaAnnualSubmissionBehaviour` `itsaAnnualSubmissionBehaviour-proxy` `itsaAnnualSubmissionBehaviour-ci` `itsaAnnualSubmissionBehaviour-prod` `itsaAnnualSubmissionBehaviour-simulator` `itsaUkPropertyPeriodBehaviour` `itsaUkPropertyPeriodBehaviour-proxy` `itsaUkPropertyPeriodBehaviour-ci` `itsaUkPropertyPeriodBehaviour-prod` `itsaUkPropertyPeriodBehaviour-simulator` `itsaUkPropertyAnnualSubmissionBehaviour` `itsaUkPropertyAnnualSubmissionBehaviour-proxy` `itsaUkPropertyAnnualSubmissionBehaviour-ci` `itsaUkPropertyAnnualSubmissionBehaviour-prod` `itsaUkPropertyAnnualSubmissionBehaviour-simulator` `itsaForeignPropertyPeriodBehaviour` `itsaForeignPropertyPeriodBehaviour-proxy` `itsaForeignPropertyPeriodBehaviour-ci` `itsaForeignPropertyPeriodBehaviour-prod` `itsaForeignPropertyPeriodBehaviour-simulator` `itsaForeignPropertyAnnualSubmissionBehaviour` `itsaForeignPropertyAnnualSubmissionBehaviour-proxy` `itsaForeignPropertyAnnualSubmissionBehaviour-ci` `itsaForeignPropertyAnnualSubmissionBehaviour-prod` `itsaForeignPropertyAnnualSubmissionBehaviour-simulator` `itsaLossesAndClaimsBehaviour` `itsaLossesAndClaimsBehaviour-proxy` `itsaLossesAndClaimsBehaviour-ci` `itsaLossesAndClaimsBehaviour-prod` `itsaLossesAndClaimsBehaviour-simulator` `itsaFinalDeclarationBehaviour` `itsaFinalDeclarationBehaviour-proxy` `itsaFinalDeclarationBehaviour-ci` `itsaFinalDeclarationBehaviour-prod` `itsaFinalDeclarationBehaviour-simulator` `postVatReturnBehaviour` `postVatReturnBehaviour-proxy` `postVatReturnBehaviour-ci` `postVatReturnBehaviour-prod` `postVatReturnBehaviour-simulator` `practiceLicenceBehaviour` `practiceLicenceBehaviour-proxy` `practiceLicenceBehaviour-ci` `practiceLicenceBehaviour-prod` `practiceLicenceBehaviour-simulator` `getVatReturnBehaviour` `getVatReturnBehaviour-proxy` `getVatReturnBehaviour-ci` `getVatReturnBehaviour-prod` `getVatReturnBehaviour-simulator` `complianceBehaviour` `complianceBehaviour-proxy` `complianceBehaviour-ci` `complianceBehaviour-prod` `complianceBehaviour-simulator` `helpBehaviour` `helpBehaviour-proxy` `helpBehaviour-ci` `helpBehaviour-prod` `helpBehaviour-simulator` `vatValidationBehaviour` `vatValidationBehaviour-proxy` `vatValidationBehaviour-ci` `vatValidationBehaviour-prod` `vatValidationBehaviour-simulator` `hmrcAssistBehaviour` `hmrcAssistBehaviour-proxy` `hmrcAssistBehaviour-ci` `hmrcAssistBehaviour-simulator` `vatSchemesBehaviour` `vatSchemesBehaviour-proxy` `vatSchemesBehaviour-ci` `vatSchemesBehaviour-prod` `vatSchemesBehaviour-simulator` `passRedemptionBehaviour` `passRedemptionBehaviour-proxy` `passRedemptionBehaviour-ci` `passRedemptionBehaviour-prod` `passRedemptionBehaviour-simulator` `tokenEnforcementBehaviour` `tokenEnforcementBehaviour-proxy` `tokenEnforcementBehaviour-ci` `tokenEnforcementBehaviour-prod` `tokenEnforcementBehaviour-simulator` `paymentBehaviour` `paymentBehaviour-proxy` `paymentBehaviour-ci` `paymentBehaviour-prod` `paymentBehaviour-simulator` `generatePassActivityBehaviour` `generatePassActivityBehaviour-proxy` `generatePassActivityBehaviour-ci` `generatePassActivityBehaviour-prod` `generatePassActivityBehaviour-simulator` `companiesHouseBehaviour` `companiesHouseBehaviour-proxy` `companiesHouseBehaviour-ci` `companiesHouseBehaviour-prod` `companiesHouseBehaviour-simulator` `diyaGlBehaviour` `diyaGlBehaviour-proxy` `diyaGlBehaviour-ci` `diyaGlBehaviour-prod` `diyaGlBehaviour-simulator` `mcpHostedBehaviour` `mcpHostedBehaviour-simulator` `mcpHostedBehaviour-ci` `mcpHmrcGrantBehaviour` `mcpHmrcGrantBehaviour-simulator` `diyaGlSubscriptionBehaviour` `diyaGlSubscriptionBehaviour-ci` `changeRegisteredOfficeBehaviour` `changeRegisteredOfficeBehaviour-proxy` `changeRegisteredOfficeBehaviour-ci` `changeRegisteredOfficeBehaviour-prod` `changeRegisteredOfficeBehaviour-simulator` `changeRegisteredEmailBehaviour` `changeRegisteredEmailBehaviour-proxy` `changeRegisteredEmailBehaviour-ci` `changeRegisteredEmailBehaviour-prod` `changeRegisteredEmailBehaviour-simulator` `fileMicroEntityAccountsBehaviour` `fileMicroEntityAccountsBehaviour-proxy` `fileMicroEntityAccountsBehaviour-ci` `fileMicroEntityAccountsBehaviour-prod` `fileMicroEntityAccountsBehaviour-simulator` `companyTaxReturnBehaviour` `companyTaxReturnBehaviour-simulator` `fileConfirmationStatementBehaviour` `fileConfirmationStatementBehaviour-proxy` `fileConfirmationStatementBehaviour-ci` `fileConfirmationStatementBehaviour-prod` `fileConfirmationStatementBehaviour-simulator` |
+| `npm run accessibility:` | 39 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `pa11y-proxy` `pa11y-ci` `pa11y-prod` `pa11y-proxy-report` `pa11y-ci-report` `pa11y-prod-report` `axe-proxy` `axe-ci` `axe-prod` `axe-proxy-report` `axe-ci-report` `axe-prod-report` `axe-wcag22-proxy` `axe-wcag22-ci` `axe-wcag22-prod` `axe-wcag22-proxy-report` `axe-wcag22-ci-report` `axe-wcag22-prod-report` `lighthouse-proxy` `lighthouse-ci` `lighthouse-prod` `lighthouse-proxy-report` `lighthouse-ci-report` `lighthouse-prod-report` `lighthouse-multi-proxy` `lighthouse-multi-ci` `lighthouse-multi-prod` `text-spacing-proxy` `text-spacing-ci` `text-spacing-prod` `text-spacing-proxy-report` `text-spacing-ci-report` `text-spacing-prod-report` |
+| `npm run penetration:` | 20 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `eslint` `eslint-report` `audit` `audit-report` `audit-dev` `audit-dev-report` `retire` `retire-report` `zap-proxy` `zap-ci` `zap-prod` `zap-proxy-report` `zap-ci-report` `zap-prod-report` |
+| `npm run compliance:` | 9 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `proxy-report-md` `ci-report-md` `prod-report-md` |
+| `npm run video:` | 8 | `mcp-diya-gl` `accounting-diya-gl-profit` `accounting-spreadsheet-profit` `publish` `embed-check` `walkthrough` `stale` `record` |
+| `npm run diagram:` | 7 | `app-all` `app-auth-billing` `app-hmrc` `app-account` `app-ops` `app-delivery` `environment` |
+| `npm run ads:` | 5 | `inventory` `sync` `report` `conversions-upload` `forecast` |
+| `npm run formatting:` | 5 | `formatting` `js` `js-fix` `java` `java-fix` |
+| `npm run msads:` | 5 | `consent` `whoami` `inventory` `forecast` `report` |
+| `npm run seo:` | 4 | `structured-data-submit-prod` `structured-data-prod` `structured-data-submit-ci` `structured-data-ci` |
+| `npm run build:` | 3 | `build` `mtd-calendar` `rates-page` |
+| `npm run cdk:` | 3 | `synth-environment` `synth-application` `cdk` |
+| `npm run deploy:` | 3 | `app` `app-ci` `app-prod` |
+| `npm run start:` | 3 | `start` `simulator` `proxy` |
+| `npm run stripe:` | 3 | `cancel` `trigger-lifecycle` `configure-policies` |
+| `npm run bundle:` | 2 | `bundle` `books` |
+| `npm run capabilities:` | 2 | `generate` `check` |
+| `npm run data:` | 2 | `data` `simulator` |
+| `npm run ga4:` | 2 | `sync` `bigquery-sync` |
+| `npm run mcp:` | 2 | `vat-sandbox-proof` `accounts-test-service-proof` |
+| `npm run server:` | 2 | `server` `simulator` |
+| `npm run verify:` | 2 | `tax-sources` `waf-false-positives` |
+| `npm run auth:` | 1 | `auth` |
+| `npm run cdk-ci:` | 1 | `cdk-ci` |
+| `npm run clean:` | 1 | `clean` |
+| `npm run cloudfront:` | 1 | `set-origins` |
+| `npm run docker:` | 1 | `build` |
+| `npm run everything:` | 1 | `everything` |
+| `npm run exploratory:` | 1 | `diff` |
+| `npm run formatting-fix:` | 1 | `formatting-fix` |
+| `npm run generate:` | 1 | `submission-record` |
+| `npm run generate-pass:` | 1 | `generate-pass` |
+| `npm run google:` | 1 | `inventory` |
+| `npm run lighthouse:` | 1 | `multi` |
+| `npm run lint:` | 1 | `workflows` |
+| `npm run linting:` | 1 | `linting` |
+| `npm run linting-fix:` | 1 | `linting-fix` |
+| `npm run playwright:` | 1 | `install` |
+| `npm run pretest:` | 1 | `pretest` |
+| `npm run scripts:` | 1 | `table` |
+| `npm run set-apex-origins:` | 1 | `set-apex-origins` |
+| `npm run simulator:` | 1 | `simulator` |
+| `npm run site:` | 1 | `screenshots` |
+| `npm run test-report:` | 1 | `test-report` |
+| `npm run update:` | 1 | `java` |
+| `npm run update-to-greatest:` | 1 | `update-to-greatest` |
+| `npm run update-to-latest:` | 1 | `update-to-latest` |
+| `npm run update-to-minor:` | 1 | `update-to-minor` |
+| `npm run users:` | 1 | `provision` |
+| `npm run validate:` | 1 | `accounts-ixbrl` |
+| `npm run videos:` | 1 | `manifest` |
+<!-- scripts-table:end -->
+
+---
+
 ## Licence
 
 The service is free to use and the source is available. The source is licensed under the

@@ -9,7 +9,7 @@ description: Record a video of the real site for a human audience from a scene s
 <!-- @capability DEV-40 Record a product demo video
 - **Use when:** asked to make, update or re-record a product demo or training video.
 - **Does:** site-video-capture drives a real browser through a scene script (videos/<name>.json) with Playwright. It draws a pointer, trail and captions with an in-page overlay, and captures the session with CDP screencast. It encodes a constant-60fps H.264 mp4 with ffmpeg, and writes a vtt, a transcript and per-scene stills.
-- **Run:** `/site-video-capture`; `npm run video:tour-proxy`
+- **Run:** `/site-video-capture`; `npm run video:record -- tour proxy`
 - **Entry:** `.claude/skills/site-video-capture/SKILL.md`; `scripts/site-video-capture.js`
 - **Files:** .claude/skills/site-video-capture/SKILL.md
 - **Keywords:** video capture, scene script, playwright recording, cdp screencast, ffmpeg, demo video, training video
@@ -119,7 +119,7 @@ bundles catalogue fetch, served from the static `submit.catalogue.toml` file. A 
 runs the whole journey locally with no Docker and no AWS:
 
 ```bash
-npm run video:view-obligations-simulator -- --stills-only
+npm run video:record -- view-obligations simulator --stills-only
 ```
 
 The capture starts dynalite, the HTTP simulator and the site in its own process whenever the
