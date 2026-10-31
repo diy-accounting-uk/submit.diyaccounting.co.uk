@@ -75,6 +75,21 @@ jobs:
   });
 });
 
+describe("jobDisplayNames with the probe matrix entries", () => {
+  test("lists every deploy.yml probe catalogue id except web-test, and names each as the old job was", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
+    const { JOB_ID_CATALOGUES } = await import("../../../scripts/ci/select-jobs.mjs");
+    const matrixEntries = readMatrixEntries("deploy.yml");
+    const probeIds = [...JOB_ID_CATALOGUES["deploy.yml"]].filter((id) => id.startsWith("web-test-"));
+    expect(matrixEntries.map((entry) => entry.id).sort()).toEqual(probeIds.sort());
+    const names = jobDisplayNames(workflowText, probeIds, matrixEntries);
+    for (const entry of matrixEntries) {
+      expect(names[entry.id]).toBe(`${entry.suite}-\${{ needs.names.outputs.environment-name }} via probe test`);
+    }
+  });
+});
+
 describe("artifactLabelForCatalogue", () => {
   test("labels test.yml's own artifact 'test'", () => {
     expect(artifactLabelForCatalogue("test.yml")).toBe("test");

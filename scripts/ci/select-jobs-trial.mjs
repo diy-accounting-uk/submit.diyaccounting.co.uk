@@ -38,7 +38,7 @@ export const MIN_ADVISED_SKIPS_TO_MEET_BAR = 50;
 // display name comes from the matrix job's name template filled with that entry's fields.
 export const MATRIX_SUITE_FILES = {
   "test.yml": [".github/behaviour-simulator-suites.json"],
-  "deploy.yml": [],
+  "deploy.yml": [".github/behaviour-probe-suites.json"],
 };
 
 // Pure: reads the job-id -> display-name map straight from the workflow's own YAML, so a rename
