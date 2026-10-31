@@ -334,7 +334,7 @@ function availabilityHtml() {
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
     `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
     `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );

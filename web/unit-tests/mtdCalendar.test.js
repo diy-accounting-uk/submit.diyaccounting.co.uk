@@ -39,7 +39,7 @@ describe("MTD calendar page", () => {
     expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*\.stacked-table td\[data-label\]::before/);
     for (const id of ["business-types", "availability"]) {
       const section = html.slice(html.indexOf(`id="${id}"`)).split("</table>")[0];
-      expect(section).toContain('class="deadline-table stacked-table"');
+      expect(section).toContain('class="deadline-table stacked-table');
       const cells = section.match(/<td[^>]*>/g);
       expect(cells.length).toBeGreaterThan(0);
       for (const c of cells) expect(c).toContain("data-label=");

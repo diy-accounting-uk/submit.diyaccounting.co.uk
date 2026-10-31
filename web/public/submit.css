@@ -5190,6 +5190,12 @@ main ol.calendar {
   }
 }
 
+/* Eight columns fit the card at desktop width without a hidden column. */
+.availability-table th,
+.availability-table td {
+  padding: var(--space-1);
+}
+
 /* Availability cells: the state shades the cell; a production cell also carries a tick after its text. */
 .avail-production {
   background-color: var(--c-ok-tint);
