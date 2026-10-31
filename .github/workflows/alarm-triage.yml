@@ -334,6 +334,13 @@ jobs:
           case "$LOG_GROUP_PREFIX" in /aws/cloudtrail*) DELIVERY_LAG_SECONDS=600 ;; esac
           READY_AT=$(( $(date -u -d "$WINDOW_END" +%s) + DELIVERY_LAG_SECONDS ))
           WAIT_SECONDS=$(( READY_AT - $(date -u +%s) ))
+          # The window's margin after the alarm grows to 3600s for a daily alarm, which is longer
+          # than this job's timeout. The wait stops at the 16 minutes the timeout budgets for.
+          MAX_WAIT_SECONDS=960
+          if [ "$WAIT_SECONDS" -gt "$MAX_WAIT_SECONDS" ]; then
+            echo "The window ends in ${WAIT_SECONDS}s; waiting ${MAX_WAIT_SECONDS}s, the most this job allows"
+            WAIT_SECONDS=$MAX_WAIT_SECONDS
+          fi
           if [ "$WAIT_SECONDS" -gt 0 ]; then
             echo "Waiting ${WAIT_SECONDS}s for the window ending ${WINDOW_END} (delivery lag ${DELIVERY_LAG_SECONDS}s)"
             sleep "$WAIT_SECONDS"

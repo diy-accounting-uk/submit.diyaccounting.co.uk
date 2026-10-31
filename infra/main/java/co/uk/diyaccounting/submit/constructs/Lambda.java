@@ -200,7 +200,7 @@ public class Lambda {
         // errors, which the handlers' caught-and-returned 500s produce without an Errors
         // datapoint).
         // 1) Errors >= 1 in a 5-minute period
-        Alarm errorsAlarm = Alarm.Builder.create(this.scope, this.props.idPrefix() + "-ErrorsAlarm")
+        Alarm errorsAlarm = AlarmChain.chained(Alarm.Builder.create(this.scope, this.props.idPrefix() + "-ErrorsAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + this.props.ingestFunctionName() + "-errors")
                 .metric(this.ingestLambda
                         .metricErrors()
@@ -213,7 +213,7 @@ public class Lambda {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Lambda errors >= 1 for function " + this.ingestLambda.getFunctionName())
-                .build();
+                .build());
 
         // 2) Log-based error detection using a CloudWatch Logs Metric Filter
         // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
@@ -270,7 +270,7 @@ public class Lambda {
 
     private static Alarm logErrorsAlarm(
             Construct scope, String id, String alarmName, String metricName, String description) {
-        return Alarm.Builder.create(scope, id)
+        return AlarmChain.chained(Alarm.Builder.create(scope, id)
                 .alarmName(alarmName)
                 .metric(Metric.Builder.create()
                         .namespace(LOG_METRIC_NAMESPACE)
@@ -283,7 +283,7 @@ public class Lambda {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription(description)
-                .build();
+                .build());
     }
 
     /**
@@ -300,7 +300,7 @@ public class Lambda {
             return Optional.empty();
         }
         String name = resourceNamePrefix + DEPLOYMENT_ERRORS_SUFFIX;
-        return Optional.of(Alarm.Builder.create(scope, "DeploymentLambdaErrorsAlarm")
+        return Optional.of(AlarmChain.chained(Alarm.Builder.create(scope, "DeploymentLambdaErrorsAlarm")
                 .alarmName(name)
                 .metric(Metric.Builder.create()
                         .namespace(LOG_METRIC_NAMESPACE)
@@ -315,7 +315,7 @@ public class Lambda {
                 .alarmDescription("A Lambda function of " + resourceNamePrefix
                         + " failed an invocation (unhandled error, crash or timeout) in the last 5 minutes."
                         + " The per-function Errors graphs on the dashboard name the function.")
-                .build());
+                .build()));
     }
 
     /**
