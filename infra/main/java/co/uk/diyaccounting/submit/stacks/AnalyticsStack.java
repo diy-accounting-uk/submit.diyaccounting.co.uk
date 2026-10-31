@@ -40,6 +40,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
+import co.uk.diyaccounting.submit.stacks.analytics.PassFiguresPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.PayPalDonationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
@@ -840,6 +841,21 @@ public class AnalyticsStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .build());
+
+        new PassFiguresPublish(
+                this,
+                PassFiguresPublish.PassFiguresPublishProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .passesTableName(sharedNames.data.passesTableName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());

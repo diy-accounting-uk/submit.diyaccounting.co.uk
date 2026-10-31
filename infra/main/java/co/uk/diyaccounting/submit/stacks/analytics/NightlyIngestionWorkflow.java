@@ -62,7 +62,7 @@ import software.constructs.Construct;
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
  * once, since they share no data; then the data quality run; then the metrics publish; then the
- * raw export publish; then the operator snapshot publish; then {@code Succeed}. In prod it runs
+ * raw export publish; then the operator snapshot publish; then the pass figures publish; then {@code Succeed}. In prod it runs
  * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
@@ -163,6 +163,12 @@ public class NightlyIngestionWorkflow {
          */
         IFunction operatorSnapshotPublishLambda();
 
+        /**
+         * Imported by name from {@code AnalyticsStack}: {@code PassFiguresPublish.figuresPublishLambda}.
+         * Runs after the snapshot, so the figures read what the same night's ingestion landed.
+         */
+        IFunction passFiguresPublishLambda();
+
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
         }
@@ -237,6 +243,11 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-OperatorSnapshotPublish",
                 "operator snapshot publish",
                 props.operatorSnapshotPublishLambda());
+        var passFiguresTask = buildTask(
+                scope,
+                prefix + "-Nightly-PassFiguresPublish",
+                "pass figures publish",
+                props.passFiguresPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
         var definition = Chain.start(ingestionParallel)
@@ -244,6 +255,7 @@ public class NightlyIngestionWorkflow {
                 .next(metricsPublishTask)
                 .next(rawExportTask)
                 .next(operatorSnapshotTask)
+                .next(passFiguresTask)
                 .next(succeed);
 
         // ============================================================================

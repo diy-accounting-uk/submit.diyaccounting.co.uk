@@ -1015,6 +1015,36 @@ async function initFeedbackEngagementSection() {
 
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
+
+const FEWER_THAN_THREE = "fewer than 3";
+
+function figureCell(label, value, { count = true } = {}) {
+  const shown = value === null || value === undefined ? (count ? FEWER_THAN_THREE : "—") : String(value);
+  return domEl(
+    "div",
+    { class: "pass-figure", "data-figure": label.toLowerCase().replace(/ /g, "-") },
+    domEl("dt", {}, label),
+    domEl("dd", {}, shown),
+  );
+}
+
+function lastUsedLabel(lastUsed) {
+  if (!lastUsed) return "Not used yet";
+  return new Date(lastUsed).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function passFiguresEl(figures, className) {
+  return domEl(
+    "dl",
+    { class: className },
+    figureCell("Uses", figures.uses, { count: false }),
+    figureCell("New accounts", figures.newAccounts),
+    figureCell("Filed", figures.filed),
+    figureCell("Subscribers", figures.subscribers),
+    figureCell("Paid charges", figures.paidCharges),
+    figureCell("Last used", lastUsedLabel(figures.lastUsed), { count: false }),
+  );
+}
 let __noGeneratedPasses = false;
 
 const PASS_ACTIVITY_IDS = ["generate-pass-digital", "generate-pass-physical"];
@@ -1065,7 +1095,7 @@ async function fetchMyGeneratedPasses(append) {
   if (viewer.account.passGeneration === false) return;
 
   try {
-    let url = "/api/v1/pass/my-passes?limit=10";
+    let url = "/api/v1/pass/my-passes?limit=50";
     if (append && __myPassesNextPageKey) {
       url += "&nextPageKey=" + encodeURIComponent(__myPassesNextPageKey);
     }
@@ -1082,6 +1112,7 @@ async function fetchMyGeneratedPasses(append) {
     section.style.display = "block";
 
     if (!append) list.replaceChildren();
+    document.getElementById("generatedPassesTotals")?.remove();
 
     if (data.passes.length === 0 && !append) {
       __noGeneratedPasses = true;
@@ -1120,6 +1151,7 @@ async function fetchMyGeneratedPasses(append) {
         ),
         pass.notes ? domEl("div", { class: "bundle-note" }, pass.notes) : null,
         domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}${heldLabel}`),
+        pass.figures ? passFiguresEl(pass.figures, "pass-figures") : null,
         domEl(
           "div",
           { class: "bundle-row-line" },
@@ -1144,6 +1176,17 @@ async function fetchMyGeneratedPasses(append) {
       );
       list.appendChild(card);
     });
+
+    if (data.totals && data.passes.length > 0) {
+      list.appendChild(
+        domEl(
+          "div",
+          { "id": "generatedPassesTotals", "class": "service-item bundle-row pass-totals" },
+          domEl("div", { class: "bundle-row-line" }, domEl("span", { class: "pass-code" }, `All ${data.totals.passes} passes`)),
+          passFiguresEl(data.totals, "pass-figures"),
+        ),
+      );
+    }
 
     __myPassesNextPageKey = data.nextPageKey || null;
     loadMore.style.display = __myPassesNextPageKey ? "block" : "none";

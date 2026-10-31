@@ -270,3 +270,44 @@ export async function getAffiliate(referrerHash) {
   );
   return result.Item || null;
 }
+
+const FIGURES_BATCH_SIZE = 100;
+
+function figuresKey(code) {
+  return `figures#${code}`;
+}
+
+/**
+ * Read the nightly figures items for some pass codes, by key. Returns a map from code to its
+ * figures item. A code with no item yet is absent from the map.
+ */
+export async function getPassFigures(codes) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const figuresByCode = new Map();
+  for (let start = 0; start < codes.length; start += FIGURES_BATCH_SIZE) {
+    let keys = codes.slice(start, start + FIGURES_BATCH_SIZE).map((code) => ({ pk: figuresKey(code) }));
+    while (keys.length > 0) {
+      const result = await executeDynamoDbCommand(
+        (module) => new module.BatchGetCommand({ RequestItems: { [tableName]: { Keys: keys } } }),
+      );
+      for (const item of result.Responses?.[tableName] || []) figuresByCode.set(item.code, item);
+      keys = result.UnprocessedKeys?.[tableName]?.Keys || [];
+    }
+  }
+  return figuresByCode;
+}
+
+/**
+ * Store the figures item of one pass. The item has no issuedBy, so it stays out of the
+ * issuedBy-index.
+ */
+export async function putPassFigures({ code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: { pk: figuresKey(code), code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt },
+      }),
+  );
+}

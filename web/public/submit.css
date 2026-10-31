@@ -4800,6 +4800,34 @@ main ul.check-list {
   gap: var(--space-3);
 }
 
+.pass-figures {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+@media (min-width: 40rem) {
+  .pass-figures {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pass-figure dt {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.pass-figure dd {
+  margin: 0;
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.pass-totals {
+  border-color: var(--c-brand);
+}
+
 .bundle-row-line + .bundle-row-line {
   margin-top: var(--space-2);
 }

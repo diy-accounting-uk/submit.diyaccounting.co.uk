@@ -9,6 +9,7 @@ import { buildEventWithToken, makeIdToken, buildLambdaEvent } from "@app/test-he
 const mockGetPassesByIssuer = vi.fn();
 vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getPassesByIssuer: (...args) => mockGetPassesByIssuer(...args),
+  getPassFigures: async () => new Map(),
 }));
 
 // Mock subHasher

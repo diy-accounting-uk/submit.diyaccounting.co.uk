@@ -622,6 +622,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DATA-51 -->
 <!-- capability DATA-62 -->
 <!-- capability DATA-63 -->
+<!-- capability DATA-64 -->
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->

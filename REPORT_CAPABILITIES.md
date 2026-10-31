@@ -176,6 +176,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry: use when a catalogue-declared duration must become an expiry date for a bundle grant, pass or token reset.
     - [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle: use when unit or browser tests need the frontend bundled before they run.
     - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project: use when researching why the pricing or bundle catalogue was changed the way it was.
+    - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines: use when a referred customer pays an invoice, or a charge behind a commission line is refunded or disputed.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -396,6 +397,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines: use when staged Stripe transactions or payouts must become validated diya-gl bookkeeping lines.
     - [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account: use when a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
     - [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data: use when asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
+    - [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly: use when a pass issuer's page must show how each pass performed without a live query on customer tables.
 - **[MCP and tools](#mcp-and-tools-mcp)**
   - [Server and CLI](#server-and-cli-mcp)
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
@@ -1607,7 +1609,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -1714,10 +1716,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-09 List a user's issued passes
 
 - **Use when:** a page must show up to 50 passes a caller has issued.
-- **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and maps them to a public-safe shape.
+- **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and maps them to a public-safe shape. Each pass carries the figures item passFiguresPublish.js wrote for it, read by key, and the response carries a totals object; a count that could identify a person is null below three new accounts.
 - **Run:** `GET /api/v1/pass/my-passes`
 - **Entry:** `app/functions/account/passMyPassesGet.js:ingestHandler`
-- **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
+- **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/functions/passMyPassesGetFigures.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
 - **Keywords:** pass, my passes, issued passes, list passes, getPassesByIssuer
 - **Related:** BILL-06, BILL-07
 
@@ -2082,6 +2084,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry
 - [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle
 - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project
+- [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2132,6 +2135,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_PRICE_UPDATE.md, ../private.diyaccounting.co.uk/strategy/REPORT_PRICE_UPDATE_REVIEW.md
 - **Keywords:** price update, plan, review, bundle catalogue, pricing project
 - **Related:** BILL-35, BILL-30
+
+#### BILL-46 Accrue and reverse referral commission lines
+
+- **Use when:** a referred customer pays an invoice, or a charge behind a commission line is refunded or disputed.
+- **Does:** accrueCommission runs on invoice.paid. It records the card that paid, finds the referrer from the account's referral claim, fixes the tier on the anchor at the first paid invoice, and writes one commission line for the share of the net charge that falls inside the tier's paid months. The line starts held until its release time. reverseCommissionForCharge turns a held or payable line into reversed, and offsets a paid line with a negative line. referrals.toml sets the tiers and the accrue switch.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/services/commissionLedger.js:accrueCommission`; `app/services/commissionLedger.js:reverseCommissionForCharge`; `app/services/commissionLedger.js:computeCommission`
+- **Files:** app/services/commissionLedger.js, app/services/referralConfig.js, referrals.toml, app/data/dynamoDbCommissionRepository.js, app/functions/billing/billingWebhookPost.js, app/unit-tests/services/commissionLedger.test.js, app/unit-tests/services/referralConfig.test.js
+- **Keywords:** referral, commission, affiliate, ledger, invoice.paid, refund, dispute, reversal, tier, held line
+- **Related:** BILL-28
 
 ## Operations and CI (OPS)
 
@@ -3689,7 +3702,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
 - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
-- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
+- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data · [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly
 <!-- /generated:area DATA -->
 
 ### Lake ingestion (DATA)
@@ -4356,6 +4369,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
 - [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account
 - [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
+- [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly
 <!-- /generated:group finance-staging-and-reconciliation-data -->
 
 #### DATA-48 Stage PayPal transactions for reconciliation
@@ -4417,6 +4431,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/microsoft-ads/SKILL.md
 - **Keywords:** microsoft advertising skill, bing advisor, bing performance, bing budget
 - **Related:** DATA-62, DATA-36
+
+#### DATA-64 Publish per-pass figures nightly
+
+- **Use when:** a pass issuer's page must show how each pass performed without a live query on customer tables.
+- **Does:** passFiguresPublish.js reads the v_pass_performance view through Athena and writes one figures#<code> item per pass into the passes table. It skips a pass whose figures did not change. passMyPassesGet.js reads these items by key; PassFiguresPublish.java provisions the Lambda and NightlyIngestionWorkflow.java runs it as the last step.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/analytics/passFiguresPublish.js:handler`
+- **Files:** app/functions/analytics/passFiguresPublish.js, app/unit-tests/analytics/passFiguresPublish.test.js, infra/main/resources/analytics/views/v_pass_performance.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/PassFiguresPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/PassFiguresPublishTest.java, app/data/dynamoDbPassRepository.js
+- **Keywords:** pass figures, my generated passes, v_pass_performance, referral pass, nightly publish, affiliate
+- **Related:** BILL-09, DATA-18, DATA-22
 
 ## MCP and tools (MCP)
 
@@ -6042,7 +6066,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6425,6 +6449,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - commit identity allowlist: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -6653,7 +6678,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - dispatch backlog: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
-- dispute: [BILL-28](#bill-28-process-stripe-webhook-events)
+- dispute: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - dispute auto-accept: [BILL-31](#bill-31-configure-stripe-account-policies)
 - dist bin: [SS-05](#ss-05-run-the-diya-gl-cli)
 - distribution: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
@@ -7020,6 +7045,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
+- held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -7128,7 +7154,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - invitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - invite_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - invoice import: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
-- invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events)
+- invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - irmark: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - isdiyaglpackage: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - iso 8601 duration: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -7209,6 +7235,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - launchd agent: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - lead time: [DATA-31](#data-31-sql-views-dora-and-operations)
 - lean deploy: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
+- ledger: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - ledger book: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-18](#bill-18-delete-a-diya-gl-book), [BILL-19](#bill-19-list-a-users-diya-gl-books), [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - legacy vatdue: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - legal declaration: [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration)
@@ -7361,6 +7388,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mtd-income-tax: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
 - mtd-it: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - mtd-vat: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
+- my generated passes: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - my passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - naming convention: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - national insurance: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7375,7 +7403,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ni thresholds: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - nightly analysis: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - nightly ingestion: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
-- nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
+- nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - nightly pull: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - nino: [HMRC-09](#hmrc-09-retrieve-itsa-business-details), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
@@ -7493,6 +7521,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
@@ -7713,12 +7742,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reference check: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - reference example: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - refresh token: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - refresh token scopes: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - refresh_token: [DEV-03](#dev-03-simulate-hmrc-oauth)
-- refund: [BILL-28](#bill-28-process-stripe-webhook-events)
+- refund: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - regenerate: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
@@ -7787,6 +7818,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reuse: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - revenue daily: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- reversal: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review document: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
@@ -8140,6 +8172,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - thumbnails: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- tier: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - time window: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
@@ -8232,6 +8265,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - ux review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- v_pass_performance: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
