@@ -93,12 +93,13 @@ jobs:
               --region "${AWS_REGION?}" \
               --query 'Certificate.DomainValidationOptions[].ResourceRecord' \
               --output json > /tmp/validation.json
-            FOUND=$(jq 'map(select(. != null)) | length' /tmp/validation.json)
+            # Straight after the request DomainValidationOptions is absent and the query yields null
+            FOUND=$(jq '(. // []) | map(select(. != null)) | length' /tmp/validation.json)
             echo "Validation records available: ${FOUND} of ${EXPECTED_RECORDS?}"
             [ "${FOUND}" = "${EXPECTED_RECORDS?}" ] && break
             sleep 10
           done
-          if [ "$(jq 'map(select(. != null)) | length' /tmp/validation.json)" != "${EXPECTED_RECORDS?}" ]; then
+          if [ "$(jq '(. // []) | map(select(. != null)) | length' /tmp/validation.json)" != "${EXPECTED_RECORDS?}" ]; then
             echo "Error: ACM did not publish all ${EXPECTED_RECORDS?} validation records" >&2
             exit 1
           fi
