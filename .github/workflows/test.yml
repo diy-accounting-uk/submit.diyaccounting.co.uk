@@ -331,6 +331,9 @@ jobs:
       - name: Check formatting (Prettier)
         run: npx prettier --check .
 
+      - name: Check external actions are pinned to a commit SHA
+        run: node scripts/check-action-pins.mjs
+
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: 'temurin'
