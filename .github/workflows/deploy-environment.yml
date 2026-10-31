@@ -95,6 +95,8 @@ on:
       - 'web/holding/**'
       # Developer site source
       - 'web/developer/**'
+      # Marketing site source
+      - 'web/marketing/**'
       # Shared utilities and entry point
       - 'infra/main/java/co/uk/diyaccounting/submit/constructs/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
@@ -183,6 +185,18 @@ jobs:
             echo "SUBMIT_DEVELOPER_CERTIFICATE_ARN is unset; skipping the developer site deployment"
             echo "developer-certificate-set=false" | tee -a "$GITHUB_OUTPUT"
           fi
+      - name: Check whether the marketing site certificate has been issued
+        id: marketing-certificate
+        env:
+          MARKETING_CERTIFICATE_ARN: ${{ vars.SUBMIT_MARKETING_CERTIFICATE_ARN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MARKETING_CERTIFICATE_ARN:-}" ]; then
+            echo "marketing-certificate-set=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "SUBMIT_MARKETING_CERTIFICATE_ARN is unset; skipping the marketing site deployment"
+            echo "marketing-certificate-set=false" | tee -a "$GITHUB_OUTPUT"
+          fi
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -194,6 +208,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
       holding-certificate-set: ${{ steps.holding-certificate.outputs.holding-certificate-set }}
       developer-certificate-set: ${{ steps.developer-certificate.outputs.developer-certificate-set }}
+      marketing-certificate-set: ${{ steps.marketing-certificate.outputs.marketing-certificate-set }}
 
   create-secrets:
     name: create secrets
@@ -1317,6 +1332,26 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.environment-name }}-env-DeveloperSiteStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
+  deploy-marketing-site:
+    name: deploy marketing site
+    if: ${{ needs.names.outputs.marketing-certificate-set == 'true' }}
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-MarketingSiteStack
       force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}

@@ -461,6 +461,7 @@ jobs:
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.public-url }}
           HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}
           DEVELOPER_CERTIFICATE_ARN: ${{ vars.SUBMIT_DEVELOPER_CERTIFICATE_ARN }}
+          MARKETING_CERTIFICATE_ARN: ${{ vars.SUBMIT_MARKETING_CERTIFICATE_ARN }}
           # diya-ops GitHub App: OpsStack, AccountStack and SecurityLakeStack read these to mint
           # their own installation tokens at runtime (see app/lib/githubAppToken.js). The
           # private key itself never passes through here - it goes straight into Secrets

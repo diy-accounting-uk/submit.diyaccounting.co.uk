@@ -37,6 +37,7 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
     @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "DEVELOPER_DOC_ROOT_PATH", value = "./web/developer"),
+    @SetEnvironmentVariable(key = "MARKETING_DOC_ROOT_PATH", value = "./web/marketing"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1"),
 })
@@ -100,6 +101,9 @@ class SubmitEnvironmentCdkResourceTest {
         ctx.put(
                 "developerCertificateArn",
                 "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "marketingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
 
         App app = new App(AppProps.builder().context(ctx).build());
 
@@ -117,6 +121,10 @@ class SubmitEnvironmentCdkResourceTest {
 
         // The developer site is one more such stack, with its own bucket and distribution
         Template.fromStack(env.developerSiteStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+
+        // The marketing site is a third such stack, with its own bucket and distribution
+        Template.fromStack(env.marketingSiteStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+        Template.fromStack(env.marketingSiteStack).resourceCountIs("AWS::S3::Bucket", 1);
 
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);

@@ -29,6 +29,8 @@
     "holdingCertificateArn": "",
     "developerCertificateArn": "",
     "developerDocRootPath": "../web/developer",
+    "marketingCertificateArn": "",
+    "marketingDocRootPath": "../web/marketing",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "hmrcApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
     "hmrcSandboxApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
