@@ -217,6 +217,45 @@ describe("plan", () => {
     expect(formatPlan(plan)).toContain("0 deletes");
   });
 
+  it("deletes a live keyword that the file declares with another match type, after adding the declared one", () => {
+    const live = matchingLive();
+    const group = live.campaigns[0].adGroups[0];
+    const declaredKeyword = group.keywords[0];
+    group.keywords[0] = { id: "7001", text: declaredKeyword.text, matchType: "Phrase" };
+    const plan = planChanges(desired, live);
+    expect(plan.actions.map((a) => a.kind)).toEqual(["create-keywords", "delete-keywords"]);
+    expect(plan.actions[0].keywords).toEqual([declaredKeyword]);
+    expect(plan.actions[1].keywords).toEqual([{ id: "7001", text: declaredKeyword.text, matchType: "Phrase" }]);
+    expect(plan.unmanaged).toEqual([]);
+    expect(formatPlan(plan)).toContain("1 deletes");
+    expect(formatPlan(plan)).toContain(
+      `- delete 1 keywords of another match type from ad group "Own brand": Phrase "${declaredKeyword.text}"`,
+    );
+  });
+
+  it("keeps an undeclared keyword with other text unmanaged and deletes nothing when the match type already matches", () => {
+    const live = matchingLive();
+    live.campaigns[0].adGroups[0].keywords.push({ id: "7002", text: "stray", matchType: "Phrase" });
+    const plan = planChanges(desired, live);
+    expect(plan.actions).toEqual([]);
+    expect(plan.unmanaged).toEqual(['keyword "stray" [Phrase] in "Own brand"']);
+    expect(formatPlan(plan)).toContain("0 deletes");
+  });
+
+  it("sends the delete with the ad group id and the keyword ids", async () => {
+    const live = matchingLive();
+    const group = live.campaigns[0].adGroups[0];
+    group.keywords[0] = { id: "7001", text: group.keywords[0].text, matchType: "Phrase" };
+    const calls = [];
+    const api = async (path, body, options = {}) => {
+      calls.push({ path, method: options.method ?? "POST", body });
+      return { KeywordIds: [1] };
+    };
+    await applyPlan(planChanges(desired, live), { api, accountId: "1" });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(["POST /Keywords", "DELETE /Keywords"]);
+    expect(calls[1].body).toEqual({ AdGroupId: group.id, KeywordIds: ["7001"] });
+  });
+
   it("uses the live tag id when the tag exists", () => {
     const live = matchingLive();
     expect(planChanges(desired, live).tagId).toBe("55");
