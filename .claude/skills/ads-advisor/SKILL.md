@@ -112,6 +112,10 @@ If forecast is unavailable, use the latest report data:
 
 ## Optimising spend: bidding strategy
 
+Before you propose a change, read the "Paid acquisition policy" section of
+`../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md`. Check the proposal against its
+targeting rules, its bid and budget rules and its decision log, and name each rule it meets.
+
 To change the bidding strategy, edit `infra/google/ads/ads.toml` and run the plan step
 (never `--apply` from the skill; the plan runs as CI or agent work).
 
