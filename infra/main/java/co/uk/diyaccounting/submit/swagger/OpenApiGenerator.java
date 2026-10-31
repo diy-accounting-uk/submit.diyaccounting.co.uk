@@ -6,7 +6,7 @@
 // spotless:off
 // @capability DEV-13 Generate the OpenAPI spec from CDK route definitions
 // - **Use when:** the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
-// - **Does:** OpenApiGenerator introspects SubmitSharedNames to discover API Gateway routes, methods and paths from the CDK code. It emits an OpenAPI 3.0.3 document from that introspection.
+// - **Does:** OpenApiGenerator introspects SubmitSharedNames to discover API Gateway routes, methods and paths from the CDK code. It emits an OpenAPI 3.0.3 document from that introspection, with the paths in sorted order.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java:OpenApiGenerator`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java, infra/main/java/co/uk/diyaccounting/submit/swagger/CHANGES.md, infra/test/java/co/uk/diyaccounting/submit/swagger/OpenApiGeneratorTest.java

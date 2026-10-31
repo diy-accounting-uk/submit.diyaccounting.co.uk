@@ -3610,10 +3610,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-125 Name and tag CDK resources consistently
 
 - **Use when:** a stack needs an IAM-safe resource name derived from a deployment identifier, or consistent cost-allocation tags.
-- **Does:** SubmitSharedNames, LambdaNames and ResourceNameUtils derive consistent, IAM-safe, max 64 character, AWS resource names from a domain and deployment identifier. CostAllocationTags applies cost-allocation tags across every stack. RetentionDaysConverter maps an integer day count onto the CloudWatch Logs RetentionDays enum.
+- **Does:** SubmitSharedNames (with one class per stack in `names/`), LambdaNames and ResourceNameUtils derive consistent, IAM-safe, max 64 character, AWS resource names from a domain and deployment identifier. CostAllocationTags applies cost-allocation tags across every stack. RetentionDaysConverter maps an integer day count onto the CloudWatch Logs RetentionDays enum.
 - **Run:** no command; see Does and Entry
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/ResourceNameUtils.java`; `infra/main/java/co/uk/diyaccounting/submit/CostAllocationTags.java`; `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`
-- **Files:** infra/main/java/co/uk/diyaccounting/submit/CostAllocationTags.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNameProps.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNames.java, infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java, infra/main/java/co/uk/diyaccounting/submit/utils/ResourceNameUtils.java, infra/test/java/co/uk/diyaccounting/submit/utils/ResourceNameUtilsTest.java, infra/main/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverter.java, infra/test/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverterTest.java
+- **Files:** infra/main/java/co/uk/diyaccounting/submit/CostAllocationTags.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNameProps.java, infra/main/java/co/uk/diyaccounting/submit/LambdaNames.java, infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java, infra/main/java/co/uk/diyaccounting/submit/names/, infra/main/java/co/uk/diyaccounting/submit/utils/ResourceNameUtils.java, infra/test/java/co/uk/diyaccounting/submit/utils/ResourceNameUtilsTest.java, infra/main/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverter.java, infra/test/java/co/uk/diyaccounting/submit/utils/RetentionDaysConverterTest.java
 - **Keywords:** resource naming, cost allocation tags, iam-safe name, retention days, lambda names
 - **Related:** OPS-124
 
@@ -4810,7 +4810,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-13 Generate the OpenAPI spec from CDK route definitions
 
 - **Use when:** the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
-- **Does:** OpenApiGenerator introspects SubmitSharedNames to discover API Gateway routes, methods and paths from the CDK code. It emits an OpenAPI 3.0.3 document from that introspection.
+- **Does:** OpenApiGenerator introspects SubmitSharedNames to discover API Gateway routes, methods and paths from the CDK code. It emits an OpenAPI 3.0.3 document from that introspection, with the paths in sorted order.
 - **Run:** no command; see Does and Entry
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java:OpenApiGenerator`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java, infra/main/java/co/uk/diyaccounting/submit/swagger/CHANGES.md, infra/test/java/co/uk/diyaccounting/submit/swagger/OpenApiGeneratorTest.java
