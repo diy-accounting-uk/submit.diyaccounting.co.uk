@@ -6,7 +6,7 @@
 # - **Does:** deploy.yml is the main pipeline, triggered by a push to main. It synths CDK, runs tests, deploys infrastructure and app code, then validates the result. Once validation passes it atomically moves the prod apex domain to the new deployment.
 # - **Run:** `git push origin main`; `gh workflow run deploy.yml -f deployment-name=<name>`
 # - **Entry:** `.github/workflows/deploy.yml`
-# - **Files:** .github/workflows/deploy.yml, .github/workflows/deploy-stacks.yml
+# - **Files:** .github/workflows/deploy.yml, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-finish.yml
 # - **Keywords:** deploy pipeline, prod apex, cdk synth, push to main, deployment-name, full deploy
 # - **Related:** OPS-04, OPS-09
 # @end-capability
@@ -137,6 +137,7 @@ on:
       - '.github/workflows/deploy.yml'
       - '.github/workflows/deploy-cdk-stack.yml'
       - '.github/workflows/deploy-stacks.yml'
+      - '.github/workflows/deploy-finish.yml'
       - '.github/workflows/destroy-prod.yml'
       - '.github/workflows/generate-pass.yml'
       - '.github/workflows/probe-test.yml'
@@ -665,7 +666,8 @@ jobs:
         :(glob)infra/main/** :(glob)web/public/** experiments.toml .env.ci .env.prod :(glob)**/cdk.json
         Dockerfile LICENSE package.json package-lock.json pom.xml
         web/public/submit.catalogue.toml :(glob).github/actions/** .github/workflows/deploy.yml
-        .github/workflows/deploy-cdk-stack.yml .github/workflows/deploy-stacks.yml .github/workflows/destroy-prod.yml
+        .github/workflows/deploy-cdk-stack.yml .github/workflows/deploy-stacks.yml .github/workflows/deploy-finish.yml
+        .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
     steps:
       - name: Checkout
@@ -1879,108 +1881,32 @@ jobs:
           workflow: ${{ github.workflow }}
           github-token: ${{ github.token }}
 
-  # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
-  set-last-known-good-deployment:
-    # Requires set-origins too, not just web-test: without this, a deployment whose
-    # EdgeStack/cutover failed could still get marked "last known good" purely on tests
-    # passing, while CloudFront kept serving something else entirely (reproduced live
-    # 2026-09-01/02 - three EdgeStack bugs blocked set-origins for hours while this job
-    # kept advancing the SSM pointer regardless).
-    # On ci set-origins does not run at all, so the requirement is prod's alone.
-    if: ${{ !cancelled() && needs.names.result == 'success' && needs.web-test.result == 'success' && (needs.names.outputs.environment-name != 'prod' || needs.set-origins.result == 'success') }}
-    name: 'set last known good deployment'
+  finish:
+    name: 'finish'
+    if: ${{ !cancelled() }}
     needs:
       - names
+      - stacks
+      - set-origins
       - web-test
       - disable-native-auth
-      - set-origins
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
+    uses: ./.github/workflows/deploy-finish.yml
+    secrets: inherit
     permissions:
       id-token: write
+      contents: read
       issues: write
-    steps:
-      - name: Checkout the actions
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          sparse-checkout: .github/actions
-          persist-credentials: false
-      - name: Assume the AWS actions and deploy roles
-        uses: ./.github/actions/aws-role
-        with:
-          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Set last known good deployment in SSM Parameter Store
-        run: |
-          PARAMETER_NAME="/submit/${{ needs.names.outputs.environment-name }}/last-known-good-deployment"
-          echo "Setting SSM Parameter Store parameter $PARAMETER_NAME to value '${{ needs.names.outputs.deployment-name }}'"
-          aws ssm put-parameter \
-            --name "$PARAMETER_NAME" \
-            --type String \
-            --value "${{ needs.names.outputs.deployment-name }}" \
-            --overwrite
-
-      # Read back the value to confirm it was set correctly
-      - name: Read back last known good deployment from SSM Parameter Store
-        run: |
-          PARAMETER_NAME="/submit/${{ needs.names.outputs.environment-name }}/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
-          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
-
-      - name: CDK stacks in eu-west-2 and us-east-1
-        run: |
-          aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
-          aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
-
-      # A set promoted to last-known-good means whatever rollback issue is open for this
-      # environment (rollback-origins raised it under this same title) is resolved: some set
-      # has now cleared web-test and gone live. Closes every open one rather than just the
-      # newest, in case more than one rollback happened before a set finally cleared.
-      - name: Close open rollback incident issues for this environment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_TITLE: "[INCIDENT] ${{ needs.names.outputs.environment-name }} apex rollback"
-        run: |
-          gh issue list --repo "${{ github.repository }}" --label incident --state open \
-            --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" \
-          | while read -r NUMBER; do
-              gh issue comment "$NUMBER" --repo "${{ github.repository }}" \
-                --body "Deployment ${{ needs.names.outputs.deployment-name }} promoted to last known good for ${{ needs.names.outputs.environment-name }}; closing."
-              gh issue close "$NUMBER" --repo "${{ github.repository }}"
-            done
-
-  # The ci apex follows a set only once that set's own probes have passed, so it moves after this
-  # run rather than inside it. promote-ci-apex.yml serialises the alias move on its own
-  # concurrency group and this job does not wait for it, so a promotion superseded at that group
-  # is dropped there instead of reddening a deploy.
-  promote-ci-apex:
-    name: 'promote the ci apex to this set'
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.set-last-known-good-deployment.result == 'success' }}
-    needs:
-      - names
-      - set-last-known-good-deployment
-    runs-on: ubuntu-24.04
-    permissions:
       actions: write
-    steps:
-      - name: Dispatch promote-ci-apex for this deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-        run: |
-          set -euo pipefail
-          # A workflow_dispatch resolves against the default branch, so the promotion runs the
-          # merged copy of promote-ci-apex.yml whatever branch this deploy came from. Until that
-          # copy exists the apex simply stays where it is, which is the state this row leaves it
-          # in anyway, so say so and pass rather than failing a proven set's deploy.
-          if ! gh workflow view promote-ci-apex.yml --repo "$REPO" >/dev/null 2>&1; then
-            echo "::warning::promote-ci-apex.yml is not on the default branch yet, so the ci apex still points where it did; it will follow ${DEPLOYMENT_NAME} on the first deploy after this branch merges."
-            exit 0
-          fi
-          gh workflow run promote-ci-apex.yml --repo "$REPO" -f "deployment-name=${DEPLOYMENT_NAME}"
+      pull-requests: read
+      pages: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      names-result: ${{ needs.names.result }}
+      web-test-result: ${{ needs.web-test.result }}
+      set-origins-result: ${{ needs.set-origins.result }}
+      existing-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
+      deploy-publish-result: ${{ needs.stacks.outputs.deploy-publish-result }}
 
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a
@@ -2084,142 +2010,6 @@ jobs:
     outputs:
       rolled-back-to-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
-  # DORA row for the one-stop dashboard's deployment-frequency, lead-time and failure-rate
-  # panels: one row per deploy run, written regardless of how the run ended so a failed deploy
-  # counts towards the failure rate rather than leaving a silent gap.
-  record-dora:
-    # A run superseded by a newer commit is cancelled at the concurrency group, taking `names`
-    # down with it, so `environment-name` is empty and `configure-aws-credentials` fails with no
-    # role to assume. That is a supersession, not a deployment failure, so skip rather than let
-    # the run show a failed job for it; a genuine failure still has an environment name and runs.
-    if: ${{ !cancelled() && needs.names.outputs.environment-name != '' }}
-    name: 'record DORA row'
-    needs:
-      - names
-      - stacks
-      - set-origins
-      - web-test
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Assume the AWS actions and deploy roles
-        uses: ./.github/actions/aws-role
-        with:
-          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Build the DORA row
-        id: dora-row
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DORA_WORKFLOW: ${{ github.workflow }}
-          DORA_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
-          DORA_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
-          DORA_BRANCH: ${{ github.ref_name }}
-          DORA_SHA: ${{ github.sha }}
-          DORA_RUN_ID: ${{ github.run_id }}
-          DORA_RUN_ATTEMPT: ${{ github.run_attempt }}
-          DORA_RUN_NUMBER: ${{ github.run_number }}
-          DORA_ACTOR: ${{ github.actor }}
-          DORA_TRIGGER: ${{ github.event_name }}
-          DORA_REPOSITORY: ${{ github.repository }}
-          DORA_DEPLOY_PUBLISH_RESULT: ${{ needs.stacks.outputs.deploy-publish-result }}
-          DORA_SET_ORIGINS_RESULT: ${{ needs.set-origins.result }}
-          DORA_WEB_TEST_RESULT: ${{ needs.web-test.result }}
-        run: |
-          set -euo pipefail
-          STARTED_AT=$(gh api "repos/${DORA_REPOSITORY}/actions/runs/${DORA_RUN_ID}" --jq .run_started_at)
-          FINISHED_AT=$(date -u +%FT%TZ)
-          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
-          MERGED_AT=$(gh api "repos/${DORA_REPOSITORY}/commits/${DORA_SHA}/pulls" --jq '.[0].merged_at // empty' || echo "")
-
-          CONCLUSION="success"
-          if [ "$DORA_DEPLOY_PUBLISH_RESULT" != "success" ] || [ "$DORA_WEB_TEST_RESULT" != "success" ]; then
-            CONCLUSION="failure"
-          fi
-          # set-origins runs for prod only, so on ci it is skipped and there is no apex cutover
-          # to have failed. Any other non-success is a real failed cutover.
-          if [ "$DORA_SET_ORIGINS_RESULT" != "success" ] && [ "$DORA_SET_ORIGINS_RESULT" != "skipped" ]; then
-            CONCLUSION="failure"
-          fi
-
-          ROW=$(jq -nc \
-            --arg workflow "$DORA_WORKFLOW" \
-            --arg environment "$DORA_ENVIRONMENT" \
-            --arg deployment "$DORA_DEPLOYMENT" \
-            --arg branch "$DORA_BRANCH" \
-            --arg sha "$DORA_SHA" \
-            --arg run_id "$DORA_RUN_ID" \
-            --argjson run_attempt "$DORA_RUN_ATTEMPT" \
-            --argjson run_number "$DORA_RUN_NUMBER" \
-            --arg actor "$DORA_ACTOR" \
-            --arg trigger "$DORA_TRIGGER" \
-            --arg started_at "$STARTED_AT" \
-            --arg finished_at "$FINISHED_AT" \
-            --argjson duration_seconds "$DURATION_SECONDS" \
-            --arg conclusion "$CONCLUSION" \
-            --arg merged_at "$MERGED_AT" \
-            '{
-              workflow: $workflow, environment: $environment, deployment: $deployment,
-              branch: $branch, sha: $sha, run_id: $run_id, run_attempt: $run_attempt,
-              run_number: $run_number, actor: $actor, trigger: $trigger,
-              started_at: $started_at, finished_at: $finished_at,
-              duration_seconds: $duration_seconds, conclusion: $conclusion,
-              merged_at: (if $merged_at == "" then null else $merged_at end),
-              lead_time_seconds: (
-                if $merged_at == "" then null
-                else (($finished_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)
-                      - ($merged_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime))
-                end
-              )
-            }')
-          echo "row=$ROW" >> "$GITHUB_OUTPUT"
-          echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
-
-      - name: Write the DORA row to the lake
-        uses: './.github/actions/dora-row'
-        with:
-          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
-          key: ${{ steps.dora-row.outputs.key }}
-          row: ${{ steps.dora-row.outputs.row }}
-
-  # Starts destroy-prod.yml for the set this deploy replaced, in its own run, and ends. The
-  # destroy takes about ten minutes, and a called workflow would hold this run and its
-  # deploy-prod group that long after the new set is live and recorded as last-known-good.
-  # The dispatched run waits for this run to end and for any newer prod deploy, then refuses a
-  # set that is live or last-known-good before it deletes anything. A workflow_dispatch from
-  # GITHUB_TOKEN starts a run; other events from that token do not. A failed destroy shows on
-  # destroy-prod.yml's runs on main, and the scheduled sweep removes a set it leaves.
-  # Without a status function GitHub applies success() over the whole ancestor chain, and the
-  # scenario web-test jobs skipped by skipTestScenarios sit in that chain, so this job would
-  # never run. Gate on the direct results instead.
-  dispatch-destroy-previous:
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && needs.set-origins.result == 'success' && needs.set-last-known-good-deployment.result == 'success' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
-    name: 'dispatch destroy previous'
-    needs:
-      - names
-      - skip-deploy-check
-      - set-origins
-      #- upload-web-test-results
-      - set-last-known-good-deployment
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Dispatch destroy-prod for the previous deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          DEPLOYMENT_NAME: ${{ needs.set-origins.outputs.existing-deployment-name }}
-        run: |
-          set -euo pipefail
-          gh workflow run destroy-prod.yml --repo "$REPO" --ref main -f "deployment-name=${DEPLOYMENT_NAME}"
-          echo "Dispatched destroy-prod for ${DEPLOYMENT_NAME}: https://github.com/${REPO}/actions/workflows/destroy-prod.yml" | tee -a "$GITHUB_STEP_SUMMARY"
-
   # A failed or cancelled run never reaches set-last-known-good-deployment, and until now only
   # claim-ci-slot.mjs's own staleness rule (self-destruct delay plus one hour) freed its slot
   # again - about five hours on the default two-hour delay, during which no other branch can get
@@ -2242,11 +2032,8 @@ jobs:
       - names
       - stacks
       - web-test
-      - set-last-known-good-deployment
-      - promote-ci-apex
+      - finish
       - rollback-origins
-      - record-dora
-      - dispatch-destroy-previous
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:

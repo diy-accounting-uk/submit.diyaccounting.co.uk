@@ -53,7 +53,7 @@ Sibling-repository PRs the session opened (`spreadsheets.diyaccounting.co.uk`,
 `homebrew-diya-gl`) count separately; they are not this repository's output.
 
 **Elapsed.** Session start is the first tool call's timestamp; batch dispatch to prod is the first
-agent dispatch to the prod deploy that promoted the batch (`set last known good deployment`
+agent dispatch to the prod deploy that promoted the batch (`finish / set last known good deployment`
 succeeded). Both from timestamps, not estimates.
 
 **LLM.** Every sub-agent's completion notification carries `subagent_tokens`; sum them and list
