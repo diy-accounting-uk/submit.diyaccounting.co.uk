@@ -327,7 +327,7 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).not.toContain("today_as_of");
     });
 
-    test("counts matching rows with a literal value expression, as the security observations do", () => {
+    test("counts matching rows with a literal value expression", () => {
       const sql = buildWindowedBatchSql({
         view: "security_hub_findings",
         dayColumn: "dt",
@@ -336,6 +336,32 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("FROM   security_hub_findings");
       expect(sql).toContain(
         "count(CASE WHEN dt > date_add('day', -30, current_date) AND (finding_id IS NOT NULL AND severity_label = 'CRITICAL') THEN 1 END) AS o0_last_30",
+      );
+    });
+
+    test("latest-total sums the rows of the newest day inside each window, Today included", () => {
+      const sql = buildWindowedBatchSql({
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END", aggregation: "latest-total" }],
+      });
+      expect(sql).toContain(
+        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -30, current_date))) AS o0_last_30",
+      );
+      expect(sql).toContain(
+        "FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date))) AS o0_prev_90",
+      );
+      expect(sql).toMatch(/FILTER \(WHERE dt = \(SELECT max\(dt\) FROM security_hub_findings WHERE dt <= [^)]*\)\)\) AS o0_today/);
+    });
+
+    test("latest-total applies an observation's where to both the newest-day lookup and the rows", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_compliance_status",
+        dayColumn: "day",
+        observations: [{ valueExpr: "open_findings", aggregation: "latest-total", where: "area = 'accessibility'" }],
+      });
+      expect(sql).toContain(
+        "sum(open_findings) FILTER (WHERE day = (SELECT max(day) FROM v_compliance_status WHERE day > date_add('day', -7, current_date) AND (area = 'accessibility')) AND (area = 'accessibility')) AS o0_last_7",
       );
     });
 

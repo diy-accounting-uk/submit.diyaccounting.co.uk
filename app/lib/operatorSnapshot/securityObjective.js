@@ -13,16 +13,17 @@ export const securityObjective = {
   observations: [
     // security_hub_findings and guardduty_findings write one row per active finding each
     // day, plus a zero_findings heartbeat row with no finding_id on a day with none; the
-    // finding_id filter excludes that heartbeat so a quiet day counts as zero, not one.
+    // finding_id test gives that heartbeat a zero, so a quiet day is a day with a count of zero,
+    // not one. Each day's rows are a nightly reading of what is open, so the figure is the
+    // newest day's total.
     {
       id: "security-hub-open-findings",
       label: "Security Hub open findings",
       unit: "count",
       view: "security_hub_findings",
       dayColumn: "dt",
-      valueExpr: "1",
-      aggregation: "count",
-      where: "finding_id IS NOT NULL",
+      valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END",
+      aggregation: "latest-total",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -31,9 +32,8 @@ export const securityObjective = {
       unit: "count",
       view: "security_hub_findings",
       dayColumn: "dt",
-      valueExpr: "1",
-      aggregation: "count",
-      where: "finding_id IS NOT NULL AND severity_label = 'CRITICAL'",
+      valueExpr: "CASE WHEN finding_id IS NOT NULL AND severity_label = 'CRITICAL' THEN 1 ELSE 0 END",
+      aggregation: "latest-total",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -42,9 +42,8 @@ export const securityObjective = {
       unit: "count",
       view: "guardduty_findings",
       dayColumn: "dt",
-      valueExpr: "1",
-      aggregation: "count",
-      where: "finding_id IS NOT NULL",
+      valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END",
+      aggregation: "latest-total",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -54,7 +53,7 @@ export const securityObjective = {
       view: "github_alerts",
       dayColumn: "dt",
       valueExpr: "count",
-      aggregation: "sum",
+      aggregation: "latest-total",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
   ],
