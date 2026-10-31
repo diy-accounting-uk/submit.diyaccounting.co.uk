@@ -1080,6 +1080,41 @@ describe("ads-sync ad groups on a live Search campaign", () => {
     expect(actions).toEqual([]);
   });
 
+  it("removes a live ad group the campaign lists as removed, paused or enabled", () => {
+    const live = baseLive();
+    live.campaigns.push(
+      liveCampaign([
+        liveAdGroup("VAT software", "ENABLED", declaredKeywords),
+        liveAdGroup("Gone", "PAUSED"),
+        liveAdGroup("Gone too", "ENABLED"),
+      ]),
+    );
+    const actions = planAds(
+      parseConfig(
+        `${SEARCH_CAMPAIGN_TOML.replace('status = "PAUSED"\nlocations', 'status = "PAUSED"\nremoved_ad_groups = ["Gone", "Gone too"]\nlocations')}`,
+      ),
+      live,
+    );
+    expect(actions.map((action) => action.kind)).toEqual(["remove-ad-group", "remove-ad-group"]);
+    expect(actions[0]).toMatchObject({ adGroupName: "Gone", resourceName: "customers/8142685080/adGroups/Gone", live: "PAUSED" });
+    expect(describeAction(actions[1])).toBe('campaign "Search #1", ad group "Gone too": status ENABLED (would remove)');
+  });
+
+  it("plans nothing for a removed ad group the account no longer has", () => {
+    const live = baseLive();
+    live.campaigns.push(liveCampaign([liveAdGroup("VAT software", "ENABLED", declaredKeywords)]));
+    const toml = SEARCH_CAMPAIGN_TOML.replace('status = "PAUSED"\nlocations', 'status = "PAUSED"\nremoved_ad_groups = ["Gone"]\nlocations');
+    expect(planAds(parseConfig(toml), live)).toEqual([]);
+  });
+
+  it("refuses an ad group that is both declared and removed", () => {
+    const toml = SEARCH_CAMPAIGN_TOML.replace(
+      'status = "PAUSED"\nlocations',
+      'status = "PAUSED"\nremoved_ad_groups = ["VAT software"]\nlocations',
+    );
+    expect(() => parseConfig(toml)).toThrow(/both declares and removes ad group "VAT software"/);
+  });
+
   it("adds missing keywords and removes undeclared ones in a declared ad group", () => {
     const actions = plan([
       liveAdGroup("VAT software", "ENABLED", [
@@ -1150,6 +1185,14 @@ describe("infra/google/ads/ads.toml", () => {
     const need = words(needle);
     return hay.some((_, start) => need.every((word, offset) => hay[start + offset] === word));
   };
+
+  it("removes the three ad groups left from the first layout", () => {
+    expect(search.removedAdGroups).toEqual([
+      "Submit VAT return online free",
+      "Free MTD VAT software",
+      "File VAT return without accountant",
+    ]);
+  });
 
   it("runs the search campaign at 1 pound a day with a 2 pound click ceiling", () => {
     expect(search.budgetMicros).toBe("1000000");
