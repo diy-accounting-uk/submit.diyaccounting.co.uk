@@ -365,6 +365,16 @@ describe("operatorSnapshotPublish", () => {
       );
     });
 
+    test("month-to-date cost reads the latest day of each window", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_vs_target_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "month_to_date_usd", aggregation: "latest" }],
+      });
+      expect(sql).toContain("max_by(month_to_date_usd, day) FILTER (WHERE day > date_add('day', -7, current_date)) AS o0_last_7");
+      expect(sql).toContain("max_by(month_to_date_usd, day) FILTER (WHERE day > date_add('day', -30, current_date)) AS o0_last_30");
+    });
+
     test("a monthly or quarterly grain column has the longer windows and no Today or Previous day", () => {
       const sql = buildWindowedBatchSql({
         view: "v_cost_vs_target_monthly",
@@ -1461,7 +1471,7 @@ describe("operatorSnapshotPublish", () => {
 
       const expectedFragments = [
         "FROM   v_visitors_by_kind_daily",
-        "FROM   v_cost_vs_target_monthly",
+        "FROM   v_cost_vs_target_daily",
         "FROM   v_cost_per_submission_daily",
         "FROM   v_paid_landings_daily",
         "FROM   v_ads_cost_daily",

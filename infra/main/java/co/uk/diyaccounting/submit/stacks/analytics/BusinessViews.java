@@ -246,6 +246,11 @@ public class BusinessViews extends Construct {
                     List.of("v_cost_daily"),
                     List.of("v_cost_daily")),
             new ViewDefinition(
+                    "v_cost_vs_target_daily",
+                    "Month-to-date billed cost each day against the steady-state target pace",
+                    List.of("v_cost_daily"),
+                    List.of("v_cost_daily")),
+            new ViewDefinition(
                     "v_sign_ins_daily",
                     "Sign-ins and refreshes each day, by app client, event and actor",
                     List.of("activity_events_all")),

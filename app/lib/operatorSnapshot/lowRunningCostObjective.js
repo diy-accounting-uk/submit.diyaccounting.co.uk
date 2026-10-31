@@ -14,22 +14,26 @@ export const lowRunningCostObjective = {
   observations: [
     {
       id: "monthly-cost-usd",
-      label: "Monthly cost",
+      label: "Month-to-date cost",
+      description:
+        "Billed cost in submit-prod from the 1st of the month to the latest day the cost export has reported. Each window reads its latest day; the trend compares it with the latest day of the window before.",
       unit: "usd",
-      view: "v_cost_vs_target_monthly",
-      dayColumn: "month",
-      valueExpr: "billed_cost_usd",
-      aggregation: "sum",
+      view: "v_cost_vs_target_daily",
+      dayColumn: "day",
+      valueExpr: "month_to_date_usd",
+      aggregation: "latest",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "cost-variance-vs-target-usd",
       label: "Cost vs $64.77 target",
+      description:
+        "Month-to-date cost in submit-prod minus the monthly target spread evenly over the days of the month, on the latest day each window holds. Positive is above the target pace.",
       unit: "usd",
-      view: "v_cost_vs_target_monthly",
-      dayColumn: "month",
+      view: "v_cost_vs_target_daily",
+      dayColumn: "day",
       valueExpr: "variance_usd",
-      aggregation: "avg",
+      aggregation: "latest",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {

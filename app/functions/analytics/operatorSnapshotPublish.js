@@ -413,6 +413,7 @@ export const LATEST_READING_VIEWS = new Set([
   "v_ads_cost_per_paid_landing_daily",
   "v_cost_per_submission_daily",
   "v_cost_daily",
+  "v_cost_vs_target_daily",
   "v_cost_by_resource_daily",
   "v_agent_cost_daily",
   "security_hub_findings",

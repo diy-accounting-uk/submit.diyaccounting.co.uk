@@ -304,6 +304,19 @@ class BusinessViewsTest {
                 "expected v_cost_vs_target_monthly to filter to submit-prod's account: " + sql);
     }
 
+    @Test
+    void costVsTargetDailyViewAccumulatesWithinTheMonthForSubmitProdsAccount() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_cost_vs_target_daily");
+        assertTrue(
+                sql.contains("sub_account_id") && sql.contains("972912397388"),
+                "expected v_cost_vs_target_daily to filter to submit-prod's account: " + sql);
+        assertTrue(
+                sql.contains("PARTITION BY date_trunc('month', day)"),
+                "expected v_cost_vs_target_daily to accumulate within each month: " + sql);
+    }
+
     private static String sqlForView(Template template, String viewName) {
         var customResources = template.findResources("Custom::AthenaView");
         for (var resource : customResources.values()) {
