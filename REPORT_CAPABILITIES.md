@@ -198,6 +198,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
     - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
+    - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job: use when a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
+    - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role: use when a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
     - [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order: use when a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
@@ -2173,7 +2175,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2207,6 +2209,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
+- [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job
+- [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
 <!-- /generated:group deploy-pipeline-ops -->
 
 #### OPS-01 Cancel superseded push-triggered deploys
@@ -2376,6 +2380,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
 - **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
 - **Related:** OPS-01
+
+#### OPS-144 Set up Node, npm dependencies and optionally Java for a job
+
+- **Use when:** a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
+- **Does:** setup-toolchain installs Node with the npm cache, runs npm ci with one retry after a pause, and installs Temurin Java with the Maven cache when `java` is `'true'`. It holds the one copy of the Node and Java versions. The calling job runs actions/checkout first.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/actions/setup-toolchain/action.yml`
+- **Files:** .github/actions/setup-toolchain/action.yml
+- **Keywords:** setup node, npm ci, retry, setup java, temurin, toolchain, node version, java version
+- **Related:** OPS-145
+
+#### OPS-145 Assume an AWS role by OIDC, with an optional chained deploy role
+
+- **Use when:** a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
+- **Does:** aws-role assumes the actions role by GitHub OIDC, then assumes the deploy role through it when `deploy-role-arn` is set. The credentials go to the job environment. The calling job grants `id-token: write`.
+- **Run:** no command; see Does and Entry
+- **Entry:** `.github/actions/aws-role/action.yml`
+- **Files:** .github/actions/aws-role/action.yml
+- **Keywords:** aws credentials, oidc, role chaining, actions role, deploy role, configure-aws-credentials
+- **Related:** OPS-144
 
 ### ci slot pool and sweep (OPS)
 
@@ -6067,6 +6091,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
 - acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- actions role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - active users daily: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - activity bus: [DATA-01](#data-01-publish-activity-events-to-the-bus)
@@ -6188,6 +6213,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
+- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
@@ -6514,6 +6540,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - concurrency group: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
+- configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
@@ -6667,6 +6694,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
+- deploy role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - deploy validation failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - deploy workflow: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - deploy-app: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
@@ -7214,6 +7242,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
+- java version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
 - journey: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
@@ -7445,6 +7474,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - no-op verdict: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - no-quibble: [BILL-31](#bill-31-configure-stripe-account-policies)
+- node version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - node-qrcode: [SITE-19](#site-19-generate-qr-codes)
 - node_modules reset: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -7453,6 +7483,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - nova lite: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - nova pro: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - npm audit: [SS-45](#ss-45-run-compliance-checks)
+- npm ci: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - npm package: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - npm publish: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - npm-check-updates: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -7478,6 +7509,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - og image: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- oidc: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
@@ -7840,6 +7872,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - retire.js: [SS-45](#ss-45-run-compliance-checks)
 - retrieved: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
+- retry: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - retry navigation: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - retryable error: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - return url allow-list: [BILL-24](#bill-24-create-a-stripe-checkout-session)
@@ -7857,6 +7890,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
+- role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - role pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - role prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -7996,6 +8030,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - settings page: [SITE-24](#site-24-change-an-account-setting)
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- setup java: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
+- setup node: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
 - share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - share posts: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
@@ -8177,6 +8213,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - telegram forwarder: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - telegram ping: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - template: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
+- temurin: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - terms: [SITE-10](#site-10-serve-general-site-pages)
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
@@ -8221,6 +8258,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - tool registry: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- toolchain: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
