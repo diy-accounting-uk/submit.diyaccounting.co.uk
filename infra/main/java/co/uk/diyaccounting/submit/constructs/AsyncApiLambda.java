@@ -133,15 +133,16 @@ public class AsyncApiLambda extends ApiLambda {
         // function names from props, not from the L2 getters, because the getters render as
         // unresolved tokens and the name prefix has to be a synth-time literal.
         Alarm dlqNotEmptyAlarm = dlqNotEmptyAlarm();
-        Alarm workerErrorsAlarm = Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-WorkerErrorsAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerFunctionName() + "-errors")
-                .metric(this.workerLambda.metricErrors())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Worker Lambda errors for " + this.workerLambda.getFunctionName())
-                .build();
+        Alarm workerErrorsAlarm =
+                AlarmChain.chained(Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-WorkerErrorsAlarm")
+                        .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerFunctionName() + "-errors")
+                        .metric(this.workerLambda.metricErrors())
+                        .threshold(1)
+                        .evaluationPeriods(1)
+                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                        .treatMissingData(TreatMissingData.NOT_BREACHING)
+                        .alarmDescription("Worker Lambda errors for " + this.workerLambda.getFunctionName())
+                        .build());
         Alarm queueMessageAgeAlarm = queueMessageAgeAlarm();
         this.healthChecks.addAll(List.of(dlqNotEmptyAlarm, workerErrorsAlarm, queueMessageAgeAlarm));
     }
@@ -190,7 +191,7 @@ public class AsyncApiLambda extends ApiLambda {
                 ageMetrics.put("a" + i, groupMembers.get(i).queue.metricApproximateAgeOfOldestMessage());
                 functionNames.add(groupMembers.get(i).asyncProps.ingestFunctionName());
             }
-            alarms.add(Alarm.Builder.create(scope, "QueueDlqAlarm" + idSuffix)
+            alarms.add(AlarmChain.chained(Alarm.Builder.create(scope, "QueueDlqAlarm" + idSuffix)
                     .alarmName(namePrefix + "-dlq-not-empty")
                     .metric(queueMath("SUM(METRICS())", dlqMetrics))
                     .threshold(1)
@@ -198,8 +199,8 @@ public class AsyncApiLambda extends ApiLambda {
                     .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                     .treatMissingData(TreatMissingData.NOT_BREACHING)
                     .alarmDescription("SQS DLQs for " + String.join(", ", functionNames) + " have items")
-                    .build());
-            alarms.add(Alarm.Builder.create(scope, "QueueMessageAgeAlarm" + idSuffix)
+                    .build()));
+            alarms.add(AlarmChain.chained(Alarm.Builder.create(scope, "QueueMessageAgeAlarm" + idSuffix)
                     .alarmName(namePrefix + "-queue-message-age")
                     .metric(queueMath("MAX(METRICS())", ageMetrics))
                     .threshold(Duration.minutes(30).toSeconds())
@@ -208,7 +209,7 @@ public class AsyncApiLambda extends ApiLambda {
                     .treatMissingData(TreatMissingData.NOT_BREACHING)
                     .alarmDescription("SQS message age >= 30 minutes in a queue of " + String.join(", ", functionNames)
                             + " (worker stalled)")
-                    .build());
+                    .build()));
         }
         return alarms;
     }
@@ -222,7 +223,7 @@ public class AsyncApiLambda extends ApiLambda {
     }
 
     private Alarm dlqNotEmptyAlarm() {
-        return Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-DlqAlarm")
+        return AlarmChain.chained(Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-DlqAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerDeadLetterQueueName() + "-not-empty")
                 .metric(this.dlq.metricApproximateNumberOfMessagesVisible())
                 .threshold(1)
@@ -230,12 +231,12 @@ public class AsyncApiLambda extends ApiLambda {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("SQS DLQ for " + this.asyncProps.ingestFunctionName() + " has items")
-                .build();
+                .build());
     }
 
     // A message stuck in the queue for >= 30 minutes indicates the worker is stalled or backed up.
     private Alarm queueMessageAgeAlarm() {
-        return Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-QueueMessageAgeAlarm")
+        return AlarmChain.chained(Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-QueueMessageAgeAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerQueueName() + "-message-age")
                 .metric(this.queue.metricApproximateAgeOfOldestMessage())
                 .threshold(Duration.minutes(30).toSeconds())
@@ -244,6 +245,6 @@ public class AsyncApiLambda extends ApiLambda {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription(
                         "SQS message age >= 30 minutes for queue " + this.queue.getQueueName() + " (worker stalled)")
-                .build();
+                .build());
     }
 }
