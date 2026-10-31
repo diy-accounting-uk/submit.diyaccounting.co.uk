@@ -47,6 +47,18 @@
         "operationId" : "getAffiliate"
       }
     },
+    "/affiliate/application" : {
+      "post" : {
+        "summary" : "Start an affiliate application",
+        "description" : "Creates the caller's Stripe Connect account if needed and answers a Stripe-hosted onboarding link",
+        "operationId" : "startAffiliateApplication"
+      },
+      "get" : {
+        "summary" : "Read my affiliate application",
+        "description" : "Reads the state of the caller's affiliate application and the Stripe Connect onboarding flags",
+        "operationId" : "getAffiliateApplication"
+      }
+    },
     "/billing/activity-checkout" : {
       "post" : {
         "summary" : "Create activity checkout session",

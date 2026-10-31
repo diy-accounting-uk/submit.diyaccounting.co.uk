@@ -19,10 +19,10 @@ passCodePattern = "^[a-z]{3,7}(-[a-z]{3,7}){3}$"
 passCodeExample = "tiger-happy-maple-river"
 submitHosts = ["submit.diyaccounting.co.uk"]
 
-# applyUrl: the Stripe application link for affiliates. Empty until applications open; the page then
-# says "Applications are opening soon." Set it to the link and run `npm run marketing:build`.
+# applyUrl: where an affiliate applies, the signed-in section of the submit site that starts Stripe onboarding.
+# Empty, the page says "Applications are opening soon." Run `npm run marketing:build` after a change.
 [affiliates]
-applyUrl = ""
+applyUrl = "https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection"
 
 [offers]
 withPass = "7 days of free VAT submissions"

@@ -475,9 +475,9 @@ describe("affiliates section", () => {
     expect(data.affiliates.capTaxYearPounds).toBe(cash.capTaxYearPence / 100);
   });
 
-  it("keeps the application link empty until applications open, and the page says so", () => {
-    expect(typeof data.affiliates.applyUrl).toBe("string");
-    expect(fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf8")).toContain("Applications are opening soon.");
+  it("links the application to the signed-in affiliate section of the submit site", () => {
+    expect(data.affiliates.applyUrl).toBe("https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection");
+    expect(fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf8")).toContain("data-aff-apply");
   });
 
   it("states the same figures in the terms", () => {

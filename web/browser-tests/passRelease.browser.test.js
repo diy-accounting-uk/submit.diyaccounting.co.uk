@@ -62,4 +62,27 @@ test.describe("release a pass held for review", () => {
     await expect(page.locator(`[data-pass-code="${heldPass.code}"]`).first()).toContainText("on hold for review");
     await expect(page.locator(".pass-release")).toHaveCount(0);
   });
+
+  test("each pass has a Post link to its campaign on the marketing site", async ({ page }) => {
+    const vatPass = { ...openPass, bundleId: "resident-vat" };
+    const otherPass = { ...heldPass, bundleId: "day-guest" };
+    await serveRealSite(page, {
+      signedIn: true,
+      apiHandler: (url) => {
+        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident");
+        if (url.pathname === "/api/v1/pass/my-passes") return { passes: [vatPass, otherPass] };
+        return undefined;
+      },
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    const vatPost = page.locator(`[data-pass-code="${vatPass.code}"] a.pass-post`);
+    await expect(vatPost).toHaveAttribute("href", `https://ci-marketing.diyaccounting.co.uk/?pass=${vatPass.code}#submit-vat`);
+    await expect(vatPost).toHaveAttribute("target", "_blank");
+    await expect(vatPost).toHaveAttribute("rel", "noopener");
+    await expect(page.locator(`[data-pass-code="${otherPass.code}"] a.pass-post`)).toHaveAttribute(
+      "href",
+      `https://ci-marketing.diyaccounting.co.uk/?pass=${otherPass.code}#submit-all`,
+    );
+  });
 });
