@@ -216,6 +216,7 @@ describe("functions/security/scanRate404Detect", () => {
       expect(call.detail.hits).toBe(27);
       expect(call.detail.host).toBe("ci-set1.submit.diyaccounting.co.uk");
       expect(call.flow).toBe("operational");
+      expect(call.actor).toBe("system");
     });
 
     test("the high-water mark advances only after publishing succeeds", async () => {

@@ -172,6 +172,7 @@ export async function handler(event) {
     const pathWord = group.uris.length === 1 ? "path" : "paths";
     await publishActivityEvent({
       event: "scan-detected",
+      actor: "system",
       flow: "operational",
       summary: `Scan blocked: ${group.uris.length} sensitive ${pathWord} from ${group.clientIp} (${group.country}) on ${deployment}${durationSuffix(group)}`,
       detail: {

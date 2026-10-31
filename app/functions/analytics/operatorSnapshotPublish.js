@@ -967,6 +967,7 @@ const VISITOR_KIND_LABELS = {
   "human": "Human",
   "synthetic": "Synthetic",
   "bot": "Bot",
+  "system": "System",
   "(unclassified)": "Unclassified",
 };
 
@@ -978,6 +979,8 @@ const VISITOR_KIND_DESCRIPTIONS = {
   synthetic:
     "Distinct visitors from the behaviour tests each day, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
   bot: "Distinct visitors each day whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
+  system:
+    "Activity events each day published by scheduled and detection jobs with no person behind them, such as capacity reconciliation, scan detection and logout clean-up, counted from the activity events.",
 };
 
 function activityLabels() {
@@ -1622,13 +1625,13 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator and human count Google Analytics sessions, so only visitors who accepted analytics. Authenticated user counts distinct signed-in customers each day from the activity events, so every customer who signs in, whether or not they accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
+      note: "Operator and human count Google Analytics sessions, so only visitors who accepted analytics. Authenticated user counts distinct signed-in customers each day from the activity events, so every customer who signs in, whether or not they accepted analytics. System counts the activity events published by scheduled and detection jobs, not visitors. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
       modes: [
         {
           id: "sessions",
           label: "Visitors",
           total: null,
-          componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
+          componentOrder: ["operator", "authenticated", "human", "synthetic", "bot", "system"],
           hourlyComponentOrder: ["operator", "human"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
           descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
@@ -1646,7 +1649,10 @@ export function buildDailyChartDefinitions() {
             `FROM   v_active_users_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), visitor_kind, cast(sum(visitors) AS double)\n` +
-            `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+            `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(date(event_ts) AS varchar), 'system', cast(count(*) AS double)\n` +
+            `FROM   activity_events_all\nWHERE  actor = 'system' AND ${dailyWindowFilter("date(event_ts)")}\nGROUP  BY 1`,
         },
         {
           id: "landing-page",

@@ -414,6 +414,7 @@ const FIXTURE_DAILY_CHARTS = {
         "Human",
         "Synthetic",
         "Bot",
+        "System",
       ]);
       visitors.modes[0].hourly = {
         series: [
@@ -1357,7 +1358,7 @@ test.describe("Operator Dashboard", () => {
         "Retention",
       ]);
       const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(7);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
     });
@@ -1470,7 +1471,7 @@ test.describe("Operator Dashboard", () => {
       await expect(daily).toHaveText("90 days, by day");
       await expect(hourly).toHaveText("7 days, by hour");
       await expect(daily).toHaveAttribute("aria-pressed", "true");
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(7);
 
       await hourly.click();
       await expect(hourly).toHaveAttribute("aria-pressed", "true");
@@ -1487,7 +1488,7 @@ test.describe("Operator Dashboard", () => {
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(3);
 
       await daily.click();
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(7);
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept");
     });
 

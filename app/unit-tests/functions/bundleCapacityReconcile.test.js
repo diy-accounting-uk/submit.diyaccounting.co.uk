@@ -129,7 +129,7 @@ describe("functions/account/bundleCapacityReconcile", () => {
 
     await handler({});
 
-    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "capacity-reconciled" }));
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "capacity-reconciled", actor: "system" }));
   });
 
   test("does not publish the activity event after a failure", async () => {

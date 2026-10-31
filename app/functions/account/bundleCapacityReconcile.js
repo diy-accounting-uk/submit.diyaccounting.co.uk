@@ -69,6 +69,7 @@ export async function handler(_event) {
   await publishActivityEvent({
     event: "capacity-reconciled",
     summary: "Capacity reconciled",
+    actor: "system",
     flow: "operational",
   });
 }

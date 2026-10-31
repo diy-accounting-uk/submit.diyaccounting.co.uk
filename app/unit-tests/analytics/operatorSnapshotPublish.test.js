@@ -980,8 +980,11 @@ describe("operatorSnapshotPublish", () => {
       expect(["sessions-operator", "sessions-human"].map(viewOf)).toEqual(Array(2).fill("v_visitors_by_kind_daily"));
       expect(viewOf("sessions-authenticated")).toBe("v_active_users_daily");
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
-      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
+      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot", "system"]);
       expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
+      expect(chart.modes[0].sql).toContain("'system', cast(count(*) AS double)\nFROM   activity_events_all\nWHERE  actor = 'system'");
+      expect(chart.modes[0].labelOf("system")).toBe("System");
+      expect(chart.modes[0].descriptionOf("system")).toBeTruthy();
       expect(chart.modes[0].sql).toContain("'authenticated', cast(sum(active_users) AS double)\nFROM   v_active_users_daily");
       expect(chart.modes[0].sql).toContain("visitor_kind IN ('operator', 'human')");
       expect(chart.note).toContain("CloudFront");
