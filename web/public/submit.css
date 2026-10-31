@@ -29,6 +29,8 @@
   --c-error-tint: #fdecea;
   --c-warn: #7a4a00;
   --c-warn-tint: #fff4d6;
+  --c-sandbox-tint: #f6ee8c;
+  --c-unavailable-tint: #e4e7ec;
   --c-info: #1d4f91;
   --c-info-tint: #e8f0fa;
   --c-focus: #ffdd00;
@@ -112,6 +114,8 @@
     --c-error-tint: #331a17;
     --c-warn: #f2c14e;
     --c-warn-tint: #2e2510;
+    --c-sandbox-tint: #4a4512;
+    --c-unavailable-tint: #2b323d;
     --c-info: #8fb4ec;
     --c-info-tint: #1e2c40;
     --c-scrim: rgb(0 0 0 / 0.72);
@@ -148,6 +152,8 @@
   --c-error-tint: #331a17;
   --c-warn: #f2c14e;
   --c-warn-tint: #2e2510;
+  --c-sandbox-tint: #4a4512;
+  --c-unavailable-tint: #2b323d;
   --c-info: #8fb4ec;
   --c-info-tint: #1e2c40;
   --c-scrim: rgb(0 0 0 / 0.72);
@@ -5154,6 +5160,30 @@ main ol.calendar {
     content: attr(data-label) ": ";
     font-weight: var(--weight-strong);
   }
+}
+
+/* Availability cells: the state shades the cell; a production cell also carries a tick after its text. */
+.avail-production {
+  background-color: var(--c-ok-tint);
+}
+
+.avail-preview {
+  background-color: var(--c-warn-tint);
+}
+
+.avail-sandbox {
+  background-color: var(--c-sandbox-tint);
+}
+
+.avail-not-offered {
+  background-color: var(--c-unavailable-tint);
+}
+
+.avail-production::after {
+  content: "\2713" / "";
+  color: var(--c-ok);
+  font-weight: var(--weight-strong);
+  margin-inline-start: var(--space-1);
 }
 
 .rates-table-scroll {

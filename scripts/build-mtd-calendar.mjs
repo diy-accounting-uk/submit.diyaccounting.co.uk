@@ -310,6 +310,10 @@ function cellHtml([status, note]) {
   return escapeHtml(status) + (note ? ` <span class="calendar-date">${escapeHtml(note)}</span>` : "");
 }
 
+export function availabilityClass(status) {
+  return `avail-${status.replace(" ", "-")}`;
+}
+
 function availabilityHtml() {
   const rows = AVAILABILITY.map((row) => {
     const links = [
@@ -322,7 +326,7 @@ function availabilityHtml() {
     const mcp = row.cells[4][0] === "not offered" ? "" : ` <a href="mcp.html">MCP</a>`;
     return (
       `<tr><th scope="row">${escapeHtml(row.filing)}</th>` +
-      row.cells.map((c, i) => `<td data-label="${CHANNELS[i]}">${cellHtml(c)}</td>`).join("") +
+      row.cells.map((c, i) => `<td class="${availabilityClass(c[0])}" data-label="${CHANNELS[i]}">${cellHtml(c)}</td>`).join("") +
       `<td data-label="Docs and video">${links}${mcp ? "," + mcp : ""}</td></tr>`
     );
   }).join("");
