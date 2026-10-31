@@ -166,7 +166,7 @@ defaultMaxUses = 1
 requiresEmailRestriction = false
 
 # digital-pass → unlocks "day-guest" bundle
-# Grants: 3 tokens, 1 day timeout per redeemer (7 days of free VAT submissions)
+# Grants: 3 tokens, 1 day timeout per redeemer: 3 VAT submissions within 24 hours
 # Validity: the pass works for 90 days, a referral link with no use cap.
 # reviewLimit: at 1000 uses the pass refuses further redemptions until the operator reviews it.
 # Tokens: the issuer pays the tokenCost of the generate-pass-digital activity in submit.catalogue.toml.

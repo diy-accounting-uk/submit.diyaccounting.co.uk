@@ -583,7 +583,8 @@ tokenCost = 10
 metered = true
 # generate-pass-digital
 # =====================
-# Time-limited (7 days), unlimited capacity (100 uses).
+# Each redeemer gets a day pass (day-guest: 3 tokens, 1 day). The pass works for 90 days with no use cap;
+# at 1000 uses it waits for operator review (see submit.passes.toml).
 # Encourages short digital campaigns (social media, email, messaging).
 paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 accountSetting = "passGeneration"
