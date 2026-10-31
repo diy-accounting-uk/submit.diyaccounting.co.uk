@@ -73,7 +73,7 @@ class SubmitEnvironmentCdkResourceTest {
         app.synth();
 
         var result = ActivityPublisherGrants.check(app);
-        assertTrue(result.publishers() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertTrue(result.checked() > 0, "no Lambda names ACTIVITY_BUS_NAME");
         assertEquals(List.of(), result.ungranted());
     }
 
