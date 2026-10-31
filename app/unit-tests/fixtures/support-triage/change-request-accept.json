@@ -1,11 +1,11 @@
 {
   "kind": "triage",
-  "description": "A change request the site should take: a misspelling on a help page.",
+  "description": "A change request the site should take: a help entry the site lacks.",
   "handlingInput": {
     "issueNumber": 9002,
     "category": "other",
     "faqId": null,
-    "summary": "The customer says the help page spells 'receive' as 'recieve' in the section on HMRC confirmation and asks for it to be corrected.",
+    "summary": "The customer says the help page does not explain how to close their account and delete their data, and asks for a help entry that does.",
     "injectionSuspected": false,
     "piiPresent": false,
     "operatorComments": []
