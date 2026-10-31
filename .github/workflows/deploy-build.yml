@@ -1,0 +1,458 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-150 Build a deployment
+# - **Use when:** reading or changing how one deployment builds before its stacks deploy: the Maven package, the Docker image, the ECR pushes and the secret check.
+# - **Does:** deploy-build.yml is called by deploy.yml. It packages the CDK jars, builds the base image, pushes it to ECR in eu-west-2 and us-east-1, validates the required secrets, and reports each result to the caller.
+# - **Run:** no command; deploy.yml calls it (see OPS-06)
+# - **Entry:** `.github/workflows/deploy-build.yml`
+# - **Files:** .github/workflows/deploy-build.yml
+# - **Keywords:** deploy build, maven package, docker build, push images, validate secrets, workflow_call, deploy phase
+# - **Related:** OPS-06, OPS-147
+# @end-capability
+
+name: deploy-build
+run-name: "deploy build from ${{ github.ref_name }}"
+
+on:
+  workflow_call:
+    inputs:
+      github-environment:
+        type: string
+        required: true
+      environment-name:
+        type: string
+        required: true
+      skip-deploy-check-result:
+        type: string
+        required: true
+    outputs:
+      base-image-tag:
+        description: 'Tag of the base image pushed to ECR'
+        value: ${{ jobs.results.outputs.base-image-tag }}
+      push-images-result:
+        description: 'Result of the push images job'
+        value: ${{ jobs.results.outputs.push-images-result }}
+      mvn-package-result:
+        description: 'Result of the maven package job'
+        value: ${{ jobs.results.outputs.mvn-package-result }}
+      validate-secrets-result:
+        description: 'Result of the validate required secrets job'
+        value: ${{ jobs.results.outputs.validate-secrets-result }}
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+  pages: write
+  actions: read
+
+env:
+  JAVA_VERSION: '25'
+  AWS_REGION: 'eu-west-2'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ github.event.inputs.selfDestructDelayHours || '4' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_ALL_STACK_DEPLOYMENT: ${{ github.event.inputs.forceAllStackDeployment || 'true' }}
+  COMMIT_HASH: ${{ github.sha }}
+  BUILD_NUMBER: ${{ github.run_number }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+
+  mvn-package:
+    name: 'maven package'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: package
+        id: package
+        shell: bash
+        run: |
+          MVN_ARGS="clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3"
+          ./mvnw $MVN_ARGS || { sleep 30; ./mvnw $MVN_ARGS || { sleep 60; ./mvnw $MVN_ARGS; }; }
+
+      - name: Upload Maven build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: maven-target
+          path: |
+            target/submit-application.jar
+            target/submit-environment.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  docker-build:
+    name: 'docker build'
+    if: ${{ inputs.skip-deploy-check-result == 'success' }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+
+      - name: Build base image
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
+            -f Dockerfile .
+
+      - name: Save image artifact
+        run: |
+          mkdir docker-image
+          docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: docker-image
+          path: docker-image/image.tar
+          if-no-files-found: error
+
+  validate-secrets:
+    name: 'validate required secrets'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate all required secrets exist
+        id: validate
+        run: |
+          ENV_NAME="${{ inputs.environment-name }}"
+          MISSING=""
+          ALL_VALID=true
+
+          echo "=== Validating secrets for environment: $ENV_NAME ==="
+          echo ""
+
+          # List of required secrets
+          SECRETS=(
+            "$ENV_NAME/submit/user-sub-hash-salt"
+            "$ENV_NAME/submit/google/client_secret"
+            "$ENV_NAME/submit/hmrc/client_secret"
+            "$ENV_NAME/submit/hmrc/sandbox_client_secret"
+            "$ENV_NAME/submit/companies-house/api_key"
+          )
+
+          for SECRET in "${SECRETS[@]}"; do
+            echo -n "Checking: $SECRET ... "
+            if aws secretsmanager describe-secret --secret-id "$SECRET" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+              # Verify it has a value
+              VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET" \
+                --query 'SecretString' --output text --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+              if [ -n "$VALUE" ] && [ "$VALUE" != "null" ]; then
+                echo "OK (has value)"
+              else
+                echo "EMPTY VALUE"
+                MISSING="$MISSING\n  - $SECRET (exists but empty)"
+                ALL_VALID=false
+              fi
+            else
+              echo "MISSING"
+              MISSING="$MISSING\n  - $SECRET"
+              ALL_VALID=false
+            fi
+          done
+
+          echo ""
+
+          if [ "$ALL_VALID" = "false" ]; then
+            echo "=============================================="
+            echo "ERROR: Missing or invalid secrets detected!"
+            echo "=============================================="
+            echo -e "Missing secrets:$MISSING"
+            echo ""
+            echo "To fix this, run the 'deploy environment' workflow first:"
+            echo "  1. Go to Actions -> 'deploy environment'"
+            echo "  2. Run workflow for the '$ENV_NAME' environment"
+            echo ""
+            echo "Or use the 'manage secrets' workflow to check status:"
+            echo "  1. Go to Actions -> 'manage secrets'"
+            echo "  2. Select 'check' action for '$ENV_NAME' environment"
+            echo ""
+            exit 1
+          fi
+
+          echo "All required secrets validated successfully"
+          echo "secrets-valid=true" >> $GITHUB_OUTPUT
+
+      - name: Validate salt secret specifically
+        run: |
+          ENV_NAME="${{ inputs.environment-name }}"
+          SECRET_NAME="$ENV_NAME/submit/user-sub-hash-salt"
+
+          echo "=== Salt Secret Validation ==="
+          echo "Checking: $SECRET_NAME"
+
+          # Get secret metadata
+          METADATA=$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+
+          if [ -z "$METADATA" ]; then
+            echo "CRITICAL: Salt secret does not exist!"
+            echo "This will cause all Lambda functions to fail at runtime."
+            exit 1
+          fi
+
+          # Check for tags
+          echo ""
+          echo "Secret metadata:"
+          echo "$METADATA" | jq '{Name: .Name, Created: .CreatedDate, Modified: .LastChangedDate, Tags: .Tags}'
+
+          # Verify value exists and has expected length
+          VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" \
+            --query 'SecretString' --output text --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+
+          if [ -z "$VALUE" ]; then
+            echo "CRITICAL: Salt secret has no value!"
+            exit 1
+          fi
+
+          VALUE_LENGTH=${#VALUE}
+          echo ""
+          echo "Salt value length: $VALUE_LENGTH characters"
+
+          # Base64-encoded 32-byte salt should be ~44 characters
+          if [ $VALUE_LENGTH -lt 40 ]; then
+            echo "WARNING: Salt value seems short (expected ~44 chars for 32-byte base64)"
+          else
+            echo "Salt value length appears valid"
+          fi
+
+          echo ""
+          echo "Salt secret validation passed"
+
+    outputs:
+      secrets-valid: ${{ steps.validate.outputs.secrets-valid }}
+
+  push-images:
+    name: 'push images'
+    needs:
+      - docker-build
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        shell: bash
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | docker login \
+                --username AWS \
+                --password-stdin "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}" \
+            ;
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr
+
+      - name: Check if image already exists in ECR
+        id: image-exists
+        shell: bash
+        run: |
+          REPO_URI="${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}"
+          REPO_NAME="${REPO_URI##*/}"
+          echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
+          if aws ecr describe-images --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr
+
+      - name: Checkout
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+
+      - name: Download image artifact
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: docker-image
+          path: docker-image/
+
+      - name: Load Docker image
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        run: docker load -i docker-image/image.tar
+
+      - name: Tag and push Docker image to ECR
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        shell: bash
+        run: |
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr
+    outputs:
+      base-image-tag: ${{ github.sha }}
+
+  push-images-us-east-1:
+    name: 'push images us-east-1'
+    needs:
+      - docker-build
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.github-environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      pages: write
+      actions: read
+    steps:
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR in us-east-1
+        shell: bash
+        run: |
+          aws ecr get-login-password --region us-east-1 \
+            | docker login \
+                --username AWS \
+                --password-stdin "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}" \
+            ;
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr-us-east-1
+
+      - name: Check if image already exists in ECR
+        id: image-exists
+        shell: bash
+        run: |
+          REPO_URI="${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}"
+          REPO_NAME="${REPO_URI##*/}"
+          echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
+          if aws ecr describe-images --region us-east-1 --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr-us-east-1
+
+      - name: Checkout
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+
+      - name: Download image artifact
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: docker-image
+          path: docker-image/
+
+      - name: Load Docker image
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        run: docker load -i docker-image/image.tar
+
+      - name: Tag and push Docker image to ECR
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        shell: bash
+        run: |
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ inputs.environment-name }}-env-ecr-us-east-1
+    outputs:
+      base-image-tag: ${{ github.sha }}
+
+  results:
+    name: 'report build results'
+    if: ${{ always() }}
+    needs:
+      - mvn-package
+      - validate-secrets
+      - push-images
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - run: ':'
+    outputs:
+      base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
+      push-images-result: ${{ needs.push-images.result }}
+      mvn-package-result: ${{ needs.mvn-package.result }}
+      validate-secrets-result: ${{ needs.validate-secrets.result }}
