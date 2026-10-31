@@ -25,7 +25,7 @@ const labelNames = (issue) => (issue.labels ?? []).map((label) => (typeof label 
 export function isReaderCandidate(issue) {
   if (!issue || issue.pull_request || issue.state !== "open") return false;
   const labels = labelNames(issue);
-  if (!labels.includes("support") || !labels.includes("maintainer-review")) return false;
+  if (!labels.includes("support") || !labels.includes("maintainer-review") || labels.includes("rejected")) return false;
   return ALLOWED_LOGINS.includes(String(issue.user?.login ?? "").toLowerCase());
 }
 

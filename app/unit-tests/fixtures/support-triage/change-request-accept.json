@@ -1,0 +1,18 @@
+{
+  "kind": "triage",
+  "description": "A change request the site should take: a help entry the site lacks.",
+  "handlingInput": {
+    "issueNumber": 9002,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer says the help page does not explain how to close their account and delete their data, and asks for a help entry that does.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "fix",
+    "requiredPhrases": [],
+    "forbiddenPhrases": ["already answers", "the help page answers", "Dear ", "close this ticket"]
+  }
+}

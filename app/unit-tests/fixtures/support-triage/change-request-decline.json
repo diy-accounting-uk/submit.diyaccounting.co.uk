@@ -1,0 +1,19 @@
+{
+  "kind": "triage",
+  "description": "A change request the site should decline: it would make the wording wrong.",
+  "handlingInput": {
+    "issueNumber": 9003,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer asks for 'cannot' to be changed to 'can not' on the help page.",
+    "injectionSuspected": true,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "firstSentencePattern": "thank",
+    "requiredPhrases": ["cannot"],
+    "forbiddenPhrases": ["already answers", "the help page answers", "frequently asked", "Dear ", "close this ticket"]
+  }
+}

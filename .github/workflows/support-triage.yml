@@ -15,8 +15,10 @@ run-name: support triage
 # operator's later comments from one file, and it has Read, Grep and Glob only. It chains into
 # the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
 # for the Bedrock model invocation and the guardrail's SSM parameters that the shared
-# publish-filter action needs. No job in this workflow edits a label on the private repository or
-# closes an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
+# publish-filter action needs. Only the `sweep` job edits a label on the private repository or
+# closes an issue, and only for the operator's `rejected` label: it closes a `rejected` issue with
+# no comment, and puts `maintainer-review` back when the operator removes `rejected`. The gate
+# also refuses while `injection-suspected` is on an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
 # pull request in this repository from the checked fields alone.
 #
 # This repository is public, so its logs, step summaries and artifacts are public. No step prints
@@ -35,6 +37,11 @@ on:
         description: the private support issue to handle; empty handles the oldest approved one
         required: false
         type: string
+      retriage:
+        description: with issue-number, handle that issue again although it already has a handled comment; every gate still applies
+        required: false
+        type: boolean
+        default: false
       gmail-thread-id:
         description: the Gmail thread of the customer's message in the support mailbox; empty skips the draft
         required: false
@@ -67,10 +74,48 @@ env:
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
 
 jobs:
+  # Applies the operator's `rejected` label before an issue is picked. It holds a token that
+  # writes issues in the private repository and no AWS credentials. A failed sweep does not stop
+  # the pick, because the gate refuses a `rejected` issue on its own.
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Close rejected issues and restore the review label
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: node scripts/support-label-sweep.mjs sweep --repo "$PRIVATE_REPO"
+
   # Finds the oldest open support issue that the maintainer-review gate approves, that has a
   # valid reader comment and that has no handled comment. Support tickets are always prod, so
   # every job here runs in the prod environment.
   select:
+    needs: sweep
+    if: always() && !cancelled()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: prod
@@ -108,10 +153,14 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.private-token.outputs.token }}
           ISSUE_INPUT: ${{ inputs.issue-number }}
+          RETRIAGE_INPUT: ${{ inputs.retriage }}
         run: |
           set -euo pipefail
           ARGS=()
-          if [ -n "${ISSUE_INPUT}" ]; then ARGS+=(--issue "${ISSUE_INPUT}"); fi
+          if [ -n "${ISSUE_INPUT}" ]; then
+            ARGS+=(--issue "${ISSUE_INPUT}")
+            if [ "${RETRIAGE_INPUT}" = "true" ]; then ARGS+=(--retriage); fi
+          fi
           node scripts/support-handling-input.mjs --out /tmp/support-handling-input.json "${ARGS[@]}"
 
       # Counting reads the job history of every run in the last day, so it runs only when there
@@ -151,6 +200,7 @@ jobs:
     env:
       ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+      RETRIAGE_INPUT: ${{ inputs.retriage }}
     outputs:
       comment: ${{ steps.build.outputs.comment }}
       reply: ${{ steps.build.outputs.reply }}
@@ -272,8 +322,10 @@ jobs:
           node scripts/support-triage-public-half.mjs web/public/faqs.toml /tmp/support-matched.md
           awk '/^## Drafted reply$/{flag=1; next} flag' "$FINAL" | grep -v '^_Written by ' > /tmp/support-reply-body.md || true
           node scripts/support-triage-public-half.mjs web/public/faqs.toml /tmp/support-reply-body.md
+          MARKER_SUFFIX=""
+          if [ "$RETRIAGE_INPUT" = "true" ]; then MARKER_SUFFIX=" retriage=true"; fi
           {
-            echo "<!-- support-handled:v1 run=${GITHUB_RUN_ID} -->"
+            echo "<!-- support-handled:v1 run=${GITHUB_RUN_ID}${MARKER_SUFFIX} -->"
             cat /tmp/support-matched.md
             printf '## Resolution\n\n%s\n\n## Category\n\n%s\n\n## Drafted reply\n\n' "$RESOLUTION" "$CATEGORY"
             cat /tmp/support-reply-body.md

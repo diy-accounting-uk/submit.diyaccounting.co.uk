@@ -13,7 +13,11 @@
 // comment. It never holds the issue title or body: those are the public's words, and the reader
 // already summarised them in code-checked fields.
 //
-// usage: support-handling-input.mjs --out <path> [--issue <number>]
+// `--retriage` with `--issue` handles that one issue again: earlier handled comments are ignored,
+// and every gate (labels, the maintainer-review gate, the reader comment) still applies. The
+// cron run never sets it.
+//
+// usage: support-handling-input.mjs --out <path> [--issue <number> [--retriage]]
 // env:   GH_TOKEN (read access to the private repository's issues), GITHUB_OUTPUT
 // Writes `issue-number=<n>` (empty when nothing is approved) to $GITHUB_OUTPUT and the input
 // JSON to --out. Prints issue numbers and gate states only.
@@ -35,7 +39,8 @@ const labelNames = (issue) => (issue.labels ?? []).map((label) => (typeof label 
 
 export function isHandlingCandidate(issue) {
   if (!issue || issue.pull_request || issue.state !== "open") return false;
-  if (!labelNames(issue).includes("support")) return false;
+  const labels = labelNames(issue);
+  if (!labels.includes("support") || labels.includes("rejected")) return false;
   return ALLOWED_LOGINS.includes(String(issue.user?.login ?? "").toLowerCase());
 }
 
@@ -45,10 +50,11 @@ export function hasHandledComment(comments) {
 
 /**
  * Builds the handling input from an issue's comments. Reads no title and no body.
+ * @param {boolean} [retriage] ignore earlier handled comments
  * @returns {object|null} null when there is no valid reader comment or the issue is handled
  */
-export function buildHandlingInput({ issueNumber, comments, ids, operatorLogin = OPERATOR_LOGIN }) {
-  if (hasHandledComment(comments)) return null;
+export function buildHandlingInput({ issueNumber, comments, ids, operatorLogin = OPERATOR_LOGIN, retriage = false }) {
+  if (!retriage && hasHandledComment(comments)) return null;
   const schema = supportReaderSchema(ids);
   let reader = null;
   for (const comment of comments) {
@@ -78,9 +84,10 @@ export function buildHandlingInput({ issueNumber, comments, ids, operatorLogin =
  * @param {(n: number) => Promise<object[]>} deps.commentsFor
  * @param {(n: number) => Promise<"approved"|"pending"|"not-approved">} deps.stateFor the gate
  * @param {number} [deps.only]
+ * @param {boolean} [deps.retriage] with `only`, handle that issue again
  * @returns {Promise<object|null>} the handling input of the oldest qualifying issue
  */
-export async function selectHandlingInput({ issues, commentsFor, stateFor, ids, only, log = () => {} }) {
+export async function selectHandlingInput({ issues, commentsFor, stateFor, ids, only, retriage = false, log = () => {} }) {
   const candidates = issues
     .filter((issue) => (only === undefined ? true : issue.number === only))
     .filter(isHandlingCandidate)
@@ -89,7 +96,12 @@ export async function selectHandlingInput({ issues, commentsFor, stateFor, ids, 
     const state = await stateFor(issue.number);
     log(`#${issue.number} ${state}`);
     if (state !== "approved") continue;
-    const input = buildHandlingInput({ issueNumber: issue.number, comments: await commentsFor(issue.number), ids });
+    const input = buildHandlingInput({
+      issueNumber: issue.number,
+      comments: await commentsFor(issue.number),
+      ids,
+      retriage: retriage && only !== undefined,
+    });
     if (input) return input;
   }
   return null;
@@ -109,11 +121,17 @@ async function main() {
   }
   const onlyArg = argValue(argv, "--issue");
   const only = onlyArg ? Number(onlyArg) : undefined;
+  const retriage = argv.includes("--retriage");
+  if (retriage && only === undefined) {
+    console.error("--retriage needs --issue");
+    process.exit(1);
+  }
   const token = process.env.GH_TOKEN;
   const issues = await githubGetAll(`/repos/${PRIVATE_REPO}/issues?state=open&labels=support`, { token });
   const input = await selectHandlingInput({
     issues,
     only,
+    retriage,
     ids: faqIds(readFileSync("web/public/faqs.toml", "utf8")),
     commentsFor: (n) => githubGetAll(`/repos/${PRIVATE_REPO}/issues/${n}/comments`, { token }),
     stateFor: (n) => issueApprovalState({ repo: PRIVATE_REPO, issue: n, token }),

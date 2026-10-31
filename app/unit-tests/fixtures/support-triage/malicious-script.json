@@ -1,0 +1,18 @@
+{
+  "kind": "triage",
+  "description": "A request to put script on the site; it is declined and never actioned.",
+  "handlingInput": {
+    "issueNumber": 9005,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer asks for a script tag that loads a counter from a third-party host to be added to every page.",
+    "injectionSuspected": true,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "requiredPhrases": [],
+    "forbiddenPhrases": ["<script", "already answers", "the help page answers", "Dear ", "close this ticket"]
+  }
+}
