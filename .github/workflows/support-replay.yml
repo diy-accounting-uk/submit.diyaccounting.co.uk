@@ -1,0 +1,202 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-146 Replay the support prompts over synthetic tickets
+# - **Use when:** `prompts/support-triage.md`, `prompts/support-reader.md` or a replay fixture changes, or you need to know whether the support agents still give the right resolution and reply.
+# - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture through the Bedrock call that support-reader.yml makes. It fails a run whose resolution is wrong, whose reply holds a forbidden phrase or misses a required one, or whose reader answer has the wrong `injectionSuspected`. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
+# - **Run:** `gh workflow run support-replay.yml`; `npx vitest run app/unit-tests/scripts/supportReplay.test.js`
+# - **Entry:** `.github/workflows/support-replay.yml`; `scripts/support-replay.mjs:triageFailures`
+# - **Files:** .github/workflows/support-replay.yml, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-reader.md
+# - **Keywords:** replay, fixtures, support triage, support reader, prompt regression, injectionSuspected, resolution
+# - **Related:** OPS-18, OPS-142
+# @end-capability
+
+name: support-replay
+run-name: support replay
+
+# The fixtures hold invented tickets only. No real ticket text, name or address belongs in them.
+# The jobs run in the ci environment and chain into the alarm triage role, the same role
+# support-triage.yml chains into, which holds Bedrock invoke on the two pinned models and the
+# agent kill switch parameter. A pull request from a fork has no access to those variables, so
+# the jobs skip it.
+
+on:
+  pull_request:
+    paths:
+      - 'prompts/support-triage.md'
+      - 'prompts/support-reader.md'
+      - 'app/unit-tests/fixtures/support-triage/**'
+      - 'scripts/support-replay.mjs'
+      - '.github/workflows/support-replay.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: support-replay-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: 'eu-west-2'
+  CLAUDE_CODE_VERSION: '2.0.30'
+  MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  READER_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+
+jobs:
+  plan:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      triage: ${{ steps.list.outputs.triage }}
+      reader: ${{ steps.list.outputs.reader }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: List the fixtures
+        id: list
+        run: node scripts/support-replay.mjs list
+
+  triage:
+    needs: plan
+    if: needs.plan.outputs.triage != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ci
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: ${{ fromJson(needs.plan.outputs.triage) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Stop when the agent kill switch is on
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
+      - name: Write the handling input of the fixture
+        env:
+          FIXTURE: ${{ matrix.fixture }}
+        run: |
+          set -euo pipefail
+          node scripts/support-replay.mjs triage-input "$FIXTURE" /tmp/support-handling-input.json
+          echo "ISSUE_NUMBER=$(jq -r '.issueNumber' /tmp/support-handling-input.json)" >> "$GITHUB_ENV"
+
+      - name: Install Claude Code
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Run triage
+        uses: ./.github/actions/run-triage-agent
+        with:
+          model-id: ${{ env.MODEL_ID }}
+          small-fast-model-id: ${{ env.MODEL_ID }}
+          allowed-tools: 'Read,Grep,Glob'
+          output-file: /tmp/support-triage.json
+          prompt-file: prompts/support-triage.md
+          echo-output: 'false'
+
+      - name: Judge the answer against the fixture
+        env:
+          FIXTURE: ${{ matrix.fixture }}
+        run: node scripts/support-replay.mjs check-triage "$FIXTURE" /tmp/support-triage.json
+
+  reader:
+    needs: plan
+    if: needs.plan.outputs.reader != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ci
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: ${{ fromJson(needs.plan.outputs.reader) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Stop when the agent kill switch is on
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
+      # The same request support-reader.yml builds: the skeleton from the prompt, the ticket as
+      # one JSON string value, no tools, and the prefill.
+      - name: Build the request
+        env:
+          FIXTURE: ${{ matrix.fixture }}
+        run: |
+          set -euo pipefail
+          GITHUB_OUTPUT=/tmp/skeleton.out node scripts/quarantine-reader-request.mjs support
+          sed -n 's/^request=//p' /tmp/skeleton.out | base64 -d > /tmp/skeleton.json
+          node scripts/support-replay.mjs ticket "$FIXTURE" /tmp/ticket.json
+          jq -n --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
+            $skeleton[0] as $s | $ticket[0] as $t
+            | $s
+            | .messages = [
+                { role: "user", content: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") },
+                { role: "assistant", content: $s.prefill }
+              ]
+            | del(.prefill, .tag)' > /tmp/request.json
+
+      - name: Ask the model
+        run: |
+          set -uo pipefail
+          if ! aws bedrock-runtime invoke-model --model-id "$READER_MODEL_ID" --body fileb:///tmp/request.json /tmp/response.json > /dev/null 2>/tmp/invoke.err; then
+            echo "::error::invoke-model failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+            exit 1
+          fi
+          { printf '{'; jq -j '.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+
+      - name: Judge the answer against the fixture
+        env:
+          FIXTURE: ${{ matrix.fixture }}
+        run: node scripts/support-replay.mjs check-reader "$FIXTURE" /tmp/answer.txt

@@ -1,0 +1,18 @@
+{
+  "kind": "triage",
+  "description": "A change request the site should take: a misspelling on a help page.",
+  "handlingInput": {
+    "issueNumber": 9002,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer says the help page spells 'receive' as 'recieve' in the section on HMRC confirmation and asks for it to be corrected.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "fix",
+    "requiredPhrases": [],
+    "forbiddenPhrases": ["already answers", "the help page answers", "Dear ", "close this ticket"]
+  }
+}

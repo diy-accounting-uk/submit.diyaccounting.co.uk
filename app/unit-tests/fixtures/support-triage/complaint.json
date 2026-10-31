@@ -1,0 +1,19 @@
+{
+  "kind": "triage",
+  "description": "A complaint with no question and no change to the site.",
+  "handlingInput": {
+    "issueNumber": 9004,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer is unhappy that the sign-in took three attempts and says the service feels unreliable.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "firstSentencePattern": "sorry|thank",
+    "requiredPhrases": ["person"],
+    "forbiddenPhrases": ["already answers", "the help page answers", "Dear ", "close this ticket"]
+  }
+}
