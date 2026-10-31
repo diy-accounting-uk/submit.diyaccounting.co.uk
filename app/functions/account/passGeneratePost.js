@@ -26,6 +26,8 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createPass } from "../../services/passService.js";
+import { putFamilyAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { isFamilyAffiliateEmail } from "../../lib/familyAffiliates.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
@@ -39,6 +41,11 @@ import {
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/passGeneratePost.js" });
+
+const GENERATE_ACTIVITY_BY_PASS_TYPE = {
+  "digital-pass": "generate-pass-digital",
+  "physical-pass": "generate-pass-physical",
+};
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -89,7 +96,10 @@ export async function ingestHandler(event) {
   }
 
   // Determine which activity this maps to
-  const activityId = passTypeId === "digital-pass" ? "generate-pass-digital" : "generate-pass-physical";
+  const activityId = GENERATE_ACTIVITY_BY_PASS_TYPE[passTypeId];
+  if (!activityId) {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: `Pass type ${passTypeId} has no generate activity` });
+  }
 
   // Consume tokens via tokenEnforcement
   const catalog = loadCatalogFromRoot();
@@ -118,6 +128,13 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "User pass created", passTypeId, code: pass.code });
+    if (await isFamilyAffiliateEmail(decodedToken?.email)) {
+      await putFamilyAffiliate({
+        hashedSub,
+        emailKey: hashSub(decodedToken.email.trim().toLowerCase()),
+        now: new Date().toISOString(),
+      });
+    }
     await publishActivityEvent({
       event: "pass-generated",
       summary: `User pass generated: ${passTypeId}`,

@@ -27,11 +27,12 @@ vi.mock("@app/data/dynamoDbCommissionRepository.js", () => ({
   reversalSk: (invoiceId) => `line#${invoiceId}#reversal`,
 }));
 
-const passes = { getReferralClaim: vi.fn(), getRedemption: vi.fn(), getAffiliate: vi.fn() };
+const passes = { getReferralClaim: vi.fn(), getRedemption: vi.fn(), getAffiliate: vi.fn(), getFamilyAffiliate: vi.fn() };
 vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getReferralClaim: (...a) => passes.getReferralClaim(...a),
   getRedemption: (...a) => passes.getRedemption(...a),
   getAffiliate: (...a) => passes.getAffiliate(...a),
+  getFamilyAffiliate: (...a) => passes.getFamilyAffiliate(...a),
 }));
 
 const mockConfig = { current: null };
@@ -102,6 +103,7 @@ beforeEach(() => {
   passes.getReferralClaim.mockResolvedValue({ code: "code-1" });
   passes.getRedemption.mockResolvedValue({ issuedBy: "referrer-hash", redeemedAt: iso(JAN_1 + 50), passTypeId: "referral" });
   passes.getAffiliate.mockResolvedValue(null);
+  passes.getFamilyAffiliate.mockResolvedValue(null);
   repo.getAnchor.mockResolvedValue(null);
 });
 
@@ -304,6 +306,33 @@ describe("services/commissionLedger - accrueCommission", () => {
       createdAt: NOW,
       updatedAt: NOW,
     });
+  });
+
+  test("a family affiliate fixes the family tier on the anchor", async () => {
+    passes.getFamilyAffiliate.mockResolvedValue({ pk: "family#referrer-hash" });
+    await run(expandedInvoice()).promise;
+    expect(passes.getFamilyAffiliate).toHaveBeenCalledWith("referrer-hash");
+    expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor).toMatchObject({
+      tier: "family",
+      rateBps: 10000,
+      months: 1,
+      payout: "bank-transfer",
+      holdDays: 60,
+    });
+  });
+
+  test("a family affiliate whose affiliate item has an approved tier still earns the family tier", async () => {
+    passes.getFamilyAffiliate.mockResolvedValue({ pk: "family#referrer-hash" });
+    passes.getAffiliate.mockResolvedValue({ state: "approved", tier: "casual" });
+    await run(expandedInvoice()).promise;
+    expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor.tier).toBe("family");
+  });
+
+  test("a family affiliate whose affiliate item has ended earns the default tier", async () => {
+    passes.getFamilyAffiliate.mockResolvedValue({ pk: "family#referrer-hash" });
+    passes.getAffiliate.mockResolvedValue({ state: "ended", tier: "family" });
+    await run(expandedInvoice()).promise;
+    expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor.tier).toBe("customer");
   });
 
   test("an approved affiliate fixes its tier on the anchor", async () => {

@@ -315,6 +315,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-51 -->
 <!-- capability BILL-52 -->
 <!-- capability BILL-53 -->
+<!-- capability BILL-54 -->
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
@@ -347,6 +348,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-147 -->
 <!-- capability OPS-148 -->
 <!-- capability OPS-149 -->
+<!-- capability OPS-150 -->
 ### ci slot pool and sweep (OPS)
 
 <!-- generated:group ci-slot-pool-and-sweep-ops -->

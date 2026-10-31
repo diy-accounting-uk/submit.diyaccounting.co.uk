@@ -46,8 +46,32 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
+const mockLoadOperators = vi.fn();
+vi.mock("@app/lib/operators.js", () => ({
+  loadOperators: (...args) => mockLoadOperators(...args),
+}));
+
+const mockLoadFamilyAffiliateEmails = vi.fn();
+vi.mock("@app/lib/familyAffiliates.js", () => ({
+  loadFamilyAffiliateEmails: (...args) => mockLoadFamilyAffiliateEmails(...args),
+}));
+
+vi.mock("@app/services/subHasher.js", () => ({
+  initializeSalt: vi.fn().mockResolvedValue(undefined),
+  hashSub: vi.fn((value) => `hashed_${value}`),
+}));
+
+const mockGetFamilyAffiliateByEmailKey = vi.fn();
+vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
+  getFamilyAffiliateByEmailKey: (...args) => mockGetFamilyAffiliateByEmailKey(...args),
+}));
+
 import {
   handler,
+  buildOperators,
+  buildFamilyAffiliates,
+  buildAffiliateGroups,
+  FAMILY_AFFILIATE_MEASURES,
   buildWindowedBatchSql,
   buildFastWindowBatchSql,
   computeTrend,
@@ -183,6 +207,11 @@ describe("operatorSnapshotPublish", () => {
     mockAthenaSend.mockReset();
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockLoadOperators.mockReset();
+    mockLoadOperators.mockResolvedValue(["op@example.com"]);
+    mockLoadFamilyAffiliateEmails.mockReset();
+    mockLoadFamilyAffiliateEmails.mockResolvedValue([]);
+    mockGetFamilyAffiliateByEmailKey.mockReset();
 
     process.env.ENVIRONMENT_NAME = "test";
     process.env.ATHENA_WORK_GROUP_NAME = "test-workgroup";
@@ -644,6 +673,7 @@ describe("operatorSnapshotPublish", () => {
         "ads-cost",
         "ads-paid-landings",
         "ads-cost-per-paid-landing",
+        "commission-earned",
         "ads-conversions",
       ]);
       const contribution = paid.modes.find((mode) => mode.id === "contribution");
@@ -667,6 +697,27 @@ describe("operatorSnapshotPublish", () => {
       expect(paid.modes.find((mode) => mode.id === "ads-cost-per-paid-landing").unit).toBe("gbp");
       expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
       expect(paid.modes.find((mode) => mode.id === "ads-cpc").unit).toBe("gbp");
+    });
+
+    test("the Conversion to paid chart draws commission earned per cost group in pounds from the daily view", () => {
+      const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
+      const mode = paid.modes.find((candidate) => candidate.id === "commission-earned");
+
+      expect(mode.unit).toBe("gbp");
+      expect(mode.componentOrder).toEqual(["referral-credit", "affiliate-cash", "family-cash"]);
+      expect(mode.sql).toContain("FROM   v_commission_earned_daily");
+      expect(mode.sql).toContain("earned_pence / 100.0");
+      for (const id of mode.componentOrder) {
+        expect(mode.labelOf(id), id).not.toBe(id);
+        expect(mode.descriptionOf(id), id).toBeTruthy();
+      }
+      for (const group of mode.componentOrder) {
+        const row = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-paid").observations.find(
+          (observation) => observation.id === `commission-earned-${group}-gbp`,
+        );
+        expect(row.where).toBe(`cost_group = '${group}'`);
+        expect(betterDirection(row.id)).toBe("down");
+      }
     });
 
     test("buildPaidSubscribers reads the latest month by channel and bundle and adds the totals", async () => {
@@ -1779,6 +1830,134 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       expect(snapshot.failedObservationCount).toBe(visitorIds.length);
+    });
+  });
+
+  describe("operators, family affiliates and affiliate groups", () => {
+    test("buildOperators lists the operator emails, sorted", async () => {
+      mockLoadOperators.mockResolvedValue(["zed@example.com", "amy@example.com"]);
+      expect(await buildOperators()).toEqual({ emails: ["amy@example.com", "zed@example.com"] });
+    });
+
+    test("buildFamilyAffiliates runs no query when the list is empty", async () => {
+      expect(await buildFamilyAffiliates({ workGroup: "wg", database: "db" })).toEqual({ affiliates: [], failedCount: 0 });
+      expect(mockAthenaSend).not.toHaveBeenCalled();
+    });
+
+    test("buildFamilyAffiliates joins each email to its issuer hash through the lookup item and reads four measures over the standard windows", async () => {
+      mockLoadFamilyAffiliateEmails.mockResolvedValue(["sister@example.com", "brother@example.com"]);
+      mockGetFamilyAffiliateByEmailKey.mockImplementation(async (key) =>
+        key === "hashed_sister@example.com" ? { hashedSub: "issuerHashA" } : null,
+      );
+      mockAllQueriesSucceedWith(["7", "5", "30", "20"]);
+
+      const { affiliates, failedCount } = await buildFamilyAffiliates({ workGroup: "wg", database: "db" });
+
+      expect(failedCount).toBe(0);
+      expect(affiliates.map((affiliate) => affiliate.email)).toEqual(["brother@example.com", "sister@example.com"]);
+      const sql = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+      expect(sql).toHaveLength(1);
+      expect(sql[0]).toContain("FROM   v_pass_issuer_daily");
+      expect(sql[0]).toContain("issuer_hash = 'issuerHashA'");
+      expect(sql[0]).not.toContain("example.com");
+      expect(sql[0]).toContain("sum(CASE WHEN");
+      for (const column of ["passes_generated", "link_clicks", "passes_redeemed", "passes_converted"]) expect(sql[0]).toContain(column);
+
+      const sister = affiliates.find((affiliate) => affiliate.email === "sister@example.com");
+      const brother = affiliates.find((affiliate) => affiliate.email === "brother@example.com");
+      expect(sister.issuerFound).toBe(true);
+      expect(Object.keys(sister).sort()).toEqual([
+        "email",
+        "issuerFound",
+        "linkClicks",
+        "passesConverted",
+        "passesGenerated",
+        "passesRedeemed",
+      ]);
+      expect(sister.passesGenerated.last30.value).toBe(7);
+      expect(sister.passesGenerated.last30.trend).toBeCloseTo(0.4);
+      expect(brother.issuerFound).toBe(false);
+      expect(brother.linkClicks.last7).toEqual({ value: 0, trend: null, isNew: false });
+    });
+
+    test("buildFamilyAffiliates refuses an issuer hash it cannot put in a query safely", async () => {
+      mockLoadFamilyAffiliateEmails.mockResolvedValue(["sister@example.com"]);
+      mockGetFamilyAffiliateByEmailKey.mockResolvedValue({ hashedSub: "x' OR 1=1 --" });
+      await expect(buildFamilyAffiliates({ workGroup: "wg", database: "db" })).rejects.toThrow(/unexpected characters/);
+    });
+
+    test("buildAffiliateGroups groups referrers by tier and totals the family payable this month", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                [
+                  "referrer_hash",
+                  "tier",
+                  "latest_line_state",
+                  "referrals",
+                  "paying_accounts",
+                  "held_pence",
+                  "payable_pence",
+                  "paid_pence",
+                  "payable_this_month_pence",
+                ],
+                [
+                  ["f1", "family", "payable", "1", "1", "0", "1000", "0", "1000"],
+                  ["f2", "family", "held", "2", "1", "300", "250", "100", "250"],
+                  ["c1", "casual", "held", "1", "1", "500", "0", "0", "0"],
+                  ["u1", "customer", "payable", "3", "2", "0", "900", "0", "0"],
+                ],
+              ),
+            });
+        }
+      });
+
+      const result = await buildAffiliateGroups({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_affiliate_referrers");
+      expect(result.groups.map((group) => [group.id, group.label, group.referrers.map((r) => r.referrerHash)])).toEqual([
+        ["customers", "Customers with credit", ["u1"]],
+        ["approved", "Approved affiliates", ["c1"]],
+        ["family", "Family", ["f1", "f2"]],
+      ]);
+      expect(result.groups[2].referrers[1]).toMatchObject({ tier: "family", heldPence: 300, payablePence: 250, paidPence: 100 });
+      expect(result.familyPayableThisMonthPence).toBe(1250);
+    });
+
+    test("the handler publishes the operator emails, the family affiliates and the affiliate groups in the snapshot", async () => {
+      mockLoadFamilyAffiliateEmails.mockResolvedValue(["sister@example.com"]);
+      mockGetFamilyAffiliateByEmailKey.mockResolvedValue({ hashedSub: "issuerHashA" });
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      await handler();
+
+      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+      const snapshot = JSON.parse(putCalls[0][0].input.Body);
+      expect(snapshot.operators).toEqual({ emails: ["op@example.com"] });
+      expect(snapshot.familyAffiliates.affiliates.map((affiliate) => affiliate.email)).toEqual(["sister@example.com"]);
+      expect(snapshot.familyAffiliates.measures.map((measure) => measure.key)).toEqual(
+        FAMILY_AFFILIATE_MEASURES.map((measure) => measure.key),
+      );
+      expect(snapshot.affiliateGroups.groups.map((group) => group.id)).toEqual(["customers", "approved", "family"]);
+    });
+
+    test("an operator list that does not load publishes the snapshot without it and counts as one failure", async () => {
+      mockLoadOperators.mockRejectedValue(new Error("denied"));
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      await expect(handler()).rejects.toThrow(/1 observation/);
+      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+      expect(JSON.parse(putCalls[0][0].input.Body).operators).toBeUndefined();
     });
   });
 

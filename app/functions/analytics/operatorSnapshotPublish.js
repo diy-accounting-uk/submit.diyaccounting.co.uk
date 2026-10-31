@@ -37,6 +37,10 @@ import { retentionObjective } from "../../lib/operatorSnapshot/retentionObjectiv
 import { operatorEffortObjective } from "../../lib/operatorSnapshot/operatorEffortObjective.js";
 import { complianceObjective } from "../../lib/operatorSnapshot/complianceObjective.js";
 import { companyAccountsObjective } from "../../lib/operatorSnapshot/companyAccountsObjective.js";
+import { loadOperators } from "../../lib/operators.js";
+import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
+import { initializeSalt, hashSub } from "../../services/subHasher.js";
+import { getFamilyAffiliateByEmailKey } from "../../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
@@ -148,6 +152,9 @@ const BETTER_DOWN_IDS = [
   "cost-cloudfront-usd",
   "ads-cost-gbp",
   "ads-cost-per-paid-landing-gbp",
+  "commission-earned-referral-credit-gbp",
+  "commission-earned-affiliate-cash-gbp",
+  "commission-earned-family-cash-gbp",
   "security-hub-open-findings",
   "security-hub-critical-findings",
   "guardduty-open-findings",
@@ -1242,6 +1249,35 @@ export function buildDailyChartDefinitions() {
             `FROM   v_ads_cost_per_paid_landing_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_paid_landing_gbp IS NOT NULL`,
         },
         {
+          id: "commission-earned",
+          label: "Commission earned",
+          unit: "gbp",
+          total: "All commission",
+          totalDescription: "Referral credit, affiliate cash and family cash earned, added together, in pounds.",
+          componentOrder: ["referral-credit", "affiliate-cash", "family-cash"],
+          labelOf: (id) =>
+            ({
+              "referral-credit": "Customer referral credit",
+              "affiliate-cash": "Approved-affiliate cash",
+              "family-cash": "Family affiliate cash",
+            })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "referral-credit": "Commission earned in the day by referred payments of the customer tier, in pounds, reversals netted.",
+              "affiliate-cash":
+                "Commission earned in the day by referred payments of the casual and creator tiers, in pounds, reversals netted.",
+              "family-cash": "Commission earned in the day by referred payments of the family tier, in pounds, reversals netted.",
+            })[id],
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "cost_group",
+            valueExpression: "earned_pence / 100.0",
+            view: "v_commission_earned_daily",
+            dayColumn: "day",
+            where: "cost_group <> 'other'",
+          }),
+        },
+        {
           id: "ads-conversions",
           label: "Ads conversions by platform",
           unit: "count",
@@ -1770,6 +1806,135 @@ export async function buildPaidSubscribers({ workGroup, database }) {
 }
 
 /**
+ * The operator list, for the Operators table at the end of the dashboard. The emails stay in this
+ * snapshot, which only the operator route reads, and appear in no log, event or public file.
+ *
+ * @returns {Promise<{emails: string[]}>}
+ */
+export async function buildOperators() {
+  return { emails: [...(await loadOperators())].sort() };
+}
+
+// What the Family affiliates tables count, one table each: the v_pass_issuer_daily column, the
+// key the snapshot carries it under, and the heading the page gives the table.
+export const FAMILY_AFFILIATE_MEASURES = [
+  { key: "passesGenerated", column: "passes_generated", label: "Passes generated" },
+  { key: "linkClicks", column: "link_clicks", label: "Pass link clicks" },
+  { key: "passesRedeemed", column: "passes_redeemed", label: "Passes redeemed" },
+  { key: "passesConverted", column: "passes_converted", label: "Passes converted to paid" },
+];
+
+const ISSUER_HASH_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * One row per email on the family affiliate list, each with the four pass measures over the
+ * standard windows. An email is joined to its issuer hash through the familyemail# lookup item
+ * that pass generation writes: the key is the salted hash of the email, so no scan and no
+ * plaintext email in the table. An email that has generated no pass yet has no item and reads
+ * zero in every window.
+ *
+ * @returns {Promise<{affiliates: Array<object>, failedCount: number}>}
+ */
+export async function buildFamilyAffiliates({ workGroup, database }) {
+  const emails = [...(await loadFamilyAffiliateEmails())].sort();
+  if (emails.length === 0) return { affiliates: [], failedCount: 0 };
+
+  await initializeSalt();
+  const issuerHashes = await Promise.all(
+    emails.map(async (email) => (await getFamilyAffiliateByEmailKey(hashSub(email)))?.hashedSub ?? null),
+  );
+
+  const observations = [];
+  emails.forEach((email, emailIndex) => {
+    const issuerHash = issuerHashes[emailIndex];
+    if (!issuerHash) return;
+    if (!ISSUER_HASH_PATTERN.test(issuerHash)) throw new Error("A family affiliate marker holds an issuer hash with unexpected characters");
+    for (const measure of FAMILY_AFFILIATE_MEASURES) {
+      observations.push({
+        id: `${emailIndex}::${measure.key}`,
+        view: "v_pass_issuer_daily",
+        dayColumn: "day",
+        valueExpr: measure.column,
+        aggregation: "sum",
+        where: `issuer_hash = '${issuerHash}'`,
+      });
+    }
+  });
+
+  const { resultsById, failedIds } = await runObservationBatches({
+    workGroup,
+    database,
+    observations,
+    groupKey: (observation) => `${observation.view}|${observation.dayColumn}`,
+    buildSql: (batch) => buildWindowedBatchSql({ view: batch[0].view, dayColumn: batch[0].dayColumn, observations: batch }),
+    toResult: (row, observation) => toObservationWindows(row, observation.aggregation, new Date()),
+    failureMessage: "Family affiliate query failed, publishing nothing for its rows",
+  });
+
+  const zero = { value: 0, trend: null, isNew: false };
+  const zeroWindows = { today: zero, previousDay: zero, last7: zero, last30: zero, last90: zero };
+  const affiliates = emails.map((email, emailIndex) => ({
+    email,
+    issuerFound: issuerHashes[emailIndex] !== null,
+    ...Object.fromEntries(
+      FAMILY_AFFILIATE_MEASURES.map((measure) => [
+        measure.key,
+        issuerHashes[emailIndex] === null ? zeroWindows : (resultsById.get(`${emailIndex}::${measure.key}`) ?? nullObservationWindows),
+      ]),
+    ),
+  }));
+  return { affiliates, failedCount: failedIds.size > 0 ? 1 : 0 };
+}
+
+// The groups the Affiliates by group table shows, in order, and the tiers that fall in each.
+export const AFFILIATE_GROUPS = [
+  { id: "customers", label: "Customers with credit", tiers: ["customer"] },
+  { id: "approved", label: "Approved affiliates", tiers: ["casual", "creator"] },
+  { id: "family", label: "Family", tiers: ["family"] },
+];
+
+/**
+ * Every referrer with a commission line, grouped by tier, each with referrals, paying accounts and
+ * the held, payable, paid and payable-this-month pence. Referrers appear under their referrer hash.
+ * The Family group's payable this month is what the operator transfers by bank.
+ *
+ * @returns {Promise<{groups: Array<{id: string, label: string, referrers: Array<object>}>, familyPayableThisMonthPence: number}>}
+ */
+export async function buildAffiliateGroups({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT referrer_hash, tier, latest_line_state, cast(referrals AS double) AS referrals,\n` +
+      `       cast(paying_accounts AS double) AS paying_accounts, cast(held_pence AS double) AS held_pence,\n` +
+      `       cast(payable_pence AS double) AS payable_pence, cast(paid_pence AS double) AS paid_pence,\n` +
+      `       cast(payable_this_month_pence AS double) AS payable_this_month_pence\n` +
+      `FROM   v_affiliate_referrers\nORDER  BY payable_pence DESC, held_pence DESC, referrer_hash`,
+  });
+  const referrers = rows.map((row) => ({
+    referrerHash: row.referrer_hash,
+    tier: row.tier,
+    latestLineState: row.latest_line_state,
+    referrals: Number(row.referrals),
+    payingAccounts: Number(row.paying_accounts),
+    heldPence: Number(row.held_pence),
+    payablePence: Number(row.payable_pence),
+    paidPence: Number(row.paid_pence),
+    payableThisMonthPence: Number(row.payable_this_month_pence),
+  }));
+  const groups = AFFILIATE_GROUPS.map((group) => ({
+    id: group.id,
+    label: group.label,
+    referrers: referrers.filter((referrer) => group.tiers.includes(referrer.tier)),
+  }));
+  const familyGroup = groups.find((group) => group.id === "family");
+  return {
+    groups,
+    familyPayableThisMonthPence: familyGroup.referrers.reduce((sum, referrer) => sum + referrer.payableThisMonthPence, 0),
+  };
+}
+
+/**
  * Writes the snapshot to its latest pointer and a dated copy alongside it, so the page always
  * reads the same key while a historical run stays available under its own date.
  *
@@ -1838,12 +2003,48 @@ export async function handler() {
     failedPaidSubscribers = 1;
     logger.warn({ message: "Paid subscribers query failed, publishing none", error: error.message });
   }
+  let operators = null;
+  let failedOperators = 0;
+  try {
+    operators = await buildOperators();
+  } catch (error) {
+    failedOperators = 1;
+    logger.warn({ message: "Operator list load failed, publishing none", error: error.message });
+  }
+  let familyAffiliates = null;
+  let failedFamilyAffiliates = 0;
+  try {
+    const family = await buildFamilyAffiliates({ workGroup, database });
+    familyAffiliates = { affiliates: family.affiliates, measures: FAMILY_AFFILIATE_MEASURES.map(({ key, label }) => ({ key, label })) };
+    failedFamilyAffiliates = family.failedCount;
+  } catch (error) {
+    failedFamilyAffiliates = 1;
+    logger.warn({ message: "Family affiliates failed, publishing none", error: error.message });
+  }
+  let affiliateGroups = null;
+  let failedAffiliateGroups = 0;
+  try {
+    affiliateGroups = await buildAffiliateGroups({ workGroup, database });
+  } catch (error) {
+    failedAffiliateGroups = 1;
+    logger.warn({ message: "Affiliate groups query failed, publishing none", error: error.message });
+  }
   const snapshot = {
     ...built,
     dailyCharts,
     ...(costDrivers ? { costDrivers } : {}),
     ...(paidSubscribers ? { paidSubscribers } : {}),
-    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers + failedPaidSubscribers,
+    ...(operators ? { operators } : {}),
+    ...(familyAffiliates ? { familyAffiliates } : {}),
+    ...(affiliateGroups ? { affiliateGroups } : {}),
+    failedObservationCount:
+      built.failedObservationCount +
+      failedChartIds.length +
+      failedCostDrivers +
+      failedPaidSubscribers +
+      failedOperators +
+      failedFamilyAffiliates +
+      failedAffiliateGroups,
   };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 

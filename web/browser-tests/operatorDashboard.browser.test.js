@@ -470,6 +470,84 @@ const sampleValue = (observation) =>
 
 // Every observation the publisher defines, each with a value in every column, which is the
 // most the page ever renders; the layout tests size the page's reserved heights against it.
+const sampleWindows = (value) => ({
+  today: { value },
+  previousDay: { value },
+  last7: { value },
+  last30: { value, trend: null },
+  last90: { value, trend: null },
+});
+
+const FIXTURE_AFFILIATE_SECTIONS = {
+  operators: { emails: ["boss@example.com", "second@example.com"] },
+  familyAffiliates: {
+    measures: [
+      { key: "passesGenerated", label: "Passes generated" },
+      { key: "linkClicks", label: "Pass link clicks" },
+      { key: "passesRedeemed", label: "Passes redeemed" },
+      { key: "passesConverted", label: "Passes converted to paid" },
+    ],
+    affiliates: [
+      {
+        email: "sister@example.com",
+        issuerFound: true,
+        passesGenerated: sampleWindows(3),
+        linkClicks: sampleWindows(8),
+        passesRedeemed: sampleWindows(2),
+        passesConverted: sampleWindows(1),
+      },
+      {
+        email: "brother@example.com",
+        issuerFound: false,
+        passesGenerated: sampleWindows(0),
+        linkClicks: sampleWindows(0),
+        passesRedeemed: sampleWindows(0),
+        passesConverted: sampleWindows(0),
+      },
+    ],
+  },
+  affiliateGroups: {
+    familyPayableThisMonthPence: 1250,
+    groups: [
+      {
+        id: "customers",
+        label: "Customers with credit",
+        referrers: [
+          {
+            referrerHash: "aaaaaaaa11112222",
+            tier: "customer",
+            latestLineState: "held",
+            referrals: 2,
+            payingAccounts: 1,
+            heldPence: 300,
+            payablePence: 0,
+            paidPence: 0,
+            payableThisMonthPence: 0,
+          },
+        ],
+      },
+      { id: "approved", label: "Approved affiliates", referrers: [] },
+      {
+        id: "family",
+        label: "Family",
+        referrers: [
+          {
+            referrerHash: "bbbbbbbb33334444",
+            tier: "family",
+            latestLineState: "payable",
+            referrals: 1,
+            payingAccounts: 1,
+            heldPence: 0,
+            payablePence: 1250,
+            paidPence: 500,
+            payableThisMonthPence: 1250,
+          },
+        ],
+      },
+    ],
+  },
+};
+
 function fullShapeSnapshot() {
   const context = {
     envName: "prod",
@@ -503,6 +581,7 @@ function fullShapeSnapshot() {
     })),
     costDrivers: FIXTURE_COST_DRIVERS,
     paidSubscribers: FIXTURE_PAID_SUBSCRIBERS,
+    ...FIXTURE_AFFILIATE_SECTIONS,
     failedObservationCount: 0,
   };
 }
@@ -616,7 +695,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      13,
+      16,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -633,6 +712,9 @@ test.describe("Operator Dashboard", () => {
       "companyAccountsPanel",
       "reservePanel",
       "reinvestmentPanel",
+      "operatorsPanel",
+      "familyAffiliatesPanel",
+      "affiliateGroupsPanel",
     ]);
     const headings = await page.locator("#objectivesContainer .objective > .section-heading-row > h2").allTextContents();
     expect(headings.slice(0, 3)).toEqual(["Conversion to paid", "Visitors", "Conversion to submission"]);
@@ -655,7 +737,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(13);
+    expect(sections).toHaveLength(16);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);
@@ -887,6 +969,36 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator('.objective[data-objective-id="low-running-cost"] .cost-drivers')).toContainText(
       "No CloudWatch charges published yet.",
     );
+  });
+
+  test("ends the page with the Operators, Family affiliates and Affiliates by group sections", async ({ page }) => {
+    const snapshotBody = { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS };
+    await setupRoutes(page, { snapshotBody });
+    await loadDashboard(page);
+
+    const panelIds = await page.locator("main section.objective[id$='Panel']").evaluateAll((nodes) => nodes.map((node) => node.id));
+    expect(panelIds.slice(-3)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"]);
+
+    await expect(page.locator("#operatorsBody tr")).toHaveCount(2);
+    await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText("boss@example.com");
+
+    const generated = page.locator('#familyAffiliatesPassesGeneratedBody tr[data-affiliate-email="sister@example.com"]');
+    await expect(generated.locator("td").nth(1)).toHaveText("3");
+    await expect(page.locator("#familyAffiliatesLinkClicksBody tr")).toHaveCount(2);
+    await expect(page.locator('#familyAffiliatesPassesConvertedBody tr[data-affiliate-email="sister@example.com"] td').nth(1)).toHaveText(
+      "1",
+    );
+    await expect(page.locator("#familyAffiliatesPassesGeneratedTable thead th")).toContainText(["Today", "Previous day", "Last 7 days"]);
+
+    await expect(page.locator("#affiliateFamilyPayableBody td").nth(1)).toHaveText("£12.50");
+    await expect(page.locator("#affiliateGroupsBody tr.affiliate-group-row")).toHaveText([
+      "Customers with credit (1)",
+      "Approved affiliates (0)",
+      "Family (1)",
+    ]);
+    const familyRow = page.locator('#affiliateGroupsBody tr.affiliate-referrer-row[data-group-id="family"]');
+    await expect(familyRow.locator("td").nth(0)).toHaveText("bbbbbbbb");
+    await expect(familyRow.locator("td").nth(6)).toHaveText("£12.50");
   });
 
   test("shows n/a for the daily windows of a monthly figure", async ({ page }) => {
@@ -1490,7 +1602,7 @@ test.describe("Operator Dashboard", () => {
 
     test("keeps every activities table header on one line at 1920px wide", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await setupRoutes(page);
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS } });
       await loadDashboard(page);
 
       const headerCells = page.locator(".activities-table thead tr:not(.last-updated) th");
@@ -1545,7 +1657,7 @@ test.describe("Operator Dashboard", () => {
 
     test("keeps every table inside its card, scrolling instead of overflowing, at 390px wide", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
-      await setupRoutes(page);
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS } });
       await loadDashboard(page);
 
       await eachObservationsTableFitsItsCard(page);

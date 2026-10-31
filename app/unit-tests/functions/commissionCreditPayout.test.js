@@ -15,6 +15,7 @@ vi.mock("@app/data/dynamoDbCommissionRepository.js", () => ({
   getLineByKey: (...a) => repo.getLineByKey(...a),
   queryPayablePointers: (...a) => repo.queryPayablePointers(...a),
   markLinePaid: (...a) => repo.markLinePaid(...a),
+  PAYABLE_CREDIT_PARTITION: "payable",
 }));
 
 const mockGetBundles = vi.fn();
@@ -92,6 +93,7 @@ describe("functions/account/commissionCreditPayout", () => {
 
   test("the referrer's customer is read from the live bundle by key", async () => {
     await handler();
+    expect(repo.queryPayablePointers).toHaveBeenCalledWith("payable");
     expect(mockGetBundles).toHaveBeenCalledWith(REFERRER);
   });
 

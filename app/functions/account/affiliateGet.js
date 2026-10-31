@@ -3,7 +3,7 @@
 
 // @capability BILL-49 Read an affiliate's tier and state
 // - **Use when:** an operator must see the tier and state of a referrer before or after changing them.
-// - **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the state is applied and the item holds a Connect account, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
+// - **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the item holds a Connect account and the state is applied, or approved with transfers not yet active, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
 // - **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
 // - **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
 // - **Files:** app/functions/account/affiliateGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
@@ -28,7 +28,7 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { isOperatorEmail } from "../../lib/operators.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getAffiliate } from "../../data/dynamoDbPassRepository.js";
-import { refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
+import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
 import { REFERRER_HASH_PATTERN } from "./affiliatePost.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateGet.js" });
@@ -71,7 +71,7 @@ export async function ingestHandler(event) {
     if (!item) {
       return http404NotFoundResponse({ request, headers: responseHeaders, message: "No affiliate for that referrer" });
     }
-    if (item.stripeAccountId && item.state === "applied") {
+    if (needsAccountRefresh(item)) {
       try {
         item = await refreshAffiliateAccount({ referrerHash, item });
       } catch (error) {

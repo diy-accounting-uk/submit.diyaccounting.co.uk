@@ -72,11 +72,26 @@ describe("affiliateApplicationGet", () => {
     expect(JSON.parse(result.body).detailsSubmitted).toBe(false);
   });
 
-  test("an approved affiliate is not read from Stripe", async () => {
-    mockGetAffiliate.mockResolvedValue({ ...applied, state: "approved", detailsSubmitted: true });
+  test("an approved affiliate with transfers active is not read from Stripe", async () => {
+    mockGetAffiliate.mockResolvedValue({ ...applied, state: "approved", detailsSubmitted: true, transfersActive: true });
     const result = await ingestHandler(buildEventWithToken(token, null));
     expect(mockRefresh).not.toHaveBeenCalled();
     expect(JSON.parse(result.body).state).toBe("approved");
+  });
+
+  test("an approved affiliate whose transfers are not yet active is read from Stripe", async () => {
+    const approved = { ...applied, state: "approved", detailsSubmitted: true };
+    mockGetAffiliate.mockResolvedValue(approved);
+    mockRefresh.mockResolvedValue({ ...approved, transfersActive: true });
+    const result = await ingestHandler(buildEventWithToken(token, null));
+    expect(mockRefresh).toHaveBeenCalledWith({ referrerHash: "hash-of-applicant-sub", item: approved });
+    expect(JSON.parse(result.body).transfersActive).toBe(true);
+  });
+
+  test("an ended affiliate is not read from Stripe", async () => {
+    mockGetAffiliate.mockResolvedValue({ ...applied, state: "ended" });
+    await ingestHandler(buildEventWithToken(token, null));
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 
   test("a storage failure is a 500", async () => {

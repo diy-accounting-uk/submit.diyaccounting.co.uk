@@ -185,6 +185,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit: use when a referrer on the credit form has payable commission lines that must reach their Stripe customer balance, or a paid line was reversed and the unused credit must come back.
     - [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect: use when a signed-in user applies to become an affiliate, or returns to finish a Stripe onboarding they left.
     - [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application: use when a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
+    - [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect: use when an approved affiliate on a tier with `payout = "connect"` has payable cash commission lines that must reach their Stripe Connect account, or a paid line was reversed and must come off the next payout.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -209,6 +210,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment: use when reading or changing the order in which the application stacks of one deployment deploy.
     - [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id: use when a `deploy-cdk-stack.yml` job sits in `cdk deploy` for an hour with one resource CREATE_IN_PROGRESS and the log shows nothing.
     - [OPS-149](#ops-149-finish-a-deployment) Finish a deployment: use when reading or changing what a deployment does after its tests pass: the last-known-good record, the ci apex promotion, the DORA row and the destroy of the previous prod set.
+    - [OPS-150](#ops-150-build-a-deployment) Build a deployment: use when reading or changing how one deployment builds before its stacks deploy: the Maven package, the Docker image, the ECR pushes and the secret check.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
     - [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order: use when a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
@@ -1624,7 +1626,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application · [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -1765,7 +1767,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-49 Read an affiliate's tier and state
 
 - **Use when:** an operator must see the tier and state of a referrer before or after changing them.
-- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the state is applied and the item holds a Connect account, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
+- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the item holds a Connect account and the state is applied, or approved with transfers not yet active, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
 - **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
 - **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
 - **Files:** app/functions/account/affiliateGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
@@ -2148,6 +2150,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit
 - [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect
 - [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application
+- [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2242,17 +2245,27 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-53 Read the caller's affiliate application
 
 - **Use when:** a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
-- **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
+- **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
 - **Run:** `GET /api/v1/affiliate/application`
 - **Entry:** `app/functions/account/affiliateApplicationGet.js:ingestHandler`
 - **Files:** app/functions/account/affiliateApplicationGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationGet.test.js, web/public/bundles.page.js
 - **Keywords:** affiliate, application, status, stripe connect, details_submitted, onboarding return
 - **Related:** BILL-48, BILL-49, BILL-52
 
+#### BILL-54 Pay referral commission in cash through Stripe Connect
+
+- **Use when:** an approved affiliate on a tier with `payout = "connect"` has payable cash commission lines that must reach their Stripe Connect account, or a paid line was reversed and must come off the next payout.
+- **Does:** The commissionCashPayout.js handler runs monthly on a schedule and does nothing while `payCash` in referrals.toml is false. It reads the Connect payable pointers by key and groups them by affiliate. For each affiliate that is approved, on a connect tier, with a Connect account whose transfers capability Stripe reports active, it first completes any pending payout, then nets the negative reversal lines against the positive lines, oldest first, inside the tier's monthly and tax-year caps less what was already paid. It pays only when the net reaches the tier's minPayoutPence: a pending payout item first, then one GBP transfer keyed by the affiliate and the month, then each line paid with the transfer id. Lines over a cap, a net under the minimum and a negative net stay payable for the next run.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/account/commissionCashPayout.js:handler`; `app/functions/account/commissionCashPayout.js:selectPayout`
+- **Files:** app/functions/account/commissionCashPayout.js, app/unit-tests/functions/commissionCashPayout.test.js, app/data/dynamoDbCommissionRepository.js, app/data/dynamoDbPassRepository.js, app/test-support/stripeSimulator.js, app/lib/ukTaxYear.js, referrals.toml
+- **Keywords:** commission, cash, payout, stripe connect, transfer, affiliate, cap, tax year, minimum payout, reversal netting, scheduled lambda, kill switch
+- **Related:** BILL-46, BILL-47, BILL-51, BILL-52
+
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2291,6 +2304,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment
 - [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id
 - [OPS-149](#ops-149-finish-a-deployment) Finish a deployment
+- [OPS-150](#ops-150-build-a-deployment) Build a deployment
 <!-- /generated:group deploy-pipeline-ops -->
 
 #### OPS-01 Cancel superseded push-triggered deploys
@@ -2349,7 +2363,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** deploy.yml is the main pipeline, triggered by a push to main. It synths CDK, runs tests, deploys infrastructure and app code, then validates the result. Once validation passes it atomically moves the prod apex domain to the new deployment.
 - **Run:** `git push origin main`; `gh workflow run deploy.yml -f deployment-name=<name>`
 - **Entry:** `.github/workflows/deploy.yml`
-- **Files:** .github/workflows/deploy.yml, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-finish.yml
+- **Files:** .github/workflows/deploy.yml, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-finish.yml, .github/workflows/deploy-build.yml
 - **Keywords:** deploy pipeline, prod apex, cdk synth, push to main, deployment-name, full deploy
 - **Related:** OPS-04, OPS-09
 
@@ -2509,6 +2523,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `.github/workflows/deploy-finish.yml`
 - **Files:** .github/workflows/deploy-finish.yml
 - **Keywords:** deploy finish, last known good, promote ci apex, DORA row, destroy previous, workflow_call, deploy phase
+- **Related:** OPS-06, OPS-147
+
+#### OPS-150 Build a deployment
+
+- **Use when:** reading or changing how one deployment builds before its stacks deploy: the Maven package, the Docker image, the ECR pushes and the secret check.
+- **Does:** deploy-build.yml is called by deploy.yml. It packages the CDK jars, builds the base image, pushes it to ECR in eu-west-2 and us-east-1, validates the required secrets, and reports each result to the caller.
+- **Run:** no command; deploy.yml calls it (see OPS-06)
+- **Entry:** `.github/workflows/deploy-build.yml`
+- **Files:** .github/workflows/deploy-build.yml
+- **Keywords:** deploy build, maven package, docker build, push images, validate secrets, workflow_call, deploy phase
 - **Related:** OPS-06, OPS-147
 
 ### ci slot pool and sweep (OPS)
@@ -6248,7 +6272,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6505,7 +6529,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
 - canonical form: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
-- cap: [BILL-47](#bill-47-release-held-commission-lines-daily)
+- cap: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - capability: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - capacity: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - capacity cap: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
@@ -6514,6 +6538,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - caption overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - card hold: [BILL-47](#bill-47-release-held-commission-lines-daily)
+- cash: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
@@ -6640,7 +6665,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
@@ -6833,12 +6858,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dependency tracking: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - dependency update: [DEV-22](#dev-22-clean-and-update-local-build-state), [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dependency updates: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
+- deploy build: [OPS-150](#ops-150-build-a-deployment)
 - deploy destroy run: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - deploy environment: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - deploy finish: [OPS-149](#ops-149-finish-a-deployment)
 - deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
-- deploy phase: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment)
+- deploy phase: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - deploy role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - deploy stacks: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment)
@@ -6915,7 +6941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - do-next agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - do-next skill: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - do-next-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
-- docker build: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
+- docker build: [OPS-150](#ops-150-build-a-deployment), [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - docker image: [OPS-51](#ops-51-publish-build-artifacts-and-documentation), [OPS-114](#ops-114-provision-ecr-image-repositories), [SS-05](#ss-05-run-the-diya-gl-cli)
 - document client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - document submission: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -7419,7 +7445,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - keyboard nav: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - keyword forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - keyword performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
-- kill switch: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
+- kill switch: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - kind helpers: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
@@ -7529,6 +7555,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
+- maven package: [OPS-150](#ops-150-build-a-deployment)
 - maximize clicks bidding: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
@@ -7570,6 +7597,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - minimum functionality standards: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
+- minimum payout: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - mint state: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - missed night: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - mock billing: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -7752,7 +7780,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
-- payout: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
+- payout: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7908,6 +7936,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - purchase reconciliation: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - purchases lines: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - push and pr trigger: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- push images: [OPS-150](#ops-150-build-a-deployment)
 - push to main: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
@@ -8051,6 +8080,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revenue daily: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - reversal: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- reversal netting: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review document: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
@@ -8124,7 +8154,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scenes to record: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - scheduled alert: [OPS-37](#ops-37-check-https-certificate-expiry)
 - scheduled check: [OPS-32](#ops-32-detect-cloudformation-drift)
-- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
+- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - scheduled pr: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - scheduled query: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
@@ -8294,7 +8324,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - streamable http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
-- stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application)
+- stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - stripe events resend: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -8376,7 +8406,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - tax sources: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
-- tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - tear down deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
@@ -8450,6 +8480,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- transfer: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - transform: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -8509,6 +8540,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ux review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - v_pass_performance: [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- validate secrets: [OPS-150](#ops-150-build-a-deployment)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
@@ -8615,7 +8647,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - worker handler: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - workflow lint: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
-- workflow_call: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment)
+- workflow_call: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
 - workflow_dispatch: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - workload identity: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)

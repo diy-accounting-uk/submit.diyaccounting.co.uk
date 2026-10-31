@@ -29,19 +29,12 @@ import {
 import { getAffiliate } from "../../data/dynamoDbPassRepository.js";
 import { getSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { getBundlesByHashedSub } from "../../data/dynamoDbBundleRepository.js";
+import { taxYearOf } from "../../lib/ukTaxYear.js";
 
 const logger = createLogger({ source: "app/functions/account/commissionRelease.js" });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const COMMISSION_PREFIX = "commission#";
-
-/** The UK tax year a UTC instant falls in, as "2026-27"; the year starts on 6 April. */
-export function taxYearOf(date) {
-  const year = date.getUTCFullYear();
-  const startsThisYear = date.getUTCMonth() > 3 || (date.getUTCMonth() === 3 && date.getUTCDate() >= 6);
-  const startYear = startsThisYear ? year : year - 1;
-  return `${startYear}-${String((startYear + 1) % 100).padStart(2, "0")}`;
-}
 
 function liveBundles(bundles) {
   return bundles.filter((bundle) => bundle.stripeSubscriptionId && bundle.subscriptionStatus === "active");

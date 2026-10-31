@@ -30,6 +30,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
+import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -161,6 +162,9 @@ public class AccountStack extends Stack {
     public Function commissionCreditPayoutLambda;
     public ILogGroup commissionCreditPayoutLambdaLogGroup;
     public Rule commissionCreditPayoutSchedule;
+    public Function commissionCashPayoutLambda;
+    public ILogGroup commissionCashPayoutLambdaLogGroup;
+    public Rule commissionCashPayoutSchedule;
 
     public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
     public Function sessionBeaconPostLambda;
@@ -1620,6 +1624,9 @@ public class AccountStack extends Stack {
         bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passGeneratePostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passGeneratePostLambda, region, account, props.envName());
+        // passGeneratePost marks a family affiliate, so it reads the family affiliate list
+        FamilyAffiliateEmailsHelper.grantFamilyAffiliateEmailsAccess(
+                this.passGeneratePostLambda, region, account, props.envName());
         this.passGeneratePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -1812,7 +1819,11 @@ public class AccountStack extends Stack {
         this.commissionCreditPayoutLambda = commissionCreditPayoutLambdaConstruct.ingestLambda;
         this.commissionCreditPayoutLambdaLogGroup = commissionCreditPayoutLambdaConstruct.logGroup;
         commissionsTable.grant(
-                this.commissionCreditPayoutLambda, "dynamodb:GetItem", "dynamodb:Query", "dynamodb:UpdateItem");
+                this.commissionCreditPayoutLambda,
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem");
         bundlesTable.grant(this.commissionCreditPayoutLambda, "dynamodb:Query");
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
@@ -1838,6 +1849,58 @@ public class AccountStack extends Stack {
         infof(
                 "Created Commission Credit Payout Lambda %s with monthly schedule",
                 this.commissionCreditPayoutLambda.getNode().getId());
+
+        // ============================================================================
+        // Commission Cash Payout Lambda (EventBridge scheduled, monthly, after the credit payout)
+        // ============================================================================
+        var commissionCashPayoutLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        withStripeSecretArns(commissionCashPayoutLambdaEnv, props);
+        var commissionCashPayoutLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionCashPayoutLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionCashPayoutLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionCashPayoutLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionCashPayoutLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionCashPayoutProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(commissionCashPayoutLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionCashPayoutLambdaConstruct);
+        this.commissionCashPayoutLambda = commissionCashPayoutLambdaConstruct.ingestLambda;
+        this.commissionCashPayoutLambdaLogGroup = commissionCashPayoutLambdaConstruct.logGroup;
+        commissionsTable.grant(
+                this.commissionCashPayoutLambda,
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem");
+        passesTable.grant(this.commissionCashPayoutLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        grantStripeSecrets(this.commissionCashPayoutLambda, props);
+
+        this.commissionCashPayoutSchedule = Rule.Builder.create(
+                        this, props.sharedNames().account.commissionCashPayoutLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.commissionCashPayoutLambdaFunctionName + "-schedule")
+                .description("Transfer payable commission cash lines to affiliates' Stripe Connect accounts on the 1st"
+                        + " of each month")
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("15").hour("5").day("1").build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.commissionCashPayoutLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Commission Cash Payout Lambda %s with monthly schedule",
+                this.commissionCashPayoutLambda.getNode().getId());
 
         // ============================================================================
         // Session Beacon POST Lambda (public, no auth)

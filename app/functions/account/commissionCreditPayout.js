@@ -17,7 +17,7 @@ import { createLogger } from "../../lib/logger.js";
 import { validateEnv } from "../../lib/env.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { loadReferralConfig } from "../../services/referralConfig.js";
-import { getLineByKey, queryPayablePointers, markLinePaid } from "../../data/dynamoDbCommissionRepository.js";
+import { getLineByKey, queryPayablePointers, markLinePaid, PAYABLE_CREDIT_PARTITION } from "../../data/dynamoDbCommissionRepository.js";
 import { getBundlesByHashedSub } from "../../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/commissionCreditPayout.js" });
@@ -82,7 +82,7 @@ export async function handler() {
   const stripe = await getStripeClient({ test: false });
   const customerByReferrer = new Map();
 
-  const pointers = await queryPayablePointers();
+  const pointers = await queryPayablePointers(PAYABLE_CREDIT_PARTITION);
   for (const pointer of pointers) {
     summary.considered += 1;
     const referrerHash = pointer.linePk.slice(COMMISSION_PREFIX.length);

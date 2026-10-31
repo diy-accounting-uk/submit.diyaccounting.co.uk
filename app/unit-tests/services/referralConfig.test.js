@@ -16,6 +16,22 @@ describe("services/referralConfig", () => {
     expect(getTier(config, "family").rateBps).toBe(10000);
   });
 
+  test("the real file keeps the cash payout switched off and gives each connect tier a minimum payout", () => {
+    const config = loadReferralConfig();
+    expect(config.ledger.payCash).toBe(false);
+    for (const tier of config.tiers.filter((t) => t.payout === "connect")) {
+      expect(tier.minPayoutPence).toBeGreaterThan(0);
+    }
+  });
+
+  test("a connect tier without minPayoutPence is refused", () => {
+    const config = valid();
+    config.tiers[1].payout = "connect";
+    expect(() => validateReferralConfig(config)).toThrow(/connect tier 'casual' must be cash with a positive integer minPayoutPence/);
+    config.tiers[1].minPayoutPence = 2000;
+    expect(() => validateReferralConfig(config)).not.toThrow();
+  });
+
   test("a duplicate tier id is refused", () => {
     const config = valid();
     config.tiers.push({ ...cash });
@@ -58,5 +74,13 @@ describe("services/referralConfig", () => {
     expect(resolveTierId(config, { state: "approved", tier: "casual" })).toBe("casual");
     expect(resolveTierId(config, { state: "applied", tier: "casual" })).toBe("customer");
     expect(resolveTierId(config, { state: "ended", tier: "casual" })).toBe("customer");
+  });
+
+  test("resolveTierId gives a family affiliate the family tier unless its affiliate item has ended", () => {
+    const config = valid();
+    expect(resolveTierId(config, null, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "approved", tier: "casual" }, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "applied", tier: "casual" }, { family: true })).toBe("family");
+    expect(resolveTierId(config, { state: "ended", tier: "family" }, { family: true })).toBe("customer");
   });
 });

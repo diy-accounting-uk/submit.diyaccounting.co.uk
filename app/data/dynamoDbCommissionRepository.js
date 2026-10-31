@@ -18,12 +18,27 @@ export const conversionsSk = (code, day) => `conversions#${code}#${day}`;
 export const heldSk = (releaseAt, referrerHash, invoiceId) => `${releaseAt}#${referrerHash}#${invoiceId}`;
 export const payableSk = (referrerHash, lineSortKey) => `${referrerHash}#${lineSortKey}`;
 
+export const PAYABLE_CREDIT_PARTITION = "payable";
+export const PAYABLE_CONNECT_PARTITION = "payable#connect";
+export const payoutSk = (month) => `payout#${month}`;
+
+/** The partition of a line's payable pointer: credit lines and Connect cash lines have one; other lines have none. */
+export function payablePointerPartition(line) {
+  if (line.form === "credit") return PAYABLE_CREDIT_PARTITION;
+  if (line.form === "cash" && line.payout === "connect") return PAYABLE_CONNECT_PARTITION;
+  return null;
+}
+
 function payablePointerItem(tableName, line) {
   const referrerHash = line.pk.slice("commission#".length);
   return {
     TableName: tableName,
-    Item: { pk: "payable", sk: payableSk(referrerHash, line.sk), linePk: line.pk, lineSk: line.sk },
+    Item: { pk: payablePointerPartition(line), sk: payableSk(referrerHash, line.sk), linePk: line.pk, lineSk: line.sk },
   };
+}
+
+function payablePointerKey(line) {
+  return { pk: payablePointerPartition(line), sk: payableSk(line.pk.slice("commission#".length), line.sk) };
 }
 
 function table() {
@@ -285,7 +300,7 @@ export async function releaseLine(line, { now, payableMonth, payableTaxYear, tot
     }
     items.push({ Update: update });
   }
-  if (line.form === "credit") items.push({ Put: payablePointerItem(tableName, line) });
+  if (payablePointerPartition(line)) items.push({ Put: payablePointerItem(tableName, line) });
   try {
     await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
     return { released: true };
@@ -362,10 +377,8 @@ export async function reversePayableLine(line, { reason, now, totals }) {
       },
     })),
   ];
-  if (line.form === "credit") {
-    items.push({
-      Delete: { TableName: tableName, Key: { pk: "payable", sk: payableSk(line.pk.slice("commission#".length), line.sk) } },
-    });
+  if (payablePointerPartition(line)) {
+    items.push({ Delete: { TableName: tableName, Key: payablePointerKey(line) } });
   }
   try {
     await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
@@ -377,13 +390,13 @@ export async function reversePayableLine(line, { reason, now, totals }) {
 }
 
 /**
- * Write the negative line that offsets a paid line, with its payable pointer when it is a credit
- * line. Returns false when it already exists.
+ * Write the negative line that offsets a paid line, with its payable pointer when its form and
+ * payout have one. Returns false when it already exists.
  */
 export async function putReversalLine(reversal) {
   const tableName = table();
   const items = [{ Put: { TableName: tableName, Item: reversal, ConditionExpression: "attribute_not_exists(pk)" } }];
-  if (reversal.form === "credit") items.push({ Put: payablePointerItem(tableName, reversal) });
+  if (payablePointerPartition(reversal)) items.push({ Put: payablePointerItem(tableName, reversal) });
   try {
     await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
     return true;
@@ -393,19 +406,19 @@ export async function putReversalLine(reversal) {
   }
 }
 
-/** The pointers of credit lines that are payable, in one Query on the payable partition. */
-export async function queryPayablePointers() {
+/** The pointers of payable lines in one pointer partition, in one Query by key. */
+export async function queryPayablePointers(partition) {
   return queryAll((startKey) => ({
     KeyConditionExpression: "pk = :payable",
-    ExpressionAttributeValues: { ":payable": "payable" },
+    ExpressionAttributeValues: { ":payable": partition },
     ExclusiveStartKey: startKey,
   }));
 }
 
 /**
  * Mark a payable line paid and delete its payable pointer, in one transaction. `fields` are extra
- * attributes to record (the balance transaction id, a shortfall). Returns false when the line is
- * no longer payable, which means another run already paid it.
+ * attributes to record (the balance transaction or transfer id, a shortfall). Returns false when
+ * the line is no longer payable, which means another run already paid it.
  */
 export async function markLinePaid(line, { now, fields = {} }) {
   const tableName = table();
@@ -417,33 +430,86 @@ export async function markLinePaid(line, { now, fields = {} }) {
     values[`:f${index}`] = value;
     sets.push(`#f${index} = :f${index}`);
   });
+  const items = [
+    {
+      Update: {
+        TableName: tableName,
+        Key: { pk: line.pk, sk: line.sk },
+        UpdateExpression: `SET ${sets.join(", ")}`,
+        ConditionExpression: "#state = :payable",
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      },
+    },
+  ];
+  if (payablePointerPartition(line)) items.push({ Delete: { TableName: tableName, Key: payablePointerKey(line) } });
+  try {
+    await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
+    return true;
+  } catch (error) {
+    if (isCancelled(error)) return false;
+    throw error;
+  }
+}
+
+/** The payout items of one referrer, one per month a cash payout was started. */
+export async function queryPayouts(referrerHash) {
+  return queryAll((startKey) => ({
+    KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+    ExpressionAttributeValues: { ":pk": commissionPk(referrerHash), ":prefix": "payout#" },
+    ExclusiveStartKey: startKey,
+  }));
+}
+
+/**
+ * Write a pending payout item before its transfer is made: the lines it pays, its net amount, its
+ * month and tax year. Returns false when the month already has a payout item.
+ */
+export async function putPendingPayout({ referrerHash, month, taxYear, amountPence, lineSks, stripeAccountId, now }) {
   try {
     await executeDynamoDbCommand(
       (module) =>
-        new module.TransactWriteCommand({
-          TransactItems: [
-            {
-              Update: {
-                TableName: tableName,
-                Key: { pk: line.pk, sk: line.sk },
-                UpdateExpression: `SET ${sets.join(", ")}`,
-                ConditionExpression: "#state = :payable",
-                ExpressionAttributeNames: names,
-                ExpressionAttributeValues: values,
-              },
-            },
-            {
-              Delete: {
-                TableName: tableName,
-                Key: { pk: "payable", sk: payableSk(line.pk.slice("commission#".length), line.sk) },
-              },
-            },
-          ],
+        new module.PutCommand({
+          TableName: table(),
+          Item: {
+            pk: commissionPk(referrerHash),
+            sk: payoutSk(month),
+            month,
+            taxYear,
+            amountPence,
+            lineSks,
+            stripeAccountId,
+            state: "pending",
+            createdAt: now,
+            updatedAt: now,
+          },
+          ConditionExpression: "attribute_not_exists(pk)",
         }),
     );
     return true;
   } catch (error) {
-    if (isCancelled(error)) return false;
+    if (error.name === "ConditionalCheckFailedException") return false;
+    throw error;
+  }
+}
+
+/** Mark a pending payout item paid with its transfer id. Returns false when it is not pending. */
+export async function markPayoutPaid({ referrerHash, month, transferId, now }) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: table(),
+          Key: { pk: commissionPk(referrerHash), sk: payoutSk(month) },
+          UpdateExpression: "SET #state = :paid, transferId = :transferId, paidAt = :now, updatedAt = :now",
+          ConditionExpression: "#state = :pending",
+          ExpressionAttributeNames: { "#state": "state" },
+          ExpressionAttributeValues: { ":paid": "paid", ":pending": "pending", ":transferId": transferId, ":now": now },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return false;
     throw error;
   }
 }

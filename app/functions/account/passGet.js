@@ -18,6 +18,7 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http400BadRequestResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { checkPass } from "../../services/passService.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/passGet.js" });
 
@@ -48,6 +49,18 @@ export async function ingestHandler(event) {
 
   try {
     const result = await checkPass(code);
+
+    // A visit to a pass link reaches here from bundles.html before any sign-in. The event names the
+    // issuer's hash and the pass type, never the code, so the lake can count visits per issuer.
+    if (result.pass?.issuedBy) {
+      await publishActivityEvent({
+        event: "pass-link-visited",
+        summary: "Pass link opened",
+        actor: "visitor",
+        flow: "user-journey",
+        detail: { passTypeId: result.pass.passTypeId, issuedBy: result.pass.issuedBy, valid: result.valid },
+      });
+    }
 
     return http200OkResponse({
       request,

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import fs from "node:fs";
+import TOML from "@iarna/toml";
 import { describe, test, expect } from "vitest";
 import { conversionToPaidObjective } from "@app/lib/operatorSnapshot/conversionToPaidObjective.js";
 
@@ -49,5 +51,33 @@ describe("conversionToPaidObjective", () => {
       expect(observation.valueExpr).toBe(`${state}_pence / 100.0`);
       expect(observation.aggregation).toBe("sum");
     }
+  });
+
+  test("the commission earned rows read each cost group's pence from the daily view in pounds", () => {
+    const byId = Object.fromEntries(conversionToPaidObjective.observations.map((observation) => [observation.id, observation]));
+    for (const group of ["referral-credit", "affiliate-cash", "family-cash"]) {
+      const observation = byId[`commission-earned-${group}-gbp`];
+      expect(observation, group).toBeDefined();
+      expect(observation).toMatchObject({
+        view: "v_commission_earned_daily",
+        dayColumn: "day",
+        unit: "gbp",
+        valueExpr: "earned_pence / 100.0",
+        aggregation: "sum",
+        where: `cost_group = '${group}'`,
+      });
+    }
+  });
+
+  test("the daily view groups the tiers of referrals.toml: credit, connect cash and bank-transfer cash", () => {
+    const tiers = TOML.parse(fs.readFileSync("referrals.toml", "utf-8")).tiers;
+    const sql = fs.readFileSync("infra/main/resources/analytics/views/v_commission_earned_daily.sql", "utf-8");
+    const idsFor = (predicate) => tiers.filter(predicate).map((tier) => tier.id);
+    expect(idsFor((tier) => tier.payout === "customer-balance")).toEqual(["customer"]);
+    expect(idsFor((tier) => tier.payout === "connect")).toEqual(["casual", "creator"]);
+    expect(idsFor((tier) => tier.payout === "bank-transfer")).toEqual(["family"]);
+    expect(sql).toContain("WHEN tier = 'customer' THEN 'referral-credit'");
+    expect(sql).toContain("WHEN tier IN ('casual', 'creator') THEN 'affiliate-cash'");
+    expect(sql).toContain("WHEN tier = 'family' THEN 'family-cash'");
   });
 });

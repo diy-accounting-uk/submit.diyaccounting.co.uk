@@ -8,6 +8,7 @@ payCredit = true              # true: the monthly job moves payable credit lines
 defaultTier = "customer"
 volumeHoldConversionsPerDay = 5
 earlyCancelDays = 30
+payCash = false               # true: the monthly job transfers payable Connect cash lines to approved affiliates
 
 [[tiers]]
 id = "customer"

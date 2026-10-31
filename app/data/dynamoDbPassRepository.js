@@ -351,6 +351,44 @@ export async function getAffiliate(referrerHash) {
 }
 
 /**
+ * Mark an account as a family affiliate. Two items: family#<hashedSub>, which accrual reads by the
+ * referrer's hash, and familyemail#<emailKey>, which the operator snapshot reads to find the hash of
+ * an email on the family list. emailKey is a keyed hash of the email; no plaintext email is stored.
+ */
+export async function putFamilyAffiliate({ hashedSub, emailKey, now }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) => new module.PutCommand({ TableName: tableName, Item: { pk: `family#${hashedSub}`, markedAt: now } }),
+  );
+  await executeDynamoDbCommand(
+    (module) => new module.PutCommand({ TableName: tableName, Item: { pk: `familyemail#${emailKey}`, hashedSub, markedAt: now } }),
+  );
+  logger.info({ message: "Family affiliate marked" });
+}
+
+/**
+ * The family marker of a referrer, or null.
+ */
+export async function getFamilyAffiliate(referrerHash) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) => new module.GetCommand({ TableName: tableName, Key: { pk: `family#${referrerHash}` } }),
+  );
+  return result.Item || null;
+}
+
+/**
+ * The family marker an email key names, or null.
+ */
+export async function getFamilyAffiliateByEmailKey(emailKey) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) => new module.GetCommand({ TableName: tableName, Key: { pk: `familyemail#${emailKey}` } }),
+  );
+  return result.Item || null;
+}
+
+/**
  * Set the tier and state of a referrer's affiliate item. Other attributes on the item are kept.
  * approvedAt is set when the state is approved. Returns the item as stored.
  */
