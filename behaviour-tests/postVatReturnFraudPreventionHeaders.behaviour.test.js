@@ -146,12 +146,7 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test("Verify fraud prevention headers for VAT return submission", async ({ page }, testInfo) => {
-  // Only run in synthetic mode
-  if (!isSyntheticMode()) {
-    console.log("[SKIP] Fraud prevention headers test is only run in synthetic mode");
-    test.skip();
-    return;
-  }
+  test.skip(!isSyntheticMode(), "the fraud prevention headers validation feedback needs HMRC_ACCOUNT=synthetic");
 
   const testUrl = baseUrl;
 
