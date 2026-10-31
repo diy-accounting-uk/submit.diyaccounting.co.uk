@@ -577,6 +577,13 @@ test.describe("Operator Dashboard", () => {
         body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.charts.js"), "utf-8"),
       });
     });
+    await page.route("**/dashboard.awslinks.js*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.awslinks.js"), "utf-8"),
+      });
+    });
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
     });
@@ -598,6 +605,25 @@ test.describe("Operator Dashboard", () => {
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "domcontentloaded" });
     await delay(200);
   }
+
+  test("lists AWS console links for the figures the page does not chart, naming each account", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const links = page.locator("#awsLinksGroups a");
+    expect(await links.count()).toBeGreaterThan(20);
+    const first = links.first();
+    await expect(first).toHaveAttribute(
+      "href",
+      /^https:\/\/eu-west-2\.console\.aws\.amazon\.com\/cloudwatch\/home\?region=eu-west-2#metricsV2:graph=/,
+    );
+    await expect(first).toContainText("account submit-prod 972912397388");
+    await expect(page.locator("#awsLinksGroups a", { hasText: "account submit-ci 367191799875" }).first()).toBeVisible();
+    await expect(page.locator("#awsLinksGroups h3")).toHaveText([
+      "Replaces the CloudWatch analytics dashboard",
+      "Replaces the CloudWatch operations dashboard",
+    ]);
+  });
 
   test("renders the eight objectives in order", async ({ page }) => {
     await setupRoutes(page);
