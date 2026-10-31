@@ -673,6 +673,7 @@ describe("operatorSnapshotPublish", () => {
         "ads-cost",
         "ads-paid-landings",
         "ads-cost-per-paid-landing",
+        "commission-earned",
         "ads-conversions",
       ]);
       const contribution = paid.modes.find((mode) => mode.id === "contribution");
@@ -696,6 +697,27 @@ describe("operatorSnapshotPublish", () => {
       expect(paid.modes.find((mode) => mode.id === "ads-cost-per-paid-landing").unit).toBe("gbp");
       expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
       expect(paid.modes.find((mode) => mode.id === "ads-cpc").unit).toBe("gbp");
+    });
+
+    test("the Conversion to paid chart draws commission earned per cost group in pounds from the daily view", () => {
+      const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
+      const mode = paid.modes.find((candidate) => candidate.id === "commission-earned");
+
+      expect(mode.unit).toBe("gbp");
+      expect(mode.componentOrder).toEqual(["referral-credit", "affiliate-cash", "family-cash"]);
+      expect(mode.sql).toContain("FROM   v_commission_earned_daily");
+      expect(mode.sql).toContain("earned_pence / 100.0");
+      for (const id of mode.componentOrder) {
+        expect(mode.labelOf(id), id).not.toBe(id);
+        expect(mode.descriptionOf(id), id).toBeTruthy();
+      }
+      for (const group of mode.componentOrder) {
+        const row = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-paid").observations.find(
+          (observation) => observation.id === `commission-earned-${group}-gbp`,
+        );
+        expect(row.where).toBe(`cost_group = '${group}'`);
+        expect(betterDirection(row.id)).toBe("down");
+      }
     });
 
     test("buildPaidSubscribers reads the latest month by channel and bundle and adds the totals", async () => {

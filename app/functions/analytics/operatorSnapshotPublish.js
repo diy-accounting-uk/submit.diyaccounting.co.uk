@@ -152,6 +152,9 @@ const BETTER_DOWN_IDS = [
   "cost-cloudfront-usd",
   "ads-cost-gbp",
   "ads-cost-per-paid-landing-gbp",
+  "commission-earned-referral-credit-gbp",
+  "commission-earned-affiliate-cash-gbp",
+  "commission-earned-family-cash-gbp",
   "security-hub-open-findings",
   "security-hub-critical-findings",
   "guardduty-open-findings",
@@ -1244,6 +1247,35 @@ export function buildDailyChartDefinitions() {
           sql:
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(cost_per_paid_landing_gbp AS double) AS value\n` +
             `FROM   v_ads_cost_per_paid_landing_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_paid_landing_gbp IS NOT NULL`,
+        },
+        {
+          id: "commission-earned",
+          label: "Commission earned",
+          unit: "gbp",
+          total: "All commission",
+          totalDescription: "Referral credit, affiliate cash and family cash earned, added together, in pounds.",
+          componentOrder: ["referral-credit", "affiliate-cash", "family-cash"],
+          labelOf: (id) =>
+            ({
+              "referral-credit": "Customer referral credit",
+              "affiliate-cash": "Approved-affiliate cash",
+              "family-cash": "Family affiliate cash",
+            })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "referral-credit": "Commission earned in the day by referred payments of the customer tier, in pounds, reversals netted.",
+              "affiliate-cash":
+                "Commission earned in the day by referred payments of the casual and creator tiers, in pounds, reversals netted.",
+              "family-cash": "Commission earned in the day by referred payments of the family tier, in pounds, reversals netted.",
+            })[id],
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "cost_group",
+            valueExpression: "earned_pence / 100.0",
+            view: "v_commission_earned_daily",
+            dayColumn: "day",
+            where: "cost_group <> 'other'",
+          }),
         },
         {
           id: "ads-conversions",

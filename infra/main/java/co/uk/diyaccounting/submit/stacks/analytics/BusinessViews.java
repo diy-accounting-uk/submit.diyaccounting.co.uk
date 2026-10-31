@@ -273,6 +273,11 @@ public class BusinessViews extends Construct {
                             + " this month in pence, live mode only",
                     List.of("dynamo_commissions")),
             new ViewDefinition(
+                    "v_commission_earned_daily",
+                    "Commission earned in pence by day of charge and cost group (referral credit, affiliate cash,"
+                            + " family cash), reversals netted, live mode only",
+                    List.of("dynamo_commissions")),
+            new ViewDefinition(
                     "v_pass_issuer_daily",
                     "Per pass issuer and day: passes generated, link visits, passes redeemed and passes converted",
                     List.of("activity_events_all", "dynamo_passes", "dynamo_commissions")),
