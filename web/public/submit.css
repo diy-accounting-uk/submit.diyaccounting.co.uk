@@ -5567,6 +5567,14 @@ table.observations th {
   #objectivesContainer [data-objective-slot] table.observations {
     min-width: 36rem;
   }
+
+  #objectivesContainer [data-objective-slot] table.observations th:nth-child(1) {
+    min-width: 10rem;
+  }
+
+  #objectivesContainer [data-objective-slot] table.observations th:nth-child(8) {
+    min-width: 11rem;
+  }
 }
 
 /* The "Last updated" subtitles under the window columns. */
