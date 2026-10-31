@@ -36,7 +36,22 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         app.synth();
 
         var result = ActivityPublisherGrants.check(app);
-        assertTrue(result.publishers() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertTrue(result.checked() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertEquals(List.of(), result.ungranted());
+    }
+
+    @Test
+    void everyLambdaBehindAnAuthorizerCanReadTheOperatorList() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+
+        var result = ActivityPublisherGrants.checkAuthenticatedApiLambdas(app, submitApplication);
+        assertTrue(result.checked() > 0, "no ApiLambda sits behind an authorizer");
         assertEquals(List.of(), result.ungranted());
     }
 
@@ -241,16 +256,16 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 25 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 26 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
-        // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
+        // interestPost(1), passGet(1), passPost(1), passAdminPost(1), passReleasePost(1),
         // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), commissionRelease(1),
         // sessionBeaconPost(1),
         // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 25);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
@@ -500,9 +515,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/hmrc/itsa/bsas/foreign-property and POST its /adjust path each sit on their own
         // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208. PUT
         // /api/v1/account/settings sits on its own unshared path, adding its primary route and its
-        // auto-HEAD route, for 208 + 2 = 210 in total.
+        // auto-HEAD route, for 208 + 2 = 210. POST /api/v1/pass/release sits on its own unshared path,
+        // adding its primary route and its auto-HEAD route, for 210 + 2 = 212 in total.
         assertEquals(
-                210,
+                212,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

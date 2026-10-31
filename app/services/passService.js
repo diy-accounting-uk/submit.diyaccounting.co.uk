@@ -330,6 +330,33 @@ export async function getPassRecord(code) {
 }
 
 /**
+ * Change the use count at which a pass is held for review.
+ *
+ * @param {string} code - The passphrase code
+ * @param {Object} change - Exactly one of raiseBy, reviewLimit or remove
+ * @param {number} [change.raiseBy] - Positive integer: the pass may be used this many more times before the hold
+ * @param {number} [change.reviewLimit] - Positive integer: the new limit
+ * @param {boolean} [change.remove] - Remove the limit
+ * @returns {Promise<Object|null>} The updated pass, or null when the pass does not exist
+ */
+export async function releasePass(code, { raiseBy, reviewLimit, remove }) {
+  const pass = await passRepository.getPass(code);
+  if (!pass) return null;
+
+  let newLimit;
+  if (remove) {
+    newLimit = null;
+  } else if (raiseBy !== undefined) {
+    const base = Math.max(pass.reviewLimit ?? pass.useCount, pass.useCount);
+    newLimit = base + raiseBy;
+  } else {
+    newLimit = reviewLimit;
+  }
+
+  return passRepository.setReviewLimit(code, newLimit, new Date().toISOString());
+}
+
+/**
  * Claim the one referral redemption an account may make, ever.
  *
  * @returns {Promise<boolean>} false when the account already holds one

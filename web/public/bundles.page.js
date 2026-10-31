@@ -1104,6 +1104,10 @@ async function fetchMyGeneratedPasses(append) {
 
     if (!res.ok || !data.passes) return;
 
+    const bundleResponse = await (await import("/lib/services/viewer-settings.js")).fetchBundleResponse();
+    const viewerIsOperator =
+      viewer.operatorFeatures && (bundleResponse?.bundles ?? []).some((bundle) => bundle.bundleId === "operator" && bundle.allocated);
+
     const section = document.getElementById("myGeneratedPasses");
     const list = document.getElementById("generatedPassesList");
     const emptyMsg = document.getElementById("generatedPassesEmpty");
@@ -1172,6 +1176,17 @@ async function fetchMyGeneratedPasses(append) {
             },
             "View QR",
           ),
+          pass.heldForReview && viewerIsOperator
+            ? domEl(
+                "button",
+                {
+                  "type": "button",
+                  "class": "btn btn-small btn-primary pass-release",
+                  "data-pass-code": pass.code,
+                },
+                "Release",
+              )
+            : null,
         ),
       );
       list.appendChild(card);
@@ -1219,6 +1234,27 @@ document.addEventListener("click", async (e) => {
       btn.textContent = "Copy Link";
     }, 2000);
   } catch {}
+});
+
+// Release a pass held for review: the operator lets it run for another thousand uses
+const RELEASE_RAISE_BY = 1000;
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".pass-release");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/pass/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: btn.getAttribute("data-pass-code"), raiseBy: RELEASE_RAISE_BY }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showStatus(`Pass ${btn.getAttribute("data-pass-code")} released`, "success");
+    fetchMyGeneratedPasses(false);
+  } catch (err) {
+    btn.disabled = false;
+    showStatus(`The pass was not released (${err.message})`, "error");
+  }
 });
 
 // Load more button

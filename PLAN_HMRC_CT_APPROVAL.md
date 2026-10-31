@@ -84,7 +84,7 @@ HMRC recommends), posted to the Transaction Engine. The GovTalk envelope differs
 House's: `EnvelopeVersion` 2.0, `Class` `HMRC-CT-CT600`, `Function` `submit`, `Role` `principal`,
 `Keys/Key Type="UTR"`, `ChannelRouting/Channel/URI` the 4-digit vendor ID, and an IRmark in
 `IRheader`. The body is `IRenvelope` in `http://www.govtalk.gov.uk/taxation/CT/5`, form CT600
-(2026) Version 3, RIM artefacts V1.994 (2025-10-10), the version `ct600-v3.toml` records. The
+(2026) Version 3, RIM artefacts V1.994 (2025-10-10), the version `../spreadsheets.diyaccounting.co.uk/app/data/filing/ct600-v3.toml` records. The
 accounts iXBRL is B34e's full document (HMRC needs the P&L, which the micro and filleted copies
 omit), built from the same figures as the Companies House copy, so one balance sheet serves both.
 The computations iXBRL follows HMRC's computations format v1.1 (sections 1 and 2:
@@ -120,7 +120,7 @@ computations box ("this period"). Box 155 is the computations' adjusted profit
 disagrees with the result by more than £5. It refuses: a book with no `CT600` sheet (not a Company
 book); a company type other than 0; a period over 12 months or starting before 1 April 2015; a
 trading loss (box 780 has no diya-gl cell); net non-trading loan debits; tax paid beyond the
-charge (the repayment boxes). `ct600-v3.toml` names the spreadsheets rows T2, T7 and T8 for the
+charge (the repayment boxes). `../spreadsheets.diyaccounting.co.uk/app/data/filing/ct600-v3.toml` names the spreadsheets rows T2, T7 and T8 for the
 remaining cells.
 
 TPVS accepts the whole payload: `node scripts/hmrc-tpvs-ct600.js` builds the CT600, the
@@ -148,7 +148,7 @@ book, the outputs `../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.j
 | P&L, current year | `PubP&L` F7 to F54 | B34g1 | in the output, unread |
 | Tax computation | `CorporationTax` K5 to K39 | B34g1 | in the output, unread |
 | CT600 boxes | `CT600` cells | B34g1 | 31 of 276 boxes mapped |
-| Computation lines | `ct-computation-v1.1.toml` | B34g1 | a few lines mapped |
+| Computation lines | `../spreadsheets.diyaccounting.co.uk/app/data/filing/ct-computation-v1.1.toml` | B34g1 | a few lines mapped |
 
 Typed on the page, with no book figure: the company UTR and the CT600 declaration. A loaded book fills every field it has; the user can edit any field before the preview.
 
