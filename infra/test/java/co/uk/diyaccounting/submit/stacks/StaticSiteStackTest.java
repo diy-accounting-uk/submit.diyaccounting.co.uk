@@ -39,8 +39,7 @@ class StaticSiteStackTest {
     @Test
     void servesOneBucketBehindOneDistributionOnTheGivenHostNames() {
         Template template = synth(
-                List.of("prod-developer.diyaccounting.co.uk", "developer.diyaccounting.co.uk"),
-                List.of("reports/"));
+                List.of("prod-developer.diyaccounting.co.uk", "developer.diyaccounting.co.uk"), List.of("reports/"));
 
         template.resourceCountIs("AWS::S3::Bucket", 1);
         template.resourceCountIs("AWS::CloudFront::Distribution", 1);
