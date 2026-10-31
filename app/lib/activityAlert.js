@@ -146,8 +146,10 @@ export function resolveActorClass(explicitActor, hashedSub = null) {
   const email = context.get("userEmail") || null;
   if (email) {
     const actor = classifyActor(email);
-    if (hashedSub && actor !== "customer") nonCustomerActorBySub.set(hashedSub, actor);
-    return actor;
+    if (actor !== "customer") {
+      if (hashedSub) nonCustomerActorBySub.set(hashedSub, actor);
+      return actor;
+    }
   }
   const remembered = hashedSub ? nonCustomerActorBySub.get(hashedSub) : null;
   if (remembered) return remembered;

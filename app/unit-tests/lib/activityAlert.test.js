@@ -32,6 +32,7 @@ import {
 } from "@app/lib/activityAlert.js";
 import { context } from "@app/lib/logger.js";
 import { extractUserFromAuthorizerContext } from "@app/lib/httpResponseHelper.js";
+import { decodeJwtToken } from "@app/lib/jwtHelper.js";
 import { initializeSalt, hashSub } from "@app/services/subHasher.js";
 import { _clearOperatorsCache, warmOperators } from "@app/lib/operators.js";
 
@@ -89,6 +90,34 @@ describe("lib/activityAlert", () => {
         delete process.env.ACTIVITY_BUS_NAME;
         const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
         expect(detail.actor).toBe("operator");
+      });
+    });
+
+    describe("a handler that decodes the bearer token itself", () => {
+      const bearer = (claims) => ({ Authorization: `Bearer h.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.s` });
+
+      test("a test lane's token resolves to test-user on the event", async () => {
+        resetRememberedActors();
+        await context.run(new Map(), async () => {
+          decodeJwtToken(bearer({ sub: "s1", email: "synthetic-local@test.diyaccounting.co.uk" }));
+          expect(resolveActorClass(undefined, "hash-s1")).toBe("test-user");
+        });
+      });
+
+      test("a native-pool access token with the email as username resolves to test-user", async () => {
+        resetRememberedActors();
+        await context.run(new Map(), async () => {
+          decodeJwtToken(bearer({ sub: "s2", username: "synthetic-ci@test.diyaccounting.co.uk" }));
+          expect(resolveActorClass(undefined, "hash-s2")).toBe("test-user");
+        });
+      });
+
+      test("a real customer's token still resolves to customer", async () => {
+        resetRememberedActors();
+        await context.run(new Map(), async () => {
+          decodeJwtToken(bearer({ sub: "s3", email: "someone@example.com" }));
+          expect(resolveActorClass(undefined, "hash-s3")).toBe("customer");
+        });
       });
     });
 

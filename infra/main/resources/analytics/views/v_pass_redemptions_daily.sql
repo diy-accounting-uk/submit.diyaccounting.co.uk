@@ -3,11 +3,13 @@
 
 -- How many passes were issued and how many redeemed, by pass type?
 --
--- Issuance comes from the activity event, which carries the pass type. Redemption does not:
--- the pass-redeemed event carries the bundle granted, not the pass type, so redemptions are
--- read off the passes table's own change log instead, where every change record (insert or
--- update) carries the pass type. A redemption is a change record whose use_count rose over
--- the previous change record for the same pass.
+-- Issuance and redemption are both read off the passes table's own change log, where every
+-- change record (insert or update) carries the pass type and the pass item's actor. An issue is
+-- an insert record. The pass-generated activity event is not used: its actor can differ from the
+-- item's, and the pass-redeemed event carries the bundle granted, not the pass type.
+--
+-- A redemption is a change record whose use_count rose over the previous change record for the
+-- same pass.
 --
 -- The lag() has to run over every change record (insert and modify), not just the modifies:
 -- almost every pass is single-use, so its only modify is the redemption itself, and the
@@ -32,11 +34,12 @@
 -- so an item with no actor, or the system actor, is left out rather than read as a customer.
 CREATE OR REPLACE VIEW v_pass_redemptions_daily AS
 WITH issued AS (
-  SELECT date(event_ts) AS day,
+  SELECT date(change_ts) AS day,
          pass_type_id,
          count(*) AS passes_issued
-  FROM   activity_events_all
-  WHERE  actor = 'customer' AND event = 'pass-generated' AND pass_type_id IS NOT NULL
+  FROM   dynamo_passes
+  WHERE  change_type = 'INSERT' AND pass_type_id IS NOT NULL AND pass_type_id NOT LIKE '%-test-pass'
+    AND  actor IS NOT NULL AND actor NOT IN ('system', 'test-user', 'probe', 'synthetic', 'operator')
   GROUP  BY 1, 2),
 pass_history AS (
   SELECT change_ts,

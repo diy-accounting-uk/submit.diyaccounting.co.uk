@@ -384,6 +384,26 @@ export function extractAuthTokenFromXAuthorization(event) {
   return xAuthHeader.split(" ")[1];
 }
 
+/**
+ * Plumb userSub and email through the async context so downstream observability
+ * (activity events → telegram routing, resolveActorClass) can classify a
+ * customer-journey event by who signed in, even when the caller doesn't pass
+ * `actor` explicitly. A Cognito access token has no email claim, but a native-pool user's
+ * username is their email address, so that stands in when the claim is absent.
+ * @param {{sub?: string, email?: string, username?: string}} claims
+ */
+export function setActorContextFromClaims(claims) {
+  if (!context.getStore()) return;
+  context.set("userSub", claims.sub);
+  const signInName = claims["cognito:username"] || claims.username || "";
+  const classifiableEmail = claims.email || (signInName.includes("@") ? signInName : "");
+  if (classifiableEmail) {
+    context.set("userEmail", classifiableEmail);
+    // Load the operator list now so it is ready when a submission is classified later
+    warmOperators();
+  }
+}
+
 export function extractUserFromAuthorizerContext(event) {
   // HTTP API JWT authorizer: claims at event.requestContext.authorizer.jwt.claims
   // Custom Lambda authorizer: claims at event.requestContext.authorizer.lambda
@@ -393,21 +413,7 @@ export function extractUserFromAuthorizerContext(event) {
   const ctx = authz.jwt?.claims ?? authz.lambda ?? authz;
 
   if (ctx && ctx.sub) {
-    // Plumb userSub and email through the async context so downstream observability
-    // (activity events → telegram routing, resolveActorClass) can classify a
-    // customer-journey event by who signed in, even when the caller doesn't pass
-    // `actor` explicitly. A Cognito access token has no email claim, but a native-pool user's
-    // username is their email address, so that stands in when the claim is absent.
-    if (context.getStore()) {
-      context.set("userSub", ctx.sub);
-      const signInName = ctx["cognito:username"] || ctx.username || "";
-      const classifiableEmail = ctx.email || (signInName.includes("@") ? signInName : "");
-      if (classifiableEmail) {
-        context.set("userEmail", classifiableEmail);
-        // Load the operator list now so it is ready when a submission is classified later
-        warmOperators();
-      }
-    }
+    setActorContextFromClaims(ctx);
     return {
       sub: ctx.sub,
       username: ctx["cognito:username"] || ctx.username || ctx.sub,
