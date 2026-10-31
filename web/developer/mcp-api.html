@@ -55,26 +55,25 @@
       &quot;description&quot;: &quot;The client's name as the practice knows them, 1 to 200 characters&quot;
     },
     &quot;vrn&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;VAT registration number, 9 digits&quot;
+      &quot;description&quot;: &quot;VAT registration number, 9 digits&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;nino&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;National Insurance number&quot;
+      &quot;description&quot;: &quot;National Insurance number&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;utr&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Unique Taxpayer Reference, 10 digits&quot;
+      &quot;description&quot;: &quot;Unique Taxpayer Reference, 10 digits&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;companyNumber&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Companies House company number, 8 characters&quot;
+      &quot;description&quot;: &quot;Companies House company number, 8 characters&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;displayName&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -111,7 +110,6 @@
     &quot;clientId&quot;,
     &quot;service&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -131,11 +129,10 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;path&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Where to write the answer as JSON for the Company Tax Return page's import&quot;
+      &quot;description&quot;: &quot;Where to write the answer as JSON for the Company Tax Return page's import&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -156,15 +153,14 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;taxYear&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Override the tax year the book's dates imply, as 2025-26&quot;
+      &quot;description&quot;: &quot;Override the tax year the book's dates imply, as 2025-26&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;path&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Where to write the answer as JSON for the annual submission page's import&quot;
+      &quot;description&quot;: &quot;Where to write the answer as JSON for the annual submission page's import&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -186,23 +182,22 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;periodEndDate&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The period's end date, YYYY-MM-DD, as HMRC's obligation names it&quot;
+      &quot;description&quot;: &quot;The period's end date, YYYY-MM-DD, as HMRC's obligation names it&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;quarterlyPeriodType&quot;: {
+      &quot;description&quot;: &quot;standard (6 April quarters, the default) or calendar&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;standard&quot;,
         &quot;calendar&quot;
-      ],
-      &quot;description&quot;: &quot;standard (6 April quarters, the default) or calendar&quot;
+      ]
     },
     &quot;taxYear&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Override the tax year the book's dates imply, as 2025-26&quot;
+      &quot;description&quot;: &quot;Override the tax year the book's dates imply, as 2025-26&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -255,7 +250,6 @@
   &quot;required&quot;: [
     &quot;taxYear&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -288,7 +282,6 @@
     &quot;periodStartDate&quot;,
     &quot;periodEndDate&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -314,18 +307,17 @@
       &quot;description&quot;: &quot;The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries&quot;
     },
     &quot;periodStart&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd&quot;
+      &quot;description&quot;: &quot;The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;periodKey&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The obligation's period key, echoed back for the submit call&quot;
+      &quot;description&quot;: &quot;The obligation's period key, echoed back for the submit call&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;periodEnd&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -360,8 +352,8 @@
       &quot;description&quot;: &quot;The confirmation statement's made-up date, YYYY-MM-DD&quot;
     },
     &quot;companyType&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The company type, when the gateway needs it to resolve the request&quot;
+      &quot;description&quot;: &quot;The company type, when the gateway needs it to resolve the request&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
@@ -369,7 +361,6 @@
     &quot;codesEntryId&quot;,
     &quot;madeUpDate&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -394,14 +385,13 @@
       &quot;description&quot;: &quot;The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to check the receipt belongs to that client&quot;
+      &quot;description&quot;: &quot;A practice client's id, to check the receipt belongs to that client&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;name&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -432,23 +422,22 @@
       &quot;description&quot;: &quot;The obligation's period key, for example 18A1&quot;
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;vrn&quot;,
     &quot;periodKey&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -487,8 +476,8 @@
       &quot;description&quot;: &quot;The VAT registration date (MTD-VAT) or the client's postcode (MTD-IT)&quot;
     },
     &quot;arn&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The practice's HMRC agent reference number; stored for reuse when given, read back when omitted&quot;
+      &quot;description&quot;: &quot;The practice's HMRC agent reference number; stored for reuse when given, read back when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
@@ -496,7 +485,6 @@
     &quot;service&quot;,
     &quot;knownFact&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -516,11 +504,10 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to list that client's books instead of the practice's own&quot;
+      &quot;description&quot;: &quot;A practice client's id, to list that client's books instead of the practice's own&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -561,30 +548,29 @@
       &quot;description&quot;: &quot;VAT registration number, 9 digits&quot;
     },
     &quot;from&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;to&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;vrn&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -610,43 +596,42 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;vrn&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;VAT registration number, 9 digits; required unless clientId is given&quot;
+      &quot;description&quot;: &quot;VAT registration number, 9 digits; required unless clientId is given&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to resolve vrn from the client row instead&quot;
+      &quot;description&quot;: &quot;A practice client's id, to resolve vrn from the client row instead&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;from&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;From date, YYYY-MM-DD; defaults to the start of the current calendar year&quot;
+      &quot;description&quot;: &quot;From date, YYYY-MM-DD; defaults to the start of the current calendar year&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;to&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;To date, YYYY-MM-DD; defaults to today&quot;
+      &quot;description&quot;: &quot;To date, YYYY-MM-DD; defaults to today&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;status&quot;: {
+      &quot;description&quot;: &quot;O (Open) or F (Fulfilled); both when omitted&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;O&quot;,
         &quot;F&quot;
-      ],
-      &quot;description&quot;: &quot;O (Open) or F (Fulfilled); both when omitted&quot;
+      ]
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -674,30 +659,29 @@
       &quot;description&quot;: &quot;VAT registration number, 9 digits&quot;
     },
     &quot;from&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;to&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;vrn&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -725,30 +709,29 @@
       &quot;description&quot;: &quot;VAT registration number, 9 digits&quot;
     },
     &quot;from&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;From date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;to&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;
+      &quot;description&quot;: &quot;To date, YYYY-MM-DD; HMRC's default range when omitted&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
   &quot;required&quot;: [
     &quot;vrn&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -768,11 +751,10 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to list that client's receipts&quot;
+      &quot;description&quot;: &quot;A practice client's id, to list that client's receipts&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -805,7 +787,6 @@
     &quot;clientId&quot;,
     &quot;bookId&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -828,23 +809,22 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;path&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads; unused with cloud&quot;
+      &quot;description&quot;: &quot;Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads; unused with cloud&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;cloud&quot;: {
-      &quot;type&quot;: &quot;boolean&quot;,
-      &quot;description&quot;: &quot;Open bookId from the DIYA cloud instead of the filesystem&quot;
+      &quot;description&quot;: &quot;Open bookId from the DIYA cloud instead of the filesystem&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
     },
     &quot;bookId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The cloud book's id; required with cloud: true&quot;
+      &quot;description&quot;: &quot;The cloud book's id; required with cloud: true&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to open that client's book instead of the practice's own&quot;
+      &quot;description&quot;: &quot;A practice client's id, to open that client's book instead of the practice's own&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -881,7 +861,6 @@
     &quot;kind&quot;,
     &quot;submissionNumber&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -927,14 +906,15 @@
       &quot;description&quot;: &quot;The confirmation statement's review date, YYYY-MM-DD, not in the future&quot;
     },
     &quot;sicCodes&quot;: {
+      &quot;description&quot;: &quot;Up to 4 SIC codes; sent only when they have changed&quot;,
+      &quot;maxItems&quot;: 4,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;string&quot;
-      },
-      &quot;maxItems&quot;: 4,
-      &quot;description&quot;: &quot;Up to 4 SIC codes; sent only when they have changed&quot;
+      }
     },
     &quot;statementOfCapital&quot;: {
+      &quot;description&quot;: &quot;Sent only when the statement of capital has changed&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;totalAmountUnpaid&quot;: {
@@ -972,8 +952,7 @@
               &quot;prescribedParticulars&quot;,
               &quot;numShares&quot;,
               &quot;aggregateNominalValue&quot;
-            ],
-            &quot;additionalProperties&quot;: false
+            ]
           }
         }
       },
@@ -983,11 +962,10 @@
         &quot;shareCurrency&quot;,
         &quot;totalAggregateNominalValue&quot;,
         &quot;shares&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Sent only when the statement of capital has changed&quot;
+      ]
     },
     &quot;shareholdings&quot;: {
+      &quot;description&quot;: &quot;Sent only when Companies House requires it (a new shareholding, or on request)&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;object&quot;,
@@ -1013,8 +991,7 @@
               &quot;required&quot;: [
                 &quot;dateOfTransfer&quot;,
                 &quot;numberSharesTransferred&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             }
           },
           &quot;shareholders&quot;: {
@@ -1033,26 +1010,26 @@
                 },
                 &quot;address&quot;: {
                   &quot;type&quot;: &quot;object&quot;,
+                  &quot;propertyNames&quot;: {
+                    &quot;type&quot;: &quot;string&quot;
+                  },
                   &quot;additionalProperties&quot;: {
                     &quot;type&quot;: &quot;string&quot;
                   }
                 }
-              },
-              &quot;additionalProperties&quot;: false
+              }
             }
           }
         },
         &quot;required&quot;: [
           &quot;shareClass&quot;,
           &quot;numberHeld&quot;
-        ],
-        &quot;additionalProperties&quot;: false
-      },
-      &quot;description&quot;: &quot;Sent only when Companies House requires it (a new shareholding, or on request)&quot;
+        ]
+      }
     },
     &quot;registeredEmailAddress&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Sent only when it has changed&quot;
+      &quot;description&quot;: &quot;Sent only when it has changed&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;lawfulPurposeStatementAccepted&quot;: {
       &quot;type&quot;: &quot;boolean&quot;,
@@ -1086,16 +1063,15 @@
             &quot;description&quot;: &quot;YYYY-MM-DD&quot;
           },
           &quot;nameMismatchReason&quot;: {
-            &quot;type&quot;: &quot;string&quot;,
-            &quot;description&quot;: &quot;Required when the director's register name differs from Companies House's own&quot;
+            &quot;description&quot;: &quot;Required when the director's register name differs from Companies House's own&quot;,
+            &quot;type&quot;: &quot;string&quot;
           }
         },
         &quot;required&quot;: [
           &quot;forename&quot;,
           &quot;surname&quot;,
           &quot;dob&quot;
-        ],
-        &quot;additionalProperties&quot;: false
+        ]
       },
       &quot;description&quot;: &quot;One verification statement row per current director&quot;
     }
@@ -1109,7 +1085,6 @@
     &quot;stateConfirmationAccepted&quot;,
     &quot;directors&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1138,6 +1113,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;registeredOffice&quot;: {
+      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;addressLine1&quot;: {
@@ -1164,11 +1140,10 @@
       },
       &quot;required&quot;: [
         &quot;addressLine1&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;
+      ]
     },
     &quot;accountantsReport&quot;: {
+      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;accountantsName&quot;: {
@@ -1183,9 +1158,7 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;
+      ]
     },
     &quot;companyNumber&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -1239,18 +1212,48 @@
             &quot;calledUpShareCapital&quot;,
             &quot;profitAndLossAccount&quot;,
             &quot;capitalAndReserves&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;priorYear&quot;: {
-          &quot;$ref&quot;: &quot;#/properties/balanceSheet/properties/currentYear&quot;
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;fixedAssets&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;currentAssets&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;creditorsWithinOneYear&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;creditorsAfterOneYear&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;calledUpShareCapital&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;profitAndLossAccount&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;capitalAndReserves&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;fixedAssets&quot;,
+            &quot;currentAssets&quot;,
+            &quot;creditorsWithinOneYear&quot;,
+            &quot;creditorsAfterOneYear&quot;,
+            &quot;calledUpShareCapital&quot;,
+            &quot;profitAndLossAccount&quot;,
+            &quot;capitalAndReserves&quot;
+          ]
         }
       },
       &quot;required&quot;: [
         &quot;currentYear&quot;,
         &quot;priorYear&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The seven FRS 105 lines for the current and prior year, as derive_micro_entity_accounts answers them&quot;
     },
     &quot;averageEmployees&quot;: {
@@ -1272,7 +1275,6 @@
         &quot;name&quot;,
         &quot;dateApproved&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The signing director and the date the accounts were approved&quot;
     },
     &quot;statementsAccepted&quot;: {
@@ -1297,7 +1299,6 @@
         &quot;directorsResponsibilities&quot;,
         &quot;microEntityProvisions&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;Every micro-entity exemption statement, confirmed true by the user before filing&quot;
     }
   },
@@ -1311,7 +1312,6 @@
     &quot;director&quot;,
     &quot;statementsAccepted&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1340,6 +1340,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;registeredOffice&quot;: {
+      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;addressLine1&quot;: {
@@ -1366,11 +1367,10 @@
       },
       &quot;required&quot;: [
         &quot;addressLine1&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;
+      ]
     },
     &quot;accountantsReport&quot;: {
+      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;accountantsName&quot;: {
@@ -1385,9 +1385,7 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;
+      ]
     },
     &quot;companyNumber&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -1424,7 +1422,6 @@
         &quot;name&quot;,
         &quot;dateApproved&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The signing director and the date the accounts were approved&quot;
     },
     &quot;statementsAccepted&quot;: {
@@ -1449,15 +1446,14 @@
         &quot;directorsResponsibilities&quot;,
         &quot;smallCompaniesRegime&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;Every small-company statement, confirmed true by the user before filing&quot;
     },
     &quot;smallCompany&quot;: {
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;filleted&quot;: {
-          &quot;type&quot;: &quot;boolean&quot;,
-          &quot;description&quot;: &quot;True to file the filleted copy, without the profit and loss account&quot;
+          &quot;description&quot;: &quot;True to file the filleted copy, without the profit and loss account&quot;,
+          &quot;type&quot;: &quot;boolean&quot;
         },
         &quot;principalActivity&quot;: {
           &quot;type&quot;: &quot;string&quot;
@@ -1469,8 +1465,8 @@
           &quot;type&quot;: &quot;string&quot;
         },
         &quot;currentIncomeTaxPolicy&quot;: {
-          &quot;type&quot;: &quot;string&quot;,
-          &quot;description&quot;: &quot;How current tax is calculated&quot;
+          &quot;description&quot;: &quot;How current tax is calculated&quot;,
+          &quot;type&quot;: &quot;string&quot;
         },
         &quot;dividendPolicy&quot;: {
           &quot;type&quot;: &quot;string&quot;
@@ -1491,21 +1487,20 @@
           &quot;type&quot;: &quot;string&quot;
         },
         &quot;controllingParty&quot;: {
+          &quot;description&quot;: &quot;Without a name, states that the company has no ultimate controlling party&quot;,
           &quot;type&quot;: &quot;object&quot;,
           &quot;properties&quot;: {
             &quot;ultimate&quot;: {
               &quot;type&quot;: &quot;boolean&quot;
             },
             &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;,
-              &quot;description&quot;: &quot;Required when the party is ultimate&quot;
+              &quot;description&quot;: &quot;Required when the party is ultimate&quot;,
+              &quot;type&quot;: &quot;string&quot;
             }
           },
           &quot;required&quot;: [
             &quot;ultimate&quot;
-          ],
-          &quot;additionalProperties&quot;: false,
-          &quot;description&quot;: &quot;Without a name, states that the company has no ultimate controlling party&quot;
+          ]
         },
         &quot;directors&quot;: {
           &quot;type&quot;: &quot;array&quot;,
@@ -1545,20 +1540,20 @@
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;bankLoansOverdrafts&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;taxationSocialSecurity&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;accruals&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
                   &quot;type&quot;: &quot;number&quot;
@@ -1582,17 +1577,79 @@
                 &quot;calledUpShareCapital&quot;,
                 &quot;profitAndLossAccount&quot;,
                 &quot;capitalAndReserves&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             },
             &quot;priorYear&quot;: {
-              &quot;$ref&quot;: &quot;#/properties/smallCompany/properties/balanceSheet/properties/currentYear&quot;
+              &quot;type&quot;: &quot;object&quot;,
+              &quot;properties&quot;: {
+                &quot;fixedAssets&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;stocks&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;debtors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;cashAtBank&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeCreditors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;corporationTax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherCreditors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;creditorsAfterOneYear&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;bankLoansOverdrafts&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;taxationSocialSecurity&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;accruals&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;bankLoansAfterOneYear&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;calledUpShareCapital&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profitAndLossAccount&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;capitalAndReserves&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                }
+              },
+              &quot;required&quot;: [
+                &quot;fixedAssets&quot;,
+                &quot;stocks&quot;,
+                &quot;debtors&quot;,
+                &quot;cashAtBank&quot;,
+                &quot;tradeCreditors&quot;,
+                &quot;corporationTax&quot;,
+                &quot;otherCreditors&quot;,
+                &quot;creditorsAfterOneYear&quot;,
+                &quot;calledUpShareCapital&quot;,
+                &quot;profitAndLossAccount&quot;,
+                &quot;capitalAndReserves&quot;
+              ]
             }
           },
           &quot;required&quot;: [
             &quot;currentYear&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;profitAndLoss&quot;: {
           &quot;type&quot;: &quot;object&quot;,
@@ -1638,20 +1695,68 @@
                 &quot;profitBeforeTax&quot;,
                 &quot;tax&quot;,
                 &quot;profit&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             },
             &quot;priorYear&quot;: {
-              &quot;$ref&quot;: &quot;#/properties/smallCompany/properties/profitAndLoss/properties/currentYear&quot;
+              &quot;type&quot;: &quot;object&quot;,
+              &quot;properties&quot;: {
+                &quot;turnover&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;costOfSales&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;grossProfit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;administrativeExpenses&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;operatingProfit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;interestReceivable&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profitBeforeTax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                }
+              },
+              &quot;required&quot;: [
+                &quot;turnover&quot;,
+                &quot;costOfSales&quot;,
+                &quot;grossProfit&quot;,
+                &quot;administrativeExpenses&quot;,
+                &quot;operatingProfit&quot;,
+                &quot;interestReceivable&quot;,
+                &quot;profitBeforeTax&quot;,
+                &quot;tax&quot;,
+                &quot;profit&quot;
+              ]
             }
           },
           &quot;required&quot;: [
             &quot;currentYear&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;fixedAssetNote&quot;: {
           &quot;type&quot;: &quot;object&quot;,
+          &quot;propertyNames&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;enum&quot;: [
+              &quot;landBuildings&quot;,
+              &quot;plantMachinery&quot;,
+              &quot;furnitureFittings&quot;,
+              &quot;computerEquipment&quot;,
+              &quot;motorVehicles&quot;
+            ]
+          },
           &quot;additionalProperties&quot;: {
             &quot;type&quot;: &quot;object&quot;,
             &quot;properties&quot;: {
@@ -1681,18 +1786,15 @@
               &quot;depreciationAtStart&quot;,
               &quot;depreciationCharge&quot;,
               &quot;depreciationOnDisposals&quot;
-            ],
-            &quot;additionalProperties&quot;: false
-          },
-          &quot;propertyNames&quot;: {
-            &quot;enum&quot;: [
-              &quot;landBuildings&quot;,
-              &quot;plantMachinery&quot;,
-              &quot;furnitureFittings&quot;,
-              &quot;computerEquipment&quot;,
-              &quot;motorVehicles&quot;
             ]
-          }
+          },
+          &quot;required&quot;: [
+            &quot;landBuildings&quot;,
+            &quot;plantMachinery&quot;,
+            &quot;furnitureFittings&quot;,
+            &quot;computerEquipment&quot;,
+            &quot;motorVehicles&quot;
+          ]
         }
       },
       &quot;required&quot;: [
@@ -1702,7 +1804,6 @@
         &quot;balanceSheet&quot;,
         &quot;profitAndLoss&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The figures and notes, as derive_small_company_accounts answers them plus principalActivity and accountingPolicies&quot;
     }
   },
@@ -1716,7 +1817,6 @@
     &quot;statementsAccepted&quot;,
     &quot;smallCompany&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1748,17 +1848,18 @@
       &quot;description&quot;: &quot;Which filing the codes are for&quot;
     },
     &quot;companyNumber&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The 8-character Companies House company number; required unless clientIds is given&quot;
+      &quot;description&quot;: &quot;The 8-character Companies House company number; required unless clientIds is given&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;clientIds&quot;: {
+      &quot;description&quot;: &quot;Practice client ids for a batch filing through run_for_clients: the page asks for one code per client&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;string&quot;
-      },
-      &quot;description&quot;: &quot;Practice client ids for a batch filing through run_for_clients: the page asks for one code per client&quot;
+      }
     },
     &quot;directors&quot;: {
+      &quot;description&quot;: &quot;Confirmation statement only: the directors in filing order; the page asks for one personal code each&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;object&quot;,
@@ -1773,16 +1874,13 @@
         &quot;required&quot;: [
           &quot;forename&quot;,
           &quot;surname&quot;
-        ],
-        &quot;additionalProperties&quot;: false
-      },
-      &quot;description&quot;: &quot;Confirmation statement only: the directors in filing order; the page asks for one personal code each&quot;
+        ]
+      }
     }
   },
   &quot;required&quot;: [
     &quot;kind&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1803,6 +1901,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;services&quot;: {
+      &quot;description&quot;: &quot;The HMRC services to ask access for: vat (the default), itsa, and agent (the practice tools invite_client and client_authorisation_status)&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;string&quot;,
@@ -1811,19 +1910,17 @@
           &quot;itsa&quot;,
           &quot;agent&quot;
         ]
-      },
-      &quot;description&quot;: &quot;The HMRC services to ask access for: vat (the default), itsa, and agent (the practice tools invite_client and client_authorisation_status)&quot;
+      }
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment: live (the default) or synthetic&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment: live (the default) or synthetic&quot;
+      ]
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1857,15 +1954,17 @@
       &quot;description&quot;: &quot;The client-scoped tool to run for every client&quot;
     },
     &quot;args&quot;: {
+      &quot;description&quot;: &quot;That tool's other arguments; clientId is added per client and overrides any given here&quot;,
       &quot;type&quot;: &quot;object&quot;,
-      &quot;additionalProperties&quot;: {},
-      &quot;description&quot;: &quot;That tool's other arguments; clientId is added per client and overrides any given here&quot;
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {}
     }
   },
   &quot;required&quot;: [
     &quot;tool&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1889,10 +1988,11 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;path&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud&quot;
+      &quot;description&quot;: &quot;Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;format&quot;: {
+      &quot;description&quot;: &quot;One of diya-gl-dir, diya-gl-zip, json, xlsx, zip; unused with cloud&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;diya-gl-dir&quot;,
@@ -1900,23 +2000,21 @@
         &quot;json&quot;,
         &quot;xlsx&quot;,
         &quot;zip&quot;
-      ],
-      &quot;description&quot;: &quot;One of diya-gl-dir, diya-gl-zip, json, xlsx, zip; unused with cloud&quot;
+      ]
     },
     &quot;cloud&quot;: {
-      &quot;type&quot;: &quot;boolean&quot;,
-      &quot;description&quot;: &quot;Save to the DIYA cloud by bookId instead of the filesystem&quot;
+      &quot;description&quot;: &quot;Save to the DIYA cloud by bookId instead of the filesystem&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
     },
     &quot;bookId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The cloud book's id; required with cloud: true&quot;
+      &quot;description&quot;: &quot;The cloud book's id; required with cloud: true&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to save into that client's book set&quot;
+      &quot;description&quot;: &quot;A practice client's id, to save into that client's book set&quot;,
+      &quot;type&quot;: &quot;string&quot;
     }
   },
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1989,14 +2087,15 @@
       &quot;description&quot;: &quot;The confirmation statement's review date, YYYY-MM-DD, not in the future&quot;
     },
     &quot;sicCodes&quot;: {
+      &quot;description&quot;: &quot;Up to 4 SIC codes; sent only when they have changed&quot;,
+      &quot;maxItems&quot;: 4,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;string&quot;
-      },
-      &quot;maxItems&quot;: 4,
-      &quot;description&quot;: &quot;Up to 4 SIC codes; sent only when they have changed&quot;
+      }
     },
     &quot;statementOfCapital&quot;: {
+      &quot;description&quot;: &quot;Sent only when the statement of capital has changed&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;totalAmountUnpaid&quot;: {
@@ -2034,8 +2133,7 @@
               &quot;prescribedParticulars&quot;,
               &quot;numShares&quot;,
               &quot;aggregateNominalValue&quot;
-            ],
-            &quot;additionalProperties&quot;: false
+            ]
           }
         }
       },
@@ -2045,11 +2143,10 @@
         &quot;shareCurrency&quot;,
         &quot;totalAggregateNominalValue&quot;,
         &quot;shares&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Sent only when the statement of capital has changed&quot;
+      ]
     },
     &quot;shareholdings&quot;: {
+      &quot;description&quot;: &quot;Sent only when Companies House requires it (a new shareholding, or on request)&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;object&quot;,
@@ -2075,8 +2172,7 @@
               &quot;required&quot;: [
                 &quot;dateOfTransfer&quot;,
                 &quot;numberSharesTransferred&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             }
           },
           &quot;shareholders&quot;: {
@@ -2095,26 +2191,26 @@
                 },
                 &quot;address&quot;: {
                   &quot;type&quot;: &quot;object&quot;,
+                  &quot;propertyNames&quot;: {
+                    &quot;type&quot;: &quot;string&quot;
+                  },
                   &quot;additionalProperties&quot;: {
                     &quot;type&quot;: &quot;string&quot;
                   }
                 }
-              },
-              &quot;additionalProperties&quot;: false
+              }
             }
           }
         },
         &quot;required&quot;: [
           &quot;shareClass&quot;,
           &quot;numberHeld&quot;
-        ],
-        &quot;additionalProperties&quot;: false
-      },
-      &quot;description&quot;: &quot;Sent only when Companies House requires it (a new shareholding, or on request)&quot;
+        ]
+      }
     },
     &quot;registeredEmailAddress&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Sent only when it has changed&quot;
+      &quot;description&quot;: &quot;Sent only when it has changed&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;lawfulPurposeStatementAccepted&quot;: {
       &quot;type&quot;: &quot;boolean&quot;,
@@ -2148,16 +2244,15 @@
             &quot;description&quot;: &quot;YYYY-MM-DD&quot;
           },
           &quot;nameMismatchReason&quot;: {
-            &quot;type&quot;: &quot;string&quot;,
-            &quot;description&quot;: &quot;Required when the director's register name differs from Companies House's own&quot;
+            &quot;description&quot;: &quot;Required when the director's register name differs from Companies House's own&quot;,
+            &quot;type&quot;: &quot;string&quot;
           }
         },
         &quot;required&quot;: [
           &quot;forename&quot;,
           &quot;surname&quot;,
           &quot;dob&quot;
-        ],
-        &quot;additionalProperties&quot;: false
+        ]
       },
       &quot;description&quot;: &quot;One verification statement row per current director&quot;
     },
@@ -2176,7 +2271,6 @@
     &quot;directors&quot;,
     &quot;codesEntryId&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2191,7 +2285,7 @@
             <tr><td><code>businessId</code></td><td>string</td><td>yes</td><td>The self-employment business id HMRC holds, for example XAIS12345678901</td></tr>
             <tr><td><code>taxYear</code></td><td>string</td><td>yes</td><td>The tax year, as 2025-26</td></tr>
             <tr><td><code>adjustments</code></td><td>object</td><td>no</td><td>Adjustments by field, as derive_itsa_annual_submission answers them</td></tr>
-            <tr><td><code>allowances</code></td><td></td><td>no</td><td>Allowances by field, as derive_itsa_annual_submission answers them</td></tr>
+            <tr><td><code>allowances</code></td><td>object</td><td>no</td><td>Allowances by field, as derive_itsa_annual_submission answers them</td></tr>
             <tr><td><code>nonFinancials</code></td><td>object</td><td>no</td><td>The non-financial facts HMRC takes, when the year needs them</td></tr>
             <tr><td><code>hmrcAccount</code></td><td>&quot;synthetic&quot; | &quot;live&quot;</td><td>no</td><td>Which HMRC environment to call; defaults to the session's HMRC authorisation's own</td></tr>
             <tr><td><code>govTestScenario</code></td><td>string</td><td>no</td><td>HMRC sandbox test scenario</td></tr>
@@ -2216,32 +2310,44 @@
       &quot;description&quot;: &quot;The tax year, as 2025-26&quot;
     },
     &quot;adjustments&quot;: {
+      &quot;description&quot;: &quot;Adjustments by field, as derive_itsa_annual_submission answers them&quot;,
       &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
       &quot;additionalProperties&quot;: {
         &quot;type&quot;: &quot;number&quot;
-      },
-      &quot;description&quot;: &quot;Adjustments by field, as derive_itsa_annual_submission answers them&quot;
+      }
     },
     &quot;allowances&quot;: {
-      &quot;$ref&quot;: &quot;#/properties/adjustments&quot;,
-      &quot;description&quot;: &quot;Allowances by field, as derive_itsa_annual_submission answers them&quot;
+      &quot;description&quot;: &quot;Allowances by field, as derive_itsa_annual_submission answers them&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {
+        &quot;type&quot;: &quot;number&quot;
+      }
     },
     &quot;nonFinancials&quot;: {
+      &quot;description&quot;: &quot;The non-financial facts HMRC takes, when the year needs them&quot;,
       &quot;type&quot;: &quot;object&quot;,
-      &quot;additionalProperties&quot;: {},
-      &quot;description&quot;: &quot;The non-financial facts HMRC takes, when the year needs them&quot;
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {}
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;runFraudPreventionHeaderValidation&quot;: {
       &quot;type&quot;: &quot;boolean&quot;
@@ -2252,7 +2358,6 @@
     &quot;businessId&quot;,
     &quot;taxYear&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2269,8 +2374,8 @@
             <tr><td><code>periodStartDate</code></td><td>string</td><td>no</td><td>The period's start, YYYY-MM-DD</td></tr>
             <tr><td><code>periodEndDate</code></td><td>string</td><td>no</td><td>The period's end, YYYY-MM-DD</td></tr>
             <tr><td><code>periodIncome</code></td><td>object</td><td>no</td><td>Income by field, as derive_itsa_quarterly_update answers it</td></tr>
-            <tr><td><code>periodExpenses</code></td><td></td><td>no</td><td>Expenses by field, as derive_itsa_quarterly_update answers it</td></tr>
-            <tr><td><code>periodDisallowableExpenses</code></td><td></td><td>no</td><td>Disallowable expenses by field, as derive_itsa_quarterly_update answers it</td></tr>
+            <tr><td><code>periodExpenses</code></td><td>object</td><td>no</td><td>Expenses by field, as derive_itsa_quarterly_update answers it</td></tr>
+            <tr><td><code>periodDisallowableExpenses</code></td><td>object</td><td>no</td><td>Disallowable expenses by field, as derive_itsa_quarterly_update answers it</td></tr>
             <tr><td><code>hmrcAccount</code></td><td>&quot;synthetic&quot; | &quot;live&quot;</td><td>no</td><td>Which HMRC environment to call; defaults to the session's HMRC authorisation's own</td></tr>
             <tr><td><code>govTestScenario</code></td><td>string</td><td>no</td><td>HMRC sandbox test scenario</td></tr>
             <tr><td><code>runFraudPreventionHeaderValidation</code></td><td>boolean</td><td>no</td><td></td></tr>
@@ -2294,39 +2399,54 @@
       &quot;description&quot;: &quot;The tax year, as 2025-26&quot;
     },
     &quot;periodStartDate&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The period's start, YYYY-MM-DD&quot;
+      &quot;description&quot;: &quot;The period's start, YYYY-MM-DD&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;periodEndDate&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The period's end, YYYY-MM-DD&quot;
+      &quot;description&quot;: &quot;The period's end, YYYY-MM-DD&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;periodIncome&quot;: {
+      &quot;description&quot;: &quot;Income by field, as derive_itsa_quarterly_update answers it&quot;,
       &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
       &quot;additionalProperties&quot;: {
         &quot;type&quot;: &quot;number&quot;
-      },
-      &quot;description&quot;: &quot;Income by field, as derive_itsa_quarterly_update answers it&quot;
+      }
     },
     &quot;periodExpenses&quot;: {
-      &quot;$ref&quot;: &quot;#/properties/periodIncome&quot;,
-      &quot;description&quot;: &quot;Expenses by field, as derive_itsa_quarterly_update answers it&quot;
+      &quot;description&quot;: &quot;Expenses by field, as derive_itsa_quarterly_update answers it&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {
+        &quot;type&quot;: &quot;number&quot;
+      }
     },
     &quot;periodDisallowableExpenses&quot;: {
-      &quot;$ref&quot;: &quot;#/properties/periodIncome&quot;,
-      &quot;description&quot;: &quot;Disallowable expenses by field, as derive_itsa_quarterly_update answers it&quot;
+      &quot;description&quot;: &quot;Disallowable expenses by field, as derive_itsa_quarterly_update answers it&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {
+        &quot;type&quot;: &quot;number&quot;
+      }
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;runFraudPreventionHeaderValidation&quot;: {
       &quot;type&quot;: &quot;boolean&quot;
@@ -2337,7 +2457,6 @@
     &quot;businessId&quot;,
     &quot;taxYear&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2368,6 +2487,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;registeredOffice&quot;: {
+      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;addressLine1&quot;: {
@@ -2394,11 +2514,10 @@
       },
       &quot;required&quot;: [
         &quot;addressLine1&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;
+      ]
     },
     &quot;accountantsReport&quot;: {
+      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;accountantsName&quot;: {
@@ -2413,13 +2532,11 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;
+      ]
     },
     &quot;companyNumber&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Required unless clientId is given&quot;
+      &quot;description&quot;: &quot;Required unless clientId is given&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;companyName&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -2469,18 +2586,48 @@
             &quot;calledUpShareCapital&quot;,
             &quot;profitAndLossAccount&quot;,
             &quot;capitalAndReserves&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;priorYear&quot;: {
-          &quot;$ref&quot;: &quot;#/properties/balanceSheet/properties/currentYear&quot;
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;fixedAssets&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;currentAssets&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;creditorsWithinOneYear&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;creditorsAfterOneYear&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;calledUpShareCapital&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;profitAndLossAccount&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            },
+            &quot;capitalAndReserves&quot;: {
+              &quot;type&quot;: &quot;number&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;fixedAssets&quot;,
+            &quot;currentAssets&quot;,
+            &quot;creditorsWithinOneYear&quot;,
+            &quot;creditorsAfterOneYear&quot;,
+            &quot;calledUpShareCapital&quot;,
+            &quot;profitAndLossAccount&quot;,
+            &quot;capitalAndReserves&quot;
+          ]
         }
       },
       &quot;required&quot;: [
         &quot;currentYear&quot;,
         &quot;priorYear&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The seven FRS 105 lines for the current and prior year, as derive_micro_entity_accounts answers them&quot;
     },
     &quot;averageEmployees&quot;: {
@@ -2502,7 +2649,6 @@
         &quot;name&quot;,
         &quot;dateApproved&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The signing director and the date the accounts were approved&quot;
     },
     &quot;statementsAccepted&quot;: {
@@ -2527,12 +2673,11 @@
         &quot;directorsResponsibilities&quot;,
         &quot;microEntityProvisions&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;Every micro-entity exemption statement, confirmed true by the user before filing&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to resolve companyNumber from the client row instead&quot;
+      &quot;description&quot;: &quot;A practice client's id, to resolve companyNumber from the client row instead&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;codesEntryId&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -2549,7 +2694,6 @@
     &quot;statementsAccepted&quot;,
     &quot;codesEntryId&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2580,6 +2724,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;registeredOffice&quot;: {
+      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;addressLine1&quot;: {
@@ -2606,11 +2751,10 @@
       },
       &quot;required&quot;: [
         &quot;addressLine1&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;The registered office as address parts; taken from the company's Companies House record when left out&quot;
+      ]
     },
     &quot;accountantsReport&quot;: {
+      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;,
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;accountantsName&quot;: {
@@ -2625,13 +2769,11 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
-      ],
-      &quot;additionalProperties&quot;: false,
-      &quot;description&quot;: &quot;Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report&quot;
+      ]
     },
     &quot;companyNumber&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Required unless clientId is given&quot;
+      &quot;description&quot;: &quot;Required unless clientId is given&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;companyName&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -2664,7 +2806,6 @@
         &quot;name&quot;,
         &quot;dateApproved&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The signing director and the date the accounts were approved&quot;
     },
     &quot;statementsAccepted&quot;: {
@@ -2689,15 +2830,14 @@
         &quot;directorsResponsibilities&quot;,
         &quot;smallCompaniesRegime&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;Every small-company statement, confirmed true by the user before filing&quot;
     },
     &quot;smallCompany&quot;: {
       &quot;type&quot;: &quot;object&quot;,
       &quot;properties&quot;: {
         &quot;filleted&quot;: {
-          &quot;type&quot;: &quot;boolean&quot;,
-          &quot;description&quot;: &quot;True to file the filleted copy, without the profit and loss account&quot;
+          &quot;description&quot;: &quot;True to file the filleted copy, without the profit and loss account&quot;,
+          &quot;type&quot;: &quot;boolean&quot;
         },
         &quot;principalActivity&quot;: {
           &quot;type&quot;: &quot;string&quot;
@@ -2709,8 +2849,8 @@
           &quot;type&quot;: &quot;string&quot;
         },
         &quot;currentIncomeTaxPolicy&quot;: {
-          &quot;type&quot;: &quot;string&quot;,
-          &quot;description&quot;: &quot;How current tax is calculated&quot;
+          &quot;description&quot;: &quot;How current tax is calculated&quot;,
+          &quot;type&quot;: &quot;string&quot;
         },
         &quot;dividendPolicy&quot;: {
           &quot;type&quot;: &quot;string&quot;
@@ -2731,21 +2871,20 @@
           &quot;type&quot;: &quot;string&quot;
         },
         &quot;controllingParty&quot;: {
+          &quot;description&quot;: &quot;Without a name, states that the company has no ultimate controlling party&quot;,
           &quot;type&quot;: &quot;object&quot;,
           &quot;properties&quot;: {
             &quot;ultimate&quot;: {
               &quot;type&quot;: &quot;boolean&quot;
             },
             &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;,
-              &quot;description&quot;: &quot;Required when the party is ultimate&quot;
+              &quot;description&quot;: &quot;Required when the party is ultimate&quot;,
+              &quot;type&quot;: &quot;string&quot;
             }
           },
           &quot;required&quot;: [
             &quot;ultimate&quot;
-          ],
-          &quot;additionalProperties&quot;: false,
-          &quot;description&quot;: &quot;Without a name, states that the company has no ultimate controlling party&quot;
+          ]
         },
         &quot;directors&quot;: {
           &quot;type&quot;: &quot;array&quot;,
@@ -2785,20 +2924,20 @@
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;bankLoansOverdrafts&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;taxationSocialSecurity&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;accruals&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;
+                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
-                  &quot;type&quot;: &quot;number&quot;,
-                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
                   &quot;type&quot;: &quot;number&quot;
@@ -2822,17 +2961,79 @@
                 &quot;calledUpShareCapital&quot;,
                 &quot;profitAndLossAccount&quot;,
                 &quot;capitalAndReserves&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             },
             &quot;priorYear&quot;: {
-              &quot;$ref&quot;: &quot;#/properties/smallCompany/properties/balanceSheet/properties/currentYear&quot;
+              &quot;type&quot;: &quot;object&quot;,
+              &quot;properties&quot;: {
+                &quot;fixedAssets&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;stocks&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;debtors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;cashAtBank&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeCreditors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;corporationTax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherCreditors&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;creditorsAfterOneYear&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;bankLoansOverdrafts&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds owed to a bank within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;taxationSocialSecurity&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;accruals&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of accruals and deferred income due within one year; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;bankLoansAfterOneYear&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;calledUpShareCapital&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profitAndLossAccount&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;capitalAndReserves&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                }
+              },
+              &quot;required&quot;: [
+                &quot;fixedAssets&quot;,
+                &quot;stocks&quot;,
+                &quot;debtors&quot;,
+                &quot;cashAtBank&quot;,
+                &quot;tradeCreditors&quot;,
+                &quot;corporationTax&quot;,
+                &quot;otherCreditors&quot;,
+                &quot;creditorsAfterOneYear&quot;,
+                &quot;calledUpShareCapital&quot;,
+                &quot;profitAndLossAccount&quot;,
+                &quot;capitalAndReserves&quot;
+              ]
             }
           },
           &quot;required&quot;: [
             &quot;currentYear&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;profitAndLoss&quot;: {
           &quot;type&quot;: &quot;object&quot;,
@@ -2878,20 +3079,68 @@
                 &quot;profitBeforeTax&quot;,
                 &quot;tax&quot;,
                 &quot;profit&quot;
-              ],
-              &quot;additionalProperties&quot;: false
+              ]
             },
             &quot;priorYear&quot;: {
-              &quot;$ref&quot;: &quot;#/properties/smallCompany/properties/profitAndLoss/properties/currentYear&quot;
+              &quot;type&quot;: &quot;object&quot;,
+              &quot;properties&quot;: {
+                &quot;turnover&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;costOfSales&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;grossProfit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;administrativeExpenses&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;operatingProfit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;interestReceivable&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profitBeforeTax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tax&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;profit&quot;: {
+                  &quot;type&quot;: &quot;number&quot;
+                }
+              },
+              &quot;required&quot;: [
+                &quot;turnover&quot;,
+                &quot;costOfSales&quot;,
+                &quot;grossProfit&quot;,
+                &quot;administrativeExpenses&quot;,
+                &quot;operatingProfit&quot;,
+                &quot;interestReceivable&quot;,
+                &quot;profitBeforeTax&quot;,
+                &quot;tax&quot;,
+                &quot;profit&quot;
+              ]
             }
           },
           &quot;required&quot;: [
             &quot;currentYear&quot;
-          ],
-          &quot;additionalProperties&quot;: false
+          ]
         },
         &quot;fixedAssetNote&quot;: {
           &quot;type&quot;: &quot;object&quot;,
+          &quot;propertyNames&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;enum&quot;: [
+              &quot;landBuildings&quot;,
+              &quot;plantMachinery&quot;,
+              &quot;furnitureFittings&quot;,
+              &quot;computerEquipment&quot;,
+              &quot;motorVehicles&quot;
+            ]
+          },
           &quot;additionalProperties&quot;: {
             &quot;type&quot;: &quot;object&quot;,
             &quot;properties&quot;: {
@@ -2921,18 +3170,15 @@
               &quot;depreciationAtStart&quot;,
               &quot;depreciationCharge&quot;,
               &quot;depreciationOnDisposals&quot;
-            ],
-            &quot;additionalProperties&quot;: false
-          },
-          &quot;propertyNames&quot;: {
-            &quot;enum&quot;: [
-              &quot;landBuildings&quot;,
-              &quot;plantMachinery&quot;,
-              &quot;furnitureFittings&quot;,
-              &quot;computerEquipment&quot;,
-              &quot;motorVehicles&quot;
             ]
-          }
+          },
+          &quot;required&quot;: [
+            &quot;landBuildings&quot;,
+            &quot;plantMachinery&quot;,
+            &quot;furnitureFittings&quot;,
+            &quot;computerEquipment&quot;,
+            &quot;motorVehicles&quot;
+          ]
         }
       },
       &quot;required&quot;: [
@@ -2942,12 +3188,11 @@
         &quot;balanceSheet&quot;,
         &quot;profitAndLoss&quot;
       ],
-      &quot;additionalProperties&quot;: false,
       &quot;description&quot;: &quot;The figures and notes, as derive_small_company_accounts answers them plus principalActivity and accountingPolicies&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to resolve companyNumber from the client row instead&quot;
+      &quot;description&quot;: &quot;A practice client's id, to resolve companyNumber from the client row instead&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;codesEntryId&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -2964,7 +3209,6 @@
     &quot;smallCompany&quot;,
     &quot;codesEntryId&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2998,12 +3242,12 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;vatNumber&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;VAT registration number, 9 digits; required unless clientId is given&quot;
+      &quot;description&quot;: &quot;VAT registration number, 9 digits; required unless clientId is given&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;clientId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;A practice client's id, to resolve vatNumber from the client row instead&quot;
+      &quot;description&quot;: &quot;A practice client's id, to resolve vatNumber from the client row instead&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;periodStart&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -3042,23 +3286,23 @@
       &quot;description&quot;: &quot;Box 9&quot;
     },
     &quot;hmrcAccount&quot;: {
+      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;,
       &quot;type&quot;: &quot;string&quot;,
       &quot;enum&quot;: [
         &quot;synthetic&quot;,
         &quot;live&quot;
-      ],
-      &quot;description&quot;: &quot;Which HMRC environment to call; defaults to the session's HMRC authorisation's own&quot;
+      ]
     },
     &quot;govTestScenario&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;
+      &quot;description&quot;: &quot;HMRC sandbox test scenario&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;runFraudPreventionHeaderValidation&quot;: {
       &quot;type&quot;: &quot;boolean&quot;
     },
     &quot;allowSyntheticObligations&quot;: {
-      &quot;type&quot;: &quot;boolean&quot;,
-      &quot;description&quot;: &quot;Synthetic only: file under any open obligation if the dates do not match&quot;
+      &quot;description&quot;: &quot;Synthetic only: file under any open obligation if the dates do not match&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
     }
   },
   &quot;required&quot;: [
@@ -3072,7 +3316,6 @@
     &quot;totalValueGoodsSuppliedExVAT&quot;,
     &quot;totalAcquisitionsExVAT&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -3096,25 +3339,31 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;bookPath&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads&quot;
+      &quot;description&quot;: &quot;Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;book&quot;: {
+      &quot;description&quot;: &quot;A parsed book.toml, instead of bookPath&quot;,
       &quot;type&quot;: &quot;object&quot;,
-      &quot;additionalProperties&quot;: {},
-      &quot;description&quot;: &quot;A parsed book.toml, instead of bookPath&quot;
+      &quot;propertyNames&quot;: {
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;additionalProperties&quot;: {}
     },
     &quot;lines&quot;: {
+      &quot;description&quot;: &quot;Parsed lines.jsonl entries, instead of bookPath&quot;,
       &quot;type&quot;: &quot;array&quot;,
       &quot;items&quot;: {
         &quot;type&quot;: &quot;object&quot;,
+        &quot;propertyNames&quot;: {
+          &quot;type&quot;: &quot;string&quot;
+        },
         &quot;additionalProperties&quot;: {}
-      },
-      &quot;description&quot;: &quot;Parsed lines.jsonl entries, instead of bookPath&quot;
+      }
     },
     &quot;templatePackagePath&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;description&quot;: &quot;The spreadsheets repository's app/ directory, read directly instead of fetching templates over the network&quot;
+      &quot;description&quot;: &quot;The spreadsheets repository's app/ directory, read directly instead of fetching templates over the network&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;outputDir&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -3124,7 +3373,6 @@
   &quot;required&quot;: [
     &quot;outputDir&quot;
   ],
-  &quot;additionalProperties&quot;: false,
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
