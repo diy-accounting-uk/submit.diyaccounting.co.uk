@@ -23,6 +23,7 @@ cdk/cdk.out/
 infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java
 web/public/tests/
 web/public/docs/api/
+web/developer/mcp-api.html
 web/public/docs/hmrc-form-field-standards/
 web/public/lib/diya-gl/
 web/public/lib/books-bundle.js
