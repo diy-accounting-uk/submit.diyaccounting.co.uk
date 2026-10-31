@@ -106,7 +106,7 @@ export function triageFailures(fixture, answerText) {
   const reply = section(answerText, "Drafted reply");
   if (reply === null) return [...failures, "no Drafted reply section"];
   if (expect.firstSentencePattern && !new RegExp(expect.firstSentencePattern, "i").test(firstSentence(reply))) {
-    failures.push(`first sentence does not match /${expect.firstSentencePattern}/`);
+    failures.push(`first sentence does not match /${expect.firstSentencePattern}/: "${firstSentence(reply)}"`);
   }
   const lower = reply.toLowerCase();
   for (const phrase of expect.requiredPhrases) if (!lower.includes(phrase.toLowerCase())) failures.push(`reply lacks "${phrase}"`);

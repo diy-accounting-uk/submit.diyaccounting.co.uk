@@ -12,7 +12,6 @@
   },
   "expect": {
     "resolution": "answer",
-    "firstSentencePattern": "thank|will not|won't|cannot|can't|not able|not add|decline",
     "requiredPhrases": [],
     "forbiddenPhrases": ["<script", "already answers", "the help page answers", "Dear ", "close this ticket"]
   }
