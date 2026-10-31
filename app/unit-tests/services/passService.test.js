@@ -13,10 +13,30 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getPass: vi.fn().mockResolvedValue(null),
   redeemPass: vi.fn().mockResolvedValue(null),
   revokePass: vi.fn().mockResolvedValue(null),
+  putReferralClaim: vi.fn().mockResolvedValue(true),
+  deleteReferralClaim: vi.fn().mockResolvedValue(undefined),
+  putRedemption: vi.fn().mockResolvedValue(undefined),
 }));
 
-const { putPass, getPass, redeemPass: redeemPassRepo } = await import("@app/data/dynamoDbPassRepository.js");
-const { buildPassRecord, createPass, checkPass, redeemPass, diagnoseFailure, addDuration } = await import("../../services/passService.js");
+const {
+  putPass,
+  getPass,
+  redeemPass: redeemPassRepo,
+  putReferralClaim,
+  deleteReferralClaim,
+  putRedemption,
+} = await import("@app/data/dynamoDbPassRepository.js");
+const {
+  buildPassRecord,
+  createPass,
+  checkPass,
+  redeemPass,
+  diagnoseFailure,
+  addDuration,
+  claimReferral,
+  releaseReferral,
+  recordRedemption,
+} = await import("../../services/passService.js");
 
 describe("passService", () => {
   beforeEach(() => {
@@ -395,6 +415,84 @@ describe("passService", () => {
       });
       const reason = await diagnoseFailure("exhausted-code");
       expect(reason).toBe("exhausted");
+    });
+  });
+
+  describe("a pass with no use cap and a review limit", () => {
+    const heldPass = {
+      revokedAt: null,
+      useCount: 1000,
+      reviewLimit: 1000,
+      validFrom: "2020-01-01T00:00:00.000Z",
+      validUntil: "2099-12-31T23:59:59.000Z",
+      bundleId: "day-guest",
+    };
+
+    it("buildPassRecord omits maxUses when the cap is null and stores the review limit", () => {
+      const record = buildPassRecord({
+        passTypeId: "digital-pass",
+        bundleId: "day-guest",
+        validityPeriod: "P90D",
+        maxUses: null,
+        reviewLimit: 1000,
+      });
+      expect(record).not.toHaveProperty("maxUses");
+      expect(record.reviewLimit).toBe(1000);
+    });
+
+    it("buildPassRecord keeps one use by default and stores no review limit", () => {
+      const record = buildPassRecord({ passTypeId: "x", bundleId: "day-guest" });
+      expect(record.maxUses).toBe(1);
+      expect(record).not.toHaveProperty("reviewLimit");
+    });
+
+    it("checkPass is valid below the review limit with no maxUses", async () => {
+      getPass.mockResolvedValueOnce({ ...heldPass, useCount: 999 });
+      const result = await checkPass("code");
+      expect(result.valid).toBe(true);
+      expect(result.usesRemaining).toBe(1);
+    });
+
+    it("checkPass refuses a held pass with held_for_review", async () => {
+      getPass.mockResolvedValueOnce(heldPass);
+      const result = await checkPass("code");
+      expect(result).toMatchObject({ valid: false, reason: "held_for_review" });
+    });
+
+    it("redeemPass reports held_for_review when the atomic redeem fails at the limit", async () => {
+      redeemPassRepo.mockResolvedValueOnce(null);
+      getPass.mockResolvedValueOnce(heldPass);
+      const result = await redeemPass("code");
+      expect(result).toMatchObject({ valid: false, reason: "held_for_review" });
+    });
+
+    it("diagnoseFailure returns held_for_review at the limit", async () => {
+      getPass.mockResolvedValueOnce(heldPass);
+      expect(await diagnoseFailure("code")).toBe("held_for_review");
+    });
+  });
+
+  describe("referral claim and redemption record", () => {
+    it("claimReferral hands the hashed sub and code to the repository", async () => {
+      putReferralClaim.mockResolvedValueOnce(false);
+      expect(await claimReferral("hash-1", "code-1")).toBe(false);
+      expect(putReferralClaim).toHaveBeenCalledWith("hash-1", "code-1", expect.any(String));
+    });
+
+    it("releaseReferral deletes the claim", async () => {
+      await releaseReferral("hash-1");
+      expect(deleteReferralClaim).toHaveBeenCalledWith("hash-1");
+    });
+
+    it("recordRedemption stores the code, redeemer, issuer, pass type and time", async () => {
+      await recordRedemption({ code: "code-1", hashedSub: "hash-1", issuedBy: "hash-2", passTypeId: "digital-pass" });
+      expect(putRedemption).toHaveBeenCalledWith({
+        code: "code-1",
+        hashedSub: "hash-1",
+        issuedBy: "hash-2",
+        passTypeId: "digital-pass",
+        redeemedAt: expect.any(String),
+      });
     });
   });
 });

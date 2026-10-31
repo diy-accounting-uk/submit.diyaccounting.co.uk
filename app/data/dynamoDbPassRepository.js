@@ -73,7 +73,8 @@ export async function redeemPass(code, now) {
           ConditionExpression: [
             "attribute_exists(pk)",
             "attribute_not_exists(revokedAt)",
-            "useCount < maxUses",
+            "(attribute_not_exists(maxUses) OR useCount < maxUses)",
+            "(attribute_not_exists(reviewLimit) OR useCount < reviewLimit)",
             "validFrom <= :now",
             "(attribute_not_exists(validUntil) OR validUntil >= :now)",
           ].join(" AND "),
@@ -164,4 +165,63 @@ export async function revokePass(code, now) {
     logger.error({ message: "Error revoking pass in DynamoDB", error: error.message });
     throw error;
   }
+}
+
+/**
+ * Claim the one referral redemption an account may ever make. Returns false when the account has
+ * already claimed one.
+ */
+export async function putReferralClaim(hashedSub, code, now) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: { pk: `referral#${hashedSub}`, code, claimedAt: now },
+          ConditionExpression: "attribute_not_exists(pk)",
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Referral already claimed for this account" });
+      return false;
+    }
+    logger.error({ message: "Error claiming referral in DynamoDB", error: error.message });
+    throw error;
+  }
+}
+
+export async function deleteReferralClaim(hashedSub) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.DeleteCommand({
+        TableName: tableName,
+        Key: { pk: `referral#${hashedSub}` },
+      }),
+  );
+}
+
+/**
+ * Store the record of one redemption: which pass, which account, who issued it and when.
+ */
+export async function putRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: {
+          pk: `redemption#${code}#${hashedSub}`,
+          code,
+          redeemedBy: hashedSub,
+          issuedBy,
+          passTypeId,
+          redeemedAt,
+        },
+      }),
+  );
+  logger.info({ message: "Redemption recorded", passTypeId });
 }

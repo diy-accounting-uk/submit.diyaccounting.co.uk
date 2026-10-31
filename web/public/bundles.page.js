@@ -757,6 +757,9 @@ const passReasonMessages = {
   wrong_email: "This pass is restricted to a different email address.",
   email_required: "This pass requires email verification.",
   not_yet_valid: "This pass is not yet valid.",
+  held_for_review: "This pass is on hold while we review it. Please try again later.",
+  own_pass: "You cannot redeem a pass you generated.",
+  referral_already_used: "This account has already redeemed a referral pass.",
 };
 
 function showPassStatus(message, type) {
@@ -1095,7 +1098,11 @@ async function fetchMyGeneratedPasses(append) {
       const expiryLabel = pass.validUntil
         ? new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
         : "No expiry";
-      const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
+      const usageLabel =
+        pass.maxUses === undefined || pass.maxUses === null
+          ? `${pass.useCount || 0} uses`
+          : `${pass.useCount || 0} of ${pass.maxUses} uses`;
+      const heldLabel = pass.heldForReview ? " · on hold for review" : "";
       const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
@@ -1112,7 +1119,7 @@ async function fetchMyGeneratedPasses(append) {
           domEl("span", { class: "status-tag" }, typeLabel),
         ),
         pass.notes ? domEl("div", { class: "bundle-note" }, pass.notes) : null,
-        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}`),
+        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}${heldLabel}`),
         domEl(
           "div",
           { class: "bundle-row-line" },

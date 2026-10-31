@@ -105,6 +105,23 @@ describe("passMyPassesGet", () => {
     expect(first.issuedBy).toBeUndefined();
   });
 
+  test("shows a pass with no use cap as uncapped, and flags it when the review limit holds it", async () => {
+    mockGetPassesByIssuer.mockResolvedValue({
+      items: [
+        { code: "open-pass", passTypeId: "digital-pass", reviewLimit: 1000, useCount: 12 },
+        { code: "held-pass", passTypeId: "digital-pass", reviewLimit: 1000, useCount: 1000 },
+      ],
+    });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, null, { method: "GET" }));
+
+    const [open, held] = JSON.parse(result.body).passes;
+    expect(open.maxUses).toBeNull();
+    expect(open.heldForReview).toBe(false);
+    expect(held.heldForReview).toBe(true);
+    expect(held).not.toHaveProperty("reviewLimit");
+  });
+
   test("passes hashedSub and limit to repository", async () => {
     mockGetPassesByIssuer.mockResolvedValue({ items: [] });
 

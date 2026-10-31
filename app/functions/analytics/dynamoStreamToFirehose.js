@@ -25,6 +25,7 @@ const firehoseClient = new FirehoseClient({});
 const PUT_RECORD_BATCH_LIMIT = 500;
 
 const STRIPE_SUBSCRIPTION_PK_PREFIX = "stripe#";
+const REDEMPTION_PK_PREFIX = "redemption#";
 
 /**
  * The receipt item stores HMRC's submission *response*, never the request body that carries
@@ -92,8 +93,13 @@ function stripSubscriptionPrefix(pk) {
  * bundle, not a user identifier. It is hashed with the same HMAC helper the app uses for subs
  * so a raw redeemable code never leaves the table, while still leaving a stable join key behind.
  * `issuedBy` is already a hashed sub by the time it lands on the item, so it passes through as-is.
+ *
+ * A redemption item ("redemption#<code>#<hashedSub>") also carries the code, which is already
+ * the redeemer's acquisition ref in the bundles stream, and the redeemer's hashed sub. The code
+ * on a pass item stays out: only a redemption item projects it.
  */
 function projectPass(image) {
+  const isRedemption = typeof image.pk === "string" && image.pk.startsWith(REDEMPTION_PK_PREFIX);
   return {
     pass_id: typeof image.pk === "string" ? hashSub(image.pk) : null,
     pass_type_id: image.passTypeId ?? null,
@@ -104,6 +110,9 @@ function projectPass(image) {
     use_count: image.useCount ?? null,
     revoked_at: image.revokedAt ?? null,
     actor: image.actor ?? null,
+    redeemed_by: isRedemption ? (image.redeemedBy ?? null) : null,
+    redeemed_at: isRedemption ? (image.redeemedAt ?? null) : null,
+    redemption_code: isRedemption ? (image.code ?? null) : null,
   };
 }
 

@@ -74,7 +74,7 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: `Unknown pass type: ${passTypeId}` });
   }
 
-  if (!passTypeDef.tokenCostToIssue || passTypeDef.tokenCostToIssue <= 0) {
+  if (passTypeDef.userIssuable !== true) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: `Pass type ${passTypeId} is not user-issuable` });
   }
 
@@ -99,7 +99,8 @@ export async function ingestHandler(event) {
       passTypeId,
       bundleId: passTypeDef.bundleId,
       validityPeriod: passTypeDef.defaultValidityPeriod,
-      maxUses: passTypeDef.defaultMaxUses || 1,
+      maxUses: passTypeDef.defaultMaxUses ?? null,
+      reviewLimit: passTypeDef.reviewLimit,
       issuedBy: hashedSub,
       createdBy: "user",
       notes,
@@ -127,7 +128,7 @@ export async function ingestHandler(event) {
         bundleId: pass.bundleId,
         validFrom: pass.validFrom,
         validUntil: pass.validUntil || null,
-        maxUses: pass.maxUses,
+        maxUses: pass.maxUses ?? null,
         tokensConsumed: tokenResult.cost,
         tokensRemaining: holdsUnlimitedGrant ? undefined : sumTokensRemaining(userBundles),
       },

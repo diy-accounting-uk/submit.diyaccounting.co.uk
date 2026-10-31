@@ -19,6 +19,9 @@
     wrong_email: "This pass is restricted to a different email address.",
     email_required: "This pass requires email verification.",
     not_yet_valid: "This pass is not yet valid.",
+    held_for_review: "This pass is on hold while we review it. Please try again later.",
+    own_pass: "You cannot redeem a pass you generated.",
+    referral_already_used: "This account has already redeemed a referral pass.",
   };
 
   function getIdToken() {
