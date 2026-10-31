@@ -471,6 +471,7 @@ const sampleValue = (observation) =>
 // most the page ever renders; the layout tests size the page's reserved heights against it.
 function fullShapeSnapshot() {
   const context = {
+    envName: "prod",
     region: "eu-west-2",
     athenaWorkGroupName: "prod-env-analytics",
     githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
@@ -505,7 +506,6 @@ function fullShapeSnapshot() {
   };
 }
 
-    envName: "prod",
 // The real 403 body a signed-in caller without the operator bundle gets back from
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
 // that handler's message so this fixture proves what the page does with the server's own words,
@@ -1417,6 +1417,9 @@ test.describe("Operator Dashboard", () => {
           expect(cardRight).toBeLessThanOrEqual(width);
           const firstColour = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--chart-1").trim());
           expect(firstColour).toBe(colorScheme === "dark" ? "#56b4e9" : "#0072b2");
+          await page.evaluate(() => {
+            for (const id of ["consent-banner", "consent-dialog"]) document.getElementById(id)?.remove();
+          });
           await page.locator("#chartsPanel").screenshot({ path: `target/rook-screenshots/dash/charts-${width}-${colorScheme}.png` });
           await page.screenshot({ path: `target/rook-screenshots/dash/dashboard-${width}-${colorScheme}.png`, fullPage: true });
         });
