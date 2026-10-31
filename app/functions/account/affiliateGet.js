@@ -3,10 +3,10 @@
 
 // @capability BILL-49 Read an affiliate's tier and state
 // - **Use when:** an operator must see the tier and state of a referrer before or after changing them.
-// - **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. It answers the tier, the state and the times, or 404 when the referrer has no affiliate item.
+// - **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the state is applied and the item holds a Connect account, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
 // - **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
 // - **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
-// - **Files:** app/functions/account/affiliateGet.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
+// - **Files:** app/functions/account/affiliateGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
 // - **Keywords:** affiliate, tier, state, referrer, operator
 // - **Related:** BILL-46, BILL-48
 // @end-capability
@@ -28,6 +28,7 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { isOperatorEmail } from "../../lib/operators.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
 import { REFERRER_HASH_PATTERN } from "./affiliatePost.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateGet.js" });
@@ -66,21 +67,18 @@ export async function ingestHandler(event) {
   }
 
   try {
-    const item = await getAffiliate(referrerHash);
+    let item = await getAffiliate(referrerHash);
     if (!item) {
       return http404NotFoundResponse({ request, headers: responseHeaders, message: "No affiliate for that referrer" });
     }
-    return http200OkResponse({
-      request,
-      headers: responseHeaders,
-      data: {
-        referrerHash,
-        tier: item.tier,
-        state: item.state,
-        updatedAt: item.updatedAt ?? null,
-        approvedAt: item.approvedAt ?? null,
-      },
-    });
+    if (item.stripeAccountId && item.state === "applied") {
+      try {
+        item = await refreshAffiliateAccount({ referrerHash, item });
+      } catch (error) {
+        logger.warn({ message: "Affiliate account read failed, answering stored values", error: error.message });
+      }
+    }
+    return http200OkResponse({ request, headers: responseHeaders, data: toAffiliateView(referrerHash, item) });
   } catch (error) {
     logger.error({ message: "Error reading affiliate", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({

@@ -256,18 +256,18 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 30 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 32 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1), passReleasePost(1),
-        // affiliatePost(1), affiliateGet(1),
+        // affiliatePost(1), affiliateGet(1), affiliateApplicationPost(1), affiliateApplicationGet(1),
         // passHeldGet(1), passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), commissionRelease(1),
         // commissionCreditPayout(1),
         // sessionBeaconPost(1),
         // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 30);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 32);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
@@ -524,9 +524,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // adding its primary route and its auto-HEAD route, for 210 + 2 = 212. GET and POST /api/v1/affiliate
         // share one path and add two primary routes and one auto-HEAD route, for 212 + 3 = 215. GET /api/v1/pass/held
         // sits on its own unshared path and adds
-        // a primary route and an auto-HEAD route, for 217 in total.
+        // a primary route and an auto-HEAD route, for 217. GET and POST /api/v1/affiliate/application share
+        // one path and add two primary routes and one auto-HEAD route, for 220 in total.
         assertEquals(
-                217,
+                220,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

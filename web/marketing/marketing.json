@@ -13,7 +13,7 @@
     "submit.diyaccounting.co.uk"
   ],
   "affiliates": {
-    "applyUrl": "",
+    "applyUrl": "https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection",
     "ratePercent": 30,
     "months": 12,
     "creditHoldDays": 30,

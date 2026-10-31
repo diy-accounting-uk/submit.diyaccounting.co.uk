@@ -68,6 +68,40 @@ export function createStripeSimulator() {
     });
   });
 
+  // POST /v1/accounts
+  app.post("/v1/accounts", (req, res) => {
+    res.json({
+      id: "acct_test_" + Date.now(),
+      object: "account",
+      country: req.body.country || "GB",
+      details_submitted: false,
+      capabilities: { transfers: "inactive" },
+      metadata: req.body.metadata || {},
+    });
+  });
+
+  // GET /v1/accounts/:id
+  app.get("/v1/accounts/:id", (req, res) => {
+    res.json({
+      id: req.params.id,
+      object: "account",
+      country: "GB",
+      details_submitted: true,
+      capabilities: { transfers: "active" },
+      metadata: {},
+    });
+  });
+
+  // POST /v1/account_links
+  app.post("/v1/account_links", (req, res) => {
+    res.json({
+      object: "account_link",
+      url: "https://connect.stripe.com/setup/e/" + (req.body.account || "acct_test_000"),
+      created: Math.floor(Date.now() / 1000),
+      expires_at: Math.floor(Date.now() / 1000) + 300,
+    });
+  });
+
   return app;
 }
 

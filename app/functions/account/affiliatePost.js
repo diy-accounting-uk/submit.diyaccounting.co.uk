@@ -3,7 +3,7 @@
 
 // @capability BILL-48 Set an affiliate's tier and state
 // - **Use when:** an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
-// - **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt.
+// - **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt. Approving a tier paid through Stripe Connect needs a stored Connect account that has submitted its details, else 409; it reads the account from Stripe first when the stored flag is false. Ending needs neither.
 // - **Run:** `POST /api/v1/affiliate`
 // - **Entry:** `app/functions/account/affiliatePost.js:ingestHandler`
 // - **Files:** app/functions/account/affiliatePost.js, app/unit-tests/functions/affiliatePost.test.js, web/public/bundles.page.js
@@ -21,6 +21,7 @@ import {
   http400BadRequestResponse,
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
+  http409ConflictResponse,
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
@@ -28,7 +29,8 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { isOperatorEmail } from "../../lib/operators.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { loadReferralConfig } from "../../services/referralConfig.js";
-import { putAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { refreshAffiliateAccount } from "../../services/affiliateConnect.js";
+import { getAffiliate, putAffiliate } from "../../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliatePost.js" });
 
@@ -71,8 +73,10 @@ export async function ingestHandler(event) {
   if (typeof referrerHash !== "string" || !REFERRER_HASH_PATTERN.test(referrerHash)) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Missing or invalid field: referrerHash" });
   }
-  const tierIds = loadReferralConfig().tiers.map((t) => t.id);
-  if (!tierIds.includes(tier)) {
+  const tiers = loadReferralConfig().tiers;
+  const tierIds = tiers.map((t) => t.id);
+  const tierConfig = tiers.find((t) => t.id === tier);
+  if (!tierConfig) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: `tier must be one of ${tierIds.join(", ")}` });
   }
   if (!AFFILIATE_STATES.includes(state)) {
@@ -84,6 +88,19 @@ export async function ingestHandler(event) {
   }
 
   try {
+    if (state === "approved" && tierConfig.payout === "connect") {
+      let existing = await getAffiliate(referrerHash);
+      if (existing?.stripeAccountId && existing.detailsSubmitted !== true) {
+        existing = await refreshAffiliateAccount({ referrerHash, item: existing });
+      }
+      if (!existing?.stripeAccountId || existing.detailsSubmitted !== true) {
+        return http409ConflictResponse({
+          request,
+          headers: responseHeaders,
+          message: "This tier is paid through Stripe Connect; the applicant has not finished Stripe onboarding",
+        });
+      }
+    }
     const item = await putAffiliate({ referrerHash, tier, state, now: new Date().toISOString() });
     logger.info({ message: "Affiliate set", referrerHash, tier, state });
     return http200OkResponse({

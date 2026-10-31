@@ -372,6 +372,60 @@ export async function putAffiliate({ referrerHash, tier, state, now }) {
   return result.Attributes;
 }
 
+/**
+ * Open an affiliate application: store the Connect account id on the referrer's affiliate item,
+ * with the state "applied" and the given tier unless the item already holds them. Returns false
+ * when the item already holds a Connect account id, so a second account is never attached.
+ */
+export async function startAffiliateApplication({ referrerHash, tier, stripeAccountId, stripeTest, now }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `affiliate#${referrerHash}` },
+          UpdateExpression:
+            "SET stripeAccountId = :accountId, stripeTest = :test, tier = if_not_exists(tier, :tier), #state = if_not_exists(#state, :applied), createdAt = if_not_exists(createdAt, :now), updatedAt = :now",
+          ConditionExpression: "attribute_not_exists(stripeAccountId)",
+          ExpressionAttributeNames: { "#state": "state" },
+          ExpressionAttributeValues: {
+            ":accountId": stripeAccountId,
+            ":test": stripeTest === true,
+            ":tier": tier,
+            ":applied": "applied",
+            ":now": now,
+          },
+        }),
+    );
+    logger.info({ message: "Affiliate application stored", pk: `affiliate#${referrerHash}` });
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return false;
+    throw error;
+  }
+}
+
+/**
+ * Record what Stripe reports of a referrer's Connect account. The item must exist. Returns the
+ * item as stored.
+ */
+export async function recordAffiliateAccountStatus({ referrerHash, detailsSubmitted, transfersActive, now }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { pk: `affiliate#${referrerHash}` },
+        UpdateExpression: "SET detailsSubmitted = :details, transfersActive = :transfers, accountCheckedAt = :now",
+        ConditionExpression: "attribute_exists(pk)",
+        ExpressionAttributeValues: { ":details": detailsSubmitted === true, ":transfers": transfersActive === true, ":now": now },
+        ReturnValues: "ALL_NEW",
+      }),
+  );
+  return result.Attributes;
+}
+
 const FIGURES_BATCH_SIZE = 100;
 
 function figuresKey(code) {

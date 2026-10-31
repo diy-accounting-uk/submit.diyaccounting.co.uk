@@ -10,6 +10,12 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getAffiliate: (...args) => mockGetAffiliate(...args),
 }));
 
+const mockRefresh = vi.fn();
+vi.mock("@app/services/affiliateConnect.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  refreshAffiliateAccount: (...args) => mockRefresh(...args),
+}));
+
 import { ingestHandler } from "@app/functions/account/affiliateGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -22,6 +28,7 @@ const eventFor = (token, query) => ({ ...buildEventWithToken(token, null), query
 describe("affiliateGet", () => {
   beforeEach(() => {
     mockGetAffiliate.mockReset();
+    mockRefresh.mockReset();
     mockGetAffiliate.mockResolvedValue({
       pk: `affiliate#${referrerHash}`,
       tier: "creator",
@@ -54,7 +61,28 @@ describe("affiliateGet", () => {
       state: "applied",
       updatedAt: "2026-01-01T00:00:00.000Z",
       approvedAt: null,
+      hasConnectAccount: false,
+      detailsSubmitted: false,
+      transfersActive: false,
     });
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  test("an applied affiliate with a Connect account is read from Stripe first", async () => {
+    const item = { pk: `affiliate#${referrerHash}`, tier: "casual", state: "applied", stripeAccountId: "acct_1" };
+    mockGetAffiliate.mockResolvedValue(item);
+    mockRefresh.mockResolvedValue({ ...item, detailsSubmitted: true, transfersActive: false });
+    const result = await ingestHandler(eventFor(tokenFor(operatorEmail), { referrerHash }));
+    expect(mockRefresh).toHaveBeenCalledWith({ referrerHash, item });
+    expect(JSON.parse(result.body)).toMatchObject({ hasConnectAccount: true, detailsSubmitted: true, transfersActive: false });
+  });
+
+  test("a Stripe read failure answers the stored values", async () => {
+    mockGetAffiliate.mockResolvedValue({ tier: "casual", state: "applied", stripeAccountId: "acct_1" });
+    mockRefresh.mockRejectedValue(new Error("stripe down"));
+    const result = await ingestHandler(eventFor(tokenFor(operatorEmail), { referrerHash }));
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).detailsSubmitted).toBe(false);
   });
 
   test("a referrer with no item is a 404", async () => {

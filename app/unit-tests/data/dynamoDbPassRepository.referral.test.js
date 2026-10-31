@@ -46,6 +46,8 @@ const {
   getAffiliate,
   setReviewLimit,
   putAffiliate,
+  startAffiliateApplication,
+  recordAffiliateAccountStatus,
 } = await import("@app/data/dynamoDbPassRepository.js");
 
 describe("data/dynamoDbPassRepository - referral claim, redemption record and review limit", () => {
@@ -149,5 +151,51 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
     await putAffiliate({ referrerHash: "h1", tier: "casual", state: "approved", now: "2026-01-01T00:00:00.000Z" });
     const { params } = mockSend.mock.calls[0][0];
     expect(params.UpdateExpression).toBe("SET tier = :tier, #state = :state, updatedAt = :now, approvedAt = :now");
+  });
+
+  test("startAffiliateApplication stores the account id once and keeps an existing tier and state", async () => {
+    mockSend.mockResolvedValue({});
+    const written = await startAffiliateApplication({
+      referrerHash: "h1",
+      tier: "casual",
+      stripeAccountId: "acct_1",
+      stripeTest: true,
+      now: "2026-01-01T00:00:00.000Z",
+    });
+    expect(written).toBe(true);
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.Key).toEqual({ pk: "affiliate#h1" });
+    expect(params.ConditionExpression).toBe("attribute_not_exists(stripeAccountId)");
+    expect(params.UpdateExpression).toContain("tier = if_not_exists(tier, :tier)");
+    expect(params.UpdateExpression).toContain("#state = if_not_exists(#state, :applied)");
+    expect(params.ExpressionAttributeValues).toMatchObject({ ":accountId": "acct_1", ":test": true, ":applied": "applied" });
+  });
+
+  test("startAffiliateApplication answers false when the item already holds an account", async () => {
+    mockSend.mockRejectedValue(Object.assign(new Error("exists"), { name: "ConditionalCheckFailedException" }));
+    expect(
+      await startAffiliateApplication({ referrerHash: "h1", tier: "casual", stripeAccountId: "acct_2", now: "2026-01-01T00:00:00.000Z" }),
+    ).toBe(false);
+  });
+
+  test("startAffiliateApplication rethrows any other failure", async () => {
+    mockSend.mockRejectedValue(new Error("boom"));
+    await expect(
+      startAffiliateApplication({ referrerHash: "h1", tier: "casual", stripeAccountId: "acct_2", now: "2026-01-01T00:00:00.000Z" }),
+    ).rejects.toThrow("boom");
+  });
+
+  test("recordAffiliateAccountStatus updates the flags of an existing item only", async () => {
+    mockSend.mockResolvedValue({ Attributes: { detailsSubmitted: true } });
+    const item = await recordAffiliateAccountStatus({
+      referrerHash: "h1",
+      detailsSubmitted: true,
+      transfersActive: false,
+      now: "2026-01-01T00:00:00.000Z",
+    });
+    expect(item.detailsSubmitted).toBe(true);
+    const { params } = mockSend.mock.calls[0][0];
+    expect(params.ConditionExpression).toBe("attribute_exists(pk)");
+    expect(params.ExpressionAttributeValues).toEqual({ ":details": true, ":transfers": false, ":now": "2026-01-01T00:00:00.000Z" });
   });
 });

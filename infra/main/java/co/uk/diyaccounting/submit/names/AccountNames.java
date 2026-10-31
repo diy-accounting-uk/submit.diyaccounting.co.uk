@@ -206,6 +206,22 @@ public class AccountNames {
     public String affiliateGetLambdaUrlPath;
     public boolean affiliateGetLambdaJwtAuthorizer;
     public boolean affiliateGetLambdaCustomAuthorizer;
+    public String affiliateApplicationPostIngestLambdaHandler;
+    public String affiliateApplicationPostIngestLambdaFunctionName;
+    public String affiliateApplicationPostIngestLambdaArn;
+    public String affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliateApplicationPostLambdaHttpMethod;
+    public String affiliateApplicationPostLambdaUrlPath;
+    public boolean affiliateApplicationPostLambdaJwtAuthorizer;
+    public boolean affiliateApplicationPostLambdaCustomAuthorizer;
+    public String affiliateApplicationGetIngestLambdaHandler;
+    public String affiliateApplicationGetIngestLambdaFunctionName;
+    public String affiliateApplicationGetIngestLambdaArn;
+    public String affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliateApplicationGetLambdaHttpMethod;
+    public String affiliateApplicationGetLambdaUrlPath;
+    public boolean affiliateApplicationGetLambdaJwtAuthorizer;
+    public boolean affiliateApplicationGetLambdaCustomAuthorizer;
     public String passHeldGetIngestLambdaHandler;
     public String passHeldGetIngestLambdaFunctionName;
     public String passHeldGetIngestLambdaArn;
@@ -839,6 +855,50 @@ public class AccountNames {
                 "Read an affiliate",
                 "Reads the tier and state of a referrer's affiliate record (operator only)",
                 "getAffiliate"));
+        // Affiliate application POST Lambda (JWT auth; any signed-in user)
+        this.affiliateApplicationPostLambdaHttpMethod = HttpMethod.POST;
+        this.affiliateApplicationPostLambdaUrlPath = "/api/v1/affiliate/application";
+        this.affiliateApplicationPostLambdaJwtAuthorizer = true;
+        this.affiliateApplicationPostLambdaCustomAuthorizer = false;
+        var affiliateApplicationPostLambdaHandlerName = "affiliateApplicationPost.ingestHandler";
+        var affiliateApplicationPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliateApplicationPostLambdaHandlerName);
+        this.affiliateApplicationPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliateApplicationPostLambdaHandlerDashed);
+        this.affiliateApplicationPostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateApplicationPostLambdaHandlerName);
+        this.affiliateApplicationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationPostLambdaHandlerDashed);
+        this.affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliateApplicationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliateApplicationPostLambdaHttpMethod,
+                this.affiliateApplicationPostLambdaUrlPath,
+                "Start an affiliate application",
+                "Creates the caller's Stripe Connect account if needed and answers a Stripe-hosted onboarding link",
+                "startAffiliateApplication"));
+        // Affiliate application GET Lambda (JWT auth; any signed-in user)
+        this.affiliateApplicationGetLambdaHttpMethod = HttpMethod.GET;
+        this.affiliateApplicationGetLambdaUrlPath = "/api/v1/affiliate/application";
+        this.affiliateApplicationGetLambdaJwtAuthorizer = true;
+        this.affiliateApplicationGetLambdaCustomAuthorizer = false;
+        var affiliateApplicationGetLambdaHandlerName = "affiliateApplicationGet.ingestHandler";
+        var affiliateApplicationGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliateApplicationGetLambdaHandlerName);
+        this.affiliateApplicationGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliateApplicationGetLambdaHandlerDashed);
+        this.affiliateApplicationGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateApplicationGetLambdaHandlerName);
+        this.affiliateApplicationGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliateApplicationGetLambdaHandlerDashed);
+        this.affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliateApplicationGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliateApplicationGetLambdaHttpMethod,
+                this.affiliateApplicationGetLambdaUrlPath,
+                "Read my affiliate application",
+                "Reads the state of the caller's affiliate application and the Stripe Connect onboarding flags",
+                "getAffiliateApplication"));
         // Pass Held GET Lambda (JWT auth; the handler admits operators only)
         this.passHeldGetLambdaHttpMethod = HttpMethod.GET;
         this.passHeldGetLambdaUrlPath = "/api/v1/pass/held";

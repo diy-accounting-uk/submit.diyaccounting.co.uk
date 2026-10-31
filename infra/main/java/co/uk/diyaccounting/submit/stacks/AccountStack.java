@@ -134,6 +134,12 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps affiliateGetLambdaProps;
     public Function affiliateGetLambda;
     public ILogGroup affiliateGetLambdaLogGroup;
+    public AbstractApiLambdaProps affiliateApplicationPostLambdaProps;
+    public Function affiliateApplicationPostLambda;
+    public ILogGroup affiliateApplicationPostLambdaLogGroup;
+    public AbstractApiLambdaProps affiliateApplicationGetLambdaProps;
+    public Function affiliateApplicationGetLambda;
+    public ILogGroup affiliateApplicationGetLambdaLogGroup;
     public AbstractApiLambdaProps passHeldGetLambdaProps;
     public Function passHeldGetLambda;
     public ILogGroup passHeldGetLambdaLogGroup;
@@ -243,6 +249,16 @@ public class AccountStack extends Stack {
         // The live Stripe secret the commission credit payout reads to write customer balances.
         @Value.Default
         default String stripeSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String baseUrl() {
             return "";
         }
 
@@ -1363,6 +1379,7 @@ public class AccountStack extends Stack {
         var affiliatePostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        withStripeSecretArns(affiliatePostLambdaEnv, props);
         var affiliatePostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -1388,7 +1405,8 @@ public class AccountStack extends Stack {
         this.affiliatePostLambda = affiliatePostApiLambda.ingestLambda;
         this.affiliatePostLambdaLogGroup = affiliatePostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.affiliatePostLambdaProps);
-        passesTable.grant(this.affiliatePostLambda, "dynamodb:UpdateItem");
+        passesTable.grant(this.affiliatePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        grantStripeSecrets(this.affiliatePostLambda, props);
         // affiliatePost admits operators only, so it reads the operator list
         OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliatePostLambda, region, account, props.envName());
         infof(
@@ -1401,6 +1419,7 @@ public class AccountStack extends Stack {
         var affiliateGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        withStripeSecretArns(affiliateGetLambdaEnv, props);
         var affiliateGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -1426,12 +1445,103 @@ public class AccountStack extends Stack {
         this.affiliateGetLambda = affiliateGetApiLambda.ingestLambda;
         this.affiliateGetLambdaLogGroup = affiliateGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.affiliateGetLambdaProps);
-        passesTable.grant(this.affiliateGetLambda, "dynamodb:GetItem");
+        passesTable.grant(this.affiliateGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        grantStripeSecrets(this.affiliateGetLambda, props);
         // affiliateGet admits operators only, so it reads the operator list
         OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliateGetLambda, region, account, props.envName());
         infof(
                 "Created Affiliate GET Lambda %s",
                 this.affiliateGetLambda.getNode().getId());
+
+        // ============================================================================
+        // Affiliate Application POST Lambda (JWT auth - the signed-in applicant)
+        // ============================================================================
+        var affiliateApplicationPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        withStripeSecretArns(affiliateApplicationPostLambdaEnv, props);
+        affiliateApplicationPostLambdaEnv.with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName);
+        if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+            affiliateApplicationPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        }
+        var affiliateApplicationPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliateApplicationPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().account.affiliateApplicationPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliateApplicationPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliateApplicationPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .affiliateApplicationPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliateApplicationPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliateApplicationPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliateApplicationPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliateApplicationPostLambdaCustomAuthorizer)
+                        .environment(affiliateApplicationPostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliateApplicationPostApiLambda);
+        this.affiliateApplicationPostLambdaProps = affiliateApplicationPostApiLambda.apiProps;
+        this.affiliateApplicationPostLambda = affiliateApplicationPostApiLambda.ingestLambda;
+        this.affiliateApplicationPostLambdaLogGroup = affiliateApplicationPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliateApplicationPostLambdaProps);
+        passesTable.grant(this.affiliateApplicationPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        grantStripeSecrets(this.affiliateApplicationPostLambda, props);
+        SubHashSaltHelper.grantSaltAccess(this.affiliateApplicationPostLambda, region, account, props.envName());
+        this.affiliateApplicationPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+        infof(
+                "Created Affiliate Application POST Lambda %s",
+                this.affiliateApplicationPostLambda.getNode().getId());
+
+        // ============================================================================
+        // Affiliate Application GET Lambda (JWT auth - the signed-in applicant)
+        // ============================================================================
+        var affiliateApplicationGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        withStripeSecretArns(affiliateApplicationGetLambdaEnv, props);
+        var affiliateApplicationGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliateApplicationGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.affiliateApplicationGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliateApplicationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliateApplicationGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .affiliateApplicationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliateApplicationGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliateApplicationGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliateApplicationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliateApplicationGetLambdaCustomAuthorizer)
+                        .environment(affiliateApplicationGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliateApplicationGetApiLambda);
+        this.affiliateApplicationGetLambdaProps = affiliateApplicationGetApiLambda.apiProps;
+        this.affiliateApplicationGetLambda = affiliateApplicationGetApiLambda.ingestLambda;
+        this.affiliateApplicationGetLambdaLogGroup = affiliateApplicationGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliateApplicationGetLambdaProps);
+        passesTable.grant(this.affiliateApplicationGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        grantStripeSecrets(this.affiliateApplicationGetLambda, props);
+        SubHashSaltHelper.grantSaltAccess(this.affiliateApplicationGetLambda, region, account, props.envName());
+        infof(
+                "Created Affiliate Application GET Lambda %s",
+                this.affiliateApplicationGetLambda.getNode().getId());
         // Pass Held GET Lambda (JWT auth - an operator lists the passes held for review)
         // ============================================================================
         var passHeldGetLambdaEnv = new PopulatedMap<String, String>()
@@ -1889,6 +1999,8 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
         cfnOutput(this, "AffiliatePostLambdaArn", this.affiliatePostLambda.getFunctionArn());
         cfnOutput(this, "AffiliateGetLambdaArn", this.affiliateGetLambda.getFunctionArn());
+        cfnOutput(this, "AffiliateApplicationPostLambdaArn", this.affiliateApplicationPostLambda.getFunctionArn());
+        cfnOutput(this, "AffiliateApplicationGetLambdaArn", this.affiliateApplicationGetLambda.getFunctionArn());
         cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
@@ -1900,5 +2012,27 @@ public class AccountStack extends Stack {
         infof(
                 "AccountStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    private static void withStripeSecretArns(PopulatedMap<String, String> environment, AccountStackProps props) {
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            environment.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            environment.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
+    }
+
+    private static void grantStripeSecrets(Function function, AccountStackProps props) {
+        for (var secretArn : List.of(props.stripeSecretKeyArn(), props.stripeTestSecretKeyArn())) {
+            if (secretArn == null || secretArn.isBlank()) continue;
+            var withWildcard = secretArn.endsWith("*") ? secretArn : secretArn + "-*";
+            function.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(withWildcard))
+                    .build());
+        }
     }
 }
