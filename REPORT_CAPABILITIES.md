@@ -207,6 +207,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments: use when a stale or finished ci deployment must be torn down, or a live one's self-destruct timer needs resetting.
     - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand: use when a superseded prod deployment's stacks must be torn down by hand.
     - [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks: use when a branch deploy needs to clean up stale stacks while slots are claimed.
+    - [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves: use when a ci or prod deployment's `{deployment}-app-*` CloudFormation stacks must be deleted in dependency order, as fast as the order allows.
     - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs: use when a new workflow job rotates a lane's durable test user, to avoid two jobs racing it.
     - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations: use when a stored data shape must change across a deploy boundary, or a migration needs a manual re-run.
   - [Alarms, triage and probes](#alarms-triage-and-probes-ops)
@@ -2176,7 +2177,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area OPS -->
 - [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
-- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
+- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
@@ -2410,6 +2411,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments
 - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand
 - [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks
+- [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves
 - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs
 - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 <!-- /generated:group ci-slot-pool-and-sweep-ops -->
@@ -2473,6 +2475,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/ci-claim-check-proof.sh
 - **Keywords:** ci slot, wait for slot, destroy stale stacks, sweep-min-age-hours, ci-set, claim check
 - **Related:** OPS-10, OPS-13
+
+#### OPS-146 Delete a deployment's app stacks in parallel waves
+
+- **Use when:** a ci or prod deployment's `{deployment}-app-*` CloudFormation stacks must be deleted in dependency order, as fast as the order allows.
+- **Does:** delete-deployment-stacks.sh deletes the stacks in four phases and waits for each phase before the next. SelfDestruct, Ops and Publish go together in phase 1. Edge is phase 2, ApiRoutes then Api phase 3, and the nine Lambda stacks go together in phase 4. Before a parallel wave it reads the CloudFormation exports and imports, and deletes the wave one stack at a time when a stack in it imports an export of another stack in it. A stack in DELETE_FAILED is deleted again with FORCE_DELETE_STACK. Each stack writes its own log, printed when its wave ends.
+- **Run:** `scripts/delete-deployment-stacks.sh <deployment-name>`; called by `destroy-ci.yml` and `destroy-prod.yml`
+- **Entry:** `scripts/delete-deployment-stacks.sh`
+- **Files:** scripts/delete-deployment-stacks.sh, app/unit-tests/scripts/deleteDeploymentStacks.test.js, .github/workflows/destroy-ci.yml, .github/workflows/destroy-prod.yml
+- **Keywords:** delete stacks, destroy deployment, parallel delete, dependency order, FORCE_DELETE_STACK, list-imports, wave, teardown
+- **Related:** OPS-13, OPS-14
 
 #### OPS-15 Serialize lane test-user rotation jobs
 
@@ -6678,6 +6690,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
 - delete packages: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- delete stacks: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - delete tax data: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - deletebook: [BILL-18](#bill-18-delete-a-diya-gl-book)
@@ -6686,6 +6699,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
+- dependency order: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - dependency tracking: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - dependency update: [DEV-22](#dev-22-clean-and-update-local-build-state), [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dependency updates: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
@@ -6718,6 +6732,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - describe-alarm-history: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - design document: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - design tokens: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- destroy deployment: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - destroy prod: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - destroy stale deployments: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - destroy stale stacks: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
@@ -6953,6 +6968,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - force logout: [OPS-64](#ops-64-runbook-information-security-operations), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
+- force_delete_stack: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - foreign property adjustments: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - foreign property annual: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - foreign property bsas: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
@@ -7313,6 +7329,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list secrets: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
+- list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
@@ -7575,6 +7592,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - paid without activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - parallel branch: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
+- parallel delete: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -8206,7 +8224,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - tear down deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
-- teardown: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
+- teardown: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - teardown prod deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - telegram: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-72](#ops-72-forward-bedrock-budget-alerts), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - telegram alert: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance), [DATA-01](#data-01-publish-activity-events-to-the-bus)
@@ -8408,6 +8426,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
+- wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - wcag 1.4.12: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)

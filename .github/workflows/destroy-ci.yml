@@ -1019,57 +1019,7 @@ jobs:
       - name: Delete stacks in dependency order
         if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
-        run: |
-          DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
-
-          delete_stack_in_region() {
-            local STACK="$1" REGION="$2"
-            local STATUS
-            STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
-              --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
-            if [ "$STATUS" = "DOES_NOT_EXIST" ]; then
-              echo "  $STACK does not exist in $REGION, skipping"
-              return 0
-            fi
-            echo "  Deleting $STACK in $REGION (status: $STATUS)..."
-            aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-            aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-            # Check for DELETE_FAILED and force delete
-            STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
-              --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
-            if [ "$STATUS" = "DELETE_FAILED" ]; then
-              echo "  $STACK is DELETE_FAILED, force deleting"
-              aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" \
-                --deletion-mode FORCE_DELETE_STACK || true
-              aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-            fi
-          }
-
-          # Delete in reverse dependency order (leaf stacks first)
-          echo "=== Phase 1: SelfDestruct + Ops + Publish (no dependents) ==="
-          delete_stack_in_region "${DEPLOYMENT}-app-SelfDestructStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-OpsStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-PublishStack" us-east-1
-
-          echo "=== Phase 2: EdgeStack (depends on ApiStack outputs) ==="
-          delete_stack_in_region "${DEPLOYMENT}-app-EdgeStack" us-east-1
-
-          echo "=== Phase 3: ApiRoutesStack, then ApiStack (depends on Lambda stacks) ==="
-          delete_stack_in_region "${DEPLOYMENT}-app-ApiRoutesStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-ApiStack" eu-west-2
-
-          echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="
-          delete_stack_in_region "${DEPLOYMENT}-app-AuthStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-HmrcStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-HmrcItsaStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-HmrcItsaPropertyStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-CompaniesHouseStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-DiyaGlStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-McpStack" eu-west-2
-
-          echo "=== Stack deletion complete ==="
+        run: scripts/delete-deployment-stacks.sh "${{ needs.names.outputs.deployment-name }}"
 
       - name: CDK destroy (cleanup pass)
         if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}

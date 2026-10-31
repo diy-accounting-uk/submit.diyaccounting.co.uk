@@ -349,6 +349,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-13 -->
 <!-- capability OPS-14 -->
 <!-- capability OPS-14a -->
+<!-- capability OPS-146 -->
 <!-- capability OPS-15 -->
 <!-- capability OPS-16 -->
 ### Alarms, triage and probes (OPS)
