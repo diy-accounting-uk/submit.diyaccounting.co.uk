@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -120,7 +121,7 @@ test.describe("Change Registered Office Address page", () => {
       await route.fulfill({
         status: 200,
         contentType: "text/css",
-        body: fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8"),
+        body: readSubmitCss(),
       });
     });
 

@@ -10,6 +10,7 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { readSubmitCss } from "./submitCss.js";
 import {
   OBJECTIVE_DEFINITIONS,
   OBJECTIVE_GUIDANCE,
@@ -491,7 +492,7 @@ test.describe("Operator Dashboard", () => {
     dashboardHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.html"), "utf-8");
     pageChromeJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/page-chrome.js"), "utf-8");
     authStatusJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/auth-status.js"), "utf-8");
-    submitCssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
+    submitCssContent = readSubmitCss();
   });
 
   async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {

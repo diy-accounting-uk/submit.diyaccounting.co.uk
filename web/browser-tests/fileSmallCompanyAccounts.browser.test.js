@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -78,7 +79,7 @@ test.describe("File small company accounts page", () => {
   test("on a phone the format 2 lines stay out of sight in format 1", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 900 });
     await openFormView(page);
-    await page.addStyleTag({ path: "web/public/submit.css" });
+    await page.addStyleTag({ content: readSubmitCss() });
     await expect(page.locator("#currentTurnover")).toBeVisible();
     await expect(page.locator("#currentChangeInStocks")).toBeHidden();
     await expect(page.locator("#currentInterestPayable")).toBeHidden();

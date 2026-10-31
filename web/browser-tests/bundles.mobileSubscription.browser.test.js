@@ -14,6 +14,7 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -31,7 +32,7 @@ test.describe("Bundles page - Manage Subscription button on mobile", () => {
 
   test.beforeAll(async () => {
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
-    cssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
+    cssContent = readSubmitCss();
     bundleCacheContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/bundle-cache.js"), "utf-8");
     requestCacheContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/request-cache.js"), "utf-8");
     tomlParserContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/toml-parser.js"), "utf-8");
