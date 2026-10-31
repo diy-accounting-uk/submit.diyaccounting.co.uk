@@ -20,6 +20,11 @@ const dynamoDbModule = {
       this.params = params;
     }
   },
+  GetCommand: class GetCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
   DeleteCommand: class DeleteCommand {
     constructor(params) {
       this.params = params;
@@ -31,7 +36,8 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
-const { putReferralClaim, deleteReferralClaim, putRedemption, redeemPass } = await import("@app/data/dynamoDbPassRepository.js");
+const { putReferralClaim, deleteReferralClaim, putRedemption, redeemPass, getReferralClaim, getRedemption, getAffiliate } =
+  await import("@app/data/dynamoDbPassRepository.js");
 
 describe("data/dynamoDbPassRepository - referral claim, redemption record and review limit", () => {
   beforeEach(() => {
@@ -76,5 +82,23 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
     const condition = mockSend.mock.calls[0][0].params.ConditionExpression;
     expect(condition).toContain("(attribute_not_exists(maxUses) OR useCount < maxUses)");
     expect(condition).toContain("(attribute_not_exists(reviewLimit) OR useCount < reviewLimit)");
+  });
+
+  test("getReferralClaim reads the account's claim item", async () => {
+    mockSend.mockResolvedValue({ Item: { pk: "referral#hash-1", code: "code-1" } });
+    expect(await getReferralClaim("hash-1")).toEqual({ pk: "referral#hash-1", code: "code-1" });
+    expect(mockSend.mock.calls[0][0].params.Key).toEqual({ pk: "referral#hash-1" });
+  });
+
+  test("getRedemption reads the redemption item and returns null when absent", async () => {
+    mockSend.mockResolvedValue({});
+    expect(await getRedemption("code-1", "hash-1")).toBeNull();
+    expect(mockSend.mock.calls[0][0].params.Key).toEqual({ pk: "redemption#code-1#hash-1" });
+  });
+
+  test("getAffiliate reads the affiliate item of a referrer", async () => {
+    mockSend.mockResolvedValue({ Item: { pk: "affiliate#ref-1", tier: "casual", state: "approved" } });
+    expect((await getAffiliate("ref-1")).tier).toBe("casual");
+    expect(mockSend.mock.calls[0][0].params.Key).toEqual({ pk: "affiliate#ref-1" });
   });
 });

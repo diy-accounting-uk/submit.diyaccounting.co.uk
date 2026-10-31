@@ -127,6 +127,13 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   listClientsByHashedSub: (...args) => mockListClientsByHashedSub(...args),
 }));
 
+const mockAccrueCommission = vi.fn();
+const mockReverseCommissionForCharge = vi.fn();
+vi.mock("@app/services/commissionLedger.js", () => ({
+  accrueCommission: (...args) => mockAccrueCommission(...args),
+  reverseCommissionForCharge: (...args) => mockReverseCommissionForCharge(...args),
+}));
+
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -198,6 +205,8 @@ function activityEventsNamed(name) {
 
 describe("billingWebhookPost", () => {
   beforeEach(() => {
+    mockAccrueCommission.mockReset();
+    mockReverseCommissionForCharge.mockReset();
     mockWebhooksConstructEvent.mockReset();
     mockSubscriptionsRetrieve.mockReset();
     mockChargesRetrieve.mockReset();
@@ -378,6 +387,44 @@ describe("billingWebhookPost", () => {
     expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident", 100, expect.any(String));
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(1);
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
+  });
+
+  test("invoice.paid accrues commission for the invoice and subscription record", async () => {
+    const subRecord = { pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" };
+    mockGetSubscription.mockResolvedValue(subRecord);
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: Math.floor(Date.now() / 1000) + 2592000 });
+    const invoice = { id: "in_test_123", parent: { subscription_details: { subscription: "sub_test_456" } } };
+    const payload = { id: "evt_test_invoice_accrue", type: "invoice.paid", data: { object: invoice } };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockAccrueCommission).toHaveBeenCalledTimes(1);
+    const [arg] = mockAccrueCommission.mock.calls[0];
+    expect(arg.invoice).toEqual(invoice);
+    expect(arg.subscriptionId).toBe("sub_test_456");
+    expect(arg.subRecord).toEqual(subRecord);
+    expect(arg.stripe.invoices.retrieve).toBeDefined();
+  });
+
+  test("invoice.paid still returns 200 and logs the failure when commission accrual throws", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: Math.floor(Date.now() / 1000) + 2592000 });
+    mockAccrueCommission.mockRejectedValue(new Error("ledger down"));
+    const payload = {
+      id: "evt_test_invoice_accrue_fail",
+      type: "invoice.paid",
+      data: { object: { id: "in_test_123", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Commission accrual failed", invoiceId: "in_test_123", error: "ledger down" }),
+    );
   });
 
   test("invoice.paid leaves a resident-pro holder's token count untouched - the practice licence has nothing to refresh", async () => {
@@ -1109,6 +1156,18 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+    expect(mockReverseCommissionForCharge).toHaveBeenCalledWith("ch_test_refund_123", "refund");
+  });
+
+  test("charge.refunded returns 200 when the commission reversal throws", async () => {
+    mockReverseCommissionForCharge.mockRejectedValue(new Error("ledger down"));
+    const payload = { id: "evt_test_refund_fail", type: "charge.refunded", data: { object: { id: "ch_test_refund_123" } } };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockLoggerError).toHaveBeenCalledWith(expect.objectContaining({ message: "Commission reversal failed" }));
   });
 
   test("charge.dispute.created flags subscription and bundle records", async () => {
@@ -1159,6 +1218,31 @@ describe("billingWebhookPost", () => {
 
     // Verify dispute was auto-accepted (no-quibble policy)
     expect(mockDisputesClose).toHaveBeenCalledWith("dp_test_dispute_789");
+  });
+
+  test("charge.dispute.created reverses the commission on the disputed charge", async () => {
+    mockChargesRetrieve.mockResolvedValue({
+      id: "ch_test_dispute_123",
+      billing_details: { email: "d@example.com" },
+      payment_intent: "pi_test_dispute",
+    });
+    mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test_dispute", invoice: "in_test_dispute" });
+    mockInvoicesRetrieve.mockResolvedValue({
+      id: "in_test_dispute",
+      parent: { subscription_details: { subscription: "sub_test_dispute_456" } },
+    });
+    mockGetSubscription.mockResolvedValue(null);
+    const payload = {
+      id: "evt_test_dispute_commission",
+      type: "charge.dispute.created",
+      data: { object: { id: "dp_test_dispute_789", charge: "ch_test_dispute_123" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockReverseCommissionForCharge).toHaveBeenCalledWith("ch_test_dispute_123", "dispute");
   });
 
   test("charge.dispute.created handles gracefully when no subscription record found", async () => {

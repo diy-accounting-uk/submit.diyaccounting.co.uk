@@ -306,6 +306,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-42 -->
 <!-- capability BILL-43 -->
 <!-- capability BILL-44 -->
+<!-- capability BILL-46 -->
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->

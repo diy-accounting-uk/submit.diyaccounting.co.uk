@@ -38,6 +38,7 @@ import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
 import { setOwnerBooksRetention } from "../../data/s3DiyaGlRepository.js";
 import { listClientsByHashedSub } from "../../data/dynamoDbPracticeClientRepository.js";
 import { acquisitionFromStripeMetadata } from "../../lib/acquisition.js";
+import { accrueCommission, reverseCommissionForCharge } from "../../services/commissionLedger.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
 
@@ -439,6 +440,20 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     flow: "user-journey",
     detail: { bundleId, subscriptionId, hashedSub },
   });
+
+  try {
+    await accrueCommission({ invoice, subscriptionId, subRecord, stripe });
+  } catch (error) {
+    logger.error({ message: "Commission accrual failed", invoiceId: invoice.id, error: error.message });
+  }
+}
+
+async function reverseCommission(chargeId, reason) {
+  try {
+    await reverseCommissionForCharge(chargeId, reason);
+  } catch (error) {
+    logger.error({ message: "Commission reversal failed", chargeId, reason, error: error.message });
+  }
 }
 
 async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
@@ -661,6 +676,7 @@ export async function ingestHandler(event) {
           flow: "user-journey",
           detail: { chargeId: stripeEvent.data.object.id },
         });
+        await reverseCommission(stripeEvent.data.object.id, "refund");
         break;
       case "charge.dispute.created": {
         const dispute = stripeEvent.data.object;
@@ -739,6 +755,7 @@ export async function ingestHandler(event) {
           flow: "user-journey",
           detail: { disputeId: dispute.id, chargeId: dispute.charge, subscriptionId: disputeSubscriptionId, hashedSub: disputeHashedSub },
         });
+        await reverseCommission(typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id, "dispute");
         break;
       }
       case "charge.dispute.closed": {

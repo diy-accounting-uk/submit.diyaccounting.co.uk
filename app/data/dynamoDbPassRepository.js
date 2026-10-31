@@ -225,3 +225,48 @@ export async function putRedemption({ code, hashedSub, issuedBy, passTypeId, red
   );
   logger.info({ message: "Redemption recorded", passTypeId });
 }
+
+/**
+ * The one referral claim an account holds: the pass code it redeemed, or null.
+ */
+export async function getReferralClaim(hashedSub) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `referral#${hashedSub}` },
+      }),
+  );
+  return result.Item || null;
+}
+
+/**
+ * The record of one redemption, or null.
+ */
+export async function getRedemption(code, hashedSub) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `redemption#${code}#${hashedSub}` },
+      }),
+  );
+  return result.Item || null;
+}
+
+/**
+ * The affiliate item of a referrer (tier and state), or null.
+ */
+export async function getAffiliate(referrerHash) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk: `affiliate#${referrerHash}` },
+      }),
+  );
+  return result.Item || null;
+}

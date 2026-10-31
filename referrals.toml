@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+version = "1.0.0"
+
+[ledger]
+accrue = true                 # false: invoice.paid writes no new lines or card records; reversals still run
+defaultTier = "customer"
+volumeHoldConversionsPerDay = 5
+earlyCancelDays = 30
+
+[[tiers]]
+id = "customer"
+name = "Customer"
+form = "credit"               # credit | cash
+payout = "customer-balance"   # customer-balance | connect | bank-transfer
+rateBps = 3000                # basis points of net
+months = 12
+holdDays = 30
+capCreditMonths = 12
+
+[[tiers]]
+id = "casual"
+name = "Casual affiliate"
+form = "cash"
+payout = "connect"
+rateBps = 3000
+months = 12
+holdDays = 120
+capMonthPence = 10000
+capTaxYearPence = 100000
+minPayoutPence = 2000
+
+[[tiers]]
+id = "creator"
+name = "Creator affiliate"
+form = "cash"
+payout = "connect"
+rateBps = 3000
+months = 12
+holdDays = 120
+capMonthPence = 10000
+capTaxYearPence = 100000
+minPayoutPence = 2000
+
+[[tiers]]
+id = "family"
+name = "Family"
+form = "cash"
+payout = "bank-transfer"
+rateBps = 10000               # the net of the first paid month
+months = 1
+holdDays = 60
+capTaxYearPence = 100000
