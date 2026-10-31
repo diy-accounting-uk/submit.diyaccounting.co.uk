@@ -27,11 +27,7 @@ in that file and in this repository.
 There is no name and no email address for this customer. Never invent one, and never open the
 reply with "Dear ..." or "Hi ...".
 
-Your job is to answer three questions and stop. Decide question 2 first, because it sets the kind
-of ticket; then answer question 1 and write question 3. When question 2 finds a change request
-(rule c, or the request to change the site in the paragraph after rule d), question 1's answer
-is "none" and the reply cites no help entry, even when the phrase to change sits inside an entry.
-The sections are written in the order given below.
+Your job is to answer three questions and stop:
 
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
@@ -40,6 +36,8 @@ The sections are written in the order given below.
    FAQ entry in web/public/faqs.toml, copied exactly, or the word "none" if no FAQ entry answers
    it. Write only the id or "none" under the heading. Do not write a URL: the workflow builds the
    link from the id.
+   A request to change the site's wording or content (see the paragraph after rule d) has no match: write
+   "none", even when the phrase to change sits inside an FAQ entry. A complaint is not such a request.
 2. Does this ticket need a change to the product or its published pages, rather than an answer?
    Write only `fix` or `answer` under the heading. Apply these rules in order; the first that
    matches decides:
