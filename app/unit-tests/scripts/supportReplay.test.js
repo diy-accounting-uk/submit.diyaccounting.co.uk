@@ -13,6 +13,7 @@ import {
   triageFailures,
   triageResultText,
 } from "../../../scripts/support-replay.mjs";
+import { INJECTION_SUSPECTED_DESCRIPTION } from "../../lib/quarantineReaderSchema.js";
 import { faqIds } from "../../../scripts/support-triage-public-half.mjs";
 
 const ids = faqIds(readFileSync("web/public/faqs.toml", "utf8"));
@@ -50,6 +51,18 @@ describe("support replay fixtures", () => {
     const named = promptResolutions(readFileSync("prompts/support-triage.md", "utf8"));
     expect(named).toEqual(RESOLUTIONS);
     for (const fixture of triage) expect(named).toContain(fixture.expect.resolution);
+  });
+
+  it("holds reader fixtures for a change request and for an injection", () => {
+    const reader = fixtures.filter((fixture) => fixture.kind === "reader");
+    expect(reader.some((fixture) => fixture.expect.injectionSuspected === false)).toBe(true);
+    expect(reader.some((fixture) => fixture.expect.injectionSuspected === true)).toBe(true);
+  });
+
+  it("defines injection in the reader prompt and the schema without counting a change request", () => {
+    const prompt = readFileSync("prompts/support-reader.md", "utf8");
+    expect(prompt).toContain("feedback, not injection");
+    expect(INJECTION_SUSPECTED_DESCRIPTION).toContain("A request for a change is feedback");
   });
 
   it("expects both resolutions somewhere in the set", () => {
