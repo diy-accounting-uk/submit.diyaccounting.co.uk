@@ -30,11 +30,15 @@ reply with "Dear ..." or "Hi ...".
 Your job is to answer five questions and stop. Answer the one numbered 0 first:
 
 0. What kind of ticket is this? Write only `change-request`, `complaint` or `other` under the
-   heading. `change-request`: the customer asks to change the site's wording, content, a page or
-   a feature. `complaint`: the customer complains about how the service behaved and asks for no
-   change to a page or feature. `other`: anything else. Code reads this word: a change request
-   gets no matched article, and a complaint gets your opening sentence first in the reply.
-
+   heading. Test in this order:
+   - `change-request`: the customer asks the site to change or add wording, content, a help
+     entry, a page or a feature.
+   - `complaint`: the customer is unhappy, frustrated or says the service felt slow, unreliable
+     or broken, and asks for no change to the site. A customer who only reports what went wrong
+     and how it felt is a complaint.
+   - `other`: a question, or anything else.
+   Code reads this word: a change request gets no matched article, and a complaint gets your
+   opening sentence first in the reply.
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
    `question`, `answer` and `keywords` fields for the closest match, and help.html and guide.html
