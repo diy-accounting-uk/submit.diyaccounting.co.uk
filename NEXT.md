@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c974d08** (PR #654's merge c974d08d9).
+**Prod runs deployment prod-dbadadd** (PR #660's merge dbadadd86).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -39,8 +39,6 @@ step.
 Facts several rows share. Every behaviour suite on the simulator lane takes the one simulator port: one suite at a time, under the lock `/tmp/submit-simulator.lock` (`lockf -k /tmp/submit-simulator.lock <suite>`; the lock is a file held with `lockf`, so a `mkdir` loop never acquires it). The latest Companies House review (00005D to 00005G, filed 2026-10-27; the judge passed all four) was cleaned from `target/` with the build output, so a fresh run writes the next one; the skills are `.claude/skills/companies-house-review/SKILL.md` and `.claude/skills/companies-house-judge/SKILL.md` (capabilities CH-17 and CH-18); B34c and CS-11b run them before a live filing. The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mcp-harness/<name>.json` (`?script=<name>`); its call endpoint `/api/v1/dev/mcp-harness/call` exists on the local Express server only (`app/bin/server.js`), so a harness proof runs locally (MCP1). The hosted MCP tools read the session's HMRC grant through `hmrcAccessTokenFor` in `mcp/lib/submit-tools.js` (MCP1). The `-ci` behaviour scripts run through `scripts/use-deployed-base-url.js`, which opens the set's own host so the Cognito callback keeps the page's `sessionStorage` state.
 
 ## In flight
-
-- [ ] **FLK2. The books import browser test needs no template download.** `web/browser-tests/booksImport.browser.test.js` line 498 failed main's deploy 41301338340: `savePackageZip` in the test's Node process fetched the diya-gl templates through the 301 from the spreadsheets host, and the fetch failed once. **Now**: PR #660 (merge dbadadd86) bumps `@diy-accounting-uk/diya-gl` to 1.2.73, which fetches from `https://diya-gl.co.uk/assets/` and retries once, and caches `~/.cache/diya-gl` in the browser-test shards of `.github/workflows/test-unit.yml`; main's prod deploy of dbadadd86 is running. The row closes when that deploy is green. **Source**: deploy 41301338340. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-only
 
