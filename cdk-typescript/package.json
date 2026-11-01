@@ -9,7 +9,7 @@
     "diff": "node scripts/diff-templates.mjs"
   },
   "devDependencies": {
-    "@types/node": "24.13.1",
+    "@types/node": "26.6.6",
     "aws-cdk": "2.1146.1",
     "ts-node": "10.9.2",
     "typescript": "6.0.3"

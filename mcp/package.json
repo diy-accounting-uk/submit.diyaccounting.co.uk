@@ -33,13 +33,13 @@
     "test:system": "vitest run --config vitest.system.config.js"
   },
   "dependencies": {
-    "@diy-accounting-uk/diya-gl": "1.2.64",
+    "@diy-accounting-uk/diya-gl": "1.2.73",
     "@modelcontextprotocol/sdk": "1.32.2",
     "happy-dom": "21.0.4",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "vitest": "^4.1.12"
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "smol-toml": "^1.9.0",
