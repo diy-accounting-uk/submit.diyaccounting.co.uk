@@ -60,7 +60,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OSJ2. Delete the unused repository variable.** select-jobs is gone from main (PR #631), so `REASONED_JOB_FILTER` has no reader: `gh variable delete REASONED_JOB_FILTER --repo diy-accounting-uk/submit.diyaccounting.co.uk` (add `--env ci` and `--env prod` if it is set per environment). **Owner**: Operator. **Model**: none.
 
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
