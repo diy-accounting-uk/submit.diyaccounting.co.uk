@@ -467,7 +467,6 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     body: sanitiseString(requestBody.toString()),
   });
 
-  let duration;
   const httpRequest = {
     method: "POST",
     headers: { ...requestHeaders },
@@ -479,7 +478,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   logger.info({ message: "Performing HTTP POST for token exchange", providerUrl });
   const fetchResult = await fetchWithTimeout(providerUrl, httpRequest, 25000);
   const response = fetchResult.response;
-  duration = fetchResult.duration;
+  const duration = fetchResult.duration;
   logger.info({ message: "HTTP POST response received with status and duration", status: response?.status, duration });
 
   let responseTokens;
