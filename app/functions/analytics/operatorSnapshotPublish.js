@@ -2179,7 +2179,7 @@ export async function handler() {
     logger.warn({ message: "Operator list load failed, publishing none", error: error.message });
   }
   let familyAffiliates = null;
-  let failedFamilyAffiliates = 0;
+  let failedFamilyAffiliates;
   try {
     const family = await buildFamilyAffiliates({ workGroup, database });
     familyAffiliates = { affiliates: family.affiliates, measures: FAMILY_AFFILIATE_MEASURES.map(({ key, label }) => ({ key, label })) };

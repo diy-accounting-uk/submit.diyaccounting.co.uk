@@ -147,7 +147,7 @@
     if (busy || !script || nextIndex >= script.turns.length) return false;
     busy = true;
     nextButton.disabled = true;
-    let played = false;
+    let played;
     try {
       played = await playTurn(script.turns[nextIndex]);
       nextIndex = played ? nextIndex + 1 : script.turns.length;

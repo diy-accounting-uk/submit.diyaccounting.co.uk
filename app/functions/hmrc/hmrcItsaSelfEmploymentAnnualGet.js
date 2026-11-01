@@ -119,7 +119,7 @@ export async function ingestHandler(event) {
 
   // Bundle enforcement
   let userSub;
-  let bundleIds = [];
+  let bundleIds;
   try {
     ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {

@@ -467,7 +467,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     body: sanitiseString(requestBody.toString()),
   });
 
-  let duration = 0;
+  let duration;
   const httpRequest = {
     method: "POST",
     headers: { ...requestHeaders },

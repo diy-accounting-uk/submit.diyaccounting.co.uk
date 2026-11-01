@@ -55,7 +55,7 @@ async function copyText(text) {
     area.className = "sr-only";
     document.body.append(area);
     area.select();
-    let copied = false;
+    let copied;
     try {
       copied = document.execCommand("copy");
     } catch {
