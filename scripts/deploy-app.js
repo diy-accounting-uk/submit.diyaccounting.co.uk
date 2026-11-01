@@ -355,7 +355,7 @@ function syncWebAssets(config) {
 
     // Generate submit.env
     console.log("Generating submit.env...");
-    const cognitoClientId = process.env.COGNITO_CLIENT_ID || "";
+    const cognitoClientId = resolveCognitoClientId(config);
     const cognitoBaseUri = process.env.COGNITO_BASE_URI || `https://${config.environmentName}-auth.diyaccounting.co.uk`;
     const submitEnv = [
       `COGNITO_CLIENT_ID=${cognitoClientId}`,
@@ -400,6 +400,23 @@ function syncWebAssets(config) {
     // Cleanup temp dir
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+// The sign-in page builds its Cognito authorize URL from submit.env's COGNITO_CLIENT_ID, and the
+// .env files leave it blank, so it comes from the environment's IdentityStack. An empty value
+// would deploy a site on which nobody can sign in, so it stops the deploy instead.
+function resolveCognitoClientId(config) {
+  const clientId =
+    process.env.COGNITO_CLIENT_ID ||
+    runCapture(
+      `aws cloudformation describe-stacks --stack-name ${config.envPrefix}-IdentityStack --region ${AWS_REGION} --query 'Stacks[0].Outputs[?OutputKey==\`UserPoolClientId\`].OutputValue' --output text`,
+    );
+  if (!clientId || clientId === "None") {
+    throw new Error(
+      `No Cognito client id: set COGNITO_CLIENT_ID or check the UserPoolClientId output of ${config.envPrefix}-IdentityStack`,
+    );
+  }
+  return clientId;
 }
 
 // --- Step 5: CloudFront invalidation ---
