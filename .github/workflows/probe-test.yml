@@ -813,7 +813,7 @@ jobs:
         id: download-artifacts
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ matrix.suite }}-artifacts
           path: |
@@ -836,7 +836,7 @@ jobs:
         id: download-reports
         if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ matrix.suite }}-reports
           path: |
