@@ -121,7 +121,7 @@ jobs:
       - name: Upload artifacts
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ${{ matrix.id }}
           retention-days: 7
@@ -207,7 +207,7 @@ jobs:
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: behaviour-test-proxy-submit-vat-results
           retention-days: 7
@@ -217,7 +217,7 @@ jobs:
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: behaviour-test-proxy-submit-vat-reports
           retention-days: 7
@@ -227,7 +227,7 @@ jobs:
       - name: Upload artifacts (dynamodb exports)
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: behaviour-test-proxy-submit-vat-dynamodb
           retention-days: 7
@@ -352,7 +352,7 @@ jobs:
       - name: Upload artifacts (crawl)
         if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: exploratory-crawl
           retention-days: 30
