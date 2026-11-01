@@ -20,7 +20,7 @@
 import { appendFileSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { TICKET_KINDS } from "../app/lib/quarantineReaderSchema.js";
+import { TICKET_KINDS } from "../app/lib/supportTicketKinds.js";
 import { SUPPORT_TICKET_CATEGORIES } from "../app/functions/support/supportTicketPost.js";
 import { faqIds } from "./support-triage-public-half.mjs";
 import { assembleAnswer } from "./support-triage-assemble.mjs";

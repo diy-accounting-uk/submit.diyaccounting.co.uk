@@ -11,9 +11,9 @@
 
 import { z } from "zod";
 import { SUPPORT_TICKET_CATEGORIES } from "../functions/support/supportTicketPost.js";
+import { TICKET_KINDS } from "./supportTicketKinds.js";
 
 export const SUMMARY_MAX_LENGTH = 300;
-export const TICKET_KINDS = ["change-request", "complaint", "other"];
 
 const summary = z
   .string()
