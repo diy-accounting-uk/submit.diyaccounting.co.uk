@@ -336,6 +336,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-08 -->
 <!-- capability OPS-09 -->
 <!-- capability OPS-156 -->
+<!-- capability OPS-157 -->
 <!-- capability OPS-131 -->
 <!-- capability OPS-132 -->
 <!-- capability OPS-133 -->
