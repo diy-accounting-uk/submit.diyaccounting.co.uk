@@ -269,7 +269,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
         analytics.resourceCountIs("AWS::Glue::Table", 33);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 58);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 59);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
