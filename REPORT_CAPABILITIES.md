@@ -197,6 +197,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3: use when a fast iteration deploy of app or web code is needed, without a full CDK deploy.
     - [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand: use when only one CDK stack needs deploying, without running the full pipeline.
     - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets: use when environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
+    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+    - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager: use when reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
     - [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages: use when CloudFront returns an HTTP error and the visitor needs the right static error page instead of a raw status.
     - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy: use when a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
     - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page: use when a visitor lands on the bare diyaccounting.co.uk root domain and needs redirecting to the submit subdomain.
@@ -2267,7 +2269,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2293,6 +2295,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3
 - [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand
 - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets
+- [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack
+- [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager
 - [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages
 - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy
 - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page
@@ -2398,6 +2402,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/deploy-environment.yml, app/unit-tests/deployEnvironmentWorkflowPaths.test.js
 - **Keywords:** deploy environment, environment stacks, create-secrets, observabilitystack, datastack
 - **Related:** OPS-42
+
+#### OPS-156 Build an environment image and deploy one environment stack
+
+- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+- **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
+- **Run:** no command; deploy-environment.yml calls it (see OPS-09)
+- **Entry:** `.github/workflows/deploy-env-image-stack.yml`
+- **Files:** .github/workflows/deploy-env-image-stack.yml, .github/workflows/deploy-environment.yml
+- **Keywords:** env image, image stack, workflow_call, ecr push, cdk deploy, activitystack, ingestionstack
+- **Related:** OPS-09
+
+#### OPS-157 Write an environment's secrets into AWS Secrets Manager
+
+- **Use when:** reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
+- **Does:** deploy-env-secrets.yml is called by the create-secrets job of deploy-environment.yml. It writes each environment secret into Secrets Manager through put-secret-with-rotation-tag.sh, creates the salt and email hash secrets once, and creates the last-known-good-deployment parameter when it is missing.
+- **Run:** no command; deploy-environment.yml calls it (see OPS-09)
+- **Entry:** `.github/workflows/deploy-env-secrets.yml`
+- **Files:** .github/workflows/deploy-env-secrets.yml, .github/workflows/deploy-environment.yml, scripts/put-secret-with-rotation-tag.sh
+- **Keywords:** create secrets, secrets manager, workflow_call, put-secret-with-rotation-tag, salt secret, email hash secret
+- **Related:** OPS-09
 
 #### OPS-131 Serve CloudFront custom error pages
 
@@ -6281,6 +6305,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity list: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - activity_events: [DATA-11](#data-11-run-glue-data-quality-checks)
 - activity_events_all: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- activitystack: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - actor class: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - ad group performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - ad insight: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
@@ -6573,7 +6598,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdk application logging: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
 - cdk config: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - cdk custom resource: [DATA-10](#data-10-create-or-replace-athena-business-views)
-- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
+- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack), [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - cdk diff: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - cdk entrypoint: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - cdk introspection: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
@@ -6782,6 +6807,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - crawl diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - crawler: [SITE-04](#site-04-track-visits-via-session-beacon)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
+- create secrets: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - create-secrets: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - create-test-user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - create-test-user api: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
@@ -7024,6 +7050,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dynamodb tables: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb ttl: [SITE-09](#site-09-track-and-poll-async-api-requests), [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - ecommerce events: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
+- ecr push: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - ecr repository: [OPS-114](#ops-114-provision-ecr-image-repositories)
 - edge lambda: [OPS-115](#ops-115-provision-the-edgecloudfront-stack), [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - edge stack: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
@@ -7032,6 +7059,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - eligibility: [CH-06](#ch-06-file-a-change-of-registered-email-address)
 - email hash: [BILL-10](#bill-10-redeem-a-pass)
 - email hash rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
+- email hash secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - email restricted: [BILL-08](#bill-08-check-a-passs-validity)
 - email-hash-rotate.js: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - emailhashsecrethelper: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
@@ -7055,6 +7083,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - entitlement status: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - entitlementfor: [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - entry point: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
+- env image: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - env loader: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - environment app: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - environment name: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
@@ -7388,6 +7417,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - identityprovider google: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - image diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
+- image stack: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - impressions clicks: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
@@ -7407,6 +7437,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
 - infra-apply: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
+- ingestionstack: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - injectionsuspected: [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets)
@@ -7975,6 +8006,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - push images: [OPS-150](#ops-150-build-a-deployment)
 - push to main: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
+- put-secret-with-rotation-tag: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
 - pwa: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - qr code: [SITE-19](#site-19-generate-qr-codes), [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
@@ -8165,7 +8197,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - salt canary: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - salt metadata: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - salt rotation: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
-- salt secret: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
+- salt secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
 - same commit: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - same slot: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - sandbox: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8215,7 +8247,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - second store: [SS-28](#ss-28-store-books-in-google-drive)
 - secret scan: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
-- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
+- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - section 1a: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
@@ -8688,7 +8720,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - worker handler: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - workflow lint: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
-- workflow_call: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
+- workflow_call: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
 - workflow_dispatch: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - workload identity: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
