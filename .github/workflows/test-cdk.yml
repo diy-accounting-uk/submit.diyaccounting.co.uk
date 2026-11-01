@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# @capability OPS-157 Synth the CDK app for the ci and prod environments in CI
+# @capability OPS-160 Synth the CDK app for the ci and prod environments in CI
 # - **Use when:** checking that the CDK app still synthesises for ci and prod before a change merges.
 # - **Does:** test-cdk.yml builds the Java CDK app and runs the ci and prod synth. test.yml calls it with the code and build flags of its changes job.
 # - **Run:** no command; test.yml calls it (see OPS-26)

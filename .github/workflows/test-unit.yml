@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# @capability OPS-156 Run the unit, system and browser test tiers in CI
+# @capability OPS-159 Run the unit, system and browser test tiers in CI
 # - **Use when:** checking which unit, MCP, system, web unit and browser test jobs run for a push, and in what shape.
 # - **Does:** test-unit.yml runs the npm unit, MCP, system, web unit and sharded browser tests. test.yml calls it with the code and build flags of its changes job.
 # - **Run:** no command; test.yml calls it (see OPS-26)

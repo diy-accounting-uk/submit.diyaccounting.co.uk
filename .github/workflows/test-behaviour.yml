@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# @capability OPS-158 Run the simulator, proxy and exploratory crawl behaviour tests in CI
+# @capability OPS-161 Run the simulator, proxy and exploratory crawl behaviour tests in CI
 # - **Use when:** checking which behaviour test jobs run for a push, a dispatch or the nightly schedule, and what each one needs.
 # - **Does:** test-behaviour.yml runs the simulator behaviour suites, the proxy submitVatBehaviour run and the weekly exploratory crawl. test.yml calls it with the code and build flags of its changes job and the two run flags.
 # - **Run:** no command; test.yml calls it (see OPS-26)
