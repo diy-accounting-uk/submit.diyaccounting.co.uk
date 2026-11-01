@@ -1,0 +1,181 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-156 Build an environment image and deploy one environment stack
+# - **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+# - **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
+# - **Run:** no command; deploy-environment.yml calls it (see OPS-09)
+# - **Entry:** `.github/workflows/deploy-env-image-stack.yml`
+# - **Files:** .github/workflows/deploy-env-image-stack.yml, .github/workflows/deploy-environment.yml
+# - **Keywords:** env image, image stack, workflow_call, ecr push, cdk deploy, activitystack, ingestionstack
+# - **Related:** OPS-09
+# @end-capability
+
+name: deploy env image stack
+run-name: "deploy env image stack ${{ inputs.stack-name }} from ${{ github.ref_name }}"
+
+on:
+  workflow_call:
+    inputs:
+      environment-name:
+        description: 'Environment to deploy, e.g. ci or prod'
+        type: string
+        required: true
+      image-name:
+        description: 'Name of the env image and of the cdk outputs file, e.g. activity or security-lake'
+        type: string
+        required: true
+      stack-name:
+        description: 'Full CloudFormation stack name, e.g. ci-env-ActivityStack'
+        type: string
+        required: true
+      push-ue1-image:
+        description: 'Also push the built image to the us-east-1 environment repository'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  JAVA_VERSION: '25'
+  AWS_REGION: 'eu-west-2'
+  GITHUB_ACTOR: ${{ github.actor }}
+
+jobs:
+  image-stack:
+    name: 'image stack'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        timeout-minutes: 6
+
+      # --- Build and push the env-level image, so this job does not wait on an app deploy ---
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+        with:
+          platforms: arm64
+
+      - name: Build env image (ARM64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t "env-${{ inputs.image-name }}:${{ github.sha }}" \
+            -f Dockerfile .
+
+      - name: Login to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
+        shell: bash
+
+      - name: Tag and push env image to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          ECR_REPOSITORY_NAME="${{ inputs.environment-name }}-env-ecr"
+          ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
+          # The SHA in the tag is what makes each deploy a new image URI; a fixed tag leaves
+          # CloudFormation with nothing to update and the function on its old image.
+          ENV_IMAGE_TAG="env-${{ inputs.image-name }}-${{ github.sha }}"
+
+          docker tag "env-${{ inputs.image-name }}:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
+          docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
+          echo "Pushed ${ECR_URI}:${ENV_IMAGE_TAG}"
+        shell: bash
+
+      # --- Push the same already-built image to the us-east-1 environment repository, for
+      #     ObservabilityUE1Stack's bedrock-budget-alert-forward Lambda. It is the same
+      #     Dockerfile with the same app code either way (the CMD is overridden per Lambda in
+      #     CDK), so this reuses the local image the build step above already produced instead
+      #     of building it again. ---
+
+      - name: Login to ECR us-east-1
+        if: ${{ inputs.push-ue1-image }}
+        run: |
+          ECR_REPOSITORY_BASE_URL_UE1="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com"
+          aws ecr get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL_UE1}"
+        shell: bash
+
+      - name: Tag and push env observability ue1 image to ECR us-east-1
+        if: ${{ inputs.push-ue1-image }}
+        run: |
+          ECR_REPOSITORY_BASE_URL_UE1="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com"
+          ECR_REPOSITORY_NAME_UE1="${{ inputs.environment-name }}-env-ecr-us-east-1"
+          ECR_URI_UE1="${ECR_REPOSITORY_BASE_URL_UE1}/${ECR_REPOSITORY_NAME_UE1}"
+          ENV_IMAGE_TAG_UE1="env-observability-ue1-${{ github.sha }}"
+
+          docker tag "env-${{ inputs.image-name }}:${{ github.sha }}" "${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
+          docker push "${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
+          echo "Pushed ${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
+        shell: bash
+
+      # --- Deploy CDK stack using the env-level image tag ---
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy stack (CDK)
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-environment \
+            && cat ../.env.${{ inputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ inputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ inputs.stack-name }} \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --no-notices \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-environment.out/cdk-outputs-${{ inputs.image-name }}.json \
+            && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ inputs.environment-name }}
+          BASE_IMAGE_TAG: env-${{ inputs.image-name }}-${{ github.sha }}
+          # The stacks read only the variables they need; the rest are set and unread.
+          # diya-ops GitHub App: SecurityLakeStack and IngestionStack read these to mint their
+          # own installation token at runtime (see app/lib/githubAppToken.js). The private key
+          # itself never passes through here - it goes straight into Secrets Manager by the
+          # create-secrets job of deploy-environment.yml.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
+          # DIY Accounting Limited's own diya-gl book, for the company book pull job. Unset
+          # means no job and no grant.
+          COMPANY_BOOK_ID: ${{ vars.SUBMIT_COMPANY_BOOK_ID }}
+          COMPANY_BOOK_OWNER_PREFIX: ${{ vars.SUBMIT_COMPANY_BOOK_OWNER_PREFIX }}
+          REGIONAL_CERTIFICATE_ARN: ${{ vars.SUBMIT_REGIONAL_CERTIFICATE_ARN }}
+          # The PayPal donations pull job exists only where the PayPal credentials were landed
+          # by the create-secrets job of deploy-environment.yml. The secret resolves from the
+          # environment named above; the caller passes `secrets: inherit`.
+          PAYPAL_PULL_ENABLED: ${{ vars.PAYPAL_CLIENT_ID != '' && secrets.PAYPAL_CLIENT_SECRET != '' }}
+          # The Google Ads cost pull job reads the Ads OAuth client and refresh token held in prod's
+          # Secrets Manager (see infra/google/ads/ads.toml).
+          ADS_COST_PULL_ENABLED: ${{ inputs.environment-name == 'prod' }}
