@@ -449,7 +449,7 @@
     "globals": "^14.0.0",
     "js-yaml": "^4.3.2",
     "lighthouse": "^13.3.0",
-    "npm-check-updates": "^22.1.1",
+    "npm-check-updates": "^23.1.1",
     "otpauth": "^9.5.1",
     "pa11y": "^10.0.0",
     "pa11y-ci": "^5.0.0",
