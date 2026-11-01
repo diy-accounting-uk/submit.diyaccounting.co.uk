@@ -87,7 +87,7 @@ test.describe("Activity-started click beacon", () => {
 
     expect(capturedRequest.method).toBe("POST");
     expect(capturedRequest.headers.authorization).toBe("Bearer the-access-token");
-    expect(capturedRequest.body).toEqual({ activityId: "bundle" });
+    expect(capturedRequest.body).toEqual({ activityId: "bundle", phase: "started" });
   });
 
   test("sends nothing when there is no access token, and the click still reaches the page", async ({ page }) => {
@@ -109,5 +109,46 @@ test.describe("Activity-started click beacon", () => {
     // a beacon was sent -- confirmed by the page still responding to a second interaction.
     await expect(redeemButton).toBeEnabled();
     expect(beaconCalled).toBe(false);
+  });
+
+  test("the help page posts started and completed when it loads", async ({ page }) => {
+    await serveRealSite(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("cognitoAccessToken", "the-access-token");
+    });
+
+    const bodies = [];
+    await page.route("**/api/v1/activity/started", async (route) => {
+      bodies.push(route.request().postDataJSON());
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    });
+
+    await page.goto("http://localhost:3000/about.html", { waitUntil: "domcontentloaded" });
+
+    await expect.poll(() => bodies.length, { timeout: 5000 }).toBe(2);
+    expect(bodies).toContainEqual({ activityId: "help", phase: "started" });
+    expect(bodies).toContainEqual({ activityId: "help", phase: "completed" });
+  });
+
+  test("the operator dashboard posts started on load and completed once the snapshot renders", async ({ page }) => {
+    await serveRealSite(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("cognitoAccessToken", "the-access-token");
+    });
+
+    const bodies = [];
+    await page.route("**/api/v1/activity/started", async (route) => {
+      bodies.push(route.request().postDataJSON());
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    });
+
+    await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "domcontentloaded" });
+
+    await expect.poll(() => bodies.length, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
+    expect(bodies[0]).toEqual({ activityId: "operator-dashboard", phase: "started" });
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" })));
+    await expect
+      .poll(() => bodies.some((b) => b.phase === "completed" && b.activityId === "operator-dashboard"), { timeout: 5000 })
+      .toBe(true);
   });
 });

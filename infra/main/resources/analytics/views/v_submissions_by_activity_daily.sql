@@ -4,8 +4,7 @@
 -- Activity is the catalogue's own id (web/public/submit.catalogue.toml), not an event name, so
 -- one row here can read straight across into the operator dashboard's started/completed table
 -- (operatorSnapshotPublish.js) without a second mapping. Every catalogue activity with a
--- completion event is covered; an activity with none (help, operator-dashboard)
--- has no rows here and reads as zero completions.
+-- completion event is covered; help and operator-dashboard complete through activity-completed.
 CREATE OR REPLACE VIEW v_submissions_by_activity_daily AS
 SELECT day, activity, outcome, client_id,
        count(*)                   AS completions,
@@ -27,8 +26,9 @@ FROM  (SELECT date(event_ts) AS day, hashed_sub, client_id,
                 WHEN event = 'book-saved'                                        THEN 'diya-gl-storage'
                 WHEN event = 'pass-generated' AND pass_type_id = 'digital-pass'  THEN 'generate-pass-digital'
                 WHEN event = 'pass-generated' AND pass_type_id = 'physical-pass' THEN 'generate-pass-physical'
+                WHEN event = 'activity-completed'                                THEN activity_id
               END AS activity
        FROM   activity_events_all
-       WHERE  actor = 'customer')
+       WHERE  (actor = 'customer' OR (actor = 'operator' AND activity_id = 'operator-dashboard')))
 WHERE  activity IS NOT NULL
 GROUP  BY 1, 2, 3, 4

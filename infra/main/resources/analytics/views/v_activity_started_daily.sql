@@ -9,5 +9,6 @@ SELECT date(event_ts) AS day, activity_id AS activity, app_client,
        count(*)                   AS starts,
        count(DISTINCT hashed_sub) AS customers
 FROM   activity_events_all
-WHERE  actor = 'customer' AND event = 'activity-started' AND activity_id IS NOT NULL
+WHERE  (actor = 'customer' OR (actor = 'operator' AND activity_id = 'operator-dashboard'))
+       AND event = 'activity-started' AND activity_id IS NOT NULL
 GROUP  BY 1, 2, 3

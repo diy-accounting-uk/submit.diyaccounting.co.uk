@@ -343,17 +343,12 @@ function bootstrapRumConfigFromMeta() {
 // Fire-and-forget, keepalive: this must never delay or block the button's own click handler --
 // a previous change elsewhere in this app awaited a fetch before navigating and hung headless
 // Chrome, so this neither awaits the fetch nor calls preventDefault.
-function handleActivityStartClick(event) {
-  const target = event.target && event.target.closest ? event.target.closest("[data-activity-start]") : null;
-  if (!target) return;
-  const activityId = target.getAttribute("data-activity-start");
-  if (!activityId) return;
-
+function postActivityEvent(activityId, phase) {
   let accessToken;
   try {
     accessToken = localStorage.getItem("cognitoAccessToken");
   } catch (error) {
-    console.warn("Failed to read access token for activity-started beacon:", error);
+    console.warn("Failed to read access token for activity beacon:", error);
     return;
   }
   if (!accessToken) return;
@@ -361,12 +356,36 @@ function handleActivityStartClick(event) {
   fetch("/api/v1/activity/started", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
-    body: JSON.stringify({ activityId }),
+    body: JSON.stringify({ activityId, phase }),
     keepalive: true,
   }).catch(() => {
-    // Best-effort: an activity-started beacon failure (offline, ad blockers) never blocks the
+    // Best-effort: an activity beacon failure (offline, ad blockers) never blocks the
     // button's own action.
   });
+}
+
+function handleActivityStartClick(event) {
+  const target = event.target && event.target.closest ? event.target.closest("[data-activity-start]") : null;
+  if (!target) return;
+  const activityId = target.getAttribute("data-activity-start");
+  if (!activityId) return;
+  postActivityEvent(activityId, "started");
+}
+
+// A page-only activity (help, the operator dashboard) starts when its page loads: the element
+// carrying data-activity-view="<id>" names it. A page that shows its content at once also
+// carries data-activity-complete="load"; one that fetches its content dispatches an
+// "activity-completed" document event with the id as detail once the content is shown.
+function recordActivityViewOnLoad() {
+  const target = document.querySelector("[data-activity-view]");
+  if (!target) return;
+  const activityId = target.getAttribute("data-activity-view");
+  postActivityEvent(activityId, "started");
+  if (target.getAttribute("data-activity-complete") === "load") postActivityEvent(activityId, "completed");
+}
+
+function handleActivityCompletedEvent(event) {
+  postActivityEvent(event.detail, "completed");
 }
 
 function ensurePrivacyLink() {
@@ -383,9 +402,11 @@ function ensurePrivacyLink() {
 // Wire up on load
 if (typeof window !== "undefined" && typeof document !== "undefined") {
   document.addEventListener("click", handleActivityStartClick);
+  document.addEventListener("activity-completed", handleActivityCompletedEvent);
   document.addEventListener("click", reopenConsentChoice);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
+      recordActivityViewOnLoad();
       ensurePrivacyLink();
       bootstrapRumConfigFromMeta();
       maybeInitRum();
@@ -396,6 +417,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
       });
     });
   } else {
+    recordActivityViewOnLoad();
     ensurePrivacyLink();
     bootstrapRumConfigFromMeta();
     maybeInitRum();

@@ -33,11 +33,11 @@ const { _setTestSalt } = await import("@app/services/subHasher.js");
 // The access token this endpoint authenticates on carries no email claim (only an ID token
 // does -- see customAuthorizer.js's tokenUse: "access" verifier), so every real customer's
 // authorizer context has an empty email, matching this default.
-function buildActivityStartedEvent({ activityId = "submit-vat", sub = "test-sub", clientId = "submit-client-id", email = "" } = {}) {
+function buildActivityStartedEvent({ activityId = "submit-vat", sub = "test-sub", clientId = "submit-client-id", email = "", phase } = {}) {
   return buildLambdaEvent({
     method: "POST",
     path: "/api/v1/activity/started",
-    body: { activityId },
+    body: phase ? { activityId, phase } : { activityId },
     authorizer: buildJwtAuthorizerContext(sub, "test", email, { client_id: clientId }),
   });
 }
@@ -111,5 +111,31 @@ describe("activityStartedPost ingestHandler", () => {
   test("classifies the app client from the books client id", async () => {
     await ingestHandler(buildActivityStartedEvent({ activityId: "submit-vat", clientId: "books-client-id" }));
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ appClient: "books" }));
+  });
+
+  test("publishes activity-completed for a page-only activity", async () => {
+    const response = await ingestHandler(buildActivityStartedEvent({ activityId: "operator-dashboard", phase: "completed" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "activity-completed", detail: { activityId: "operator-dashboard" } }),
+    );
+  });
+
+  test("publishes activity-completed for help", async () => {
+    await ingestHandler(buildActivityStartedEvent({ activityId: "help", phase: "completed" }));
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "activity-completed" }));
+  });
+
+  test("rejects activity-completed for an activity that completes through its own event", async () => {
+    const response = await ingestHandler(buildActivityStartedEvent({ activityId: "submit-vat", phase: "completed" }));
+    expect(response.statusCode).toBe(400);
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+  });
+
+  test("rejects an unknown phase", async () => {
+    const response = await ingestHandler(buildActivityStartedEvent({ activityId: "help", phase: "abandoned" }));
+    expect(response.statusCode).toBe(400);
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
   });
 });
