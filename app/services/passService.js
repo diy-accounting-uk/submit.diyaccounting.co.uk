@@ -412,6 +412,13 @@ export async function claimReferral(hashedSub, code) {
   return passRepository.putReferralClaim(hashedSub, code, new Date().toISOString());
 }
 
+/**
+ * The record of one account's redemption of one pass, or null.
+ */
+export async function getRedemption(code, hashedSub) {
+  return passRepository.getRedemption(code, hashedSub);
+}
+
 export async function releaseReferral(hashedSub) {
   await passRepository.deleteReferralClaim(hashedSub);
 }

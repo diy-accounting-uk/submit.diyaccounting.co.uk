@@ -760,14 +760,25 @@ const passReasonMessages = {
   held_for_review: "This pass is on hold while we review it. Please try again later.",
   own_pass: "You cannot redeem a pass you generated.",
   referral_already_used: "This account has already redeemed a referral pass.",
+  already_redeemed: "This account has already redeemed this pass.",
+  network_error: "Could not reach the server to check the pass. Please try again.",
 };
 
 function showPassStatus(message, type) {
   const el = document.getElementById("passStatus");
   if (!el) return;
-  el.textContent = message;
+  // Clear first and write on the next frame so the live region announces a repeated outcome.
+  el.textContent = "";
   el.hidden = false;
   el.className = `pass-status pass-status--${type === "success" ? "ok" : type === "error" ? "error" : "info"}`;
+  requestAnimationFrame(() => {
+    el.textContent = message;
+  });
+}
+
+function focusPassTarget(bundleId) {
+  const target = document.querySelector(`#catalogBundles button[data-bundle-id="${bundleId}"]`);
+  if (target) target.focus();
 }
 
 async function redeemPassCode(code) {
@@ -903,6 +914,11 @@ async function handlePassEntry(code) {
     const bundleName = catBundle?.name || bundleId;
     const isHidden = !!catBundle?.hidden;
 
+    if (isLoggedIn && hasBundle(__userBundles, bundleId)) {
+      showPassStatus(`This account already has the "${bundleName}" bundle.`, "info");
+      return;
+    }
+
     if (isLoggedIn) {
       const isSubscriptionBundle = catBundle?.allocation === "on-pass-on-subscription";
       if (result.emailRestricted) {
@@ -929,6 +945,7 @@ async function handlePassEntry(code) {
     }
     // Re-render catalogue to show the pass-unlocked bundle
     renderCatalogueBundles();
+    if (isLoggedIn) focusPassTarget(bundleId);
   } catch (err) {
     showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
   } finally {
