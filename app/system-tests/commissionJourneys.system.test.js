@@ -10,6 +10,7 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach } from "vitest"
 import Stripe from "stripe";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { startStripeSimulator } from "../test-support/stripeSimulator.js";
+import { emulateTransactions } from "../test-support/dynaliteTransactions.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -19,42 +20,6 @@ const MONTH_STARTS = [Date.UTC(2026, 0, 1), Date.UTC(2026, 1, 1), Date.UTC(2026,
 const seconds = (ms) => ms / 1000;
 const chargedAtOf = (monthIndex) => MONTH_STARTS[monthIndex] + 3600 * 1000;
 const NET_PENCE = 1000;
-
-// Dynalite has no transactions. This runs a transaction's items one after another and undoes the earlier ones when an item's
-// condition fails, which is enough for one writer at a time.
-async function emulateTransactions() {
-  const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
-  const { docClient, module } = await getDynamoDbDocClient();
-  const send = docClient.send.bind(docClient);
-
-  docClient.send = async (command) => {
-    if (!(command instanceof module.TransactWriteCommand)) return send(command);
-    const applied = [];
-    const items = command.input.TransactItems;
-    for (const [index, item] of items.entries()) {
-      const [kind, params] = Object.entries(item)[0];
-      const key = kind === "Put" ? { pk: params.Item.pk, sk: params.Item.sk } : params.Key;
-      const before = (await send(new module.GetCommand({ TableName: params.TableName, Key: key }))).Item ?? null;
-      try {
-        await send(new module[`${kind}Command`](params));
-        applied.push({ params, key, before });
-      } catch (error) {
-        if (error.name !== "ConditionalCheckFailedException") throw error;
-        for (const undo of applied.reverse()) {
-          const restore = undo.before
-            ? new module.PutCommand({ TableName: undo.params.TableName, Item: undo.before })
-            : new module.DeleteCommand({ TableName: undo.params.TableName, Key: undo.key });
-          await send(restore);
-        }
-        const cancelled = new Error("Transaction cancelled");
-        cancelled.name = "TransactionCanceledException";
-        cancelled.CancellationReasons = items.map((_, position) => ({ Code: position === index ? "ConditionalCheckFailed" : "None" }));
-        throw cancelled;
-      }
-    }
-    return {};
-  };
-}
 
 let stopDynalite;
 let simulatorServer;
@@ -75,7 +40,6 @@ let cashPayout;
 beforeAll(async () => {
   const { default: dynalite } = await import("dynalite");
   const dynamodbModule = await import("../bin/dynamodb.js");
-  const { DynamoDBClient, CreateTableCommand } = await import("@aws-sdk/client-dynamodb");
 
   const server = dynalite({ createTableMs: 0 });
   const address = await new Promise((resolve, reject) => {
@@ -107,14 +71,7 @@ beforeAll(async () => {
 
   await dynamodbModule.ensureBundleTableExists(process.env.BUNDLE_DYNAMODB_TABLE_NAME, endpoint);
   await dynamodbModule.ensurePassesTableExists(process.env.PASSES_DYNAMODB_TABLE_NAME, endpoint);
-  await new DynamoDBClient({ endpoint, region: "us-east-1", credentials: { accessKeyId: "dummy", secretAccessKey: "dummy" } }).send(
-    new CreateTableCommand({
-      TableName: process.env.SUBSCRIPTIONS_DYNAMODB_TABLE_NAME,
-      KeySchema: [{ AttributeName: "pk", KeyType: "HASH" }],
-      AttributeDefinitions: [{ AttributeName: "pk", AttributeType: "S" }],
-      BillingMode: "PAY_PER_REQUEST",
-    }),
-  );
+  await dynamodbModule.ensureSubscriptionsTableExists(process.env.SUBSCRIPTIONS_DYNAMODB_TABLE_NAME, endpoint);
 
   await emulateTransactions();
 
