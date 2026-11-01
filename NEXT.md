@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3503869** (PR #635's merge 3503869e6). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: no live set; ci-set2 was destroyed on 2026-11-01 (destroy-ci 41290587440) and `/submit/ci/last-known-good-deployment` reads None until the next branch deploy.
+**Prod runs deployment prod-13c668d** (PR #636's merge 13c668d0f). Main's deploy of PR #638 (6b5ca47c4) is in flight.
+**ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -44,9 +44,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **TD11-T1 and T2. test.yml splits into test-unit.yml, test-cdk.yml and test-behaviour.yml.** Design: `../private.diyaccounting.co.uk/engineering/submit/DESIGN_TD11_WORKFLOW_SPLIT_2026-11-01.md`. Branch `claude/topaz-test-split` (worktree `.claude/worktrees/topaz`, cut from THUNDER at 67145bd48; e4827eaba T1, 9bebfb588 T2, 443c1a909 capability ids OPS-159 to OPS-161), not pushed. `test.yml` 1144 to 522 lines; `changes`, `names`, `params`, `lint-workflows`, `capabilities`, `lint-js`, `npm-test` and `mvn-test` stay top-level; callers 'unit tiers', 'cdk synth', 'behaviour'. Rebased on main after PR #636 (3936dadf8); `scripts/batch-check.sh` queued, then push and PR. Proof: the push's check-runs list `npm test`, `maven test` and `eslint` unprefixed and green; a Markdown-only commit skips them; `gh workflow run test.yml --ref claude/topaz-test-split -f runProxyBehaviourTests=true -f runExploratoryCrawl=true`. **Source**: the tech-debt audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
 
-- [ ] **TD18b. The diya-gl behaviour suite runs on ci.** The CSP half is live: spreadsheets PR #185 (merge 774b6b770) added the ci Submit hosts to the ci diya-gl site's `connect-src`, and `https://ci.diya-gl.co.uk/` serves it. The ci run on 2026-11-01 (ci-set1, Cognito native auth on and off again, with `TEST_AUTH_TOTP_SECRET` from the credentials file's `totpSecret`) then failed at `behaviour-tests/diyaGlStorage.behaviour.test.js` line 132: the books `PUT` got 401, because the suite signs in on Submit and sends a web-client token, and the books routes accept only the books and MCP clients (`booksJwtAuthorizer`, `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutes.java` lines 77-82). **Now**: e839f935e on `claude/tundra-diyagl-storage` (worktree `.claude/worktrees/tundra`) moves the suite's sign-in to `signInWithDiyaGlHostedUi` (`behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js`) as the subscription suite does. Then the ci run again (the Cognito toggle is pre-approved), then the suite into the deploy workflow beside `web-test-diya-gl-subscription`. **Source**: TD18's run. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **SUP6. The triage handle job loads no npm package; then re-triage #15 and decide #19.** PR #636 (13c668d0f) put `reread` on `support-reader.yml`; the re-reads ran on 2026-11-01: #15 read as `change-request` (run 41297977179); #19's answer was rejected twice (runs 41297984917, 41298352359) because Haiku set `faqId` to `custom`, which is not an id in `web/public/faqs.toml`. The re-triage of #15 (run 41298342495) failed at "Build the comment and the reply": `scripts/support-triage-assemble.mjs` imported `TICKET_KINDS` from `app/lib/quarantineReaderSchema.js`, which imports `zod`, and the handle job runs no npm install, so every triage fails there. **Now**: the fix is ea16118d8 on `claude/tundra-diyagl-storage` (`TICKET_KINDS` in `app/lib/supportTicketKinds.js`, which imports nothing, and a test in `app/unit-tests/supportTriageWorkflow.test.js` that fails when a handle-job script loads a package). After merge: `gh workflow run support-triage.yml -f issue-number=15 -f retriage=true`. #19 stays with the operator to handle by hand or label `rejected`, as its reader comment says. **Source**: run 41298342495. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+- [ ] **SUP6. Re-triage #15 with its ticket kind.** PR #638 (6b5ca47c4) fixed the handle job's `zod` load. #15 was re-read as `change-request` (run 41297977179); its re-triage is run 41301358422. Read its handled comment: a change request's reply opens with the checked thank-you sentence and names no matched article. **Source**: run 41298342495. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 ## Machine-only
 
@@ -58,6 +56,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
+- [ ] **OSUP19. Handle private support issue #19 by hand, or label it `rejected`.** Its reader answer was rejected twice on 2026-11-01 (runs 41297984917, 41298352359) because the reader model set `faqId` to `custom`, which is not an id in `web/public/faqs.toml`; the reader comment says to read the ticket itself. **Owner**: Operator. **Model**: none.
 
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
