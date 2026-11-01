@@ -40,7 +40,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-- [ ] **FLK2. The books import browser test needs no template download.** `web/browser-tests/booksImport.browser.test.js` line 498 failed main's deploy 41301338340: `savePackageZip` in the test's Node process fetched the diya-gl templates through the 301 from the spreadsheets host, and the fetch failed once. `@diy-accounting-uk/diya-gl` 1.2.73 fetches from `https://diya-gl.co.uk/assets/` and retries once. **Now**: an agent on `claude/ukulele-diyagl-cache` (worktree `.claude/worktrees/ukulele`) bumps diya-gl from 1.2.64 to 1.2.73 in `package.json` and `mcp/package.json`, and adds an `actions/cache` step for the diya-gl template cache to the browser-test shards in `.github/workflows/test-unit.yml`; then the batch check, one PR. **Source**: deploy 41301338340. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+- [ ] **FLK2. The books import browser test needs no template download.** `web/browser-tests/booksImport.browser.test.js` line 498 failed main's deploy 41301338340: `savePackageZip` in the test's Node process fetched the diya-gl templates through the 301 from the spreadsheets host, and the fetch failed once. **Now**: PR #660 (merge dbadadd86) bumps `@diy-accounting-uk/diya-gl` to 1.2.73, which fetches from `https://diya-gl.co.uk/assets/` and retries once, and caches `~/.cache/diya-gl` in the browser-test shards of `.github/workflows/test-unit.yml`; main's prod deploy of dbadadd86 is running. The row closes when that deploy is green. **Source**: deploy 41301338340. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-only
 
