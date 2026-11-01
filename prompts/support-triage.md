@@ -70,11 +70,11 @@ Your job is to answer these questions and stop:
    thank-you that says what will not change and why. Example of `fix`: the customer asks for a
    typo on a help page to be corrected. Example of `answer`: the customer asks to replace
    "cannot" with "can not"; "cannot" is the standard spelling, so the wording stays. Never reply
-   that the help page already answers a change request.
+   that the help page already answers a change request, and never write the words "help page entry" or "answers your question" in the reply to a change request. When the change is declined, say what stays as it is, using the customer's own words for it.
 3. When `ticketKind` is `complaint` or `change-request`, write one sentence under "## Opening sentence" that starts
    with "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it
    first in the reply and rejects a sentence that says neither. Your drafted reply then
-   goes on without repeating it. A complaint reply still says that a person will look into it. For any other
+   goes on without repeating it. A complaint reply must contain the words "a person will look into it". For any other
    kind, write "none".
 4. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
