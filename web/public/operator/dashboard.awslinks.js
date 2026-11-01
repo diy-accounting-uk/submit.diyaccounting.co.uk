@@ -54,7 +54,6 @@
   ];
 
   const analyticsQueries = [
-    ["Sign-ins by app client", '{Submit/Analytics,AppClient} MetricName="SignIns"'],
     ["Cognito sign-ins and refreshes by client", '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"'],
     ["HMRC authentications", "Submit/Analytics HmrcAuthentications"],
     ["Bundle operations by activity", '{Submit/Analytics,Activity} MetricName="BundleOperations"'],
