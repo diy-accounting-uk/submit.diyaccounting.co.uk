@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3ae484e** (PR #634's merge 3ae484e69). Main's deploy 41289460052 (PR #635's merge 3503869e6) is in flight and builds prod-3503869. `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: ci-set2 is `/submit/ci/last-known-good-deployment`.
+**Prod runs deployment prod-3503869** (PR #635's merge 3503869e6). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
+**ci**: no live set; ci-set2 was destroyed on 2026-11-01 (destroy-ci 41290587440) and `/submit/ci/last-known-good-deployment` reads None until the next branch deploy.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
