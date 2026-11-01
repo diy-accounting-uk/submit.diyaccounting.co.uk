@@ -1007,6 +1007,7 @@ async function initPage() {
     renderOperators(snapshot);
     renderFamilyAffiliates(snapshot);
     renderAffiliateGroups(snapshot);
+    document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
       showError(null);

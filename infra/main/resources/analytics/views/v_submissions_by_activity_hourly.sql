@@ -25,9 +25,10 @@ FROM  (SELECT date_trunc('hour', event_ts) AS hour, hashed_sub, client_id,
                 WHEN event = 'book-saved'                                        THEN 'diya-gl-storage'
                 WHEN event = 'pass-generated' AND pass_type_id = 'digital-pass'  THEN 'generate-pass-digital'
                 WHEN event = 'pass-generated' AND pass_type_id = 'physical-pass' THEN 'generate-pass-physical'
+                WHEN event = 'activity-completed'                                THEN activity_id
               END AS activity
        FROM   activity_events_all
-       WHERE  actor = 'customer'
+       WHERE  (actor = 'customer' OR (actor = 'operator' AND activity_id = 'operator-dashboard'))
               AND dt >= current_date - interval '8' day)
 WHERE  activity IS NOT NULL
 GROUP  BY 1, 2, 3, 4

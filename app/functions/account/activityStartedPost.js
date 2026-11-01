@@ -6,7 +6,10 @@
 // Authenticated: the operator dashboard's started/completed table (operatorSnapshotPublish.js)
 // needs a "started" count, and nothing records a click today (the pages send GA4 login,
 // begin_checkout, purchase and submit_vat_return only). web/public/submit.js sends this,
-// keepalive, when an element carrying data-activity-start="<id>" is clicked.
+// keepalive, when an element carrying data-activity-start="<id>" is clicked, and when a page
+// whose element carries data-activity-view="<id>" loads. A page-only activity (a view, with no
+// action behind it) also posts phase "completed" once its content is shown; that publishes
+// activity-completed, which the completed views read for exactly those activities.
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -29,6 +32,8 @@ export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/activity/started", ingestHandler);
 }
 /* v8 ignore stop */
+
+const VIEW_ACTIVITY_IDS = ["help", "operator-dashboard"];
 
 function isKnownActivityId(activityId) {
   const catalog = loadCatalogFromRoot();
@@ -56,6 +61,14 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers, message: "Unknown activity id", error: { activityId } });
   }
 
+  const phase = body.phase ?? "started";
+  if (phase !== "started" && phase !== "completed") {
+    return http400BadRequestResponse({ request, headers, message: "Unknown phase", error: { phase } });
+  }
+  if (phase === "completed" && !VIEW_ACTIVITY_IDS.includes(activityId)) {
+    return http400BadRequestResponse({ request, headers, message: "Activity has no page-only completion", error: { activityId } });
+  }
+
   await initializeSalt();
   const appClient = await resolveAppClient(user.appClientId);
 
@@ -65,14 +78,14 @@ export async function ingestHandler(event) {
   // check every other activity event uses, then defaults to "customer" -- the same path
   // vat-return-submitted and the rest of the estate rely on.
   await publishActivityEvent({
-    event: "activity-started",
-    summary: `Activity started: ${activityId}`,
+    event: `activity-${phase}`,
+    summary: `Activity ${phase}: ${activityId}`,
     userSub: user.sub,
     appClient,
     detail: { activityId },
   });
 
-  logger.info({ message: "Activity started event published", activityId });
+  logger.info({ message: `Activity ${phase} event published`, activityId });
 
   return http200OkResponse({ request, headers, data: { ok: true } });
 }
