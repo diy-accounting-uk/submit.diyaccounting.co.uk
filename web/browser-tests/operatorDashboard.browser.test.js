@@ -23,7 +23,24 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const FIXTURE_SNAPSHOT = {
   generatedAt: "2026-09-08T03:15:00.000Z",
   environment: "prod",
-  reinvestment: { fraction: 0.2, trailing30IncomeGbp: 250, budgetGbp: 50 },
+  monthlyMarketingBudget: {
+    netIncomeLastMonthGbp: 600,
+    netIncomeThreeMonthMeanGbp: 500,
+    incomeUsedGbp: 500,
+    gbpPerUsd: 0.75,
+    fixedSuppliersMonthlyGbp: 20,
+    runningCostsLastMonthGbp: 120,
+    runningCostsThisMonthProjectedGbp: 130,
+    costsUsedGbp: 130,
+    share: 1,
+    activePaidBase: 12,
+    budgetBeforeCashGuardGbp: 370,
+    cashAboveReserveGbp: null,
+    budgetGbp: 370,
+    spentThisMonthGbp: 70,
+    leftToSpendGbp: 300,
+    searchFloorMonthGbp: 31,
+  },
   objectives: [
     {
       id: "uptime",
@@ -445,6 +462,7 @@ const SAMPLE_VALUE_BY_ID = {
   "paid-landings": 41,
   "ads-cost-per-paid-landing-gbp": 2.05,
   "revenue-gbp": 312,
+  "revenue-net-gbp": 300,
   "revenue-subscriptions-gbp": 252,
   "revenue-donations-gbp": 40,
   "revenue-paypal-donations-gbp": 20,
@@ -721,7 +739,7 @@ test.describe("Operator Dashboard", () => {
     await expect(sections.nth(7)).toHaveAttribute("data-objective-id", "operator-effort");
   });
 
-  test("orders the table sections from conversion to paid down to reinvestment", async ({ page }) => {
+  test("orders the table sections from conversion to paid down to the monthly marketing budget", async ({ page }) => {
     await setupRoutes(page, { snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString() } });
     await loadDashboard(page);
 
@@ -742,7 +760,7 @@ test.describe("Operator Dashboard", () => {
       "table-operator-effort",
       "companyAccountsPanel",
       "reservePanel",
-      "reinvestmentPanel",
+      "monthlyMarketingBudgetPanel",
       "operatorsPanel",
       "familyAffiliatesPanel",
       "affiliateGroupsPanel",
@@ -1002,13 +1020,13 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("ends the page with the Operators, Family affiliates and Affiliates by group sections", async ({ page }) => {
+  test("ends the page with the Operators, Family affiliates, Affiliates by group and AWS links sections", async ({ page }) => {
     const snapshotBody = { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS };
     await setupRoutes(page, { snapshotBody });
     await loadDashboard(page);
 
     const panelIds = await page.locator("main section.objective[id$='Panel']").evaluateAll((nodes) => nodes.map((node) => node.id));
-    expect(panelIds.slice(-3)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"]);
+    expect(panelIds.slice(-4)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel", "awsLinksPanel"]);
 
     await expect(page.locator("#operatorsBody tr")).toHaveCount(2);
     await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText("boss@example.com");
@@ -1121,23 +1139,42 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("shows the reinvestment fraction, trailing 30-day income and the budget", async ({ page }) => {
+  test("shows the income, costs, share, budget and what is left to spend", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const panel = page.locator("#reinvestmentPanel");
+    const panel = page.locator("#monthlyMarketingBudgetPanel");
+    const figure = (id) => panel.locator(`tr[data-figure-id="${id}"] td`).nth(1);
     await expect(panel).toBeVisible();
-    await expect(panel.locator('tr[data-figure-id="reinvestment-fraction"] td').nth(1)).toHaveText("20.0%");
-    await expect(panel.locator('tr[data-figure-id="trailing-30-income"] td').nth(1)).toHaveText("£250.00");
-    await expect(panel.locator('tr[data-figure-id="reinvestment-budget"] td').nth(1)).toHaveText("£50.00");
+    await expect(figure("net-income-last-month")).toHaveText("£600.00");
+    await expect(figure("income-used")).toHaveText("£500.00");
+    await expect(figure("running-costs-this-month")).toHaveText("£130.00");
+    await expect(figure("costs-used")).toHaveText("£130.00");
+    await expect(figure("exchange-rate")).toHaveText("0.75");
+    await expect(figure("share")).toHaveText("100.0%");
+    await expect(figure("active-paid-base")).toHaveText("12");
+    await expect(figure("budget-before-cash-guard")).toHaveText("£370.00");
+    await expect(figure("budget")).toHaveText("£370.00");
+    await expect(figure("spent-this-month")).toHaveText("£70.00");
+    await expect(figure("left-to-spend")).toHaveText("£300.00");
+    await expect(figure("search-floor")).toHaveText("£31.00");
   });
 
-  test("hides the reinvestment panel when the snapshot carries no reinvestment figures", async ({ page }) => {
-    const { reinvestment: _omitted, ...snapshotWithoutReinvestment } = FIXTURE_SNAPSHOT;
-    await setupRoutes(page, { snapshotBody: snapshotWithoutReinvestment });
+  test("shows a figure that is not measured as not measured", async ({ page }) => {
+    await setupRoutes(page);
     await loadDashboard(page);
 
-    await expect(page.locator("#reinvestmentPanel")).toBeHidden();
+    const panel = page.locator("#monthlyMarketingBudgetPanel");
+    const cashGuard = await panel.locator('tr[data-figure-id="cash-above-reserve"] td').nth(1).innerText();
+    expect(cashGuard.toLowerCase()).toContain("not measured");
+  });
+
+  test("hides the monthly marketing budget panel when the snapshot carries no budget figures", async ({ page }) => {
+    const { monthlyMarketingBudget: _omitted, ...snapshotWithoutBudget } = FIXTURE_SNAPSHOT;
+    await setupRoutes(page, { snapshotBody: snapshotWithoutBudget });
+    await loadDashboard(page);
+
+    await expect(page.locator("#monthlyMarketingBudgetPanel")).toBeHidden();
   });
 
   test("shows cash at bank against the reserve floor with the headroom", async ({ page }) => {

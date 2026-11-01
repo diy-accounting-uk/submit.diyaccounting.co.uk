@@ -250,297 +250,6 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
-  # Reasoned job filter: the same select-jobs job test.yml carries. It writes a decision artifact
-  # recording which behaviour suites and stack jobs it judges this change has nothing left to
-  # prove for, so scripts/ci/select-jobs-trial.mjs can check each advised skip against what that
-  # job did. Its advised-json output is read by the web-test-* jobs, and through stack-holdings by
-  # the deploy-* stack jobs, each guarded by the REASONED_JOB_FILTER repository variable ('off'
-  # runs every job) and by the ref (main runs every job). web-test always runs, because
-  # set-last-known-good-deployment and the apex promotion rest on it. See select-jobs.mjs's
-  # module comment for the shared eligibility,
-  # budget, and kill-switch behaviour; `continue-on-error: true` and no job-level `if:` mean a
-  # Bedrock error here never surfaces as a red status check.
-  select-jobs:
-    name: 'select jobs'
-    needs:
-      - params
-    continue-on-error: true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment: ci
-    permissions:
-      contents: read
-      id-token: write
-      actions: read
-    env:
-      CLAUDE_CODE_VERSION: '2.0.30'
-      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
-      OUT_DIR: '/tmp/select-jobs'
-      SELECT_JOBS_BUDGET_PER_DAY: '200'
-      # 'off' makes the ref ineligible, so no model call runs and every job runs.
-      SELECT_JOBS_MODE: 'off'
-    outputs:
-      skip-json: ${{ steps.decide.outputs.skip-json }}
-      advised-json: ${{ steps.decide.outputs.advised-json }}
-      compared-from: ${{ steps.diff.outputs.compared-from }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Decide whether this ref is eligible for a job-selection call
-        id: eligibility
-        run: |
-          markdown_only=false
-          before='${{ github.event.before }}'
-          if [ "${{ github.event_name }}" = "push" ] && [ -n "$before" ] \
-            && [ "$before" != "0000000000000000000000000000000000000000" ] \
-            && git cat-file -e "${before}^{commit}" 2>/dev/null; then
-            changed=$(git diff --name-only "${before}..${{ github.sha }}")
-            non_md=$(printf '%s\n' "$changed" | grep -v -E '\.md$' || true)
-            if [ -n "$changed" ] && [ -z "$non_md" ]; then
-              markdown_only=true
-            fi
-          fi
-          echo "markdown-only=${markdown_only}" | tee -a "$GITHUB_OUTPUT"
-          if [ "${SELECT_JOBS_MODE}" = "off" ] || [ "${{ github.ref }}" = "refs/heads/main" ] || [ "$markdown_only" = "true" ]; then
-            echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
-          fi
-
-      - name: Stop once ${{ env.SELECT_JOBS_BUDGET_PER_DAY }} decisions have already posted today
-        id: budget-guard
-        if: steps.eligibility.outputs.eligible == 'true'
-        uses: ./.github/actions/agent-run-budget
-        with:
-          workflow-file: deploy.yml
-          job-name: select jobs
-          step-name: Parse the answer
-          budget: ${{ env.SELECT_JOBS_BUDGET_PER_DAY }}
-
-      - name: Assume the AWS actions and deploy roles
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        uses: ./.github/actions/aws-role
-        with:
-          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Stop when the agent kill switch is on
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        id: kill-switch
-        uses: ./.github/actions/agent-kill-switch
-        with:
-          environment-name: ci
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup-toolchain
-        with:
-          npm-install: none
-          npm-cache: 'false'
-
-      - name: Install Claude Code
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
-      - name: Find the last green run of this workflow on this branch
-        id: last-green
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p "${OUT_DIR}"
-          sha=$(gh run list --repo "${{ github.repository }}" --workflow deploy.yml \
-                  --branch "${{ github.ref_name }}" --status success --limit 1 \
-                  --json headSha --jq '.[0].headSha // empty' || true)
-          echo "sha=${sha}" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Build the diff and changed-files inputs
-        id: diff
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        env:
-          LAST_GREEN_SHA: ${{ steps.last-green.outputs.sha }}
-        run: |
-          set -euo pipefail
-          git fetch origin '${{ github.event.repository.default_branch }}' --quiet
-          fork_point=$(git merge-base "origin/${{ github.event.repository.default_branch }}" HEAD)
-          # A code name comes round again, so the last green run of a branch of the same name can
-          # be weeks older than this branch. Use it only when it already holds this branch's fork
-          # point from the default branch.
-          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null \
-            && git merge-base --is-ancestor "${fork_point}" "${LAST_GREEN_SHA}"; then
-            range="${LAST_GREEN_SHA}..${{ github.sha }}"
-            echo "compared-from=${LAST_GREEN_SHA}" | tee -a "$GITHUB_OUTPUT"
-          else
-            range="origin/${{ github.event.repository.default_branch }}...HEAD"
-          fi
-          echo "comparing ${range}" | tee -a "$GITHUB_STEP_SUMMARY"
-          git diff "${range}" > "${OUT_DIR}/diff.txt"
-          git diff --name-only "${range}" > "${OUT_DIR}/changed-files.txt"
-          echo "range=${range}" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Write the invocation context
-        id: context
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: |
-          set -euo pipefail
-          jq -n \
-            --arg eventName '${{ github.event_name }}' \
-            --arg ref '${{ github.ref }}' \
-            --arg refName '${{ github.ref_name }}' \
-            --arg environmentName '${{ needs.params.outputs.environment-name }}' \
-            --arg githubEnvironment '${{ needs.params.outputs.github-environment }}' \
-            --arg deploymentName '${{ needs.params.outputs.deployment-name }}' \
-            --arg forceAllStackDeployment '${{ needs.params.outputs.forceAllStackDeployment }}' \
-            --arg skipTestScenarios '${{ needs.params.outputs.skipTestScenarios }}' \
-            --arg isSkippingDeploy '${{ needs.params.outputs.isSkippingDeploy }}' \
-            --arg lastGreenSha '${{ steps.last-green.outputs.sha }}' \
-            --arg comparedRange '${{ steps.diff.outputs.range }}' \
-            '{eventName: $eventName, ref: $ref, refName: $refName, environmentName: $environmentName, githubEnvironment: $githubEnvironment, deploymentName: $deploymentName, forceAllStackDeployment: $forceAllStackDeployment, skipTestScenarios: $skipTestScenarios, isSkippingDeploy: $isSkippingDeploy, lastGreenSha: $lastGreenSha, comparedRange: $comparedRange}' \
-            > "${OUT_DIR}/context.json"
-
-      - name: Build the prompt
-        id: prompt
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: |
-          set -euo pipefail
-          node scripts/ci/select-jobs.mjs prompt \
-            --context "${OUT_DIR}/context.json" \
-            --diff "${OUT_DIR}/diff.txt" \
-            --changed-files "${OUT_DIR}/changed-files.txt" \
-            --catalogue deploy.yml \
-            > "${OUT_DIR}/prompt.txt"
-          echo "prompt-hash=$(sha256sum "${OUT_DIR}/prompt.txt" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Run the job-selection agent
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        id: run
-        env:
-          CLAUDE_CODE_USE_BEDROCK: '1'
-          AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
-          ANTHROPIC_SMALL_FAST_MODEL: ${{ env.MODEL_ID }}
-          DISABLE_TELEMETRY: '1'
-          DISABLE_ERROR_REPORTING: '1'
-          DISABLE_AUTOUPDATER: '1'
-        run: |
-          set -o pipefail
-          claude -p \
-            --max-turns 6 \
-            --output-format json \
-            --permission-mode default \
-            --disallowedTools "Bash,Edit,Write,WebFetch,WebSearch" \
-            --allowedTools "Read,Grep,Glob" \
-            < "${OUT_DIR}/prompt.txt" \
-            2>&1 | tee "${OUT_DIR}/claude-output.json"
-
-      - name: Parse the answer
-        id: decide
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p "${OUT_DIR}"
-          SKIP_JSON=$(node scripts/ci/select-jobs.mjs decide \
-            --ref "${{ github.ref }}" \
-            --claude-output "${OUT_DIR}/claude-output.json" \
-            --context "${OUT_DIR}/context.json" \
-            --model-id "${{ env.MODEL_ID }}" \
-            --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
-            --catalogue deploy.yml \
-            --mode "${SELECT_JOBS_MODE}" \
-            --markdown-only "${{ steps.eligibility.outputs.markdown-only }}" \
-            --out "${OUT_DIR}/decision.json")
-          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
-          ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')
-          echo "advised-json=${ADVISED_JSON}" | tee -a "$GITHUB_OUTPUT"
-
-      # This run also calls test.yml with `uses:` (job "test"), whose own select-jobs job shares
-      # this same github.run_id and uploads its own decision artifact - the name is prefixed by
-      # which catalogue produced it so the two never collide.
-      - name: Save the decision artifact
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: select-jobs-decision-deploy-${{ github.run_id }}
-          path: ${{ env.OUT_DIR }}/decision.json
-          if-no-files-found: warn
-          retention-days: 30
-
-  # The advice above compares this commit with the head of the branch's last green run, so a
-  # stack job may skip only when this deployment still holds what that run left in its stacks.
-  # A ci slot passes from branch to branch, so existence alone is not enough: see
-  # scripts/ci/stack-holdings.mjs for the checks. Its skip-json names the stack jobs that may
-  # skip; on main, with REASONED_JOB_FILTER 'off', on prod, or on any error this job is skipped
-  # or writes nothing, and every stack job runs.
-  stack-holdings:
-    name: 'read which stacks this deployment still holds'
-    needs:
-      - params
-      - names
-      - select-jobs
-    if: >-
-      ${{ !cancelled() && vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main'
-      && needs.names.result == 'success' && needs.names.outputs.environment-name == 'ci'
-      && needs.params.outputs.isSkippingDeploy != 'true'
-      && needs.select-jobs.outputs.compared-from != '' && needs.select-jobs.outputs.advised-json != '' && needs.select-jobs.outputs.advised-json != '[]' }}
-    continue-on-error: true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    environment: ${{ needs.params.outputs.github-environment }}
-    permissions:
-      contents: read
-      id-token: write
-      actions: read
-    outputs:
-      skip-json: ${{ steps.read.outputs.skip-json }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup-toolchain
-        with:
-          npm-install: none
-          npm-cache: 'false'
-
-      - name: Assume the AWS actions and deploy roles
-        uses: ./.github/actions/aws-role
-        with:
-          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Read which advised stack jobs this deployment still holds
-        id: read
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ADVISED_JSON: ${{ needs.select-jobs.outputs.advised-json }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          COMPARED_FROM: ${{ needs.select-jobs.outputs.compared-from }}
-        run: |
-          SKIP_JSON=$(node scripts/ci/stack-holdings.mjs \
-            --advised-json "${ADVISED_JSON}" \
-            --deployment-name "${DEPLOYMENT_NAME}" \
-            --compared-from "${COMPARED_FROM}" \
-            --repo "${{ github.repository }}" \
-            --branch "${{ github.ref_name }}") || SKIP_JSON='[]'
-          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
-
   # A workflow_dispatch naming an explicit deployment-name is about to deploy this same commit,
   # so any push-triggered run of deploy.yml for the same github.sha would otherwise run alongside
   # it and the two contend for the same ci apex alias and Cognito lane user (B140; the coordinator
@@ -1142,7 +851,6 @@ jobs:
     needs:
       - params
       - names
-      - stack-holdings
       - skip-deploy-check
       - build
     uses: ./.github/workflows/deploy-stacks.yml
@@ -1169,7 +877,6 @@ jobs:
       cognito-client-id: ${{ needs.names.outputs.cognito-client-id }}
       cognito-diya-gl-client-id: ${{ needs.names.outputs.cognito-diya-gl-client-id }}
       cognito-mcp-client-id: ${{ needs.names.outputs.cognito-mcp-client-id }}
-      skip-json: ${{ needs.stack-holdings.outputs.skip-json }}
       base-image-tag: ${{ needs.build.outputs.base-image-tag }}
       mvn-package-result: ${{ needs.build.outputs.mvn-package-result }}
       validate-secrets-result: ${{ needs.build.outputs.validate-secrets-result }}
@@ -1180,7 +887,7 @@ jobs:
     # passed, one promotion behind this run, through promote-ci-apex.yml. Skipping this job on ci
     # does not skip the jobs that need it: every one of them is `if: !cancelled()`.
     # The condition names each need's result, because the implicit success() is false whenever
-    # any job upstream was skipped, and stack-holdings is skipped on main by design.
+    # any job upstream was skipped.
     if: >-
       ${{ !cancelled() && needs.names.result == 'success' && needs.names.outputs.environment-name == 'prod'
       && needs.skip-deploy-check.result == 'success'
@@ -1404,16 +1111,13 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   # The probe suites other than web-test are listed in .github/behaviour-probe-suites.json; each
-  # entry's id is the id select-jobs knows it by. The reasoned job filter drops an entry that
-  # advised-json names, while the variable is on and the ref is not main. scenarios drops it when
-  # skipTestScenarios is set, ciOnly drops it outside ci, and filing drops it unless
+  # entry's id names it. scenarios drops it when skipTestScenarios is set, ciOnly drops it outside ci, and filing drops it unless
   # runCompaniesHouseSandboxFiling is set.
   probe-suites:
     if: ${{ !cancelled() }}
     name: 'probe suites'
     runs-on: ubuntu-24.04
     needs:
-      - select-jobs
       - params
       - names
     outputs:
@@ -1428,25 +1132,16 @@ jobs:
       - name: Drop the suites that do not run in this deploy
         id: filter
         env:
-          ADVISED_JSON: ${{ needs.select-jobs.outputs.advised-json || '[]' }}
-          REASONED_JOB_FILTER: ${{ vars.REASONED_JOB_FILTER }}
           SKIP_TEST_SCENARIOS: ${{ needs.params.outputs.skipTestScenarios }}
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           RUN_COMPANIES_HOUSE_FILING: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
         run: |
-          ADVISED_ACTIVE=false
-          if [ "${REASONED_JOB_FILTER}" != "off" ] && [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            ADVISED_ACTIVE=true
-          fi
           INCLUDE=$(jq -c \
-            --argjson advised "${ADVISED_JSON}" \
-            --arg active "${ADVISED_ACTIVE}" \
             --arg skipScenarios "${SKIP_TEST_SCENARIOS}" \
             --arg environment "${ENVIRONMENT_NAME}" \
             --arg filing "${RUN_COMPANIES_HOUSE_FILING}" \
-            '[.[] | .id as $id | select(
-              (($active == "true" and ($advised | index($id) != null)) | not)
-              and (if .scenarios then $skipScenarios != "true" else true end)
+            '[.[] | select(
+              (if .scenarios then $skipScenarios != "true" else true end)
               and (if .ciOnly then $environment == "ci" else true end)
               and (if .filing then $filing == "true" else true end)
             )]' .github/behaviour-probe-suites.json)

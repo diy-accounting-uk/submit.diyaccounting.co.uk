@@ -43,6 +43,7 @@ describe("productCatalogHelper", () => {
     const catalog = parseCatalog(tomlText);
     expect(bundlesForActivity(catalog, "submit-vat")).toEqual([
       "day-guest",
+      "week-guest",
       "invited-guest",
       "resident-vat",
       "resident",

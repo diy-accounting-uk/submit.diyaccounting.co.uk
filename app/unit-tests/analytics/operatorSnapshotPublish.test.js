@@ -91,8 +91,8 @@ import {
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
-  buildReinvestment,
-  REINVESTMENT_FRACTION,
+  buildMonthlyMarketingBudget,
+  CASH_RESERVE_GBP,
   mapInOrderWithConcurrency,
   writeSnapshot,
   parseResultSet,
@@ -1647,7 +1647,7 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
-  describe("reinvestment budget", () => {
+  describe("monthly marketing budget", () => {
     const context = {
       envName: "test",
       region: "eu-west-2",
@@ -1656,37 +1656,133 @@ describe("operatorSnapshotPublish", () => {
       ga4PropertyId: "523400333",
     };
 
-    test("the reinvestment fraction is one fifth", () => {
-      expect(REINVESTMENT_FRACTION).toBe(0.2);
-    });
-
-    test("the revenue observation sums only the days after the 30-day cutoff into its trailing window", () => {
-      const revenue = OBJECTIVE_DEFINITIONS.flatMap((o) => o.observations).find((o) => o.id === "revenue-gbp");
-      const sql = buildWindowedBatchSql({ view: revenue.view, dayColumn: revenue.dayColumn, observations: [revenue] });
+    test("the net revenue observation sums the net column of the revenue view over the trailing 30 days", () => {
+      const net = OBJECTIVE_DEFINITIONS.flatMap((o) => o.observations).find((o) => o.id === "revenue-net-gbp");
+      const sql = buildWindowedBatchSql({ view: net.view, dayColumn: net.dayColumn, observations: [net] });
       const trailingColumn = sql.split("\n").find((line) => line.includes("AS o0_last_30"));
 
-      expect(trailingColumn.trim()).toBe("sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS o0_last_30,");
+      expect(trailingColumn.trim()).toBe("sum(CASE WHEN day > date_add('day', -30, current_date) THEN net_revenue_gbp END) AS o0_last_30,");
       expect(sql).toContain("FROM   v_revenue_daily");
     });
 
-    test("buildReinvestment gives a budget of the fraction of the trailing 30-day revenue", () => {
-      const objectives = [{ id: "conversion-to-paid", observations: [{ id: "revenue-gbp", last30: { value: 250 } }] }];
+    const now = new Date("2026-10-11T12:00:00Z");
+    const RATE = 0.8;
+    const septemberDay = { day: "2026-09-15", gbp: 100 * RATE };
+    const octoberDays = [
+      { day: "2026-10-01", gbp: 40 * RATE },
+      { day: "2026-10-02", gbp: 10 * RATE },
+      { day: "2026-10-10", gbp: 10 * RATE },
+    ];
+    const baseInputs = {
+      lastThreeNetIncomeGbp: [600, 600, 600],
+      awsDailyGbp: [septemberDay, ...octoberDays],
+      gbpPerUsd: RATE,
+      adsSpentGbp: 12,
+    };
+    const baseContext = { cashAtBankGbp: 50000, activePaidBase: 12, fixedSuppliersMonthlyGbp: 0, now };
+    const budgetFor = (inputs = {}, context = {}) =>
+      buildMonthlyMarketingBudget({ ...baseInputs, ...inputs }, { ...baseContext, ...context });
 
-      expect(buildReinvestment(objectives)).toEqual({ fraction: 0.2, trailing30IncomeGbp: 250, budgetGbp: 50 });
+    test("this month's cost projects the days after the 1st over the days elapsed and adds the 1st's charges", () => {
+      // (10 + 10) / 10 days elapsed x 31 days + 40 charged on the 1st = 102 dollars
+      expect(budgetFor().runningCostsThisMonthProjectedGbp).toBeCloseTo(102 * RATE, 6);
     });
 
-    test("buildReinvestment gives no budget while the revenue query has no figure", () => {
-      const objectives = [{ id: "conversion-to-paid", observations: [{ id: "revenue-gbp", last30: { value: null } }] }];
+    test("the fixed suppliers add to both months' running costs", () => {
+      const budget = budgetFor({}, { fixedSuppliersMonthlyGbp: 10 });
 
-      expect(buildReinvestment(objectives)).toEqual({ fraction: 0.2, trailing30IncomeGbp: null, budgetGbp: null });
+      expect(budget.runningCostsLastMonthGbp).toBeCloseTo(100 * RATE + 10, 6);
+      expect(budget.runningCostsThisMonthProjectedGbp).toBeCloseTo(102 * RATE + 10, 6);
     });
 
-    test("buildSnapshot carries the reinvestment figures from the revenue observation", async () => {
-      mockAllQueriesSucceedWith(["100", "50", "300", "200"]);
+    test("the costs used are the higher of last month's and this month's projected", () => {
+      const projectedHigher = budgetFor();
+      expect(projectedHigher.costsUsedGbp).toBeCloseTo(102 * RATE, 6);
 
-      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+      const lastMonthHigher = budgetFor({ awsDailyGbp: [{ day: "2026-09-15", gbp: 400 * RATE }, ...octoberDays] });
+      expect(lastMonthHigher.costsUsedGbp).toBeCloseTo(400 * RATE, 6);
+    });
 
-      expect(snapshot.reinvestment).toEqual({ fraction: 0.2, trailing30IncomeGbp: 100, budgetGbp: 20 });
+    test("the running costs hold no marketing spend", () => {
+      const withoutAds = budgetFor({ adsSpentGbp: 0 });
+      const withAds = budgetFor({ adsSpentGbp: 500 });
+
+      expect(withAds.costsUsedGbp).toBe(withoutAds.costsUsedGbp);
+      expect(withAds.budgetGbp).toBe(withoutAds.budgetGbp);
+    });
+
+    test("the income used is the lower of last month and the three-month mean", () => {
+      const lastMonthLower = budgetFor({ lastThreeNetIncomeGbp: [900, 900, 300] });
+      expect(lastMonthLower.netIncomeThreeMonthMeanGbp).toBe(700);
+      expect(lastMonthLower.incomeUsedGbp).toBe(300);
+
+      const meanLower = budgetFor({ lastThreeNetIncomeGbp: [0, 0, 900] });
+      expect(meanLower.incomeUsedGbp).toBe(300);
+    });
+
+    test("the budget is the share of the income used above the costs used", () => {
+      const budget = budgetFor();
+
+      expect(budget.share).toBe(1);
+      expect(budget.budgetBeforeCashGuardGbp).toBeCloseTo(600 - 102 * RATE, 6);
+      expect(budget.budgetGbp).toBe(budget.budgetBeforeCashGuardGbp);
+      expect(budgetFor({}, { activePaidBase: 1001 }).budgetGbp).toBeCloseTo((600 - 102 * RATE) / 2, 6);
+    });
+
+    test("the budget is zero when the costs used pass the income used", () => {
+      expect(budgetFor({ lastThreeNetIncomeGbp: [10, 10, 10] }).budgetGbp).toBe(0);
+    });
+
+    test("the cash guard holds the budget to the cash above the reserve when that is lower", () => {
+      const budget = budgetFor({}, { cashAtBankGbp: CASH_RESERVE_GBP + 100 });
+
+      expect(budget.cashAboveReserveGbp).toBe(100);
+      expect(budget.budgetBeforeCashGuardGbp).toBeGreaterThan(100);
+      expect(budget.budgetGbp).toBe(100);
+    });
+
+    test("the cash guard leaves the budget alone when cash is not measured", () => {
+      const budget = budgetFor({}, { cashAtBankGbp: null });
+
+      expect(budget.cashAboveReserveGbp).toBeNull();
+      expect(budget.budgetGbp).toBe(budget.budgetBeforeCashGuardGbp);
+    });
+
+    test("cash under the reserve gives a zero budget", () => {
+      expect(budgetFor({}, { cashAtBankGbp: 500 }).budgetGbp).toBe(0);
+    });
+
+    test("left to spend is the budget less this month's ads spend, and the Search floor is the month's days at £1", () => {
+      const budget = budgetFor();
+
+      expect(budget.spentThisMonthGbp).toBe(12);
+      expect(budget.leftToSpendGbp).toBeCloseTo(budget.budgetGbp - 12, 6);
+      expect(budget.searchFloorMonthGbp).toBe(31);
+    });
+
+    test("an input that is not measured makes the figures that need it null", () => {
+      const noIncome = budgetFor({ lastThreeNetIncomeGbp: null });
+      expect(noIncome.incomeUsedGbp).toBeNull();
+      expect(noIncome.budgetGbp).toBeNull();
+      expect(noIncome.runningCostsLastMonthGbp).not.toBeNull();
+
+      const noCosts = budgetFor({ awsDailyGbp: null, gbpPerUsd: null });
+      expect(noCosts.costsUsedGbp).toBeNull();
+      expect(noCosts.runningCostsLastMonthGbp).toBeNull();
+      expect(noCosts.gbpPerUsd).toBeNull();
+      expect(noCosts.budgetGbp).toBeNull();
+
+      const noThisMonthCosts = budgetFor({ awsDailyGbp: [septemberDay] });
+      expect(noThisMonthCosts.runningCostsThisMonthProjectedGbp).toBeNull();
+      expect(noThisMonthCosts.costsUsedGbp).toBeNull();
+
+      const noPaidBase = budgetFor({}, { activePaidBase: null });
+      expect(noPaidBase.share).toBeNull();
+      expect(noPaidBase.budgetGbp).toBeNull();
+
+      const noAdsSpend = budgetFor({ adsSpentGbp: null });
+      expect(noAdsSpend.budgetGbp).not.toBeNull();
+      expect(noAdsSpend.leftToSpendGbp).toBeNull();
     });
   });
 

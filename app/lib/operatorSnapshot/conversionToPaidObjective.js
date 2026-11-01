@@ -23,6 +23,16 @@ export const conversionToPaidObjective = {
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
+      id: "revenue-net-gbp",
+      label: "Revenue, net of payment fees",
+      unit: "gbp",
+      view: "v_revenue_daily",
+      dayColumn: "day",
+      valueExpr: "net_revenue_gbp",
+      aggregation: "sum",
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+    },
+    {
       id: "revenue-donations-gbp",
       label: "Revenue, Stripe donations (Payment Links)",
       unit: "gbp",

@@ -7,6 +7,7 @@ version = "1.1.0"
 # ==============================
 # Bundle ID          → Unlocked by pass types                                      → Payment required?
 # default            → (automatic, no pass needed)                                 → No
+# week-guest         → digital-pass                                                → No
 # day-guest          → self-service, no pass needed (enable = "always")               → No
 # invited-guest      → invited-guest, campaign                                     → No (admin passes) / 10 tokens (campaign, Phase 6)
 # resident-guest     → resident-guest                                              → No (admin-issued, email-restricted)
@@ -77,6 +78,21 @@ tokensGranted = 3
 #  }],
 #  "tokensRemaining": 1
 #}
+
+# week-guest: What a digital pass gives the person who redeems it
+# Unlocked by: digital-pass (referral link from passes/generate-digital.html)
+# Payment: None
+# Tokens: 3 granted, no refresh, 7 days
+# Not self-service and not listed on the bundles page; the free day pass without a link stays day-guest.
+[[bundles]]
+id = "week-guest"
+name = "Week pass"
+levelName = "Guest"
+enable = "on-pass"
+hidden = true
+allocation = "on-email-match"
+timeout = "P7D"
+tokensGranted = 3
 
 # invited-guest: Month-long access for specific invited users
 # Unlocked by: invited-guest pass (email-restricted), campaign pass (user-issued, 10 tokens)
@@ -263,7 +279,7 @@ name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
@@ -277,7 +293,7 @@ hmrcScopesRequired = ["write:vat", "read:vat"]
 id = "vat-assist-check"
 name = "HMRC Assist check (VAT, preview)"
 display = "never"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["^/api/v1/hmrc/vat/assist.*"]
@@ -288,7 +304,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "mcp-harness"
 name = "MCP chat harness (preview)"
 display = "never"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = false
 paths = ["mcp-harness.html", "^/api/v1/dev/mcp-harness/.*"]
@@ -298,7 +314,7 @@ environments = ["local", "test", "simulator", "proxy"]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
@@ -313,7 +329,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "vat-liabilities"
 name = "VAT Liabilities (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat/liability.*"]
@@ -324,7 +340,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "vat-payments"
 name = "VAT Payments (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat/payment.*"]
@@ -335,7 +351,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "vat-penalties"
 name = "VAT Penalties (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat/penalty.*"]
@@ -346,7 +362,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
@@ -583,7 +599,8 @@ tokenCost = 10
 metered = true
 # generate-pass-digital
 # =====================
-# Time-limited (7 days), unlimited capacity (100 uses).
+# Each redeemer gets a week pass (week-guest: 3 tokens, 7 days). The pass works for 90 days with no use cap;
+# at 1000 uses it waits for operator review (see submit.passes.toml).
 # Encourages short digital campaigns (social media, email, messaging).
 paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 accountSetting = "passGeneration"

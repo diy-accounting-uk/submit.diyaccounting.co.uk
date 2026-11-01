@@ -184,11 +184,10 @@ jobs:
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
 
   lint-workflows:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'lint-workflows')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' }}
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
     needs:
-      - select-jobs
       - changes
     steps:
       - name: Checkout
@@ -241,11 +240,10 @@ jobs:
         run: node scripts/capabilities-generate.mjs --check
 
   lint-js:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-js') }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'eslint'
     runs-on: ubuntu-24.04
     needs:
-      - select-jobs
       - changes
     # Gates JavaScript files this change ADDS, and reports the repository total without failing on
     # it. Linting everything would be red on every run until a backlog of pre-existing findings is
@@ -401,291 +399,6 @@ jobs:
       runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
-  # Reasoned job filter (proof of concept): asks a model which of the jobs below, already
-  # mechanically gated on `needs.changes.outputs.code`, have nothing left to prove for this
-  # diff. Its answer only ADDS skips on top of that mechanical gate - it can turn a job that
-  # would run into a skip, never the reverse - and a malformed, failed, budget/kill-switch
-  # skipped, or main-branch answer is read as "skip nothing", so every gated job still runs.
-  #
-  # This job carries NO job-level `if:` and sets `continue-on-error: true`, so it always reports
-  # 'success' to every job that needs it, whatever happens inside it. Both are required, not
-  # decorative: GitHub Actions applies an implicit `success()` check to a dependent job's `if:`
-  # whenever that `if:` does not itself reference a status function (always()/success()/
-  # failure()/cancelled()), and success() is false when a needed job was skipped OR failed - so
-  # a select-jobs job that could be skipped (a job-level `if:`) or fail (an unhandled step error)
-  # would silently skip every job below it, including the required npm test/maven test/eslint
-  # status contexts, on exactly the runs (main, a kill-switched or budget-exhausted call) where
-  # running everything matters most. See:
-  # https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow - "If a job fails or
-  # is skipped, all jobs that need it are skipped unless the jobs use a conditional expression
-  # that causes the job to continue."
-  # https://docs.github.com/en/actions/learn-github-actions/expressions#status-check-functions -
-  # "A default status check of success() is applied unless you include one of these functions."
-  # A job whose steps fail but which itself carries `continue-on-error: true` still reports
-  # `success` to a downstream `needs.<job>.result` (confirmed against
-  # https://www.kenmuse.com/blog/how-to-handle-step-and-job-errors-in-github-actions/, which
-  # traces this exact case), so that field covers a genuine step failure (Bedrock error, a
-  # crashed script) the same way the internal gating below covers main, the budget and the kill
-  # switch. The `select-jobs.mjs decide` step (`if: always()`) is what actually turns every one
-  # of those cases into "skip nothing" (`decideForContext`, unit tested for each), so the job
-  # reporting success is necessary but not sufficient on its own - both layers matter.
-  select-jobs:
-    name: 'select jobs'
-    needs:
-      - params
-      - changes
-    continue-on-error: true
-    runs-on: ubuntu-24.04
-    # `continue-on-error: true` reports a step FAILURE inside this job as `success` downstream,
-    # but a job cancelled by hitting its own `timeout-minutes` is not a step failure - it reports
-    # `cancelled`, which the same default success() gate below would still read as "skip
-    # everything". 10 minutes is generous headroom for what this job actually does (git, npm
-    # install -g, one small Bedrock call) so that path stays theoretical rather than mitigated.
-    timeout-minutes: 10
-    # `npm-test-cdk-ci` below already declares `environment: ci` unconditionally - including on
-    # every run this workflow serves for a PROD deploy from main via deploy.yml's workflow_call -
-    # so this job doing the same is the existing, proven pattern, not a new risk. The eligibility
-    # check below means the ci-scoped AWS role chain is never actually exercised on main anyway.
-    environment: ci
-    permissions:
-      contents: read
-      id-token: write
-      actions: read
-    env:
-      CLAUDE_CODE_VERSION: '2.0.30'
-      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
-      OUT_DIR: '/tmp/select-jobs'
-      # The one place this number is written, same convention as alarm-triage.yml's and
-      # support-triage.yml's own budgets. This path is called on every branch push rather than
-      # per issue or per dispatch, so the budget bounds Bedrock spend on a runaway push loop
-      # rather than reflecting a single call's cost.
-      SELECT_JOBS_BUDGET_PER_DAY: '200'
-      # advised-json is the model's advised list in either mode. A job in an enforced group of
-      # the rollout reads it, guarded by the REASONED_JOB_FILTER repository variable ('off' runs
-      # every job) and by the ref (main runs every job).
-      # 'advisory' records what the model would have skipped in the decision artifact but always
-      # reports skip-json=[], so every job below still runs. 'enforcing' lets skip-json turn a
-      # job off. See select-jobs.mjs's module comment for what each mode does.
-      # 'off' makes the ref ineligible, so no model call runs and every job runs.
-      SELECT_JOBS_MODE: 'off'
-    outputs:
-      skip-json: ${{ steps.decide.outputs.skip-json }}
-      advised-json: ${{ steps.decide.outputs.advised-json }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      # Cheap and unconditional: every step below that touches the budget, AWS or Bedrock is
-      # gated on this, but the eligibility that actually matters for correctness is
-      # `decideForContext`'s own `isEligibleRef` check in the final "Parse the answer" step -
-      # this is a cost optimisation on top of that, never its replacement.
-      - name: Decide whether this ref is eligible for a job-selection call
-        id: eligibility
-        run: |
-          if [ "${{ needs.changes.outputs.code }}" = "false" ]; then
-            echo "markdown-only=true" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "markdown-only=false" | tee -a "$GITHUB_OUTPUT"
-          fi
-          if [ "${SELECT_JOBS_MODE}" = "off" ] || [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ needs.changes.outputs.code }}" = "false" ]; then
-            echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
-          fi
-
-      - name: Stop once ${{ env.SELECT_JOBS_BUDGET_PER_DAY }} decisions have already posted today
-        id: budget-guard
-        if: steps.eligibility.outputs.eligible == 'true'
-        uses: ./.github/actions/agent-run-budget
-        with:
-          workflow-file: test.yml
-          job-name: select jobs
-          step-name: Parse the answer
-          budget: ${{ env.SELECT_JOBS_BUDGET_PER_DAY }}
-
-      - name: Configure AWS role via GitHub OIDC
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume the read-only alarm triage role
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Stop when the agent kill switch is on
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        id: kill-switch
-        uses: ./.github/actions/agent-kill-switch
-        with:
-          environment-name: ci
-
-      # Unconditional (not gated like the steps around it): the final "Parse the answer" step
-      # (`if: always()`) needs a working `node` on every path, including one where every step
-      # below this is skipped.
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Claude Code
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
-      - name: Find the last green run of this workflow on this branch
-        id: last-green
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p "${OUT_DIR}"
-          sha=$(gh run list --repo "${{ github.repository }}" --workflow test.yml \
-                  --branch "${{ github.ref_name }}" --status success --limit 1 \
-                  --json headSha --jq '.[0].headSha // empty' || true)
-          echo "sha=${sha}" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Build the diff and changed-files inputs
-        id: diff
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        env:
-          LAST_GREEN_SHA: ${{ steps.last-green.outputs.sha }}
-        run: |
-          set -euo pipefail
-          git fetch origin '${{ github.event.repository.default_branch }}' --quiet
-          fork_point=$(git merge-base "origin/${{ github.event.repository.default_branch }}" HEAD)
-          # A code name comes round again, so the last green run of a branch of the same name can
-          # be weeks older than this branch. Use it only when it already holds this branch's fork
-          # point from the default branch.
-          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null \
-            && git merge-base --is-ancestor "${fork_point}" "${LAST_GREEN_SHA}"; then
-            range="${LAST_GREEN_SHA}..${{ github.sha }}"
-          else
-            range="origin/${{ github.event.repository.default_branch }}...HEAD"
-          fi
-          echo "comparing ${range}" | tee -a "$GITHUB_STEP_SUMMARY"
-          git diff "${range}" > "${OUT_DIR}/diff.txt"
-          git diff --name-only "${range}" > "${OUT_DIR}/changed-files.txt"
-          echo "range=${range}" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Write the invocation context
-        id: context
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: |
-          set -euo pipefail
-          jq -n \
-            --arg eventName '${{ github.event_name }}' \
-            --arg ref '${{ github.ref }}' \
-            --arg refName '${{ github.ref_name }}' \
-            --arg environmentName '${{ needs.params.outputs.environment-name }}' \
-            --arg githubEnvironment '${{ needs.params.outputs.github-environment }}' \
-            --arg deploymentName '${{ needs.params.outputs.deployment-name }}' \
-            --arg runProxyBehaviourTests '${{ needs.params.outputs.runProxyBehaviourTests }}' \
-            --arg lastGreenSha '${{ steps.last-green.outputs.sha }}' \
-            --arg comparedRange '${{ steps.diff.outputs.range }}' \
-            '{eventName: $eventName, ref: $ref, refName: $refName, environmentName: $environmentName, githubEnvironment: $githubEnvironment, deploymentName: $deploymentName, runProxyBehaviourTests: $runProxyBehaviourTests, lastGreenSha: $lastGreenSha, comparedRange: $comparedRange}' \
-            > "${OUT_DIR}/context.json"
-
-      - name: Build the prompt
-        id: prompt
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        run: |
-          set -euo pipefail
-          node scripts/ci/select-jobs.mjs prompt \
-            --context "${OUT_DIR}/context.json" \
-            --diff "${OUT_DIR}/diff.txt" \
-            --changed-files "${OUT_DIR}/changed-files.txt" \
-            --catalogue test.yml \
-            > "${OUT_DIR}/prompt.txt"
-          echo "prompt-hash=$(sha256sum "${OUT_DIR}/prompt.txt" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Run the job-selection agent
-        if: >-
-          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
-          steps.kill-switch.conclusion != 'failure'
-        id: run
-        env:
-          CLAUDE_CODE_USE_BEDROCK: '1'
-          AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
-          ANTHROPIC_SMALL_FAST_MODEL: ${{ env.MODEL_ID }}
-          DISABLE_TELEMETRY: '1'
-          DISABLE_ERROR_REPORTING: '1'
-          DISABLE_AUTOUPDATER: '1'
-        run: |
-          set -o pipefail
-          claude -p \
-            --max-turns 6 \
-            --output-format json \
-            --permission-mode default \
-            --disallowedTools "Bash,Edit,Write,WebFetch,WebSearch" \
-            --allowedTools "Read,Grep,Glob" \
-            < "${OUT_DIR}/prompt.txt" \
-            2>&1 | tee "${OUT_DIR}/claude-output.json"
-
-      # Always runs, whatever happened above (not eligible, over budget, kill switch on, or the
-      # agent step itself failed) - decideForContext (unit tested) turns every one of those into
-      # "skip nothing" rather than this step ever throwing.
-      - name: Parse the answer
-        id: decide
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p "${OUT_DIR}"
-          SKIP_JSON=$(node scripts/ci/select-jobs.mjs decide \
-            --ref "${{ github.ref }}" \
-            --claude-output "${OUT_DIR}/claude-output.json" \
-            --context "${OUT_DIR}/context.json" \
-            --model-id "${{ env.MODEL_ID }}" \
-            --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
-            --catalogue test.yml \
-            --mode "${SELECT_JOBS_MODE}" \
-            --markdown-only "${{ steps.eligibility.outputs.markdown-only }}" \
-            --out "${OUT_DIR}/decision.json")
-          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
-          ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')
-          echo "advised-json=${ADVISED_JSON}" | tee -a "$GITHUB_OUTPUT"
-
-      # deploy.yml calls this workflow with `uses:` (job "test"), and `github.run_id` inside a
-      # called workflow is the CALLER's run id - so a deploy.yml run carries both this job's
-      # artifact and deploy.yml's own select-jobs job's artifact under the same run id.
-      # upload-artifact refuses two artifacts of the same name in one run, so the name is
-      # prefixed by which catalogue produced it.
-      - name: Save the decision artifact
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: select-jobs-decision-test-${{ github.run_id }}
-          path: ${{ env.OUT_DIR }}/decision.json
-          if-no-files-found: warn
-          retention-days: 30
-
   names:
     needs:
       - params
@@ -711,11 +424,10 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   npm-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm test'
     runs-on: ubuntu-24.04
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -756,11 +468,10 @@ jobs:
           retention-days: 14
 
   npm-unit-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-unit-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm unit test'
     runs-on: ubuntu-latest
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -800,11 +511,10 @@ jobs:
           retention-days: 14
 
   npm-mcp-test:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-mcp-test')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' }}
     name: 'npm mcp test'
     runs-on: ubuntu-latest
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -838,11 +548,10 @@ jobs:
         working-directory: mcp
 
   npm-system-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-system-test')) }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm system test'
     runs-on: ubuntu-latest
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -864,11 +573,10 @@ jobs:
       - run: npm run test:system
 
   npm-test-web-unit:
-    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-web-unit')) }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -895,7 +603,7 @@ jobs:
   # The browser tests run on one worker, so three shards cut the wall time to about a third.
   # `npm-browser-test` below keeps the job name and gathers the shards.
   npm-browser-test-shard:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-browser-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm browser test shard ${{ matrix.shard }}/3'
     runs-on: ubuntu-latest
     strategy:
@@ -903,7 +611,6 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -942,11 +649,10 @@ jobs:
           test "${SHARD_RESULT}" = "success"
 
   mvn-test:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'mvn-test')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' }}
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
-      - select-jobs
       - changes
       - names
     permissions:
@@ -967,10 +673,9 @@ jobs:
           ./mvnw clean test
 
   npm-test-cdk-ci:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-cdk-ci')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' }}
     name: 'npm test cdk-ci'
     needs:
-      - select-jobs
       - changes
       - names
     runs-on: ubuntu-24.04
@@ -1056,10 +761,9 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-cdk-prod')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' }}
     name: 'npm test cdk prod'
     needs:
-      - select-jobs
       - changes
       - names
     runs-on: ubuntu-24.04
@@ -1144,16 +848,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   # Simulator behaviour tests - run in parallel without a tunnel, Docker or HMRC.
-  # The suites are listed in .github/behaviour-simulator-suites.json; each entry's id is the id
-  # select-jobs knows it by. gate "skip" drops an entry that skip-json names; gate "advised"
-  # drops an entry that advised-json names while the reasoned job filter is on and the ref is
-  # not main.
+  # The suites are listed in .github/behaviour-simulator-suites.json.
   simulator-suites:
     if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator suites'
     runs-on: ubuntu-24.04
     needs:
-      - select-jobs
       - changes
     outputs:
       include: ${{ steps.filter.outputs.include }}
@@ -1164,27 +864,10 @@ jobs:
           sparse-checkout: .github/behaviour-simulator-suites.json
           persist-credentials: false
 
-      - name: Drop the suites select-jobs skipped
+      - name: List the suites
         id: filter
-        env:
-          SKIP_JSON: ${{ needs.select-jobs.outputs.skip-json || '[]' }}
-          ADVISED_JSON: ${{ needs.select-jobs.outputs.advised-json || '[]' }}
-          REASONED_JOB_FILTER: ${{ vars.REASONED_JOB_FILTER }}
         run: |
-          ADVISED_ACTIVE=false
-          if [ "${REASONED_JOB_FILTER}" != "off" ] && [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            ADVISED_ACTIVE=true
-          fi
-          INCLUDE=$(jq -c \
-            --argjson skip "${SKIP_JSON}" \
-            --argjson advised "${ADVISED_JSON}" \
-            --arg active "${ADVISED_ACTIVE}" \
-            '[.[] | select(
-              if .gate == "skip"
-              then (.id as $id | $skip | index($id) == null)
-              else (.id as $id | ($active == "true" and ($advised | index($id) != null)) | not)
-              end
-            )]' .github/behaviour-simulator-suites.json)
+          INCLUDE=$(jq -c '.' .github/behaviour-simulator-suites.json)
           echo "include=${INCLUDE}" | tee -a "$GITHUB_OUTPUT"
 
   behaviour-test-simulator:
@@ -1231,10 +914,9 @@ jobs:
   # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
-    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'behaviour-test-proxy-submit-vat')) }}
+    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
     name: 'proxy - submitVatBehaviour'
     needs:
-      - select-jobs
       - changes
       - params
       - names
@@ -1365,7 +1047,7 @@ jobs:
   # when today is a Sunday (the gate step reads `date -u +%u`), and on a workflow_dispatch with
   # runExploratoryCrawl set to true. `github.workflow == 'test'` keeps deploy.yml's delegated call,
   # which inherits the caller's event name, from starting it. It needs the `build` output so a
-  # Markdown-only push leaves it out, and it has no select-jobs entry because no push runs it.
+  # Markdown-only push leaves it out.
   exploratory-crawl:
     if: ${{ needs.changes.outputs.build == 'true' && github.workflow == 'test' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.runExploratoryCrawl == 'true')) }}
     name: 'exploratory crawl'
