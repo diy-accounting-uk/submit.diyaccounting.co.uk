@@ -18,6 +18,11 @@
 -- of trusting the item's own column. A subscription with no matching event anywhere is counted
 -- as a customer rather than dropped, the same fail-safe-to-LIVE default resolveActorClass()
 -- itself uses.
+--
+-- A day since the first subscription record with no cancellation carries one row with bundle
+-- "none" and 0, so the source reads as measured and a window with no cancellations is 0 rather
+-- than absent. Without the spine the view held no rows at all while every cancellation was test
+-- traffic, and every window read as not measured.
 CREATE OR REPLACE VIEW v_subscription_cancellations_daily AS
 WITH subscription_actor AS (
   SELECT subscription_id, arbitrary(actor) AS actor
@@ -33,13 +38,25 @@ history AS (
          lag(status) OVER (PARTITION BY subscription_id ORDER BY change_ts) AS previous_status,
          lag(cancel_at_period_end) OVER (PARTITION BY subscription_id ORDER BY change_ts) AS previous_cancel_at_period_end
   FROM   dynamo_subscriptions
-  WHERE  change_type = 'MODIFY')
-SELECT date(h.change_ts) AS day,
-       coalesce(h.bundle_id, 'unknown') AS bundle_id,
-       count(*) AS cancellations
-FROM   history h
-LEFT JOIN subscription_actor sa ON sa.subscription_id = h.subscription_id
-WHERE  ((h.status = 'canceled' AND (h.previous_status IS NULL OR h.previous_status <> 'canceled'))
-   OR   (h.cancel_at_period_end = true AND (h.previous_cancel_at_period_end IS NULL OR h.previous_cancel_at_period_end = false)))
-  AND  coalesce(sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
-GROUP  BY 1, 2
+  WHERE  change_type = 'MODIFY'),
+cancellations AS (
+  SELECT date(h.change_ts) AS day,
+         coalesce(h.bundle_id, 'unknown') AS bundle_id,
+         count(*) AS cancellations
+  FROM   history h
+  LEFT JOIN subscription_actor sa ON sa.subscription_id = h.subscription_id
+  WHERE  ((h.status = 'canceled' AND (h.previous_status IS NULL OR h.previous_status <> 'canceled'))
+     OR   (h.cancel_at_period_end = true AND (h.previous_cancel_at_period_end IS NULL OR h.previous_cancel_at_period_end = false)))
+    AND  coalesce(sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
+  GROUP  BY 1, 2),
+days AS (
+  SELECT cast(d AS date) AS day
+  FROM   (SELECT min(date(change_ts)) AS first_day FROM dynamo_subscriptions)
+  CROSS JOIN UNNEST(sequence(first_day, current_date, INTERVAL '1' DAY)) AS t(d)),
+quiet_days AS (
+  SELECT day, 'none' AS bundle_id, cast(0 AS bigint) AS cancellations
+  FROM   days
+  WHERE  day NOT IN (SELECT day FROM cancellations))
+SELECT day, bundle_id, cancellations FROM cancellations
+UNION ALL
+SELECT day, bundle_id, cancellations FROM quiet_days

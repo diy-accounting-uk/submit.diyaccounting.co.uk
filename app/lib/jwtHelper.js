@@ -4,7 +4,7 @@
 // app/lib/jwtHelper.js
 
 import { createLogger } from "./logger.js";
-import { getHeader } from "./httpResponseHelper.js";
+import { getHeader, setActorContextFromClaims } from "./httpResponseHelper.js";
 
 const logger = createLogger({ source: "app/lib/jwtHelper.js" });
 
@@ -39,6 +39,7 @@ export function decodeJwtToken(eventHeaders) {
     throw new Error("Unauthorized - Invalid token");
   }
 
+  setActorContextFromClaims(decodedToken);
   return decodedToken;
 }
 

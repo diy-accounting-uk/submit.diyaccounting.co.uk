@@ -3,10 +3,10 @@
 
 -- @capability DATA-30 SQL views: cost
 -- - **Use when:** a question is about AWS spend by service or tag, cost per submission, or the steady-state target.
--- - **Does:** Three Athena views read the FOCUS cost export. They cover billed cost by AWS service, and by DeploymentName/Stack cost-allocation tags, each day. They also cover cost per completion, and monthly spend against a $64.77 steady-state target.
+-- - **Does:** Four Athena views read the FOCUS cost export. They cover billed cost by AWS service, and by DeploymentName/Stack cost-allocation tags, each day. They also cover cost per completion, and monthly and month-to-date spend against a $64.77 steady-state target.
 -- - **Run:** no command; see Does and Entry
 -- - **Entry:** `infra/main/resources/analytics/views/v_cost_daily.sql:`
--- - **Files:** infra/main/resources/analytics/views/v_cost_daily.sql, infra/main/resources/analytics/views/v_cost_per_submission_daily.sql, infra/main/resources/analytics/views/v_cost_vs_target_monthly.sql
+-- - **Files:** infra/main/resources/analytics/views/v_cost_daily.sql, infra/main/resources/analytics/views/v_cost_per_submission_daily.sql, infra/main/resources/analytics/views/v_cost_vs_target_monthly.sql, infra/main/resources/analytics/views/v_cost_vs_target_daily.sql
 -- - **Keywords:** cost daily, cost per submission, cost vs target, focus cost export, deployment name tag, steady-state target
 -- - **Related:** DATA-08, DATA-17
 -- @end-capability

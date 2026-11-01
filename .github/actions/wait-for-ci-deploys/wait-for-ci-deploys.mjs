@@ -107,7 +107,8 @@ export async function github(path, { attempts = 3, retrySeconds = 10 } = {}) {
   }
 }
 
-const JOBS_PER_PAGE = 100;
+// GitHub answers 502 to a 100-job page of a large re-run deploy run; 50 answers.
+const JOBS_PER_PAGE = 50;
 
 // Every job of a run. A deploy.yml run has more than 200 jobs, so one page misses most of them.
 export async function fetchJobs(runId) {

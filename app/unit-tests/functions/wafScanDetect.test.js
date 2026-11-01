@@ -130,6 +130,7 @@ describe("functions/security/wafScanDetect", () => {
 
       expect(result.published).toBe(1);
       expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+      expect(mockPublishActivityEvent.mock.calls[0][0].actor).toBe("system");
     });
 
     test("the event carries the client IP, the path count and the deployment name", async () => {

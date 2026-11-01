@@ -186,6 +186,13 @@ describe("claims", () => {
     if (texts.some((text) => text.includes("99p"))) expect(price.amount).toBe(99);
   });
 
+  it("names both offers in the pass panel note", () => {
+    const html = fs.readFileSync(path.join(path.dirname(JSON_FILE), "index.html"), "utf-8");
+    const note = html.match(/<p id="offerNote">([^<]*)<\/p>/)[1];
+    expect(note).toContain(data.offers.withoutPass.replace(/^a /, ""));
+    expect(note).toContain(data.offers.withPass);
+  });
+
   it("states the pass offer as the pass page does", () => {
     const page = fs.readFileSync(path.join(publicDir, "passes", "generate-digital.html"), "utf-8");
     expect(page).toContain(data.offers.withPass);

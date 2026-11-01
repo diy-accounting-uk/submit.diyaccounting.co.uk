@@ -192,6 +192,7 @@ export async function handler(event = {}) {
   for (const row of rows) {
     await publishActivityEvent({
       event: "scan-404-detected",
+      actor: "system",
       flow: "operational",
       summary: `404 scan: ${row.c_ip} made ${row.hits} 404s in one minute on ${row.cs_host}`,
       detail: {

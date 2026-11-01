@@ -92,7 +92,7 @@ h1 {
 .product-section > h2 {
   font-size: 1.75rem;
 }
-.brand-guide > h3,
+.brand-guide > summary > h3,
 .post-group > h3 {
   margin: 1.5rem 0 0.5rem;
   font-size: 1.3rem;
@@ -386,6 +386,41 @@ header {
   box-shadow: var(--mk-shadow);
   padding: 1.25rem;
   margin-bottom: 1.25rem;
+}
+.post-set > summary,
+.brand-guide > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+}
+.post-set > summary::-webkit-details-marker,
+.brand-guide > summary::-webkit-details-marker {
+  display: none;
+}
+.post-set > summary::before,
+.brand-guide > summary::before {
+  content: "";
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 3px solid var(--mk-brand);
+  border-bottom: 3px solid var(--mk-brand);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.post-set[open] > summary::before,
+.brand-guide[open] > summary::before {
+  transform: rotate(45deg);
+}
+.post-set > summary > h4,
+.brand-guide > summary > h3 {
+  margin: 0;
+}
+.post-set[open] > summary {
+  margin-bottom: 0.5rem;
 }
 .post-set h4 a {
   color: var(--mk-text);

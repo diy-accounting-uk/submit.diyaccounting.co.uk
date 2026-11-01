@@ -18,6 +18,7 @@ import {
 } from "./marketing-lib.js";
 
 const COPIED_FOR_MS = 3000;
+const OPEN_SET_ID = "submit-vat-mtd";
 const CODE_ERROR = "A pass code is four words joined by hyphens, for example tiger-happy-maple-river.";
 const URL_ERROR = "Paste the link from Generate a pass. It looks like https://submit.diyaccounting.co.uk/bundles.html?pass=…";
 const PASS_OK = "Your pass is in every DIY Accounting Submit link below. Posts that carry it start with #ad.";
@@ -103,8 +104,13 @@ function updateSet(article, set) {
 function buildSet(section, set) {
   const data = state.data;
   const lengths = data.lengths.filter((l) => l.id !== "headline" && set.posts[l.id]);
-  const article = el("article", { "id": set.id, "class": "post-set", "aria-labelledby": `${set.id}-title` });
-  article.append(el("h4", { id: `${set.id}-title`, tabindex: "-1" }, el("a", { href: `#${set.id}`, text: set.title })));
+  const article = el("details", {
+    "id": set.id,
+    "class": "post-set",
+    "aria-labelledby": `${set.id}-title`,
+    "open": set.id === OPEN_SET_ID,
+  });
+  article.append(el("summary", {}, el("h4", { id: `${set.id}-title`, tabindex: "-1" }, el("a", { href: `#${set.id}`, text: set.title }))));
 
   const fieldset = el("fieldset", {}, el("legend", { text: "Post length" }));
   for (const length of lengths) {
@@ -426,6 +432,7 @@ function goToHash() {
   const id = decodeURIComponent(location.hash.slice(1));
   const target = id ? byId(id) : null;
   if (!target) return;
+  for (let box = target.closest("details"); box; box = box.parentElement?.closest("details")) box.open = true;
   target.scrollIntoView();
   const heading = target.matches("h1, h2, h3, h4") ? target : target.querySelector("h2, h3, h4");
   if (heading) heading.focus({ preventScroll: true });

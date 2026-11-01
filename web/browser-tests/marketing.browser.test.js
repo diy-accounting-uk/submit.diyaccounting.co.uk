@@ -136,7 +136,7 @@ test("typing a code fills the link and the reverse, a bad code shows the error, 
 
 test("the medium length changes the post and Copy post puts it on the clipboard", async ({ page, context }) => {
   await openPage(page, context);
-  const set = page.locator("#submit-vat-price");
+  const set = page.locator("#submit-vat-mtd");
   const shortText = await set.locator(".post-text").innerText();
   await set.getByLabel(/^Medium/).check();
   const mediumText = await set.locator(".post-text").innerText();
@@ -153,7 +153,7 @@ test("a LinkedIn click copies the post", async ({ page, context }) => {
   await context.route("https://www.linkedin.com/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<p>stub</p>" }),
   );
-  const set = page.locator("#submit-vat-price");
+  const set = page.locator("#submit-vat-mtd");
   const [popup] = await Promise.all([context.waitForEvent("page"), set.locator('a.share[data-network="linkedin"]').click()]);
   await popup.close();
   await expect(set.locator(".copy-status")).toContainText("Post text copied. Paste it into LinkedIn.");
@@ -188,7 +188,7 @@ test("Share shows when the browser can share and sends the pass link", async ({ 
     };
   });
   await openPage(page, context, `/?pass=${PASS}`);
-  const set = page.locator("#submit-vat-price");
+  const set = page.locator("#submit-vat-mtd");
   await expect(set.locator(".native-share")).toBeVisible();
   await set.locator(".native-share").click();
   await expect.poll(() => page.evaluate(() => window.__shared.length)).toBe(1);
@@ -202,6 +202,7 @@ test("Share shows when the browser can share and sends the pass link", async ({ 
 test("the Dark button swaps a guide to its dark scheme and is disabled for a light-only site", async ({ page, context }) => {
   await openPage(page, context);
   const guide = page.locator("#submit-brand");
+  await guide.locator("summary").click();
   await guide.getByRole("button", { name: "Dark" }).click();
   await expect(guide.locator(".brand-submit")).toHaveAttribute("data-theme", "dark");
   await expect(guide.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
@@ -210,6 +211,7 @@ test("the Dark button swaps a guide to its dark scheme and is disabled for a lig
   for (const src of sources) expect(src.endsWith("-dark.png")).toBe(true);
   await guide.getByRole("button", { name: "Light" }).click();
   await expect(guide.locator(".brand-submit")).toHaveAttribute("data-theme", "light");
+  await page.locator("#spreadsheets-brand summary").click();
   await expect(page.locator("#spreadsheets-brand").getByRole("button", { name: "Dark" })).toBeDisabled();
   await expect(page.locator("#spreadsheets-brand .scheme-note")).toHaveText("This site has a light scheme only.");
 });
@@ -218,6 +220,7 @@ test("at 390 pixels wide the page does not scroll sideways", async ({ page, cont
   await page.setViewportSize({ width: 390, height: 844 });
   await openPage(page, context);
   for (const id of ["submit", "spreadsheets", "diya-gl", "limited"]) {
+    await page.locator(`#${id}-brand summary`).click();
     await page.locator(`#${id}-brand`).getByRole("button", { name: "Light" }).click();
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
@@ -234,4 +237,44 @@ test("the affiliates section shows its figures from the data and links to the ap
     "href",
     "https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection",
   );
+});
+
+test("each brand guide and each post is a twisty, and only the Making Tax Digital for VAT post starts open", async ({ page, context }) => {
+  await openPage(page, context);
+  for (const id of ["submit", "spreadsheets", "diya-gl", "limited"]) {
+    const guide = page.locator(`#${id}-brand`);
+    expect(await guide.evaluate((node) => node.tagName)).toBe("DETAILS");
+    await expect(guide).not.toHaveAttribute("open", /.*/);
+    await expect(guide.locator("> summary > h3")).toHaveText("Brand guide");
+  }
+  const posts = await page.locator(".post-set").evaluateAll((nodes) => nodes.map((n) => ({ id: n.id, tag: n.tagName, open: n.open })));
+  expect(posts.length).toBeGreaterThan(1);
+  for (const post of posts) expect(post.tag).toBe("DETAILS");
+  expect(posts.filter((p) => p.open).map((p) => p.id)).toEqual(["submit-vat-mtd"]);
+  await expect(page.locator("#submit-vat-mtd .post-text")).toBeVisible();
+  await expect(page.locator("#submit-vat-price .post-text")).toBeHidden();
+});
+
+test("clicking a summary opens its post and its brand guide", async ({ page, context }) => {
+  await openPage(page, context);
+  const post = page.locator("#submit-vat-price");
+  await post.locator("> summary").click();
+  await expect(post).toHaveAttribute("open", "");
+  await expect(post.locator(".post-text")).toBeVisible();
+  const guide = page.locator("#limited-brand");
+  await guide.locator("> summary").click();
+  await expect(guide).toHaveAttribute("open", "");
+  await expect(guide.getByRole("button", { name: "Dark" })).toBeVisible();
+});
+
+test("a link to an id inside a closed post or guide opens it, on load and on a later hash change", async ({ page, context }) => {
+  await openPage(page, context, "/#submit-vat-price");
+  await expect(page.locator("#submit-vat-price")).toHaveAttribute("open", "");
+  await expect(page.locator("#submit-vat-price-title")).toBeFocused();
+  await expect(page.locator("#submit-brand")).not.toHaveAttribute("open", /.*/);
+  await page.evaluate(() => {
+    location.hash = "#submit-brand-title";
+  });
+  await expect(page.locator("#submit-brand")).toHaveAttribute("open", "");
+  expect(await inView(page, "#submit-brand-title")).toBe(true);
 });

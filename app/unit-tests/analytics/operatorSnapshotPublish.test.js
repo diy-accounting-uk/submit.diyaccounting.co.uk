@@ -327,7 +327,7 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).not.toContain("today_as_of");
     });
 
-    test("counts matching rows with a literal value expression, as the security observations do", () => {
+    test("counts matching rows with a literal value expression", () => {
       const sql = buildWindowedBatchSql({
         view: "security_hub_findings",
         dayColumn: "dt",
@@ -337,6 +337,42 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain(
         "count(CASE WHEN dt > date_add('day', -30, current_date) AND (finding_id IS NOT NULL AND severity_label = 'CRITICAL') THEN 1 END) AS o0_last_30",
       );
+    });
+
+    test("latest-total sums the rows of the newest day inside each window, Today included", () => {
+      const sql = buildWindowedBatchSql({
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END", aggregation: "latest-total" }],
+      });
+      expect(sql).toContain(
+        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -30, current_date))) AS o0_last_30",
+      );
+      expect(sql).toContain(
+        "FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date))) AS o0_prev_90",
+      );
+      expect(sql).toMatch(/FILTER \(WHERE dt = \(SELECT max\(dt\) FROM security_hub_findings WHERE dt <= [^)]*\)\)\) AS o0_today/);
+    });
+
+    test("latest-total applies an observation's where to both the newest-day lookup and the rows", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_compliance_status",
+        dayColumn: "day",
+        observations: [{ valueExpr: "open_findings", aggregation: "latest-total", where: "area = 'accessibility'" }],
+      });
+      expect(sql).toContain(
+        "sum(open_findings) FILTER (WHERE day = (SELECT max(day) FROM v_compliance_status WHERE day > date_add('day', -7, current_date) AND (area = 'accessibility')) AND (area = 'accessibility')) AS o0_last_7",
+      );
+    });
+
+    test("month-to-date cost reads the latest day of each window", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_vs_target_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "month_to_date_usd", aggregation: "latest" }],
+      });
+      expect(sql).toContain("max_by(month_to_date_usd, day) FILTER (WHERE day > date_add('day', -7, current_date)) AS o0_last_7");
+      expect(sql).toContain("max_by(month_to_date_usd, day) FILTER (WHERE day > date_add('day', -30, current_date)) AS o0_last_30");
     });
 
     test("a monthly or quarterly grain column has the longer windows and no Today or Previous day", () => {
@@ -944,8 +980,11 @@ describe("operatorSnapshotPublish", () => {
       expect(["sessions-operator", "sessions-human"].map(viewOf)).toEqual(Array(2).fill("v_visitors_by_kind_daily"));
       expect(viewOf("sessions-authenticated")).toBe("v_active_users_daily");
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
-      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
+      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot", "system"]);
       expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
+      expect(chart.modes[0].sql).toContain("'system', cast(count(*) AS double)\nFROM   activity_events_all\nWHERE  actor = 'system'");
+      expect(chart.modes[0].labelOf("system")).toBe("System");
+      expect(chart.modes[0].descriptionOf("system")).toBeTruthy();
       expect(chart.modes[0].sql).toContain("'authenticated', cast(sum(active_users) AS double)\nFROM   v_active_users_daily");
       expect(chart.modes[0].sql).toContain("visitor_kind IN ('operator', 'human')");
       expect(chart.note).toContain("CloudFront");
@@ -1435,7 +1474,7 @@ describe("operatorSnapshotPublish", () => {
 
       const expectedFragments = [
         "FROM   v_visitors_by_kind_daily",
-        "FROM   v_cost_vs_target_monthly",
+        "FROM   v_cost_vs_target_daily",
         "FROM   v_cost_per_submission_daily",
         "FROM   v_paid_landings_daily",
         "FROM   v_ads_cost_daily",
