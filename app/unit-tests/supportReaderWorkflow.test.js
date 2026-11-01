@@ -36,6 +36,13 @@ describe("support-reader.yml", () => {
     expect(on).not.toMatch(/issues:|issue_comment:|pull_request/);
   });
 
+  it("passes the reread input to the select script only with an issue number", () => {
+    const select = jobBlock("select");
+    expect(select).toContain("REREAD_INPUT: ${{ inputs.reread }}");
+    expect(select).toContain("ARGS+=(--reread)");
+    expect(select).toContain("reread needs an issue-number");
+  });
+
   it("gives the read job no checkout and only id-token write", () => {
     const read = jobBlock("read");
     expect(read).not.toContain("actions/checkout");

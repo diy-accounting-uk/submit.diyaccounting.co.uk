@@ -8,7 +8,11 @@
 // `maintainer-review`, filed by a login on the allow list, with no reader comment from the agent
 // App yet. The oldest comes first. It reads no title and no body, and it prints only the number.
 //
-// usage: support-reader-select.mjs [--issue <number>]
+// With `--issue <number> --reread` it reads that one issue again: open, labelled `support`, not
+// labelled `rejected`, filed by an allowed login, with or without `maintainer-review` and with or
+// without an earlier reader comment.
+//
+// usage: support-reader-select.mjs [--issue <number> [--reread]]
 // env:   GH_TOKEN (read access to the private repository's issues), GITHUB_OUTPUT
 // Writes `issue-number=<n>` (empty when there is nothing to read) to $GITHUB_OUTPUT.
 
@@ -16,7 +20,7 @@ import { appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { AGENT_APP_LOGIN, ALLOWED_LOGINS } from "./issue-agent-allowlist.mjs";
 import { READER_MARKER } from "./quarantine-reader-check.mjs";
-import { githubGetAll } from "./github-issue-comment.mjs";
+import { githubGet, githubGetAll } from "./github-issue-comment.mjs";
 
 export const PRIVATE_REPO = "diy-accounting-uk/private.diyaccounting.co.uk";
 
@@ -27,6 +31,21 @@ export function isReaderCandidate(issue) {
   const labels = labelNames(issue);
   if (!labels.includes("support") || !labels.includes("maintainer-review") || labels.includes("rejected")) return false;
   return ALLOWED_LOGINS.includes(String(issue.user?.login ?? "").toLowerCase());
+}
+
+export function isRereadCandidate(issue) {
+  if (!issue || issue.pull_request || issue.state !== "open") return false;
+  const labels = labelNames(issue);
+  if (!labels.includes("support") || labels.includes("rejected")) return false;
+  return ALLOWED_LOGINS.includes(String(issue.user?.login ?? "").toLowerCase());
+}
+
+export function parseReaderArgs(argv) {
+  const index = argv.indexOf("--issue");
+  const only = index !== -1 && argv[index + 1] ? Number(argv[index + 1]) : undefined;
+  const reread = argv.includes("--reread");
+  if (reread && only === undefined) throw new Error("--reread needs --issue <number>");
+  return { only, reread };
 }
 
 export function hasReaderComment(comments) {
@@ -50,17 +69,30 @@ export async function selectIssueToRead({ issues, commentsFor, only }) {
   return null;
 }
 
+/**
+ * @param {object} issue the one issue fetched for the dispatch input
+ * @param {number} only the dispatch input
+ * @returns {number|null}
+ */
+export function selectIssueToReread({ issue, only }) {
+  return issue?.number === only && isRereadCandidate(issue) ? only : null;
+}
+
 async function main() {
-  const argv = process.argv.slice(2);
-  const index = argv.indexOf("--issue");
-  const only = index !== -1 && argv[index + 1] ? Number(argv[index + 1]) : undefined;
+  const { only, reread } = parseReaderArgs(process.argv.slice(2));
   const token = process.env.GH_TOKEN;
-  const issues = await githubGetAll(`/repos/${PRIVATE_REPO}/issues?state=open&labels=support,maintainer-review`, { token });
-  const number = await selectIssueToRead({
-    issues,
-    only,
-    commentsFor: (n) => githubGetAll(`/repos/${PRIVATE_REPO}/issues/${n}/comments`, { token }),
-  });
+  let number;
+  if (reread) {
+    const issue = await githubGet(`/repos/${PRIVATE_REPO}/issues/${only}`, { token });
+    number = selectIssueToReread({ issue, only });
+  } else {
+    const issues = await githubGetAll(`/repos/${PRIVATE_REPO}/issues?state=open&labels=support,maintainer-review`, { token });
+    number = await selectIssueToRead({
+      issues,
+      only,
+      commentsFor: (n) => githubGetAll(`/repos/${PRIVATE_REPO}/issues/${n}/comments`, { token }),
+    });
+  }
   const line = `issue-number=${number ?? ""}`;
   console.log(line);
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${line}\n`);
