@@ -158,12 +158,14 @@ describe("github", () => {
   });
 });
 
-// A deploy.yml run has 205 jobs: pages of 100, 100 and 5. Job 190 is on page 2.
+// A deploy.yml run has 205 jobs: five pages at the requested page size. Job 190 is on page 4.
 function pagedJobsFetch() {
   const jobs = Array.from({ length: 205 }, (_, i) => ({ id: i + 1, name: `job ${i + 1}`, status: "completed" }));
   return vi.fn(async (url) => {
-    const page = Number(new URL(url).searchParams.get("page") || 1);
-    const body = { total_count: jobs.length, jobs: jobs.slice((page - 1) * 100, page * 100) };
+    const params = new URL(url).searchParams;
+    const page = Number(params.get("page") || 1);
+    const perPage = Number(params.get("per_page"));
+    const body = { total_count: jobs.length, jobs: jobs.slice((page - 1) * perPage, page * perPage) };
     return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
   });
 }
@@ -176,7 +178,8 @@ describe("fetchJobs", () => {
     vi.unstubAllGlobals();
     expect(jobs).toHaveLength(205);
     expect(jobs.find((job) => job.name === "job 190")).toBeDefined();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(fetchMock.mock.calls.every(([url]) => new URL(url).searchParams.get("per_page") === "50")).toBe(true);
   });
 });
 
