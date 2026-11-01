@@ -235,7 +235,7 @@ async function handleAuthCallback(code, state) {
       const postLoginRedirect = sessionStorage.getItem("postLoginRedirect");
       if (postLoginRedirect) {
         sessionStorage.removeItem("postLoginRedirect");
-        redirectUrl = "../" + postLoginRedirect;
+        redirectUrl = window.postLoginRedirectTarget(postLoginRedirect);
       }
     } catch {}
     window.location.href = redirectUrl;
