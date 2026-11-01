@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-bd7a782** (PR #661's merge bd7a782a3).
-**ci**: no ci set stands; `/submit/ci/last-known-good-deployment` is `None` until the next branch deploy promotes one.
+**ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
