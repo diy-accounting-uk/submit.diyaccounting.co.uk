@@ -63,6 +63,11 @@
     "ciOnly": true
   },
   {
+    "id": "web-test-diya-gl-storage",
+    "suite": "diyaGlBehaviour",
+    "ciOnly": true
+  },
+  {
     "id": "web-test-fraud-prevention-headers-vat-synthetic",
     "suite": "postVatReturnFraudPreventionHeadersBehaviour"
   },

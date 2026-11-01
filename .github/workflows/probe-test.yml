@@ -70,6 +70,7 @@ on:
           - 'changeRegisteredOfficeBehaviour'
           - 'changeRegisteredEmailBehaviour'
           - 'diyaGlSubscriptionBehaviour'
+          - 'diyaGlBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
@@ -421,9 +422,9 @@ jobs:
             echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      - name: Look up the DIYA-GL app client for the DIYA-GL subscription suite
+      - name: Look up the DIYA-GL app client for the DIYA-GL suites
         id: diya-gl-client
-        if: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' }}
+        if: ${{ (matrix.suite == 'diyaGlSubscriptionBehaviour' || matrix.suite == 'diyaGlBehaviour') }}
         shell: bash
         run: |
           # This job runs in the Playwright container, which has the AWS SDK but not the CLI.
@@ -535,14 +536,14 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
-          # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
+          # The DIYA-GL suites sign in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_MCP_CLIENT_ID: ${{ steps.mcp-client.outputs.mcp-client-id }}
-          COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          COGNITO_BASE_URI: ${{ (matrix.suite == 'diyaGlSubscriptionBehaviour' || matrix.suite == 'diyaGlBehaviour') && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the diya-gl.co.uk pages, so the sign-in
           # returns there; the ci client also lists localhost:3001 for local runs.
-          DIYA_GL_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://diya-gl.co.uk/' || 'https://ci.diya-gl.co.uk/') || '' }}
+          DIYA_GL_BASE_URL: ${{ (matrix.suite == 'diyaGlSubscriptionBehaviour' || matrix.suite == 'diyaGlBehaviour') && (needs.names.outputs.environment-name == 'prod' && 'https://diya-gl.co.uk/' || 'https://ci.diya-gl.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
@@ -592,14 +593,14 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
-          # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
+          # The DIYA-GL suites sign in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_MCP_CLIENT_ID: ${{ steps.mcp-client.outputs.mcp-client-id }}
-          COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          COGNITO_BASE_URI: ${{ (matrix.suite == 'diyaGlSubscriptionBehaviour' || matrix.suite == 'diyaGlBehaviour') && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the diya-gl.co.uk pages, so the sign-in
           # returns there; the ci client also lists localhost:3001 for local runs.
-          DIYA_GL_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://diya-gl.co.uk/' || 'https://ci.diya-gl.co.uk/') || '' }}
+          DIYA_GL_BASE_URL: ${{ (matrix.suite == 'diyaGlSubscriptionBehaviour' || matrix.suite == 'diyaGlBehaviour') && (needs.names.outputs.environment-name == 'prod' && 'https://diya-gl.co.uk/' || 'https://ci.diya-gl.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}

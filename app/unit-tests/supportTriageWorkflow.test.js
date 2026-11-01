@@ -8,7 +8,7 @@
 // public repository's logs.
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFixRow, buildPrBody, fixBranchName, fixRowPath } from "../../scripts/support-fix-pr.mjs";
@@ -225,5 +225,37 @@ describe("support-fix-pr.mjs", () => {
 
   it("treats an unknown FAQ id as none", () => {
     expect(buildFixRow({ ...input, faqId: "x\n## injected" })).toContain("FAQ the reader matched: none");
+  });
+});
+
+// The handle job runs no npm install, so every module its node scripts load must resolve with
+// Node's built-ins and the repository's own files.
+function packageImportsReachedFrom(entry, seen = new Set()) {
+  if (seen.has(entry)) return [];
+  seen.add(entry);
+  const source = readFileSync(entry, "utf8");
+  const found = [];
+  for (const [, specifier] of source.matchAll(/^\s*import\s[^;]*?from\s+"([^"]+)"/gm)) {
+    if (specifier.startsWith("node:")) continue;
+    if (specifier.startsWith(".")) {
+      const target = resolve(dirname(entry), specifier);
+      if (!existsSync(target)) throw new Error(`${entry} imports ${specifier}, which does not exist`);
+      found.push(...packageImportsReachedFrom(target, seen));
+    } else {
+      found.push(`${entry.slice(ROOT.length + 1)} imports ${specifier}`);
+    }
+  }
+  return found;
+}
+
+describe("support-triage.yml handle job", () => {
+  const scripts = [...new Set([...code(jobBlock("handle")).matchAll(/node (scripts\/[\w.-]+\.mjs)/g)].map((m) => m[1]))];
+
+  it("runs at least one repository script", () => {
+    expect(scripts.length).toBeGreaterThan(0);
+  });
+
+  it.each(scripts)("%s loads no npm package", (script) => {
+    expect(packageImportsReachedFrom(resolve(ROOT, script))).toEqual([]);
   });
 });

@@ -15,7 +15,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { TICKET_KINDS } from "../app/lib/quarantineReaderSchema.js";
+import { TICKET_KINDS } from "../app/lib/supportTicketKinds.js";
 
 export const OPENING_PATTERN = /sorry|thank/i;
 
