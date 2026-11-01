@@ -316,7 +316,9 @@ export async function openSession({ config, clientCredentials, smClient, fetchIm
     storedRefreshToken = await readSecretString(config.refreshTokenSecretName);
   } catch (error) {
     if (error.name === "ResourceNotFoundException") {
-      throw new Error(`No refresh token in ${config.refreshTokenSecretName}. Run: node infra/microsoft/ads/msads.js --consent`);
+      throw new Error(`No refresh token in ${config.refreshTokenSecretName}. Run: node infra/microsoft/ads/msads.js --consent`, {
+        cause: error,
+      });
     }
     throw error;
   }

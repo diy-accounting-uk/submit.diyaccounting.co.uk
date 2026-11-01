@@ -104,7 +104,7 @@ export async function ensureBundleTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -145,7 +145,7 @@ export async function ensureHmrcApiRequestsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -186,7 +186,7 @@ export async function ensureAsyncRequestsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -229,7 +229,7 @@ export async function ensureActivityChargesTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -265,7 +265,7 @@ export async function ensureSecurityStateTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -306,7 +306,7 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -349,7 +349,7 @@ export async function ensurePracticeClientsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -379,7 +379,7 @@ export async function ensureMcpSessionsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -428,7 +428,7 @@ export async function ensurePassesTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -469,7 +469,7 @@ export async function ensureCommissionsTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }
@@ -504,7 +504,7 @@ export async function ensureCapacityTableExists(tableName, endpoint) {
       );
       logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
     } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
     }
   }
 }

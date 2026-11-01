@@ -92,7 +92,7 @@ export async function runPdftotext(pdfPath) {
     return stdout;
   } catch (error) {
     if (error.code === "ENOENT") {
-      throw new Error(`pdftotext was not found on PATH -- install poppler to read "${pdfPath}"`);
+      throw new Error(`pdftotext was not found on PATH -- install poppler to read "${pdfPath}"`, { cause: error });
     }
     throw error;
   }
