@@ -43,7 +43,6 @@ on:
         default: false
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
 
 jobs:
@@ -80,16 +79,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
+        uses: ./.github/actions/setup-toolchain
 
       - name: Lookup Cognito User Pool
         id: lookup-resources

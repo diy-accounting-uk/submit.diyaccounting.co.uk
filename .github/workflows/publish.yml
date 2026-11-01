@@ -36,7 +36,6 @@ permissions:
 
 env:
   JAVA_VERSION: '25'
-  NODE_VERSION: '24'
 
 jobs:
   # ============================================================================
@@ -54,9 +53,10 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       # The ruleset on main refuses a push from the workflow's own token; only an admin's token
       # (RELEASE_PAT) can land the bump, so an absent secret must stop the run here.
@@ -110,15 +110,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+      - name: Set up the toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
 
       - name: Run npm tests
         run: npm test
@@ -130,21 +126,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+      - name: Set up the toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: ./.github/actions/setup-toolchain
         with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
+          npm-install: scripts
+          java: 'true'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
@@ -168,9 +155,11 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PAT }}
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       - name: Update package.json version
         run: |
@@ -227,17 +216,12 @@ jobs:
         with:
           ref: ${{ needs.sync-versions.outputs.commit-sha }}
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@${{ github.repository_owner }}'
-
-      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+      - name: Set up the toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          registry-url: 'https://npm.pkg.github.com'
 
       - name: Publish to GitHub Packages (npm)
         run: npm publish --access public
@@ -257,21 +241,12 @@ jobs:
         with:
           ref: ${{ needs.sync-versions.outputs.commit-sha }}
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+      - name: Set up the toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: ./.github/actions/setup-toolchain
         with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
+          npm-install: scripts
+          java: 'true'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4

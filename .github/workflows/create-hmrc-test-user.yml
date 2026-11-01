@@ -39,7 +39,6 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
   HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
@@ -53,9 +52,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       - name: Create HMRC Sandbox Test User
         id: create-user
