@@ -55,7 +55,7 @@ export function setOperatorFeaturesOn(on) {
  * @returns {Promise<{bundles: object[], settings: object}|null>} Null when the person is signed out or the read fails
  */
 export async function fetchBundleResponse() {
-  let idToken = null;
+  let idToken;
   try {
     idToken = localStorage.getItem("cognitoIdToken");
   } catch {

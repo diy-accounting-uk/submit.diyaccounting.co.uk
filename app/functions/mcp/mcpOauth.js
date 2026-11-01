@@ -401,7 +401,7 @@ async function postUpstream(url, form) {
     },
     UPSTREAM_TIMEOUT_MS,
   );
-  let body = null;
+  let body;
   try {
     body = await response.json();
   } catch {

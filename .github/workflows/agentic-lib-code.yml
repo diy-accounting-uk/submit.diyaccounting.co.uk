@@ -60,7 +60,6 @@ permissions:
   issues: read # to read the issue an issue-number run takes its task from
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
   # The one place this number is written, same convention as alarm-triage.yml's own budget.
@@ -169,9 +168,10 @@ jobs:
 
       - name: Set up Node
         if: steps.budget-guard.outputs.over-budget == 'false'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       # Unconditional (not gated on the budget outcome): this and the role assumption after it
       # exist so a budget-skipped run can still write the ledger row at the end of this job,

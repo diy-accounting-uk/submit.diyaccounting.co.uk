@@ -29,7 +29,7 @@ export async function putPass(pass) {
   } catch (error) {
     if (error.name === "ConditionalCheckFailedException") {
       logger.warn({ message: "Pass code collision, pk already exists", pk: pass.pk });
-      throw new Error("Pass code collision");
+      throw new Error("Pass code collision", { cause: error });
     }
     logger.error({ message: "Error storing pass in DynamoDB", error: error.message });
     throw error;

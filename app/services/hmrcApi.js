@@ -448,7 +448,7 @@ export async function hmrcHttpGet(
     },
   });
 
-  let duration = 0;
+  let duration;
   let hmrcResponse;
   const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_READ_TIMEOUT_MS);
   const controller = new AbortController();
@@ -574,7 +574,7 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
     ...httpRequest,
   });
 
-  let duration = 0;
+  let duration;
   const controller = new AbortController();
   const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_WRITE_TIMEOUT_MS);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);

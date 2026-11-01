@@ -179,6 +179,6 @@ export async function getReceiptByReceiptId(userSub, receiptId) {
     if (e.message === "Receipt not found") {
       throw e;
     }
-    throw new Error(`Failed to get receipt: ${e?.message || String(e)}`);
+    throw new Error(`Failed to get receipt: ${e?.message || String(e)}`, { cause: e });
   }
 }

@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { selectIssueToRead } from "../../../scripts/support-reader-select.mjs";
+import { selectIssueToRead, selectIssueToReread, parseReaderArgs } from "../../../scripts/support-reader-select.mjs";
 import { READER_MARKER } from "../../../scripts/quarantine-reader-check.mjs";
 
 function issue(number, overrides = {}) {
@@ -61,5 +61,46 @@ describe("support reader select", () => {
 
   it("returns null when nothing is left", async () => {
     expect(await select([])).toBeNull();
+  });
+
+  describe("reread", () => {
+    const unreviewed = (n, overrides = {}) => issue(n, { labels: [{ name: "support" }], ...overrides });
+
+    it("selects the named issue without maintainer-review", () => {
+      expect(selectIssueToReread({ issue: unreviewed(7), only: 7 })).toBe(7);
+    });
+
+    it("selects the named issue that carries maintainer-review", () => {
+      expect(selectIssueToReread({ issue: issue(7), only: 7 })).toBe(7);
+    });
+
+    it("refuses a rejected issue", () => {
+      const rejected = unreviewed(7, { labels: [{ name: "support" }, { name: "rejected" }] });
+      expect(selectIssueToReread({ issue: rejected, only: 7 })).toBeNull();
+    });
+
+    it("refuses a closed issue, a pull request and an issue without the support label", () => {
+      expect(selectIssueToReread({ issue: unreviewed(7, { state: "closed" }), only: 7 })).toBeNull();
+      expect(selectIssueToReread({ issue: unreviewed(7, { pull_request: {} }), only: 7 })).toBeNull();
+      expect(selectIssueToReread({ issue: unreviewed(7, { labels: [] }), only: 7 })).toBeNull();
+    });
+
+    it("refuses a login that is not on the allow list", () => {
+      expect(selectIssueToReread({ issue: unreviewed(7, { user: { login: "stranger" } }), only: 7 })).toBeNull();
+    });
+
+    it("refuses an issue whose number differs from the input", () => {
+      expect(selectIssueToReread({ issue: unreviewed(8), only: 7 })).toBeNull();
+    });
+
+    it("parses --reread with --issue", () => {
+      expect(parseReaderArgs(["--issue", "15", "--reread"])).toEqual({ only: 15, reread: true });
+      expect(parseReaderArgs(["--issue", "15"])).toEqual({ only: 15, reread: false });
+      expect(parseReaderArgs([])).toEqual({ only: undefined, reread: false });
+    });
+
+    it("fails on --reread without --issue", () => {
+      expect(() => parseReaderArgs(["--reread"])).toThrow(/--reread needs --issue/);
+    });
   });
 });

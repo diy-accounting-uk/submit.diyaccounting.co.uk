@@ -40,7 +40,7 @@ export async function generatePassQrCode({ code, url, options = {} }) {
     const dataUrl = await QRCode.toDataURL(url, qrOptions);
     return dataUrl;
   } catch (error) {
-    throw new Error(`Failed to generate QR code for pass ${code}: ${error.message}`);
+    throw new Error(`Failed to generate QR code for pass ${code}: ${error.message}`, { cause: error });
   }
 }
 
@@ -71,7 +71,7 @@ export async function generatePassQrCodeBuffer({ code, url, options = {} }) {
     const buffer = await QRCode.toBuffer(url, qrOptions);
     return buffer;
   } catch (error) {
-    throw new Error(`Failed to generate QR code buffer for pass ${code}: ${error.message}`);
+    throw new Error(`Failed to generate QR code buffer for pass ${code}: ${error.message}`, { cause: error });
   }
 }
 

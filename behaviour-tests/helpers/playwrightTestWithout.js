@@ -3,6 +3,7 @@
 
 // behaviour-tests/helpers/playwrightTestWithout.js
 import { test as base } from "@playwright/test";
+import { fetchWithResetRetry } from "./fetchWithResetRetry.js";
 
 // Blocks RUM / GA / gtag / GTM endpoints / HMRC all.js so behaviour tests aren't
 // slowed down or polluted by real analytics calls. Shared by any fixture that
@@ -65,7 +66,7 @@ export function blockAnalyticsRequests(context) {
     if (isCacheableStaticRequest(route.request())) {
       let cached = staticResponses.get(url);
       if (!cached) {
-        const response = await route.fetch();
+        const response = await fetchWithResetRetry(route);
         if (response.status() !== 200) return route.fulfill({ response });
         cached = { response, body: await response.body() };
         staticResponses.set(url, cached);

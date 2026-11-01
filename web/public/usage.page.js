@@ -255,7 +255,7 @@ document.getElementById("clearStorageBtn").addEventListener("click", function ()
 // this session - not every visitor to this page has.
 function renderItsaYearCostSummary() {
   const summaryEl = document.getElementById("itsaYearCostSummary");
-  let stored = null;
+  let stored;
   try {
     stored = JSON.parse(sessionStorage.getItem("itsaYearTokenCost") || "null");
   } catch (e) {

@@ -50,8 +50,6 @@ export default [
       ...sonarjs.configs.recommended.rules,
       "sonarjs/os-command": "off",
       // Added to the recommended set in ESLint 10; on once the existing code is fixed
-      "preserve-caught-error": "off",
-      "no-useless-assignment": "off",
       // Raise allowed cognitive complexity from default (15) to 40
       "sonarjs/cognitive-complexity": ["error", 40],
       // Do not complain about TODO comments

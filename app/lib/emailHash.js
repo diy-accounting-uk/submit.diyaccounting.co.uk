@@ -133,7 +133,7 @@ export async function initializeEmailHashSecret() {
     } catch (error) {
       logger.error({ message: "Failed to fetch email hash secret", error: error.message });
       __initPromise = null;
-      throw new Error(`Failed to initialize email hash secret: ${error.message}.`);
+      throw new Error(`Failed to initialize email hash secret: ${error.message}.`, { cause: error });
     }
   })();
 

@@ -137,7 +137,7 @@ export async function fetchTransactionsPage(
 export async function fetchAllTransactions(accessToken, start, end, fetchImpl = fetch, options = {}) {
   const transactions = [];
   let page = 1;
-  let totalPages = 1;
+  let totalPages;
   do {
     const body = await fetchTransactionsPage(accessToken, { startDate: start, endDate: end, page }, fetchImpl, options);
     transactions.push(...(body.transaction_details ?? []));

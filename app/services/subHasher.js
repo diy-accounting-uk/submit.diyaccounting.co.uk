@@ -125,6 +125,7 @@ export async function initializeSalt() {
       __initPromise = null; // Clear promise so next call will retry
       throw new Error(
         `Failed to initialize salt: ${error.message}. ` + `Ensure secret exists and Lambda has secretsmanager:GetSecretValue permission.`,
+        { cause: error },
       );
     }
   })();

@@ -49,7 +49,7 @@ export async function ingestHandler(event) {
     return http401UnauthorizedResponse({ request, headers, message: "Authentication required" });
   }
 
-  let body = {};
+  let body;
   try {
     body = JSON.parse(event.body || "{}") || {};
   } catch {

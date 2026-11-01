@@ -56,7 +56,6 @@ permissions:
 
 env:
   JAVA_VERSION: '25'
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   GITHUB_ACTOR: ${{ github.actor }}
   COMMIT_HASH: ${{ github.sha }}

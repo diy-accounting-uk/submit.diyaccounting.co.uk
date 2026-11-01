@@ -103,7 +103,7 @@ export function readConfig() {
   try {
     targets = JSON.parse(targetsJson);
   } catch (error) {
-    throw new Error(`GLUE_DATA_QUALITY_TARGETS is not valid JSON: ${error.message}`);
+    throw new Error(`GLUE_DATA_QUALITY_TARGETS is not valid JSON: ${error.message}`, { cause: error });
   }
   if (!Array.isArray(targets) || targets.length === 0) {
     throw new Error("GLUE_DATA_QUALITY_TARGETS must be a non-empty JSON array");

@@ -411,7 +411,7 @@ export async function ingestHandler(event) {
   const clientId = parseRequestBody(event)?.clientId || undefined;
 
   let userSub;
-  let client = null;
+  let client;
   try {
     ({ userSub, client } = await enforceBundles(event, { clientId }));
   } catch (error) {

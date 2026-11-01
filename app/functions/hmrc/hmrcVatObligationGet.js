@@ -142,8 +142,8 @@ export async function ingestHandler(event) {
 
   // Bundle enforcement
   let userSub;
-  let bundleIds = [];
-  let client = null;
+  let bundleIds;
+  let client;
   try {
     ({ userSub, bundleIds, client } = await enforceBundles(event, { clientId }));
   } catch (error) {
