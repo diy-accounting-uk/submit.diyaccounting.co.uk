@@ -11,7 +11,7 @@ const body = (extra = "") =>
 
 describe("support triage assemble", () => {
   test("a change request loses its matched article", () => {
-    const out = assembleAnswer(body(), "change-request");
+    const out = assembleAnswer(body("## Opening sentence\n\nThank you.\n\n"), "change-request");
     expect(out).toContain("## Matched article\n\nnone");
     expect(out).not.toContain("submitted-wrong-figures");
   });
@@ -31,6 +31,12 @@ describe("support triage assemble", () => {
   test("a complaint without an apology or thanks throws", () => {
     expect(() => assembleAnswer(body("## Opening sentence\n\nIt may be your browser.\n\n"), "complaint")).toThrow(/sorry or thank/);
     expect(() => assembleAnswer(body(), "complaint")).toThrow(/sorry or thank/);
+  });
+
+  test("a change request's opening sentence goes first and must thank or apologise", () => {
+    const out = assembleAnswer(body("## Opening sentence\n\nThank you for the suggestion.\n\n"), "change-request");
+    expect(out).toContain("## Drafted reply\n\nThank you for the suggestion. A person");
+    expect(() => assembleAnswer(body("## Opening sentence\n\nWe do not edit text.\n\n"), "change-request")).toThrow(/sorry or thank/);
   });
 
   test("an unknown kind throws", () => {

@@ -5,11 +5,11 @@
 // scripts/support-triage-assemble.mjs
 //
 // Applies the ticket kind the quarantine reader recorded (handling input `ticketKind`) to the
-// model's answer, in code. A change request
-// has no matched article, whatever the model wrote under "## Matched article". A complaint's
-// reply opens with the model's own "## Opening sentence", which must say sorry or thank the
-// customer; code puts it first in the drafted reply. A kind or an opening that breaks these rules
-// throws, so the workflow posts nothing and a person handles the ticket.
+// model's answer, in code. A change request has no matched article, whatever the model wrote under
+// "## Matched article". The reply of a change request or a complaint opens with the model's own
+// "## Opening sentence", which must say sorry or thank the customer; code puts it first in the
+// drafted reply. An opening that breaks the rule throws, so the workflow posts nothing and a
+// person handles the ticket.
 //
 // usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>
 
@@ -44,8 +44,9 @@ export function assembleAnswer(text, kind) {
   if (kind === "change-request") {
     result = result.replace(sectionPattern("Matched article"), "## Matched article\n\nnone\n\n");
   }
-  if (kind === "complaint") {
-    if (!OPENING_PATTERN.test(opening)) throw new Error('a complaint needs an "## Opening sentence" that says sorry or thank you');
+  if (kind === "complaint" || kind === "change-request") {
+    if (!OPENING_PATTERN.test(opening))
+      throw new Error('a complaint or change request needs an "## Opening sentence" that says sorry or thank you');
     result = result.replace(/^(## Drafted reply\n+)/m, `$1${opening} `);
   }
   return result;
