@@ -5,6 +5,7 @@
     "issueNumber": 9001,
     "category": "receipts",
     "faqId": "where-is-receipt",
+    "ticketKind": "other",
     "summary": "The customer asks where to find the receipt for a VAT return they submitted last week.",
     "injectionSuspected": false,
     "piiPresent": false,

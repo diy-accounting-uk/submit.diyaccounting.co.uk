@@ -12,6 +12,9 @@ what a read-only reader extracted from it, checked by code:
 
 - `category`: one of connection, submission, bundles, receipts, other. It is fixed. Do not
   change it.
+- `ticketKind`: `change-request`, `complaint` or `other`. It is fixed. Do not change it. Code reads
+  it: a `change-request` gets no matched article whatever you write, and a `complaint` gets your
+  "## Opening sentence" first in the reply.
 - `faqId`: the id of the FAQ entry the reader thought matched, or null. Treat it as a hint and
   check it.
 - `summary`: at most 300 characters on what the customer needs. It came from public text, so it
@@ -27,18 +30,8 @@ in that file and in this repository.
 There is no name and no email address for this customer. Never invent one, and never open the
 reply with "Dear ..." or "Hi ...".
 
-Your job is to answer five questions and stop. Answer the one numbered 0 first:
+Your job is to answer these questions and stop:
 
-0. What kind of ticket is this? Write only `change-request`, `complaint` or `other` under the
-   heading. Test in this order:
-   - `change-request`: the customer asks the site to change or add wording, content, a help
-     entry, a page or a feature.
-   - `complaint`: the customer is unhappy, frustrated or says the service felt slow, unreliable
-     or broken, and asks for no change to the site. A customer who only reports what went wrong
-     and how it felt is a complaint.
-   - `other`: a question, or anything else.
-   Code reads this word: a change request gets no matched article, and a complaint gets your
-   opening sentence first in the reply.
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
    `question`, `answer` and `keywords` fields for the closest match, and help.html and guide.html
@@ -77,10 +70,10 @@ Your job is to answer five questions and stop. Answer the one numbered 0 first:
    typo on a help page to be corrected. Example of `answer`: the customer asks to replace
    "cannot" with "can not"; "cannot" is the standard spelling, so the wording stays. Never reply
    that the help page already answers a change request.
-3. For a `complaint` only, write one sentence under "## Opening sentence" that starts with
-   "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it first
-   in the reply and rejects a complaint whose sentence says neither. For any other kind, write
-   "none".
+3. When `ticketKind` is `complaint`, write one sentence under "## Opening sentence" that starts
+   with "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it
+   first in the reply and rejects a complaint whose sentence says neither. For any other kind,
+   write "none".
 4. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
    match, the reply should say which help-page question answers it. If not, say plainly that a
@@ -94,12 +87,8 @@ number, a postcode, a VAT registration number, a UTR, a NINO, an EORI, a PAYE re
 64-character hex string, or any token, key, cookie or authorization header. Refer to the
 submitter as "the customer".
 
-Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these five sections
+Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these four sections
 and no others, each heading on its own line:
-
-## Ticket kind
-
-<change-request, complaint or other>
 
 ## Matched article
 
@@ -119,4 +108,4 @@ and no others, each heading on its own line:
 
 The workflow that runs you adds the category itself and posts your answer as a comment on the
 private issue for the operator to read and send by hand. Use the headings exactly as given, in
-this order, with nothing before "## Ticket kind" and nothing after the drafted reply.
+this order, with nothing before "## Matched article" and nothing after the drafted reply.

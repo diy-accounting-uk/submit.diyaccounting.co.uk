@@ -178,6 +178,7 @@ describe("support-fix-pr.mjs", () => {
     issueNumber: 42,
     category: "submission",
     faqId: "vat-return-failed",
+    ticketKind: "other",
     summary: "The customer cannot submit a VAT return and sees an error.",
     injectionSuspected: false,
     piiPresent: false,

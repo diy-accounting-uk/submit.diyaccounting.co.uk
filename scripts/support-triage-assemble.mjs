@@ -4,18 +4,19 @@
 
 // scripts/support-triage-assemble.mjs
 //
-// Applies the ticket kind the model states to the rest of its answer, in code. A change request
+// Applies the ticket kind the quarantine reader recorded (handling input `ticketKind`) to the
+// model's answer, in code. A change request
 // has no matched article, whatever the model wrote under "## Matched article". A complaint's
 // reply opens with the model's own "## Opening sentence", which must say sorry or thank the
 // customer; code puts it first in the drafted reply. A kind or an opening that breaks these rules
 // throws, so the workflow posts nothing and a person handles the ticket.
 //
-// usage: support-triage-assemble.mjs <model-answer.md> <assembled.md>
+// usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { TICKET_KINDS } from "../app/lib/quarantineReaderSchema.js";
 
-export const TICKET_KINDS = ["change-request", "complaint", "other"];
 export const OPENING_PATTERN = /sorry|thank/i;
 
 const sectionPattern = (heading) => new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m");
@@ -31,14 +32,15 @@ const firstLine = (body) =>
     .map((line) => line.trim())
     .find((line) => line.length > 0) ?? "";
 
-/** @returns {string} the answer with the kind applied and the kind and opening sections removed */
-export function assembleAnswer(text) {
-  const kind = firstLine(sectionBody(text, "Ticket kind"))
-    .replace(/[`*_ .]/g, "")
-    .toLowerCase();
-  if (!TICKET_KINDS.includes(kind)) throw new Error(`the triage answer has no valid "## Ticket kind" (${TICKET_KINDS.join(", ")})`);
+/**
+ * @param {string} text the model's answer
+ * @param {string} kind the handling input's ticketKind
+ * @returns {string} the answer with the kind applied and the opening sentence section removed
+ */
+export function assembleAnswer(text, kind) {
+  if (!TICKET_KINDS.includes(kind)) throw new Error(`the handling input has no valid ticketKind (${TICKET_KINDS.join(", ")})`);
   const opening = firstLine(sectionBody(text, "Opening sentence"));
-  let result = text.replace(sectionPattern("Ticket kind"), "").replace(sectionPattern("Opening sentence"), "");
+  let result = text.replace(sectionPattern("Opening sentence"), "");
   if (kind === "change-request") {
     result = result.replace(sectionPattern("Matched article"), "## Matched article\n\nnone\n\n");
   }
@@ -50,13 +52,16 @@ export function assembleAnswer(text) {
 }
 
 function main() {
-  const [inputPath, outputPath] = process.argv.slice(2);
-  if (!inputPath || !outputPath) {
-    console.error("usage: support-triage-assemble.mjs <model-answer.md> <assembled.md>");
+  const [inputPath, outputPath, handlingInputPath] = process.argv.slice(2);
+  if (!inputPath || !outputPath || !handlingInputPath) {
+    console.error("usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>");
     process.exit(1);
   }
   try {
-    writeFileSync(outputPath, assembleAnswer(readFileSync(inputPath, "utf8")));
+    writeFileSync(
+      outputPath,
+      assembleAnswer(readFileSync(inputPath, "utf8"), JSON.parse(readFileSync(handlingInputPath, "utf8")).ticketKind),
+    );
   } catch (error) {
     console.error(`::error::${error.message}; nothing is posted`);
     process.exit(1);

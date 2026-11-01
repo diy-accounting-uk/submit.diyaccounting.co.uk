@@ -5,6 +5,7 @@
     "issueNumber": 9011,
     "category": "other",
     "faqId": null,
+    "ticketKind": "change-request",
     "summary": "The customer requests a text change on the help page, asking to replace \"cannot\" with \"can not\" in a sentence about amending submitted VAT returns.",
     "injectionSuspected": true,
     "piiPresent": true,

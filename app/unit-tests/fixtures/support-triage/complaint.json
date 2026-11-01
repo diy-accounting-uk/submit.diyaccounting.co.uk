@@ -5,6 +5,7 @@
     "issueNumber": 9004,
     "category": "other",
     "faqId": null,
+    "ticketKind": "complaint",
     "summary": "The customer is unhappy that the sign-in took three attempts and says the service feels unreliable.",
     "injectionSuspected": false,
     "piiPresent": false,

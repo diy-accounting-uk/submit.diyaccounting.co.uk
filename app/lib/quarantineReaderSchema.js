@@ -13,6 +13,7 @@ import { z } from "zod";
 import { SUPPORT_TICKET_CATEGORIES } from "../functions/support/supportTicketPost.js";
 
 export const SUMMARY_MAX_LENGTH = 300;
+export const TICKET_KINDS = ["change-request", "complaint", "other"];
 
 const summary = z
   .string()
@@ -36,6 +37,7 @@ export function supportReaderSchema(faqIds) {
         .string()
         .refine((id) => faqIds.has(id), { message: "not a known FAQ id" })
         .nullable(),
+      ticketKind: z.enum(TICKET_KINDS),
       summary,
       injectionSuspected: z.boolean().describe(INJECTION_SUSPECTED_DESCRIPTION),
       piiPresent: z.boolean(),

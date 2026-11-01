@@ -69,6 +69,7 @@ export function buildHandlingInput({ issueNumber, comments, ids, operatorLogin =
     issueNumber,
     category: reader.value.category,
     faqId: reader.value.faqId,
+    ticketKind: reader.value.ticketKind,
     summary: reader.value.summary,
     injectionSuspected: reader.value.injectionSuspected,
     piiPresent: reader.value.piiPresent,

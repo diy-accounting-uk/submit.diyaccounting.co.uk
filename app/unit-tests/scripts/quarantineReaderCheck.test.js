@@ -12,6 +12,7 @@ const run = { modelId: "model-x", runNumber: "7", runUrl: "https://github.com/o/
 const valid = {
   category: "bundles",
   faqId: "how-to-submit-vat-return",
+  ticketKind: "other",
   summary: "The customer cannot see the bundle.",
   injectionSuspected: false,
   piiPresent: false,
