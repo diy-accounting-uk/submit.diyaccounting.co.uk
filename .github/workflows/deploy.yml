@@ -143,6 +143,8 @@ on:
       - '.github/workflows/generate-pass.yml'
       - '.github/workflows/probe-test.yml'
       - '.github/workflows/test.yml'
+      - '.github/workflows/test-unit.yml'
+      - '.github/workflows/test-cdk.yml'
   schedule:
     - cron: '11 4 * * *'
 
@@ -380,6 +382,7 @@ jobs:
         .github/workflows/deploy-cdk-stack.yml .github/workflows/deploy-stacks.yml .github/workflows/deploy-finish.yml
         .github/workflows/deploy-build.yml .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
+        .github/workflows/test-unit.yml .github/workflows/test-cdk.yml
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

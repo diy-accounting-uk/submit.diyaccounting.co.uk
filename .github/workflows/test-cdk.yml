@@ -1,0 +1,193 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-157 Synth the CDK app for the ci and prod environments in CI
+# - **Use when:** checking that the CDK app still synthesises for ci and prod before a change merges.
+# - **Does:** test-cdk.yml builds the Java CDK app and runs the ci and prod synth. test.yml calls it with the code and build flags of its changes job.
+# - **Run:** no command; test.yml calls it (see OPS-26)
+# - **Entry:** `.github/workflows/test-cdk.yml`
+# - **Files:** .github/workflows/test-cdk.yml
+# - **Keywords:** cdk synth, cdk-ci, cdk prod, workflow_call, test suite
+# - **Related:** OPS-26
+# @end-capability
+
+name: test-cdk
+run-name: "test-cdk from ${{ github.ref_name }}"
+
+on:
+  workflow_call:
+    inputs:
+      code:
+        type: string
+        required: true
+      build:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+env:
+  JAVA_VERSION: '25'
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  loadTestDuration: '30s'
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: '1'
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_ALL_STACK_DEPLOYMENT: 'false'
+  COMMIT_HASH: ${{ github.sha }}
+  BUILD_NUMBER: ${{ github.run_number }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+
+  npm-test-cdk-ci:
+    if: ${{ inputs.code == 'true' && inputs.build == 'true' }}
+    name: 'npm test cdk-ci'
+    runs-on: ubuntu-24.04
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup Cognito from domain convention
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: 'ci'
+          lookup-cognito: 'true'
+
+      - name: Setup Node
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          java: 'true'
+
+      - name: verify
+        id: mvn-verify
+        shell: bash
+        run: |
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
+      - name: test cdk
+        id: test-cdk
+        shell: bash
+        run: npm run cdk-ci
+        env:
+          ENVIRONMENT_NAME: 'ci'
+          DEPLOYMENT_NAME: 'ci'
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
+          # Looked up from Cognito domain convention
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
+
+  npm-test-cdk-prod:
+    if: ${{ inputs.code == 'true' && inputs.build == 'true' }}
+    name: 'npm test cdk prod'
+    runs-on: ubuntu-24.04
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup Cognito from domain convention
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: 'ci'
+          lookup-cognito: 'true'
+
+      - name: Setup Node
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          java: 'true'
+
+      - name: verify
+        id: mvn-verify
+        shell: bash
+        run: |
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
+      - name: test cdk
+        id: test-cdk
+        shell: bash
+        run: npm run cdk
+        env:
+          ENVIRONMENT_NAME: 'prod'
+          DEPLOYMENT_NAME: 'prod'
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
+          # Synth only reads these as strings; the ci pool stands in for the prod pool
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
