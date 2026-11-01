@@ -106,8 +106,11 @@ export async function handler() {
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "PASSES_DYNAMODB_TABLE_NAME",
   ]);
+  return releaseCommissions(new Date());
+}
 
-  const nowDate = new Date();
+/** Evaluate every held line due at `nowDate` and release or keep each one. */
+export async function releaseCommissions(nowDate) {
   const now = nowDate.toISOString();
   const config = loadReferralConfig();
   const catalog = loadCatalogFromRoot();
