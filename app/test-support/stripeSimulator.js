@@ -11,6 +11,9 @@ import express from "express";
  *
  * `state.accounts` maps a Connect account id to fields that replace the default account read;
  * `state.transfers` collects the transfers created, each with the idempotency key it came with.
+ * `state.invoices` maps an invoice id to the expanded invoice a retrieve answers with.
+ * `state.customers` maps a customer id to `{ balance, transactions }`; balance transactions move the balance
+ * (a negative amount is credit) and a repeated idempotency key answers the first transaction.
  */
 export function createStripeSimulator({ state = { accounts: {}, transfers: [] } } = {}) {
   const app = express();
@@ -136,6 +139,57 @@ export function createStripeSimulator({ state = { accounts: {}, transfers: [] } 
       .filter((transfer) => !req.query.destination || transfer.destination === req.query.destination)
       .filter((transfer) => !req.query.transfer_group || transfer.transfer_group === req.query.transfer_group);
     res.json({ object: "list", data, has_more: false });
+  });
+
+  // GET /v1/invoices/:id
+  app.get("/v1/invoices/:id", (req, res) => {
+    const invoice = state.invoices?.[req.params.id];
+    if (!invoice) {
+      res.status(404).json({ error: { type: "invalid_request_error", code: "resource_missing", message: "No such invoice" } });
+      return;
+    }
+    res.json({ object: "invoice", ...invoice });
+  });
+
+  function customerOf(id) {
+    state.customers ??= {};
+    state.customers[id] ??= { balance: 0, transactions: [] };
+    return state.customers[id];
+  }
+
+  // GET /v1/customers/:id
+  app.get("/v1/customers/:id", (req, res) => {
+    res.json({ id: req.params.id, object: "customer", balance: customerOf(req.params.id).balance });
+  });
+
+  // GET /v1/customers/:id/balance_transactions
+  app.get("/v1/customers/:id/balance_transactions", (req, res) => {
+    res.json({ object: "list", data: customerOf(req.params.id).transactions.map(({ transaction }) => transaction), has_more: false });
+  });
+
+  // POST /v1/customers/:id/balance_transactions
+  app.post("/v1/customers/:id/balance_transactions", (req, res) => {
+    const customer = customerOf(req.params.id);
+    const idempotencyKey = req.get("Idempotency-Key") || null;
+    const earlier = idempotencyKey ? customer.transactions.find((entry) => entry.idempotencyKey === idempotencyKey) : null;
+    if (earlier) {
+      res.json(earlier.transaction);
+      return;
+    }
+    const amount = Number(req.body.amount);
+    customer.balance += amount;
+    const transaction = {
+      id: `cbtxn_test_${customer.transactions.length + 1}`,
+      object: "customer_balance_transaction",
+      amount,
+      currency: req.body.currency,
+      customer: req.params.id,
+      description: req.body.description || null,
+      ending_balance: customer.balance,
+      metadata: req.body.metadata || {},
+    };
+    customer.transactions.push({ idempotencyKey, transaction });
+    res.json(transaction);
   });
 
   // POST /v1/account_links
