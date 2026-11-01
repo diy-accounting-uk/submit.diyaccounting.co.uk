@@ -68,7 +68,7 @@ concurrency:
 env:
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
-  MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
   PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
   # The one place this number is written. The budget guard and its step name read it.
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
@@ -301,7 +301,8 @@ jobs:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          FINAL="${{ steps.publish-filter.outputs.output-file }}"
+          node scripts/support-triage-assemble.mjs "${{ steps.publish-filter.outputs.output-file }}" /tmp/support-assembled.md /tmp/support-handling-input.json
+          FINAL=/tmp/support-assembled.md
           if ! grep -q '^## Drafted reply$' "$FINAL"; then
             echo "::error::the triage answer has no '## Drafted reply' heading; nothing is posted"
             exit 1

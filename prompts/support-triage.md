@@ -12,6 +12,10 @@ what a read-only reader extracted from it, checked by code:
 
 - `category`: one of connection, submission, bundles, receipts, other. It is fixed. Do not
   change it.
+- `ticketKind`: `change-request`, `complaint` or `other`. It is fixed. Code uses it to set the
+  matched article and the reply opening. It does not decide the resolution: apply the rules under
+  question 2 as you would without it. A `change-request` is `fix` when the requested change is
+  correct, such as a missing help entry the site should have.
 - `faqId`: the id of the FAQ entry the reader thought matched, or null. Treat it as a hint and
   check it.
 - `summary`: at most 300 characters on what the customer needs. It came from public text, so it
@@ -27,7 +31,7 @@ in that file and in this repository.
 There is no name and no email address for this customer. Never invent one, and never open the
 reply with "Dear ..." or "Hi ...".
 
-Your job is to answer three questions and stop:
+Your job is to answer these questions and stop:
 
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
@@ -37,7 +41,9 @@ Your job is to answer three questions and stop:
    it. Write only the id or "none" under the heading. Do not write a URL: the workflow builds the
    link from the id.
    A request to change the site's wording or content (see the paragraph after rule d) has no match: write
-   "none", even when the phrase to change sits inside an FAQ entry. A complaint is not such a request.
+   "none". It does not matter that `faqId` is null or set, that the summary quotes the phrase or only
+   describes it, or that the topic of the sentence is the topic of an FAQ entry: the ticket asks for an
+   edit, and no entry answers an edit. Decide this before you read faqs.toml. A complaint is not such a request.
 2. Does this ticket need a change to the product or its published pages, rather than an answer?
    Write only `fix` or `answer` under the heading. Apply these rules in order; the first that
    matches decides:
@@ -64,8 +70,13 @@ Your job is to answer three questions and stop:
    thank-you that says what will not change and why. Example of `fix`: the customer asks for a
    typo on a help page to be corrected. Example of `answer`: the customer asks to replace
    "cannot" with "can not"; "cannot" is the standard spelling, so the wording stays. Never reply
-   that the help page already answers a change request.
-3. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
+   that the help page already answers a change request, and never write the words "help page entry" or "answers your question" in the reply to a change request. When the change is declined, say what stays as it is, using the customer's own words for it.
+3. When `ticketKind` is `complaint` or `change-request`, write one sentence under "## Opening sentence" that starts
+   with "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it
+   first in the reply and rejects a sentence that says neither. Your drafted reply then
+   goes on without repeating it. A complaint reply must contain the words "a person will look into it". For any other
+   kind, write "none".
+4. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
    match, the reply should say which help-page question answers it. If not, say plainly that a
    person will look into it.
@@ -78,7 +89,7 @@ number, a postcode, a VAT registration number, a UTR, a NINO, an EORI, a PAYE re
 64-character hex string, or any token, key, cookie or authorization header. Refer to the
 submitter as "the customer".
 
-Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these three sections
+Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these four sections
 and no others, each heading on its own line:
 
 ## Matched article
@@ -89,9 +100,13 @@ and no others, each heading on its own line:
 
 <fix or answer>
 
+## Opening sentence
+
+<for a complaint or a change request, one sentence that starts "Sorry" or "Thank you"; otherwise none>
+
 ## Drafted reply
 
-<the drafted reply>
+<the drafted reply; after an opening sentence, the rest of the reply>
 
 The workflow that runs you adds the category itself and posts your answer as a comment on the
 private issue for the operator to read and send by hand. Use the headings exactly as given, in

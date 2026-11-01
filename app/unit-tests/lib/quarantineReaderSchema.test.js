@@ -10,6 +10,7 @@ const families = new Set(["prod-env-github-probe-failed"]);
 const support = {
   category: "bundles",
   faqId: "how-to-submit-vat-return",
+  ticketKind: "other",
   summary: "The customer cannot see the VAT bundle after paying.",
   injectionSuspected: false,
   piiPresent: false,
@@ -40,6 +41,7 @@ describe("support reader schema", () => {
 
   it("rejects an FAQ id that is not in faqs.toml", () => {
     expect(schema.safeParse({ ...support, faqId: "made-up" }).success).toBe(false);
+    expect(schema.safeParse({ ...support, ticketKind: "question" }).success).toBe(false);
   });
 
   it("rejects a 301-character summary and accepts a 300-character one", () => {

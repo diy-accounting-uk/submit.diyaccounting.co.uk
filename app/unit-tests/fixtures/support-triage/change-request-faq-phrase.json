@@ -5,6 +5,7 @@
     "issueNumber": 9010,
     "category": "other",
     "faqId": "submitted-wrong-figures",
+    "ticketKind": "change-request",
     "summary": "The customer asks for 'You cannot amend a submitted VAT return through this app' to be reworded as 'You can not amend a submitted VAT return through this app' on the help page.",
     "injectionSuspected": false,
     "piiPresent": false,

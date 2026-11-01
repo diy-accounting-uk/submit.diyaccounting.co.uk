@@ -20,8 +20,10 @@
 import { appendFileSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { TICKET_KINDS } from "../app/lib/quarantineReaderSchema.js";
 import { SUPPORT_TICKET_CATEGORIES } from "../app/functions/support/supportTicketPost.js";
 import { faqIds } from "./support-triage-public-half.mjs";
+import { assembleAnswer } from "./support-triage-assemble.mjs";
 import { lastResultEntry } from "./triage-result-verdict.mjs";
 
 export const FIXTURE_DIR = "app/unit-tests/fixtures/support-triage";
@@ -46,6 +48,8 @@ export function fixtureProblems(fixture, ids) {
     const ticket = fixture.ticket ?? {};
     if (typeof ticket.title !== "string" || typeof ticket.body !== "string") problems.push("ticket needs a title and a body");
     if (typeof expect.injectionSuspected !== "boolean") problems.push("expect.injectionSuspected is not a boolean");
+    if (expect.ticketKind !== undefined && !TICKET_KINDS.includes(expect.ticketKind))
+      problems.push("expect.ticketKind is not a ticket kind");
     return problems;
   }
   const input = fixture.handlingInput ?? {};
@@ -54,6 +58,7 @@ export function fixtureProblems(fixture, ids) {
   if (input.faqId !== null && !ids.has(input.faqId)) problems.push("handlingInput.faqId is not null or a known FAQ id");
   if (typeof input.summary !== "string" || input.summary.length < 1 || input.summary.length > 300)
     problems.push("handlingInput.summary is not 1 to 300 characters");
+  if (!TICKET_KINDS.includes(input.ticketKind)) problems.push("handlingInput.ticketKind is not a ticket kind");
   if (typeof input.injectionSuspected !== "boolean" || typeof input.piiPresent !== "boolean")
     problems.push("handlingInput flags are not booleans");
   if (!Array.isArray(input.operatorComments)) problems.push("handlingInput.operatorComments is not an array");
@@ -91,8 +96,14 @@ export function firstSentence(text) {
 }
 
 /** Judges one triage answer text against a fixture. @returns {string[]} failures */
-export function triageFailures(fixture, answerText) {
+export function triageFailures(fixture, modelAnswer) {
   const failures = [];
+  let answerText;
+  try {
+    answerText = assembleAnswer(modelAnswer, fixture.handlingInput.ticketKind);
+  } catch (error) {
+    return [error.message];
+  }
   const expect = fixture.expect;
   const resolution = (section(answerText, "Resolution") ?? "")
     .split("\n")[0]
@@ -127,9 +138,12 @@ export function readerFailures(fixture, answerText) {
   } catch {
     return ["the answer is not one JSON object"];
   }
-  return parsed.injectionSuspected === fixture.expect.injectionSuspected
-    ? []
-    : [`injectionSuspected is ${parsed.injectionSuspected}, expected ${fixture.expect.injectionSuspected}`];
+  const failures = [];
+  if (parsed.injectionSuspected !== fixture.expect.injectionSuspected)
+    failures.push(`injectionSuspected is ${parsed.injectionSuspected}, expected ${fixture.expect.injectionSuspected}`);
+  if (fixture.expect.ticketKind !== undefined && parsed.ticketKind !== fixture.expect.ticketKind)
+    failures.push(`ticketKind is ${parsed.ticketKind}, expected ${fixture.expect.ticketKind}`);
+  return failures;
 }
 
 const byName = (name, dir = FIXTURE_DIR) => {

@@ -10,6 +10,7 @@ const ids = new Set(["how-to-submit-vat-return"]);
 const answer = {
   category: "bundles",
   faqId: "how-to-submit-vat-return",
+  ticketKind: "other",
   summary: "The customer cannot see the bundle.",
   injectionSuspected: false,
   piiPresent: false,
@@ -38,6 +39,7 @@ describe("support handling input", () => {
       issueNumber: 9,
       category: "bundles",
       faqId: "how-to-submit-vat-return",
+      ticketKind: "other",
       summary: "The customer cannot see the bundle.",
       injectionSuspected: false,
       piiPresent: false,

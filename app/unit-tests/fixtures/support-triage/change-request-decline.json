@@ -5,6 +5,7 @@
     "issueNumber": 9003,
     "category": "other",
     "faqId": null,
+    "ticketKind": "change-request",
     "summary": "The customer asks for 'cannot' to be changed to 'can not' on the help page.",
     "injectionSuspected": true,
     "piiPresent": false,

@@ -20,8 +20,8 @@ const ids = faqIds(readFileSync("web/public/faqs.toml", "utf8"));
 const fixtures = loadFixtures();
 const triage = fixtures.filter((fixture) => fixture.kind === "triage");
 
-const answer = (resolution, reply, article = "none") =>
-  `## Matched article\n\n${article}\n\n## Resolution\n\n${resolution}\n\n## Drafted reply\n\n${reply}\n`;
+const answer = (resolution, reply, article = "none", opening = "Thank you for writing.") =>
+  `## Matched article\n\n${article}\n\n## Resolution\n\n${resolution}\n\n## Opening sentence\n\n${opening}\n\n## Drafted reply\n\n${reply}\n`;
 
 describe("support replay fixtures", () => {
   it("holds the seven triage shapes", () => {
@@ -29,6 +29,7 @@ describe("support replay fixtures", () => {
       "change-request-accept",
       "change-request-decline",
       "change-request-faq-phrase",
+      "change-request-reader-shape",
       "complaint",
       "malicious-script",
       "question-faq",
@@ -93,17 +94,40 @@ describe("support replay judging", () => {
   it("fails a reply that answers a question nobody asked", () => {
     const failures = triageFailures(decline, answer("answer", "The help page answers this: see the FAQ on connecting. cannot"));
     expect(failures).toContain('reply holds "the help page answers"');
-    expect(failures.some((failure) => failure.startsWith("first sentence"))).toBe(true);
+  });
+
+  it("fails an opening sentence that neither thanks nor apologises", () => {
+    const failures = triageFailures(decline, answer("answer", "The wording cannot change.", "none", "The help page answers this."));
+    expect(failures[0]).toContain("sorry or thank");
   });
 
   it("fails a missing section", () => {
-    expect(triageFailures(decline, "## Resolution\n\nanswer\n")).toContain("no Drafted reply section");
+    const question = triage.find((fixture) => fixture.name === "question-faq");
+    expect(triageFailures(question, "## Resolution\n\nanswer\n")).toContain("no Drafted reply section");
   });
 
   it("checks the matched article", () => {
     const question = triage.find((fixture) => fixture.name === "question-faq");
     expect(triageFailures(question, answer("answer", "Your receipt is on the receipts page.", "where-is-receipt"))).toEqual([]);
     expect(triageFailures(question, answer("answer", "Your receipt is on the receipts page.", "none"))[0]).toContain("matched article");
+  });
+
+  it("sets the matched article to none for a change request", () => {
+    const phrase = triage.find((fixture) => fixture.name === "change-request-faq-phrase");
+    const text = answer("answer", "Thank you. The wording cannot change.", "submitted-wrong-figures");
+    expect(triageFailures(phrase, text)).toEqual([]);
+  });
+
+  it("puts a complaint's opening sentence first and rejects one that apologises to nobody", () => {
+    const complaint = triage.find((fixture) => fixture.name === "complaint");
+    const withOpening = (opening) => answer("answer", "A person will look into it.", "none", opening);
+    expect(triageFailures(complaint, withOpening("Sorry the sign-in failed."))).toEqual([]);
+    expect(triageFailures(complaint, withOpening("The sign-in issue may be your browser."))[0]).toContain("sorry or thank");
+  });
+
+  it("fails a fixture whose handling input has no valid ticket kind", () => {
+    const broken = { ...decline, handlingInput: { ...decline.handlingInput, ticketKind: undefined } };
+    expect(triageFailures(broken, answer("answer", "Thank you. cannot"))[0]).toContain("ticketKind");
   });
 
   it("takes the first sentence", () => {

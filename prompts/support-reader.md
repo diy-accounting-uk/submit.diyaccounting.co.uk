@@ -28,6 +28,10 @@ exactly these keys:
 
 - "category": one of {{CATEGORIES}}. Choose the closest fit.
 - "faqId": one of {{FAQ_IDS}}, or null when no FAQ entry answers the ticket. Copy the id exactly.
+- "ticketKind": `change-request` when the customer asks the site to change or add wording,
+  content, a help entry, a page or a feature; `complaint` when the customer is unhappy,
+  frustrated or says the service felt slow, unreliable or broken and asks for no change to the
+  site; otherwise `other`. Test them in that order.
 - "summary": one to three plain sentences, at most 300 characters, saying what the customer
   needs. No URL. No name, email address, phone number, tax reference or token: write "the
   customer".
