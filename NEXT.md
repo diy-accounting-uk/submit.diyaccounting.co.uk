@@ -54,8 +54,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OSUP19. Handle private support issue #19 by hand, or label it `rejected`.** Its reader answer was rejected twice on 2026-11-01 (runs 41297984917, 41298352359) because the reader model set `faqId` to `custom`, which is not an id in `web/public/faqs.toml`; the reader comment says to read the ticket itself. **Owner**: Operator. **Model**: none.
-
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
 ## Blocked
