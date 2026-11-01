@@ -178,6 +178,18 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
+      # diya-gl caches the workbook templates it downloads under ~/.cache/diya-gl/<version>/
+      # (XDG_CACHE_HOME moves it); a warm cache lets savePackageZip run with no network.
+      - name: Read the installed diya-gl version
+        id: diya-gl-version
+        run: echo "version=$(node -p "require('./node_modules/@diy-accounting-uk/diya-gl/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache diya-gl templates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/diya-gl
+          key: diya-gl-templates-${{ runner.os }}-${{ steps.diya-gl-version.outputs.version }}
+
       - run: npm run test:browser -- --shard=${{ matrix.shard }}/3
 
   npm-browser-test:
