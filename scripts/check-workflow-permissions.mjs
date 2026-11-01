@@ -27,17 +27,12 @@
 // regular enough — two-space indents, no flow-style mappings — for a line-based
 // reader to track "which job am I in" and "what key is this" correctly.
 //
-// What this deliberately does NOT flag: a called workflow's own top-level
-// `permissions:` block, for a job that does not override it. GitHub does not check
-// that block against the caller when the workflow runs via `workflow_call`; it is
-// only the default token scope for a *standalone* trigger (workflow_dispatch, push,
-// schedule) on the same file. A job with no override simply receives whatever the
-// caller job grants, whatever that is. deploy-cdk-stack.yml is the live proof: its
-// top-level `permissions:` names `pull-requests: read`, no job overrides it, and
-// none of its ~18 call sites in deploy.yml or deploy-environment.yml grant
-// `pull-requests` at all — those runs complete successfully. Only an explicit
-// job-level `permissions:` override inside the called workflow is a real request
-// that can exceed the caller's grant.
+// A called workflow's own top-level `permissions:` block is a request too. GitHub checks it
+// against the caller job's grant at startup even when every job in the called workflow
+// overrides it: test-unit.yml's top-level `packages: read` under a caller granting
+// `contents: read` and `id-token: write` failed with "The workflow is requesting
+// 'packages: read', but is only allowed 'packages: none'". This script checks that block
+// as a request named "(top-level permissions)", beside each job-level override.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -192,9 +187,8 @@ function effectiveCallerPermissions(job, workflow) {
 
 /**
  * Walks every workflow, finds every local `uses: ./.github/workflows/<file>.yml`
- * call site, and for each job in the called workflow that carries its own
- * `permissions:` override, checks that override against the caller's effective
- * grant. Returns one finding per (scope) shortfall.
+ * call site, and checks the called workflow's top-level `permissions:` block and each
+ * job-level override in it against the caller's effective grant. Returns one finding per (scope) shortfall.
  */
 export function findViolations(workflowsByFile) {
   const findings = [];
@@ -208,7 +202,11 @@ export function findViolations(workflowsByFile) {
 
         const callerEffective = effectiveCallerPermissions(callerJob, callerWorkflow);
 
-        for (const [calledJobId, calledJob] of Object.entries(calledWorkflow.jobs)) {
+        const calledRequests = Object.entries(calledWorkflow.jobs);
+        if (calledWorkflow.workflowPermissions !== null) {
+          calledRequests.push(["(top-level permissions)", { permissions: calledWorkflow.workflowPermissions }]);
+        }
+        for (const [calledJobId, calledJob] of calledRequests) {
           if (calledJob.permissions === null) continue; // no override: inherits the caller's grant, always satisfied
 
           const neededScopes =

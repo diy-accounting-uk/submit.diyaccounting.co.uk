@@ -17,7 +17,7 @@ const pages = ["index.html", "mcp-api.html"];
 const rootPackage = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf-8"));
 const mcpPackage = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf-8"));
 const publishMcp = fs.readFileSync(path.join(root, ".github/workflows/publish-mcp.yml"), "utf-8");
-const testWorkflow = fs.readFileSync(path.join(root, ".github/workflows/test.yml"), "utf-8");
+const testWorkflow = fs.readFileSync(path.join(root, ".github/workflows/test-behaviour.yml"), "utf-8");
 
 function hrefsOf(page) {
   const html = fs.readFileSync(path.join(developerDir, page), "utf-8");

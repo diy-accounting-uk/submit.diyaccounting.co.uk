@@ -236,6 +236,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy: use when a probe test or other check must wait until the main apex deploy has finished moving.
     - [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics: use when a deploy or probe workflow step must record a metrics row for the dashboard.
     - [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI: use when checking which test tiers run on every push and pull request.
+    - [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI: use when checking which unit, MCP, system, web unit and browser test jobs run for a push, and in what shape.
+    - [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI: use when checking that the CDK app still synthesises for ci and prod before a change merges.
+    - [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI: use when checking which behaviour test jobs run for a push, a dispatch or the nightly schedule, and what each one needs.
     - [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments: use when a deployed environment's behaviour must be confirmed after a deploy, outside the full deploy.yml pipeline.
     - [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram: use when an EventBridge activity event needs routing to the right Telegram group as formatted text.
     - [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms: use when a CloudWatch alarm fires and needs a tracked GitHub issue instead of a one-off notification.
@@ -2271,7 +2274,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area OPS -->
 - [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
-- [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
+- [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
@@ -2680,6 +2683,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy
 - [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics
 - [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI
+- [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI
+- [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI
+- [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI
 - [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments
 - [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram
 - [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms
@@ -2814,6 +2820,36 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/test.yml
 - **Keywords:** test suite, unit tests, system tests, browser tests, behaviour tests, push and pr trigger
 - **Related:** OPS-33
+
+#### OPS-159 Run the unit, system and browser test tiers in CI
+
+- **Use when:** checking which unit, MCP, system, web unit and browser test jobs run for a push, and in what shape.
+- **Does:** test-unit.yml runs the npm unit, MCP, system, web unit and sharded browser tests. test.yml calls it with the code and build flags of its changes job.
+- **Run:** no command; test.yml calls it (see OPS-26)
+- **Entry:** `.github/workflows/test-unit.yml`
+- **Files:** .github/workflows/test-unit.yml
+- **Keywords:** unit tests, system tests, browser tests, mcp tests, test shards, workflow_call
+- **Related:** OPS-26
+
+#### OPS-160 Synth the CDK app for the ci and prod environments in CI
+
+- **Use when:** checking that the CDK app still synthesises for ci and prod before a change merges.
+- **Does:** test-cdk.yml builds the Java CDK app and runs the ci and prod synth. test.yml calls it with the code and build flags of its changes job.
+- **Run:** no command; test.yml calls it (see OPS-26)
+- **Entry:** `.github/workflows/test-cdk.yml`
+- **Files:** .github/workflows/test-cdk.yml
+- **Keywords:** cdk synth, cdk-ci, cdk prod, workflow_call, test suite
+- **Related:** OPS-26
+
+#### OPS-161 Run the simulator, proxy and exploratory crawl behaviour tests in CI
+
+- **Use when:** checking which behaviour test jobs run for a push, a dispatch or the nightly schedule, and what each one needs.
+- **Does:** test-behaviour.yml runs the simulator behaviour suites, the proxy submitVatBehaviour run and the weekly exploratory crawl. test.yml calls it with the code and build flags of its changes job and the two run flags.
+- **Run:** no command; test.yml calls it (see OPS-26)
+- **Entry:** `.github/workflows/test-behaviour.yml`
+- **Files:** .github/workflows/test-behaviour.yml
+- **Keywords:** behaviour tests, simulator suites, proxy behaviour, exploratory crawl, workflow_call
+- **Related:** OPS-26
 
 #### OPS-27 Run probe tests against deployed environments
 
@@ -5516,10 +5552,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-51 Crawl the deployed site blind every Sunday
 
 - **Use when:** you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
-- **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
+- **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test-behaviour.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
 - **Run:** `gh workflow run test.yml --ref main -f runExploratoryCrawl=true`; locally `node scripts/exploratory-crawl.mjs --lane simulator --base-url http://localhost:3000 --roles visitor --viewports desktop --themes light`
 - **Entry:** `scripts/exploratory-crawl.mjs`
-- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
+- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test-behaviour.yml, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
 - **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
 - **Related:** DEV-46, DEV-49, DEV-50
 
@@ -6463,7 +6499,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - behaviour test helpers: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - behaviour test master: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
-- behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - betaanalyticsdataclient: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - bidding optimisation: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - bigquery: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -6527,7 +6563,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - browser mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - browser test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
-- browser tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- browser tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - browser_navigate: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - browser_snapshot: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - brute force: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
@@ -6606,8 +6642,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdk lambda construct: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - cdk naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - cdk prerequisites: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- cdk prod: [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - cdk stack: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- cdk synth: [OPS-06](#ops-06-run-the-full-deployment-pipeline), [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [SS-35](#ss-35-cdk-spreadsheetsstack)
+- cdk synth: [OPS-06](#ops-06-run-the-full-deployment-pipeline), [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci), [SS-35](#ss-35-cdk-spreadsheetsstack)
+- cdk-ci: [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - cdn allowlist: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - cdp screencast: [DEV-40](#dev-40-record-a-product-demo-video)
 - certbot deploy hook: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
@@ -7128,7 +7166,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
 - explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
-- exploratory crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
+- exploratory crawl: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - exploratory qa: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - explore skill: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -7634,6 +7672,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp state: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
+- mcp tests: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
@@ -7985,6 +8024,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - provision secrets: [BILL-32](#bill-32-provision-stripe-secrets)
 - provision test user: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - provisioned concurrency: [BILL-38](#bill-38-cdk-billing-webhook-stack)
+- proxy behaviour: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - proxy secrets: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
@@ -8316,6 +8356,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- simulator suites: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
@@ -8468,7 +8509,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - synthetic user: [OPS-12](#ops-12-clean-up-expired-test-users), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - synthetics runtime: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - system test: [DEV-01](#dev-01-run-the-http-simulator-server)
-- system tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- system tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - table change: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - table name lookup: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - tagging: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
@@ -8500,8 +8541,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
+- test shards: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - test step: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
-- test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - test-data-link: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
@@ -8582,7 +8624,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - unit: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
-- unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - unlisted pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
@@ -8720,7 +8762,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - worker handler: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - workflow lint: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
-- workflow_call: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
+- workflow_call: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci), [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - workflow_dispatch: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - workload identity: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)

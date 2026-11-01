@@ -1,0 +1,398 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-161 Run the simulator, proxy and exploratory crawl behaviour tests in CI
+# - **Use when:** checking which behaviour test jobs run for a push, a dispatch or the nightly schedule, and what each one needs.
+# - **Does:** test-behaviour.yml runs the simulator behaviour suites, the proxy submitVatBehaviour run and the weekly exploratory crawl. test.yml calls it with the code and build flags of its changes job and the two run flags.
+# - **Run:** no command; test.yml calls it (see OPS-26)
+# - **Entry:** `.github/workflows/test-behaviour.yml`
+# - **Files:** .github/workflows/test-behaviour.yml
+# - **Keywords:** behaviour tests, simulator suites, proxy behaviour, exploratory crawl, workflow_call
+# - **Related:** OPS-26
+# @end-capability
+
+name: test-behaviour
+run-name: "test-behaviour from ${{ github.ref_name }}"
+
+on:
+  workflow_call:
+    inputs:
+      code:
+        type: string
+        required: true
+      build:
+        type: string
+        required: true
+      run-proxy-behaviour-tests:
+        type: string
+        required: true
+      run-exploratory-crawl:
+        type: string
+        required: true
+      crawl-sunday-only:
+        type: string
+        required: true
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET:
+        required: false
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+env:
+  JAVA_VERSION: '25'
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  loadTestDuration: '30s'
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: '1'
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_ALL_STACK_DEPLOYMENT: 'false'
+  COMMIT_HASH: ${{ github.sha }}
+  BUILD_NUMBER: ${{ github.run_number }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
+  # Simulator behaviour tests - run in parallel without a tunnel, Docker or HMRC.
+  # The suites are listed in .github/behaviour-simulator-suites.json.
+  simulator-suites:
+    if: ${{ inputs.code == 'true' }}
+    name: 'simulator suites'
+    runs-on: ubuntu-24.04
+    outputs:
+      include: ${{ steps.filter.outputs.include }}
+    steps:
+      - name: Checkout the suite list
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/behaviour-simulator-suites.json
+          persist-credentials: false
+
+      - name: List the suites
+        id: filter
+        run: |
+          INCLUDE=$(jq -c '.' .github/behaviour-simulator-suites.json)
+          echo "include=${INCLUDE}" | tee -a "$GITHUB_OUTPUT"
+
+  behaviour-test-simulator:
+    if: ${{ needs.simulator-suites.result == 'success' && needs.simulator-suites.outputs.include != '[]' }}
+    name: 'simulator - ${{ matrix.suite }}'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
+    needs:
+      - simulator-suites
+      - playwright-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.simulator-suites.outputs.include) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Install the MCP package's dependencies (the suite drives the practice through mcp/lib)
+        if: ${{ matrix.extraInstall == 'mcp' }}
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        working-directory: mcp
+
+      - name: Run behaviour test
+        run: npm run ${{ matrix.script }}
+
+      # The artifact service can refuse finalize after the suite passed
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ matrix.id }}
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  # Proxy behaviour test - requires Docker and HMRC sandbox secrets
+  # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
+  behaviour-test-proxy-submit-vat:
+    if: ${{ inputs.code == 'true' && !cancelled() && inputs.run-proxy-behaviour-tests == 'true' }}
+    name: 'proxy - submitVatBehaviour'
+    runs-on: ubuntu-24.04
+    # Always ci: the job tests a local server with the cert and HMRC sandbox
+    # secrets held in submit-ci, regardless of which branch dispatched it.
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: none
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Resolve the local hostname to loopback
+        run: echo "127.0.0.1 local.submit.diyaccounting.co.uk" | sudo tee -a /etc/hosts
+
+      - name: Fetch the local TLS certificate
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "$LOCAL_TLS_SECRET_ARN" --region "$AWS_REGION" \
+            --query SecretString --output text > "$RUNNER_TEMP/local-tls.json"
+          jq -r .fullchain "$RUNNER_TEMP/local-tls.json" > "$RUNNER_TEMP/local-tls.pem"
+          jq -r .privkey   "$RUNNER_TEMP/local-tls.json" > "$RUNNER_TEMP/local-tls.key"
+          chmod 600 "$RUNNER_TEMP/local-tls.key"
+        env:
+          LOCAL_TLS_SECRET_ARN: arn:aws:secretsmanager:eu-west-2:367191799875:secret:ci/submit/local-tls/certificate
+
+      - name: Run behaviour tests - submit vat
+        run: |
+          npm run test:submitVatBehaviour-proxy || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          HMRC_ACCOUNT: synthetic
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          TEST_SERVER_TLS: run
+          TEST_SERVER_TLS_CERT: ${{ runner.temp }}/local-tls.pem
+          TEST_SERVER_TLS_KEY: ${{ runner.temp }}/local-tls.key
+          TEST_SERVER_HTTPS_PORT: "3443"
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: behaviour-test-proxy-submit-vat-results
+          retention-days: 7
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: behaviour-test-proxy-submit-vat-reports
+          retention-days: 7
+          path: |
+            target/test-reports/
+
+      - name: Upload artifacts (dynamodb exports)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: behaviour-test-proxy-submit-vat-dynamodb
+          retention-days: 7
+          path: |
+            target/behaviour-test-results/**/*.jsonl
+
+      # The developer site links this path as the latest Playwright report for submit. The ci
+      # environment's bucket holds it, because this job only holds ci credentials. A called run
+      # sees the caller's github.ref, so a deploy.yml run on main publishes too.
+      - name: Publish the Playwright report to the developer site
+        if: ${{ success() && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          OUTPUTS=$(aws cloudformation describe-stacks --region us-east-1 \
+            --stack-name ci-env-DeveloperSiteStack \
+            --query 'Stacks[0].Outputs' --output json 2>/dev/null || echo '[]')
+          BUCKET=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "BucketName") | .OutputValue')
+          DISTRIBUTION_ID=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "DistributionId") | .OutputValue')
+          if [ -z "${BUCKET}" ]; then
+            echo "::notice::ci-env-DeveloperSiteStack is not deployed; the report is not published"
+            exit 0
+          fi
+          aws s3 sync target/test-reports/html-report "s3://${BUCKET}/reports/submit/" --delete --region us-east-1
+          aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths '/reports/submit/*'
+
+  # The weekly blind crawl (scripts/exploratory-crawl.mjs). The caller sets run-exploratory-crawl
+  # for the scheduled run and for a workflow_dispatch that asks for it. A scheduled run crawls
+  # only when today is a Sunday (crawl-sunday-only, then the gate step reads `date -u +%u`).
+  # `github.workflow == 'test'` keeps deploy.yml's delegated call from starting it. It needs the
+  # `build` output so a Markdown-only push leaves it out.
+  exploratory-crawl:
+    if: ${{ inputs.build == 'true' && github.workflow == 'test' && inputs.run-exploratory-crawl == 'true' }}
+    name: 'exploratory crawl'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+    # The crawl signs in as the ci lane's durable `local` user, which the enable step rotates.
+    concurrency:
+      group: behaviour-test-user-ci-local
+      cancel-in-progress: false
+    steps:
+      - name: Decide whether today is a crawl day
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ inputs.crawl-sunday-only }}" = "true" ] && [ "$(date -u +%u)" != "7" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "The scheduled run crawls on Sundays only; today is day $(date -u +%u)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Setup Node
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: none
+
+      - name: Install dependencies
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install chromium --with-deps
+
+      - name: Enable native auth and refresh the ci test user
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: npm run test:enableCognitoNative -- ci
+
+      - name: Crawl ci as the visitor and the customer
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: |
+          node scripts/mint-exploratory-state.mjs
+          node scripts/exploratory-crawl.mjs --lane ci --roles visitor,customer
+
+      - name: Disable native auth
+        if: ${{ always() && steps.gate.outputs.run == 'true' }}
+        run: npm run test:disableCognitoNative
+
+      # Last among the steps that need no AWS session: the paced prod crawl runs past the one-hour
+      # life of the chained role session, so every AWS step above it finishes first.
+      - name: Crawl prod as the visitor
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        run: node scripts/exploratory-crawl.mjs --lane prod --roles visitor
+
+      - name: Write the counts per class to the job summary
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        run: cat target/exploratory-crawl/summary-*.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload artifacts (crawl)
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: exploratory-crawl
+          retention-days: 30
+          path: target/exploratory-crawl/
+
+      - name: Lookup origin bucket name of the ci apex set from its EdgeStack
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        id: lookup-bucket
+        shell: bash
+        run: |
+          APEX_DEPLOYMENT=$(aws ssm get-parameter --name "/submit/ci/last-known-good-deployment" \
+            --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -z "$APEX_DEPLOYMENT" ] || [ "$APEX_DEPLOYMENT" = "None" ]; then
+            echo "WARNING: No /submit/ci/last-known-good-deployment, skipping publish"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          EDGE_STACK="${APEX_DEPLOYMENT}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "WARNING: Could not find OriginBucketName from stack ${EDGE_STACK}, skipping publish"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found origin bucket of ${APEX_DEPLOYMENT}: ${BUCKET_NAME}"
+            echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish the contact sheets
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
+        env:
+          BUCKET_NAME: ${{ steps.lookup-bucket.outputs.BUCKET_NAME }}
+          CRAWL_DATE: ${{ steps.gate.outputs.date }}
+        shell: bash
+        run: |
+          TARGET_DIR="web/public/tests/exploratory/${CRAWL_DATE?}"
+          mkdir -p "${TARGET_DIR?}"
+          cp -r target/exploratory-crawl/ci "${TARGET_DIR?}/ci"
+          cp target/exploratory-crawl/summary-ci.md "${TARGET_DIR?}/summary-ci.md"
+          echo "Uploading the crawl to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp "${TARGET_DIR?}/" "s3://${BUCKET_NAME?}/tests/exploratory/${CRAWL_DATE?}/" --recursive

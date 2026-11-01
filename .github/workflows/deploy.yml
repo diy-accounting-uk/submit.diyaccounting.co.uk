@@ -143,6 +143,9 @@ on:
       - '.github/workflows/generate-pass.yml'
       - '.github/workflows/probe-test.yml'
       - '.github/workflows/test.yml'
+      - '.github/workflows/test-unit.yml'
+      - '.github/workflows/test-cdk.yml'
+      - '.github/workflows/test-behaviour.yml'
   schedule:
     - cron: '11 4 * * *'
 
@@ -380,6 +383,7 @@ jobs:
         .github/workflows/deploy-cdk-stack.yml .github/workflows/deploy-stacks.yml .github/workflows/deploy-finish.yml
         .github/workflows/deploy-build.yml .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
+        .github/workflows/test-unit.yml .github/workflows/test-cdk.yml .github/workflows/test-behaviour.yml
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -725,7 +729,7 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # NOTE: behaviour-test-submit-vat has been moved to test.yml as behaviour-test-proxy-submit-vat
+  # NOTE: behaviour-test-submit-vat has been moved to test-behaviour.yml as behaviour-test-proxy-submit-vat
   # It runs when runProxyBehaviourTests=true is passed to the test workflow
 
   test-aws-credentials:
