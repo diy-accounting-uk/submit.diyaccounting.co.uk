@@ -29,6 +29,7 @@ describe("support replay fixtures", () => {
       "change-request-accept",
       "change-request-decline",
       "change-request-faq-phrase",
+      "change-request-reader-shape",
       "complaint",
       "malicious-script",
       "question-faq",

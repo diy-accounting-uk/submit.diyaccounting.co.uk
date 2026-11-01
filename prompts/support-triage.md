@@ -37,7 +37,9 @@ Your job is to answer three questions and stop:
    it. Write only the id or "none" under the heading. Do not write a URL: the workflow builds the
    link from the id.
    A request to change the site's wording or content (see the paragraph after rule d) has no match: write
-   "none", even when the phrase to change sits inside an FAQ entry. A complaint is not such a request.
+   "none". It does not matter that `faqId` is null or set, that the summary quotes the phrase or only
+   describes it, or that the topic of the sentence is the topic of an FAQ entry: the ticket asks for an
+   edit, and no entry answers an edit. Decide this before you read faqs.toml. A complaint is not such a request.
 2. Does this ticket need a change to the product or its published pages, rather than an answer?
    Write only `fix` or `answer` under the heading. Apply these rules in order; the first that
    matches decides:

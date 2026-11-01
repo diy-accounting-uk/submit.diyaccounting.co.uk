@@ -1,0 +1,19 @@
+{
+  "kind": "triage",
+  "description": "A change request to reword a sentence on a help page, as the reader reports it in practice: no faqId, the summary describes the sentence without quoting it, injection and PII flagged. The topic matches a help entry, but the ticket asks for an edit, so no entry is cited.",
+  "handlingInput": {
+    "issueNumber": 9011,
+    "category": "other",
+    "faqId": null,
+    "summary": "The customer requests a text change on the help page, asking to replace \"cannot\" with \"can not\" in a sentence about amending submitted VAT returns.",
+    "injectionSuspected": true,
+    "piiPresent": true,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "requiredPhrases": ["cannot"],
+    "forbiddenPhrases": ["answers your question", "help page entry", "already answers", "Dear ", "close this ticket"]
+  }
+}
