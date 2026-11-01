@@ -22,6 +22,7 @@ import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { SUPPORT_TICKET_CATEGORIES } from "../app/functions/support/supportTicketPost.js";
 import { faqIds } from "./support-triage-public-half.mjs";
+import { assembleAnswer } from "./support-triage-assemble.mjs";
 import { lastResultEntry } from "./triage-result-verdict.mjs";
 
 export const FIXTURE_DIR = "app/unit-tests/fixtures/support-triage";
@@ -91,8 +92,14 @@ export function firstSentence(text) {
 }
 
 /** Judges one triage answer text against a fixture. @returns {string[]} failures */
-export function triageFailures(fixture, answerText) {
+export function triageFailures(fixture, modelAnswer) {
   const failures = [];
+  let answerText;
+  try {
+    answerText = assembleAnswer(modelAnswer);
+  } catch (error) {
+    return [error.message];
+  }
   const expect = fixture.expect;
   const resolution = (section(answerText, "Resolution") ?? "")
     .split("\n")[0]

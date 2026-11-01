@@ -301,7 +301,8 @@ jobs:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          FINAL="${{ steps.publish-filter.outputs.output-file }}"
+          node scripts/support-triage-assemble.mjs "${{ steps.publish-filter.outputs.output-file }}" /tmp/support-assembled.md
+          FINAL=/tmp/support-assembled.md
           if ! grep -q '^## Drafted reply$' "$FINAL"; then
             echo "::error::the triage answer has no '## Drafted reply' heading; nothing is posted"
             exit 1

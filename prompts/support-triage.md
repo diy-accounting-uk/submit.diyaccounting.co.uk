@@ -27,7 +27,13 @@ in that file and in this repository.
 There is no name and no email address for this customer. Never invent one, and never open the
 reply with "Dear ..." or "Hi ...".
 
-Your job is to answer three questions and stop:
+Your job is to answer five questions and stop. Answer the one numbered 0 first:
+
+0. What kind of ticket is this? Write only `change-request`, `complaint` or `other` under the
+   heading. `change-request`: the customer asks to change the site's wording, content, a page or
+   a feature. `complaint`: the customer complains about how the service behaved and asks for no
+   change to a page or feature. `other`: anything else. Code reads this word: a change request
+   gets no matched article, and a complaint gets your opening sentence first in the reply.
 
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
@@ -67,7 +73,11 @@ Your job is to answer three questions and stop:
    typo on a help page to be corrected. Example of `answer`: the customer asks to replace
    "cannot" with "can not"; "cannot" is the standard spelling, so the wording stays. Never reply
    that the help page already answers a change request.
-3. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
+3. For a `complaint` only, write one sentence under "## Opening sentence" that starts with
+   "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it first
+   in the reply and rejects a complaint whose sentence says neither. For any other kind, write
+   "none".
+4. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
    match, the reply should say which help-page question answers it. If not, say plainly that a
    person will look into it.
@@ -80,8 +90,12 @@ number, a postcode, a VAT registration number, a UTR, a NINO, an EORI, a PAYE re
 64-character hex string, or any token, key, cookie or authorization header. Refer to the
 submitter as "the customer".
 
-Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these three sections
+Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these five sections
 and no others, each heading on its own line:
+
+## Ticket kind
+
+<change-request, complaint or other>
 
 ## Matched article
 
@@ -91,10 +105,14 @@ and no others, each heading on its own line:
 
 <fix or answer>
 
+## Opening sentence
+
+<for a complaint, one sentence that starts "Sorry" or "Thank you"; otherwise none>
+
 ## Drafted reply
 
-<the drafted reply>
+<the drafted reply; for a complaint, the rest of the reply after the opening sentence>
 
 The workflow that runs you adds the category itself and posts your answer as a comment on the
 private issue for the operator to read and send by hand. Use the headings exactly as given, in
-this order, with nothing before "## Matched article" and nothing after the drafted reply.
+this order, with nothing before "## Ticket kind" and nothing after the drafted reply.
