@@ -487,7 +487,7 @@ jobs:
 
       - name: Authenticate to Google by federation
         if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
-        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
           service_account: ${{ steps.google-identity.outputs.service-account }}
@@ -813,7 +813,7 @@ jobs:
         id: download-artifacts
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ matrix.suite }}-artifacts
           path: |
@@ -836,7 +836,7 @@ jobs:
         id: download-reports
         if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ matrix.suite }}-reports
           path: |
