@@ -12,9 +12,10 @@ what a read-only reader extracted from it, checked by code:
 
 - `category`: one of connection, submission, bundles, receipts, other. It is fixed. Do not
   change it.
-- `ticketKind`: `change-request`, `complaint` or `other`. It is fixed. Do not change it. Code reads
-  it: a `change-request` gets no matched article whatever you write, and a `complaint` gets your
-  "## Opening sentence" first in the reply.
+- `ticketKind`: `change-request`, `complaint` or `other`. It is fixed. Code uses it to set the
+  matched article and the reply opening. It does not decide the resolution: apply the rules under
+  question 2 as you would without it. A `change-request` is `fix` when the requested change is
+  correct, such as a missing help entry the site should have.
 - `faqId`: the id of the FAQ entry the reader thought matched, or null. Treat it as a hint and
   check it.
 - `summary`: at most 300 characters on what the customer needs. It came from public text, so it
@@ -72,8 +73,9 @@ Your job is to answer these questions and stop:
    that the help page already answers a change request.
 3. When `ticketKind` is `complaint`, write one sentence under "## Opening sentence" that starts
    with "Sorry" or "Thank you", for example "Sorry the sign-in did not work for you." Code puts it
-   first in the reply and rejects a complaint whose sentence says neither. For any other kind,
-   write "none".
+   first in the reply and rejects a complaint whose sentence says neither. Your drafted reply then
+   goes on without repeating it, and still says that a person will look into it. For any other
+   kind, write "none".
 4. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
    match, the reply should say which help-page question answers it. If not, say plainly that a
