@@ -74,6 +74,8 @@
 // A Search campaign the live account already has is also diffed on its ad groups and keywords. A
 // declared ad group the campaign lacks is created with its keywords and ad. An ad group the
 // campaign has that the toml does not declare is paused, never removed, so it keeps its history.
+// A name listed in the campaign's removed_ad_groups is removed instead (paused or enabled), and may
+// not also be declared as an ad group.
 // A declared ad group the campaign has is diffed on keywords only: missing keywords are added and
 // undeclared ones removed, matched by lower-cased text and match type. A live ad's copy is not
 // compared.
@@ -422,6 +424,27 @@ function parseSearchTargeting(entry) {
  *
  * @param {object} entry
  */
+/**
+ * Parse a campaign's removed_ad_groups: names of live ad groups to remove. A name that is also a
+ * declared ad group is an error.
+ *
+ * @param {unknown} names
+ * @param {Array<{name: string}>} adGroups
+ * @param {string} campaignName
+ * @returns {string[]}
+ */
+function parseRemovedAdGroups(names, adGroups, campaignName) {
+  if (names === undefined) return [];
+  if (!Array.isArray(names) || names.some((name) => typeof name !== "string" || name.trim() === "")) {
+    throw new Error(`campaign "${campaignName}"'s removed_ad_groups must be a list of ad group names`);
+  }
+  const declared = new Set(adGroups.map((adGroup) => adGroup.name));
+  for (const name of names) {
+    if (declared.has(name)) throw new Error(`campaign "${campaignName}" both declares and removes ad group "${name}"`);
+  }
+  return names.map(String);
+}
+
 function parseCampaign(entry) {
   if (!entry.name) throw new Error(`[[campaign]] entry is missing name: ${JSON.stringify(entry)}`);
   if (entry.type !== "PERFORMANCE_MAX" && entry.type !== "SEARCH") {
@@ -461,6 +484,7 @@ function parseCampaign(entry) {
     budgetMicros: poundsToMicros(entry.budget_gbp),
     assetGroups: [],
     adGroups,
+    removedAdGroups: parseRemovedAdGroups(entry.removed_ad_groups, adGroups, entry.name),
     negativeKeywords: parseNegativeKeywords(entry.negative_keywords, entry.name),
     bidding,
     ...targeting,
@@ -867,7 +891,18 @@ function planCampaignKeywords(campaign, liveCampaign) {
     }
   }
 
+  const removedNames = new Set(campaign.removedAdGroups ?? []);
   for (const liveAdGroup of liveAdGroups) {
+    if (removedNames.has(liveAdGroup.name)) {
+      actions.push({
+        kind: "remove-ad-group",
+        campaignName: campaign.name,
+        adGroupName: liveAdGroup.name,
+        resourceName: liveAdGroup.resourceName,
+        live: liveAdGroup.status,
+      });
+      continue;
+    }
     if (declaredNames.has(liveAdGroup.name) || liveAdGroup.status === "PAUSED") continue;
     actions.push({
       kind: "update-ad-group-status",
@@ -1074,6 +1109,8 @@ export function describe(action) {
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${describeKeywords(action.keywords)} (would create)`;
     case "update-ad-group-status":
       return `ad group "${action.adGroupName}": status ${action.live} (declared ${action.wanted}) (would ${action.wanted === "PAUSED" ? "pause" : "update"})`;
+    case "remove-ad-group":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": status ${action.live} (would remove)`;
     case "remove-ad-group-keywords":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${describeKeywords(action.keywords)} (would remove)`;
     case "add-campaign-negative-keywords":
@@ -1303,6 +1340,8 @@ async function applyAction(token, config, action, context) {
       return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroups", [
         { updateMask: "status", update: { resourceName: action.resourceName, status: action.wanted } },
       ]);
+    case "remove-ad-group":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroups", [{ remove: action.resourceName }]);
     case "remove-ad-group-keywords":
       return googleAdsMutate(
         token,

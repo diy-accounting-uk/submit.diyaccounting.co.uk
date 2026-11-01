@@ -5,7 +5,7 @@
 //
 // The conversion-to-paid objective's observations for the operator snapshot.
 
-import { buildCloudWatchDashboardLink, buildAthenaSavedQueryLink } from "../consoleLinks.js";
+import { buildAthenaSavedQueryLink } from "../consoleLinks.js";
 import { STRIPE_DONATION_PRODUCT_FILTER, PAYPAL_DONATION_PRODUCT_FILTER } from "./donationFilters.js";
 
 export const conversionToPaidObjective = {
@@ -20,7 +20,7 @@ export const conversionToPaidObjective = {
       dayColumn: "day",
       valueExpr: "revenue_gbp",
       aggregation: "sum",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "revenue-donations-gbp",

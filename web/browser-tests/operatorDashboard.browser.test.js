@@ -40,7 +40,8 @@ const FIXTURE_SNAPSHOT = {
           better: "up",
           last30: { value: 0.999, trend: 0.001 },
           last90: { value: 0.998, trend: null },
-          deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
         },
         {
           id: "alarms-fired",
@@ -68,7 +69,8 @@ const FIXTURE_SNAPSHOT = {
           unit: "ratio",
           last30: { value: 0.42, trend: 0 },
           last90: { value: 0.4, trend: 0.05 },
-          deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-analytics",
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
         },
         {
           id: "sessions-human",
@@ -656,6 +658,13 @@ test.describe("Operator Dashboard", () => {
         body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.charts.js"), "utf-8"),
       });
     });
+    await page.route("**/dashboard.awslinks.js*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.awslinks.js"), "utf-8"),
+      });
+    });
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
     });
@@ -677,6 +686,28 @@ test.describe("Operator Dashboard", () => {
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "domcontentloaded" });
     await delay(200);
   }
+
+  test("lists AWS console links for the figures the page does not chart, naming each account", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const links = page.locator("#awsLinksGroups a");
+    expect(await links.count()).toBeGreaterThan(20);
+    const first = links.first();
+    await expect(first).toHaveAttribute(
+      "href",
+      /^https:\/\/eu-west-2\.console\.aws\.amazon\.com\/cloudwatch\/home\?region=eu-west-2#metricsV2:graph=/,
+    );
+    await expect(first).toContainText("account submit-prod 972912397388");
+    await expect(page.locator("#awsLinksGroups a", { hasText: "account submit-ci 367191799875" }).first()).toBeVisible();
+    const bedrock = page.locator("#awsLinksGroups a", { hasText: "Bedrock invocations in Logs Insights" });
+    await expect(bedrock).toHaveCount(2);
+    await expect(bedrock.first()).toHaveAttribute("href", /#logsV2:logs-insights.*\*2fprod\*2fbedrock\*2finvocations/);
+    await expect(page.locator("#awsLinksGroups h3")).toHaveText([
+      "Replaces the CloudWatch analytics dashboard",
+      "Replaces the CloudWatch operations dashboard",
+    ]);
+  });
 
   test("renders the eight objectives in order", async ({ page }) => {
     await setupRoutes(page);
@@ -810,7 +841,7 @@ test.describe("Operator Dashboard", () => {
     await expect(row).toContainText("0.1%");
     await expect(row.locator("a.deep-link")).toHaveAttribute(
       "href",
-      "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
+      "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
     );
   });
 
@@ -844,7 +875,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator('.observation[data-observation-id="probe-pass-rate"] a.deep-link')).toHaveText(
-      "CloudWatch dashboard prod-env-operations",
+      "Athena saved queries (v_availability_sli_daily)",
     );
     await expect(page.locator('.observation[data-observation-id="alarms-fired"] a.deep-link')).toHaveText("CloudWatch alarms");
     await expect(page.locator("#visitorsPanel")).toBeVisible();

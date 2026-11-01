@@ -5,7 +5,7 @@
 //
 // The conversion-to-submission objective's observations for the operator snapshot.
 
-import { buildCloudWatchDashboardLink, buildAthenaSavedQueryLink, buildGa4ReportsLink } from "../consoleLinks.js";
+import { buildAthenaSavedQueryLink, buildGa4ReportsLink } from "../consoleLinks.js";
 
 export const conversionToSubmissionObjective = {
   id: "conversion-to-submission",
@@ -19,7 +19,7 @@ export const conversionToSubmissionObjective = {
       dayColumn: "cohort_day",
       valueExpr: "conversion",
       aggregation: "avg",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "completions-by-activity",

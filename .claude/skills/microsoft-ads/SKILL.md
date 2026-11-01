@@ -98,6 +98,10 @@ estimate has a minimum and a maximum; quote both, with the match type and the bi
 
 ## Proposing a change
 
+Before you propose a change, read the "Paid acquisition policy" section of
+`../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md`. Check the proposal against its
+targeting rules, its bid and budget rules and its decision log, and name each rule it meets.
+
 The scripts here read only. To propose a change, say which campaign, ad group, keyword, bid or
 budget changes, from what to what, with the forecast or report figures behind it, and leave the
 change to the operator in the Microsoft Advertising UI. A forecast row for a phrase the account

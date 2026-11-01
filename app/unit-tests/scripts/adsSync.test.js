@@ -1080,6 +1080,41 @@ describe("ads-sync ad groups on a live Search campaign", () => {
     expect(actions).toEqual([]);
   });
 
+  it("removes a live ad group the campaign lists as removed, paused or enabled", () => {
+    const live = baseLive();
+    live.campaigns.push(
+      liveCampaign([
+        liveAdGroup("VAT software", "ENABLED", declaredKeywords),
+        liveAdGroup("Gone", "PAUSED"),
+        liveAdGroup("Gone too", "ENABLED"),
+      ]),
+    );
+    const actions = planAds(
+      parseConfig(
+        `${SEARCH_CAMPAIGN_TOML.replace('status = "PAUSED"\nlocations', 'status = "PAUSED"\nremoved_ad_groups = ["Gone", "Gone too"]\nlocations')}`,
+      ),
+      live,
+    );
+    expect(actions.map((action) => action.kind)).toEqual(["remove-ad-group", "remove-ad-group"]);
+    expect(actions[0]).toMatchObject({ adGroupName: "Gone", resourceName: "customers/8142685080/adGroups/Gone", live: "PAUSED" });
+    expect(describeAction(actions[1])).toBe('campaign "Search #1", ad group "Gone too": status ENABLED (would remove)');
+  });
+
+  it("plans nothing for a removed ad group the account no longer has", () => {
+    const live = baseLive();
+    live.campaigns.push(liveCampaign([liveAdGroup("VAT software", "ENABLED", declaredKeywords)]));
+    const toml = SEARCH_CAMPAIGN_TOML.replace('status = "PAUSED"\nlocations', 'status = "PAUSED"\nremoved_ad_groups = ["Gone"]\nlocations');
+    expect(planAds(parseConfig(toml), live)).toEqual([]);
+  });
+
+  it("refuses an ad group that is both declared and removed", () => {
+    const toml = SEARCH_CAMPAIGN_TOML.replace(
+      'status = "PAUSED"\nlocations',
+      'status = "PAUSED"\nremoved_ad_groups = ["VAT software"]\nlocations',
+    );
+    expect(() => parseConfig(toml)).toThrow(/both declares and removes ad group "VAT software"/);
+  });
+
   it("adds missing keywords and removes undeclared ones in a declared ad group", () => {
     const actions = plan([
       liveAdGroup("VAT software", "ENABLED", [
@@ -1151,12 +1186,20 @@ describe("infra/google/ads/ads.toml", () => {
     return hay.some((_, start) => need.every((word, offset) => hay[start + offset] === word));
   };
 
-  it("runs the search campaign at 1 pound a day with a 2 pound click ceiling", () => {
-    expect(search.budgetMicros).toBe("1000000");
-    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "2000000" });
+  it("removes the three ad groups left from the first layout", () => {
+    expect(search.removedAdGroups).toEqual([
+      "Submit VAT return online free",
+      "Free MTD VAT software",
+      "File VAT return without accountant",
+    ]);
   });
 
-  it("declares six ad groups of phrase-match keywords, 34 in all, each with one ad", () => {
+  it("runs the search campaign at 2 pounds a day with a 3 pound click ceiling", () => {
+    expect(search.budgetMicros).toBe("2000000");
+    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "3000000" });
+  });
+
+  it("declares seven ad groups of broad-match keywords, 38 in all, each with one ad", () => {
     expect(search.adGroups.map((adGroup) => adGroup.name)).toEqual([
       "Own brand",
       "Bridging software",
@@ -1164,11 +1207,28 @@ describe("infra/google/ads/ads.toml", () => {
       "Submit VAT return",
       "Free MTD VAT",
       "Spreadsheet and Excel",
+      "VAT deadline",
     ]);
     const keywords = search.adGroups.flatMap((adGroup) => adGroup.keywords);
-    expect(keywords).toHaveLength(34);
-    expect(keywords.every((keyword) => keyword.matchType === "PHRASE")).toBe(true);
-    expect(new Set(keywords.map((keyword) => keyword.text)).size).toBe(34);
+    expect(keywords).toHaveLength(38);
+    expect(keywords.every((keyword) => keyword.matchType === "BROAD")).toBe(true);
+    expect(new Set(keywords.map((keyword) => keyword.text)).size).toBe(38);
+  });
+
+  it("offers the free check of the customer's own VAT due dates in the VAT deadline ad group", () => {
+    const group = search.adGroups.find((adGroup) => adGroup.name === "VAT deadline");
+    expect(group.keywords.map((keyword) => keyword.text)).toEqual([
+      "vat return deadline",
+      "vat return due date",
+      "when is my vat return due",
+      "vat deadline",
+    ]);
+    expect(group.ad.headlines).toContain("Free Day Pass: See Due Dates");
+    expect(group.ad.descriptions.join(" ")).not.toMatch(/approved|accredited|certified|endorsed/i);
+  });
+
+  it("keeps template out of the negatives because three keywords contain it", () => {
+    expect(search.negativeKeywords.map((negative) => negative.text)).not.toContain("template");
   });
 
   it("carries negatives that block none of its own keywords", () => {

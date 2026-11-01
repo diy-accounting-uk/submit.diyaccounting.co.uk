@@ -5,7 +5,7 @@
 //
 // The retention objective's observations for the operator snapshot.
 
-import { buildCloudWatchDashboardLink, buildAthenaSavedQueryLink } from "../consoleLinks.js";
+import { buildAthenaSavedQueryLink } from "../consoleLinks.js";
 
 export const retentionObjective = {
   id: "retention",
@@ -19,7 +19,7 @@ export const retentionObjective = {
       dayColumn: "day",
       valueExpr: "submitters_90d",
       aggregation: "latest",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "returning-submitters",
@@ -29,7 +29,7 @@ export const retentionObjective = {
       dayColumn: "day",
       valueExpr: "returning_submitters_90d",
       aggregation: "latest",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "retention-active-customers-7d",
@@ -86,7 +86,7 @@ export const retentionObjective = {
       dayColumn: "day",
       valueExpr: "renewals",
       aggregation: "sum",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "subscription-cancellations",
@@ -96,7 +96,7 @@ export const retentionObjective = {
       dayColumn: "day",
       valueExpr: "cancellations",
       aggregation: "sum",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
   ],
 };

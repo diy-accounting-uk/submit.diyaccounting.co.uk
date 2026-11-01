@@ -148,6 +148,7 @@ class SubmitEnvironmentCdkResourceTest {
                 Match.objectLike(Map.of("IsMultiRegionTrail", true, "IncludeGlobalServiceEvents", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
         assertApiAccessLogGroupKeepsTheConfiguredRetention(observability, appProps);
+        assertBedrockInvocationLoggingIsMetadataOnly(observability);
 
         // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack
         // manages the CIS v5.0.0 and AWS Foundational Security Best Practices subscriptions
@@ -218,12 +219,8 @@ class SubmitEnvironmentCdkResourceTest {
         assertAlarmTriageResources(observability);
         assertQuarantineReaderResources(observability);
 
-        // 8c) Operations dashboard: nine widgets across four rows plus the RUM and probe rows,
-        // narrowed to the live deployment (a CloudFormation dynamic reference to the
-        // last-known-good-deployment SSM parameter, not a bare "test-" prefix matching every
-        // retired deployment's functions), with the business widgets moved to the analytics
-        // dashboard and one deliberate duplicate (VAT submissions) kept here.
-        assertOperationsDashboardScopedToLiveDeployment(observability);
+        // 8c) No CloudWatch dashboard: the operator dashboard page shows the figures.
+        observability.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
 
         // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
         // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
@@ -269,7 +266,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 5);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
-        analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+        analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
         analytics.resourceCountIs("AWS::Glue::Table", 33);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 57);
@@ -359,6 +356,36 @@ class SubmitEnvironmentCdkResourceTest {
      * that every other ensured log group gets.
      */
     @SuppressWarnings("unchecked")
+    private static void assertBedrockInvocationLoggingIsMetadataOnly(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::Logs::LogGroup",
+                Match.objectLike(Map.of("LogGroupName", "/test/bedrock/invocations", "RetentionInDays", 14)));
+        var bedrockRoles = observability.findResources("AWS::IAM::Role").values().stream()
+                .map(resource -> String.valueOf(
+                        ((Map<String, Object>) resource.get("Properties")).get("AssumeRolePolicyDocument")))
+                .filter(document -> document.contains("bedrock.amazonaws.com"))
+                .toList();
+        assertEquals(1, bedrockRoles.size(), "expected one role Bedrock can assume");
+        assertTrue(bedrockRoles.get(0).contains("aws:SourceAccount"), "the role must be scoped to the account");
+        List<String> puts = observability.findResources("Custom::AWS").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(properties -> properties == null ? "" : String.valueOf(properties.get("Create")))
+                .filter(create -> create.contains("putModelInvocationLoggingConfiguration"))
+                .toList();
+        assertEquals(1, puts.size(), "expected one putModelInvocationLoggingConfiguration call");
+        for (String field :
+                List.of("textDataDeliveryEnabled", "imageDataDeliveryEnabled", "embeddingDataDeliveryEnabled")) {
+            assertTrue(puts.get(0).contains("\"" + field + "\":false"), field + " must stay off");
+        }
+        assertTrue(puts.get(0).contains("/test/bedrock/invocations"), "the call must name the log group");
+        assertTrue(
+                observability.findResources("Custom::AWS").values().stream()
+                        .map(resource ->
+                                String.valueOf(((Map<String, Object>) resource.get("Properties")).get("Delete")))
+                        .anyMatch(delete -> delete.contains("deleteModelInvocationLoggingConfiguration")),
+                "expected the logging configuration to be deleted with the stack");
+    }
+
     private static void assertApiAccessLogGroupKeepsTheConfiguredRetention(
             Template observability, SubmitEnvironment.SubmitEnvironmentProps appProps) {
         String configured = System.getenv("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS");
@@ -441,56 +468,6 @@ class SubmitEnvironmentCdkResourceTest {
                         .anyMatch(call -> call.contains("batchEnableStandards")
                                 && call.contains("aws-foundational-security-best-practices/v/1.0.0")),
                 "expected a Custom::AWS resource keeping AWS Foundational Security Best Practices enabled");
-    }
-
-    /**
-     * The Errors, Throttles, p95 Duration and VAT-submissions widgets all resolve the live
-     * deployment from the last-known-good-deployment SSM parameter rather than a bare
-     * per-environment prefix (which matched every retired deployment's functions and broke
-     * CloudWatch's 500-series SEARCH limit); the four widgets that moved to the business
-     * dashboard are gone from this one.
-     */
-    @SuppressWarnings("unchecked")
-    private static void assertOperationsDashboardScopedToLiveDeployment(Template observability) {
-        Map<String, Map<String, Object>> dashboards = observability.findResources("AWS::CloudWatch::Dashboard");
-        assertEquals(1, dashboards.size());
-        var properties =
-                (Map<String, Object>) dashboards.values().iterator().next().get("Properties");
-        var dashboardBody = String.valueOf(properties.get("DashboardBody"));
-
-        // StringParameter.valueForStringParameter renders as a Ref to an
-        // AWS::SSM::Parameter::Value<String> template parameter, whose logical id is the SSM
-        // parameter's path with punctuation stripped.
-        assertTrue(
-                dashboardBody.contains("lastknowngooddeployment"),
-                "expected the live deployment name to come from the last-known-good-deployment SSM parameter, got: "
-                        + dashboardBody);
-
-        assertTrue(dashboardBody.contains("VAT Submissions (deployment: "));
-        assertTrue(dashboardBody.contains("Active Bundle Allocations (reconciled)"));
-        assertTrue(dashboardBody.contains("Lambda Errors (deployment: "));
-        assertTrue(dashboardBody.contains("Lambda Throttles (deployment: "));
-        assertTrue(dashboardBody.contains("Lambda p95 Duration (deployment: "));
-
-        // The titles embed the same last-known-good-deployment reference as the search
-        // expressions, not a static "(live deployment)" label: when the sentinel "None" is the
-        // resolved value (no deployment is live, or the sweep just cleared one), the dashboard
-        // shows that in the title instead of a blank graph that reads the same as a live
-        // deployment with no traffic.
-        long lastKnownGoodDeploymentRefCount = dashboardBody.split("lastknowngooddeployment", -1).length - 1;
-        assertTrue(
-                lastKnownGoodDeploymentRefCount >= 5,
-                "expected the last-known-good-deployment reference in all four titles plus the "
-                        + "function-prefix expressions, found "
-                        + lastKnownGoodDeploymentRefCount
-                        + " occurrences in: "
-                        + dashboardBody);
-
-        assertFalse(dashboardBody.contains("HMRC Authentications"));
-        assertFalse(dashboardBody.contains("Bundle Operations"));
-        assertFalse(dashboardBody.contains("Sign-ups & Cognito Auth"));
-        assertFalse(dashboardBody.contains("Bundle Grants & Cap Enforcement"));
-        assertFalse(dashboardBody.contains("all deployments"));
     }
 
     /**

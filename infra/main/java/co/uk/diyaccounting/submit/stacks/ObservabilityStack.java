@@ -25,7 +25,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -42,10 +41,6 @@ import software.amazon.awscdk.services.bedrock.CfnGuardrailVersion;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Dashboard;
-import software.amazon.awscdk.services.cloudwatch.GraphWidget;
-import software.amazon.awscdk.services.cloudwatch.IWidget;
-import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cognito.CfnIdentityPool;
@@ -318,6 +313,83 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
         cfnOutput(this, "ApiAccessLogGroupArn", this.apiAccessLogGroup.getLogGroupArn());
 
+        // ------------------ Bedrock model invocation logging ------------------
+        // The setting is account-and-region wide and CloudFormation has no resource for it, so an
+        // AwsCustomResource calls PutModelInvocationLoggingConfiguration. Every Bedrock call runs
+        // in this region through the eu.anthropic.* inference profiles. Text, image and embedding
+        // bodies stay off because prompts carry support ticket summaries and alarm data; each log
+        // record keeps the caller's identity ARN, the model, the token counts and the request id.
+        String bedrockLogGroupName = "/%s/bedrock/invocations".formatted(props.envName());
+        LogGroup bedrockInvocationLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogGroup")
+                .logGroupName(bedrockLogGroupName)
+                .retention(RetentionDays.TWO_WEEKS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        Role bedrockInvocationLogRole = Role.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogRole")
+                .assumedBy(new ServicePrincipal("bedrock.amazonaws.com")
+                        .withConditions(Map.of(
+                                "StringEquals", Map.of("aws:SourceAccount", this.getAccount()),
+                                "ArnLike",
+                                        Map.of(
+                                                "aws:SourceArn",
+                                                "arn:aws:bedrock:%s:%s:*"
+                                                        .formatted(this.getRegion(), this.getAccount())))))
+                .build();
+        bedrockInvocationLogRole.addToPolicy(PolicyStatement.Builder.create()
+                .actions(List.of("logs:CreateLogStream", "logs:PutLogEvents"))
+                .resources(List.of(bedrockInvocationLogGroup.getLogGroupArn() + ":*"))
+                .build());
+        Map<String, Object> bedrockLoggingConfig = Map.of(
+                "cloudWatchConfig",
+                Map.of("logGroupName", bedrockLogGroupName, "roleArn", bedrockInvocationLogRole.getRoleArn()),
+                "textDataDeliveryEnabled",
+                false,
+                "imageDataDeliveryEnabled",
+                false,
+                "embeddingDataDeliveryEnabled",
+                false);
+        AwsCustomResource bedrockInvocationLogging = AwsCustomResource.Builder.create(
+                        this, props.resourceNamePrefix() + "-BedrockInvocationLogging")
+                .onCreate(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("putModelInvocationLoggingConfiguration")
+                        .parameters(Map.of("loggingConfig", bedrockLoggingConfig))
+                        .physicalResourceId(PhysicalResourceId.of(bedrockLogGroupName))
+                        .build())
+                .onUpdate(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("putModelInvocationLoggingConfiguration")
+                        .parameters(Map.of("loggingConfig", bedrockLoggingConfig))
+                        .physicalResourceId(PhysicalResourceId.of(bedrockLogGroupName))
+                        .build())
+                .onDelete(AwsSdkCall.builder()
+                        .service("Bedrock")
+                        .action("deleteModelInvocationLoggingConfiguration")
+                        .build())
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
+                .build();
+        bedrockInvocationLogging.getNode().addDependency(bedrockInvocationLogGroup);
+        bedrockInvocationLogging.getNode().addDependency(bedrockInvocationLogRole);
+        bedrockInvocationLogging
+                .getNode()
+                .addDependency(KindCdk.grantToAwsCustomResourceProvider(
+                        this,
+                        List.of(
+                                PolicyStatement.Builder.create()
+                                        .actions(List.of(
+                                                "bedrock:PutModelInvocationLoggingConfiguration",
+                                                "bedrock:DeleteModelInvocationLoggingConfiguration"))
+                                        .resources(List.of("*"))
+                                        .build(),
+                                PolicyStatement.Builder.create()
+                                        .actions(List.of("iam:PassRole"))
+                                        .resources(List.of(bedrockInvocationLogRole.getRoleArn()))
+                                        .build())));
+        cfnOutput(this, "BedrockInvocationLogGroupArn", bedrockInvocationLogGroup.getLogGroupArn());
+
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
         // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
         CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
@@ -580,235 +652,10 @@ public class ObservabilityStack extends Stack {
 
         infof("Created anomaly detection rules: IAM policy changes, security groups, access keys, root activity");
 
-        // ============================================================================
-        // Consolidated Operations Dashboard
-        // ============================================================================
-        // This dashboard provides a single view across all deployments in this environment
-        List<List<IWidget>> dashboardRows = new ArrayList<>();
-
-        // Determine apex domain for GitHub probe metrics namespace
+        // The apex domain is the namespace of the GitHub probe metrics
         String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
                 ? props.apexDomain()
                 : props.sharedNames().envDomainName;
-
-        // Live deployment: the environment's last-known-good deployment slug (e.g.
-        // "prod-c6e18fd"), read as a CloudFormation dynamic reference so the search patterns
-        // below track whichever deployment is live without a redeploy of this stack. Function
-        // names are "{liveDeploymentName}-app-{function-name}"; scoping to this prefix keeps
-        // each widget under CloudWatch's 500-series SEARCH limit — an unscoped "{envName}-"
-        // prefix matches every retired deployment's functions (CloudWatch keeps their series
-        // for fifteen months) plus the cwsyn-* canaries — and drops the canaries as a side
-        // effect, since they carry no "-app-" segment.
-        //
-        // CloudFormation resolves this as an AWS::SSM::Parameter::Value<String> template
-        // parameter, so a missing SSM parameter fails the changeset outright rather than
-        // resolving to an empty string; deploy-environment.yml's create-secrets job creates it
-        // with the sentinel "None" first if it is ever missing, and the destroy sweeps
-        // (destroy-ci.yml/destroy-prod.yml) set that same sentinel instead of deleting the
-        // parameter once no deployment is live. "None-app-" as a prefix matches no real function
-        // name, so the widgets below go quietly empty rather than mismatching — but an empty
-        // widget reads the same as a live deployment with no traffic, so the titles below embed
-        // the raw name too: "None" in a widget's title is the visible sign that no deployment is
-        // live, where a blank graph alone would not be.
-        String liveDeploymentName = StringParameter.valueForStringParameter(
-                this, "/submit/%s/last-known-good-deployment".formatted(props.envName()));
-        String liveDeploymentFunctionPrefix = liveDeploymentName + "-app-";
-
-        // Row 1: Real User Traffic (RUM) and Web Vitals
-        Metric inpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsInteractionToNextPaint")
-                .dimensionsMap(Map.of("application_name", rumAppName))
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("RUM p75 LCP (ms)")
-                        .left(List.of(lcpP75))
-                        .width(6)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("RUM p75 INP (ms)")
-                        .left(List.of(inpP75))
-                        .width(6)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("RUM p75 CLS")
-                        .left(List.of(clsP75))
-                        .width(6)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("RUM JS Errors (5m sum)")
-                        .left(List.of(jsErrors))
-                        .width(6)
-                        .height(6)
-                        .build()));
-
-        // Row 1b: the spreadsheets site's own RUM p75 web vitals, read cross-account and
-        // cross-region through the OAM sink ObservabilityUE1Stack creates in us-east-1 (the
-        // spreadsheets RUM app monitor's home Region). A CloudWatch dashboard widget can graph
-        // another account's metrics from another Region directly; an alarm cannot, so the
-        // alarms on these same metrics live in ObservabilityUE1Stack instead. Empty until the
-        // spreadsheets account links to that sink.
-        String spreadsheetsAccountId = "064390746177"; // spreadsheets.diyaccounting.co.uk's AWS account
-        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
-
-        Metric spreadsheetsLcpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsLargestContentfulPaint")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric spreadsheetsInpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsInteractionToNextPaint")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric spreadsheetsClsP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsCumulativeLayoutShift")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Spreadsheets RUM p75 LCP (ms)")
-                        .left(List.of(spreadsheetsLcpP75))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Spreadsheets RUM p75 INP (ms)")
-                        .left(List.of(spreadsheetsInpP75))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Spreadsheets RUM p75 CLS")
-                        .left(List.of(spreadsheetsClsP75))
-                        .width(8)
-                        .height(6)
-                        .build()));
-
-        // Row 1c: the gateway site's own RUM p75 web vitals, read cross-account and
-        // cross-region through the OAM sink ObservabilityUE1Stack creates in us-east-1 (the
-        // gateway RUM app monitor's home Region). Empty until the gateway account links to
-        // that sink.
-        String gatewayAccountId = "283165661847"; // www.diyaccounting.co.uk's AWS account
-        String gatewayRumAppName = "prod".equals(props.envName()) ? "gateway-web" : "ci-gateway-web";
-
-        Metric gatewayLcpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsLargestContentfulPaint")
-                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
-                .account(gatewayAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric gatewayInpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsInteractionToNextPaint")
-                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
-                .account(gatewayAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric gatewayClsP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsCumulativeLayoutShift")
-                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
-                .account(gatewayAccountId)
-                .region("us-east-1")
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Gateway RUM p75 LCP (ms)")
-                        .left(List.of(gatewayLcpP75))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Gateway RUM p75 INP (ms)")
-                        .left(List.of(gatewayInpP75))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Gateway RUM p75 CLS")
-                        .left(List.of(gatewayClsP75))
-                        .width(8)
-                        .height(6)
-                        .build()));
-
-        // Row 2: GitHub Probe Tests
-        // GitHub probe test metrics (sent from probe-test.yml), one series per suite
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("GitHub Probe Tests")
-                .left(List.of(MathExpression.Builder.create()
-                        .expression(String.format(
-                                "SEARCH('{%s,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)", apexDomain))
-                        .label("Behaviour Tests (0=pass)")
-                        .period(Duration.hours(1))
-                        .build()))
-                .width(24)
-                .height(6)
-                .build()));
-
-        // Row 3: VAT submissions on the live deployment - the one deliberate duplicate kept
-        // here. The business dashboard's "Submissions by Outcome" widget counts the same VAT
-        // submissions from activity events, so this Lambda-invocation count sits next to it as
-        // a second source on the same quantity. HMRC authentications, bundle operations,
-        // sign-ups and bundle grants moved to the business dashboard (AnalyticsDashboard),
-        // since they are business counts rather than operations.
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("VAT Submissions (deployment: %s)".formatted(liveDeploymentName))
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%shmrc-vat-return-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                        liveDeploymentFunctionPrefix))
-                                .label("hmrcVatReturnPost")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Active Bundle Allocations (reconciled)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(
-                                        "SEARCH('{Submit/BundleCapacity,bundleId} MetricName=\"BundleActiveAllocations\"', 'Maximum', 300)")
-                                .label("Active allocations by bundle")
-                                .period(Duration.minutes(5))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
 
         // Alarms for bundle capacity and pass/token events (EMF custom metrics)
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-BundleCapReachedAlarm")
@@ -923,62 +770,14 @@ public class ObservabilityStack extends Stack {
         // Row 6: Lambda errors and throttles on the live deployment. Narrowed from an
         // unscoped "{envName}-" prefix, which matched every retired deployment's functions
         // (about 4,700 series) against CloudWatch's 500-series SEARCH limit and never rendered.
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Lambda Errors (deployment: %s)".formatted(liveDeploymentName))
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Errors\"', 'Sum', 300)",
-                                        liveDeploymentFunctionPrefix))
-                                .label("Errors by function")
-                                .period(Duration.minutes(5))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Lambda Throttles (deployment: %s)".formatted(liveDeploymentName))
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Throttles\"', 'Sum', 300)",
-                                        liveDeploymentFunctionPrefix))
-                                .label("Throttles by function")
-                                .period(Duration.minutes(5))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
 
         // Row 7: Lambda p95 duration on the live deployment, same narrowing as row 6.
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Lambda p95 Duration (deployment: %s)".formatted(liveDeploymentName))
-                .left(List.of(MathExpression.Builder.create()
-                        .expression(String.format(
-                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Duration\"', 'p95', 300)",
-                                liveDeploymentFunctionPrefix))
-                        .label("p95 Duration by function")
-                        .period(Duration.minutes(5))
-                        .build()))
-                .width(24)
-                .height(6)
-                .build()));
 
-        Dashboard operationsDashboard = Dashboard.Builder.create(
-                        this, props.resourceNamePrefix() + "-OperationsDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-operations")
-                .widgets(dashboardRows)
-                .build();
-
-        // Outputs for RUM configuration and dashboard
+        // Outputs for RUM configuration
         cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
         cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
         cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
         cfnOutput(this, "RumRegion", this.getRegion());
-        cfnOutput(
-                this,
-                "OperationsDashboard",
-                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + operationsDashboard.getDashboardName());
 
         // ============================================================================
         // Alarm triage: read-only role, output guardrail, SSM parameters

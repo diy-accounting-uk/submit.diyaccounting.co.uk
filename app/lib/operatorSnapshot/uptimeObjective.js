@@ -5,12 +5,7 @@
 //
 // The uptime objective's observations for the operator snapshot.
 
-import {
-  buildCloudWatchDashboardLink,
-  buildCloudWatchAlarmsOverviewLink,
-  buildAthenaSavedQueryLink,
-  buildGithubActionsWorkflowLink,
-} from "../consoleLinks.js";
+import { buildCloudWatchAlarmsOverviewLink, buildAthenaSavedQueryLink, buildGithubActionsWorkflowLink } from "../consoleLinks.js";
 
 export const uptimeObjective = {
   id: "uptime",
@@ -24,7 +19,7 @@ export const uptimeObjective = {
       dayColumn: "day",
       valueExpr: "pass_rate",
       aggregation: "avg",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-operations`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "error-budget-remaining-runs",
@@ -34,7 +29,7 @@ export const uptimeObjective = {
       dayColumn: "day",
       valueExpr: "budget_remaining_runs",
       aggregation: "sum",
-      deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-operations`),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
       id: "alarms-fired",

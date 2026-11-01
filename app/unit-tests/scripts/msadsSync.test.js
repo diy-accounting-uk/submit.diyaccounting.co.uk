@@ -101,11 +101,18 @@ describe("ads.toml", () => {
     const google = googleToml.campaign.find((c) => c.name === "Search: MTD VAT");
     const toml = TOML.parse(adsToml).campaign[0];
     expect(toml.bidding.cpc_bid_ceiling_gbp).toBe(google.bidding.cpc_bid_ceiling_gbp);
+    expect(campaign.adGroups.every((g) => g.cpcBid === 1.5)).toBe(true);
     expect(campaign.adGroups.every((g) => g.cpcBid <= google.bidding.cpc_bid_ceiling_gbp)).toBe(true);
     expect(campaign.dailyBudget).toBe(1);
     expect(campaign.isPolitical).toBe(false);
     expect(campaign.status).toBe("Active");
     expect(campaign.finalUrlSuffix).toMatch(/^utm_source=bing&utm_medium=cpc&utm_campaign=/);
+  });
+
+  it("refuses an ad group bid above the ceiling", () => {
+    expect(() => parseDesired(adsToml.replace("ad_group_cpc_bid_gbp = 1.50", "ad_group_cpc_bid_gbp = 3.01"))).toThrow(
+      /ad_group_cpc_bid_gbp must be above 0 and at most cpc_bid_ceiling_gbp/,
+    );
   });
 
   it("declares an event goal for each Google conversion action and an offline goal for the upload", () => {
@@ -184,7 +191,7 @@ describe("plan", () => {
     expect(kinds[0]).toBe("create-uet");
     expect(kinds.filter((k) => k === "create-goal")).toHaveLength(5);
     expect(kinds.indexOf("create-campaign")).toBeGreaterThan(kinds.lastIndexOf("create-goal"));
-    expect(kinds.filter((k) => k === "create-ad-group")).toHaveLength(6);
+    expect(kinds.filter((k) => k === "create-ad-group")).toHaveLength(7);
     expect(kinds.at(-1)).toBe("enable-auto-tagging");
     expect(plan.unmanaged).toEqual([]);
     expect(formatPlan(plan)).toContain('+ create campaign "Search: MTD VAT" Active budget 1.00/day EnhancedCpc not political');
@@ -208,6 +215,45 @@ describe("plan", () => {
     expect(plan.actions[0].differences).toEqual(["daily budget 5 to 1"]);
     expect(plan.unmanaged).toEqual(['keyword "stray" [Broad] in "Own brand"', 'campaign "Other"']);
     expect(formatPlan(plan)).toContain("0 deletes");
+  });
+
+  it("deletes a live keyword that the file declares with another match type, after adding the declared one", () => {
+    const live = matchingLive();
+    const group = live.campaigns[0].adGroups[0];
+    const declaredKeyword = group.keywords[0];
+    group.keywords[0] = { id: "7001", text: declaredKeyword.text, matchType: "Phrase" };
+    const plan = planChanges(desired, live);
+    expect(plan.actions.map((a) => a.kind)).toEqual(["create-keywords", "delete-keywords"]);
+    expect(plan.actions[0].keywords).toEqual([declaredKeyword]);
+    expect(plan.actions[1].keywords).toEqual([{ id: "7001", text: declaredKeyword.text, matchType: "Phrase" }]);
+    expect(plan.unmanaged).toEqual([]);
+    expect(formatPlan(plan)).toContain("1 deletes");
+    expect(formatPlan(plan)).toContain(
+      `- delete 1 keywords of another match type from ad group "Own brand": Phrase "${declaredKeyword.text}"`,
+    );
+  });
+
+  it("keeps an undeclared keyword with other text unmanaged and deletes nothing when the match type already matches", () => {
+    const live = matchingLive();
+    live.campaigns[0].adGroups[0].keywords.push({ id: "7002", text: "stray", matchType: "Phrase" });
+    const plan = planChanges(desired, live);
+    expect(plan.actions).toEqual([]);
+    expect(plan.unmanaged).toEqual(['keyword "stray" [Phrase] in "Own brand"']);
+    expect(formatPlan(plan)).toContain("0 deletes");
+  });
+
+  it("sends the delete with the ad group id and the keyword ids", async () => {
+    const live = matchingLive();
+    const group = live.campaigns[0].adGroups[0];
+    group.keywords[0] = { id: "7001", text: group.keywords[0].text, matchType: "Phrase" };
+    const calls = [];
+    const api = async (path, body, options = {}) => {
+      calls.push({ path, method: options.method ?? "POST", body });
+      return { KeywordIds: [1] };
+    };
+    await applyPlan(planChanges(desired, live), { api, accountId: "1" });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(["POST /Keywords", "DELETE /Keywords"]);
+    expect(calls[1].body).toEqual({ AdGroupId: group.id, KeywordIds: ["7001"] });
   });
 
   it("uses the live tag id when the tag exists", () => {
@@ -250,15 +296,15 @@ describe("apply", () => {
     const paths = calls.map((c) => `${c.method} ${c.path}`);
     expect(paths.slice(0, 7)).toEqual(["POST /UetTags", ...Array(5).fill("POST /ConversionGoals"), "POST /Campaigns"]);
     expect(paths.slice(7, 9)).toEqual(["POST /CampaignCriterions", "POST /EntityNegativeKeywords"]);
-    expect(calls.filter((c) => c.path === "/AdGroups")).toHaveLength(6);
-    expect(calls.filter((c) => c.path === "/Keywords")).toHaveLength(6);
-    expect(calls.filter((c) => c.path === "/Ads")).toHaveLength(6);
+    expect(calls.filter((c) => c.path === "/AdGroups")).toHaveLength(7);
+    expect(calls.filter((c) => c.path === "/Keywords")).toHaveLength(7);
+    expect(calls.filter((c) => c.path === "/Ads")).toHaveLength(7);
     expect(calls.find((c) => c.path === "/ConversionGoals").body.ConversionGoals[0].TagId).toBe("55");
     expect(calls.find((c) => c.path === "/Campaigns").body.Campaigns[0].IsPolitical).toBe(false);
     expect(calls.find((c) => c.path === "/CampaignCriterions").body.CriterionType).toBe("Targets");
     const adGroup = calls.find((c) => c.path === "/AdGroups");
     expect(adGroup.body.CampaignId).toBe("900");
-    expect(adGroup.body.AdGroups[0]).toMatchObject({ Name: "Own brand", CpcBid: { Amount: 1 }, Network: "OwnedAndOperatedOnly" });
+    expect(adGroup.body.AdGroups[0]).toMatchObject({ Name: "Own brand", CpcBid: { Amount: 1.5 }, Network: "OwnedAndOperatedOnly" });
     expect(calls.at(-1)).toMatchObject({ method: "PUT", path: "/AccountProperties" });
     expect(calls.at(-1).body.AccountProperties).toEqual([{ Name: "MSCLKIDAutoTaggingEnabled", Value: "true" }]);
   });
@@ -286,8 +332,8 @@ describe("export", () => {
     const exported = TOML.parse(exportToToml(live));
     expect(exported.campaign[0].name).toBe("Search: MTD VAT");
     expect(exported.campaign[0].locations).toEqual(["GB"]);
-    expect(exported.campaign[0].ad_group).toHaveLength(6);
-    expect(exported.campaign[0].ad_group[0].keyword[0]).toEqual({ text: "diy accounting", match_type: "PHRASE" });
+    expect(exported.campaign[0].ad_group).toHaveLength(7);
+    expect(exported.campaign[0].ad_group[0].keyword[0]).toEqual({ text: "diy accounting", match_type: "BROAD" });
     expect(exported.uet.tag_id).toBe("55");
     expect(exported.account.auto_tagging).toBe(true);
   });

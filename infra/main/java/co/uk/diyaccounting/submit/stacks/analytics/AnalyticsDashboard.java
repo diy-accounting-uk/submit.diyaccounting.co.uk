@@ -5,12 +5,10 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -18,14 +16,8 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Dashboard;
-import software.amazon.awscdk.services.cloudwatch.GraphWidget;
-import software.amazon.awscdk.services.cloudwatch.IWidget;
-import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
-import software.amazon.awscdk.services.cloudwatch.SingleValueWidget;
-import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -42,7 +34,7 @@ import software.constructs.Construct;
 
 /**
  * WP-7: the Lambda that turns the WP-6 Athena views into CloudWatch custom metrics, invoked as
- * the last step of the nightly chain, and the dashboard that reads them.
+ * the last step of the nightly chain.
  *
  * <p>Not a {@code Stack}: this lives inside {@code AnalyticsStack}, which owns the lake, the
  * Glue database and the Athena workgroup this construct queries. A plain {@code
@@ -53,7 +45,7 @@ import software.constructs.Construct;
  * <p>No schedule, DLQ or DLQ-depth alarm of its own: {@code IngestionStack}'s {@code
  * NightlyIngestionWorkflow} state machine invokes {@link #metricsPublishLambda} directly as the
  * final step, after the ingestion jobs and the data quality run, so a failed ingestion stops the
- * publish rather than the publish running regardless and putting a false zero on the dashboard.
+ * publish rather than the publish running regardless and putting a false zero in the metrics.
  *
  * <p>CloudWatch over QuickSight is the design's cost call: about $9/month all in, reusing the
  * alarm and Telegram routing that already exist, against QuickSight's $9-24 per author per month
@@ -62,14 +54,13 @@ import software.constructs.Construct;
 public class AnalyticsDashboard extends Construct {
 
     /** The namespace the Lambda's {@code cloudwatch:PutMetricData} grant is conditioned on, and
-     * every dashboard widget reads from. Must match {@code METRICS_NAMESPACE} in {@code
+     * the published metrics are written to. Must match {@code METRICS_NAMESPACE} in {@code
      * app/functions/analytics/analyticsMetricsPublish.js} exactly. */
     private static final String METRICS_NAMESPACE = "Submit/Analytics";
 
     public final Function metricsPublishLambda;
     public final Alarm errorsAlarm;
     public final Alarm chargesWithoutActivationAlarm;
-    public final Dashboard dashboard;
 
     @Value.Immutable
     public interface AnalyticsDashboardProps {
@@ -110,7 +101,6 @@ public class AnalyticsDashboard extends Construct {
         var region = stack.getRegion();
         var account = stack.getAccount();
         var prefix = props.idPrefix();
-        var sharedNames = props.sharedNames();
 
         // ============================================================================
         // Metrics-publish Lambda
@@ -246,223 +236,6 @@ public class AnalyticsDashboard extends Construct {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
-
-        // ============================================================================
-        // Dashboard
-        //
-        // Laid out by objective (uptime, conversion to submission, conversion to paid, running
-        // cost), each objective's widgets under its own heading. HMRC authentications, bundle
-        // operations, sign-ups and bundle grants moved here from the operations dashboard, which
-        // counted them as Lambda invocations of the live deployment - a fair proxy on the day but
-        // wrong as history, since a deploy renames the functions.
-        // ============================================================================
-        var dashboardName = sharedNames.envResourceNamePrefix + "-analytics";
-        var dashboardRows = new ArrayList<List<IWidget>>();
-
-        dashboardRows.add(List.of(heading("Uptime")));
-        dashboardRows.add(List.of(
-                SingleValueWidget.Builder.create()
-                        .title("Availability SLI")
-                        .metrics(List.of(search("ProbePassRate", "Suite")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Error Budget Remaining")
-                        .left(List.of(search("ErrorBudgetRemaining", "Suite")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Alarms Fired by Family")
-                .left(List.of(search("AlarmsFired", "Family")))
-                .width(24)
-                .height(6)
-                .build()));
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("HMRC Failures by Class")
-                .left(List.of(search("HmrcFailures", "FailureClass")))
-                .width(24)
-                .height(6)
-                .build()));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Deployment Frequency")
-                        .left(List.of(search("Deploys", "Environment")))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Lead Time for Changes (hours)")
-                        .left(List.of(search("DeployLeadTimeHours", "Environment")))
-                        .width(8)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Deploy Failure Rate")
-                        .left(List.of(search("DeployFailureRate", "Environment")))
-                        .width(8)
-                        .height(6)
-                        .build()));
-
-        dashboardRows.add(List.of(heading("Conversion to submission")));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Active Users")
-                        .left(List.of(metric("ActiveUsers")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Sessions by Country (top 5)")
-                        .left(List.of(search("Sessions", "Country")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Completions by Activity")
-                        .left(List.of(search("CompletionsByActivity", "Activity")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Sessions by Channel")
-                        .left(List.of(search("SessionsByChannel", "Channel")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("New Accounts (Sign-ups)")
-                        .left(List.of(metric("NewAccounts")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("HMRC Authentications")
-                        .left(List.of(metric("HmrcAuthentications")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Submissions by Outcome")
-                .left(List.of(search("Submissions", "Outcome")))
-                .width(24)
-                .height(6)
-                .build()));
-        dashboardRows.add(List.of(SingleValueWidget.Builder.create()
-                .title("Login-to-Submission Conversion (7 day)")
-                .metrics(List.of(metric("LoginToSubmissionConversion")))
-                .width(24)
-                .height(4)
-                .build()));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Sign-Ins by App Client")
-                        .left(List.of(search("SignIns", "AppClient")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                // The lake's SignIns metric comes from the Pre Token Generation trigger's own
-                // publish, so this Cognito metric is the reconcile line: the same total should
-                // move together with it, not an exact match (the trigger path drops failed
-                // sign-ins, which Cognito counts too).
-                GraphWidget.Builder.create()
-                        .title("Cognito Sign-Ins and Refreshes by Client (reconcile)")
-                        .left(List.of(cognitoSearch("SignInSuccesses"), cognitoSearch("TokenRefreshSuccesses")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-
-        dashboardRows.add(List.of(heading("Conversion to paid")));
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Bundle Operations")
-                        .left(List.of(search("BundleOperations", "Activity")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Bundle Grants")
-                        .left(List.of(metric("BundleGrants")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Revenue (GBP) by Product")
-                .left(List.of(search("RevenueGbp", "Product")))
-                .width(24)
-                .height(6)
-                .build()));
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Passes Issued and Redeemed by Type")
-                .left(List.of(search("PassesIssued", "PassType"), search("PassesRedeemed", "PassType")))
-                .width(24)
-                .height(6)
-                .build()));
-        // The three counts plotted together so a gap between sources is visible without a
-        // query. Not the two gap metrics themselves: METRIC_DEFINITIONS in
-        // analyticsMetricsPublish.js publishes only the three raw counts, and this widget reads
-        // exactly those three plain metric names, not a SEARCH.
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Purchase Reconciliation: GA4 vs Stripe vs Activity Events")
-                .left(List.of(metric("Ga4Purchases"), metric("StripePaidCharges"), metric("ActivityActivations")))
-                .width(24)
-                .height(6)
-                .build()));
-
-        dashboardRows.addAll(runningCostWidgetRows());
-
-        this.dashboard = Dashboard.Builder.create(this, prefix + "-AnalyticsDashboard")
-                .dashboardName(dashboardName)
-                .widgets(dashboardRows)
-                .build();
-
-        cfnOutput(
-                this,
-                "AnalyticsDashboardUrl",
-                "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#dashboards:name="
-                        + dashboardName);
-    }
-
-    /**
-     * The "Running cost" objective row: daily spend by service from the FOCUS export, cost per
-     * submission, and the month's spend against the $64.77 steady-state target, from the metrics
-     * {@code analyticsMetricsPublish.js} publishes off the {@code v_cost_*} views.
-     */
-    private List<List<IWidget>> runningCostWidgetRows() {
-        var rows = new ArrayList<List<IWidget>>();
-        rows.add(List.of(heading("Running cost")));
-        rows.add(List.of(GraphWidget.Builder.create()
-                .title("Daily Cost by Service")
-                .left(List.of(search("CostDailyByService", "Service")))
-                .width(24)
-                .height(6)
-                .build()));
-        rows.add(List.of(
-                SingleValueWidget.Builder.create()
-                        .title("Cost per Submission (USD)")
-                        .metrics(List.of(metric("CostPerSubmission")))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Monthly Cost vs $64.77 Target")
-                        .left(List.of(metric("CostMonthlyActual"), metric("CostMonthlyTarget")))
-                        .width(12)
-                        .height(6)
-                        .build()));
-        return rows;
-    }
-
-    /** A section heading, one per objective, above the widgets that answer it. */
-    private static TextWidget heading(String objective) {
-        return TextWidget.Builder.create()
-                .markdown("## " + objective)
-                .width(24)
-                .height(1)
-                .build();
     }
 
     private static Metric metric(String metricName) {
@@ -470,39 +243,6 @@ public class AnalyticsDashboard extends Construct {
                 .namespace(METRICS_NAMESPACE)
                 .metricName(metricName)
                 .statistic("Sum")
-                .period(Duration.hours(24))
-                .build();
-    }
-
-    /**
-     * A SEARCH expression over every time series for one metric name, regardless of its
-     * dimension value: the daily count of distinct outcomes, pass types, products, failure
-     * classes or countries is data-driven, so CDK cannot enumerate them at synth time. Matches
-     * the SEARCH pattern {@code ObservabilityStack} already uses for per-function Lambda
-     * metrics (ObservabilityStack.java:697).
-     */
-    private static MathExpression search(String metricName, String dimensionName) {
-        return MathExpression.Builder.create()
-                .expression(String.format(
-                        "SEARCH('{%s,%s} MetricName=\"%s\"', 'Sum', 86400)",
-                        METRICS_NAMESPACE, dimensionName, metricName))
-                .label(metricName + " by " + dimensionName)
-                .period(Duration.hours(24))
-                .build();
-    }
-
-    /**
-     * A SEARCH expression over {@code AWS/Cognito}'s own {@code SignInSuccesses} and {@code
-     * TokenRefreshSuccesses} metrics, by {@code UserPoolClient}: Cognito's count of the same
-     * sign-ins and refreshes the lake's {@code SignIns} metric derives from the Pre Token
-     * Generation trigger, published under a different namespace with no CDK-known client ids to
-     * enumerate at synth time.
-     */
-    private static MathExpression cognitoSearch(String metricName) {
-        return MathExpression.Builder.create()
-                .expression(String.format(
-                        "SEARCH('{AWS/Cognito,UserPool,UserPoolClient} MetricName=\"%s\"', 'Sum', 86400)", metricName))
-                .label(metricName + " by UserPoolClient")
                 .period(Duration.hours(24))
                 .build();
     }

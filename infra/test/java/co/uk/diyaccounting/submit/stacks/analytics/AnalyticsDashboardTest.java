@@ -76,7 +76,7 @@ class AnalyticsDashboardTest {
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
         template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
-        template.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+        template.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
 
         // Importing both buckets by name creates no bucket of its own.
         template.resourceCountIs("AWS::S3::Bucket", 0);
@@ -117,86 +117,6 @@ class AnalyticsDashboardTest {
                         "EvaluationPeriods", 1,
                         "ComparisonOperator", "GreaterThanThreshold",
                         "TreatMissingData", "notBreaching")));
-    }
-
-    @Test
-    void dashboardIsLaidOutByObjectiveWithAHeadingPerObjective() throws Exception {
-        Template template = synthAnalyticsDashboard();
-
-        var dashboards = template.findResources("AWS::CloudWatch::Dashboard");
-        assertEquals(1, dashboards.size());
-        var dashboard = dashboards.values().iterator().next();
-        @SuppressWarnings("unchecked")
-        var properties = (Map<String, Object>) dashboard.get("Properties");
-        var dashboardBody = String.valueOf(properties.get("DashboardBody"));
-
-        // DashboardBody is a CloudFormation intrinsic (Fn::Join) at synth time, so this checks
-        // the raw JSON text for the pieces of the dashboard definition that must be present,
-        // rather than trying to decode the join at the template layer.
-        assertTrue(dashboardBody.contains("Submit/Analytics"), "dashboard should read the Submit/Analytics namespace");
-
-        // One heading per objective, in order: Uptime, Conversion to submission, Conversion to paid,
-        // Running cost.
-        int uptimeIndex = dashboardBody.indexOf("## Uptime");
-        int submissionIndex = dashboardBody.indexOf("## Conversion to submission");
-        int paidIndex = dashboardBody.indexOf("## Conversion to paid");
-        int costIndex = dashboardBody.indexOf("## Running cost");
-        assertTrue(uptimeIndex >= 0, "expected an Uptime heading");
-        assertTrue(submissionIndex > uptimeIndex, "expected Conversion to submission after Uptime");
-        assertTrue(paidIndex > submissionIndex, "expected Conversion to paid after Conversion to submission");
-        assertTrue(costIndex > paidIndex, "expected Running cost after Conversion to paid");
-
-        assertTrue(dashboardBody.contains("ActiveUsers"));
-        assertTrue(dashboardBody.contains("NewAccounts"));
-        assertTrue(dashboardBody.contains("HmrcAuthentications"));
-        assertTrue(dashboardBody.contains("LoginToSubmissionConversion"));
-        assertTrue(dashboardBody.contains("BundleOperations"));
-        assertTrue(dashboardBody.contains("BundleGrants"));
-        assertTrue(dashboardBody.contains("RevenueGbp"));
-        assertTrue(dashboardBody.contains("PassesIssued"));
-        assertTrue(dashboardBody.contains("PassesRedeemed"));
-        assertTrue(dashboardBody.contains("HmrcFailures"));
-        assertTrue(dashboardBody.contains("Ga4Purchases"));
-        assertTrue(dashboardBody.contains("StripePaidCharges"));
-        assertTrue(dashboardBody.contains("ActivityActivations"));
-
-        // SI-2b: sign-ins by app client, plus Cognito's own counts as the reconcile line.
-        assertTrue(dashboardBody.contains("SignIns"));
-        assertTrue(dashboardBody.contains("AWS/Cognito"));
-        assertTrue(dashboardBody.contains("SignInSuccesses"));
-        assertTrue(dashboardBody.contains("TokenRefreshSuccesses"));
-        int signInsIndex = dashboardBody.indexOf("SignIns");
-        assertTrue(signInsIndex > submissionIndex, "expected sign-ins under Conversion to submission");
-        assertTrue(signInsIndex < paidIndex, "expected sign-ins before Conversion to paid");
-
-        // B52d panels: the uptime SLI, alarms by family and DORA delivery metrics sit under
-        // Uptime; completions by activity and sessions by channel sit under Conversion to
-        // submission, all above their heading's next objective.
-        assertTrue(dashboardBody.contains("ProbePassRate"));
-        assertTrue(dashboardBody.contains("ErrorBudgetRemaining"));
-        assertTrue(dashboardBody.contains("AlarmsFired"));
-        assertTrue(dashboardBody.contains("Deploys"));
-        assertTrue(dashboardBody.contains("DeployLeadTimeHours"));
-        assertTrue(dashboardBody.contains("DeployFailureRate"));
-        assertTrue(dashboardBody.contains("CompletionsByActivity"));
-        assertTrue(dashboardBody.contains("SessionsByChannel"));
-
-        int probePassRateIndex = dashboardBody.indexOf("ProbePassRate");
-        int completionsIndex = dashboardBody.indexOf("CompletionsByActivity");
-        assertTrue(probePassRateIndex > uptimeIndex, "expected the availability SLI under Uptime");
-        assertTrue(
-                probePassRateIndex < submissionIndex, "expected the availability SLI before Conversion to submission");
-        assertTrue(
-                completionsIndex > submissionIndex, "expected completions by activity under Conversion to submission");
-        assertTrue(completionsIndex < paidIndex, "expected completions by activity before Conversion to paid");
-
-        // B52e: the running cost widgets sit under their own heading, after Conversion to paid.
-        assertTrue(dashboardBody.contains("CostDailyByService"));
-        assertTrue(dashboardBody.contains("CostPerSubmission"));
-        assertTrue(dashboardBody.contains("CostMonthlyActual"));
-        assertTrue(dashboardBody.contains("CostMonthlyTarget"));
-        int costDailyIndex = dashboardBody.indexOf("CostDailyByService");
-        assertTrue(costDailyIndex > costIndex, "expected the cost widgets under Running cost");
     }
 
     @Test

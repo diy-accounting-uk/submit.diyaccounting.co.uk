@@ -9,7 +9,7 @@
 # and updates what this file names and deletes nothing.
 #
 # The campaign below mirrors the Google "Search: MTD VAT" campaign in infra/google/ads/ads.toml:
-# the same ad groups, phrase keywords, negative keywords and responsive search ads. Microsoft
+# the same ad groups, broad keywords, negative keywords and responsive search ads. Microsoft
 # Search campaigns take Enhanced CPC at the campaign level and ignore Manual CPC, so the bid
 # cap is the ad group bid, held at or under the Google ceiling.
 
@@ -91,8 +91,8 @@ partner_syndication = false
 
 [campaign.bidding]
 strategy = "enhanced_cpc"
-ad_group_cpc_bid_gbp = 1.00
-cpc_bid_ceiling_gbp = 2.00
+ad_group_cpc_bid_gbp = 1.50
+cpc_bid_ceiling_gbp = 3.00
 
 [campaign.negative_keywords]
 phrase = [
@@ -118,6 +118,12 @@ phrase = [
   "australia", "gst", "india", "dubai", "uae", "south africa", "nz", "template download",
   "template free", "free template", "pdf", "excel formula", "excel formulas",
   "spreadsheet tutorial",
+  "download", "format", "layout", "for accountants", "for agents", "agent", "bureau",
+  "practice software", "vat on", "zero rated", "exempt", "vat inclusive", "add vat", "remove vat",
+  "vat rate on", "flat rate scheme", "cash accounting scheme", "annual accounting scheme",
+  "income tax mtd", "itsa", "self employed tax return", "vat inspection", "compliance check",
+  "jersey", "guernsey", "isle of man", "vatbridge", "bridgit", "go simple tax", "taxfiler",
+  "capium", "iris", "vt software", "clear books", "brightpay", "dext", "hubdoc",
 ]
 exact = [
   "vat online account", "vat account",
@@ -128,15 +134,15 @@ name = "Own brand"
 
 [[campaign.ad_group.keyword]]
 text = "diy accounting"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "diyaccounting"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "diy accounting spreadsheets"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -162,23 +168,23 @@ name = "Bridging software"
 
 [[campaign.ad_group.keyword]]
 text = "mtd bridging software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat bridging software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "hmrc bridging software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "bridging software for vat returns"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "bridging software vat"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -206,31 +212,31 @@ name = "MTD VAT software"
 
 [[campaign.ad_group.keyword]]
 text = "making tax digital vat"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "making tax digital for vat"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat mtd"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "mtd compatible software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "mtd vat software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "mtd vat return"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "making tax digital software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -258,31 +264,31 @@ name = "Submit VAT return"
 
 [[campaign.ad_group.keyword]]
 text = "submit vat return"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "submit vat return online"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "file vat return online"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat return online"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "how to submit vat return"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "hmrc vat submission"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat return hmrc"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -310,23 +316,23 @@ name = "Free MTD VAT"
 
 [[campaign.ad_group.keyword]]
 text = "free mtd software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "free vat return software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "free mtd vat software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "cheapest mtd software"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "mtd software for small business"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -354,31 +360,31 @@ name = "Spreadsheet and Excel"
 
 [[campaign.ad_group.keyword]]
 text = "excel vat return template"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat return template"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat spreadsheet template"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "making tax digital excel spreadsheet"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "excel vat return"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat return spreadsheet"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [[campaign.ad_group.keyword]]
 text = "vat return excel spreadsheet"
-match_type = "PHRASE"
+match_type = "BROAD"
 
 [campaign.ad_group.ad]
 headlines = [
@@ -398,5 +404,45 @@ descriptions = [
   "Type the 9 boxes from your spreadsheet and send the return to HMRC under MTD. 3 free.",
   "Bridging software for MTD VAT. Figures stay in your spreadsheet. We send them to HMRC.",
   "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "VAT deadline"
+
+[[campaign.ad_group.keyword]]
+text = "vat return deadline"
+match_type = "BROAD"
+
+[[campaign.ad_group.keyword]]
+text = "vat return due date"
+match_type = "BROAD"
+
+[[campaign.ad_group.keyword]]
+text = "when is my vat return due"
+match_type = "BROAD"
+
+[[campaign.ad_group.keyword]]
+text = "vat deadline"
+match_type = "BROAD"
+
+[campaign.ad_group.ad]
+headlines = [
+  "Free Day Pass: See Due Dates",
+  "See When Your VAT Is Due",
+  "Due Dates Straight From HMRC",
+  "Free Day Pass, No Card",
+  "VAT Return Deadline Check",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "On HMRC's MTD Software List",
+  "Cancel Any Time",
+  "Sends Your Return To HMRC",
+]
+descriptions = [
+  "Take the free day pass, no card. Connect HMRC once and see your VAT return due dates.",
+  "Your VAT obligations come straight from HMRC: each period, its due date and its status.",
+  "Then file the return from your spreadsheet. 3 free, then 99p a month. Cancel any time.",
+  "Never guess the deadline. See your open VAT periods and due dates from HMRC. No card.",
 ]
 final_url = "https://submit.diyaccounting.co.uk/"

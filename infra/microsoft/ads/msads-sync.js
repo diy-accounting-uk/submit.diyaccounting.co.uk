@@ -8,8 +8,10 @@
 // that runs those actions. It makes no network call of its own: the apply takes an `api` function
 // (path, body, options) that infra/microsoft/ads/msads.js supplies.
 //
-// Only entities the file names are created or updated. Nothing is deleted: a live entity the file
-// does not name is listed as unmanaged and left alone.
+// Only entities the file names are created or updated. The one delete is a live keyword whose text
+// is declared in the same ad group with a different match type: it is replaced, so it is removed
+// after the declared keyword is added. Every other live entity the file does not name is listed as
+// unmanaged and left alone.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -299,9 +301,14 @@ function planAdGroup({ campaignName, campaignId }, adGroup, liveGroup, actions, 
   const missing = adGroup.keywords.filter((k) => !liveKeywords.has(`${k.matchType}|${k.text}`));
   if (missing.length > 0) actions.push({ kind: "create-keywords", campaignName, adGroup, adGroupId: liveGroup.id, keywords: missing });
   const declaredKeywords = new Set(adGroup.keywords.map((k) => `${k.matchType}|${k.text}`));
+  const declaredTexts = new Set(adGroup.keywords.map((k) => k.text));
+  const replaced = [];
   for (const k of liveGroup.keywords) {
-    if (!declaredKeywords.has(`${k.matchType}|${k.text}`)) unmanaged.push(`keyword "${k.text}" [${k.matchType}] in "${adGroup.name}"`);
+    if (declaredKeywords.has(`${k.matchType}|${k.text}`)) continue;
+    if (declaredTexts.has(k.text)) replaced.push(k);
+    else unmanaged.push(`keyword "${k.text}" [${k.matchType}] in "${adGroup.name}"`);
   }
+  if (replaced.length > 0) actions.push({ kind: "delete-keywords", campaignName, adGroup, adGroupId: liveGroup.id, keywords: replaced });
   const liveAd = liveGroup.ads.find((a) => a.type === "ResponsiveSearch");
   if (!liveAd) {
     actions.push({ kind: "create-ad", campaignName, adGroup, adGroupId: liveGroup.id });
@@ -404,6 +411,10 @@ export function describeAction(a) {
       return `update ad group "${a.adGroup.name}": ${a.differences.join("; ")}`;
     case "create-keywords":
       return `add ${a.keywords.length} keywords to ad group "${a.adGroup.name}"`;
+    case "delete-keywords": {
+      const replaced = a.keywords.map((k) => k.matchType + ' "' + k.text + '"').join(", ");
+      return `delete ${a.keywords.length} keywords of another match type from ad group "${a.adGroup.name}": ${replaced}`;
+    }
     case "create-ad":
       return `create the responsive search ad in ad group "${a.adGroup.name}"`;
     case "update-ad":
@@ -416,9 +427,14 @@ export function describeAction(a) {
 }
 
 export function formatPlan(plan) {
-  const lines = [`Plan: ${plan.actions.length} change(s), 0 deletes (apply never deletes)`];
-  for (const a of plan.actions)
-    lines.push(`  ${a.kind.startsWith("update") || a.kind === "enable-auto-tagging" ? "~" : "+"} ${describeAction(a)}`);
+  const deletes = plan.actions.filter((a) => a.kind === "delete-keywords").reduce((total, a) => total + a.keywords.length, 0);
+  const lines = [`Plan: ${plan.actions.length} change(s), ${deletes} deletes (only a keyword replaced by another match type is deleted)`];
+  for (const a of plan.actions) {
+    let mark = "+";
+    if (a.kind.startsWith("update") || a.kind === "enable-auto-tagging") mark = "~";
+    else if (a.kind.startsWith("delete")) mark = "-";
+    lines.push(`  ${mark} ${describeAction(a)}`);
+  }
   if (plan.actions.length === 0) lines.push("  The account matches the file.");
   for (const u of plan.unmanaged) lines.push(`  unmanaged, left alone: ${u}`);
   return lines.join("\n");
@@ -551,6 +567,15 @@ async function applyAction(a, { api, accountId, ctx }) {
         { AdGroupId: a.adGroupId, Keywords: a.keywords.map((k) => buildKeywordBody(k, a.adGroup)) },
         {},
         `AddKeywords ${a.adGroup.name}`,
+      );
+      return;
+    case "delete-keywords":
+      await call(
+        api,
+        "/Keywords",
+        { AdGroupId: a.adGroupId, KeywordIds: a.keywords.map((k) => k.id) },
+        { method: "DELETE" },
+        `DeleteKeywords ${a.adGroup.name}`,
       );
       return;
     case "create-ad":
