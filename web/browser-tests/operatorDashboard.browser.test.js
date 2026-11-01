@@ -1020,13 +1020,13 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("ends the page with the Operators, Family affiliates and Affiliates by group sections", async ({ page }) => {
+  test("ends the page with the Operators, Family affiliates, Affiliates by group and AWS links sections", async ({ page }) => {
     const snapshotBody = { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS };
     await setupRoutes(page, { snapshotBody });
     await loadDashboard(page);
 
     const panelIds = await page.locator("main section.objective[id$='Panel']").evaluateAll((nodes) => nodes.map((node) => node.id));
-    expect(panelIds.slice(-3)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"]);
+    expect(panelIds.slice(-4)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel", "awsLinksPanel"]);
 
     await expect(page.locator("#operatorsBody tr")).toHaveCount(2);
     await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText("boss@example.com");
