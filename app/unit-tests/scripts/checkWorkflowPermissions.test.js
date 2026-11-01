@@ -36,7 +36,6 @@ name: probe-test
 on:
   workflow_call:
 permissions:
-  id-token: write
   contents: read
 
 jobs:
@@ -155,16 +154,29 @@ describe("findViolations", () => {
     expect(findViolations(workflowsByFile)).toEqual([]);
   });
 
-  test("does not flag a called job with no permissions override, regardless of the called workflow's own default", () => {
-    // CALLED_WORKFLOW's top-level permissions ask for id-token: write, which
-    // CALLER_WORKFLOW_INSUFFICIENT's job does not grant — but no job in
-    // CALLED_WORKFLOW overrides permissions, so there is no independent request
-    // to check: the job simply inherits whatever the caller grants.
+  test("flags the called workflow's top-level permissions when the caller does not grant them", () => {
+    const calledTopLevelOnly = `
+name: probe-test
+on:
+  workflow_call:
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  behaviour-test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo hi
+`;
     const workflowsByFile = {
-      "probe-test.yml": parseWorkflow(CALLED_WORKFLOW),
+      "probe-test.yml": parseWorkflow(calledTopLevelOnly),
       "deploy.yml": parseWorkflow(CALLER_WORKFLOW_INSUFFICIENT),
     };
-    expect(findViolations(workflowsByFile)).toEqual([]);
+    const findings = findViolations(workflowsByFile);
+    expect(findings.map((f) => `${f.calledJobId} ${f.scope}:${f.neededLevel}`)).toEqual(["(top-level permissions) packages:write"]);
   });
 
   test("ignores a 'uses:' call to a file with no workflow_call trigger", () => {
