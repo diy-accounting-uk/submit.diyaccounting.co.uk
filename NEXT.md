@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-15aad7f** (PR #639's merge 15aad7f09).
+**Prod runs deployment prod-c974d08** (PR #654's merge c974d08d9).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -39,8 +39,6 @@ step.
 Facts several rows share. Every behaviour suite on the simulator lane takes the one simulator port: one suite at a time, under the lock `/tmp/submit-simulator.lock` (`lockf -k /tmp/submit-simulator.lock <suite>`; the lock is a file held with `lockf`, so a `mkdir` loop never acquires it). The latest Companies House review (00005D to 00005G, filed 2026-10-27; the judge passed all four) was cleaned from `target/` with the build output, so a fresh run writes the next one; the skills are `.claude/skills/companies-house-review/SKILL.md` and `.claude/skills/companies-house-judge/SKILL.md` (capabilities CH-17 and CH-18); B34c and CS-11b run them before a live filing. The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mcp-harness/<name>.json` (`?script=<name>`); its call endpoint `/api/v1/dev/mcp-harness/call` exists on the local Express server only (`app/bin/server.js`), so a harness proof runs locally (MCP1). The hosted MCP tools read the session's HMRC grant through `hmrcAccessTokenFor` in `mcp/lib/submit-tools.js` (MCP1). The `-ci` behaviour scripts run through `scripts/use-deployed-base-url.js`, which opens the set's own host so the Cognito callback keeps the page's `sessionStorage` state.
 
 ## In flight
-
-- [ ] **DEPPR. The Dependabot PRs opened 2026-11-01 (#640 to #653).** dotenv stays at 17 because dotenv 18's own `dotenv` binary takes the name of dotenv-cli's, which 168 `npx dotenv -e` scripts call. **Now**: PR #654 on `claude/typhoon-httpcore-stable` carries all of them in four commits (httpcore5 to stable 5.4.4 for #642; Maven #640, #641; Actions #643 to #648; npm #649 to #651, #653); local maven verify, unit, mcp, ESLint, Prettier and Spotless pass, and the browser suite and the action majors are proven by its CI and deploy. After the merge, close #640 to #651 and #653 that Dependabot leaves open. **Source**: Dependabot. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~35 files.
 
 - [ ] **DEP133. Spreadsheets Dependabot alert 133: minimatch below 11.0.1, dev tools only.** https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/security/dependabot/133 (GHSA-g3hv-75wg-m249, the same advisory as DEP183). **Now**: commit 05098b3eb on `claude/ops-minimatch-override` in `../spreadsheets.diyaccounting.co.uk/` (worktree `.claude/worktrees/ops-minimatch`) adds scoped overrides `"minimatch": "^11.0.1"` under `eslint`, `@eslint/config-array` and `@sentry/bundler-plugins`, so `node_modules/minimatch` is 11.0.3; it is pushing through the pre-push hook, then a spreadsheets PR. The alert stays open on one copy, `node_modules/glob/node_modules/minimatch` 3.1.5, under `glob@7.2.3` from `globby@7.1.1` from `pa11y-ci@5.0.0` (the newest release, `globby ~7.1.1`); a global override to 11 breaks `glob@7` (`glob.sync` throws in `glob/sync.js`). That remainder waits on a pa11y-ci release without `glob@7`. **Source**: spreadsheets Dependabot alert 133. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files (spreadsheets).
 
