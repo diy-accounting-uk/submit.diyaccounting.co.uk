@@ -107,6 +107,12 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
     expect(mockSend.mock.calls[0][0].params.Key).toEqual({ pk: "redemption#code-1#hash-1" });
   });
 
+  test("getRedemption returns the stored redemption item when the account redeemed the pass", async () => {
+    const item = { pk: "redemption#code-1#hash-1", code: "code-1", redeemedBy: "hash-1" };
+    mockSend.mockResolvedValue({ Item: item });
+    expect(await getRedemption("code-1", "hash-1")).toEqual(item);
+  });
+
   test("getAffiliate reads the affiliate item of a referrer", async () => {
     mockSend.mockResolvedValue({ Item: { pk: "affiliate#ref-1", tier: "casual", state: "approved" } });
     expect((await getAffiliate("ref-1")).tier).toBe("casual");

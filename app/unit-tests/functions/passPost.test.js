@@ -9,12 +9,14 @@ import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilder
 const mockRedeemPass = vi.fn();
 const mockGetPassRecord = vi.fn();
 const mockClaimReferral = vi.fn();
+const mockGetRedemption = vi.fn();
 const mockReleaseReferral = vi.fn();
 const mockRecordRedemption = vi.fn();
 vi.mock("@app/services/passService.js", () => ({
   redeemPass: (...args) => mockRedeemPass(...args),
   getPassRecord: (...args) => mockGetPassRecord(...args),
   claimReferral: (...args) => mockClaimReferral(...args),
+  getRedemption: (...args) => mockGetRedemption(...args),
   releaseReferral: (...args) => mockReleaseReferral(...args),
   recordRedemption: (...args) => mockRecordRedemption(...args),
 }));
@@ -69,6 +71,8 @@ describe("passPost", () => {
     mockGetPassRecord.mockResolvedValue({ code: "test-pass-code", passTypeId: "day-guest-pass" });
     mockClaimReferral.mockReset();
     mockClaimReferral.mockResolvedValue(true);
+    mockGetRedemption.mockReset();
+    mockGetRedemption.mockResolvedValue(null);
     mockReleaseReferral.mockReset();
     mockRecordRedemption.mockReset();
     mockGrantBundle.mockReset();
@@ -252,6 +256,19 @@ describe("passPost", () => {
       expect(mockRedeemPass).not.toHaveBeenCalled();
       expect(mockGrantBundle).not.toHaveBeenCalled();
       expect(mockRecordRedemption).not.toHaveBeenCalled();
+    });
+
+    test("answers already_redeemed when this account has redeemed this pass before", async () => {
+      mockGetRedemption.mockResolvedValue({ code: referralPass.code, redeemedBy: "hashed_test-user-sub" });
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: referralPass.code }));
+
+      expect(result.statusCode).toBe(409);
+      expect(JSON.parse(result.body).reason).toBe("already_redeemed");
+      expect(mockGetRedemption).toHaveBeenCalledWith(referralPass.code, "hashed_test-user-sub");
+      expect(mockClaimReferral).not.toHaveBeenCalled();
+      expect(mockRedeemPass).not.toHaveBeenCalled();
+      expect(mockGrantBundle).not.toHaveBeenCalled();
     });
 
     test("refuses a second referral redemption by the same account", async () => {

@@ -509,6 +509,34 @@ export async function ensureCapacityTableExists(tableName, endpoint) {
   }
 }
 
+// Create subscriptions table if it doesn't exist. Key schema matches dynamoDbSubscriptionRepository.js.
+export async function ensureSubscriptionsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring subscriptions table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const dynamodb = new DynamoDBClient({
+    endpoint,
+    region: "us-east-1",
+    credentials: { accessKeyId: "dummy", secretAccessKey: "dummy" },
+  });
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+  } catch (err) {
+    if (err.name !== "ResourceNotFoundException") {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
+    }
+    await dynamodb.send(
+      new CreateTableCommand({
+        TableName: tableName,
+        KeySchema: [{ AttributeName: "pk", KeyType: "HASH" }],
+        AttributeDefinitions: [{ AttributeName: "pk", AttributeType: "S" }],
+        BillingMode: "PAY_PER_REQUEST",
+      }),
+    );
+    logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+  }
+}
+
 // Every table the local server needs, keyed by the environment variable that names it. The
 // behaviour-test helper and the simulator start script both create these through
 // ensureConfiguredTablesExist, so the two cannot drift apart.
@@ -518,6 +546,7 @@ const CONFIGURED_TABLES = [
   ["RECEIPTS_DYNAMODB_TABLE_NAME", ensureReceiptsTableExists],
   ["PASSES_DYNAMODB_TABLE_NAME", ensurePassesTableExists],
   ["COMMISSIONS_DYNAMODB_TABLE_NAME", ensureCommissionsTableExists],
+  ["SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", ensureSubscriptionsTableExists],
   ["BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", ensureCapacityTableExists],
   ["PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", ensurePracticeClientsTableExists],
   ["MCP_SESSIONS_DYNAMODB_TABLE_NAME", ensureMcpSessionsTableExists],

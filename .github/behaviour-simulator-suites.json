@@ -86,6 +86,11 @@
     "script": "test:passRedemptionBehaviour-simulator"
   },
   {
+    "id": "behaviour-test-simulator-commission-journeys",
+    "suite": "commissionJourneysBehaviour",
+    "script": "test:commissionJourneysBehaviour-simulator"
+  },
+  {
     "id": "behaviour-test-simulator-token-enforcement",
     "suite": "tokenEnforcementBehaviour",
     "script": "test:tokenEnforcementBehaviour-simulator"

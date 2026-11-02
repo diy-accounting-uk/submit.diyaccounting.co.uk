@@ -27,7 +27,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { claimReferral, getPassRecord, recordRedemption, redeemPass, releaseReferral } from "../../services/passService.js";
+import { claimReferral, getPassRecord, getRedemption, recordRedemption, redeemPass, releaseReferral } from "../../services/passService.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
@@ -87,6 +87,14 @@ export async function ingestHandler(event) {
           headers: responseHeaders,
           message: "You cannot redeem a pass you generated.",
           error: { reason: "own_pass" },
+        });
+      }
+      if (await getRedemption(code, hashedSub)) {
+        return http409ConflictResponse({
+          request,
+          headers: responseHeaders,
+          message: "This account has already redeemed this pass.",
+          error: { reason: "already_redeemed" },
         });
       }
       referralClaimed = await claimReferral(hashedSub, code);
