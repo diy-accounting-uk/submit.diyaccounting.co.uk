@@ -45,6 +45,16 @@ function isHourly(state) {
   return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
 }
 
+// Lines that start hidden, by chart id and mode id; the legend still shows them.
+const INITIALLY_HIDDEN_SERIES = {
+  visitors: { sessions: ["synthetic", "bot", "system"] },
+};
+
+function initiallyHidden(chart, modeIndex) {
+  const byMode = INITIALLY_HIDDEN_SERIES[chart.id];
+  return new Set((byMode && byMode[chart.modes[modeIndex].id]) || []);
+}
+
 function activeSeries(state) {
   const mode = state.chart.modes[state.modeIndex];
   return isHourly(state) ? mode.hourly.series : mode.series;
@@ -390,7 +400,7 @@ function renderChartCard(chart, days, hours) {
   card.appendChild(heading);
   decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
 
-  const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: new Set(), card };
+  const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: initiallyHidden(chart, 0), card };
 
   if (chart.modes.length > 1) {
     const tabs = document.createElement("div");
@@ -406,7 +416,7 @@ function renderChartCard(chart, days, hours) {
       button.setAttribute("aria-pressed", String(index === 0));
       button.addEventListener("click", () => {
         state.modeIndex = index;
-        state.hidden = new Set();
+        state.hidden = initiallyHidden(chart, index);
         tabs.querySelectorAll("button").forEach((other, otherIndex) => other.setAttribute("aria-pressed", String(otherIndex === index)));
         syncRangeSwitch(state);
         drawLegend(state);

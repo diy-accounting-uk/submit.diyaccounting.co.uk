@@ -416,6 +416,10 @@ const FIXTURE_DAILY_CHARTS = {
         "Bot",
         "System",
       ]);
+      visitors.modes[0].id = "sessions";
+      ["operator", "authenticated", "human", "synthetic", "bot", "system"].forEach((kind, index) => {
+        visitors.modes[0].series[index + 1].id = kind;
+      });
       visitors.modes[0].hourly = {
         series: [
           hourlySeries("operator", "Operator", 1),
@@ -1358,7 +1362,7 @@ test.describe("Operator Dashboard", () => {
         "Retention",
       ]);
       const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(7);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(4);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
     });
@@ -1439,6 +1443,25 @@ test.describe("Operator Dashboard", () => {
       }
     });
 
+    test("starts the Visitors graph with System, Synthetic and Bot hidden and shows one from its legend button", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
+      for (const kind of ["system", "synthetic", "bot"]) {
+        await expect(visitors.locator(`.chart-legend-item[data-series-id="${kind}"]`)).toBeVisible();
+        await expect(visitors.locator(`.chart-legend-item[data-series-id="${kind}"]`)).toHaveAttribute("aria-pressed", "false");
+      }
+      for (const kind of ["operator", "authenticated", "human"]) {
+        await expect(visitors.locator(`.chart-legend-item[data-series-id="${kind}"]`)).toHaveAttribute("aria-pressed", "true");
+      }
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(4);
+
+      await visitors.locator('.chart-legend-item[data-series-id="bot"]').click();
+      await expect(visitors.locator('.chart-legend-item[data-series-id="bot"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(5);
+    });
+
     test("hides and shows a line from its legend button", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
@@ -1471,7 +1494,7 @@ test.describe("Operator Dashboard", () => {
       await expect(daily).toHaveText("90 days, by day");
       await expect(hourly).toHaveText("7 days, by hour");
       await expect(daily).toHaveAttribute("aria-pressed", "true");
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(7);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(4);
 
       await hourly.click();
       await expect(hourly).toHaveAttribute("aria-pressed", "true");
