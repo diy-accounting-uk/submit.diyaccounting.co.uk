@@ -28,7 +28,7 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
-import { createConnectAccount, createOnboardingLink } from "../../services/affiliateConnect.js";
+import { collectsRequirementsInApplication, createConnectAccount, createOnboardingLink } from "../../services/affiliateConnect.js";
 import { getAffiliate, startAffiliateApplication } from "../../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationPost.js" });
@@ -73,10 +73,11 @@ export async function ingestHandler(event) {
       });
     }
 
+    const platformCollected = collectsRequirementsInApplication({ test });
     const stripe = await getStripeClient({ test: item?.stripeAccountId ? item.stripeTest === true : test });
     let applicationStarted = false;
     if (!item?.stripeAccountId) {
-      const account = await createConnectAccount(stripe, { referrerHash });
+      const account = await createConnectAccount(stripe, { referrerHash, platformCollected });
       applicationStarted = await startAffiliateApplication({
         referrerHash,
         tier: APPLICATION_TIER,
@@ -88,7 +89,7 @@ export async function ingestHandler(event) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
-    const link = await createOnboardingLink(stripe, { accountId: item.stripeAccountId, baseUrl });
+    const onboardingUrl = platformCollected ? null : (await createOnboardingLink(stripe, { accountId: item.stripeAccountId, baseUrl })).url;
 
     if (applicationStarted) {
       await publishActivityEvent({
@@ -100,7 +101,7 @@ export async function ingestHandler(event) {
       });
     }
 
-    return http200OkResponse({ request, headers: responseHeaders, data: { state: item.state, url: link.url } });
+    return http200OkResponse({ request, headers: responseHeaders, data: { state: item.state, url: onboardingUrl } });
   } catch (error) {
     logger.error({ message: "Error starting affiliate application", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({

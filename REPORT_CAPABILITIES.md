@@ -187,7 +187,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application: use when a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
     - [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect: use when an approved affiliate on a tier with `payout = "connect"` has payable cash commission lines that must reach their Stripe Connect account, or a paid line was reversed and must come off the next payout.
     - [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events) Run the commission journeys on ci with Stripe test-mode events: use when the commission ledger must be proved against real Stripe test-mode invoices, renewals, refunds, disputes and cancels on ci.
-    - [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding) Start the ci commission affiliate's Stripe Connect onboarding: use when the commission journeys on ci report that the affiliate lane has no finished Stripe Connect onboarding.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -1635,7 +1634,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application · [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect · [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events) Run the commission journeys on ci with Stripe test-mode events · [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding) Start the ci commission affiliate's Stripe Connect onboarding
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application · [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect · [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events) Run the commission journeys on ci with Stripe test-mode events
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -2161,7 +2160,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application
 - [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect
 - [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events) Run the commission journeys on ci with Stripe test-mode events
-- [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding) Start the ci commission affiliate's Stripe Connect onboarding
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2281,17 +2279,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `behaviour-tests/commissionJourneysStripe.behaviour.test.js`; `behaviour-tests/helpers/commissionCi.js:cleanup`
 - **Files:** behaviour-tests/commissionJourneysStripe.behaviour.test.js, behaviour-tests/helpers/commissionCi.js, app/unit-tests/behaviour-helpers/commissionCi.test.js, playwright.config.js
 - **Keywords:** commission, stripe test clock, ledger, release, as-of, referral, affiliate, ci journeys
-- **Related:** BILL-46, BILL-47, BILL-56
-
-#### BILL-56 Start the ci commission affiliate's Stripe Connect onboarding
-
-- **Use when:** the commission journeys on ci report that the affiliate lane has no finished Stripe Connect onboarding.
-- **Does:** commission-ci-affiliate-onboarding.js ensures the commission-affiliate lane and signs it in. It calls the affiliate application route and prints the Stripe onboarding link. Finish the link once with Stripe's test values.
-- **Run:** `AWS_PROFILE=diya-submit-ci DIY_SUBMIT_BASE_URL=https://ci-submit.diyaccounting.co.uk/ node scripts/commission-ci-affiliate-onboarding.js`
-- **Entry:** `scripts/commission-ci-affiliate-onboarding.js:main`
-- **Files:** scripts/commission-ci-affiliate-onboarding.js, scripts/commission-ci-clock-spike.js, behaviour-tests/helpers/commissionCi.js
-- **Keywords:** affiliate, stripe connect, onboarding, commission, ci, test mode
-- **Related:** BILL-52, BILL-53, BILL-55
+- **Related:** BILL-46, BILL-47, BILL-52
 
 ## Operations and CI (OPS)
 
@@ -6381,7 +6369,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6700,7 +6688,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - checkout.session.completed: [BILL-28](#bill-28-process-stripe-webhook-events)
 - checkpass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkpoint: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
-- ci: [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding)
 - ci apex: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - ci branch deploys: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - ci deployments: [DEV-27](#dev-27-render-the-open-work-board)
@@ -6780,7 +6767,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
@@ -7833,7 +7820,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - old logs: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - on-demand backup: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - on-pass-on-subscription: [BILL-10](#bill-10-redeem-a-pass)
-- onboarding: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding)
+- onboarding: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - onboarding return: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - one-stop dashboard: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - one-stop objectives: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -8463,7 +8450,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - streamable http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
-- stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding)
+- stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - stripe events resend: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -8565,7 +8552,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
 - test discovery: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
-- test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-56](#bill-56-start-the-ci-commission-affiliates-stripe-connect-onboarding)
+- test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
