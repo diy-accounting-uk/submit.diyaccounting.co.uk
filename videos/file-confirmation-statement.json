@@ -54,7 +54,7 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "Filed straight to Companies House through its XML Gateway.",
+          "caption": "A sandbox preview against Companies House's test filing service.",
           "headline": "Confirmation statements",
           "keyWord": "statements"
         },
@@ -124,7 +124,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Confirmation Statement (Companies House)')",
+          "until": "button:has-text('File Confirmation Statement (Companies House, sandbox)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -142,7 +142,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "File Confirmation Statement (Companies House)"
+            "name": "File Confirmation Statement (Companies House, sandbox)"
           },
           "expectsNavigation": true,
           "caption": "Open File Confirmation Statement to find the company.",

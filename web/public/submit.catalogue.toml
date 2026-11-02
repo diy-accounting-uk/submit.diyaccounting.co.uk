@@ -495,7 +495,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-micro-entity-accounts"
-name = "File Micro-entity Accounts (Companies House)"
+name = "File Micro-entity Accounts (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -505,7 +505,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "file-small-company-accounts"
-name = "File Small Company Accounts (Companies House)"
+name = "File Small Company Accounts (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -525,7 +525,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "file-confirmation-statement"
-name = "File Confirmation Statement (Companies House)"
+name = "File Confirmation Statement (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
