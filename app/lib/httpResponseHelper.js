@@ -35,6 +35,21 @@ export function http200OkResponse({ request, headers, data }) {
   });
 }
 
+/**
+ * A 200 answer whose body is binary, in the Lambda proxy shape: the bytes base64 encoded and
+ * `isBase64Encoded` true. The Content-Type comes from the caller.
+ */
+export function http200OkBinaryResponse({ request, headers, contentType, data }) {
+  const response = httpResponse({
+    statusCode: 200,
+    request,
+    headers: { ...(headers || {}), "Content-Type": contentType },
+    data: {},
+    levelledLogger: logger.info.bind(logger),
+  });
+  return { ...response, body: Buffer.from(data).toString("base64"), isBase64Encoded: true };
+}
+
 export function http201CreatedResponse({ request, headers, data }) {
   return httpResponse({
     statusCode: 201,

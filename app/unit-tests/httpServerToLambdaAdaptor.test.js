@@ -164,6 +164,17 @@ describe("unit: httpServerToLambdaAdaptor.buildHttpResponseFromLambdaResult", ()
     expect(res._state.sent).toBe("not-json");
   });
 
+  it("sends decoded bytes when the lambda result is base64 encoded", () => {
+    const res = makeStubResponse();
+    buildHttpResponseFromLambdaResult(
+      { headers: { "Content-Type": "image/png" }, statusCode: 200, body: Buffer.from([1, 2, 3]).toString("base64"), isBase64Encoded: true },
+      res,
+    );
+    expect(res._state.status).toBe(200);
+    expect(Buffer.isBuffer(res._state.sent)).toBe(true);
+    expect([...res._state.sent]).toEqual([1, 2, 3]);
+  });
+
   it("ends without body for 304 Not Modified", () => {
     const res = makeStubResponse();
     buildHttpResponseFromLambdaResult({ headers: { a: "b" }, statusCode: 304, body: "{}" }, res);
