@@ -159,7 +159,7 @@ export const AVAILABILITY = [
     web: "companies-house/fileConfirmationStatement.html",
     activity: "file-confirmation-statement",
     video: "P0aG_mLfhZI",
-    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox"], NOT_OFFERED],
+    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production"], NOT_OFFERED],
   },
   {
     filing: "Companies House PSC verification statement",

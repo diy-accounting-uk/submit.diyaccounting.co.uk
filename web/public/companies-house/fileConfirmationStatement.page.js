@@ -529,6 +529,7 @@ function buildStatementPayload() {
     stateConfirmationAccepted: document.getElementById("stateConfirmation").checked,
     directors: readDirectors(),
     officers: currentOfficers.map((officer) => ({ identityVerificationDetails: officer.identityVerificationDetails })),
+    shareholdings,
   };
 
   if (!deepEqual(sicCodes, originalSicCodes)) {
@@ -536,9 +537,6 @@ function buildStatementPayload() {
   }
   if (!deepEqual(statementOfCapital, originalStatementOfCapital)) {
     payload.statementOfCapital = statementOfCapital;
-  }
-  if (!deepEqual(shareholdings, originalShareholdings)) {
-    payload.shareholdings = shareholdings;
   }
   if (registeredEmailAddress && registeredEmailAddress !== originalRegisteredEmailAddress) {
     payload.registeredEmailAddress = registeredEmailAddress;

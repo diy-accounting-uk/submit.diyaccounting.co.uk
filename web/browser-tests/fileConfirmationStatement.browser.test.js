@@ -318,6 +318,31 @@ test.describe("File Confirmation Statement page", () => {
     expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
   });
 
+  test("sends the register's shareholdings on a statement where nothing changed", async ({ page }) => {
+    setupPage(page);
+    const registerHolding = {
+      shareClass: "ORDINARY",
+      numberHeld: 10,
+      shareholders: [{ forename: "ANTONY", surname: "CARTWRIGHT" }],
+    };
+    await setupRoutes(page, { filingData: { ...FILING_DATA, shareholdings: [registerHolding] } });
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls).toHaveLength(1);
+    expect(previewCalls[0].shareholdings).toHaveLength(1);
+    expect(previewCalls[0].shareholdings[0].shareClass).toBe("ORDINARY");
+    expect(previewCalls[0].shareholdings[0].shareholders[0].surname).toBe("CARTWRIGHT");
+  });
+
   test("shows the fee amount and a 'Pay and submit' label on the preview when the payment period is unpaid", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false } });
