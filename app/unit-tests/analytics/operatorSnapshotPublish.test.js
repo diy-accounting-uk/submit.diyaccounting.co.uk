@@ -217,6 +217,7 @@ describe("operatorSnapshotPublish", () => {
     process.env.ATHENA_WORK_GROUP_NAME = "test-workgroup";
     process.env.GLUE_DATABASE_NAME = "test_env_analytics";
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-env-analytics-lake";
+    process.env.SECURITY_SERVICES_ENABLED = "true";
     process.env.ATHENA_POLL_INTERVAL_MS = "1";
     process.env.ATHENA_POLL_MAX_ATTEMPTS = "3";
     process.env.ATHENA_THROTTLE_BACKOFF_MS = "1";
@@ -1508,6 +1509,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1543,6 +1545,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1589,6 +1592,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1609,6 +1613,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1633,6 +1638,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1665,6 +1671,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1688,10 +1695,71 @@ describe("operatorSnapshotPublish", () => {
       expect(snapshot.failedObservationCount).toBe(1);
     });
 
+    test("with the security lake not built, the security observations are not queried, are marked not collected and do not count as failing", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "ci",
+        region: "eu-west-2",
+        athenaWorkGroupName: "wg",
+        githubRepo: "r",
+        ga4PropertyId: null,
+        securityServicesEnabled: false,
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const queries = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+      for (const table of ["security_hub_findings", "guardduty_findings", "github_alerts"]) {
+        expect(queries.some((q) => q.includes(table))).toBe(false);
+      }
+
+      const security = snapshot.objectives.find((o) => o.id === "security");
+      expect(security.observations.map((o) => o.id)).toEqual([
+        "security-hub-open-findings",
+        "security-hub-critical-findings",
+        "guardduty-open-findings",
+        "github-open-alerts",
+      ]);
+      for (const observation of security.observations) {
+        expect(observation.notCollected).toBe(true);
+        expect(observation.today).toEqual({ value: null });
+        expect(observation.last30).toEqual({ value: null, trend: null });
+      }
+      const uptime = snapshot.objectives.find((o) => o.id === "uptime");
+      expect(uptime.observations.every((o) => o.notCollected === undefined && o.last30.value === 10)).toBe(true);
+      expect(snapshot.failedObservationCount).toBe(0);
+    });
+
+    test("with the security lake built, a security observation is not marked not collected", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "prod",
+        region: "eu-west-2",
+        athenaWorkGroupName: "wg",
+        githubRepo: "r",
+        ga4PropertyId: null,
+        securityServicesEnabled: true,
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const security = snapshot.objectives.find((o) => o.id === "security");
+      expect(security.observations.every((o) => o.notCollected === undefined && o.last30.value === 10)).toBe(true);
+    });
+
     test("a failing view query answers null for every observation of that view and counts each one", async () => {
       mockQueriesWithOneFailing("FROM   v_dora_runs_daily", ["10", "5", "30", "20"]);
 
-      const context = { envName: "test", region: "eu-west-2", athenaWorkGroupName: "wg", githubRepo: "r", ga4PropertyId: null };
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "wg",
+        githubRepo: "r",
+        securityServicesEnabled: true,
+        ga4PropertyId: null,
+      };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const uptime = snapshot.objectives.find((o) => o.id === "uptime");
@@ -1719,6 +1787,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1751,6 +1820,7 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         athenaWorkGroupName: "test-env-analytics",
         githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        securityServicesEnabled: true,
         ga4PropertyId: "523400333",
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
@@ -1771,6 +1841,7 @@ describe("operatorSnapshotPublish", () => {
       region: "eu-west-2",
       athenaWorkGroupName: "test-env-analytics",
       githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+      securityServicesEnabled: true,
       ga4PropertyId: "523400333",
     };
 
@@ -1996,6 +2067,7 @@ describe("operatorSnapshotPublish", () => {
       region: "eu-west-2",
       athenaWorkGroupName: "test-env-analytics",
       githubRepo: "r",
+      securityServicesEnabled: true,
       ga4PropertyId: null,
     };
 
@@ -2179,6 +2251,20 @@ describe("operatorSnapshotPublish", () => {
     test("requires its environment variables", async () => {
       delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
       await expect(handler()).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
+    });
+
+    test("requires SECURITY_SERVICES_ENABLED to be true or false", async () => {
+      delete process.env.SECURITY_SERVICES_ENABLED;
+      await expect(handler()).rejects.toThrow(/SECURITY_SERVICES_ENABLED/);
+    });
+
+    test("with SECURITY_SERVICES_ENABLED false, a missing security table does not fail the run", async () => {
+      process.env.SECURITY_SERVICES_ENABLED = "false";
+      mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
+
+      const result = await handler();
+
+      expect(result).toEqual({ environment: "test", objectives: 10 });
     });
 
     test("builds and writes a whole snapshot", async () => {

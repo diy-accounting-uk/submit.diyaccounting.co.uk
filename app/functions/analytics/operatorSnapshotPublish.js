@@ -856,6 +856,9 @@ export async function buildMarketingBudgetInputs({ workGroup, database }) {
  * objectives publishing. Each failure is logged at warn level, and every observation it covers
  * is counted in the returned snapshot's failedObservationCount, so the caller can still surface it.
  *
+ * An observation that requires the security lake is not queried where context.securityServicesEnabled
+ * is false: it publishes null windows with notCollected true and is not a failure.
+ *
  * @param {{workGroup: string, database: string, context: object}} params
  * @returns {Promise<object>}
  */
@@ -877,7 +880,10 @@ export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
 }
 
 export async function buildSnapshot({ workGroup, database, context }) {
-  const allObservations = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations);
+  const isNotCollected = (observation) => observation.requiresSecurityLake === true && !context.securityServicesEnabled;
+  const allObservations = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations).filter(
+    (observation) => !isNotCollected(observation),
+  );
 
   const [fast, windowed] = await Promise.all([
     runObservationBatches({
@@ -931,6 +937,9 @@ export async function buildSnapshot({ workGroup, database, context }) {
       };
       if (windows.dataSince) {
         observationResult.dataSince = windows.dataSince;
+      }
+      if (isNotCollected(observation)) {
+        observationResult.notCollected = true;
       }
       return observationResult;
     });
@@ -2187,9 +2196,14 @@ export async function handler() {
   if (!workGroup) throw new Error("ATHENA_WORK_GROUP_NAME environment variable is required");
   if (!database) throw new Error("GLUE_DATABASE_NAME environment variable is required");
   if (!lakeBucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
+  const securityServicesEnabled = process.env.SECURITY_SERVICES_ENABLED;
+  if (securityServicesEnabled !== "true" && securityServicesEnabled !== "false") {
+    throw new Error("SECURITY_SERVICES_ENABLED environment variable must be true or false");
+  }
 
   const context = {
     envName,
+    securityServicesEnabled: securityServicesEnabled === "true",
     region: process.env.AWS_REGION || "eu-west-2",
     athenaWorkGroupName: workGroup,
     githubRepo: process.env.GITHUB_REPO || "diy-accounting-uk/submit.diyaccounting.co.uk",

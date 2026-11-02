@@ -145,6 +145,9 @@ public class AnalyticsStack extends Stack {
 
         String baseImageTag();
 
+        /** Whether SecurityLakeStack builds the security lake tables in this environment. */
+        boolean securityServicesEnabled();
+
         static ImmutableAnalyticsStackProps.Builder builder() {
             return ImmutableAnalyticsStackProps.builder();
         }
@@ -845,6 +848,7 @@ public class AnalyticsStack extends Stack {
                         .passesTableName(sharedNames.data.passesTableName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .securityServicesEnabled(props.securityServicesEnabled())
                         .build());
 
         new PassFiguresPublish(

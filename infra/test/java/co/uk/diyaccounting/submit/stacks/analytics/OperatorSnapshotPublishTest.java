@@ -27,6 +27,10 @@ import software.amazon.awscdk.services.s3.Bucket;
 class OperatorSnapshotPublishTest {
 
     private Template synthOperatorSnapshotPublish(String envName) {
+        return synthOperatorSnapshotPublish(envName, !"ci".equals(envName));
+    }
+
+    private Template synthOperatorSnapshotPublish(String envName, boolean securityServicesEnabled) {
         var sharedNames = SubmitSharedNames.forDocs();
         App app = new App();
         Stack stack = new Stack(
@@ -54,6 +58,7 @@ class OperatorSnapshotPublishTest {
                 .passesTableName(sharedNames.data.passesTableName)
                 .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                .securityServicesEnabled(securityServicesEnabled)
                 .build();
 
         new OperatorSnapshotPublish(stack, props);
@@ -77,6 +82,22 @@ class OperatorSnapshotPublishTest {
                     "AWS::Lambda::Function",
                     Match.objectLike(Map.of("FunctionName", "docs-env-operator-snapshot-publish")));
         }
+    }
+
+    @Test
+    void lambdaGetsTheSecurityServicesFlagItWasBuiltWith() {
+        assertSecurityServicesEnvironment(synthOperatorSnapshotPublish("ci", false), "false");
+        assertSecurityServicesEnvironment(synthOperatorSnapshotPublish("prod", true), "true");
+    }
+
+    private void assertSecurityServicesEnvironment(Template template, String expected) {
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        "docs-env-operator-snapshot-publish",
+                        "Environment",
+                        Map.of("Variables", Match.objectLike(Map.of("SECURITY_SERVICES_ENABLED", expected))))));
     }
 
     @Test

@@ -3,7 +3,9 @@
 
 // app/lib/operatorSnapshot/securityObjective.js
 //
-// The security objective's observations for the operator snapshot.
+// The security objective's observations for the operator snapshot. Each reads a table the
+// SecurityLakeStack builds, which exists only where securityServicesEnabled is true, so each is
+// marked requiresSecurityLake and the snapshot publishes it as not collected elsewhere.
 
 import { buildAthenaSavedQueryLink } from "../consoleLinks.js";
 
@@ -20,6 +22,7 @@ export const securityObjective = {
       id: "security-hub-open-findings",
       label: "Security Hub open findings",
       unit: "count",
+      requiresSecurityLake: true,
       view: "security_hub_findings",
       dayColumn: "dt",
       valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END",
@@ -30,6 +33,7 @@ export const securityObjective = {
       id: "security-hub-critical-findings",
       label: "Security Hub critical findings",
       unit: "count",
+      requiresSecurityLake: true,
       view: "security_hub_findings",
       dayColumn: "dt",
       valueExpr: "CASE WHEN finding_id IS NOT NULL AND severity_label = 'CRITICAL' THEN 1 ELSE 0 END",
@@ -40,6 +44,7 @@ export const securityObjective = {
       id: "guardduty-open-findings",
       label: "GuardDuty open findings",
       unit: "count",
+      requiresSecurityLake: true,
       view: "guardduty_findings",
       dayColumn: "dt",
       valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END",
@@ -50,6 +55,7 @@ export const securityObjective = {
       id: "github-open-alerts",
       label: "GitHub open alerts",
       unit: "count",
+      requiresSecurityLake: true,
       view: "github_alerts",
       dayColumn: "dt",
       valueExpr: "count",

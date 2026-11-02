@@ -46,6 +46,7 @@ const COMPANY_CONTRIBUTION_ROWS = [
 const RESERVE_FLOOR_GBP = 2000;
 
 const NOT_MEASURED = "not measured";
+const NOT_COLLECTED = "not collected";
 const NONE = "none";
 const NO_BASE = "no base";
 const NOT_APPLICABLE = "n/a";
@@ -471,6 +472,11 @@ function windowCell(observation, key, unavailableTitle) {
   if (window && window.notApplicable) {
     cell.textContent = NOT_APPLICABLE;
     cell.title = "This figure is reported by month or quarter, so it has no daily window.";
+    return cell;
+  }
+  if (observation && observation.notCollected) {
+    cell.textContent = NOT_COLLECTED;
+    cell.title = "This environment does not run the source of this figure.";
     return cell;
   }
   cell.textContent = formatWindowValue(unit, window);
