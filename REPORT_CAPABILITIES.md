@@ -5409,12 +5409,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-34 Clean up stale deployments and branches
 
 - **Use when:** the operator says clean, clean up, or tidy the repo.
-- **Does:** clean gathers five categories of leftover state: stale deployments, merged branches, worktrees, logs, test artefacts and build output. It shows them together and removes every category the operator agrees to in one go. It then fetches, switches to main and pulls, once nothing is in progress.
+- **Does:** clean gathers leftover state in submit and in every sibling repository of the workspace: stale deployments, merged branches, worktrees, logs, test artefacts and build output. It also gathers what needs attention across the estate: unread inbox messages, open board items, GitHub issues, failing workflows, open pull requests, security alerts, and unpushed or uncommitted work. It shows them together, removes or closes every category the operator agrees to in one go, and brings each repository back to main once nothing is in progress.
 - **Run:** `/clean`
 - **Entry:** `.claude/skills/clean/SKILL.md`
 - **Files:** .claude/skills/clean/SKILL.md
-- **Keywords:** clean, stale deployment sweep, merged branch cleanup, worktree removal, build output cleanup, tidy repo
-- **Related:** DEV-22
+- **Keywords:** clean, stale deployment sweep, merged branch cleanup, worktree removal, build output cleanup, tidy repo, sibling repositories, inbox, dependabot, code scanning, failing workflows, unpushed commits
+- **Related:** DEV-22, DEV-27
 
 #### DEV-35 Cool down an overloaded batch
 
@@ -6766,6 +6766,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch metrics: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
 - cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
+- code scanning: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - codes entry: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - codes link: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -6969,7 +6970,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - demo video: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
-- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
+- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - dependabot alerts: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - dependency order: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
@@ -7210,6 +7211,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fail fast: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - failed requests: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - failed rules metric: [DATA-11](#data-11-run-glue-data-quality-checks)
+- failing workflows: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - faq search: [SITE-10](#site-10-serve-general-site-pages)
@@ -7490,6 +7492,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - in-flight items: [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - in-memory store: [DEV-01](#dev-01-run-the-http-simulator-server)
 - in-page script: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
+- inbox: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - incident response: [OPS-64](#ops-64-runbook-information-security-operations)
 - income and relief: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - income tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -8377,6 +8380,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - shared scenario: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - shared worktree staging: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - short ttl: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
+- sibling repositories: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - sign in: [SITE-01](#site-01-sign-customers-in-via-cognito), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
@@ -8657,6 +8661,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - unlisted pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - unlisted to public: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
+- unpushed commits: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - unrecognised identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - unset iam session: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - unsigned commit: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
