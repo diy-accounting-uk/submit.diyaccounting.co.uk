@@ -611,6 +611,105 @@ function fullShapeSnapshot() {
   };
 }
 
+const PIXEL_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+
+const CAPTURED_AT = "2026-11-02T02:20:00.000Z";
+
+// What consoleCapturePublish.js writes to snapshots/<env>/console/index.json and
+// operatorSnapshotGet.js returns as snapshot.console.
+const FIXTURE_CONSOLE_INDEX = {
+  generatedAt: CAPTURED_AT,
+  environment: "prod",
+  items: {
+    "prod-lambda-errors": {
+      id: "prod-lambda-errors",
+      target: "prod",
+      env: "prod",
+      group: "operations",
+      title: "Lambda errors by function",
+      kind: "image",
+      capturedAt: CAPTURED_AT,
+      imageKey: "snapshots/prod/console/prod/prod-lambda-errors.png",
+    },
+    "prod-lambda-throttles": {
+      id: "prod-lambda-throttles",
+      target: "prod",
+      env: "prod",
+      group: "operations",
+      title: "Lambda throttles by function",
+      kind: "metric-search",
+      capturedAt: CAPTURED_AT,
+      error: "AccessDenied: not authorised",
+    },
+    "prod-alarms": {
+      id: "prod-alarms",
+      target: "prod",
+      env: "prod",
+      group: "operations",
+      title: "Alarms",
+      kind: "alarms",
+      capturedAt: CAPTURED_AT,
+      rows: [
+        {
+          name: "prod-env-hmrc-submission-failure",
+          state: "ALARM",
+          reason: "Threshold crossed: 1 datapoint was 2",
+          stateUpdatedAt: "2026-11-02T01:00:00.000Z",
+        },
+        {
+          name: "prod-env-stripe-webhook-errors",
+          state: "OK",
+          reason: "Threshold not crossed",
+          stateUpdatedAt: "2026-11-01T10:00:00.000Z",
+        },
+      ],
+    },
+    "prod-bedrock": {
+      id: "prod-bedrock",
+      target: "prod",
+      env: "prod",
+      group: "operations",
+      title: "Bedrock invocations by hour and model",
+      kind: "bedrock",
+      capturedAt: CAPTURED_AT,
+      rows: [
+        { bin: "2026-10-31 09:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 4, inputTokens: 4000, outputTokens: 900 },
+        { bin: "2026-11-01 09:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 6, inputTokens: 6200, outputTokens: 1100 },
+        { bin: "2026-11-02 01:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 2, inputTokens: 2100, outputTokens: 400 },
+      ],
+    },
+    "prod-xray": {
+      id: "prod-xray",
+      target: "prod",
+      env: "prod",
+      group: "operations",
+      title: "X-Ray services",
+      kind: "service-graph",
+      capturedAt: CAPTURED_AT,
+      rows: [
+        {
+          name: "prod-env-hmrc-vat-return-post",
+          type: "AWS::Lambda",
+          requests: 4,
+          errors: 1,
+          faults: 2,
+          throttles: 0,
+          averageResponseMilliseconds: 250,
+        },
+        {
+          name: "prod-env-bundle-get",
+          type: "AWS::Lambda",
+          requests: 10,
+          errors: 0,
+          faults: 0,
+          throttles: 0,
+          averageResponseMilliseconds: 80,
+        },
+      ],
+    },
+  },
+};
+
 // The real 403 body a signed-in caller without the operator bundle gets back from
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
 // that handler's message so this fixture proves what the page does with the server's own words,
@@ -632,6 +731,12 @@ test.describe("Operator Dashboard", () => {
     pageChromeJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/page-chrome.js"), "utf-8");
     authStatusJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/auth-status.js"), "utf-8");
     submitCssContent = readSubmitCss();
+  });
+
+  let consoleImageRequests;
+
+  test.beforeEach(() => {
+    consoleImageRequests = [];
   });
 
   async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
@@ -664,6 +769,10 @@ test.describe("Operator Dashboard", () => {
     });
     await page.route("**/auth/login.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>login stub</body></html>" });
+    });
+    await page.route("**/api/v1/operator/console-image*", async (route) => {
+      consoleImageRequests.push({ url: route.request().url(), authorization: route.request().headers()["authorization"] });
+      await route.fulfill({ status: 200, contentType: "image/png", body: PIXEL_PNG });
     });
     // Catch-all for every other script (submit.js, developer-mode.js, request-cache.js,
     // toml-parser.js, entitlement-status.js, status-messages.js, view-source-link.js): none of
@@ -733,15 +842,106 @@ test.describe("Operator Dashboard", () => {
       "Operations on AWS ci",
     ]);
     const groupLinks = (title) =>
-      page.locator("#awsLinksGroups h3", { hasText: title }).evaluate((heading) =>
-        [...heading.nextElementSibling.querySelectorAll("a")].map((anchor) => anchor.textContent),
-      );
+      page.locator("#awsLinksGroups h3", { hasText: title }).evaluate((heading) => {
+        const texts = [];
+        for (let sibling = heading.nextElementSibling; sibling && sibling.tagName !== "H3"; sibling = sibling.nextElementSibling) {
+          sibling.querySelectorAll("h4 a").forEach((anchor) => texts.push(anchor.textContent));
+        }
+        return texts;
+      });
     for (const title of ["Analytics on AWS prod", "Operations on AWS prod"]) {
       for (const text of await groupLinks(title)) expect(text).toContain("(prod, account ");
     }
     for (const title of ["Analytics on AWS ci", "Operations on AWS ci"]) {
       for (const text of await groupLinks(title)) expect(text).toContain("submit-ci 367191799875");
     }
+  });
+
+  test.describe("console captures", () => {
+    const withConsole = { ...FIXTURE_SNAPSHOT, console: FIXTURE_CONSOLE_INDEX };
+
+    test("shows a captured graph beside its link with the time it was captured", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      const section = page.locator("#console-prod-lambda-errors");
+      await expect(section.locator("h4 a")).toContainText("Lambda errors by function (prod, account submit-prod 972912397388)");
+      await expect(section.locator(".console-capture-time")).toContainText("captured 2 Nov 02:20 UTC");
+      const image = section.locator("img.console-capture-image");
+      await expect(image).toHaveAttribute("src", /^data:image\/png;base64,/);
+      await expect(image).toHaveAttribute("alt", "Lambda errors by function");
+      expect(await image.evaluate((element) => element.complete && element.naturalWidth > 0)).toBe(true);
+    });
+
+    test("fetches each image through the API with the sign-in token", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      await expect(page.locator("img.console-capture-image")).toHaveCount(1);
+      expect(consoleImageRequests).toHaveLength(1);
+      expect(consoleImageRequests[0].url).toContain("/api/v1/operator/console-image?id=prod-lambda-errors");
+      expect(consoleImageRequests[0].authorization).toBe("Bearer test-id-token");
+    });
+
+    test("shows the error text of an item that failed to capture", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      const failed = page.locator("#console-prod-lambda-throttles .console-capture-error");
+      await expect(failed).toHaveText("Capture failed: AccessDenied: not authorised");
+    });
+
+    test("says Not captured yet for an item the index does not hold", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      await expect(page.locator("#console-ci-lambda-errors .console-capture-empty")).toHaveText("Not captured yet");
+      await expect(page.locator("#console-prod-rum .console-capture-empty")).toHaveCount(2);
+    });
+
+    test("says Not captured yet everywhere when the snapshot has no console index", async ({ page }) => {
+      await setupRoutes(page);
+      await loadDashboard(page, { loggedIn: true });
+
+      const sections = await page.locator(".console-capture").count();
+      expect(sections).toBeGreaterThan(30);
+      await expect(page.locator("img.console-capture-image")).toHaveCount(0);
+      expect(await page.locator(".console-capture-empty", { hasText: "Not captured yet" }).count()).toBeGreaterThanOrEqual(sections);
+    });
+
+    test("lists the alarms with the ALARM rows first", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      const rows = page.locator("#console-prod-alarms tbody tr");
+      await expect(rows).toHaveCount(2);
+      await expect(rows.first()).toContainText("prod-env-hmrc-submission-failure");
+      await expect(rows.first()).toContainText("ALARM");
+      await expect(rows.first()).toContainText("Threshold crossed");
+    });
+
+    test("lists the X-Ray services with their request, error and fault counts", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      const first = page.locator("#console-prod-xray tbody tr").first();
+      await expect(first).toContainText("prod-env-hmrc-vat-return-post");
+      await expect(first.locator("td").nth(2)).toHaveText("4");
+      await expect(first.locator("td").nth(4)).toHaveText("2");
+    });
+
+    test("draws the Bedrock counts as a chart with a line for the model and a switch to tokens", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+
+      const card = page.locator("#console-prod-bedrock .chart-card");
+      await expect(card).toHaveCount(1);
+      await expect(card.locator(".chart-line")).toHaveCount(1);
+      await expect(card.locator(".chart-legend-item")).toHaveText(["eu.anthropic.claude-haiku-4-5"]);
+      await expect(card.locator(".chart-table-link")).toHaveCount(0);
+      await card.locator(".chart-mode", { hasText: "Input tokens" }).click();
+      await expect(card.locator(".chart-readout")).toContainText("2,100");
+    });
   });
 
   test.describe("entitlement", () => {

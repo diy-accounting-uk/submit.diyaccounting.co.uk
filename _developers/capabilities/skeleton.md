@@ -574,6 +574,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability DATA-18 -->
 <!-- capability DATA-19 -->
+<!-- capability DATA-65 -->
+<!-- capability DATA-66 -->
 <!-- capability DATA-20 -->
 <!-- capability DATA-21 -->
 <!-- capability DATA-22 -->

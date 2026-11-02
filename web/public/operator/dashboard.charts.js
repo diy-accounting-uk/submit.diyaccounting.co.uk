@@ -398,7 +398,7 @@ function renderChartCard(chart, days, hours) {
   const heading = document.createElement("h3");
   heading.textContent = chart.title;
   card.appendChild(heading);
-  decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
+  if (!chart.standalone) decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
 
   const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: initiallyHidden(chart, 0), card };
 
@@ -499,7 +499,16 @@ function renderDailyCharts(snapshot) {
   renderedCharts.forEach((state) => state.draw());
 }
 
+// One chart outside the snapshot's daily charts, for a panel that holds its own series. The
+// caller attaches `element`, then calls `draw`, because a chart sizes itself from its card.
+function renderStandaloneChart(chart, days) {
+  const state = renderChartCard(chart, days, []);
+  renderedCharts.push(state);
+  return { element: state.card, draw: state.draw };
+}
+
 window.renderDailyCharts = renderDailyCharts;
+window.renderStandaloneChart = renderStandaloneChart;
 window.decorateSectionHeading = decorateSectionHeading;
 window.parseRefreshMinutes = parseRefreshMinutes;
 window.addEventListener("resize", redrawAllCharts);

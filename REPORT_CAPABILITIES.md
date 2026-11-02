@@ -374,6 +374,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data)
     - [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot: use when the eight one-stop objectives must be precomputed so the dashboard route never queries Athena directly.
     - [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API: use when the operator dashboard page needs its snapshot data over HTTP.
+    - [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard: use when a figure the operator dashboard links to in the AWS console (a metric search, the web vitals, the alarms, the Bedrock counts, the X-Ray services, a sibling site's RUM) must be readable on the dashboard itself.
+    - [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators: use when the operator dashboard shows a graph that consoleCapturePublish.js rendered.
     - [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing: use when a dashboard figure must be readable as a plain file, for the corpus index.
     - [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch: use when a business figure (active users, submissions, revenue, HMRC failures, cost) needs a CloudWatch metric for the dashboard.
     - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow: use when a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
@@ -3974,7 +3976,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
-- [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
+- [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues · [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
@@ -4216,6 +4218,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group nightly-publish-and-orchestration-data -->
 - [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot
 - [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API
+- [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard
+- [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators
 - [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing
 - [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch
 - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
@@ -4242,6 +4246,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** operator snapshot api, bundle entitlement, get snapshot, operator dashboard route, 404 not run
 - **Related:** DATA-18, DATA-24
 
+#### DATA-65 Capture AWS console figures as images for the operator dashboard
+
+- **Use when:** a figure the operator dashboard links to in the AWS console (a metric search, the web vitals, the alarms, the Bedrock counts, the X-Ray services, a sibling site's RUM) must be readable on the dashboard itself.
+- **Does:** consoleCapturePublish.js renders each entry of app/services/consoleCaptureCatalogue.js through read APIs only: GetMetricWidgetImage for the metric graphs, DescribeAlarms, one fixed Logs Insights query over the Bedrock invocation log group, and the X-Ray service graph. It writes one PNG per graph and one index.json to s3://<lake>/snapshots/<env>/console/. The prod run also reads ci, spreadsheets and gateway through sts:AssumeRole. One failed item records its error in the index and the others continue.
+- **Run:** `aws stepfunctions start-execution --state-machine-arn <env>-env-analytics-nightly`; the prod run captures at 02:15 UTC, the ci run on every execution
+- **Entry:** `app/functions/analytics/consoleCapturePublish.js:handler`
+- **Files:** app/functions/analytics/consoleCapturePublish.js, app/services/consoleCaptureCatalogue.js, app/lib/consoleCaptureStore.js, app/unit-tests/analytics/consoleCapturePublish.test.js, app/unit-tests/services/consoleCaptureCatalogue.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ConsoleCapturePublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/ConsoleCapturePublishTest.java
+- **Keywords:** console capture, GetMetricWidgetImage, cloudwatch widget image, alarms table, x-ray service graph, bedrock invocations, cross-account read role, external id, operator dashboard images
+- **Related:** DATA-18, DATA-19, DATA-66
+
+#### DATA-66 Serve a captured AWS console image to operators
+
+- **Use when:** the operator dashboard shows a graph that consoleCapturePublish.js rendered.
+- **Does:** operatorConsoleImageGet.js is the GET /api/v1/operator/console-image?id=<capture id> Lambda. It enforces the operator bundle, looks the id up in snapshots/<env>/console/index.json and answers the PNG from the lake. An id that is not in the index answers 404 in JSON, and the id never forms an object key, so no request reads another object.
+- **Run:** `GET /api/v1/operator/console-image?id=prod-lambda-errors`
+- **Entry:** `app/functions/analytics/operatorConsoleImageGet.js:ingestHandler`
+- **Files:** app/functions/analytics/operatorConsoleImageGet.js, app/unit-tests/analytics/operatorConsoleImageGet.test.js, app/lib/consoleCaptureStore.js
+- **Keywords:** console image api, operator bundle entitlement, captured graph, png response, operator dashboard route
+- **Related:** DATA-19, DATA-65
+
 #### DATA-20 Publish the nightly raw export for indexing
 
 - **Use when:** a dashboard figure must be readable as a plain file, for the corpus index.
@@ -4265,7 +4289,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-22 Orchestrate the nightly ingestion workflow
 
 - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish. There is no Catch: any failure stops the chain, not a false zero.
+- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
 - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -6394,6 +6418,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alarm state changes daily: [DATA-31](#data-31-sql-views-dora-and-operations)
 - alarm triage: [OPS-18](#ops-18-run-alarm-and-support-triage), [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - alarm_state_changes: [DATA-11](#data-11-run-glue-data-quality-checks)
+- alarms table: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - alarms view: [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - alert routing: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - alert thresholds: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
@@ -6508,6 +6533,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - batchitemfailure: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bcmdataexports: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - bedrock: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-18](#ops-18-run-alarm-and-support-triage), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
+- bedrock invocations: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - behaviour test: [CH-12](#ch-12-generate-synthetic-test-companies), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - behaviour test helpers: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
@@ -6636,6 +6662,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - capped bundle: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - caption overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
+- captured graph: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - card hold: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - cash: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -6752,6 +6779,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch logs v2 delivery: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - cloudwatch metrics: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
 - cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- cloudwatch widget image: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
 - codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - codes entry: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -6814,7 +6842,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - consent.analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent.rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- console capture: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
+- console image api: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday), [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
@@ -6877,6 +6907,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cross-account copy: [OPS-48](#ops-48-verify-backup-health-daily)
 - cross-account copyobject: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - cross-account hold: [OPS-64](#ops-64-runbook-information-security-operations)
+- cross-account read role: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - cross-account restore: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - cross-account secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - cross-client move: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
@@ -7190,6 +7221,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - express: [DEV-01](#dev-01-run-the-http-simulator-server)
 - express adaptor: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - express server: [SITE-08](#site-08-bootstrap-the-app-server)
+- external id: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - external link cache: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - extract scenarios: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - extract_book: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
@@ -7306,6 +7338,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - get version: [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - get-names: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - get_vat_receipt: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- getmetricwidgetimage: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - getpassesbyissuer: [BILL-09](#bill-09-list-a-users-issued-passes)
 - getqueryexecution: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - ghcr image: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
@@ -7834,12 +7867,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
-- operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
+- operator bundle entitlement: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - operator dashboard: [DEV-55](#dev-55-review-the-operator-dashboard)
 - operator dashboard annotations: [SITE-21](#site-21-log-growth-experiments)
+- operator dashboard images: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - operator dashboard page: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
-- operator dashboard route: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
+- operator dashboard route: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api), [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - operator effort: [DATA-07](#data-07-pull-github-operator-effort-data)
 - operator features: [SITE-24](#site-24-change-an-account-setting)
 - operator interventions: [DATA-07](#data-07-pull-github-operator-effort-data), [DATA-31](#data-31-sql-views-dora-and-operations)
@@ -7957,6 +7991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - playwright recording: [DEV-40](#dev-40-record-a-product-demo-video)
 - playwright steps: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - pna: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
+- png response: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - point in time recovery: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - point-in-time recovery: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - pointer cue: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
@@ -8793,6 +8828,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - writing style: [DEV-38](#dev-38-write-plain-human-prose)
 - x-ray: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - x-ray console: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
+- x-ray service graph: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - x-request-id: [SITE-17](#site-17-trace-and-secure-client-requests)
 - xbrl validator: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - xhtml: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)

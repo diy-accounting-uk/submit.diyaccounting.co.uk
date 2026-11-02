@@ -1008,7 +1008,7 @@ async function initPage() {
     renderOperators(snapshot);
     renderFamilyAffiliates(snapshot);
     renderAffiliateGroups(snapshot);
-    window.renderAwsLinks();
+    window.renderAwsLinks(snapshot.console);
     document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
