@@ -42,8 +42,6 @@ Facts the commission rows share (COMM1, CT4b, CT4c; the ci design is `PLAN_COMMI
 
 ## In flight
 
-- [ ] **COMM1. The first invoice of a subscription earns its commission.** Merged in PR #663 (3ae340aa6) and live on ci (deploy-environment 41374331097). Remainder: the prod environment deploy 41380619687 (dispatched from main) finishes green; then `prod-env-billing-webhook` stops logging "No subscription record found for invoice.paid" for invoices with metadata (read the next day's count against the 540 in 30 days). **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md` change 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. Unblocks CT4b.
-
 ## Machine-only
 
 - [ ] **ADS2. Compare Google and Microsoft on cost per click and cost per day-pass grant.** Both run with the same keywords, ads and negatives; the readings start on 2026-11-01, when broad match and the bid test applied on both platforms. Each week, read clicks, cost and day-pass grants per platform (Google `gclid`, Microsoft `msclkid` and `utm_source=bing` on the stored acquisition), and write the reading into `../private.diyaccounting.co.uk/strategy/PLAN_PAID_GOOGLE_SEARCH.md` E7. First reading at 50 clicks per platform (Google about 4 weeks, Microsoft about 10). Cost per paid customer stays BING1's question. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
@@ -59,6 +57,8 @@ Facts the commission rows share (COMM1, CT4b, CT4c; the ci design is `PLAN_COMMI
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **COMM1. Read that first invoices now earn their commission on prod.** PR #663 is live: `prod-env-BillingWebhookStack` updated 2026-11-02 03:07 UTC by deploy-environment 41380619687. On 2026-11-03, count in `prod-env-billing-webhook` since 03:07 UTC the lines "No subscription record found for invoice.paid" (only invoices with no metadata should remain) and "invoice.paid before the subscription record: accruing from invoice metadata", against the 540 misses in the 30 days before. Read-only CloudWatch Logs Insights on `diya-submit-prod`. Blocked on 2026-11-03. **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md` change 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **CT4b. Commission journeys on ci: build.** Build `PLAN_COMMISSION_CI_JOURNEYS.md` changes 1, 2 and 4 to 7 and run J1 to J4 on ci; its "Files CT4b creates or changes", "Commands CT4b runs" and "Proof that counts as done" sections are the brief. The first step is the one-checkout spike that settles whether Stripe Checkout takes a Test Clock customer (open question 1); its answer picks the checkout or the API subscription path. O-CT4 step 3 (the test-mode Connect onboarding) runs after the first deploy, and step 4 is the `deploy-environment.yml` dispatch from the branch. Blocked on OCT4. **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~20 files. Unblocks CT4c.
 
