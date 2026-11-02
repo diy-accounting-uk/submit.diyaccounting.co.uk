@@ -42,6 +42,8 @@ Facts the commission rows share (COMM1, CT4b, CT4c, OAFF7; the ci design is `PLA
 
 ## In flight
 
+- [ ] **Wave vesper (batch `claude/vesper-dashboard`, worktree `.claude/worktrees/vesper`).** DASH16 then DASH17 (agent branch `claude/vesper-dash-ops`), B34c then CS-11b (`claude/vesper-ch-launch`), DASH18's design (`claude/vesper-console-design`, docs to main). The rows stay below until their PR merges. **Owner**: Claude Code.
+
 ## Machine-only
 
 - [ ] **ADS2. Compare Google and Microsoft on cost per click and cost per day-pass grant.** Both run with the same keywords, ads and negatives; the readings start on 2026-11-01, when broad match and the bid test applied on both platforms. Each week, read clicks, cost and day-pass grants per platform (Google `gclid`, Microsoft `msclkid` and `utm_source=bing` on the stored acquisition), and write the reading into `../private.diyaccounting.co.uk/strategy/PLAN_PAID_GOOGLE_SEARCH.md` E7. First reading at 50 clicks per platform (Google about 4 weeks, Microsoft about 10). Cost per paid customer stays BING1's question. **Source**: operator, 2026-10-31. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
