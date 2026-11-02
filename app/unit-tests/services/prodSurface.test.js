@@ -9,7 +9,7 @@ const activity = (id) => catalog.activities.find((candidate) => candidate.id ===
 const bundle = (id) => catalog.bundles.find((candidate) => candidate.id === id);
 
 describe("what the catalogue lists in each environment", () => {
-  test.each(["practice", "diya-gl-storage", "self-employed", "file-confirmation-statement", "vat-assist-check"])(
+  test.each(["practice", "diya-gl-storage", "self-employed", "vat-assist-check"])(
     "%s is listed in ci and not in prod",
     (id) => {
       expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
@@ -25,7 +25,7 @@ describe("what the catalogue lists in each environment", () => {
     expect(isActivityListedInEnvironment(activity(id), "simulator")).toBe(true);
   });
 
-  test.each(["submit-vat", "vat-obligations", "vat-liabilities", "company-lookup", "generate-pass-digital"])(
+  test.each(["submit-vat", "vat-obligations", "vat-liabilities", "company-lookup", "generate-pass-digital", "file-micro-entity-accounts", "file-small-company-accounts", "file-confirmation-statement"])(
     "%s stays listed in prod",
     (id) => {
       expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);

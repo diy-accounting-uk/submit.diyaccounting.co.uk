@@ -225,14 +225,13 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).toContain("^/api/v1/hmrc/ct/return.*");
   });
 
-  it("file-confirmation-statement activity should be granted by resident and resident-pro, ci only", () => {
+  it("file-confirmation-statement activity should be granted by resident and resident-pro, listed in ci and prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
     expect(bundlesForActivity(catalog, "file-confirmation-statement")).toEqual(["resident", "resident-pro"]);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident")).toBe(true);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
-    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
-    expect(activity.environments).not.toContain("prod");
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
   });
 
   it("file-confirmation-statement carries a one-off per-submission price", () => {
