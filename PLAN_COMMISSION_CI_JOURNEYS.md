@@ -335,7 +335,7 @@ them again, and Stripe deletes a clock by itself after its `deletes_after` time.
 | `behaviour-tests/commissionJourneysStripe.behaviour.test.js` | new: the steps |
 | `behaviour-tests/helpers/commissionCi.js` | new: lanes, sign-in, clocks, ledger, release, cleanup |
 | `behaviour-tests/steps/behaviour-bundle-steps.js` | `cardNumber` option |
-| `scripts/commission-ci-affiliate-onboarding.js` | new: RA's one-time Connect link |
+| `scripts/commission-ci-affiliate-onboarding.js` | RA's Connect test account; CT4b replaces the hosted onboarding with the suite's own setup |
 | `playwright.config.js` | project |
 | `package.json` | two scripts |
 | `README.md` | script table count and names |
@@ -386,10 +386,10 @@ Then, after the push:
    `gh workflow run deploy-environment.yml --ref claude/<branch> -f environment-name=ci`
 2. Wait for the branch's `deploy.yml`. It must finish after step 1, because the app Lambdas cache
    the email lists per container (`app/lib/emailList.js:62-68`).
-3. Spike before the full run: one clock, one customer, one checkout through the deployed API, and
-   check that `checkout.session.completed` stores `actor: "test-user"` on the subscription record.
-   The actor comes from `session.customer_details.email` (`billingWebhookPost.js:247`), and the
-   session no longer carries `customer_email`.
+3. The suite's first journey answers what a spike would: it pays a Checkout on a clock customer
+   with `fillAndSubmitStripeTestCard`, and its accrual assertions fail unless
+   `checkout.session.completed` stores `actor: "test-user"` (from `session.customer_details.email`,
+   `billingWebhookPost.js:247`). No separate spike runs (operator, 2026-11-02).
 4. Run the suite:
    `gh workflow run probe-test.yml --ref claude/<branch> -f environment-name=ci -f deployment-name=<the branch's ci deployment> -f behaviour-test-suite=commissionJourneysStripeBehaviour`
    Or locally, with `AWS_PROFILE=diya-submit-ci`:
@@ -425,11 +425,11 @@ is Claude Code's, with the operator as the fallback.
    `gh variable set SYNTHETIC_OPERATOR_EMAILS --env ci -R diy-accounting-uk/submit.diyaccounting.co.uk --body synthetic-commission-operator@test.diyaccounting.co.uk`
 2. Set the synthetic family address on ci:
    `gh variable set SYNTHETIC_FAMILY_AFFILIATE_EMAILS --env ci -R diy-accounting-uk/submit.diyaccounting.co.uk --body synthetic-commission-j2-family@test.diyaccounting.co.uk`
-3. Once, after CT4b's first deploy: run `node scripts/commission-ci-affiliate-onboarding.js` with
-   `AWS_PROFILE=diya-submit-ci`, open the printed Stripe link, and finish the Express onboarding
-   with Stripe's test-mode values (the link creates a test-mode account, because the caller is
-   synthetic, `app/functions/account/affiliateApplicationPost.js:64`). The Playwright MCP browser
-   can do this.
+3. The affiliate RA's Connect test account is set up by the suite itself, with no person on a
+   hosted page: through the Stripe API in test mode with Stripe's published test values, or by the
+   suite filling the test-mode onboarding page as it fills the card (the account is test-mode
+   because the caller is synthetic, `app/functions/account/affiliateApplicationPost.js:64`).
+   Operator, 2026-11-02.
 4. Approve the dispatch of `deploy-environment.yml` for ci from the branch (CT4b command step 1).
    It writes ci's secrets from the branch's workflow.
 
@@ -437,7 +437,7 @@ is Claude Code's, with the operator as the fallback.
 
 1. **Does Stripe Checkout accept a customer on a Test Clock?** Stripe's test-clock pages show
    customers and subscriptions made through the API. No page found states it for Checkout. The
-   spike (command step 3) settles it. If Checkout refuses, the alternative is a subscription made
+   suite's first journey settles it (command step 3). If Checkout refuses, the alternative is a subscription made
    by the API with a `pm_card_*` payment method on the clock customer. That needs the webhook to
    write the subscription record from `customer.subscription.created` metadata (change 3 covers
    the lines; `early_cancel` needs the record, `commissionRelease.js:62`). That is a larger webhook
