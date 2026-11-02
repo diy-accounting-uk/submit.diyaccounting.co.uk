@@ -265,10 +265,15 @@ test.describe("HMRC Assist on the Income Tax calculation", () => {
     await grantPermissionHmrcAuth(page, screenshotPath);
     await verifyItsaCalculationResults(page, screenshotPath);
 
+    const reportAnswer = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" && response.url().endsWith("/api/v1/hmrc/itsa/assist/report") && response.status() === 200,
+      { timeout: 120000 },
+    );
     await requestHmrcAssistFeedback(page, screenshotPath);
-    await expect.poll(() => traffic.reports.map((entry) => entry.status), { timeout: 60000 }).toEqual([200]);
-    expect(traffic.reports[0].messages.length, "HMRC's messages for the calculation").toBeGreaterThan(0);
-    await verifyAssistMessagesInOrder(page, traffic.reports[0].messages, screenshotPath);
+    const { messages } = await (await reportAnswer).json();
+    expect(messages.length, "HMRC's messages for the calculation").toBeGreaterThan(0);
+    await verifyAssistMessagesInOrder(page, messages, screenshotPath);
 
     await expect.poll(() => traffic.acknowledgements.map((entry) => entry.status), { timeout: 60000 }).toEqual([204]);
     expect(traffic.reports).toHaveLength(1);
