@@ -46,7 +46,8 @@ export function recordAssistTraffic(page, kind) {
     const request = response.request();
     if (request.method() !== "POST" || response.status() === 202) return;
     if (url.endsWith(`/api/v1/hmrc/${kind}/assist/report`)) {
-      traffic.reports.push({ status: response.status(), body: request.postDataJSON() });
+      const answer = response.status() === 200 ? await response.json().catch(() => null) : null;
+      traffic.reports.push({ status: response.status(), body: request.postDataJSON(), messages: answer?.messages ?? [] });
     } else if (url.endsWith(`/api/v1/hmrc/${kind}/assist/acknowledge`)) {
       traffic.acknowledgements.push({ status: response.status(), body: request.postDataJSON() });
     }

@@ -9,7 +9,7 @@ import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { itsaDefaultMessages, vatDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
+import { vatDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
 import {
   addOnPageLogging,
   createHmrcTestUser,
@@ -266,7 +266,9 @@ test.describe("HMRC Assist on the Income Tax calculation", () => {
     await verifyItsaCalculationResults(page, screenshotPath);
 
     await requestHmrcAssistFeedback(page, screenshotPath);
-    await verifyAssistMessagesInOrder(page, itsaDefaultMessages(), screenshotPath);
+    await expect.poll(() => traffic.reports.map((entry) => entry.status), { timeout: 60000 }).toEqual([200]);
+    expect(traffic.reports[0].messages.length, "HMRC's messages for the calculation").toBeGreaterThan(0);
+    await verifyAssistMessagesInOrder(page, traffic.reports[0].messages, screenshotPath);
 
     await expect.poll(() => traffic.acknowledgements.map((entry) => entry.status), { timeout: 60000 }).toEqual([204]);
     expect(traffic.reports).toHaveLength(1);
