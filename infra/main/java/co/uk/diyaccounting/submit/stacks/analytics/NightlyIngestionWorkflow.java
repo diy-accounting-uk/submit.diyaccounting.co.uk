@@ -6,7 +6,7 @@
 // spotless:off
 // @capability DATA-22 Orchestrate the nightly ingestion workflow
 // - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish. There is no Catch: any failure stops the chain, not a false zero.
+// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
 // - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -65,7 +65,9 @@ import software.constructs.Construct;
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
  * once, since they share no data; then, on the 02:15 UTC run or an execution input that names a
  * {@code date}, the data quality run, the metrics publish and the raw export publish; then the
- * operator snapshot publish; then the pass figures publish; then {@code Succeed}. In prod it runs
+ * operator snapshot publish; then the pass figures publish; then, in ci always and in prod on the 02:15
+ * UTC run only, the console capture publish; then {@code Succeed}. The capture is an optional task: a
+ * failure is recorded under {@code $.failures.consoleCapture} and does not fail the night. In prod it runs
  * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
@@ -179,6 +181,14 @@ public class NightlyIngestionWorkflow {
          */
         IFunction passFiguresPublishLambda();
 
+        /**
+         * Imported by name from {@code AnalyticsStack}: {@code ConsoleCapturePublish.capturePublishLambda}.
+         * Runs last, after the pass figures, so a slow capture delays nothing the snapshot needs. In
+         * prod it runs only on the {@link #NIGHTLY_START_TIME_PATTERN} execution, once a day; in ci
+         * it runs on every execution.
+         */
+        IFunction consoleCapturePublishLambda();
+
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
         }
@@ -258,9 +268,27 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-PassFiguresPublish",
                 "pass figures publish",
                 props.passFiguresPublishLambda());
+        var consoleCaptureTask = buildOptionalTask(
+                scope,
+                prefix + "-Nightly-ConsoleCapturePublish",
+                "console capture publish",
+                "consoleCapture",
+                props.consoleCapturePublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
-        operatorSnapshotTask.next(passFiguresTask).next(succeed);
+        consoleCaptureTask.next(succeed);
+        if (isProd) {
+            var consoleCaptureDue = Choice.Builder.create(scope, prefix + "-Nightly-ConsoleCaptureDue")
+                    .stateName("console capture due")
+                    .build()
+                    .when(
+                            Condition.stringMatches("$$.Execution.StartTime", NIGHTLY_START_TIME_PATTERN),
+                            consoleCaptureTask)
+                    .otherwise(succeed);
+            operatorSnapshotTask.next(passFiguresTask).next(consoleCaptureDue);
+        } else {
+            operatorSnapshotTask.next(passFiguresTask).next(consoleCaptureTask);
+        }
         var nightlyStepsDue = Choice.Builder.create(scope, prefix + "-Nightly-NightlyStepsDue")
                 .stateName("nightly steps due")
                 .build()

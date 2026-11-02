@@ -220,12 +220,16 @@ async function captureItem({ item, clients, region, envName, writeImage, now, sl
   }
 }
 
+export async function handler() {
+  return runConsoleCapture({});
+}
+
 /**
  * Runs the capture for the environment this Lambda is deployed in.
  *
- * @param {object} [dependencies] test seams: `s3Client`, `stsClient`, `clientsFor`, `now`, `sleep`
+ * @param {object} dependencies test seams: `s3Client`, `stsClient`, `clientsForTarget`, `now`, `sleep`
  */
-export async function handler(_event, dependencies = {}) {
+export async function runConsoleCapture(dependencies) {
   const envName = requireEnvironment("ENVIRONMENT_NAME");
   const bucket = requireEnvironment("ANALYTICS_LAKE_BUCKET_NAME");
   const targetKeys = targetsForRun(envName);

@@ -1013,6 +1013,8 @@ public class IngestionStack extends Stack {
                 this, prefix + "-OperatorSnapshotPublish-Import", prefix + "-operator-snapshot-publish");
         var passFiguresPublishLambda = Function.fromFunctionName(
                 this, prefix + "-PassFiguresPublish-Import", prefix + "-pass-figures-publish");
+        var consoleCapturePublishLambda = Function.fromFunctionName(
+                this, prefix + "-ConsoleCapturePublish-Import", prefix + "-console-capture-publish");
 
         new NightlyIngestionWorkflow(
                 this,
@@ -1035,6 +1037,7 @@ public class IngestionStack extends Stack {
                         .rawExportPublishLambda(rawExportPublishLambda)
                         .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda)
                         .passFiguresPublishLambda(passFiguresPublishLambda)
+                        .consoleCapturePublishLambda(consoleCapturePublishLambda)
                         .build());
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);

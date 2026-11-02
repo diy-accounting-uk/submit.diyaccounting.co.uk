@@ -80,7 +80,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
-import { handler } from "@app/functions/analytics/consoleCapturePublish.js";
+import { runConsoleCapture } from "@app/functions/analytics/consoleCapturePublish.js";
 
 const PNG = new Uint8Array([137, 80, 78, 71]);
 const NOW = new Date("2026-11-02T02:20:00.000Z");
@@ -190,13 +190,13 @@ describe("consoleCapturePublish", () => {
 
   test("requires its environment variables", async () => {
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
-    await expect(handler({}, makeDependencies().dependencies)).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
+    await expect(runConsoleCapture(makeDependencies().dependencies)).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
   });
 
   test("a ci run renders every ci item and writes one PNG per graph and one index", async () => {
     const { puts, dependencies } = makeDependencies();
 
-    const result = await handler({}, dependencies);
+    const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
     expect(result).toEqual({ items: 16, failed: 0 });
@@ -208,7 +208,7 @@ describe("consoleCapturePublish", () => {
   });
 
   test("a ci run calls GetMetricWidgetImage with a SORTed search widget in the local region", async () => {
-    await handler({}, makeDependencies().dependencies);
+    await runConsoleCapture(makeDependencies().dependencies);
 
     const widgetCall = cloudWatchHandler.mock.calls.map((call) => call[0]).find((command) => command.name === "GetMetricWidgetImage");
     const widget = JSON.parse(widgetCall.input.MetricWidget);
@@ -218,7 +218,7 @@ describe("consoleCapturePublish", () => {
 
   test("the alarms table puts ALARM rows first", async () => {
     const { puts, dependencies } = makeDependencies();
-    await handler({}, dependencies);
+    await runConsoleCapture(dependencies);
     const rows = indexFrom(puts).items["ci-alarms"].rows;
     expect(rows.map((row) => row.name)).toEqual(["ci-env-a", "ci-env-b"]);
     expect(rows[0].state).toBe("ALARM");
@@ -226,7 +226,7 @@ describe("consoleCapturePublish", () => {
 
   test("the Bedrock item stores counts from the fixed query and no log line", async () => {
     const { puts, dependencies } = makeDependencies();
-    await handler({}, dependencies);
+    await runConsoleCapture(dependencies);
     const startQuery = logsHandler.mock.calls.map((call) => call[0]).find((command) => command.name === "StartQuery");
     expect(startQuery.input.logGroupName).toBe("/ci/bedrock/invocations");
     expect(startQuery.input.queryString).toMatch(/^stats count\(\*\) as invocations/);
@@ -237,7 +237,7 @@ describe("consoleCapturePublish", () => {
 
   test("the X-Ray item sorts services by faults and computes the average response time", async () => {
     const { puts, dependencies } = makeDependencies();
-    await handler({}, dependencies);
+    await runConsoleCapture(dependencies);
     const rows = indexFrom(puts).items["ci-xray"].rows;
     expect(rows.map((row) => row.name)).toEqual(["broken", "quiet"]);
     expect(rows[0]).toMatchObject({ requests: 4, errors: 1, faults: 2, throttles: 1, averageResponseMilliseconds: 250 });
@@ -254,7 +254,7 @@ describe("consoleCapturePublish", () => {
     });
     const { puts, dependencies } = makeDependencies();
 
-    const result = await handler({}, dependencies);
+    const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
     expect(result).toEqual({ items: 16, failed: 1 });
@@ -267,7 +267,7 @@ describe("consoleCapturePublish", () => {
   test("a Bedrock query that fails is an error entry", async () => {
     logsHandler.mockImplementation(async (command) => (command.name === "StartQuery" ? { queryId: "q1" } : { status: "Failed" }));
     const { puts, dependencies } = makeDependencies();
-    await handler({}, dependencies);
+    await runConsoleCapture(dependencies);
     expect(indexFrom(puts).items["ci-bedrock"].error).toMatch(/ended Failed/);
   });
 
@@ -289,7 +289,7 @@ describe("consoleCapturePublish", () => {
       },
     };
 
-    const result = await handler({}, dependencies);
+    const result = await runConsoleCapture(dependencies);
 
     expect(assumed.map((input) => input.RoleArn)).toEqual([
       "arn:aws:iam::367191799875:role/ci-env-console-capture-read",
@@ -328,7 +328,7 @@ describe("consoleCapturePublish", () => {
       },
     };
 
-    const result = await handler({}, dependencies);
+    const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
     expect(result.failed).toBe(1);
@@ -344,7 +344,7 @@ describe("consoleCapturePublish", () => {
     const { puts, dependencies } = makeDependencies();
     dependencies.stsClient = { send: vi.fn() };
 
-    await handler({}, dependencies);
+    await runConsoleCapture(dependencies);
 
     expect(indexFrom(puts).items["ci-alarms"].error).toMatch(/No read role is configured for ci/);
     expect(dependencies.stsClient.send).not.toHaveBeenCalled();
