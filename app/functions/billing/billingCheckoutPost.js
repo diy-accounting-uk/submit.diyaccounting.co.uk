@@ -113,6 +113,27 @@ export async function ingestHandler(event) {
     else if (isSynthetic) syntheticSource = "test-user-email";
     logger.info({ message: "Synthetic mode resolved", isSynthetic, syntheticSource });
 
+    const testClockId = body.testClockId;
+    if (testClockId !== undefined) {
+      if (!isSynthetic) {
+        logger.warn({ message: "Test clock refused for a caller that is not synthetic" });
+        return http400BadRequestResponse({
+          request,
+          headers: responseHeaders,
+          message: "test-clock-not-allowed",
+          error: { code: "test-clock-not-allowed" },
+        });
+      }
+      if (typeof testClockId !== "string" || !/^clock_[A-Za-z0-9]+$/.test(testClockId)) {
+        return http400BadRequestResponse({
+          request,
+          headers: responseHeaders,
+          message: "invalid-test-clock",
+          error: { code: "invalid-test-clock" },
+        });
+      }
+    }
+
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
     const bundleId = body.bundleId || "resident-pro";
     const catalog = loadCatalogFromRoot();
@@ -155,11 +176,17 @@ export async function ingestHandler(event) {
 
     const stripe = await getStripeClient({ test: isSynthetic });
 
+    let customerParams = { customer_email: userEmail };
+    if (testClockId) {
+      const customer = await stripe.customers.create({ email: userEmail, test_clock: testClockId, metadata: { hashedSub } });
+      customerParams = { customer: customer.id };
+    }
+
     logger.info({ message: "Creating checkout session", isSynthetic, bundleId, priceId: priceId.substring(0, 20) + "..." });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_email: userEmail,
+      ...customerParams,
       client_reference_id: hashedSub,
       metadata: { hashedSub, bundleId, ...acquisitionMetadata },
       subscription_data: {

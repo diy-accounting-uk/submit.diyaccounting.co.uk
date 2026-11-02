@@ -553,7 +553,7 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
   // Update subscription record
   await updateSubscription(`stripe#${subscription.id}`, {
     status: "canceled",
-    canceledAt: new Date().toISOString(),
+    canceledAt: new Date(subscription.ended_at * 1000).toISOString(),
   });
 
   if (bundleId === DIYA_GL_PERSONAL_BUNDLE_ID) {

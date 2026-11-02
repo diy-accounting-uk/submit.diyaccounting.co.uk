@@ -42,6 +42,10 @@ export function validateReferralConfig(config) {
   if (!seen.has(config.ledger?.defaultTier)) {
     throw new Error(`referrals.toml: defaultTier '${config.ledger?.defaultTier}' has no tier`);
   }
+  const journeyEnvironments = config.ledger?.testJourneyEnvironments;
+  if (!Array.isArray(journeyEnvironments) || !journeyEnvironments.every((name) => typeof name === "string" && name)) {
+    throw new Error("referrals.toml: ledger.testJourneyEnvironments must be an array of strings");
+  }
   return config;
 }
 

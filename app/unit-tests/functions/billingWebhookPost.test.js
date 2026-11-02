@@ -835,7 +835,7 @@ describe("billingWebhookPost", () => {
       id: "evt_test_sub_delete",
       type: "customer.subscription.deleted",
       data: {
-        object: { id: "sub_test_456" },
+        object: { id: "sub_test_456", ended_at: 1_700_000_000 },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -848,14 +848,17 @@ describe("billingWebhookPost", () => {
       subscriptionStatus: "canceled",
       cancelAtPeriodEnd: false,
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", expect.objectContaining({ status: "canceled" }));
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
+      status: "canceled",
+      canceledAt: new Date(1_700_000_000 * 1000).toISOString(),
+    });
   });
 
   function buildSubscriptionDeletedPayload(subscriptionId = "sub_test_456") {
     return {
       id: "evt_test_sub_delete",
       type: "customer.subscription.deleted",
-      data: { object: { id: subscriptionId } },
+      data: { object: { id: subscriptionId, ended_at: 1_700_000_000 } },
     };
   }
 
@@ -1529,7 +1532,7 @@ describe("billingWebhookPost", () => {
     const payload = {
       id: "evt_test_sub_delete_activity",
       type: "customer.subscription.deleted",
-      data: { object: { id: "sub_test_456" } },
+      data: { object: { id: "sub_test_456", ended_at: 1_700_000_000 } },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
 

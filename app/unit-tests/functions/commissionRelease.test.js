@@ -96,7 +96,7 @@ describe("functions/account/commissionRelease", () => {
 
   test("a clean cash line is released with month and tax-year totals", async () => {
     const summary = await handler();
-    expect(summary).toEqual({ evaluated: 1, released: 1, held: 0, stale: 0 });
+    expect(summary).toEqual({ asOf: NOW, evaluated: 1, released: 1, held: 0, stale: 0 });
     expect(repo.queryDueHeldPointers).toHaveBeenCalledWith(NOW);
     expect(repo.releaseLine).toHaveBeenCalledWith(expect.objectContaining({ sk: "line#in_1" }), {
       now: NOW,
@@ -140,7 +140,7 @@ describe("functions/account/commissionRelease", () => {
   ])("hold reason %s keeps the line held and the pointer", async (reason, arrange) => {
     arrange();
     const summary = await handler();
-    expect(summary).toEqual({ evaluated: 1, released: 0, held: 1, stale: 0 });
+    expect(summary).toEqual({ asOf: NOW, evaluated: 1, released: 0, held: 1, stale: 0 });
     expect(repo.setHoldReasons).toHaveBeenCalledWith(expect.objectContaining({ sk: "line#in_1" }), expect.arrayContaining([reason]), NOW);
     expect(repo.releaseLine).not.toHaveBeenCalled();
     expect(repo.deleteHeldPointer).not.toHaveBeenCalled();
@@ -193,7 +193,7 @@ describe("functions/account/commissionRelease", () => {
   ])("a transaction cancelled at index %i holds the line as %s", async (cancelledIndex, reason) => {
     repo.releaseLine.mockResolvedValue({ released: false, cancelledIndex, totalsIndex: cancelledIndex - 2 });
     const summary = await handler();
-    expect(summary).toEqual({ evaluated: 1, released: 0, held: 1, stale: 0 });
+    expect(summary).toEqual({ asOf: NOW, evaluated: 1, released: 0, held: 1, stale: 0 });
     expect(repo.setHoldReasons).toHaveBeenCalledWith(expect.anything(), [reason], NOW);
   });
 
@@ -214,7 +214,46 @@ describe("functions/account/commissionRelease", () => {
 
   test("an empty queue evaluates nothing", async () => {
     repo.queryDueHeldPointers.mockResolvedValue([]);
-    expect(await handler()).toEqual({ evaluated: 0, released: 0, held: 0, stale: 0 });
+    expect(await handler()).toEqual({ asOf: NOW, evaluated: 0, released: 0, held: 0, stale: 0 });
+  });
+
+  describe("asOf", () => {
+    const AS_OF = "2027-03-01T00:00:00.000Z";
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    test("the schedule's event runs at the real time", async () => {
+      vi.stubEnv("ENVIRONMENT_NAME", "ci");
+      const result = await handler({ version: "0", source: "aws.events", time: "2026-10-31T03:15:00Z" });
+      expect(result.asOf).toBe(NOW);
+      expect(repo.queryDueHeldPointers).toHaveBeenCalledWith(NOW);
+    });
+
+    test("a listed environment runs at the date sent and echoes it", async () => {
+      vi.stubEnv("ENVIRONMENT_NAME", "ci");
+      const result = await handler({ asOf: AS_OF });
+      expect(result.asOf).toBe(AS_OF);
+      expect(repo.queryDueHeldPointers).toHaveBeenCalledWith(AS_OF);
+    });
+
+    test("prod throws and queries nothing", async () => {
+      vi.stubEnv("ENVIRONMENT_NAME", "prod");
+      await expect(handler({ asOf: AS_OF })).rejects.toThrow(/asOf is not allowed/);
+      expect(repo.queryDueHeldPointers).not.toHaveBeenCalled();
+    });
+
+    test("prod still runs the schedule's event at the real time", async () => {
+      vi.stubEnv("ENVIRONMENT_NAME", "prod");
+      expect((await handler({})).asOf).toBe(NOW);
+    });
+
+    test("a date that does not parse throws", async () => {
+      vi.stubEnv("ENVIRONMENT_NAME", "ci");
+      await expect(handler({ asOf: "not a date" })).rejects.toThrow(/is not a date/);
+      expect(repo.queryDueHeldPointers).not.toHaveBeenCalled();
+    });
   });
 
   test("a missing table name fails the run", async () => {

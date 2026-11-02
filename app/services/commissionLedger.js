@@ -56,7 +56,10 @@ export function computeCommission({ netPence, rateBps, months, windowStart, peri
 
 const toIso = (seconds) => new Date(seconds * 1000).toISOString();
 
-function isAccrualActor(subRecord, invoice) {
+function isAccrualActor(subRecord, invoice, config) {
+  if (subRecord.actor === "test-user" && invoice.livemode === false) {
+    return (config.ledger.testJourneyEnvironments || []).includes(process.env.ENVIRONMENT_NAME);
+  }
   if (subRecord.actor) return subRecord.actor === "customer";
   return invoice.livemode === true;
 }
@@ -71,7 +74,7 @@ export async function accrueCommission({ invoice, subscriptionId, subRecord, str
     logger.info({ message: "Commission accrual switched off", invoiceId: invoice.id });
     return { status: "off" };
   }
-  if (!isAccrualActor(subRecord, invoice)) return { status: "not-customer" };
+  if (!isAccrualActor(subRecord, invoice, config)) return { status: "not-customer" };
 
   const { hashedSub } = subRecord;
   const full = await stripe.invoices.retrieve(

@@ -201,6 +201,58 @@ describe("services/commissionLedger - accrueCommission", () => {
     expect(stripe.invoices.retrieve).not.toHaveBeenCalled();
   });
 
+  describe("test-user actor on a test-mode invoice", () => {
+    const testInvoice = () => {
+      const invoice = expandedInvoice();
+      invoice.livemode = false;
+      return invoice;
+    };
+    const runTest = (invoice, environmentName, actor = "test-user", invoiceLivemode = false) => {
+      vi.stubEnv("ENVIRONMENT_NAME", environmentName);
+      const config = structuredClone(loadReferralConfig());
+      config.ledger.testJourneyEnvironments = ["ci"];
+      mockConfig.current = config;
+      const stripe = stripeReturning(invoice);
+      return accrueCommission({
+        invoice: { id: invoice.id, livemode: invoiceLivemode },
+        subscriptionId: "sub_test_456",
+        subRecord: { ...subRecord, actor },
+        stripe,
+        nowIso: NOW,
+      });
+    };
+
+    test("accrues in a listed environment", async () => {
+      const result = await runTest(testInvoice(), "ci");
+      expect(result.status).toBe("recorded");
+      expect(repo.putLineWithPointers).toHaveBeenCalledTimes(1);
+      vi.unstubAllEnvs();
+    });
+
+    test("writes nothing in prod", async () => {
+      expect((await runTest(testInvoice(), "prod")).status).toBe("not-customer");
+      expect(repo.putLineWithPointers).not.toHaveBeenCalled();
+      expect(repo.putCardPayer).not.toHaveBeenCalled();
+      vi.unstubAllEnvs();
+    });
+
+    test("writes nothing when the environment name is unset", async () => {
+      expect((await runTest(testInvoice(), undefined)).status).toBe("not-customer");
+      vi.unstubAllEnvs();
+    });
+
+    test("writes nothing on a live-mode invoice, even in a listed environment", async () => {
+      expect((await runTest(expandedInvoice(), "ci", "test-user", true)).status).toBe("not-customer");
+      expect(repo.putLineWithPointers).not.toHaveBeenCalled();
+      vi.unstubAllEnvs();
+    });
+
+    test("a customer actor on a test-mode invoice keeps today's rule in prod", async () => {
+      expect((await runTest(testInvoice(), "prod", "customer")).status).toBe("recorded");
+      vi.unstubAllEnvs();
+    });
+  });
+
   test("a record without an actor counts only on a live invoice", async () => {
     const { actor, ...legacy } = subRecord;
     expect(actor).toBe("customer");
