@@ -4066,6 +4066,22 @@
         "operationId" : "registerInterest"
       }
     },
+    "/operator/console-image" : {
+      "get" : {
+        "summary" : "Get a captured AWS console image",
+        "description" : "Returns one PNG the console capture rendered for the operator dashboard",
+        "operationId" : "getOperatorConsoleImage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "query",
+          "required" : true,
+          "description" : "The capture id from snapshot.console",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/operator/snapshot" : {
       "get" : {
         "summary" : "Get the operator objectives snapshot",
