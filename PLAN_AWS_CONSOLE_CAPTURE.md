@@ -7,6 +7,7 @@
 
 - Capture AWS console pages (the CloudWatch metric searches, RUM, alarms, X-Ray and Logs Insights that `web/public/operator/dashboard.awslinks.js` links to) as images on a schedule.
 - Serve them over HTTPS to signed-in operators only.
+- Once a day on prod; the spreadsheets and gateway RUM captured too; the ci proof's `start-execution` printed for the operator to run (operator, 2026-11-02).
 - The sign-in must use permissions or tokens, never an emulated person (no password or second factor).
 
 ## Recommendation
@@ -31,7 +32,7 @@ Approach (a) is not chosen. It needs a second container image with Chromium, a r
 | Alarms | 1 | (c) | `cloudwatch:DescribeAlarms` |
 | Bedrock in Logs Insights | 1 | (c) | `logs:StartQuery`, `GetQueryResults` |
 | X-Ray service map | 1 | (c) | `xray:GetServiceGraph` |
-| Spreadsheets, gateway RUM | 2 | (b), later | needs a role in each sibling account |
+| Spreadsheets, gateway RUM | 2 | (b) | a read role in each sibling account, us-east-1 |
 
 Notes keyed by row:
 
@@ -40,7 +41,7 @@ Notes keyed by row:
 - **Alarms.** `DescribeAlarms` with the prefix `<env>-` returns 60 alarms on prod and 51 on ci. The capture stores name, state, reason and state time. The dashboard shows a table with the ALARM rows first.
 - **Bedrock.** The log group `/prod/bedrock/invocations` holds prompts and responses (10.6 KB stored, 14-day retention). The capture runs one fixed query only: `stats count(*) as invocations, sum(input.inputTokenCount) as inputTokens, sum(output.outputTokenCount) as outputTokens by bin(1h), modelId`. It stores no log lines.
 - **X-Ray.** `GetServiceGraph` returned 27 services on prod (1 hour) and 21 on ci (6 hours). The capture stores each node's name, type, request count, error, fault and throttle counts, and average response time. The dashboard shows a table sorted by fault count. A drawn map is a later step.
-- **Sibling RUM.** The `spreadsheets` (064390746177) and `gateway` (283165661847) monitors are in us-east-1 in accounts that other repositories own. `GetMetricWidgetImage` accepts only the local Region, so the capture calls it in us-east-1 with a role in each account. Until those repositories create the roles, the two items stay as links.
+- **Sibling RUM.** The `spreadsheets` (064390746177) and `gateway` (283165661847) monitors are in us-east-1 in accounts that other repositories own. `GetMetricWidgetImage` accepts only the local Region, so the prod capture assumes a read role in each account and calls it in us-east-1. `spreadsheets.diyaccounting.co.uk` and `www.diyaccounting.co.uk` each add `<site>-console-capture-read`: trust `arn:aws:iam::972912397388:role/prod-env-console-capture` with an `sts:ExternalId` condition, `cloudwatch:GetMetricWidgetImage` only, `MaxSessionDuration` 3600. Each lands on its own PR in its own repository before the submit build proves the two widgets.
 
 ## IAM
 
@@ -56,7 +57,7 @@ The prod capture Lambda captures prod and ci. The ci capture Lambda captures ci 
 | `logs:GetQueryResults`, `logs:StopQuery` | `*` (no resource type) |
 | `xray:GetServiceGraph` | `*` (no resource type) |
 | `s3:PutObject` | `<lake>/snapshots/<env>/console/*` |
-| `sts:AssumeRole` (prod only) | `arn:aws:iam::367191799875:role/ci-env-console-capture-read` |
+| `sts:AssumeRole` (prod only) | `arn:aws:iam::367191799875:role/ci-env-console-capture-read`, `arn:aws:iam::064390746177:role/spreadsheets-console-capture-read`, `arn:aws:iam::283165661847:role/gateway-console-capture-read` |
 
 **ci read role** (`ci-env-console-capture-read` in 367191799875, created only when `envName` is `ci`):
 
@@ -72,7 +73,7 @@ The build proves the list on ci: a capture with only these grants renders every 
 
 - **Code.** `app/functions/analytics/consoleCapturePublish.js` in the shared Lambda image (`public.ecr.aws/lambda/nodejs:24`). It uses only AWS SDK v3 clients: CloudWatch, CloudWatch Logs, X-Ray, STS and S3. 256 MB, ARM64, 5-minute timeout.
 - **CDK.** A construct `ConsoleCapturePublish` inside `AnalyticsStack`, modelled on `OperatorSnapshotPublish` (log group through `ensureLogGroupWithDependency`, `DockerImageFunction.fromEcr`, errors alarm).
-- **Schedule.** The existing state machine `<env>-env-analytics-nightly` (`NightlyIngestionWorkflow`) starts it. It runs at minute 15 of every hour in prod and at 02:15 UTC on Mondays in ci. A new `Choice` runs the capture when `$$.Execution.StartTime` matches `*T00:*`, `*T06:*`, `*T12:*` or `*T18:*` in prod (4 captures a day), and on every ci run. The task uses `buildOptionalTask`, so a failed capture records `$.failures.consoleCapture` and does not fail the night. Its own errors alarm is the signal.
+- **Schedule.** The existing state machine `<env>-env-analytics-nightly` (`NightlyIngestionWorkflow`) starts it. It runs at minute 15 of every hour in prod and at 02:15 UTC on Mondays in ci. A new `Choice` runs the capture when `$$.Execution.StartTime` matches `*T02:*` in prod (the 02:15 UTC run, once a day), and on every ci run. The task uses `buildOptionalTask`, so a failed capture records `$.failures.consoleCapture` and does not fail the night. Its own errors alarm is the signal.
 - **Order.** The capture goes after the pass figures publish, so it adds no time before the snapshot.
 
 ## Storage
@@ -97,13 +98,13 @@ List prices: `GetMetricWidgetImage` $0.02 per 1,000 metrics requested, never in 
 
 | Item | Per run | Runs a month | Month |
 |---|---|---|---|
-| Widget images, prod and ci (13 widgets each, at most 150 series each) | 3,900 metrics, $0.078 | 120 | $9.36 |
+| Widget images, prod, ci and the two siblings (at most 150 series each) | 4,200 metrics, $0.084 | 30 | $2.52 |
 | Widget images, ci's own capture | 1,950 metrics, $0.039 | 4 | $0.16 |
-| Lambda, 256 MB for 60 s | 15 GB-s | 124 | under $0.05 |
+| Lambda, 256 MB for 60 s | 15 GB-s | 34 | under $0.05 |
 | Logs Insights on 10.6 KB, X-Ray, DescribeAlarms, S3 | — | — | under $0.05 |
-| Total, upper bound | | | about $9.60 |
+| Total, upper bound | | | about $2.75 |
 
-The upper bound assumes 150 series per `SEARCH`. With the narrowed searches (`prod-env` in the term) most widgets return 10 to 40 series, so the expected month is $2 to $4. Hourly captures cost six times as much ($57 upper bound). The capture logs the series count per widget, so the first week shows the real figure.
+The upper bound assumes 150 series per `SEARCH`. With the narrowed searches (`prod-env` in the term) most widgets return 10 to 40 series, so the expected month is under $1. The capture logs the series count per widget, so the first week shows the real figure.
 
 The headless browser (a) for comparison: Lambda 2,048 MB x86 for about 500 s per run (25 pages) is 1,000 GB-s, $0.017 per run, $2.00 a month at 120 runs, plus the console's own `GetMetricData` charges of the same order as (b) and a Chromium image of about 0.5 GB in ECR ($0.05). Fargate at 1 vCPU and 2 GB for 10 minutes is about $0.01 per run, and needs a VPC with a public subnet.
 
@@ -126,6 +127,7 @@ The headless browser (a) for comparison: Lambda 2,048 MB x86 for about 500 s per
 
 ## Build steps (DASH19)
 
+0. In `../spreadsheets.diyaccounting.co.uk` and `../www.diyaccounting.co.uk`, add the read role from the Sibling RUM note to each repository's CDK, one PR each.
 1. Add a stable `id` to each link in `web/public/operator/dashboard.awslinks.js` (for example `prod-lambda-errors`), and rename the groups to the four DASH17 names if DASH17 has not landed.
 2. Write `app/services/consoleCaptureCatalogue.js`: one entry per link id with its environment, title, approach and widget JSON or query. Each `SEARCH` uses `SORT(..., DESC, 10)` and the environment term.
 3. Write `app/functions/analytics/consoleCapturePublish.js`: for each environment (prod and, through `sts:AssumeRole`, ci; or ci alone), render the widgets, run `DescribeAlarms`, the Bedrock query and `GetServiceGraph`, write the PNGs and `index.json`, and log the series count per widget. One failed item records its error in the index and does not stop the others.
@@ -139,5 +141,5 @@ The headless browser (a) for comparison: Lambda 2,048 MB x86 for about 500 s per
 11. In `web/public/operator/dashboard.awslinks.js` and `web/public/operator/dashboard.page.js`, render each link as a heading (the link) beside its image or table and the time captured. Draw the Bedrock series with `web/public/operator/dashboard.charts.js`. Show "Not captured yet" when the index has no entry.
 12. Extend `web/browser-tests/operatorDashboard.browser.test.js`: a stub snapshot with a `console` index and a stub PNG; the image shows with its time; an item with an error shows the error text.
 13. Add the capability entries to `REPORT_CAPABILITIES.md` (the capture and the image route).
-14. Run `npm test` and `./mvnw clean verify`. Deploy to ci, start one capture with `aws stepfunctions start-execution` on `ci-env-analytics-nightly`, and check every widget on the ci dashboard. Run curl for signed out (401), customer (403) and operator (200) on the image route.
+14. Run `npm test` and `./mvnw clean verify`. Deploy to ci. Print `aws --profile diya-submit-ci stepfunctions start-execution --state-machine-arn <ci-env-analytics-nightly arn>` for the operator in a `!` block (a Step Functions invocation is the operator's), then read the execution and check every widget on the ci dashboard. Run curl for signed out (401), customer (403) and operator (200) on the image route.
 15. Follow the visual definition of done in `CLAUDE.md`: the `visual-review` skill on the dashboard screenshots.
