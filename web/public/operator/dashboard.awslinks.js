@@ -72,12 +72,15 @@
 
   function groups() {
     const result = [];
-    const analytics = { title: "Replaces the CloudWatch analytics dashboard", links: [] };
-    const operations = { title: "Replaces the CloudWatch operations dashboard", links: [] };
     ENVIRONMENTS.forEach((env) => {
+      const analytics = { title: "Analytics on AWS " + env.id, links: [] };
       analyticsQueries.forEach(([label, query]) => {
         analytics.links.push({ label: label, account: env.account, env: env.id, href: metricsSearchUrl(env.region, query) });
       });
+      result.push(analytics);
+    });
+    ENVIRONMENTS.forEach((env) => {
+      const operations = { title: "Operations on AWS " + env.id, links: [] };
       operationsQueries.forEach(([label, query]) => {
         operations.links.push({ label: label, account: env.account, env: env.id, href: metricsSearchUrl(env.region, query) });
       });
@@ -95,22 +98,22 @@
         href: logsInsightsUrl(env.region, "/" + env.id + "/bedrock/invocations"),
       });
       operations.links.push({ label: "X-Ray service map", account: env.account, env: env.id, href: xrayUrl(env.region) });
+      if (env.id === "prod") {
+        SIBLING_RUM.forEach((rum) => {
+          operations.links.push({ label: rum.label, account: rum.account, env: "prod", href: rumUrl(rum.region, rum.monitor) });
+        });
+      }
+      result.push(operations);
     });
-    SIBLING_RUM.forEach((rum) => {
-      operations.links.push({
-        label: rum.label,
-        account: rum.account,
-        env: "prod",
-        href: rumUrl(rum.region, rum.monitor),
-      });
-    });
-    result.push(analytics, operations);
     return result;
   }
 
+  // Called by the page once the operator snapshot request has shown the caller holds the
+  // operator bundle; until then the panel stays hidden and holds no link.
   function render() {
     const mount = document.getElementById("awsLinksGroups");
-    if (!mount) return;
+    mount.replaceChildren();
+    document.getElementById("awsLinksPanel").hidden = false;
     groups().forEach((group) => {
       const heading = document.createElement("h3");
       heading.textContent = group.title;
@@ -131,6 +134,5 @@
     });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
-  else render();
+  window.renderAwsLinks = render;
 })();

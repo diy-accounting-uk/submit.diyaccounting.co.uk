@@ -727,9 +727,60 @@ test.describe("Operator Dashboard", () => {
     await expect(bedrock).toHaveCount(2);
     await expect(bedrock.first()).toHaveAttribute("href", /#logsV2:logs-insights.*\*2fprod\*2fbedrock\*2finvocations/);
     await expect(page.locator("#awsLinksGroups h3")).toHaveText([
-      "Replaces the CloudWatch analytics dashboard",
-      "Replaces the CloudWatch operations dashboard",
+      "Analytics on AWS prod",
+      "Analytics on AWS ci",
+      "Operations on AWS prod",
+      "Operations on AWS ci",
     ]);
+    const groupLinks = (title) =>
+      page.locator("#awsLinksGroups h3", { hasText: title }).evaluate((heading) =>
+        [...heading.nextElementSibling.querySelectorAll("a")].map((anchor) => anchor.textContent),
+      );
+    for (const title of ["Analytics on AWS prod", "Operations on AWS prod"]) {
+      for (const text of await groupLinks(title)) expect(text).toContain("(prod, account ");
+    }
+    for (const title of ["Analytics on AWS ci", "Operations on AWS ci"]) {
+      for (const text of await groupLinks(title)) expect(text).toContain("submit-ci 367191799875");
+    }
+  });
+
+  test.describe("entitlement", () => {
+    test("draws no panel, heading or AWS link for a signed-in caller without the operator bundle", async ({ page }) => {
+      await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
+      await page.route("**/api/v1/pass/held*", (route) =>
+        route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify(FORBIDDEN_BODY) }),
+      );
+      await loadDashboard(page, { loggedIn: true });
+
+      await expect(page.locator("main section.objective:visible")).toHaveCount(0);
+      await expect(page.locator("#awsLinksPanel")).toBeHidden();
+      await expect(page.locator("#awsLinksGroups a")).toHaveCount(0);
+      await expect(page.locator("#awsLinksGroups h3")).toHaveCount(0);
+      await expect(page.locator("#visitorsPanel")).toBeHidden();
+      await expect(page.locator(".chart-card")).toHaveCount(0);
+    });
+
+    test("draws no panel, heading or AWS link for a signed-out visitor, and says to sign in", async ({ page }) => {
+      await setupRoutes(page, { snapshotStatus: 401, snapshotBody: { message: "Unauthorized" } });
+      await page.route("**/api/v1/pass/held*", (route) =>
+        route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Unauthorized" }) }),
+      );
+      await loadDashboard(page);
+
+      await expect(page.locator("#snapshotError")).toHaveText("Sign in with an operator account to see this page.");
+      await expect(page.locator("main section.objective:visible")).toHaveCount(0);
+      await expect(page.locator("#awsLinksGroups a")).toHaveCount(0);
+      await expect(page.locator("#awsLinksGroups h3")).toHaveCount(0);
+    });
+
+    test("draws the panels and the AWS links for an operator", async ({ page }) => {
+      await setupRoutes(page);
+      await loadDashboard(page, { loggedIn: true });
+
+      await expect(page.locator("#visitorsPanel")).toBeVisible();
+      await expect(page.locator("#awsLinksPanel")).toBeVisible();
+      await expect(page.locator("#awsLinksGroups h3")).toHaveCount(4);
+    });
   });
 
   test("renders the eight objectives in order", async ({ page }) => {
