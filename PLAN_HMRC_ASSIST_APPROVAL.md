@@ -5,7 +5,7 @@
 
 HMRC Assist returns up to five feedback messages on a draft return before it is filed. It is live for Income Tax (the Self Assessment Assist (MTD) API, sandbox and production) and arrives for VAT in April 2027 (the VAT Assist (MTD) API, listed on the Developer Hub without documentation on 2026-10-03, early adopters in production from January 2027). This plan takes HMRC Assist over from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ENGAGEMENT.md` item 24 and designs the integration from what HMRC has published: the Income Tax API's specification, the VAT service guide's rules, the June 2026 slides and the three emails.
 
-Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. HA8a is on main (e27327599, PR #530). HA8b's sandbox run passed 5 of 5 on 2026-11-02 (`../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/RUN_SANDBOX_HMRC_ASSIST_2026-11-02.md`); its three suite fixes are on PR #665. Open: HA9 (the operator sends the production-access email, OHA9), then HA8b's `prod` listing when HMRC grants production access.
+Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. HA8a is on main (e27327599, PR #530). HA8b's sandbox run passed 5 of 5 on 2026-11-02 (`../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/RUN_SANDBOX_HMRC_ASSIST_2026-11-02.md`); its three suite fixes are on PR #665. HA9's email went on 2026-11-02 (`../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/EMAIL_HMRC_ASSIST_SANDBOX_RUN.md`). Open: HA8b's `prod` listing, when HMRC's email about the January 2027 live testing says how production access is given.
 
 ## Operator assertions (verbatim)
 
@@ -140,7 +140,6 @@ The VAT half follows the published specification (<https://developer.service.hmr
 | HA7 (done) | The video scene: the VAT return checked with HMRC Assist on the simulator, added to `videos/` and `web/public/videos/publish.json` through `site-video-capture` and `video-publish` | `videos/vat-hmrc-assist.json`, `web/public/videos/publish.json` | ~2 | Sonnet | HA5 |
 | HA8a | The real VAT contract, built: rewrite `hmrcAssistApi.js`'s VAT half and its tests and the simulator's VAT routes to the published `mtd-transaction-risking` 1.0 paths, bodies and scenarios (HMRC's email of 2026-10-21 links the documentation) | `app/lib/hmrcAssistApi.js`, its test, `app/http-simulator/routes/vat-assist.js`, `app/http-simulator/scenarios/assist.js` | ~4 | Sonnet | none |
 | HA8b | The sandbox proof: subscribe the Developer Hub sandbox application, run HA5 against the sandbox, and record the run for the early adopter proof; `prod` on `vat-assist-check` waits for HMRC's production access (early adopters from January 2027) | the run record | ~1 | Sonnet | HA8a; the operator's reply with the sandbox application name and ID (OHA8); HMRC granting access |
-| HA9 | The sandbox-run email: report the 2026-11-02 sandbox run with its references and UTC times and the attached screenshot, say we look forward to HMRC's email on the January 2027 live testing (their 2026-10-21 email added us to the mailing list), and offer Income Tax readiness in one sentence; no questions (decisions 11 and 12 settle the plan's questions 4 and 6); the draft is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/DRAFT_EMAIL_HMRC_ASSIST_PRODUCTION_ACCESS.md`, sent by the operator (`NEXT.md` OHA9) | the sent copy | 0 | Opus (draft) | HA8b's sandbox run |
 
 Order: HA1, HA2 and HA6's privacy text in the first wave (HA1 and HA2 share the simulator contract, so one agent runs HA1 then HA2); HA3 and HA4 next, one agent, VAT then Income Tax; HA5, then HA7. HA8a runs now; HA8b waits on OHA8 and HMRC's access grant.
 
@@ -153,7 +152,7 @@ HA1 ──► HA2 ──► HA3 ──► HA3a ──► HA4 ──► HA5 ─�
          │               
          └──► HA6 (receipts page; the privacy text is independent)
 HA8a ──► HA8b ◄── OHA8 (sandbox application name and ID to HMRC) ◄── HMRC's access grant
-HA8b's sandbox run ──► HA9 (OHA9, the production-access email) ──► HMRC's answer ──► HA8b's `prod` listing
+HMRC's January 2027 live-testing email ──► HA8b's `prod` listing
 ```
 
 ## Production approval
@@ -176,7 +175,7 @@ Where Submit stands:
 1. The early adopter interest email went to HMRC on 2026-10-20, after the Income Tax sandbox run (HA4).
 2. Sandbox access for VAT Assist was granted on 2026-11-02.
 3. The VAT and Income Tax Assist suite passed 5 of 5 against HMRC's sandbox on 2026-11-02. The record is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/RUN_SANDBOX_HMRC_ASSIST_2026-11-02.md`.
-4. The sandbox-run email (HA9) reports the run and says we look forward to HMRC's email on the January live testing. The operator sends it (`NEXT.md` OHA9).
+4. The sandbox-run email went to HMRC on 2026-11-02 at 20:13 with the run's references and the screenshot.
 5. The VAT Assist control stays off on prod until HMRC grants production access. That is the HA8b remainder: add `prod` to `vat-assist-check` in `web/public/submit.catalogue.toml` and update the availability table on `web/public/mtd-calendar.html`.
 
 Income Tax Assist is live in HMRC's production, but Submit can call it only after HMRC recognises Submit for Income Tax (MTD) and issues production credentials. That is the IA5 to IA8 chain in `PLAN_ITSA_APPROVAL.md`, which waits for HMRC's 2027 update. UH3 then unhides the Income Tax forms on prod.
