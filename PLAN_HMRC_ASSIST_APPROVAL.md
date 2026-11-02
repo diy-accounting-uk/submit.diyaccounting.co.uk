@@ -5,7 +5,7 @@
 
 HMRC Assist returns up to five feedback messages on a draft return before it is filed. It is live for Income Tax (the Self Assessment Assist (MTD) API, sandbox and production) and arrives for VAT in April 2027 (the VAT Assist (MTD) API, listed on the Developer Hub without documentation on 2026-10-03, early adopters in production from January 2027). This plan takes HMRC Assist over from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ENGAGEMENT.md` item 24 and designs the integration from what HMRC has published: the Income Tax API's specification, the VAT service guide's rules, the June 2026 slides and the three emails.
 
-Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. HA8a is on main (e27327599, PR #530). Open: HA8b.
+Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. HA8a is on main (e27327599, PR #530). HA8b's sandbox run passed 5 of 5 on 2026-11-02 (`../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/RUN_SANDBOX_HMRC_ASSIST_2026-11-02.md`); its two suite fixes are on `claude/upsilon-hmrc-assist`. Open: HA8b's `prod` listing, held for HMRC's production access.
 
 ## Operator assertions (verbatim)
 
