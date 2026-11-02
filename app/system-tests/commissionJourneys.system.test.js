@@ -109,7 +109,7 @@ beforeEach(async () => {
   };
 });
 
-async function seedAccounts() {
+async function seedAccounts({ withSubscriptionRecord = true } = {}) {
   const now = "2025-12-01T00:00:00.000Z";
   await bundles.putBundleByHashedSub(ids.referrer, {
     bundleId: "resident",
@@ -123,13 +123,15 @@ async function seedAccounts() {
     stripeSubscriptionId: ids.subscription,
     subscriptionStatus: "active",
   });
-  await subscriptions.putSubscription({
-    pk: `stripe#${ids.subscription}`,
-    hashedSub: ids.redeemer,
-    bundleId: "resident",
-    status: "active",
-    actor: "customer",
-  });
+  if (withSubscriptionRecord) {
+    await subscriptions.putSubscription({
+      pk: `stripe#${ids.subscription}`,
+      hashedSub: ids.redeemer,
+      bundleId: "resident",
+      status: "active",
+      actor: "customer",
+    });
+  }
   await passes.putReferralClaim(ids.redeemer, ids.code, now);
   await passes.putRedemption({ code: ids.code, hashedSub: ids.redeemer, issuedBy: ids.referrer, passTypeId: "referral", redeemedAt: now });
 }
@@ -224,6 +226,19 @@ describe("commission journeys on dynalite and the Stripe simulator", () => {
     expect(await creditPayout.handler()).toMatchObject({ considered: 0, paid: 0 });
     expect(stripeState.customers[ids.referrerCustomer].balance).toBe(-990);
     expect(await cashPayout.handler()).toEqual({ status: "off" });
+  });
+
+  test("J1b first invoice before the subscription record: invoice.paid accrues from the invoice metadata, once", async () => {
+    await seedAccounts({ withSubscriptionRecord: false });
+    const invoice = invoiceFor(0);
+    invoice.parent.subscription_details.metadata = { hashedSub: ids.redeemer, bundleId: "resident", actor: "customer" };
+    stripeState.invoices[invoice.id] = invoice;
+
+    await sendWebhook("invoice.paid", invoice);
+    await sendWebhook("invoice.paid", invoice);
+
+    expect(shape(await lineOf(0))).toEqual({ state: "held", tier: "customer", form: "credit", amountPence: 330, holdReasons: [] });
+    expect(await subscriptions.getSubscription(`stripe#${ids.subscription}`)).toBeNull();
   });
 
   test("J2 family: the first month is held as not approved until the referrer is approved, and then needs a hand payment", async () => {
