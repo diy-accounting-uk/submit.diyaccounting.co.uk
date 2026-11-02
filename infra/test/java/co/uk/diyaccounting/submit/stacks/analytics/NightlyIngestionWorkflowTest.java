@@ -118,29 +118,21 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void
-            definitionRunsFiveIngestionJobsInParallelThenDataQualityThenMetricsPublishThenRawExportThenOperatorSnapshotThenSucceed() {
+    void definitionRunsIngestionJobsInParallelThenTheNightlyStepsOnlyWhenDueThenOperatorSnapshotThenPassFigures() {
         Template template = synthWorkflow();
 
         var definitionText = joinedDefinitionString(template);
 
-        // State names appear in the definition text in the order the Chain wires them: the
-        // Parallel branch's five tasks, then data quality, then metrics publish, then raw
-        // export. Each state's own definition is keyed as "<name>":{ - distinct from the
-        // "Next":"<name>" reference to it, which appears earlier (the Parallel state's own
-        // "Next" points at "data quality run" before its Branches array even starts), so
-        // indexOf on the bare name would find the wrong occurrence.
+        // Each state's own definition is keyed as "<name>":{ - distinct from the "Next":"<name>"
+        // reference to it, which can appear earlier, so indexOf on the bare name would find the
+        // wrong occurrence.
         int parallelIndex = definitionText.indexOf("\"Run ingestion jobs\":{");
         int stripeIndex = definitionText.indexOf("\"Stripe reconciliation\":{");
         int ga4ReportIndex = definitionText.indexOf("\"GA4 report pull\":{");
         int ga4EventIndex = definitionText.indexOf("\"GA4 event export pull\":{");
         int ga4DailyIndex = definitionText.indexOf("\"GA4 daily aggregate pull\":{");
         int operatorEffortIndex = definitionText.indexOf("\"operator effort pull\":{");
-        int dataQualityIndex = definitionText.indexOf("\"data quality run\":{");
-        int metricsPublishIndex = definitionText.indexOf("\"metrics publish\":{");
-        int rawExportIndex = definitionText.indexOf("\"raw export publish\":{");
-        int operatorSnapshotIndex = definitionText.indexOf("\"operator snapshot publish\":{");
-        int passFiguresIndex = definitionText.indexOf("\"pass figures publish\":{");
+        int choiceIndex = definitionText.indexOf("\"nightly steps due\":{");
 
         assertTrue(parallelIndex >= 0, "expected the parallel branch state");
         assertTrue(stripeIndex > parallelIndex, "Stripe task should be nested inside the parallel branch");
@@ -154,20 +146,34 @@ class NightlyIngestionWorkflowTest {
         assertTrue(
                 operatorEffortIndex > parallelIndex,
                 "operator effort pull task should be nested inside the parallel branch");
-        assertTrue(dataQualityIndex > parallelIndex, "data quality should run after the parallel branch");
-        assertTrue(metricsPublishIndex > dataQualityIndex, "metrics publish should run after data quality");
-        assertTrue(rawExportIndex > metricsPublishIndex, "raw export should run after metrics publish");
+        assertTrue(choiceIndex > parallelIndex, "the nightly-steps choice should follow the parallel branch");
         assertTrue(
-                operatorSnapshotIndex > rawExportIndex,
-                "the operator snapshot should publish after every ingestion job and export has finished");
+                stateText(definitionText, "Run ingestion jobs").contains("\"Next\":\"nightly steps due\""),
+                "the parallel branch should go to the nightly-steps choice");
+
+        var choice = stateText(definitionText, "nightly steps due");
+        assertTrue(choice.contains("\"Type\":\"Choice\""), "expected a Choice state: " + choice);
         assertTrue(
-                passFiguresIndex > operatorSnapshotIndex,
-                "the pass figures should publish after the operator snapshot");
+                choice.contains("\"Variable\":\"$$.Execution.StartTime\",\"StringMatches\":\"*T02:*\""),
+                "the nightly steps should run on the 02:xx UTC start: " + choice);
+        assertTrue(
+                choice.contains("\"Variable\":\"$.date\",\"IsPresent\":true"),
+                "an execution input naming a date should run the nightly steps: " + choice);
+        assertTrue(choice.contains("\"Next\":\"data quality run\""), "the due branch should start at data quality");
+        assertTrue(
+                choice.contains("\"Default\":\"operator snapshot publish\""),
+                "every other run should go straight to the operator snapshot: " + choice);
+
+        assertTrue(stateText(definitionText, "data quality run").contains("\"Next\":\"metrics publish\""));
+        assertTrue(stateText(definitionText, "metrics publish").contains("\"Next\":\"raw export publish\""));
+        assertTrue(stateText(definitionText, "raw export publish").contains("\"Next\":\"operator snapshot publish\""));
+        assertTrue(
+                stateText(definitionText, "operator snapshot publish").contains("\"Next\":\"pass figures publish\""));
 
         // Exactly five LambdaInvoke tasks named as the ingestion jobs sit in the parallel
         // branch: the definition contains no sixth job's state key between the parallel
         // branch's open and the data quality task.
-        var parallelBranchSlice = definitionText.substring(parallelIndex, dataQualityIndex);
+        var parallelBranchSlice = definitionText.substring(parallelIndex, choiceIndex);
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"Stripe reconciliation\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 report pull\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 event export pull\":{"));
@@ -329,7 +335,9 @@ class NightlyIngestionWorkflowTest {
             "data quality run",
             "metrics publish",
             "raw export publish",
-            "operator snapshot publish");
+            "nightly steps due",
+            "operator snapshot publish",
+            "pass figures publish");
 
     /** The text of one state's definition, up to where the next state's definition starts. */
     private static String stateText(String definitionText, String stateName) {

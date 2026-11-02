@@ -1115,6 +1115,84 @@ describe("operatorSnapshotPublish", () => {
       expect(visitors.hourly.series[1].values.at(-1)).toBe(3);
     });
 
+    function recordChartQueries() {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["day", "component", "value", "actor_group", "submissions", "submitters"],
+                [[END_DAY, "human", "3", "customer", "5", "2"]],
+              ),
+            });
+        }
+      });
+      return queries;
+    }
+
+    test("buildDailyCharts reuses the previous daily series under six hours old and queries only the hourly series", async () => {
+      const queries = recordChartQueries();
+      const firstRunAt = new Date(`${END_DAY}T09:15:00.000Z`);
+      const first = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now: firstRunAt });
+      const firstRunQueryCount = queries.length;
+      queries.length = 0;
+
+      const second = await buildDailyCharts({
+        workGroup: "wg",
+        database: "db",
+        endDay: END_DAY,
+        now: new Date(`${END_DAY}T14:15:00.000Z`),
+        previous: first.dailyCharts,
+      });
+
+      expect(firstRunQueryCount).toBe(35);
+      expect(queries).toHaveLength(3);
+      expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
+      expect(second.failedChartIds).toEqual([]);
+      expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
+      expect(second.dailyCharts.charts.map((chart) => chart.modes.map((mode) => mode.series))).toEqual(
+        first.dailyCharts.charts.map((chart) => chart.modes.map((mode) => mode.series)),
+      );
+      expect(second.dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation).toBe(
+        first.dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation,
+      );
+    });
+
+    test("buildDailyCharts queries every daily series again at six hours old or on a new day", async () => {
+      const queries = recordChartQueries();
+      const firstRunAt = new Date(`${END_DAY}T09:15:00.000Z`);
+      const first = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now: firstRunAt });
+      const firstRunQueryCount = queries.length;
+
+      queries.length = 0;
+      const sixHoursOn = new Date(`${END_DAY}T15:15:00.000Z`);
+      const stale = await buildDailyCharts({
+        workGroup: "wg",
+        database: "db",
+        endDay: END_DAY,
+        now: sixHoursOn,
+        previous: first.dailyCharts,
+      });
+      expect(queries).toHaveLength(firstRunQueryCount);
+      expect(stale.dailyCharts.dailySeriesQueriedAt).toBe(sixHoursOn.toISOString());
+
+      queries.length = 0;
+      await buildDailyCharts({
+        workGroup: "wg",
+        database: "db",
+        endDay: "2026-10-29",
+        now: new Date("2026-10-29T00:15:00.000Z"),
+        previous: first.dailyCharts,
+      });
+      expect(queries).toHaveLength(firstRunQueryCount);
+    });
+
     test("a failing hourly query leaves the chart without its hourly series and counts as a failure", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -1436,6 +1514,7 @@ describe("operatorSnapshotPublish", () => {
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       expect(startCalls).toHaveLength(WINDOWED_QUERY_COUNT + FAST_WINDOW_VIEW_COUNT);
+      expect(startCalls).toHaveLength(43);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -2108,7 +2187,29 @@ describe("operatorSnapshotPublish", () => {
       const result = await handler();
 
       expect(result).toEqual({ environment: "test", objectives: 10 });
-      expect(mockS3Send).toHaveBeenCalledTimes(2);
+      expect(mockS3Send.mock.calls.map(([command]) => command.constructor.name)).toEqual([
+        "GetObjectCommand",
+        "PutObjectCommand",
+        "PutObjectCommand",
+      ]);
+    });
+
+    test("reads the last published snapshot and reuses its daily chart series", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+      const startCount = () =>
+        mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand").length;
+
+      await handler();
+      const firstRunQueries = startCount();
+      const published = mockS3Send.mock.calls.find(([command]) => command.constructor.name === "PutObjectCommand")[0].input.Body;
+
+      mockS3Send.mockImplementation((command) =>
+        Promise.resolve(command.constructor.name === "GetObjectCommand" ? { Body: { transformToString: async () => published } } : {}),
+      );
+      await handler();
+
+      expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 32);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
@@ -2123,7 +2224,7 @@ describe("operatorSnapshotPublish", () => {
       mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
 
       await expect(handler()).rejects.toThrow(/1 observation/);
-      expect(mockS3Send).toHaveBeenCalledTimes(2);
+      expect(mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand")).toHaveLength(2);
     });
   });
 });

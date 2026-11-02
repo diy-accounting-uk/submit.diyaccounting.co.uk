@@ -6,7 +6,7 @@
 // spotless:off
 // @capability DATA-22 Orchestrate the nightly ingestion workflow
 // - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs five ingestion jobs, then data quality, metrics publish and raw export publish. There is no Catch: any failure stops the chain, not a false zero.
+// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish. There is no Catch: any failure stops the chain, not a false zero.
 // - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -39,6 +39,8 @@ import software.amazon.awscdk.services.scheduler.TimeWindow;
 import software.amazon.awscdk.services.scheduler.targets.StepFunctionsStartExecution;
 import software.amazon.awscdk.services.stepfunctions.CatchProps;
 import software.amazon.awscdk.services.stepfunctions.Chain;
+import software.amazon.awscdk.services.stepfunctions.Choice;
+import software.amazon.awscdk.services.stepfunctions.Condition;
 import software.amazon.awscdk.services.stepfunctions.DefinitionBody;
 import software.amazon.awscdk.services.stepfunctions.Errors;
 import software.amazon.awscdk.services.stepfunctions.JsonPath;
@@ -61,8 +63,9 @@ import software.constructs.Construct;
  *
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
- * once, since they share no data; then the data quality run; then the metrics publish; then the
- * raw export publish; then the operator snapshot publish; then the pass figures publish; then {@code Succeed}. In prod it runs
+ * once, since they share no data; then, on the 02:15 UTC run or an execution input that names a
+ * {@code date}, the data quality run, the metrics publish and the raw export publish; then the
+ * operator snapshot publish; then the pass figures publish; then {@code Succeed}. In prod it runs
  * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
@@ -90,6 +93,13 @@ import software.constructs.Construct;
  * owned by a sibling stack.
  */
 public class NightlyIngestionWorkflow {
+
+    /**
+     * The execution start times that also run the data quality run, the metrics publish and the
+     * raw export: the 02:15 UTC run. Those three report or check whole days, so the other hourly
+     * runs go from the ingestion jobs straight to the operator snapshot.
+     */
+    static final String NIGHTLY_START_TIME_PATTERN = "*T02:*";
 
     public final StateMachine stateMachine;
     public final Schedule schedule;
@@ -250,13 +260,20 @@ public class NightlyIngestionWorkflow {
                 props.passFiguresPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
-        var definition = Chain.start(ingestionParallel)
-                .next(dataQualityTask)
-                .next(metricsPublishTask)
-                .next(rawExportTask)
-                .next(operatorSnapshotTask)
-                .next(passFiguresTask)
-                .next(succeed);
+        operatorSnapshotTask.next(passFiguresTask).next(succeed);
+        var nightlyStepsDue = Choice.Builder.create(scope, prefix + "-Nightly-NightlyStepsDue")
+                .stateName("nightly steps due")
+                .build()
+                .when(
+                        Condition.or(
+                                Condition.stringMatches("$$.Execution.StartTime", NIGHTLY_START_TIME_PATTERN),
+                                Condition.isPresent("$.date")),
+                        Chain.start(dataQualityTask)
+                                .next(metricsPublishTask)
+                                .next(rawExportTask)
+                                .next(operatorSnapshotTask))
+                .otherwise(operatorSnapshotTask);
+        var definition = Chain.start(ingestionParallel).next(nightlyStepsDue);
 
         // ============================================================================
         // State machine
