@@ -152,7 +152,7 @@ export const AVAILABILITY = [
     activity: "file-micro-entity-accounts",
     otherActivities: ["file-small-company-accounts"],
     video: "yPSpvLKrTJU",
-    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox", "micro-entity"], NOT_OFFERED],
+    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",

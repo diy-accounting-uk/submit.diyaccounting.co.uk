@@ -495,23 +495,23 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-micro-entity-accounts"
-name = "File Micro-entity Accounts (Companies House, sandbox)"
+name = "File Micro-entity Accounts (Companies House)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-small-company-accounts"
-name = "File Small Company Accounts (Companies House, sandbox)"
+name = "File Small Company Accounts (Companies House)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-company-tax-return"

@@ -54,9 +54,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "A sandbox preview against Companies House's test filing service.",
-          "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "caption": "Filed straight to Companies House through its XML Gateway.",
+          "headline": "Filed to Companies House",
+          "keyWord": "Companies House"
         },
         {
           "action": "caption",
@@ -147,7 +147,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Small Company Accounts (Companies House, sandbox)')",
+          "until": "button:has-text('File Small Company Accounts (Companies House)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -165,7 +165,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "File Small Company Accounts (Companies House, sandbox)"
+            "name": "File Small Company Accounts (Companies House)"
           },
           "expectsNavigation": true,
           "caption": "Open File Small Company Accounts to find the company.",
@@ -523,9 +523,9 @@
         {
           "action": "click",
           "target": "#submitFilingBtn",
-          "caption": "Submit the filing to Companies House's sandbox.",
-          "headline": "Submit to the sandbox",
-          "keyWord": "sandbox"
+          "caption": "Submit the filing to Companies House.",
+          "headline": "Submit the filing",
+          "keyWord": "Submit"
         },
         {
           "action": "await",
