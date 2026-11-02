@@ -22,7 +22,7 @@
 // itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { AWS_ACCOUNT_NAMES_BY_ID } from "../../lib/operatorSnapshot/awsAccounts.js";
@@ -1805,25 +1805,51 @@ export function buildChartSeries({ days, rows, mode }) {
   return series;
 }
 
+export const DAILY_SERIES_REFRESH_HOURS = 6;
+
+// The previous snapshot's daily charts, when they end on the same day and their daily series were
+// queried less than DAILY_SERIES_REFRESH_HOURS ago.
+function reusableDailyCharts(previous, endDay, now) {
+  if (!previous || !Array.isArray(previous.charts) || previous.days?.at(-1) !== endDay) return null;
+  const ageMs = now.getTime() - Date.parse(previous.dailySeriesQueriedAt);
+  return ageMs >= 0 && ageMs < DAILY_SERIES_REFRESH_HOURS * 60 * 60 * 1000 ? previous : null;
+}
+
 /**
  * Runs each chart mode's query and assembles the daily charts for the snapshot. A mode whose
  * query fails leaves its chart out and is returned in `failedChartIds`, so one missing view does
  * not stop the other charts publishing.
  *
- * @returns {Promise<{dailyCharts: {days: string[], hours: string[], charts: object[]}, failedChartIds: string[]}>}
+ * Each 90-day daily query reads every object of its view's tables, and the series changes only in
+ * its last point during a day. So when `previous` (the last snapshot's dailyCharts) ends on the
+ * same day and its daily series were queried less than DAILY_SERIES_REFRESH_HOURS ago, each mode
+ * and reconciliation line it holds is reused. The 168-hour series are queried on every run.
+ *
+ * @returns {Promise<{dailyCharts: {days: string[], hours: string[], dailySeriesQueriedAt: string, charts: object[]}, failedChartIds: string[]}>}
  */
-export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10), now = new Date() }) {
+export async function buildDailyCharts({
+  workGroup,
+  database,
+  endDay = new Date().toISOString().slice(0, 10),
+  now = new Date(),
+  previous = null,
+}) {
   const days = dailyChartDays(endDay);
   const hours = hourlyChartHours(now);
   const definitions = buildDailyChartDefinitions();
   const failedChartIds = new Set();
+  const reusable = reusableDailyCharts(previous, endDay, now);
+  const previousChart = (chartId) => reusable?.charts.find((chart) => chart.id === chartId);
 
   const modeResults = await mapInOrderWithConcurrency(
     definitions.flatMap((definition) => definition.modes.map((mode) => ({ definition, mode }))),
     OBSERVATION_QUERY_CONCURRENCY,
     async ({ definition, mode }) => {
       try {
-        const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
+        const previousMode = previousChart(definition.id)?.modes?.find((candidate) => candidate.id === mode.id);
+        const series = previousMode
+          ? previousMode.series
+          : buildChartSeries({ days, rows: await runAthenaQuery({ workGroup, database, sql: mode.sql }), mode });
         let hourly = null;
         if (mode.hourlySql) {
           try {
@@ -1851,7 +1877,7 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
             id: mode.id,
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
-            series: buildChartSeries({ days, rows, mode }),
+            series,
             ...(hourly ? { hourly } : {}),
           },
         };
@@ -1883,6 +1909,11 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
   for (const chart of charts) {
     const { reconciliation } = definitions.find((definition) => definition.id === chart.id);
     if (!reconciliation) continue;
+    const previousReconciliation = previousChart(chart.id)?.reconciliation;
+    if (previousReconciliation) {
+      chart.reconciliation = previousReconciliation;
+      continue;
+    }
     try {
       const rows = await runAthenaQuery({ workGroup, database, sql: reconciliation.sql });
       const series = chart.modes.flatMap((mode) => mode.series);
@@ -1896,7 +1927,8 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
       });
     }
   }
-  return { dailyCharts: { days, hours, charts }, failedChartIds: [...failedChartIds] };
+  const dailySeriesQueriedAt = reusable ? reusable.dailySeriesQueriedAt : now.toISOString();
+  return { dailyCharts: { days, hours, dailySeriesQueriedAt, charts }, failedChartIds: [...failedChartIds] };
 }
 
 export const COST_DRIVER_DAYS = 30;
@@ -2130,6 +2162,18 @@ export async function writeSnapshot({ bucket, envName, snapshot }) {
   );
 }
 
+// The last published snapshot, or null when there is none or it cannot be read: the run then
+// queries every daily chart.
+export async function readPreviousSnapshot({ bucket, envName }) {
+  try {
+    const response = await getS3Client().send(new GetObjectCommand({ Bucket: bucket, Key: `snapshots/${envName}/latest.json` }));
+    return JSON.parse(await response.Body.transformToString());
+  } catch (error) {
+    logger.warn({ message: "Previous snapshot not read, querying every daily chart", error: error.message });
+    return null;
+  }
+}
+
 /**
  * Rebuilds every objective and publishes the snapshot. The ingestion state machine runs it as
  * its last step, so the daily sources have landed before it reads.
@@ -2153,7 +2197,8 @@ export async function handler() {
   };
 
   const built = await buildSnapshot({ workGroup, database, context });
-  const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
+  const previousSnapshot = await readPreviousSnapshot({ bucket: lakeBucket, envName });
+  const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database, previous: previousSnapshot?.dailyCharts ?? null });
   let costDrivers = null;
   let failedCostDrivers = 0;
   try {

@@ -18,23 +18,22 @@
 -- an account that any of its events shows to be a test user, synthetic or probe account has its
 -- 'customer' events read as 'test-user' here, and an account that any event shows to be an
 -- operator's has them read as 'operator', so every v_* view that filters on actor = 'customer'
--- counts real customers only.
+-- counts real customers only. The account's flags come from window aggregates over the one scan
+-- of the table, so a query through this view reads each object of activity_events once.
 CREATE OR REPLACE VIEW activity_events_all AS
-SELECT e.event_id, e.event_ts, e.ingest_ts, e.event, e.site, e.summary,
-       CASE WHEN e.actor = 'customer' AND s.account_actor IS NOT NULL THEN s.account_actor ELSE e.actor END AS actor,
-       e.flow, e.outcome, e.failure,
-       e.request_id, e.hashed_sub, e.bundle_id, e.pass_type_id, e.subscription_id, e.visitor_type,
-       e.country, e.page, e.hmrc_status, e.client_id, e.env, e.detail_json, e.app_client, e.session_id,
-       e.activity_id, e.dt
-FROM   activity_events e
-LEFT   JOIN (
-         SELECT hashed_sub,
-                CASE WHEN bool_or(actor IN ('test-user', 'synthetic', 'probe')
-                                  OR regexp_like(summary, '@test\.diyaccounting\.co\.uk'))
-                     THEN 'test-user' ELSE 'operator' END AS account_actor
-         FROM   activity_events
-         WHERE  hashed_sub IS NOT NULL
-           AND  (actor IN ('test-user', 'synthetic', 'probe', 'operator')
-                 OR regexp_like(summary, '@test\.diyaccounting\.co\.uk'))
-         GROUP  BY hashed_sub
-       ) s ON e.hashed_sub = s.hashed_sub
+SELECT event_id, event_ts, ingest_ts, event, site, summary,
+       CASE WHEN actor = 'customer' AND hashed_sub IS NOT NULL AND account_is_test THEN 'test-user'
+            WHEN actor = 'customer' AND hashed_sub IS NOT NULL AND account_is_operator THEN 'operator'
+            ELSE actor END AS actor,
+       flow, outcome, failure,
+       request_id, hashed_sub, bundle_id, pass_type_id, subscription_id, visitor_type,
+       country, page, hmrc_status, client_id, env, detail_json, app_client, session_id,
+       activity_id, dt
+FROM   (
+         SELECT e.*,
+                bool_or(coalesce(e.actor IN ('test-user', 'synthetic', 'probe'), false)
+                        OR coalesce(regexp_like(e.summary, '@test\.diyaccounting\.co\.uk'), false))
+                  OVER (PARTITION BY e.hashed_sub) AS account_is_test,
+                bool_or(coalesce(e.actor = 'operator', false)) OVER (PARTITION BY e.hashed_sub) AS account_is_operator
+         FROM   activity_events e
+       )

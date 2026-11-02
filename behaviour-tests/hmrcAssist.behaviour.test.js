@@ -9,11 +9,12 @@ import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { itsaDefaultMessages, vatDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
+import { vatDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
 import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -23,6 +24,7 @@ import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, initSubmitVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { allowSyntheticObligationsOnForm } from "./steps/behaviour-books-import-steps.js";
 import {
   fillInItsaCalculationTrigger,
   initItsaTaxCalculation,
@@ -166,6 +168,7 @@ test.describe("HMRC Assist on the VAT return", () => {
     expect(traffic.acknowledgements[0].body.receiptId).toBeTruthy();
 
     await expect(page.locator("#submitBtn")).toBeEnabled();
+    if (isSyntheticMode()) await allowSyntheticObligationsOnForm(page);
     await page.locator("#submitBtn").click();
     await completeHmrcReauthIfPresented(page, user.username, user.password, screenshotPath);
     await completeVat(page, baseUrl, null, screenshotPath);
@@ -219,7 +222,7 @@ test.describe("HMRC Assist on the VAT return", () => {
     expect(traffic.reports.map((entry) => entry.status)).toEqual([500]);
     expect(traffic.acknowledgements).toEqual([]);
     await expect(page.locator("#submitBtn")).toBeEnabled();
-
+    if (isSyntheticMode()) await allowSyntheticObligationsOnForm(page);
     await page.locator("#submitBtn").click();
     await completeHmrcReauthIfPresented(page, user.username, user.password, screenshotPath);
     await completeVat(page, baseUrl, null, screenshotPath);
@@ -262,8 +265,15 @@ test.describe("HMRC Assist on the Income Tax calculation", () => {
     await grantPermissionHmrcAuth(page, screenshotPath);
     await verifyItsaCalculationResults(page, screenshotPath);
 
+    const reportAnswer = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" && response.url().endsWith("/api/v1/hmrc/itsa/assist/report") && response.status() === 200,
+      { timeout: 120000 },
+    );
     await requestHmrcAssistFeedback(page, screenshotPath);
-    await verifyAssistMessagesInOrder(page, itsaDefaultMessages(), screenshotPath);
+    const { messages } = await (await reportAnswer).json();
+    expect(messages.length, "HMRC's messages for the calculation").toBeGreaterThan(0);
+    await verifyAssistMessagesInOrder(page, messages, screenshotPath);
 
     await expect.poll(() => traffic.acknowledgements.map((entry) => entry.status), { timeout: 60000 }).toEqual([204]);
     expect(traffic.reports).toHaveLength(1);

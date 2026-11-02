@@ -4277,7 +4277,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-22 Orchestrate the nightly ingestion workflow
 
 - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs five ingestion jobs, then data quality, metrics publish and raw export publish. There is no Catch: any failure stops the chain, not a false zero.
+- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish. There is no Catch: any failure stops the chain, not a false zero.
 - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
