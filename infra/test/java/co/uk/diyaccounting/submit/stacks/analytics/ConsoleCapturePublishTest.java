@@ -54,7 +54,8 @@ class ConsoleCapturePublishTest {
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> statementsOfRole(Template template, String roleName) {
         var statements = new ArrayList<Map<String, Object>>();
-        for (Map<String, Object> policy : template.findResources("AWS::IAM::Policy").values()) {
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
             var properties = (Map<String, Object>) policy.get("Properties");
             var roles = (List<Object>) properties.get("Roles");
             var attached = roles.stream().anyMatch(role -> String.valueOf(role).contains(roleName));
@@ -104,21 +105,19 @@ class ConsoleCapturePublishTest {
         assertTrue(actions.contains("s3:PutObject"));
         assertTrue(actions.contains("sts:AssumeRole"));
         assertTrue(
-                actions.stream().noneMatch(action -> action.startsWith("dynamodb:") || action.startsWith("secretsmanager:")),
+                actions.stream()
+                        .noneMatch(action -> action.startsWith("dynamodb:") || action.startsWith("secretsmanager:")),
                 "the capture reads no table and no secret: " + actions);
         var assume = statements.stream()
                 .filter(statement -> "sts:AssumeRole".equals(String.valueOf(statement.get("Action"))))
                 .findFirst()
                 .orElseThrow();
-        assertTrue(
-                String.valueOf(assume.get("Resource"))
-                        .contains("arn:aws:iam::367191799875:role/ci-env-console-capture-read"));
-        assertTrue(
-                String.valueOf(assume.get("Resource"))
-                        .contains("arn:aws:iam::064390746177:role/spreadsheets-console-capture-read"));
-        assertTrue(
-                String.valueOf(assume.get("Resource"))
-                        .contains("arn:aws:iam::283165661847:role/gateway-console-capture-read"));
+        assertTrue(String.valueOf(assume.get("Resource"))
+                .contains("arn:aws:iam::367191799875:role/ci-env-console-capture-read"));
+        assertTrue(String.valueOf(assume.get("Resource"))
+                .contains("arn:aws:iam::064390746177:role/spreadsheets-console-capture-read"));
+        assertTrue(String.valueOf(assume.get("Resource"))
+                .contains("arn:aws:iam::283165661847:role/gateway-console-capture-read"));
     }
 
     @Test
@@ -136,8 +135,7 @@ class ConsoleCapturePublishTest {
                                                 "CONSOLE_CAPTURE_EXTERNAL_ID",
                                                 "submit-console-capture",
                                                 "CONSOLE_CAPTURE_ROLE_ARNS",
-                                                Match.stringLikeRegexp("spreadsheets-console-capture-read"))))))
-                );
+                                                Match.stringLikeRegexp("spreadsheets-console-capture-read")))))));
     }
 
     @Test
@@ -156,7 +154,8 @@ class ConsoleCapturePublishTest {
         var template = synth("ci");
 
         var roles = template.findResources(
-                "AWS::IAM::Role", Match.objectLike(Map.of("Properties", Map.of("RoleName", "ci-env-console-capture-read"))));
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of("Properties", Map.of("RoleName", "ci-env-console-capture-read"))));
         assertEquals(1, roles.size());
         var properties = (Map<String, Object>) roles.values().iterator().next().get("Properties");
         assertEquals(3600, properties.get("MaxSessionDuration"));
@@ -177,7 +176,8 @@ class ConsoleCapturePublishTest {
                 synth("prod")
                         .findResources(
                                 "AWS::IAM::Role",
-                                Match.objectLike(Map.of("Properties", Map.of("RoleName", "prod-env-console-capture-read"))))
+                                Match.objectLike(
+                                        Map.of("Properties", Map.of("RoleName", "prod-env-console-capture-read"))))
                         .size());
     }
 

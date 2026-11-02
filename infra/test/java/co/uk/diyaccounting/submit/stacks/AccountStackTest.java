@@ -131,7 +131,8 @@ class AccountStackTest {
         AccountStack stack = synthAccountStack(null);
         Template template = Template.fromStack(stack);
 
-        for (String functionNameFragment : List.of("bundle-get", "operator-snapshot-get", "operator-console-image-get")) {
+        for (String functionNameFragment :
+                List.of("bundle-get", "operator-snapshot-get", "operator-console-image-get")) {
             var functions = template.findResources("AWS::Lambda::Function").values().stream()
                     .map(resource -> (Map<String, Object>) resource.get("Properties"))
                     .filter(properties ->

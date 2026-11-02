@@ -117,8 +117,8 @@ public class ConsoleCapturePublish extends Construct {
         this.executionRole = Role.Builder.create(this, prefix + "-ConsoleCapturePublish-Role")
                 .roleName(executionRoleName(prefix))
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-                .managedPolicies(List.of(
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .managedPolicies(
+                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
                 .build();
 
         this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
@@ -214,8 +214,7 @@ public class ConsoleCapturePublish extends Construct {
     }
 
     private Role buildCiReadRole(String prefix, String region, String account) {
-        var prodExecutionRoleArn =
-                "arn:aws:iam::%s:role/%s".formatted(PROD_ACCOUNT, executionRoleName("prod-env"));
+        var prodExecutionRoleArn = "arn:aws:iam::%s:role/%s".formatted(PROD_ACCOUNT, executionRoleName("prod-env"));
         // The trust names the prod account and requires the prod execution role by condition,
         // not by principal: a role-ARN principal needs that role to exist before this deploys.
         var trust = new AccountPrincipal(PROD_ACCOUNT)
@@ -229,7 +228,8 @@ public class ConsoleCapturePublish extends Construct {
                 .build();
         role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
         role.addToPolicy(readPolicyStatement(
-                "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:ci-*".formatted(region, account))));
+                "cloudwatch:DescribeAlarms",
+                List.of("arn:aws:cloudwatch:%s:%s:alarm:ci-*".formatted(region, account))));
         role.addToPolicy(readPolicyStatement(
                 "logs:StartQuery",
                 List.of("arn:aws:logs:%s:%s:log-group:/ci/bedrock/invocations:*".formatted(region, account))));
@@ -259,7 +259,11 @@ public class ConsoleCapturePublish extends Construct {
             if (!first) {
                 json.append(",");
             }
-            json.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\"");
+            json.append("\"")
+                    .append(entry.getKey())
+                    .append("\":\"")
+                    .append(entry.getValue())
+                    .append("\"");
             first = false;
         }
         return json.append("}").toString();

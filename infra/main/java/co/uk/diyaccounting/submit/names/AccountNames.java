@@ -571,8 +571,8 @@ public class AccountNames {
                 "%s/analytics/%s".formatted(root.appLambdaHandlerPrefix, operatorConsoleImageGetLambdaHandlerName);
         this.operatorConsoleImageGetIngestLambdaArn =
                 "%s-%s".formatted(root.appLambdaArnPrefix, operatorConsoleImageGetLambdaHandlerDashed);
-        this.operatorConsoleImageGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.operatorConsoleImageGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        this.operatorConsoleImageGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.operatorConsoleImageGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
         root.publishedApiLambdas.add(new PublishedLambda(
                 this.operatorConsoleImageGetLambdaHttpMethod,
                 this.operatorConsoleImageGetLambdaUrlPath,
