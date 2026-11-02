@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c89cb38** (PR #662's merge c89cb38e6).
+**Prod runs deployment prod-3ae340a** (PR #663's merge 3ae340aa6).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -42,7 +42,7 @@ Facts the commission rows share (COMM1, CT4b, CT4c; the ci design is `PLAN_COMMI
 
 ## In flight
 
-- [ ] **COMM1. The first invoice of a subscription earns its commission.** Merged in PR #663 (3ae340aa6) and live on ci (deploy-environment 41374331097). Remainder: the prod environment deploy, `gh workflow run deploy-environment.yml --ref main -f environment-name=prod`, after main's deploy 41376700440; then `prod-env-billing-webhook` stops logging "No subscription record found for invoice.paid" for invoices with metadata (read the next day's count against the 540 in 30 days). **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md` change 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. Unblocks CT4b.
+- [ ] **COMM1. The first invoice of a subscription earns its commission.** Merged in PR #663 (3ae340aa6) and live on ci (deploy-environment 41374331097). Remainder: the prod environment deploy 41380619687 (dispatched from main) finishes green; then `prod-env-billing-webhook` stops logging "No subscription record found for invoice.paid" for invoices with metadata (read the next day's count against the 540 in 30 days). **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md` change 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. Unblocks CT4b.
 
 ## Machine-only
 
