@@ -62,8 +62,6 @@ Facts the commission rows share (COMM1, CT4b, CT4c, OAFF7; the ci design is `PLA
 
 ## Machine-ask
 
-- [ ] **OCS11b. The live Stripe price for the confirmation statement fee (PLAN_COMPANIES_HOUSE_APPROVAL CS-11b).** When CS-11b's build is ready, a session runs `.claude/skills/stripe-catalogue-sync/SKILL.md`'s live step for the £61.35 fee and lands the price id; the ask is the operator's go for the live Stripe write. Blocked on CS-11b's build. **Source**: `PLAN_COMPANIES_HOUSE_APPROVAL.md` CS-11b. **Owner**: Claude Code (run), Operator (go). **Model**: Haiku. **Size**: ~2 files.
-
 ## Human-driven
 
 ## Blocked
@@ -77,6 +75,8 @@ Facts the commission rows share (COMM1, CT4b, CT4c, OAFF7; the ci design is `PLA
 - [ ] **HA8b. VAT Assist on prod when HMRC grants production access (PLAN_HMRC_ASSIST_APPROVAL HA8).** The sandbox run passed 5 of 5 on 2026-11-02 (record `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/RUN_SANDBOX_HMRC_ASSIST_2026-11-02.md`); its suite fixes are on main (PR #665, d25a02bbd). Remainder: `prod` on the `vat-assist-check` activity's `environments` (`web/public/submit.catalogue.toml`) and the availability table on `web/public/mtd-calendar.html`, in the way HMRC's email about the January 2027 early adopter live testing says production access is given; the sandbox-run email went on 2026-11-02 (`../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/EMAIL_HMRC_ASSIST_SANDBOX_RUN.md`). Blocked on HMRC's January email. **Source**: `PLAN_HMRC_ASSIST_APPROVAL.md` HA8. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **CT4c. Credit payout of test-mode lines on ci (`PLAN_COMMISSION_CI_JOURNEYS.md` open question 4).** `commissionCreditPayout` uses the live client and skips every line with `livemode !== true`, and the payout Lambda has no test key ARN (`infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` lines 1795 to 1800). Do: the test key ARN in the stack, a client chosen per line by `livemode`, gated by `testJourneyEnvironments`; `./mvnw clean verify`. Blocked on CT4b. **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **OCS11b. The live Stripe price for the confirmation statement fee (PLAN_COMPANIES_HOUSE_APPROVAL CS-11b).** When CS-11b's build is ready, a session runs `.claude/skills/stripe-catalogue-sync/SKILL.md`'s live step for the £61.35 fee and lands the price id; the ask is the operator's go for the live Stripe write. Blocked on CS-11b's build. **Source**: `PLAN_COMPANIES_HOUSE_APPROVAL.md` CS-11b. **Owner**: Claude Code (run), Operator (go). **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **DASH19. Build the AWS console captures and show them on the dashboard.** As DASH18's design says: the scheduled capture and its storage, then the dashboard's AWS section shows each group's links as headings (the DASH17 names), each beside its latest image and the time it was captured. Blocked on DASH18 and the operator's yes to its design. **Source**: operator, 2026-11-02. **Owner**: Claude Code. **Model**: Sonnet. **Size**: set by DASH18.
 
