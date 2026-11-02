@@ -152,14 +152,14 @@ export const AVAILABILITY = [
     activity: "file-micro-entity-accounts",
     otherActivities: ["file-small-company-accounts"],
     video: "yPSpvLKrTJU",
-    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production", "micro-entity"], NOT_OFFERED],
+    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",
     web: "companies-house/fileConfirmationStatement.html",
     activity: "file-confirmation-statement",
     video: "P0aG_mLfhZI",
-    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production"], NOT_OFFERED],
+    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox"], NOT_OFFERED],
   },
   {
     filing: "Companies House PSC verification statement",

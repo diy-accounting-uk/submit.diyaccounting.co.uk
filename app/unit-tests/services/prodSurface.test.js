@@ -9,7 +9,15 @@ const activity = (id) => catalog.activities.find((candidate) => candidate.id ===
 const bundle = (id) => catalog.bundles.find((candidate) => candidate.id === id);
 
 describe("what the catalogue lists in each environment", () => {
-  test.each(["practice", "diya-gl-storage", "self-employed", "vat-assist-check"])("%s is listed in ci and not in prod", (id) => {
+  test.each(["practice", "diya-gl-storage", "self-employed", "file-confirmation-statement", "vat-assist-check"])(
+    "%s is listed in ci and not in prod",
+    (id) => {
+      expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
+      expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
+    },
+  );
+
+  test.each(["file-micro-entity-accounts", "file-small-company-accounts"])("%s is listed in ci and not in prod", (id) => {
     expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
     expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
   });
@@ -22,18 +30,12 @@ describe("what the catalogue lists in each environment", () => {
     expect(isActivityListedInEnvironment(activity(id), "simulator")).toBe(true);
   });
 
-  test.each([
-    "submit-vat",
-    "vat-obligations",
-    "vat-liabilities",
-    "company-lookup",
-    "generate-pass-digital",
-    "file-micro-entity-accounts",
-    "file-small-company-accounts",
-    "file-confirmation-statement",
-  ])("%s stays listed in prod", (id) => {
-    expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);
-  });
+  test.each(["submit-vat", "vat-obligations", "vat-liabilities", "company-lookup", "generate-pass-digital"])(
+    "%s stays listed in prod",
+    (id) => {
+      expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);
+    },
+  );
 
   test.each(["resident", "resident-pro"])("the %s bundle is listed in ci and not in prod", (id) => {
     expect(isBundleListedInEnvironment(bundle(id), "ci")).toBe(true);

@@ -413,7 +413,7 @@ describe("bundleEnforcement.js", () => {
       });
 
       test("an environment the small company activity does not list refuses the shared route", async () => {
-        process.env.ENVIRONMENT_NAME = "preview";
+        process.env.ENVIRONMENT_NAME = "prod";
         const token = makeJWT("accounts-filer-prod");
         const authorizerContext = {
           "sub": "accounts-filer-prod",
