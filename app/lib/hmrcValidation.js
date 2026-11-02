@@ -54,6 +54,27 @@ export function isValidUtr(utr) {
 }
 
 /**
+ * Validates a Property Business submissionId.
+ * HMRC issues it as a UUID (for example 4557ecb5-fd32-48cc-81f5-e6acd1099f3c).
+ * @param {string} submissionId - The submissionId to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidSubmissionId(submissionId) {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(submissionId));
+}
+
+/**
+ * Validates a Self-Employment Business periodId.
+ * Two ISO dates joined by an underscore: start then end (for example 2017-04-06_2017-07-04).
+ * @see reference/hmrc-mtd-self-employment-business-api-5.0.yaml (periodId, example 2017-04-06_2017-07-04)
+ * @param {string} periodId - The periodId to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidPeriodId(periodId) {
+  return /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(String(periodId));
+}
+
+/**
  * Validates HMRC period key format per HMRC MTD VAT API specification.
  * Period keys are 4 characters and can be in several formats:
  *

@@ -13,7 +13,7 @@
 function defaultPeriods() {
   return [
     {
-      submissionId: "2023-04-06_2023-07-05",
+      submissionId: "4557ecb5-fd32-48cc-81f5-e6acd1099f3c",
       fromDate: "2023-04-06",
       toDate: "2023-07-05",
     },

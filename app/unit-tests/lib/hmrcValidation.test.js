@@ -5,6 +5,8 @@
 
 import { describe, test, expect } from "vitest";
 import {
+  isValidSubmissionId,
+  isValidPeriodId,
   isValidVrn,
   isValidNino,
   isValidPeriodKey,
@@ -572,5 +574,23 @@ describe("hmrcValidation", () => {
     test("handles floating point precision correctly", () => {
       expect(isValidNetVatDueCalculation(100.01, 50.02, 49.99)).toBe(true);
     });
+  });
+});
+
+describe("isValidSubmissionId", () => {
+  test("accepts a UUID", () => {
+    expect(isValidSubmissionId("4557ecb5-fd32-48cc-81f5-e6acd1099f3c")).toBe(true);
+  });
+  test.each(["../..", "4557ecb5", "2023-04-06_2023-07-05", "4557ecb5-fd32-48cc-81f5-e6acd1099f3c/x", ""])("rejects %s", (id) => {
+    expect(isValidSubmissionId(id)).toBe(false);
+  });
+});
+
+describe("isValidPeriodId", () => {
+  test("accepts two dates joined by an underscore", () => {
+    expect(isValidPeriodId("2017-04-06_2017-07-04")).toBe(true);
+  });
+  test.each(["../..", "2017-04-06", "2017-04-06_2017-07-04/x", "2017-04-06-2017-07-04", ""])("rejects %s", (id) => {
+    expect(isValidPeriodId(id)).toBe(false);
   });
 });

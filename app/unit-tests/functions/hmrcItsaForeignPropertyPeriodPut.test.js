@@ -153,6 +153,12 @@ describe("hmrcItsaForeignPropertyPeriodPut ingestHandler", () => {
     expect(parseResponseBody(response).message).toContain("submissionId");
   });
 
+  test("returns 400 when the submissionId is not a UUID", async () => {
+    const response = await handler(putEvent(amendBody({ submissionId: "../.." })));
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid submissionId format");
+  });
+
   test("returns 400 for a repeated country without calling HMRC", async () => {
     const response = await handler(putEvent(amendBody({ foreignNonFhlProperty: [FRANCE_ENTRY, FRANCE_ENTRY] })));
     expect(response.statusCode).toBe(400);

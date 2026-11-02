@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel, isValidSubmissionId } from "../../lib/hmrcValidation.js";
 import {
   buildDatedSections,
   buildForeignPropertyCumulativeRequestBody,
@@ -157,6 +157,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     if (toDate && !isValidIsoDate(toDate)) errorMessages.push("Invalid toDate format - must be YYYY-MM-DD");
   } else {
     if (!submissionId) errorMessages.push("Missing submissionId parameter from body");
+    if (submissionId && !isValidSubmissionId(submissionId)) errorMessages.push("Invalid submissionId format - must be a UUID");
   }
 
   if (taxYear && isValidTaxYear(taxYear)) {

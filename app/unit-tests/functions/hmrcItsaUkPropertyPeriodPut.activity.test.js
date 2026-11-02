@@ -70,7 +70,7 @@ const mockFetch = setupFetchMock();
 const VALID_NINO = "AB123456C";
 const VALID_BUSINESS_ID = "XAIS12345678901";
 const VALID_TAX_YEAR = "2023-24";
-const VALID_SUBMISSION_ID = "2023-04-06_2023-07-05";
+const VALID_SUBMISSION_ID = "4557ecb5-fd32-48cc-81f5-e6acd1099f3c";
 
 function buildPeriodBody(overrides = {}) {
   return {

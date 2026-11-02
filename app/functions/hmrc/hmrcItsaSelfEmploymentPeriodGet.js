@@ -29,7 +29,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear, resolveItsaSubmissionModel, isValidPeriodId } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -71,6 +71,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   // retrieves the year's single running total, addressed by taxYear alone.
   const submissionModel = taxYear && isValidTaxYear(taxYear) ? resolveItsaSubmissionModel(taxYear) : "dated";
   if (submissionModel === "dated" && !periodId) errorMessages.push("Missing periodId parameter");
+  if (periodId && !isValidPeriodId(periodId)) errorMessages.push("Invalid periodId format - must be YYYY-MM-DD_YYYY-MM-DD");
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";

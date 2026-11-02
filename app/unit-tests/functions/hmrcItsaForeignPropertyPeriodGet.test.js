@@ -125,6 +125,12 @@ describe("hmrcItsaForeignPropertyPeriodGet ingestHandler", () => {
     expect(parseResponseBody(response).message).toContain("submissionId");
   });
 
+  test("returns 400 when the submissionId is not a UUID", async () => {
+    const response = await handler(getEvent({ submissionId: "../.." }));
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid submissionId format");
+  });
+
   test("returns 403 JSON when the authenticated user holds no bundle entitled to ITSA", async () => {
     const event = getEvent();
     event.requestContext.http.path = "/api/v1/hmrc/itsa/foreign-property/period";

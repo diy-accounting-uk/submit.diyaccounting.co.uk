@@ -131,6 +131,16 @@ describe("hmrcItsaSelfEmploymentPeriodGet ingestHandler", () => {
     expect(body.message).toContain("periodId");
   });
 
+  test("returns 400 when periodId is not two dates", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR, periodId: "../.." },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid periodId format");
+  });
+
   test("returns 400 for invalid taxYear format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: {

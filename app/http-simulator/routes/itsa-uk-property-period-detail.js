@@ -59,7 +59,7 @@ export function apiEndpoint(app) {
 
     if (!validatePathParams(req, res)) return;
 
-    const result = getUkPropertyPeriodDetailForScenario(govTestScenario, submissionId);
+    const result = getUkPropertyPeriodDetailForScenario(govTestScenario);
     if (result.status) {
       return res.status(result.status).json(result.body);
     }
