@@ -58,6 +58,8 @@ Facts the commission rows share (COMM1, CT4b, CT4c; the ci design is `PLAN_COMMI
 
 ## Human-driven
 
+- [ ] **OHA9. Send the VAT Assist production-access email (PLAN_HMRC_ASSIST_APPROVAL HA9).** The draft is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/DRAFT_EMAIL_HMRC_ASSIST_PRODUCTION_ACCESS.md`: a reply on HMRC's 2026-11-02 09:38 email (subject "HMRC Assist for VAT – request for alpha sandbox access – DIY Accounting") to `hmrcassist@hmrc.gov.uk`, from antony@diyaccounting.co.uk. It reports the 2026-11-02 sandbox run (feedback 200, acknowledge 204, return 201), asks how production access is given to early adopters from January 2027, and asks the plan's open questions 4 and 6. When it is sent, a session renames the draft to `EMAIL_`, adds the `Sent:` line, and on HMRC's answer records it in the plan's "Production approval" section and rewrites HA8b's remainder. **Source**: `PLAN_HMRC_ASSIST_APPROVAL.md` HA9. **Owner**: Operator (send), Claude Code (record). **Model**: none. **Size**: 0 files.
+
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
 ## Blocked
