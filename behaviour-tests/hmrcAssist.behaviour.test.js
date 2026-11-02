@@ -14,6 +14,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -23,6 +24,7 @@ import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, initSubmitVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { allowSyntheticObligationsOnForm } from "./steps/behaviour-books-import-steps.js";
 import {
   fillInItsaCalculationTrigger,
   initItsaTaxCalculation,
@@ -166,6 +168,7 @@ test.describe("HMRC Assist on the VAT return", () => {
     expect(traffic.acknowledgements[0].body.receiptId).toBeTruthy();
 
     await expect(page.locator("#submitBtn")).toBeEnabled();
+    if (isSyntheticMode()) await allowSyntheticObligationsOnForm(page);
     await page.locator("#submitBtn").click();
     await completeHmrcReauthIfPresented(page, user.username, user.password, screenshotPath);
     await completeVat(page, baseUrl, null, screenshotPath);
@@ -219,7 +222,7 @@ test.describe("HMRC Assist on the VAT return", () => {
     expect(traffic.reports.map((entry) => entry.status)).toEqual([500]);
     expect(traffic.acknowledgements).toEqual([]);
     await expect(page.locator("#submitBtn")).toBeEnabled();
-
+    if (isSyntheticMode()) await allowSyntheticObligationsOnForm(page);
     await page.locator("#submitBtn").click();
     await completeHmrcReauthIfPresented(page, user.username, user.password, screenshotPath);
     await completeVat(page, baseUrl, null, screenshotPath);
