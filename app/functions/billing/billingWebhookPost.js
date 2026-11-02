@@ -390,7 +390,26 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
 
   const subRecord = await getSubscription(`stripe#${subscriptionId}`);
   if (!subRecord) {
-    logger.warn({ message: "No subscription record found for invoice.paid", subscriptionId });
+    // Stripe sends the first invoice and checkout.session.completed together, so the record may
+    // not exist yet. The subscription metadata on the invoice names the account; checkout.session.completed
+    // writes the token and bundle fields.
+    const metadata = invoice.parent?.subscription_details?.metadata;
+    if (!metadata?.hashedSub) {
+      logger.warn({ message: "No subscription record found for invoice.paid", subscriptionId });
+      return;
+    }
+    logger.info({
+      message: "invoice.paid before the subscription record: accruing from invoice metadata",
+      subscriptionId,
+      invoiceId: invoice.id,
+    });
+    const { hashedSub, bundleId, actor } = metadata;
+    try {
+      const stripe = await getStripeClient({ test });
+      await accrueCommission({ invoice, subscriptionId, subRecord: { hashedSub, bundleId, actor }, stripe });
+    } catch (error) {
+      logger.error({ message: "Commission accrual failed", invoiceId: invoice.id, error: error.message });
+    }
     return;
   }
 

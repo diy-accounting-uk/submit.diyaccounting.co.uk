@@ -619,6 +619,65 @@ describe("billingWebhookPost", () => {
     expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
   });
 
+  describe("invoice.paid before checkout.session.completed has written the record", () => {
+    const metadata = { hashedSub: "hashed_meta", bundleId: "resident", actor: "customer" };
+    const invoice = { id: "in_first", parent: { subscription_details: { subscription: "sub_first", metadata } } };
+    const send = async () => {
+      const payload = { id: "evt_first_invoice", type: "invoice.paid", data: { object: invoice } };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+      return ingestHandler(buildWebhookEvent(payload));
+    };
+
+    test("accrues from the invoice metadata and leaves tokens and bundle to checkout", async () => {
+      mockGetSubscription.mockResolvedValue(null);
+      const result = await send();
+
+      expect(result.statusCode).toBe(200);
+      expect(mockAccrueCommission).toHaveBeenCalledTimes(1);
+      const [arg] = mockAccrueCommission.mock.calls[0];
+      expect(arg.invoice).toEqual(invoice);
+      expect(arg.subscriptionId).toBe("sub_first");
+      expect(arg.subRecord).toEqual(metadata);
+      expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+      expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+      expect(mockUpdateSubscription).not.toHaveBeenCalled();
+    });
+
+    test("a second delivery passes the same invoice to the ledger, whose conditional put records it once", async () => {
+      mockGetSubscription.mockResolvedValue(null);
+      mockAccrueCommission.mockResolvedValueOnce({ status: "recorded" }).mockResolvedValueOnce({ status: "duplicate" });
+      await send();
+      await send();
+
+      expect(mockAccrueCommission).toHaveBeenCalledTimes(2);
+      expect(mockAccrueCommission.mock.calls.map(([a]) => a.invoice.id)).toEqual(["in_first", "in_first"]);
+    });
+
+    test("a retry that finds the record takes the renewal path", async () => {
+      mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_first", ...metadata });
+      mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_first", current_period_end: Math.floor(Date.now() / 1000) + 2592000 });
+      await send();
+
+      expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
+      expect(mockAccrueCommission).toHaveBeenCalledTimes(1);
+    });
+
+    test("without metadata the warning stays and nothing accrues", async () => {
+      mockGetSubscription.mockResolvedValue(null);
+      const bare = { id: "in_bare", parent: { subscription_details: { subscription: "sub_first" } } };
+      const payload = { id: "evt_bare", type: "invoice.paid", data: { object: bare } };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+      const result = await ingestHandler(buildWebhookEvent(payload));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockAccrueCommission).not.toHaveBeenCalled();
+      expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+      expect(mockLoggerInfo).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining("accruing from invoice metadata") }),
+      );
+    });
+  });
+
   test("invoice.paid skips when invoice carries no subscription id", async () => {
     const payload = {
       id: "evt_test_invoice_no_sub",
