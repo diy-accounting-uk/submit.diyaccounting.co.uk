@@ -262,6 +262,14 @@ export default defineConfig({
       timeout: 900_000,
     },
     {
+      name: "commissionJourneysStripeBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/commissionJourneysStripe.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 3_600_000,
+    },
+    {
       name: "tokenEnforcementBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/tokenEnforcement.behaviour.test.js"],

@@ -382,14 +382,14 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
 }
 
 /**
- * Fills in Stripe's test card (4242 4242 4242 4242) on a real Stripe Checkout hosted page and
+ * Fills in a Stripe test card (4242 4242 4242 4242 unless `cardNumber` says otherwise) on a real Stripe Checkout hosted page and
  * submits it. Stripe Checkout is a JS SPA with an accordion UI for payment methods: card inputs
  * are not rendered until the "Card" accordion item is clicked/expanded, and after expansion
  * card/expiry/CVC/name appear as direct <input> elements on the page. Leaves the caller to wait
  * for its own redirect target, since that differs between the main checkout flow (bundles.html)
  * and a DIYA-GL checkout (the spreadsheets page the subscriber started from).
  */
-export async function fillAndSubmitStripeTestCard(page, screenshotPath = defaultScreenshotPath) {
+export async function fillAndSubmitStripeTestCard(page, screenshotPath = defaultScreenshotPath, { cardNumber = "4242424242424242" } = {}) {
   return await test.step("Fill in Stripe test card and submit", async () => {
     console.log("Stripe test checkout: waiting for Stripe form to render...");
 
@@ -436,7 +436,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     // which may cause Stripe to ignore the value in headless CI environments).
     await cardNumberInput.first().click({ force: true });
     await cardNumberInput.first().fill("");
-    await cardNumberInput.first().pressSequentially("4242424242424242", { delay: 50 });
+    await cardNumberInput.first().pressSequentially(cardNumber, { delay: 50 });
     filledFields.push("card");
     console.log("Card number filled (pressSequentially)");
 

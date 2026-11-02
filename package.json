@@ -240,6 +240,8 @@
     "test:generatePassActivityBehaviour-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- npm run test:generatePassActivityBehaviour 2>&1 | tee generatePassActivityBehaviour-simulator.log'",
     "test:commissionJourneysBehaviour": "bash -c 'set -o pipefail; playwright test --project=commissionJourneysBehaviour 2>&1 | tee commissionJourneysBehaviour.log'",
     "test:commissionJourneysBehaviour-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- npm run test:commissionJourneysBehaviour 2>&1 | tee commissionJourneysBehaviour-simulator.log'",
+    "test:commissionJourneysStripeBehaviour": "bash -c 'set -o pipefail; playwright test --project=commissionJourneysStripeBehaviour 2>&1 | tee commissionJourneysStripeBehaviour.log'",
+    "test:commissionJourneysStripeBehaviour-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/use-deployed-base-url.js -- npm run test:commissionJourneysStripeBehaviour 2>&1 | tee commissionJourneysStripeBehaviour-ci.log'",
     "test:companiesHouseBehaviour": "bash -c 'set -o pipefail; playwright test --project=companiesHouseBehaviour 2>&1 | tee companiesHouseBehaviour.log'",
     "test:companiesHouseBehaviour-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- npm run test:companiesHouseBehaviour 2>&1 | tee companiesHouseBehaviour-proxy.log'",
     "test:companiesHouseBehaviour-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/use-deployed-base-url.js -- npm run test:companiesHouseBehaviour 2>&1 | tee companiesHouseBehaviour-ci.log'",

@@ -7,10 +7,12 @@ import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilder
 
 // Mock Stripe SDK
 const mockCheckoutSessionsCreate = vi.fn();
+const mockCustomersCreate = vi.fn();
 vi.mock("stripe", () => {
   return {
     default: class Stripe {
       constructor() {
+        this.customers = { create: mockCustomersCreate };
         this.checkout = {
           sessions: {
             create: mockCheckoutSessionsCreate,
@@ -69,6 +71,8 @@ describe("billingCheckoutPost", () => {
   beforeEach(() => {
     mockGetUserBundles.mockReset();
     mockGetUserBundles.mockResolvedValue([]); // No bundles by default
+    mockCustomersCreate.mockReset();
+    mockCustomersCreate.mockResolvedValue({ id: "cus_clock_1" });
     mockCheckoutSessionsCreate.mockReset();
     mockCheckoutSessionsCreate.mockResolvedValue({
       id: "cs_test_123",
@@ -117,6 +121,48 @@ describe("billingCheckoutPost", () => {
       "https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
     );
     expect(params.cancel_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=canceled");
+  });
+
+  describe("testClockId", () => {
+    test("a synthetic caller gets a customer on the clock and the session takes that customer", async () => {
+      const result = await ingestHandler(
+        buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-pro", testClockId: "clock_1AbC" }),
+      );
+
+      expect(result.statusCode).toBe(200);
+      expect(mockCustomersCreate).toHaveBeenCalledTimes(1);
+      const customerParams = mockCustomersCreate.mock.calls[0][0];
+      expect(customerParams.email).toBe("synthetic-local@test.diyaccounting.co.uk");
+      expect(customerParams.test_clock).toBe("clock_1AbC");
+      expect(customerParams.metadata.hashedSub).toHaveLength(64);
+      const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+      expect(params.customer).toBe("cus_clock_1");
+      expect(params.customer_email).toBeUndefined();
+      expect(params.client_reference_id).toBe(customerParams.metadata.hashedSub);
+    });
+
+    test("a caller that is not synthetic gets 400 and nothing reaches Stripe", async () => {
+      const result = await ingestHandler(buildEventWithToken(validToken, { bundleId: "resident-pro", testClockId: "clock_1AbC" }));
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).message).toBe("test-clock-not-allowed");
+      expect(mockCustomersCreate).not.toHaveBeenCalled();
+      expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test("a synthetic caller with an id that is not a clock id gets 400", async () => {
+      const result = await ingestHandler(buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-pro", testClockId: "cus_123" }));
+
+      expect(result.statusCode).toBe(400);
+      expect(mockCustomersCreate).not.toHaveBeenCalled();
+    });
+
+    test("without testClockId no customer is created and the session keeps customer_email", async () => {
+      await ingestHandler(buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-pro" }));
+
+      expect(mockCustomersCreate).not.toHaveBeenCalled();
+      expect(mockCheckoutSessionsCreate.mock.calls[0][0].customer_email).toBe("synthetic-local@test.diyaccounting.co.uk");
+    });
   });
 
   test("puts the whitelisted acquisition fields into the session metadata, trimmed and capped", async () => {

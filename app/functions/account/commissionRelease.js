@@ -99,14 +99,26 @@ function totalsFor(line, tier, { payableMonth, payableTaxYear, bundles, catalog 
   return totals;
 }
 
-export async function handler() {
+export async function handler(event) {
   validateEnv([
     "COMMISSIONS_DYNAMODB_TABLE_NAME",
     "SUBSCRIPTIONS_DYNAMODB_TABLE_NAME",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "PASSES_DYNAMODB_TABLE_NAME",
   ]);
-  return releaseCommissions(new Date());
+  if (event?.asOf === undefined) {
+    const now = new Date();
+    return { asOf: now.toISOString(), ...(await releaseCommissions(now)) };
+  }
+  const config = loadReferralConfig();
+  if (!(config.ledger.testJourneyEnvironments || []).includes(process.env.ENVIRONMENT_NAME)) {
+    throw new Error(`asOf is not allowed in environment '${process.env.ENVIRONMENT_NAME}'`);
+  }
+  const asOf = new Date(event.asOf);
+  if (Number.isNaN(asOf.getTime())) {
+    throw new Error(`asOf '${event.asOf}' is not a date`);
+  }
+  return { asOf: asOf.toISOString(), ...(await releaseCommissions(asOf)) };
 }
 
 /** Evaluate every held line due at `nowDate` and release or keep each one. */

@@ -6,7 +6,7 @@ import { loadReferralConfig, validateReferralConfig, getTier, resolveTierId } fr
 
 const credit = { id: "customer", form: "credit", rateBps: 3000, months: 12, holdDays: 30, capCreditMonths: 12 };
 const cash = { id: "casual", form: "cash", rateBps: 3000, months: 12, holdDays: 120 };
-const valid = () => ({ ledger: { defaultTier: "customer" }, tiers: [{ ...credit }, { ...cash }] });
+const valid = () => ({ ledger: { defaultTier: "customer", testJourneyEnvironments: ["ci"] }, tiers: [{ ...credit }, { ...cash }] });
 
 describe("services/referralConfig", () => {
   test("the real file loads with the four tiers", () => {
@@ -56,6 +56,23 @@ describe("services/referralConfig", () => {
     const config = valid();
     delete config.tiers[0].capCreditMonths;
     expect(() => validateReferralConfig(config)).toThrow(/needs capCreditMonths/);
+  });
+
+  test("the real file lists ci and not prod as a test journey environment", () => {
+    const { testJourneyEnvironments } = loadReferralConfig().ledger;
+    expect(testJourneyEnvironments).toContain("ci");
+    expect(testJourneyEnvironments).not.toContain("prod");
+  });
+
+  test("testJourneyEnvironments accepts an empty array and refuses a missing key, a non-array and a non-string entry", () => {
+    const config = valid();
+    config.ledger.testJourneyEnvironments = [];
+    expect(() => validateReferralConfig(config)).not.toThrow();
+    for (const bad of [undefined, "ci", [1], [""], [null]]) {
+      const broken = valid();
+      broken.ledger.testJourneyEnvironments = bad;
+      expect(() => validateReferralConfig(broken)).toThrow(/testJourneyEnvironments must be an array of strings/);
+    }
   });
 
   test("a default tier with no tier is refused", () => {

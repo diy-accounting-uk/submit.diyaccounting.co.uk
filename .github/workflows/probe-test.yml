@@ -67,6 +67,7 @@ on:
           - 'generatePassActivityBehaviour'
           - 'paymentBehaviour'
           - 'companiesHouseBehaviour'
+          - 'commissionJourneysStripeBehaviour'
           - 'changeRegisteredOfficeBehaviour'
           - 'changeRegisteredEmailBehaviour'
           - 'diyaGlSubscriptionBehaviour'
@@ -468,6 +469,16 @@ jobs:
             exit 1
           fi
 
+      - name: Guard the commission journeys on Stripe test mode
+        id: commission-guard
+        if: ${{ !cancelled() && matrix.suite == 'commissionJourneysStripeBehaviour' }}
+        shell: bash
+        run: |
+          if [ "${{ needs.names.outputs.environment-name }}" != "ci" ]; then
+            echo "::error::${{ matrix.suite }} drives Stripe test mode and the ledger on ci, and only runs with environment-name=ci."
+            exit 1
+          fi
+
       # paymentBehaviour's GA4 purchase assertion (behaviour-tests/helpers/ga4PurchaseQuery.js)
       # reads BigQuery over application default credentials, the same federated path
       # google-apply.yml's Google steps use: exchange this job's own OIDC token through the
@@ -503,7 +514,7 @@ jobs:
       # next, so a wait here can only make the gating run take longer to clear.
       - name: Wait for a deploy in progress on main before navigating the apex
         id: wait-before-navigate
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
@@ -520,7 +531,7 @@ jobs:
       - name: 'Run behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         continue-on-error: true
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
         run: |
           npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
@@ -531,6 +542,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
@@ -588,6 +600,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
