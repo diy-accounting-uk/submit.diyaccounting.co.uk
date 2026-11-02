@@ -36,7 +36,6 @@ import {
   latestIso,
   openSessions,
   pollUntil,
-  prepareHashing,
   queryLines,
   runRelease,
   secondAfter,
@@ -91,7 +90,6 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
   // 1. Start cleanup, then users.
   await test.step("Start cleanup", async () => cleanup({ log }));
   const sessions = await test.step("Ensure and sign in the lanes", async () => openSessions({ baseUrl, lanes: LANE_NAMES }));
-  await prepareHashing();
   const hashOf = (lane) => sessions[lane].hash;
   const referrerOf = Object.fromEntries(REDEEMERS.map(({ lane, referrer }) => [lane, referrer]));
 

@@ -179,6 +179,7 @@ export function subOfIdToken(idToken) {
 
 /** Ensure every lane at once, then sign each in. Returns a session per lane. */
 export async function openSessions({ baseUrl, lanes = LANE_NAMES }) {
+  await prepareHashing();
   const [credentials, identity] = await Promise.all([Promise.all(lanes.map((lane) => ensureLane(lane))), identityStackOutputs()]);
   const sessions = {};
   for (const [index, lane] of lanes.entries()) {
