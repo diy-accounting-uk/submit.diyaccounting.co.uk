@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
-import { recordFigure, recordHeading } from "../lib/submissionRecord.js";
+import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
 export const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
@@ -185,6 +185,14 @@ export const CONCEPTS = {
   otherDebtors: { prefix: "core", name: "OtherDebtors" },
   prepaymentsInDebtors: { prefix: "core", name: "PrepaymentsAccruedIncome" },
   amountsOwedToDirectors: { prefix: "core", name: "AmountsOwedToDirectors" },
+  amountsOwedByDirectors: { prefix: "core", name: "AmountsOwedByDirectors" },
+  advancesCreditsDirectors: { prefix: "direp", name: "AdvancesCreditsDirectors" },
+  advancesCreditsMadeDirectors: { prefix: "direp", name: "AdvancesCreditsMadeInPeriodDirectors" },
+  advancesCreditsRepaidDirectors: { prefix: "direp", name: "AdvancesCreditsRepaidInPeriodDirectors" },
+  descriptionAdvanceConditionsDirectors: {
+    prefix: "direp",
+    name: "DescriptionSpecificAdvanceOrCreditItsConditionsIndicativeInterestRateDirectors",
+  },
   amountsOwedToGroupUndertakings: { prefix: "core", name: "AmountsOwedToGroupUndertakings" },
   propertyPlantEquipmentPolicy: { prefix: "core", name: "PropertyPlantEquipmentPolicy" },
   depreciationMethodPolicy: { prefix: "core", name: "DescriptionDepreciationMethodForPropertyPlantEquipment" },
@@ -233,7 +241,10 @@ export const DIMENSIONS = {
   entityContactType: { prefix: "bus", name: "EntityContactTypeDimension" },
   currencies: { prefix: "curr", name: "CurrenciesDimension" },
   controllingPartyGrouping: { prefix: "core", name: "X-ParentEntityOrControllingPartyUltimateControllingPartyGroupingDimension" },
+  specificAdvanceOrCreditDirectors: { prefix: "direp", name: "X-SpecificAdvanceOrCreditDirectorsGroupingDimension" },
 };
+
+const SPECIFIC_ADVANCE_DOMAIN = { prefix: "direp", name: "SpecificAdvanceOrCreditDirectorsGroupingDimension.domain" };
 
 const CONTROLLING_PARTY_DOMAIN = {
   prefix: "core",
@@ -566,6 +577,117 @@ export function controllingPartyNote({ controllingParty, contextRef }) {
     title: "Controlling party",
     html: `<p>The company's ${kind} is ${renderTextFact("nameControllingParty", contextRef, controllingParty.name)}.</p>`,
   };
+}
+
+export const DIRECTORS_ADVANCE_FIELDS = ["balanceAtStart", "advanced", "repaid", "balanceAtEnd"];
+
+/**
+ * The problems in the advances to directors figures: one row per director, whole pounds that are
+ * not negative, and a closing balance equal to the opening balance plus the advances less the
+ * repayments.
+ * @param {Array<{name: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} directorsAdvances
+ * @returns {string[]}
+ */
+export function directorsAdvancesProblems(directorsAdvances) {
+  const problems = [];
+  directorsAdvances.forEach((row, index) => {
+    const label = `directorsAdvances[${index}]`;
+    if (typeof row?.name !== "string" || row.name.trim() === "") problems.push(`${label}.name is required`);
+    for (const field of DIRECTORS_ADVANCE_FIELDS) {
+      if (!Number.isInteger(row?.[field]) || row[field] < 0) {
+        problems.push(`${label}.${field} must be a whole number of pounds, not negative`);
+      }
+    }
+    if (typeof row?.terms !== "string" || row.terms.trim() === "") {
+      problems.push(`${label}.terms is required: state the interest rate and the main conditions`);
+    }
+    if (
+      DIRECTORS_ADVANCE_FIELDS.every((field) => Number.isInteger(row?.[field])) &&
+      row.balanceAtStart + row.advanced - row.repaid !== row.balanceAtEnd
+    ) {
+      problems.push(`${label}.balanceAtEnd must equal balanceAtStart plus advanced less repaid`);
+    }
+  });
+  return problems;
+}
+
+/**
+ * The advances to directors rows of a request body, as the builders take them, or undefined when the
+ * body carries none. Pushes what is wrong with them to errorMessages.
+ * @param {unknown} values
+ * @param {string} label - the request path, e.g. "smallCompany.directorsAdvances"
+ * @param {string[]} errorMessages
+ */
+export function readDirectorsAdvances(values, label, errorMessages) {
+  if (values === undefined || values === null) return undefined;
+  if (!Array.isArray(values)) {
+    errorMessages.push(`${label} must be a list`);
+    return undefined;
+  }
+  const rows = values.map((row) => ({
+    name: typeof row?.name === "string" ? row.name.trim() : "",
+    terms: typeof row?.terms === "string" ? row.terms.trim() : "",
+    ...Object.fromEntries(DIRECTORS_ADVANCE_FIELDS.map((field) => [field, Number(row?.[field])])),
+  }));
+  for (const problem of directorsAdvancesProblems(rows)) errorMessages.push(`${label}${problem.slice("directorsAdvances".length)}`);
+  return rows;
+}
+
+/**
+ * The note on advances and credits to directors (Companies Act 2006 section 413): per director the
+ * balance owed at the start and the end of the year, and the amounts advanced and repaid in it.
+ * Each amount is a tagged fact on a context typed by the director's position.
+ * @param {object} note
+ * @param {Array<{name: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} note.directorsAdvances
+ * @param {{periodStart: string, priorBalanceSheetDate?: string}} note.input
+ * @returns {Array<{title: string, html: string}>} the one note, or none when no director owes the company money
+ */
+export function directorsAdvancesNotes({ directorsAdvances = [], input, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  if (directorsAdvances.length === 0) return [];
+  const startInstantXml = `<xbrli:period><xbrli:instant>${input.priorBalanceSheetDate || previousDay(input.periodStart)}</xbrli:instant></xbrli:period>`;
+  const rows = directorsAdvances.map((advance, index) => {
+    const position = index + 1;
+    const dimensionXml = typedMemberXml(DIMENSIONS.specificAdvanceOrCreditDirectors, SPECIFIC_ADVANCE_DOMAIN, position);
+    const contextIn = (period, suffix) =>
+      buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: period,
+        dimensionXml,
+        id: `${suffix}-director-advance-${position}`,
+      });
+    const cell = (conceptKey, contextRef, value) => recordFigure(renderMonetaryFact(conceptKey, contextRef, "GBP", value), value);
+    const duringYear = contextIn(periodXml[refs.current], refs.current);
+    return {
+      label: advance.name,
+      cells: [
+        cell("advancesCreditsDirectors", contextIn(startInstantXml, `start-${refs.currentInstant}`), advance.balanceAtStart),
+        cell("advancesCreditsMadeDirectors", duringYear, advance.advanced),
+        cell("advancesCreditsRepaidDirectors", duringYear, advance.repaid),
+        cell("advancesCreditsDirectors", contextIn(periodXml[refs.currentInstant], refs.currentInstant), advance.balanceAtEnd),
+      ],
+    };
+  });
+  const termsHtml = directorsAdvances
+    .map((advance, index) => {
+      const contextRef = buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: periodXml[refs.current],
+        dimensionXml: typedMemberXml(DIMENSIONS.specificAdvanceOrCreditDirectors, SPECIFIC_ADVANCE_DOMAIN, index + 1),
+        id: `${refs.current}-director-advance-${index + 1}`,
+      });
+      return `<p>${escapeXmlText(advance.name)}: ${renderTextFact("descriptionAdvanceConditionsDirectors", contextRef, advance.terms)}</p>`;
+    })
+    .join("\n");
+  return [
+    {
+      title: "Advances and credits to directors",
+      html: `<p>Amounts owed to the company by its directors:</p>
+${recordTable({ columns: ["Owed at start", "Advanced", "Repaid", "Owed at end"], rows })}
+${termsHtml}`,
+    },
+  ];
 }
 
 /**

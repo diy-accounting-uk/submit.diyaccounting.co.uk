@@ -567,6 +567,25 @@
                   </td>
                 </tr>
                 <tr>
+                  <th scope="row" class="ledger__part">Of which, amounts owed by directors</th>
+                  <td class="ledger__figure">
+                    <label for="currentAmountsOwedByDirectors" class="visually-hidden"
+                      >Of which, amounts owed by directors, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedByDirectors"
+                        name="currentAmountsOwedByDirectors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row" class="ledger__part">Of which, prepayments and accrued income</th>
                   <td class="ledger__figure">
                     <label for="currentPrepayments" class="visually-hidden">Of which, prepayments and accrued income, this year</label>
@@ -1247,6 +1266,25 @@
                           type="text"
                           id="priorOtherDebtors"
                           name="priorOtherDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, amounts owed by directors</th>
+                    <td class="ledger__figure">
+                      <label for="priorAmountsOwedByDirectors" class="visually-hidden"
+                        >Of which, amounts owed by directors, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedByDirectors"
+                          name="priorAmountsOwedByDirectors"
                           inputmode="decimal"
                           data-money="whole-pounds"
                         />
@@ -2477,6 +2515,53 @@
                 <label for="accountantsStatement">Statement of the scope of the report</label>
                 <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
 In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Advances to directors</h3>
+            <p class="hint">
+              Fill this in when the balance sheet shows amounts owed by directors. Section 413 of the Companies Act 2006 requires the note.
+            </p>
+            <div class="form-group">
+              <label for="directorsAdvanceName">Director who owes the company money</label>
+              <input type="text" id="directorsAdvanceName" name="directorsAdvanceName" />
+            </div>
+            <div class="form-group">
+              <label for="directorsAdvanceTerms">Interest rate and main conditions of the advance</label>
+              <input type="text" id="directorsAdvanceTerms" name="directorsAdvanceTerms" />
+            </div>
+            <div class="form-group">
+              <label for="directorsAdvanceAtStart">Owed by that director at the start of the year</label>
+              <div class="input-prefix input-prefix--amount">
+                <span class="prefix" aria-hidden="true">£</span
+                ><input
+                  type="text"
+                  id="directorsAdvanceAtStart"
+                  name="directorsAdvanceAtStart"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="directorsAdvanceMade">Advanced to that director in the year</label>
+              <div class="input-prefix input-prefix--amount">
+                <span class="prefix" aria-hidden="true">£</span
+                ><input type="text" id="directorsAdvanceMade" name="directorsAdvanceMade" inputmode="decimal" data-money="whole-pounds" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="directorsAdvanceRepaid">Repaid by that director in the year</label>
+              <div class="input-prefix input-prefix--amount">
+                <span class="prefix" aria-hidden="true">£</span
+                ><input
+                  type="text"
+                  id="directorsAdvanceRepaid"
+                  name="directorsAdvanceRepaid"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
               </div>
             </div>
           </section>

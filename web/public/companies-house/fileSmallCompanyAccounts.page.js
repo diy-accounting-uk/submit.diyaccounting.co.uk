@@ -37,6 +37,7 @@ const BALANCE_SHEET_INPUT_FIELDS = [
   "bankLoansAfterOneYear",
   "tradeDebtors",
   "otherDebtors",
+  "amountsOwedByDirectors",
   "prepayments",
   "amountsOwedToDirectors",
   "amountsOwedToGroupUndertakings",
@@ -151,6 +152,21 @@ function applyProfitAndLossFormat() {
       input.disabled = !shown;
     });
   });
+}
+
+function readDirectorsAdvances(currentYear) {
+  const name = document.getElementById("directorsAdvanceName").value.trim();
+  if (currentYear.amountsOwedByDirectors === 0 && name === "") return undefined;
+  return [
+    {
+      name,
+      terms: document.getElementById("directorsAdvanceTerms").value.trim(),
+      balanceAtStart: readPounds("directorsAdvanceAtStart"),
+      advanced: readPounds("directorsAdvanceMade"),
+      repaid: readPounds("directorsAdvanceRepaid"),
+      balanceAtEnd: currentYear.amountsOwedByDirectors,
+    },
+  ];
 }
 
 function readBalanceSheet(prefix) {
@@ -314,6 +330,7 @@ function buildAccountsPayload() {
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
   const accountantsReport = window.accountsFormSections.readAccountantsReport();
   const controllingParty = window.accountsFormSections.readControllingParty();
+  const directorsAdvances = readDirectorsAdvances(readBalanceSheet("current"));
   return {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
@@ -354,6 +371,7 @@ function buildAccountsPayload() {
       ...(intangibleAssetNote ? { intangibleAssetNote } : {}),
       ...readPolicies(),
       ...(controllingParty ? { controllingParty } : {}),
+      ...(directorsAdvances ? { directorsAdvances } : {}),
     },
   };
 }
@@ -370,9 +388,10 @@ function formProblem() {
     if (balanceSheet.bankLoansAfterOneYear > balanceSheet.creditorsAfterOneYear) {
       return "Bank loans due after one year cannot be more than the creditors due after one year.";
     }
-    const debtorsSplit = balanceSheet.tradeDebtors + balanceSheet.otherDebtors + balanceSheet.prepayments;
+    const debtorsSplit =
+      balanceSheet.tradeDebtors + balanceSheet.otherDebtors + balanceSheet.amountsOwedByDirectors + balanceSheet.prepayments;
     if (debtorsSplit !== 0 && debtorsSplit !== balanceSheet.debtors) {
-      return "Trade debtors, other debtors and prepayments must add up to the debtors for every year before previewing.";
+      return "Trade debtors, other debtors, amounts owed by directors and prepayments must add up to the debtors for every year before previewing.";
     }
     const afterOneYearSplit =
       balanceSheet.bankLoansAfterOneYear + balanceSheet.amountsOwedToDirectors + balanceSheet.amountsOwedToGroupUndertakings;

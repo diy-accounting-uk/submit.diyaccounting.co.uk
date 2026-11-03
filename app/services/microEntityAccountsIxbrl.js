@@ -35,6 +35,8 @@ import {
   renderTextFact,
   renderMonetaryFact,
   renderSigningDirectorFact,
+  directorsAdvancesNotes,
+  directorsAdvancesProblems,
   accountsStatusMember,
   accountantsReportPage,
   renderCompanyDescriptionFacts,
@@ -203,6 +205,7 @@ function withOptionalHeadings(balanceSheetYears) {
  * @param {number} [input.balanceSheet.current.calledUpShareCapitalNotPaid] - and prepaymentsAccruedIncome, provisionsForLiabilities,
  *   accrualsDeferredIncome: optional headings that enter the balance sheet totals
  * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year
+ * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} [input.directorsAdvances] - the section 413 note on advances and credits to directors, for a company whose directors owe it money
  * @param {{current: object, prior?: object}} [input.profitAndLoss] - MICRO_PROFIT_AND_LOSS_LINES; when
  *   present the document is the full copy HMRC takes with a Company Tax Return, with the profit and
  *   loss account and no section 444 exemption; when absent it is the Companies House copy
@@ -218,6 +221,9 @@ export function buildMicroEntityAccounts(input) {
   } = buildContexts(input, { includePriorPeriod: Boolean(profitAndLoss?.prior) });
   const additionalContexts = [];
   const hiddenFacts = [];
+
+  const advancesProblems = directorsAdvancesProblems(input.directorsAdvances ?? []);
+  if (advancesProblems.length > 0) throw new Error(advancesProblems.join("; "));
 
   if (profitAndLoss) {
     const problems = [
@@ -334,6 +340,17 @@ export function buildMicroEntityAccounts(input) {
       html: `<p>The average number of employees during the ${periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0]} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
     },
   ];
+
+  notes.push(
+    ...directorsAdvancesNotes({
+      directorsAdvances: input.directorsAdvances,
+      input,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+    }),
+  );
 
   let shareCapitalNote;
   if (input.dormant) {

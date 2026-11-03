@@ -1116,3 +1116,63 @@ describe("services/smallCompanyAccountsIxbrl revised accounts", () => {
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
   });
 });
+
+describe("the advances to directors note of a small company", () => {
+  const ADVANCE = {
+    name: "Jo Smith",
+    terms: "Interest free and repayable on demand",
+    balanceAtStart: 0,
+    advanced: 800,
+    repaid: 0,
+    balanceAtEnd: 800,
+  };
+  const owingInput = (overrides = {}) => ({
+    ...SAMPLE_INPUT,
+    balanceSheet: { current: { ...CURRENT_BALANCE_SHEET, tradeDebtors: 1700, amountsOwedByDirectors: 800 } },
+    directorsAdvances: [ADVANCE],
+    ...overrides,
+  });
+
+  test("shows the overdrawn loan as a debtor line and writes the section 413 note with tagged facts", () => {
+    const xhtml = buildSmallCompanyAccounts(owingInput());
+    expect(nonFractionValue(xhtml, "core:AmountsOwedByDirectors", "e2026")).toBe(800);
+    expect(xhtml).toContain("Amounts owed by directors");
+    expect(xhtml).toMatch(/<h3>\d+\. Advances and credits to directors<\/h3>/);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsMadeInPeriodDirectors", "y2026-director-advance-1")).toBe(800);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsRepaidInPeriodDirectors", "y2026-director-advance-1")).toBe(0);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsDirectors", "e2026-director-advance-1")).toBe(800);
+    expect(xhtml).toMatch(/name="direp:DescriptionSpecificAdvanceOrCreditItsConditionsIndicativeInterestRateDirectors"[^>]*>Interest free/);
+    expect(xhtml).toContain('<xbrldi:typedMember dimension="direp:X-SpecificAdvanceOrCreditDirectorsGroupingDimension">');
+  });
+
+  test("tags only concepts the FRC taxonomy defines", () => {
+    const concepts = new Set(loadFrcTaxonomyConcepts());
+    const xhtml = buildSmallCompanyAccounts(owingInput());
+    const used = factNames(xhtml).filter((name) => /Directors|AdvanceOrCredit/.test(name));
+    expect(used.length).toBeGreaterThan(0);
+    for (const name of used) expect(concepts.has(name), name).toBe(true);
+    expect(concepts.has("direp:SpecificAdvanceOrCreditDirectorsGroupingDimension.domain")).toBe(true);
+    expect(concepts.has("direp:X-SpecificAdvanceOrCreditDirectorsGroupingDimension")).toBe(true);
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("refuses a balance sheet that shows the debtor without the note", () => {
+    expect(() => buildSmallCompanyAccounts(owingInput({ directorsAdvances: undefined }))).toThrow(/directorsAdvances is required/);
+  });
+
+  test("refuses a note whose closing balance differs from the balance sheet or whose arithmetic fails", () => {
+    expect(() => buildSmallCompanyAccounts(owingInput({ directorsAdvances: [{ ...ADVANCE, balanceAtEnd: 700, advanced: 700 }] }))).toThrow(
+      /must equal balanceSheet.current.amountsOwedByDirectors/,
+    );
+    expect(() => buildSmallCompanyAccounts(owingInput({ directorsAdvances: [{ ...ADVANCE, advanced: 900 }] }))).toThrow(
+      /balanceAtEnd must equal balanceAtStart plus advanced less repaid/,
+    );
+    expect(() => buildSmallCompanyAccounts(owingInput({ directorsAdvances: [{ ...ADVANCE, terms: "" }] }))).toThrow(/terms is required/);
+  });
+
+  test("a company whose directors owe nothing writes no note", () => {
+    const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
+    expect(xhtml).not.toContain("Advances and credits to directors");
+    expect(xhtml).not.toContain("AmountsOwedByDirectors");
+  });
+});

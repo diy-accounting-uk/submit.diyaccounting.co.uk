@@ -12,6 +12,7 @@ import { deriveMicroEntityAccounts, microProfitAndLossYear } from "../services/m
 import { deriveCompanyTaxReturn } from "../services/ct600Xml.js";
 
 export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
+export const DIRECTORS_ADVANCE_TERMS = "Interest free and repayable on demand.";
 export const FIXTURE_UTR = "8596148860";
 const FIXTURE_REGISTERED_OFFICE = { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" };
 
@@ -51,6 +52,9 @@ export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK
       balanceSheet: accounts.balanceSheet,
       profitAndLoss: { currentYear: accounts.profitAndLoss.currentYear },
       fixedAssetNote: accounts.fixedAssetNote,
+      ...(accounts.directorsAdvances
+        ? { directorsAdvances: accounts.directorsAdvances.map((advance) => ({ ...advance, terms: DIRECTORS_ADVANCE_TERMS })) }
+        : {}),
     },
     figures,
   };

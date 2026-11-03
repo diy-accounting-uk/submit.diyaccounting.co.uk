@@ -277,6 +277,44 @@ describe("the form's own checks", () => {
     return values;
   }
 
+  test("a balance sheet that shows amounts owed by directors asks for the section 413 note's answers", () => {
+    const owing = { ...complete(), currentDebtors: "19180", currentAmountsOwedByDirectors: "12000" };
+    const targets = formProblems(owing).map((problem) => problem.target);
+    expect(targets).toEqual(expect.arrayContaining(["directorsAdvanceName", "directorsAdvanceTerms"]));
+    const answered = {
+      ...owing,
+      directorsAdvanceName: "Carol Smith",
+      directorsAdvanceTerms: "Interest free and repayable on demand",
+      directorsAdvanceMade: "12000",
+    };
+    expect(formProblems(answered).filter((problem) => problem.target.startsWith("directorsAdvance"))).toEqual([]);
+    expect(accountsFromValues(answered).smallCompany).toMatchObject({
+      balanceSheet: { currentYear: { debtors: 19180, amountsOwedByDirectors: 12000, tradeDebtors: 7180 } },
+      directorsAdvances: [
+        {
+          name: "Carol Smith",
+          terms: "Interest free and repayable on demand",
+          balanceAtStart: 0,
+          advanced: 12000,
+          repaid: 0,
+          balanceAtEnd: 12000,
+        },
+      ],
+    });
+  });
+
+  test("the note's arithmetic must close on the amount owed at the end", () => {
+    const wrong = {
+      ...complete(),
+      currentDebtors: "19180",
+      currentAmountsOwedByDirectors: "12000",
+      directorsAdvanceName: "Carol Smith",
+      directorsAdvanceTerms: "Interest free",
+      directorsAdvanceMade: "11000",
+    };
+    expect(formProblems(wrong)).toContainEqual(expect.objectContaining({ target: "directorsAdvanceMade" }));
+  });
+
   test("names an overdrawn director's loan account as a refusal at the question", () => {
     expect(formProblems({ ...complete(), loanOverdrawn: "yes" })).toContainEqual(
       expect.objectContaining({ target: "loanOverdrawn", refusal: true }),

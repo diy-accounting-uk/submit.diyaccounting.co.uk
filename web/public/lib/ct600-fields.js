@@ -942,6 +942,7 @@ export const BALANCE_SHEET_FIELDS = [
   ["fixedAssets", "Fixed assets"],
   ["stocks", "Stocks"],
   ["debtors", "Debtors"],
+  ["amountsOwedByDirectors", "Of which, amounts owed by directors"],
   ["cashAtBank", "Cash at bank and in hand"],
   ["bankLoansOverdrafts", "Bank loans and overdrafts (due within one year)"],
   ["tradeCreditors", "Trade creditors (due within one year)"],
@@ -975,6 +976,21 @@ export const ACCOUNTS_TEXT_FIELDS = [
   { id: "principalActivity", label: "Principal activity", type: "text", smallOnly: true },
   { id: "accountingPolicies", label: "Accounting policies", type: "textarea", smallOnly: true },
   { id: "directors", label: "Directors who held office during the period (one name per line)", type: "textarea", smallOnly: true },
+  {
+    id: "directorsAdvanceName",
+    label: "Director who owes the company money (when the balance sheet shows amounts owed by directors)",
+    type: "text",
+    smallOnly: true,
+  },
+  { id: "directorsAdvanceTerms", label: "Interest rate and main conditions of that director's advance", type: "text", smallOnly: true },
+  {
+    id: "directorsAdvanceAtStart",
+    label: "Owed by that director at the start of the period, in whole pounds",
+    type: "count",
+    smallOnly: true,
+  },
+  { id: "directorsAdvanceMade", label: "Advanced to that director in the period, in whole pounds", type: "count", smallOnly: true },
+  { id: "directorsAdvanceRepaid", label: "Repaid by that director in the period, in whole pounds", type: "count", smallOnly: true },
   { id: "averageEmployees", label: "Average number of employees during the period", type: "count" },
   { id: "directorName", label: "Director approving the accounts", type: "text" },
   { id: "directorDateApproved", label: "Date approved", type: "date" },
@@ -1075,7 +1091,24 @@ function balanceSheetOf(values, year) {
   const figures = {};
   for (const [field] of BALANCE_SHEET_FIELDS) figures[field] = amountOf(values, balanceSheetId(year, field), true);
   figures.capitalAndReserves = figures.calledUpShareCapital + figures.profitAndLossAccount;
+  // The form asks for the director's loan as a part of the debtors; the rest is trade debtors.
+  if (figures.amountsOwedByDirectors > 0) figures.tradeDebtors = figures.debtors - figures.amountsOwedByDirectors;
   return figures;
+}
+
+function directorsAdvancesOf(values, currentSheet) {
+  if (!currentSheet.amountsOwedByDirectors && String(values.directorsAdvanceName ?? "").trim() === "") return undefined;
+  const whole = (id) => Number(String(values[id] ?? "").trim() || 0);
+  return [
+    {
+      name: String(values.directorsAdvanceName ?? "").trim(),
+      terms: String(values.directorsAdvanceTerms ?? "").trim(),
+      balanceAtStart: whole("directorsAdvanceAtStart"),
+      advanced: whole("directorsAdvanceMade"),
+      repaid: whole("directorsAdvanceRepaid"),
+      balanceAtEnd: currentSheet.amountsOwedByDirectors || 0,
+    },
+  ];
 }
 
 function microProfitAndLossOf(values, year) {
@@ -1190,6 +1223,8 @@ export function accountsFromValues(values) {
     };
   }
   const note = values.includeFixedAssetNote === true ? fixedAssetNoteOf(values) : undefined;
+  const currentSheet = balanceSheetOf(values, "current");
+  const directorsAdvances = directorsAdvancesOf(values, currentSheet);
   return {
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
@@ -1204,9 +1239,10 @@ export function accountsFromValues(values) {
         .map((name) => name.trim())
         .filter((name) => name),
       balanceSheet: {
-        currentYear: balanceSheetOf(values, "current"),
+        currentYear: currentSheet,
         ...(includePrior ? { priorYear: balanceSheetOf(values, "prior") } : {}),
       },
+      ...(directorsAdvances ? { directorsAdvances } : {}),
       profitAndLoss: {
         currentYear: profitAndLossOf(values, "current"),
         ...(includePrior ? { priorYear: profitAndLossOf(values, "prior") } : {}),
@@ -1358,6 +1394,27 @@ function balanceSheetProblems(values, problem) {
   }
 }
 
+function directorsAdvancesProblems(values, problem) {
+  const years = values.includeComparatives === true ? ["current", "prior"] : ["current"];
+  const owed = years.some((year) => amountOf(values, balanceSheetId(year, "amountsOwedByDirectors"), true) > 0);
+  if (!owed) return;
+  if (String(values.directorsAdvanceName ?? "").trim() === "")
+    problem("directorsAdvanceName", "Name the director who owes the company money");
+  if (String(values.directorsAdvanceTerms ?? "").trim() === "") {
+    problem("directorsAdvanceTerms", "State the interest rate and the main conditions of the advance");
+  }
+  for (const id of ["directorsAdvanceAtStart", "directorsAdvanceMade", "directorsAdvanceRepaid"]) {
+    if (!/^\d*$/.test(String(values[id] ?? "").trim())) problem(id, "Enter a whole number of pounds, or leave it empty for none");
+  }
+  const sheet = accountsFromValues(values).smallCompany?.directorsAdvances?.[0];
+  if (sheet && sheet.balanceAtStart + sheet.advanced - sheet.repaid !== sheet.balanceAtEnd) {
+    problem(
+      "directorsAdvanceMade",
+      `Owed at the start ${sheet.balanceAtStart} plus advanced ${sheet.advanced} less repaid ${sheet.repaid} must equal the ${sheet.balanceAtEnd} owed by directors at the end`,
+    );
+  }
+}
+
 function fixedAssetNoteProblems(values, problem) {
   if (values.includeFixedAssetNote !== true) return;
   const note = fixedAssetNoteOf(values);
@@ -1422,6 +1479,7 @@ export function formProblems(values) {
     microBalanceSheetProblems(values, problem);
   } else {
     balanceSheetProblems(values, problem);
+    directorsAdvancesProblems(values, problem);
     fixedAssetNoteProblems(values, problem);
   }
   answerProblems(values, problem);
@@ -1482,6 +1540,15 @@ function accountsEntries(accounts) {
   if (smallCompany?.principalActivity) entries.push(["principalActivity", smallCompany.principalActivity]);
   if (smallCompany?.accountingPolicies) entries.push(["accountingPolicies", smallCompany.accountingPolicies]);
   if (smallCompany?.directors) entries.push(["directors", smallCompany.directors.join("\n")]);
+  const advance = smallCompany?.directorsAdvances?.[0];
+  if (advance) {
+    entries.push(
+      ["directorsAdvanceName", advance.name],
+      ["directorsAdvanceAtStart", text(advance.balanceAtStart)],
+      ["directorsAdvanceMade", text(advance.advanced)],
+      ["directorsAdvanceRepaid", text(advance.repaid)],
+    );
+  }
   if (accounts.averageEmployees !== undefined) entries.push(["averageEmployees", text(accounts.averageEmployees)]);
   if (accounts.director?.name) entries.push(["directorName", accounts.director.name]);
   if (accounts.director?.dateApproved) entries.push(["directorDateApproved", accounts.director.dateApproved]);
@@ -1521,6 +1588,7 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
         accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
         directors: accounts.directors?.length ? accounts.directors : [accounts.directorName].filter(Boolean),
         balanceSheet: accounts.balanceSheet,
+        directorsAdvances: accounts.directorsAdvances,
         profitAndLoss: { currentYear: accounts.profitAndLoss.currentYear },
         fixedAssetNote: Object.keys(accounts.fixedAssetNote ?? {}).length > 0 ? accounts.fixedAssetNote : undefined,
       },

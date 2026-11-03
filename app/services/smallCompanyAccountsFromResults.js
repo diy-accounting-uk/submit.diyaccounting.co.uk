@@ -11,6 +11,7 @@
 // browser's books bundle runs it too.
 
 import { smallCompanyProfitAndLossFromPublishedAccount } from "./ct600Figures.js";
+import { directorsAdvancesFrom } from "./microEntityAccountsFromResults.js";
 
 const BALANCE_TOLERANCE = 0.005;
 
@@ -65,20 +66,23 @@ export function smallCompanyLinesFromPublishedBalanceSheet(sheet) {
         `(a difference of ${pence(netAssets - shareholdersFunds)}); a long-term debtor sits on no published line and is the usual cause`,
     );
   }
+  // An overdrawn director's loan account (E29 below 0) is a debtor, not a negative creditor.
+  const owedByDirectors = Math.max(0, -(sheet.E29 ?? 0));
   return {
     fixedAssets: sheet.F6 ?? 0,
     stocks: sheet.E10 ?? 0,
-    debtors: sheet.E11 ?? 0,
+    debtors: (sheet.E11 ?? 0) + owedByDirectors,
     tradeDebtors: sheet.E11 ?? 0,
     otherDebtors: 0,
+    amountsOwedByDirectors: owedByDirectors,
     cashAtBank: sheet.E12 ?? 0,
     bankLoansOverdrafts: sheet.E19 ?? 0,
     tradeCreditors: sheet.E16 ?? 0,
     corporationTax: sheet.E17 ?? 0,
     taxationSocialSecurity: sheet.E18 ?? 0,
     otherCreditors: 0,
-    creditorsAfterOneYear: sheet.F31 ?? 0,
-    amountsOwedToDirectors: sheet.E29 ?? 0,
+    creditorsAfterOneYear: (sheet.F31 ?? 0) + owedByDirectors,
+    amountsOwedToDirectors: Math.max(0, sheet.E29 ?? 0),
     calledUpShareCapital: sheet.F36 ?? 0,
     profitAndLossAccount: shareholdersFunds - (sheet.F36 ?? 0),
     capitalAndReserves: shareholdersFunds,
@@ -96,7 +100,8 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
   const stocks = at("stock");
   const tradeDebtors = at("trade_debtors");
   const otherDebtors = at("long_term_debtors");
-  const debtors = tradeDebtors + otherDebtors;
+  const amountsOwedByDirectors = Math.max(0, -at("directors_loan"));
+  const debtors = tradeDebtors + otherDebtors + amountsOwedByDirectors;
   const statementAccounts = at("current_account") + at("savings_account") + at("credit_card");
   const bankLoansOverdrafts = statementAccounts < 0 ? -statementAccounts : 0;
   const cashAtBank = (statementAccounts < 0 ? 0 : statementAccounts) + at("cash");
@@ -104,7 +109,7 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
   const corporationTax = at("corporation_tax");
   const taxationSocialSecurity = at("paye_due") + at("vat_due") + at("cis_due");
   const otherCreditors = at("net_wages_due") + at("wage_deductions_due") + at("dividends_due");
-  const amountsOwedToDirectors = at("directors_loan");
+  const amountsOwedToDirectors = Math.max(0, at("directors_loan"));
   const creditorsAfterOneYear = amountsOwedToDirectors + at("long_term_creditors");
   const calledUpShareCapital = at("share_capital");
   const profitAndLossAccount = at("retained_earnings") + at("capital_reserves");
@@ -132,6 +137,7 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
     debtors,
     tradeDebtors,
     otherDebtors,
+    amountsOwedByDirectors,
     cashAtBank,
     bankLoansOverdrafts,
     tradeCreditors,
@@ -163,7 +169,8 @@ export function roundSmallCompanyBalanceSheet(lines) {
   const creditorsAfterOneYear = Math.round(lines.creditorsAfterOneYear);
   // The debtors split adds up to the rounded debtors, and the directors' loan stays within the creditors it splits.
   const otherDebtors = Math.round(lines.otherDebtors ?? 0);
-  const tradeDebtors = debtors - otherDebtors;
+  const amountsOwedByDirectors = Math.round(lines.amountsOwedByDirectors ?? 0);
+  const tradeDebtors = debtors - otherDebtors - amountsOwedByDirectors;
   const amountsOwedToDirectors = Math.min(Math.round(lines.amountsOwedToDirectors ?? 0), creditorsAfterOneYear);
   const calledUpShareCapital = Math.round(lines.calledUpShareCapital);
   const capitalAndReserves =
@@ -183,6 +190,7 @@ export function roundSmallCompanyBalanceSheet(lines) {
     debtors,
     tradeDebtors,
     otherDebtors,
+    amountsOwedByDirectors,
     cashAtBank,
     bankLoansOverdrafts,
     tradeCreditors,
@@ -292,6 +300,10 @@ export function smallCompanyAccountsFromResults(book, results, scenario, { prior
       : "The book publishes no prior-year profit and loss account: supply the comparatives when the company has them, or leave them out.",
     "The principal activity and the accounting policies text are typed on the page; the book holds neither.",
   ];
+  if (currentYear.amountsOwedByDirectors > 0 || priorYear.amountsOwedByDirectors > 0)
+    notes.push(
+      "The director's loan account is overdrawn, so it is a debtor. Add the interest rate and the main conditions of the advance to the advances to directors note; the book holds neither.",
+    );
   if (capitalReserve)
     notes.push(
       `A capital reserve of ${pence(capitalReserve)} is folded into the profit and loss account; the sub-line set has no other reserve line.`,
@@ -306,6 +318,7 @@ export function smallCompanyAccountsFromResults(book, results, scenario, { prior
     averageNumberOfEmployees: (book.employees ?? []).length,
     directors: (book.directors ?? []).map((director) => director.name).filter(Boolean),
     directorName: book.directors?.[0]?.name ?? null,
+    ...directorsAdvancesFrom(currentYear, priorYear, book.directors?.[0]?.name),
     profitAndLoss: { currentYear: profitAndLoss, ...(priorYearProfitAndLoss ? { priorYear: priorYearProfitAndLoss } : {}) },
     profitAndLossFormat2: { currentYear: smallCompanyFormat2ProfitAndLossFromResults(results) },
     balanceSheet: { currentYear, priorYear },

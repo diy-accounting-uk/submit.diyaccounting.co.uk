@@ -39,7 +39,7 @@ import {
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
-import { REGISTERED_OFFICE_FIELDS } from "../../services/accountsIxbrlCommon.js";
+import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
@@ -164,6 +164,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     shareClass,
     nominalValue,
     smallCompany,
+    directorsAdvances,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -255,6 +256,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     };
   }
 
+  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages);
   const isDormant = dormant === true;
   const numericNominalValue = Number(nominalValue);
   if (isDormant) {
@@ -289,6 +291,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     dateOfApproval: dateApproved,
     ...revisionField,
     statementsAccepted: statements,
+    ...(validDirectorsAdvances?.length ? { directorsAdvances: validDirectorsAdvances } : {}),
     ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
   };
 }
