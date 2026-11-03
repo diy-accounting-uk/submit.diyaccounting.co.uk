@@ -2,10 +2,9 @@
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
 -- The prod resident-pro rows with no expiry: the latest change per account is not a REMOVE, carries no
--- expires_at, was granted in 2026-02 or 2026-03, and the account holds no other bundle. Run on the prod
--- lake: aws --profile diya-submit-prod athena start-query-execution --work-group prod-env-analytics
--- --query-execution-context Database=prod_env_analytics. The hashed_sub column is the key list in
--- 008-resident-pro-without-expiry.keys.json.
+-- expires_at, was granted in 2026-02 or 2026-03, and the account holds no other bundle. Migration 008
+-- runs this query on the lake (workgroup prod-env-analytics, database prod_env_analytics) and deletes
+-- the rows named by its hashed_sub column.
 WITH latest AS (
   SELECT hashed_sub,
          bundle_id,
