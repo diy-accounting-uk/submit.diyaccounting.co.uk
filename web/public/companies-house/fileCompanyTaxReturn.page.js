@@ -1487,6 +1487,11 @@ async function showOutcome(outcome) {
     element("returnIrmark").replaceChildren(
       create("p", {}, "IRmark: ", create("code", {}, outcome.irmark)),
       create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
+      create(
+        "p",
+        { id: "receiptProof" },
+        "The receipt below is the company's proof that it filed this return. Keep it with the company's records.",
+      ),
     );
     element("returnIrmark").style.display = "block";
     element("startAgainBtn").style.display = "inline-block";

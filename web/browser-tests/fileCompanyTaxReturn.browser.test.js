@@ -529,6 +529,18 @@ test.describe("File Company Tax Return entry form", () => {
         "filings.html?receipt=2026-10-24T11%3A30%3A00.000Z-ABCDEF0123456789.json",
       );
 
+      await expect(page.locator("#receiptProof")).toContainText("proof that it filed this return");
+      await expect(copy).toContainText("This receipt is the company's proof that it filed the return");
+      const help = page.locator("#supportHelp");
+      await expect(help.getByRole("link", { name: "HMRC Online Services Helpdesk" })).toHaveAttribute(
+        "href",
+        /gov\.uk\/.*online-services-helpdesk/,
+      );
+      await expect(help.getByRole("link", { name: "support@diyaccounting.co.uk" })).toHaveAttribute(
+        "href",
+        "mailto:support@diyaccounting.co.uk",
+      );
+
       const text = await page.locator("#returnRecord").innerText();
       expect(text).not.toContain("undefined");
       expect(text).not.toContain("NaN");

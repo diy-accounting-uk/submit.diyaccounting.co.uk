@@ -190,7 +190,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
       {
         heading: "Receipt from HMRC",
         explanation:
-          "The IRmark receipt is HMRC's proof that it received the return unchanged. The correlation ID is the reference to quote if you ask HMRC about this filing.",
+          "This receipt is the company's proof that it filed the return. Keep it with the company's records. The IRmark receipt shows HMRC received the return unchanged. The correlation ID is the reference to quote if you ask HMRC about this filing.",
         recordHtml: ctReceiptRecord(receipt, dateText),
       },
     ],
