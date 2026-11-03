@@ -194,7 +194,6 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
 | 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
-| 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
 
 ### Design: the CT600 without a book (CT2)
 
@@ -668,7 +667,7 @@ The new `--loans` option reads the JSON into `figures.loansToParticipators`. The
 | Build | Files | Size | Model | After |
 |---|---|---|---|---|
 | CT8c the overdrawn loan in the accounts | `app/services/smallCompanyAccountsFromResults.js`, `app/services/microEntityAccountsFromResults.js`, `app/services/smallCompanyAccountsIxbrl.js`, `app/services/microEntityAccountsIxbrl.js`, their unit tests | ~7 | Sonnet | — |
-| CT8b the CT600A | `ct600Figures.js`, `ct600Xml.js`, `hmrcCtReturnRequest.js`, `web/public/lib/ct600-fields.js`, `fileCompanyTaxReturn.page.js`, `fileCompanyTaxReturn.html`, `web/public/lib/books-bundle.js` (rebuilt), `scripts/hmrc-tpvs-ct600.js`, the fixture (3), the tests above (8), `REPORT_CAPABILITIES.md` | ~19 | Sonnet | CT8c for the TPVS proof only |
+| CT8b the CT600A | `ct600Figures.js`, `ct600Xml.js`, `hmrcCtReturnRequest.js`, `web/public/lib/ct600-fields.js`, `fileCompanyTaxReturn.page.js`, `fileCompanyTaxReturn.html`, `web/public/lib/books-bundle.js` (rebuilt), `scripts/hmrc-tpvs-ct600.js`, the fixture (3), the tests above (8), `REPORT_CAPABILITIES.md` | ~20 | Sonnet | CT8c for the TPVS proof only |
 
 `web/public/mtd-calendar.html` does not change: the CT600 stays preview on the same channels.
 
@@ -714,6 +713,138 @@ Steps:
 Done when the tests pass, both TPVS runs exit 0, and the `visual-review` skill passes the Loans
 section and its review at 1280 px and 390 px.
 
+### Design: agent filing of the CT600 (CT9a)
+
+The design CT9b builds to (evidence row R54). It answers plan question 10: a practice
+(resident-tax-agent) files a client company's CT600 as its agent, with the practice's own
+Government Gateway credentials. The journey is part of the practice build and stays hidden on
+prod until UH1 (`PLAN_ITSA_APPROVAL.md`). It does not wait on UH1 to be built.
+
+**Sources** (read 2026-11-03):
+
+| Source | What it says |
+|---|---|
+| Transaction Engine Document Submission Protocol v2.0, section 3.2.2 | "Level 1: SenderDetails User ID/password is authenticated. The enrolment (identified by Keys) can be access[ed] either by a client enrolled in the service or an agent authorised to use the enrolment." Error 1046: "Authentication Failure. The supplied user credentials failed validation for the requested service." |
+| CT online service validation rules v1.17a | `Authentication/Role`: "If present should be set to principal." `IRheader/Sender` takes Individual, Company, Agent, Bureau and others |
+| RIM V1.994 specDoc, `/IRheader/Agent` | optional `AgentID` (1 to 35), `Company` (1 to 35), `Address`, `Contact`, after `PeriodEnd` and before `DefaultCurrency`. `AgentID` "is for the agent's own reference and is not the same as any agent's credentials". No rule ties `Sender` to `Agent` |
+| HMRC COTAX manual COM130090 | "A return delivered through the Corporation Tax Online Service includes the name of a person authorised by the company"; "You should accept the name of any company official, employee or agent, including a tax advisor or an accountant"; acceptable "as long as the declaration is completed with the name and status of the person authorising the return" |
+| COM60020 | "Companies have to authorise an agent to act on their behalf using a form 64-8 ... However, an agent can use the HMRC online authorisation service" |
+| gov.uk "Corporation Tax for Agents online service" (updated 5 May 2022) | an agent registers with HMRC first and files clients' returns with commercial software |
+| Agent Authorisation Online specifications, Corporation Tax (16 June 2023) | a Transaction Engine service through which software asks for a client's CT authorisation |
+| The Agent Authorisation API (`app/lib/hmrcAgentAuthorisation.js`) | MTD VAT and MTD Income Tax only; no Corporation Tax |
+
+**TPVS proof of the shape (2026-11-03).** The precision-code return with
+`<Agent><AgentID>PCL-001</AgentID><Company>Example Practice LLP</Company></Agent>` in `IRheader`,
+`<Sender>Agent</Sender>` and the declaration status `Agent` drew HMRC's success receipt.
+
+**The answers.**
+
+| Question | Answer |
+|---|---|
+| `IRheader/Sender` | `Agent` for a client-scoped filing, `Company` otherwise |
+| `IRheader/Agent` | `AgentID` = the client id (26 characters, the practice can quote it); `Company` = the practice name typed on the page, cut to 35 characters. No address or contact |
+| Declaration, boxes 975 and 985 | 975 = the name of the person at the practice who makes the declaration; 985 = the status, default "Agent" (2 to 56 characters, the practice can type "Tax agent, Example Practice LLP"). `AcceptDeclaration` stays `yes` |
+| GovTalk `SenderDetails` | the practice's own Government Gateway user ID and password, for HMRC Online Services for Agents with Corporation Tax enrolled. Typed per filing, sent once, never stored or logged, as today. `Role` stays `principal` |
+| GovTalk `Keys` and `IRheader/Keys` | the client company's UTR, from the client row |
+| An agent reference in the GovTalk header | none: the protocol has no agent element; `IRheader/Agent/AgentID` is the only one |
+| What HMRC checks | the Transaction Engine authenticates the credentials and checks that they may use the enrolment the UTR names. For an agent credential, that needs the company's authorisation for Corporation Tax (form 64-8 or the online authorisation). A missing authorisation is error 1046 at the submission |
+| What Submit checks before it sends | it cannot read a CT authorisation: the Agent Authorisation API has no CT service. The page asks the practice to confirm the authorisation for each filing, and maps 1046 to a message that names both causes |
+
+The 1046 message for a client filing: "HMRC did not accept these Government Gateway credentials
+for this company. Use the practice's own agent user ID with Corporation Tax enrolled. Check that
+the company has authorised the practice for Corporation Tax, by form 64-8 or online. A new
+authorisation can take up to 72 hours to reach HMRC's systems."
+
+**How a practice picks the client and its book.**
+
+- The page asks "Who is this return for?" when `GET /api/v1/practice/clients` answers 200. The
+  choices are "My own company" and each client that is not archived (display name and company
+  number). The question is absent when that call answers 403.
+- A client choice fills the company number and the UTR from the client row
+  (`identifiers.companyNumber`, `identifiers.utr`), read-only. A client with no UTR or no company
+  number stops the form: "Add the company's UTR to <client> on Practice clients", linked to
+  `practice.html`.
+- The choice shows two more fields: "Practice name (for HMRC's records)", which the browser keeps
+  in `localStorage` under a try/catch, and the box 985 default "Agent".
+- The declaration section gains a checkbox: "The company has authorised this practice to act for
+  it for Corporation Tax (form 64-8 or online), and has approved this return." The server
+  refuses a client filing without it.
+- The "Fill from your books" card gains a list of the client's saved books
+  (`GET /api/v1/diya-gl/books?clientId=`, then
+  `GET /api/v1/diya-gl/books/:bookId/versions/:version?clientId=`). The chosen version goes
+  through `readBookSource` as a dropped file does. A file dropped from disk also works.
+
+**The server.** `hmrcCtReturnPreviewPost.js`, `hmrcCtReturnPost.js` and `hmrcCtReturnGet.js` read
+`clientId` from the body (the poll from the query), as `companiesHouseAccountsPost.js` does.
+
+- `enforceBundles(event, { clientId })` gives the client row and checks the practice licence
+  (`holdsPracticeLicence`).
+- The company number and the UTR come from the client row, never from the body.
+- `extractAndValidateCtReturnParameters` takes `agent: { practiceName, authorisationConfirmed }`
+  for a client request. `authorisationConfirmed` must be `true`.
+- `buildCtReturnDocuments` passes `agent: { reference: clientId, practiceName }` to
+  `buildCt600IrEnvelope`, which writes `IRheader/Agent` and `Sender` `Agent`.
+- The async request, the receipt and the activity events carry `clientId`, so the practice's
+  receipts list shows the client.
+- `hmrcCtReturnPost.js` maps a 1046 on a client filing to the message above.
+
+**The hidden-on-prod gate.** Two layers, so UH7 (the CT600 for companies on prod) does not unhide
+agent filing:
+
+1. The three CT routes refuse a client-scoped request with 403 `CLIENT_SCOPE_ENVIRONMENT_RESTRICTED`
+   unless the catalogue's `practice` activity is listed in `ENVIRONMENT_NAME`
+   (`isActivityListedInEnvironment`). Today `practice` lists local, test, simulator, proxy and
+   ci. UH1 adds prod.
+2. The page shows "Who is this return for?" only when the practice clients call answers 200, which
+   the `practice` activity's own environments gate.
+
+**The ETS test.** SDST issues one set of CT test credentials (O34g). The ETS checks them for the
+service, and its TPVS stage validates the body. B34g1's ETS proof script gains an `--agent` case:
+the same test credentials, `Sender` `Agent`, the Agent block. If the ETS answers 1046 to that case
+alone, the test credentials are company-only. Then the operator asks SDST for an agent test
+credential for CT online, and the agent case waits on it. The company case does not.
+
+**The TPVS proof.** `node scripts/hmrc-tpvs-ct600.js --agent "Example Practice LLP"` builds the
+return with `agent: { reference: "PCL-001", practiceName }` and status "Agent", and exits 0 on
+HMRC's success receipt.
+
+**The build.**
+
+| Part | Files | Tests |
+|---|---|---|
+| The return | `app/services/ct600Xml.js` (`agent` input: the Agent block and `Sender`), `app/services/hmrcCtReturnRequest.js` (`agent`, its checks), `scripts/hmrc-tpvs-ct600.js` (`--agent`) | `ct600Xml.test.js`: `Sender` `Company` with no agent, `Agent` with one; the block's position and the 35-character cut; `hmrcCtReturnRequest.test.js`: the confirmation is required |
+| The routes | `app/functions/hmrc/hmrcCtReturnPreviewPost.js`, `hmrcCtReturnPost.js`, `hmrcCtReturnGet.js` | `hmrcCtReturnPost.test.js`, `hmrcCtReturnPreviewPost.test.js`, `hmrcCtReturnGet.test.js`: the client row's UTR and company number win over the body; no licence is 403; an archived client is 403; the environment gate is 403 when `practice` is not listed; 1046 gives the client message; the receipt carries `clientId` |
+| The page | `web/public/companies-house/fileCompanyTaxReturn.html`, `fileCompanyTaxReturn.page.js`, `web/public/lib/ct600-fields.js`, `web/public/widgets/books-import.js` (the saved books list) | `web/browser-tests/fileCompanyTaxReturn.browser.test.js`: the question shows only on a 200 from the clients call; a client fills the UTR and company number; the missing-UTR stop; the confirmation checkbox; a saved book fills the form; `web/browser-tests/hiddenContent.browser.test.js`: no "Who is this return for?" on prod |
+| The record | `REPORT_CAPABILITIES.md` | — |
+
+About 18 files with the tests. Model: Sonnet. CT9b and CT8b both change `ct600Xml.js`,
+`hmrcCtReturnRequest.js`, the page and `ct600-fields.js`, so CT9b follows CT8b on the same
+batch.
+
+**A later step.** Submit could ask for the client's CT authorisation itself through Agent
+Authorisation Online (Transaction Engine, specifications of 16 June 2023), and keep its status on
+the client row. That is not designed yet. Until it is, the practice confirms the authorisation and
+HMRC's 1046 is the check.
+
+**CT9b brief (Sonnet).** Build agent filing of the CT600 to this design. Branch from the batch
+that holds CT8b. Run `npm run bundle` first. Steps:
+
+1. In `ct600Xml.js`, add the `agent` input to `buildCt600IrEnvelope`. With it, write
+   `<Agent><AgentID>` and `<Company>` after `PeriodEnd` and `Sender` `Agent`. Without it, keep
+   `Company`.
+2. In `hmrcCtReturnRequest.js`, read `agent` for a client request and refuse when
+   `authorisationConfirmed` is not `true`. Pass `agent` through `buildCtReturnDocuments`.
+3. In the three CT routes, read `clientId`, call `enforceBundles(event, { clientId })`, take the
+   UTR and company number from the client row, add the environment gate, carry `clientId` on the
+   async request, the receipt and the events, and map 1046 for a client filing.
+4. On the page, add "Who is this return for?", the practice name, the status default, the
+   confirmation checkbox, and the saved books list in the books card.
+5. Add `--agent <practice name>` to `scripts/hmrc-tpvs-ct600.js`, and run it. It must exit 0.
+6. Write the tests in the table above.
+
+Done when the tests pass, the TPVS run exits 0, and the `visual-review` skill passes the page with
+a client chosen at 1280 px and 390 px. The ETS agent case runs with B34g1 when O34g lands.
+
 ## Tasks
 
 The launch and approval steps are on the Board above.
@@ -728,4 +859,5 @@ The launch and approval steps are on the Board above.
 | CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the submit refuses figures that differ from the reviewed boxes | ~5 | Sonnet | — | On main (PR #535, PR #536) |
 | CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14); the page's entry path is `NEXT.md` CT3e | ~5 | Sonnet | — | On main (PR #536) |
 | CT8c | An overdrawn director's loan account as a debtor in the accounts, with the s413 note of advances to directors (the CT8a design) | ~7 | Sonnet | — | Open |
-| CT8b | Supplementary page CT600A: the figures, the page questions, the XML, boxes 95, 480 and 485, the fixture book and the TPVS proof (the CT8a design) | ~19 | Sonnet | CT8c for the TPVS proof; open question 15 | Open |
+| CT8b | Supplementary page CT600A: the figures, the page questions, the XML, boxes 95, 480 and 485, the fixture book and the TPVS proof (the CT8a design) | ~20 | Sonnet | CT8c for the TPVS proof; open question 15 | Open |
+| CT9b | Agent filing of the CT600: `Sender` `Agent`, the Agent block, the practice's own Gateway credentials, the client picker and saved books, the hidden-on-prod gate, the TPVS proof (the CT9a design) | ~18 | Sonnet | CT8b (shared files) | Open |
