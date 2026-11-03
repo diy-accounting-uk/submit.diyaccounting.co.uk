@@ -26,6 +26,12 @@
 The go covers the live Stripe writes: the resident-ltd product and prices, and the £61.35
 confirmation statement fee price (OCS11b, done: price_1UXgLQCD0Ld2ukzIxWk80VH7 on branch claude/yahtzee-stripe-fee).
 
+Operator answers to the design's open questions (2026-11-03):
+
+- RQ1, the 120 prod resident-pro rows with no expiry: "Delete via lake keys", migration 008 with its keys from the lake query.
+- RQ2: the CT600 and the PSC verification statement join resident-ltd now, still hidden on prod by `environments`.
+- The live Stripe go covers every RL3 write: resident-vat's £9.99/year, resident-pro's new prices and product text, and the resident-tax-agent product and prices.
+
 ## Target catalogue
 
 | Bundle | Holds | Prices | Tokens | Prod |
@@ -45,7 +51,7 @@ Resident Pro's strap line: "Submit VAT returns to HMRC and Accounts to Companies
 | Id | What | Model | Blocked by |
 |---|---|---|---|
 | RL2a | The aggregation resolver, its readers and its tests | Sonnet | — |
-| RL2b | The catalogue fold, resident-tax-agent, every `resident`/`resident-pro` reference, migration 007 | Sonnet | RL2a |
+| RL2b | The catalogue fold, resident-tax-agent, every `resident`/`resident-pro` reference, migration 007, and migration 008 that deletes the 120 prod resident-pro rows with no expiry by the keys from the lake query (RQ1); the CT600 and PSC verification statement in resident-ltd (RQ2) | Sonnet | RL2a |
 | RL2c | The Stripe price wiring: env var names, CDK props, the stripe-sync product update | Sonnet | RL2b |
 | RL2d | UH4: the three Companies House filings on prod, and the copy | Sonnet | RL2b |
 | RL3 | Stripe test then live: resident-ltd, resident-vat's year price, resident-pro's new prices, resident-tax-agent | Haiku | RL2c |
@@ -373,10 +379,3 @@ in section 6. About 40. Proof:
 
 The PR's ci deploy then runs the ci behaviour suites; migration 007 runs on ci, then on prod after
 the prod deploy.
-
-## Open questions
-
-| Id | Question | Options | Recommendation |
-|---|---|---|---|
-| RQ1 | The 120 prod `resident-pro` rows with no expiry (granted 2026-02 and 2026-03, no Stripe subscription, no other bundle on the account). After RL2 they hold VAT and Companies House on prod with no end date. The sparse GSI does not reach them | (a) leave them; (b) a migration 008 that deletes them by the keys from the lake query, run by `run-migrations.yml`; (c) a scan migration like 006 | (b): keys come from the lake, so no scan, and no paying customer holds them |
-| RQ2 | CT600 and PSC verification in resident-ltd now, hidden on prod by `environments` | (a) in resident-ltd now; (b) in resident-pro only until UH7 | (a), as designed: prod shows the three filings, and UH7 is then one `environments` change |
