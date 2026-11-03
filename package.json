@@ -364,6 +364,7 @@
     "stripe:trigger-lifecycle": "bash scripts/stripe-trigger-lifecycle.sh",
     "stripe:configure-policies": "node scripts/stripe-configure-policies.js",
     "ga4:sync": "node infra/google/ga4/ga4-sync.js",
+    "searchconsole:sync": "node infra/google/searchconsole/searchconsole-sync.js",
     "ga4:bigquery-sync": "node infra/google/ga4/ga4-bigquery-sync.js",
     "google:inventory": "node infra/google/gcp/google-inventory.js",
     "ads:inventory": "node infra/google/ads/ads-inventory.js",

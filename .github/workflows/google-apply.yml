@@ -3,7 +3,7 @@
 
 # @capability OPS-67 Apply Google Cloud / GA4 infrastructure
 # - **Use when:** Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
-# - **Does:** google-apply.yml runs the infra/google/** scripts in dependency order. The order is API enablement, workload identity, IAM roles, billing, GA4, the GA4-in-BigQuery dataset, then the OAuth client check. It plans on a pull request and applies on a push to main or a manual dispatch with apply true.
+# - **Does:** google-apply.yml runs the infra/google/** scripts in dependency order. The order is API enablement, workload identity, IAM roles, billing, GA4, the GA4-in-BigQuery dataset, Search Console verification, then the OAuth client check. It plans on a manual dispatch with apply false and applies on a push to main or a manual dispatch with apply true.
 # - **Run:** `gh workflow run google-apply.yml -f apply=<true|false>`
 # - **Entry:** `.github/workflows/google-apply.yml`
 # - **Files:** .github/workflows/google-apply.yml
@@ -175,6 +175,18 @@ jobs:
             node infra/google/ga4/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
           fi
 
+      # Verifies the Search Console domain properties in infra/google/searchconsole/searchconsole.toml.
+      # Verification needs the DNS_CNAME records in DNS; until they exist an apply reports the
+      # domains as unverified and exits zero, so the step never fails a merge for a record that
+      # lands later.
+      - name: Run searchconsole-sync
+        run: |
+          if [ "$GOOGLE_APPLY" != "true" ]; then
+            node infra/google/searchconsole/searchconsole-sync.js 2>&1 | tee searchconsole-sync.log
+          else
+            node infra/google/searchconsole/searchconsole-sync.js --apply 2>&1 | tee searchconsole-sync.log
+          fi
+
       # Read-only: checks infra/google/gcp/oauth.toml against Cognito, Secrets Manager and the
       # Google Auth Platform brand, the same on a plan and on an apply. Nothing to apply.
       - name: Run google-oauth-assert
@@ -197,7 +209,7 @@ jobs:
         run: |
           echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log google-api-keys.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log ads-sync.log; do
+          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log google-api-keys.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log searchconsole-sync.log google-oauth-assert.log ads-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
