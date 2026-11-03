@@ -259,7 +259,9 @@ async function renderDynamicActivities() {
     }
 
     const text = await response.text();
-    const catalog = window.TOML ? window.TOML.parse(text) : await response.json().catch(() => ({}));
+    const catalog = window.TOML
+      ? (await import("/lib/services/catalog-service.js")).parseCatalogueText(text)
+      : await response.json().catch(() => ({}));
     const userBundles = parseUserBundles();
     const activeBundles = getActiveBundles(catalog, userBundles);
     const expiredBundles = getExpiredBundles(userBundles);

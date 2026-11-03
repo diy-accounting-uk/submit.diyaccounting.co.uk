@@ -15,11 +15,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
+import { resolveAggregateBundles } from "../../web/public/lib/services/catalogue-aggregates.js";
 
 export function parseCatalog(tomlString) {
   if (typeof tomlString !== "string") throw new TypeError("tomlString must be a string");
-  const catalog = TOML.parse(tomlString);
-  return catalog;
+  return resolveAggregateBundles(TOML.parse(tomlString));
 }
 
 export function loadCatalogFromRoot() {

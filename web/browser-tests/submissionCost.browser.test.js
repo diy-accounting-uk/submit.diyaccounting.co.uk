@@ -84,6 +84,15 @@ test.describe("Submission cost widget", () => {
     await page.route("**/lib/request-cache.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: requestCacheJsContent });
     });
+    for (const file of ["catalog-service.js", "catalogue-aggregates.js"]) {
+      await page.route(`**/lib/services/${file}`, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public/lib/services", file), "utf-8"),
+        });
+      });
+    }
     await page.route("**/widgets/submission-cost.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: submissionCostJsContent });
     });

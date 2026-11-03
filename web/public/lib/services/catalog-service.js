@@ -3,6 +3,20 @@
 
 // Catalog service for bundle and activity management
 
+import { resolveAggregateBundles, includedBundleIds, bundleIdsIncluding, aggregateBundleErrors } from "./catalogue-aggregates.js";
+
+export { resolveAggregateBundles, includedBundleIds, bundleIdsIncluding, aggregateBundleErrors };
+
+/**
+ * Parse the catalogue TOML and resolve bundle aggregation, so each activity's `bundles` names
+ * every aggregate that holds it.
+ * @param {string} text - Raw TOML content
+ * @returns {object} The resolved catalogue
+ */
+export function parseCatalogueText(text) {
+  return resolveAggregateBundles(window.TOML.parse(text));
+}
+
 /**
  * Get bundles available for an activity
  * @param {object} catalog - Parsed catalog object

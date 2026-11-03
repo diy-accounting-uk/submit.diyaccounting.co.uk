@@ -16,6 +16,7 @@ WORKDIR /build
 # Copy package files first for better layer caching
 COPY package.json package-lock.json ./
 COPY web/public/submit.catalogue.toml web/public/submit.catalogue.toml
+COPY web/public/lib/services/catalogue-aggregates.js web/public/lib/services/catalogue-aggregates.js
 
 # Install only production dependencies
 # --ignore-scripts: skip native compilation (none needed for our pure-JS deps)
@@ -39,6 +40,7 @@ LABEL org.opencontainers.image.licenses="LicenseRef-PolyForm-Internal-Use-1.0.0"
 COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./package.json
 COPY --from=builder /build/web/public/submit.catalogue.toml ./web/public/submit.catalogue.toml
+COPY --from=builder /build/web/public/lib/services/catalogue-aggregates.js ./web/public/lib/services/catalogue-aggregates.js
 COPY --from=builder /build/mcp/node_modules ./mcp/node_modules
 
 # Copy application code

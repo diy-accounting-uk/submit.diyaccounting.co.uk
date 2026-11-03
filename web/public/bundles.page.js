@@ -30,7 +30,7 @@ const fetchAndParse = async (url, opts = {}) => {
   try {
     if (url.endsWith(".toml")) {
       const text = await res.text();
-      return window.TOML ? window.TOML.parse(text) : null;
+      return window.TOML ? (await import("/lib/services/catalog-service.js")).parseCatalogueText(text) : null;
     }
     return await res.json();
   } catch {

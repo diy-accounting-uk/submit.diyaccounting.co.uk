@@ -392,3 +392,29 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).toContain("prod");
   });
 });
+
+describe("productCatalog aggregation", () => {
+  const fixture = `
+[[bundles]]
+id = "part"
+
+[[bundles]]
+id = "whole"
+includes = ["part"]
+
+[[activities]]
+id = "uses-part"
+bundles = ["part"]
+
+[[activities]]
+id = "uses-whole"
+bundles = ["whole"]
+`;
+
+  it("parseCatalog gives an aggregate the activities of its parts", () => {
+    const catalog = parseCatalog(fixture);
+    expect(bundlesForActivity(catalog, "uses-part")).toEqual(["part", "whole"]);
+    expect(bundlesForActivity(catalog, "uses-whole")).toEqual(["whole"]);
+    expect(isActivityAvailable(catalog, "uses-part", "whole")).toBe(true);
+  });
+});
