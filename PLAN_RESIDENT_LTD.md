@@ -57,7 +57,7 @@ Resident Pro's strap line: "Submit VAT returns to HMRC and Accounts to Companies
 | RL3 | Stripe test then live: resident-ltd, resident-vat's year price, resident-pro's new prices, resident-tax-agent | Haiku | RL2c |
 | RL4 | Record again the videos that show the bundle card (RL2d's list), then `video-publish` | Sonnet | RL2d deployed to ci |
 
-RL2a to RL2d land on one branch and one PR, in order. RL3 runs after that PR merges.
+RL2a to RL2d land on one branch and one PR, in order. RL3 runs from that branch before its push, so the PR carries the live price ids with the prod listing and UH4.
 
 ## Design (RL1)
 
