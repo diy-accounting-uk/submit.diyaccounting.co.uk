@@ -501,6 +501,42 @@ test.describe("File Company Tax Return entry form", () => {
     });
   }
 
+  for (const [mismatch, label] of [
+    [true, "warns when the IRmark on HMRC's receipt differs"],
+    [false, "shows no IRmark warning when the receipt matches"],
+  ]) {
+    test(`an accepted return ${label}`, async ({ page }) => {
+      const submission = {
+        requests: [],
+        status: 200,
+        body: { correlationId: "ABCDEF0123456789", pollIntervalSeconds: 1 },
+        pollBody: mismatch ? { ...ACCEPTED_RETURN, irmarkReceiptMismatch: true } : ACCEPTED_RETURN,
+      };
+      await openForm(page, [], submission);
+      await dropBook(page);
+      await completeTheAnswersTheBookLeaves(page);
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#gatewayUserId").fill("gateway-user");
+      await page.locator("#gatewayPassword").fill("gateway-password");
+      await page.locator("#submitReturnBtn").click();
+
+      const copy = page.locator("#returnRecord .customer-copy");
+      await expect(copy).toBeVisible({ timeout: 15_000 });
+      const resultWarning = page.locator("#irmarkMismatchWarning");
+      const copyWarning = copy.locator(".customer-copy-warning");
+      if (mismatch) {
+        await expect(resultWarning).toBeVisible();
+        await expect(resultWarning).toContainText("IRmark on HMRC's receipt is different from the one we calculated");
+        await expect(copyWarning).toBeVisible();
+        await expect(copyWarning).toContainText("Contact support if you need the difference explained");
+      } else {
+        await expect(resultWarning).toHaveCount(0);
+        await expect(copyWarning).toHaveCount(0);
+      }
+    });
+  }
+
   for (const [width, scheme] of [
     [1280, "light"],
     [390, "dark"],

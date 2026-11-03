@@ -137,6 +137,9 @@ function figureCell(value, options) {
   return recordAmount(amount, { decimals: Number.isInteger(amount) ? 0 : 2, ...options });
 }
 
+export const IRMARK_MISMATCH_WARNING =
+  "HMRC accepted the return, but the IRmark on HMRC's receipt is different from the one we calculated. Keep the receipt. Contact support if you need the difference explained.";
+
 /**
  * The customer copy of an accepted Company Tax Return as filed.
  * @param {object} filed
@@ -191,6 +194,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
         heading: "Receipt from HMRC",
         explanation:
           "This receipt is the company's proof that it filed the return. Keep it with the company's records. The IRmark receipt shows HMRC received the return unchanged. The correlation ID is the reference to quote if you ask HMRC about this filing.",
+        warning: outcome.irmarkReceiptMismatch ? IRMARK_MISMATCH_WARNING : undefined,
         recordHtml: ctReceiptRecord(receipt, dateText),
       },
     ],

@@ -1607,8 +1607,18 @@ async function showOutcome(outcome) {
     element("returnResult").replaceChildren(
       outcomeTitle(sending.amendment ? "HMRC accepted the amended Company Tax Return" : "HMRC accepted the Company Tax Return"),
     );
+    const { IRMARK_MISMATCH_WARNING } = await import("../lib/filing-result-record.js");
     element("returnIrmark").replaceChildren(
       create("p", {}, "IRmark: ", create("code", {}, outcome.irmark)),
+      ...(outcome.irmarkReceiptMismatch
+        ? [
+            create(
+              "div",
+              { id: "irmarkMismatchWarning", class: "status-message status-warning", role: "alert" },
+              create("div", { class: "status-message-content" }, IRMARK_MISMATCH_WARNING),
+            ),
+          ]
+        : []),
       create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
       create(
         "p",
