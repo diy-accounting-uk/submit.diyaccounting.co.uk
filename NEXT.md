@@ -60,8 +60,6 @@ Facts the commission rows share (CT4c, OAFF7; the ci design is `PLAN_COMMISSION_
 
 - [ ] **SEO5. diya-gl.co.uk: `/` in the sitemap, a canonical, an h1, and the layout shift (spreadsheets repository; `../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** The sitemap lists `/index.html` while `/` serves the same page; the home page has no h1; CLS 0.187. With SEO2. **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **SEO4. `www.diyaccounting.co.uk` redirects to the apex with a 301, and both carry a canonical (www and root repositories; `../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** `www` answers 200 with no redirect and no canonical, so Google sees two copies; best practices score 92. A Sonnet agent on `claude/zebra-www-canonical` (www) and `claude/zebra-www-redirect` (root). **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-only
 
 ## Machine-ask
