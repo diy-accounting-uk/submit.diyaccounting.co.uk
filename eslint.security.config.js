@@ -3,6 +3,7 @@
 
 import security from "eslint-plugin-security";
 import sonarjs from "eslint-plugin-sonarjs";
+import noUnsanitized from "eslint-plugin-no-unsanitized";
 import globals from "globals";
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
@@ -10,6 +11,7 @@ export default [
   {
     plugins: {
       security,
+      "no-unsanitized": noUnsanitized,
       sonarjs, // Loaded so eslint-disable comments for sonarjs rules don't cause errors
     },
     languageOptions: {
@@ -30,6 +32,8 @@ export default [
       "sonarjs/pseudo-random": "off",
       "sonarjs/no-parameter-reassignment": "off",
       "sonarjs/no-os-command-from-path": "off",
+      "no-unsanitized/property": "error",
+      "no-unsanitized/method": "error",
       ...security.configs.recommended.rules,
       // Disabled: generates too many false positives for intentional obj[key] patterns.
       // Real object injection risks are mitigated by input validation at API boundaries.
@@ -74,6 +78,9 @@ export default [
       "**/*.bundle.js",
       // Exclude entry points that have eslint-disable for other plugins
       "web/public/submit.js",
+      // Generated and vendored bundles: retire.js and npm audit cover third-party code
+      "web/public/lib/books-bundle.js",
+      "web/public/docs/api/vendor/",
       "web/public/lib/test-data-generator.js",
       // Note: bundleManagement.js and hmrcApi.js have eslint-disable for sonarjs (code quality)
       // but are now included in security scanning since this config only uses security plugin
