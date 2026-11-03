@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-loss-claims",
   "title": "A sole trade loss: carry sideways, carry back, and which applies first",
-  "description": "A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first.",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident Pro, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -105,7 +105,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -118,9 +118,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
+          "caption": "Resident Pro opens the Self Assessment activities.",
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },

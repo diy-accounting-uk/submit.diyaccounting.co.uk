@@ -579,7 +579,7 @@ id = "companies-house-filings"
 category = "submission"
 question = "Can I file with Companies House?"
 answer = """
-Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address.
+Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -587,14 +587,16 @@ keywords = ["companies house", "registered office", "registered email", "company
 priority = 31
 
 [[faq]]
-id = "companies-house-sandbox-filings"
+id = "companies-house-accounts-filings"
 activity = "file-confirmation-statement"
 category = "submission"
 question = "Can I file accounts or a confirmation statement with Companies House?"
 answer = """
-Not yet for real filings. These filings are in **sandbox**: micro-entity accounts, small company accounts, confirmation statement and PSC verification statement. A sandbox filing goes to the Companies House test service and files nothing real.
+Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **production**. A filing goes to Companies House.
 
-Filing accounts, a confirmation statement or a company tax return needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+
+The PSC verification statement is in **sandbox**: it goes to the Companies House test service and files nothing real.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """

@@ -176,7 +176,7 @@ describe("billingActivityCheckoutPost", () => {
 
   test("returns activity-not-listed for an activity not listed in the current environment", async () => {
     process.env.ENVIRONMENT_NAME = "prod";
-    const event = buildEventWithToken(validToken, buildBody());
+    const event = buildEventWithToken(validToken, buildBody({ activityId: "file-company-tax-return" }));
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).code).toBe("activity-not-listed");

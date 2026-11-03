@@ -231,7 +231,7 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).toContain("^/api/v1/hmrc/ct/return.*");
   });
 
-  it("file-confirmation-statement activity should be granted by resident-ltd and the bundles that include it, ci only", () => {
+  it("file-confirmation-statement activity should be granted by resident-ltd and the bundles that include it, listed in ci and prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
     expect(bundlesForActivity(catalog, "file-confirmation-statement")).toEqual([
@@ -242,8 +242,7 @@ describe("productCatalogHelper", () => {
     ]);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
-    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
-    expect(activity.environments).not.toContain("prod");
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
   });
 
   it("file-confirmation-statement carries a one-off per-submission price", () => {
@@ -272,7 +271,7 @@ describe("productCatalogHelper", () => {
   it("resident-ltd is always visible, on-subscription, 100 tokens monthly, annual default", () => {
     const catalog = parseCatalog(tomlText);
     const residentLtd = getCatalogBundleById(catalog, "resident-ltd");
-    expect(residentLtd.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(residentLtd.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
     expect(residentLtd).toMatchObject({
       name: "Resident Ltd",
       enable: "always",
@@ -300,7 +299,7 @@ describe("productCatalogHelper", () => {
       tokenRefreshInterval: "P1M",
       description: "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.",
     });
-    expect(residentPro.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(residentPro.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
     expect(getBundlePrices(residentPro)).toEqual([
       { interval: "year", amount: 3999, currency: "gbp", default: true },
       { interval: "month", amount: 399, currency: "gbp", default: false },

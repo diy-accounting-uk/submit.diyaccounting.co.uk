@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-year",
   "title": "A whole Income Tax year, quarter to declaration",
-  "description": "A signed-in walk through Making Tax Digital for Income Tax across a full tax year: sign in, take out Resident, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission, its adjustable summary adjustments, losses and claims, the tax calculation and the final declaration.",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax across a full tax year: sign in, take out Resident Pro, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission, its adjustable summary adjustments, losses and claims, the tax calculation and the final declaration.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -104,7 +104,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "steps": [
         {
           "action": "click",
@@ -115,7 +115,7 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true
         },
         {

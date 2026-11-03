@@ -91,7 +91,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -104,9 +104,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
+          "caption": "Resident Pro opens the Self Assessment activities.",
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },

@@ -81,7 +81,7 @@ test.describe("Prod surface", () => {
     await shoot(page, "guard-prod");
   });
 
-  for (const pagePath of ["companies-house/fileConfirmationStatement.html", "practice.html", "mcp-harness.html"]) {
+  for (const pagePath of ["companies-house/fileCompanyTaxReturn.html", "practice.html", "mcp-harness.html"]) {
     test(`${pagePath} shows the panel in prod`, async ({ page }) => {
       await serveSite(page, "prod");
       await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "networkidle" });
@@ -106,7 +106,8 @@ test.describe("Prod surface", () => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/mtd-calendar.html", { waitUntil: "networkidle" });
     await expect(page.locator('a[href="hmrc/itsa/dashboard.html"]')).toHaveCount(0);
-    await expect(page.locator('a[href="companies-house/fileConfirmationStatement.html"]')).toHaveCount(0);
+    await expect(page.locator('a[href="companies-house/fileConfirmationStatement.html"]')).toHaveCount(1);
+    await expect(page.locator('a[href="companies-house/fileMicroEntityAccounts.html"]')).toHaveCount(1);
     await expect(page.locator('a[href="hmrc/vat/submitVat.html"]')).toHaveCount(1);
     await expect(page.locator('a[href="companies-house/changeRegisteredOffice.html"]')).toHaveCount(1);
   });

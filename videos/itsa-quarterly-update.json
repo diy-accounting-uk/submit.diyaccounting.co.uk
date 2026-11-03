@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-quarterly-update",
   "title": "From business details to a quarterly update with HMRC",
-  "description": "A signed-in walk through Making Tax Digital for Income Tax: sign in, take out Resident, ask HMRC which businesses and quarterly obligations sit against a National Insurance number, then open the form a quarterly update is filed on.",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax: sign in, take out Resident Pro, ask HMRC which businesses and quarterly obligations sit against a National Insurance number, then open the form a quarterly update is filed on.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -86,7 +86,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "steps": [
         {
           "action": "click",
@@ -97,7 +97,7 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true
         },
         {

@@ -9,15 +9,14 @@ const activity = (id) => catalog.activities.find((candidate) => candidate.id ===
 const bundle = (id) => catalog.bundles.find((candidate) => candidate.id === id);
 
 describe("what the catalogue lists in each environment", () => {
-  test.each(["practice", "diya-gl-storage", "self-employed", "file-confirmation-statement", "vat-assist-check"])(
-    "%s is listed in ci and not in prod",
-    (id) => {
-      expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
-      expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
-    },
-  );
-
-  test.each(["file-micro-entity-accounts", "file-small-company-accounts"])("%s is listed in ci and not in prod", (id) => {
+  test.each([
+    "practice",
+    "diya-gl-storage",
+    "self-employed",
+    "vat-assist-check",
+    "file-company-tax-return",
+    "file-psc-verification-statement",
+  ])("%s is listed in ci and not in prod", (id) => {
     expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
     expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
   });
@@ -30,20 +29,28 @@ describe("what the catalogue lists in each environment", () => {
     expect(isActivityListedInEnvironment(activity(id), "simulator")).toBe(true);
   });
 
-  test.each(["submit-vat", "vat-obligations", "vat-liabilities", "company-lookup", "generate-pass-digital"])(
-    "%s stays listed in prod",
-    (id) => {
-      expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);
-    },
-  );
-
-  test.each(["resident-ltd", "resident-pro", "resident-tax-agent"])("the %s bundle is listed in ci and not in prod", (id) => {
-    expect(isBundleListedInEnvironment(bundle(id), "ci")).toBe(true);
-    expect(isBundleListedInEnvironment(bundle(id), "prod")).toBe(false);
+  test.each([
+    "submit-vat",
+    "vat-obligations",
+    "vat-liabilities",
+    "company-lookup",
+    "generate-pass-digital",
+    "file-micro-entity-accounts",
+    "file-small-company-accounts",
+    "file-confirmation-statement",
+  ])("%s stays listed in prod", (id) => {
+    expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);
   });
 
-  test("the other subscription bundles stay listed in prod", () => {
-    expect(isBundleListedInEnvironment(bundle("resident-vat"), "prod")).toBe(true);
+  test("the resident-tax-agent bundle is listed in ci and not in prod", () => {
+    expect(isBundleListedInEnvironment(bundle("resident-tax-agent"), "ci")).toBe(true);
+    expect(isBundleListedInEnvironment(bundle("resident-tax-agent"), "prod")).toBe(false);
+  });
+
+  test("the other subscription bundles are listed in prod", () => {
+    for (const id of ["resident-vat", "resident-ltd", "resident-pro"]) {
+      expect(isBundleListedInEnvironment(bundle(id), "prod")).toBe(true);
+    }
     expect(isBundleListedInEnvironment(bundle("day-guest"), "prod")).toBe(true);
   });
 });

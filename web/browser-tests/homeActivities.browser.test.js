@@ -89,7 +89,7 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box).toContainText("HMRC VAT");
     await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
     await expect(box.locator('.status-tag[data-status="preview"]')).toHaveCount(0);
-    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC|accounts/i);
+    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC/i);
     await expect(page.locator("#homeSubtitle")).toContainText("VAT returns");
     await expect(page.locator("#homeSubtitle")).not.toContainText("Income Tax");
   });

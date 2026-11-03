@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "file-company-tax-return-book",
   "title": "File a Company Tax Return from a diya-gl book",
-  "description": "A signed-in walk through filing a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book, check what it filled, preview the CT600 and file it with HMRC's test service.",
+  "description": "A signed-in walk through filing a Company Tax Return from a diya-gl book: sign in, take out Resident Ltd, look up a company, drop the book, check what it filled, preview the CT600 and file it with HMRC's test service.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -109,7 +109,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Ltd",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -125,9 +125,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Ltd",
           "testPass": true,
-          "caption": "Resident opens the Company Tax Return filing.",
+          "caption": "Resident Ltd opens the Company Tax Return filing.",
           "headline": "Unlock the tax return",
           "keyWord": "tax"
         },
