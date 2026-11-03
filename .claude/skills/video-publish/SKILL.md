@@ -170,8 +170,8 @@ Step 4; nothing is written without `--apply`.
 
 ## Metadata rules
 
-Titles under 70 characters, product name first ("DIY Accounting Submit: view your VAT
-obligations"). Descriptions: three to six plain sentences, say it is a real recording, link
+Titles under 70 characters. VAT and Companies House titles open with the question people search ("How to submit a VAT return under MTD | DIY Accounting Submit"); the others put the product name first ("DIY Accounting Submit: view your VAT
+obligations"). A description never calls the product "free": it states the price (99p a month for VAT or Companies House, £3.99 for Income Tax) and names the free day pass. Descriptions: three to six plain sentences, say it is a real recording, link
 https://submit.diyaccounting.co.uk, and say "sandbox" when the recording is one. Captions
 and the transcript travel with the mp4 (WCAG SC 1.2.1). Prose follows `plain-prose`.
 
