@@ -344,29 +344,55 @@ const FIXTURE_DAILY_CHARTS = {
         {
           id: "started",
           label: "Started",
-          hourly: { series: [hourlySeries("total", "All activities", 2, { isTotal: true }), hourlySeries("a0", "Submit VAT (HMRC)", 1)] },
+          hourly: {
+            series: [
+              hourlySeries("total", "All activities", 2, { isTotal: true }),
+              hourlySeries("a0", "Submit VAT (HMRC)", 1),
+              hourlySeries("bundle", "View and edit your bundles", 1),
+            ],
+          },
           series: [
             chartSeries("total", "All activities", 20, { isTotal: true }),
             ...Array.from({ length: 12 }, (_, index) => chartSeries(`a${index}`, `Activity number ${index + 1}`, 2 + index)),
+            chartSeries("bundle", "View and edit your bundles", 3),
           ],
         },
         {
           id: "completed",
           label: "Completed",
-          series: [chartSeries("total", "All activities", 9, { isTotal: true }), chartSeries("a0", "Submit VAT (HMRC)", 4)],
+          series: [
+            chartSeries("total", "All activities", 9, { isTotal: true }),
+            chartSeries("a0", "Submit VAT (HMRC)", 4),
+            chartSeries("bundle", "View and edit your bundles", 2),
+          ],
         },
       ],
     },
-    chartWithSeries(
-      "conversion-to-submission",
-      "conversion-to-submission",
-      "Conversion to submission",
-      "count",
-      ["Human sessions", "Active customers", "Submitted within 7 days"],
-      {
-        note: "Steps, left to right.",
-      },
-    ),
+    (() => {
+      const funnel = chartWithSeries(
+        "conversion-to-submission",
+        "conversion-to-submission",
+        "Conversion to submission",
+        "count",
+        [
+          "Submit sessions from the spreadsheets site",
+          "Submit sessions from the gateway site",
+          "Submit sessions from other sources",
+          "Human sessions",
+          "Active customers",
+        ],
+        { note: "Steps, left to right." },
+      );
+      funnel.modes[0].id = "funnel";
+      funnel.modes[0].label = "Funnel";
+      funnel.modes[0].series = funnel.modes[0].series.slice(1);
+      ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere", "human-sessions", "active-customers"].forEach(
+        (id, index) => {
+          funnel.modes[0].series[index].id = id;
+        },
+      );
+      return funnel;
+    })(),
     {
       ...chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
         "Subscriptions",
@@ -819,10 +845,17 @@ test.describe("Operator Dashboard", () => {
     await delay(200);
   }
 
+  const DASHBOARD_TABS = ["main", "adoption", "ops", "affiliates", "aws-prod", "aws-ci"];
+
+  async function openTab(page, tabId) {
+    await page.locator(`.dashboard-tab[data-tab-id="${tabId}"]`).click();
+  }
+
   test("lists AWS console links for the figures the page does not chart, naming each account", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
+    await openTab(page, "aws-prod");
     const links = page.locator("#awsLinksGroups a");
     expect(await links.count()).toBeGreaterThan(20);
     const first = links.first();
@@ -831,7 +864,7 @@ test.describe("Operator Dashboard", () => {
       /^https:\/\/eu-west-2\.console\.aws\.amazon\.com\/cloudwatch\/home\?region=eu-west-2#metricsV2:graph=/,
     );
     await expect(first).toContainText("account submit-prod 972912397388");
-    await expect(page.locator("#awsLinksGroups a", { hasText: "account submit-ci 367191799875" }).first()).toBeVisible();
+    await expect(page.locator("#awsLinksGroups a", { hasText: "account submit-ci 367191799875" }).first()).toBeAttached();
     const bedrock = page.locator("#awsLinksGroups a", { hasText: "Bedrock invocations in Logs Insights" });
     await expect(bedrock).toHaveCount(2);
     await expect(bedrock.first()).toHaveAttribute("href", /#logsV2:logs-insights.*\*2fprod\*2fbedrock\*2finvocations/);
@@ -933,6 +966,7 @@ test.describe("Operator Dashboard", () => {
     test("draws the Bedrock counts as a chart with a line for the model and a switch to tokens", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: withConsole });
       await loadDashboard(page, { loggedIn: true });
+      await openTab(page, "aws-prod");
 
       const card = page.locator("#console-prod-bedrock .chart-card");
       await expect(card).toHaveCount(1);
@@ -978,8 +1012,143 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
 
       await expect(page.locator("#visitorsPanel")).toBeVisible();
+      await expect(page.locator("#awsLinksPanel")).toBeHidden();
+      await openTab(page, "aws-prod");
       await expect(page.locator("#awsLinksPanel")).toBeVisible();
       await expect(page.locator("#awsLinksGroups h3")).toHaveCount(4);
+    });
+  });
+
+  test.describe("tabs", () => {
+    const SECTIONS_BY_TAB = {
+      "main": [
+        "chartsPanel",
+        "visitorsPanel",
+        "activitiesPanel",
+        "table-low-running-cost",
+        "table-compliance",
+        "table-security",
+        "companyAccountsPanel",
+        "reservePanel",
+      ],
+      "adoption": ["table-conversion-to-paid", "table-conversion-to-submission", "table-retention", "monthlyMarketingBudgetPanel"],
+      "ops": ["table-uptime", "table-operator-effort"],
+      "affiliates": ["heldPassesPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"],
+      "aws-prod": ["awsLinksPanel"],
+      "aws-ci": ["awsLinksPanel"],
+    };
+    const ALL_SECTIONS = [...new Set(Object.values(SECTIONS_BY_TAB).flat())];
+
+    async function expectOnlyTabSections(page, tabId) {
+      for (const id of ALL_SECTIONS) {
+        const section = page.locator("#" + id);
+        if (SECTIONS_BY_TAB[tabId].includes(id)) await expect(section, `${id} on ${tabId}`).toBeVisible();
+        else await expect(section, `${id} on ${tabId}`).toBeHidden();
+      }
+    }
+
+    async function loadTabs(page) {
+      const snapshotBody = { ...FIXTURE_SNAPSHOT_WITH_CHARTS, ...fullShapeSnapshot(), generatedAt: new Date().toISOString() };
+      await setupRoutes(page, { snapshotBody });
+      await loadDashboard(page, { loggedIn: true });
+    }
+
+    test("opens on Main with the six tabs and one pressed", async ({ page }) => {
+      await loadTabs(page);
+
+      await expect(page.locator(".dashboard-tab")).toHaveText(["Main", "Adoption", "Ops", "Affiliates", "AWS prod", "AWS ci"]);
+      await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Main"]);
+      await expect(page.locator(".subtitle", { hasText: "The eight objectives" })).toHaveCount(0);
+      await expectOnlyTabSections(page, "main");
+    });
+
+    test("shows only its own sections on each tab and moves the pressed state with a click", async ({ page }) => {
+      await loadTabs(page);
+
+      for (const tabId of Object.keys(SECTIONS_BY_TAB)) {
+        await openTab(page, tabId);
+        await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveAttribute("data-tab-id", tabId);
+        await expectOnlyTabSections(page, tabId);
+      }
+    });
+
+    test("shows the environment's own AWS links on AWS prod and AWS ci", async ({ page }) => {
+      await loadTabs(page);
+
+      await openTab(page, "aws-prod");
+      await expect(page.locator("#awsLinksGroups h3:visible")).toHaveText(["Analytics on AWS prod", "Operations on AWS prod"]);
+      await expect(page.locator("#awsLinksGroups a:visible", { hasText: "account submit-ci" })).toHaveCount(0);
+      await openTab(page, "aws-ci");
+      await expect(page.locator("#awsLinksGroups h3:visible")).toHaveText(["Analytics on AWS ci", "Operations on AWS ci"]);
+      await expect(page.locator("#awsLinksGroups a:visible", { hasText: "account submit-prod" })).toHaveCount(0);
+      await expect(page.locator("#table-low-running-cost")).toBeHidden();
+    });
+
+    test("draws the Adoption, Ops and Affiliates sections as tables with no graph", async ({ page }) => {
+      await loadTabs(page);
+
+      for (const tabId of ["adoption", "ops", "affiliates"]) {
+        await openTab(page, tabId);
+        for (const id of SECTIONS_BY_TAB[tabId]) {
+          const section = page.locator("#" + id);
+          if (id === "heldPassesPanel") continue;
+          expect(await section.locator("table:visible").count(), `${id} holds a table`).toBeGreaterThan(0);
+        }
+        await expect(page.locator(".chart-card:visible")).toHaveCount(0);
+        await expect(page.locator("svg.chart-svg:visible, .chart-line:visible")).toHaveCount(0);
+      }
+      await openTab(page, "main");
+      expect(await page.locator(".chart-card:visible").count()).toBeGreaterThan(0);
+    });
+
+    for (const [label, size] of [
+      ["desktop", { width: 1280, height: 900 }],
+      ["phone", { width: 390, height: 844 }],
+    ]) {
+      test(`draws every tab without sideways scroll at ${label} width and saves its screenshot`, async ({ page }) => {
+        await page.setViewportSize(size);
+        await loadTabs(page);
+
+        for (const tabId of Object.keys(SECTIONS_BY_TAB)) {
+          await openTab(page, tabId);
+          const scrollsSideways = await page.evaluate(
+            () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+          );
+          expect(scrollsSideways, tabId).toBe(false);
+          await page.screenshot({ path: `target/dash20-screens/${label}-${tabId}.png`, fullPage: true });
+        }
+      });
+    }
+
+    test("remembers the chosen tab after a reload", async ({ page }) => {
+      await loadTabs(page);
+
+      await openTab(page, "ops");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Ops"]);
+      await expectOnlyTabSections(page, "ops");
+    });
+
+    test("opens the tab that holds the section a link points to", async ({ page }) => {
+      await loadTabs(page);
+
+      await page.locator('.chart-card[data-chart-id="retention"] .chart-table-link').click();
+      await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Adoption"]);
+      await expect(page.locator("#table-retention")).toBeVisible();
+    });
+
+    test("falls back to Main when the stored tab is not one of the six", async ({ page }) => {
+      await page.addInitScript(() => window.localStorage.setItem("operatorDashboardTab", "elsewhere"));
+      await loadTabs(page);
+
+      await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Main"]);
+    });
+
+    test("draws no tab bar for a caller without the operator bundle", async ({ page }) => {
+      await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
+      await loadDashboard(page, { loggedIn: true });
+
+      await expect(page.locator("#dashboardTabs")).toBeHidden();
     });
   });
 
@@ -1398,6 +1567,7 @@ test.describe("Operator Dashboard", () => {
   test("shows the income, costs, share, budget and what is left to spend", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
+    await openTab(page, "adoption");
 
     const panel = page.locator("#monthlyMarketingBudgetPanel");
     const figure = (id) => panel.locator(`tr[data-figure-id="${id}"] td`).nth(1);
@@ -1730,9 +1900,47 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(12);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
+    });
+
+    test("starts All activities and View and edit your bundles hidden in both modes and shows one from its legend button", async ({
+      page,
+    }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+      const pressed = async (id) => activities.locator(`.chart-legend-item[data-series-id="${id}"]`).getAttribute("aria-pressed");
+      for (const mode of ["started", "completed"]) {
+        await activities.locator(`.chart-mode[data-mode-id="${mode}"]`).click();
+        await expect(activities.locator('.chart-legend-item[data-series-id="total"]')).toBeVisible();
+        expect(await pressed("total")).toBe("false");
+        expect(await pressed("bundle")).toBe("false");
+        expect(await pressed("a0")).toBe("true");
+      }
+      await activities.locator('.chart-legend-item[data-series-id="bundle"]').click();
+      expect(await pressed("bundle")).toBe("true");
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("starts the two referral series and Submit sessions from other sources hidden on the funnel and shows one from its legend button", async ({
+      page,
+    }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const funnel = page.locator('.chart-card[data-chart-id="conversion-to-submission"]');
+      for (const id of ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"]) {
+        await expect(funnel.locator(`.chart-legend-item[data-series-id="${id}"]`)).toHaveAttribute("aria-pressed", "false");
+      }
+      for (const id of ["human-sessions", "active-customers"]) {
+        await expect(funnel.locator(`.chart-legend-item[data-series-id="${id}"]`)).toHaveAttribute("aria-pressed", "true");
+      }
+      await expect(funnel.locator("polyline.chart-line")).toHaveCount(2);
+      await funnel.locator('.chart-legend-item[data-series-id="sessions-from-www"]').click();
+      await expect(funnel.locator("polyline.chart-line")).toHaveCount(3);
     });
 
     test("switches a chart with hourly data between 90 days by day and 7 days by hour", async ({ page }) => {
@@ -1773,10 +1981,10 @@ test.describe("Operator Dashboard", () => {
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
       await expect(activities.locator(".chart-range")).toBeVisible();
       await activities.locator('.chart-range-option[data-range="hourly"]').click();
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator(".chart-range")).toBeHidden();
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       const points = await activities.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
 
@@ -1935,6 +2143,7 @@ test.describe("Operator Dashboard", () => {
       const tableCount = await page.locator("table.observations").count();
       for (let i = 0; i < tableCount; i++) {
         const table = page.locator("table.observations").nth(i);
+        if (!(await table.isVisible())) continue;
         const card = table.locator("xpath=ancestor::*[contains(@class, 'objective')][1]");
         const tableBox = await table.boundingBox();
         const cardBox = await card.boundingBox();
@@ -1960,7 +2169,11 @@ test.describe("Operator Dashboard", () => {
         expect(box.height).toBeLessThanOrEqual(fontSize * 2.5);
       }
 
-      await eachObservationsTableFitsItsCard(page);
+      for (const tabId of DASHBOARD_TABS) {
+        await openTab(page, tabId);
+        await eachObservationsTableFitsItsCard(page);
+      }
+      await openTab(page, "main");
       await page.screenshot({ path: "target/dashboard-1920.png", fullPage: true });
     });
 
@@ -1970,23 +2183,29 @@ test.describe("Operator Dashboard", () => {
         await setupRoutes(page);
         await loadDashboard(page);
 
-        const tables = page.locator("[data-objective-slot] table.observations");
-        const tableCount = await tables.count();
-        expect(tableCount).toBeGreaterThan(0);
-        for (let t = 0; t < tableCount; t++) {
-          const headers = tables.nth(t).locator("thead tr:not(.last-updated) th");
-          await expect(headers).toHaveCount(8);
-          const boxes = [];
-          for (let i = 0; i < 8; i++) {
-            const header = headers.nth(i);
-            const box = await header.boundingBox();
-            expect(box.width).toBeGreaterThan(40);
-            const textOverflows = await header.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
-            expect(textOverflows).toBe(false);
-            boxes.push(box);
+        let tableCount = 0;
+        for (const tabId of DASHBOARD_TABS) {
+          await openTab(page, tabId);
+          const tables = page.locator("[data-objective-slot] table.observations:visible");
+          const visibleCount = await tables.count();
+          tableCount += visibleCount;
+          for (let t = 0; t < visibleCount; t++) {
+            const headers = tables.nth(t).locator("thead tr:not(.last-updated) th");
+            await expect(headers).toHaveCount(8);
+            const boxes = [];
+            for (let i = 0; i < 8; i++) {
+              const header = headers.nth(i);
+              const box = await header.boundingBox();
+              expect(box.width).toBeGreaterThan(40);
+              const textOverflows = await header.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+              expect(textOverflows).toBe(false);
+              boxes.push(box);
+            }
+            for (let i = 1; i < 8; i++) expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width - 1);
           }
-          for (let i = 1; i < 8; i++) expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width - 1);
         }
+        expect(tableCount).toBeGreaterThan(0);
+        await openTab(page, "main");
 
         const scrollingCards = await page
           .locator(".objective")
@@ -2003,7 +2222,15 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS } });
       await loadDashboard(page);
 
-      await eachObservationsTableFitsItsCard(page);
+      for (const tabId of DASHBOARD_TABS) {
+        await openTab(page, tabId);
+        await eachObservationsTableFitsItsCard(page);
+        const tabScrollsSideways = await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        );
+        expect(tabScrollsSideways, tabId).toBe(false);
+      }
+      await openTab(page, "main");
       const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       expect(scrollsSideways).toBe(false);
       await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Today");

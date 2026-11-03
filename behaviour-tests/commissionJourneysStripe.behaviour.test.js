@@ -100,6 +100,9 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     await page.goto(checkoutUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await fillAndSubmitStripeTestCard(page, screenshotPath, { cardNumber: LANES[lane].cardNumber });
     await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
+    // The browser holds no sign-in, so bundles.html sends it on to the login page; wait for that
+    // redirect here, or it interrupts the next checkout's navigation.
+    await page.waitForURL(/auth\/login\.html/, { timeout: 60_000 });
   }
 
   const lines = async (lane) => queryLines(hashOf(referrerOf[lane]), hashOf(lane));
@@ -278,6 +281,20 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     const [j1c] = await lines(J1C);
     expect(j1c.state).toBe("held");
     expect(reasonsOf(j1c)).toEqual(expect.arrayContaining(["card_referrer", "card_shared", "early_cancel"]));
+  });
+
+  await test.step("Credit payout puts J1a month 1 on R1's Stripe test customer balance", async () => {
+    const bundle = await sessions[R1].bundle();
+    expect(bundle.stripeCustomerId, "R1 customer id").toBeTruthy();
+    const before = (await stripe.customers.retrieve(bundle.stripeCustomerId)).balance;
+    const result = await invokeLambda(`${deploymentName}-app-commission-credit-payout`, {});
+    expect(result).toMatchObject({ status: "ran", failed: 0 });
+    expect(result.paid).toBeGreaterThanOrEqual(1);
+    const [paid] = await lines(J1A);
+    expect(paid.state).toBe("paid");
+    expect(paid.balanceTransactionId, "J1a month 1 balance transaction").toBeTruthy();
+    const after = (await stripe.customers.retrieve(bundle.stripeCustomerId)).balance;
+    expect(after).toBe(before - paid.amountPence);
   });
 
   await test.step("Cancel R1's own subscription, then release after J1a month 2", async () => {

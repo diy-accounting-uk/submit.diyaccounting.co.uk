@@ -3,7 +3,7 @@
 
 // @capability BILL-51 Pay referral commission as Stripe balance credit
 // - **Use when:** a referrer on the credit form has payable commission lines that must reach their Stripe customer balance, or a paid line was reversed and the unused credit must come back.
-// - **Does:** The commissionCreditPayout.js handler runs monthly on a schedule and does nothing while `payCredit` in referrals.toml is false. It reads the payable pointers by key, then for each live credit line finds the referrer's Stripe customer from their bundles (a bundle with a subscription and a customer id) and creates a negative customer balance transaction, keyed by the line so a retry cannot pay twice. A reversal line debits back the unused credit, capped at the credit left on the customer. The line becomes paid in one conditional update. A referrer with no customer or no live subscription keeps the line payable and is counted in the run summary.
+// - **Does:** The commissionCreditPayout.js handler runs monthly on a schedule and does nothing while `payCredit` in referrals.toml is false. It reads the payable pointers by key, then for each live credit line finds the referrer's Stripe customer from their bundles (a bundle with a subscription and a customer id) and creates a negative customer balance transaction on the live Stripe account (a test-mode line uses the test account, and only in an environment listed in `testJourneyEnvironments`), keyed by the line so a retry cannot pay twice. A reversal line debits back the unused credit, capped at the credit left on the customer. The line becomes paid in one conditional update. A referrer with no customer or no live subscription keeps the line payable and is counted in the run summary.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/account/commissionCreditPayout.js:handler`
 // - **Files:** app/functions/account/commissionCreditPayout.js, app/unit-tests/functions/commissionCreditPayout.test.js, app/data/dynamoDbCommissionRepository.js, app/lib/stripeClient.js, referrals.toml
@@ -24,6 +24,11 @@ const logger = createLogger({ source: "app/functions/account/commissionCreditPay
 
 const COMMISSION_PREFIX = "commission#";
 const IDEMPOTENCY_ERROR = "idempotency_error";
+
+function testLinesAllowed(config) {
+  const hasTestKey = Boolean(process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY_ARN);
+  return hasTestKey && (config.ledger.testJourneyEnvironments || []).includes(process.env.ENVIRONMENT_NAME);
+}
 
 function stripeCustomerOf(bundles) {
   const live = bundles.find((bundle) => bundle.stripeCustomerId && bundle.stripeSubscriptionId && bundle.subscriptionStatus === "active");
@@ -79,7 +84,12 @@ export async function handler() {
 
   const now = new Date().toISOString();
   const summary = { status: "ran", considered: 0, paid: 0, debited: 0, alreadyPaid: 0, skipped: 0, noCustomer: 0, failed: 0 };
-  const stripe = await getStripeClient({ test: false });
+  const testAllowed = testLinesAllowed(config);
+  const clients = new Map();
+  const clientFor = async (livemode) => {
+    if (!clients.has(livemode)) clients.set(livemode, await getStripeClient({ test: !livemode }));
+    return clients.get(livemode);
+  };
   const customerByReferrer = new Map();
 
   const pointers = await queryPayablePointers(PAYABLE_CREDIT_PARTITION);
@@ -87,7 +97,12 @@ export async function handler() {
     summary.considered += 1;
     const referrerHash = pointer.linePk.slice(COMMISSION_PREFIX.length);
     const line = await getLineByKey(pointer.linePk, pointer.lineSk);
-    if (!line || line.state !== "payable" || line.form !== "credit" || line.livemode !== true) {
+    if (
+      !line ||
+      line.state !== "payable" ||
+      line.form !== "credit" ||
+      !(line.livemode === true || (line.livemode === false && testAllowed))
+    ) {
       summary.skipped += 1;
       continue;
     }
@@ -107,6 +122,7 @@ export async function handler() {
     }
 
     try {
+      const stripe = await clientFor(line.livemode === true);
       const updated = await payLine({ stripe, line, referrerHash, customerId, now });
       if (!updated) summary.alreadyPaid += 1;
       else if (line.amountPence > 0) summary.paid += 1;

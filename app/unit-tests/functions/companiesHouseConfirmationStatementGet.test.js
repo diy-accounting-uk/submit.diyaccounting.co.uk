@@ -120,6 +120,22 @@ describe("companiesHouseConfirmationStatementGet ingestHandler", () => {
     expect(mockPollSubmission).toHaveBeenCalledWith(expect.objectContaining({ govTestScenario: "CS_SHAREHOLDERS_REQUIRED" }));
   });
 
+  test("passes the customer's own presenter from the X-Presenter headers to pollSubmission", async () => {
+    mockPollSubmission.mockResolvedValue({ data: { statusCode: "PENDING", submissionNumber: "00001A", rejections: [] } });
+    await companiesHouseConfirmationStatementGetHandler(
+      buildEvent({ headers: { "X-Presenter-Id": "OWN-PRES-7731", "X-Presenter-Code": "OwnSecretCode#42" } }),
+    );
+    expect(mockPollSubmission).toHaveBeenCalledWith(
+      expect.objectContaining({ ownPresenter: { presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" } }),
+    );
+  });
+
+  test("rejects a poll that sends only one of the two presenter headers", async () => {
+    const response = await companiesHouseConfirmationStatementGetHandler(buildEvent({ headers: { "X-Presenter-Id": "OWN-PRES-7731" } }));
+    expect(response.statusCode).toBe(400);
+    expect(mockPollSubmission).not.toHaveBeenCalled();
+  });
+
   test("returns 500 when pollSubmission reports gateway errors", async () => {
     mockPollSubmission.mockResolvedValue({ errors: [{ raisedBy: "Gateway", number: 502, type: "fatal", text: "Authorisation Failure" }] });
     const response = await companiesHouseConfirmationStatementGetHandler(buildEvent());

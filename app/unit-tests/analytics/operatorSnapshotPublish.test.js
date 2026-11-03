@@ -618,8 +618,20 @@ describe("operatorSnapshotPublish", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-submission");
       expect(chart.modes.map((mode) => mode.id)).toEqual(["funnel", "active-customers", "active-customers-7d"]);
       const funnel = chart.modes[0];
-      expect(funnel.componentOrder.slice(0, 3)).toEqual(["spreadsheet-downloads", "sessions-from-spreadsheets", "sessions-from-www"]);
+      expect(funnel.componentOrder.slice(0, 4)).toEqual([
+        "spreadsheet-downloads",
+        "sessions-from-spreadsheets",
+        "sessions-from-www",
+        "sessions-from-elsewhere",
+      ]);
       for (const id of funnel.componentOrder) expect(funnel.descriptionOf(id), id).toBeTruthy();
+      expect(funnel.labelOf("sessions-from-elsewhere")).toBe("Submit sessions from other sources");
+      const humanSql = funnel.sql.split("UNION ALL").find((part) => part.includes("'human-sessions'"));
+      expect(humanSql).toContain("visitor_kind = 'human'");
+      expect(humanSql).toContain("hostname LIKE '%submit.diyaccounting.co.uk'");
+      const elsewhereSql = funnel.sql.slice(funnel.sql.indexOf("'sessions-from-elsewhere'"));
+      expect(elsewhereSql).toContain("-sessions FROM v_submit_referrals_daily");
+      expect(elsewhereSql).toContain("hostname LIKE '%submit.diyaccounting.co.uk'");
       expect(chart.modes[1].sql).toContain("FROM   v_active_customers_7d_daily");
       expect(chart.modes[2].labelOf("all")).toBe("All clients");
     });

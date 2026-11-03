@@ -420,6 +420,79 @@ test.describe("File Confirmation Statement page", () => {
     expect(resumeCompanyNumber).toBeNull();
   });
 
+  test("keeps the own presenter fields hidden until the option is ticked", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await expect(page.locator("#ownPresenterFields")).toBeHidden();
+    await page.check("#useOwnPresenter");
+    await expect(page.locator("#ownPresenterFields")).toBeVisible();
+    await expect(page.locator("#ownPresenterFields")).toContainText("credit account");
+    await page.screenshot({ path: "target/csp1-screens/own-presenter-option-open.png", fullPage: true });
+  });
+
+  test("asks for both presenter parts before reading the register data", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await page.check("#useOwnPresenter");
+    await page.fill("#ownPresenterId", "OWN-PRES-7731");
+    await enterAuthCode(page);
+
+    await expect(page.locator("#authView")).toBeVisible();
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls).toHaveLength(0);
+  });
+
+  test("files under the own presenter: no Submit fee, own presenter on the submit, nothing in storage", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false } });
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await page.check("#useOwnPresenter");
+    await page.fill("#ownPresenterId", "OWN-PRES-7731");
+    await page.fill("#ownPresenterCode", "OwnSecretCode42");
+    await enterAuthCode(page);
+    await expect(page.locator("#feeMessage")).toContainText("credit account behind your presenter");
+
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    await expect(page.locator("#previewFeeMessage")).not.toContainText("£61.35");
+    await expect(page.locator("#submitFilingBtn")).toHaveText("Submit to Companies House");
+    await page.click("#submitFilingBtn");
+    await delay(300);
+
+    await expect(page.locator("#resultView")).toBeVisible();
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls[0].ownPresenter).toEqual({ id: "OWN-PRES-7731", code: "OwnSecretCode42" });
+    const submitCalls = await page.evaluate(() => window.__submitCalls);
+    expect(submitCalls[0].ownPresenter).toEqual({ id: "OWN-PRES-7731", code: "OwnSecretCode42" });
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls[0].ownPresenter).toBeUndefined();
+    const stored = await page.evaluate(() => JSON.stringify([{ ...localStorage }, { ...sessionStorage }]));
+    expect(stored).not.toContain("OwnSecretCode42");
+    expect(stored).not.toContain("OWN-PRES-7731");
+  });
+
+  test("sends no own presenter when the option is off", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls[0].ownPresenter).toBeUndefined();
+  });
+
   test("shows the accepted filing result and the PSC follow-up after submitting", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);

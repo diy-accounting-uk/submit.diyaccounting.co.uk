@@ -155,6 +155,17 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
   });
 
+  test("presents under the customer's own presenter without resolving ours", async () => {
+    const response = await companiesHousePscVerificationStatementPostHandler(
+      buildEvent({ body: buildStatementBody({ ownPresenter: { id: "OWN-PRES-7731", code: "OwnSecretCode#42" } }) }),
+    );
+    expect(response.statusCode).toBe(201);
+    expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+    expect(mockBuildPscVerificationStatementSubmission).toHaveBeenCalledWith(
+      expect.objectContaining({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" }),
+    );
+  });
+
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     await companiesHousePscVerificationStatementPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "AUTH_FAILURE" } }));
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {

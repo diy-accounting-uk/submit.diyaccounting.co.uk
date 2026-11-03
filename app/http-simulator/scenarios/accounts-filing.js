@@ -12,6 +12,9 @@ import { createHash } from "crypto";
 // House issues by email. Every caller against the simulator authenticates with these.
 export const SIMULATOR_PRESENTER_ID = "12345678901";
 export const SIMULATOR_PRESENTER_CODE = "SimTest1";
+// A second presenter, standing in for a customer's own presenter with its own credit account.
+export const SIMULATOR_CUSTOMER_PRESENTER_ID = "98765432109";
+export const SIMULATOR_CUSTOMER_PRESENTER_CODE = "CustSim1";
 
 function md5Lowercase(value) {
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
@@ -19,6 +22,8 @@ function md5Lowercase(value) {
 
 const SIMULATOR_SENDER_ID_HASH = md5Lowercase(SIMULATOR_PRESENTER_ID);
 const SIMULATOR_AUTH_VALUE_HASH = md5Lowercase(SIMULATOR_PRESENTER_CODE);
+const SIMULATOR_CUSTOMER_SENDER_ID_HASH = md5Lowercase(SIMULATOR_CUSTOMER_PRESENTER_ID);
+const SIMULATOR_CUSTOMER_AUTH_VALUE_HASH = md5Lowercase(SIMULATOR_CUSTOMER_PRESENTER_CODE);
 
 const AUTHORISATION_FAILURE_ERROR = {
   raisedBy: "Gateway",
@@ -74,8 +79,16 @@ export function resetAccountsFilings() {
   usedSubmissionNumbers = new Set();
 }
 
-function isAuthenticated({ senderIdHash, authValueHash }) {
-  return senderIdHash === SIMULATOR_SENDER_ID_HASH && authValueHash === SIMULATOR_AUTH_VALUE_HASH;
+/**
+ * True when the hashed pair is either simulator presenter: ours or the customer's own.
+ * @param {{senderIdHash: string, authValueHash: string}} hashes
+ * @returns {boolean}
+ */
+export function isAuthenticated({ senderIdHash, authValueHash }) {
+  return (
+    (senderIdHash === SIMULATOR_SENDER_ID_HASH && authValueHash === SIMULATOR_AUTH_VALUE_HASH) ||
+    (senderIdHash === SIMULATOR_CUSTOMER_SENDER_ID_HASH && authValueHash === SIMULATOR_CUSTOMER_AUTH_VALUE_HASH)
+  );
 }
 
 /**

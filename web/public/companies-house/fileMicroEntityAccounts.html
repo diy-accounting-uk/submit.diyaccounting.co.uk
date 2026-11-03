@@ -689,6 +689,47 @@ In accordance with your instructions, we have compiled these unaudited financial
               spellcheck="false"
             />
           </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="useOwnPresenter" name="useOwnPresenter" aria-controls="ownPresenterFields" /><label
+                for="useOwnPresenter"
+                >File under my own Companies House presenter</label
+              >
+            </div>
+          </div>
+          <div id="ownPresenterFields" class="form-section" hidden>
+            <p id="ownPresenter-hint" class="hint">
+              Micro-entity accounts carry no Companies House fee, so this changes only whose presenter shows on the filing. You need a
+              Companies House presenter id and a presenter authentication code. Submit uses them for this filing only and keeps no copy of
+              either.
+            </p>
+            <div class="form-group">
+              <label for="ownPresenterId">Presenter id</label>
+              <input
+                type="text"
+                id="ownPresenterId"
+                class="input--code"
+                name="ownPresenterId"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+            <div class="form-group">
+              <label for="ownPresenterCode">Presenter authentication code</label>
+              <input
+                type="password"
+                id="ownPresenterCode"
+                class="input--code"
+                name="ownPresenterCode"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+          </div>
           <div class="form-group" id="govTestScenarioGroup" style="display: none">
             <label for="govTestScenario">Gov-Test-Scenario</label>
             <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />

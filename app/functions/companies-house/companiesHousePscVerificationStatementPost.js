@@ -39,6 +39,7 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePscVerificationStatementPost.js" });
 
@@ -153,6 +154,8 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const statement = extractAndValidateParameters(event, errorMessages);
+  // Held in this call only: it goes to the envelope builder and nowhere else.
+  const ownPresenter = readOwnPresenterFromBody(parseRequestBody(event), errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -167,7 +170,7 @@ export async function ingestHandler(event) {
 
   let submissionNumber;
   try {
-    const { presenterId, presenterCode } = await resolvePresenterCredentials();
+    const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
     const statementXml = buildPscVerificationStatementBody({
       title: statement.title,

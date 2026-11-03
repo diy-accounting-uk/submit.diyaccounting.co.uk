@@ -31,14 +31,15 @@ function confirmationStatementErrorFromResponse(response, body) {
  * company authentication code is sent for this one call and held only in the page's memory
  * afterwards - never stored.
  * @param {string} companyNumber
- * @param {{companyAuthCode: string, madeUpDate: string, companyType?: string}} input
+ * @param {{companyAuthCode: string, madeUpDate: string, companyType?: string, ownPresenter?: {id: string, code: string}}} input
+ *   ownPresenter is the customer's own presenter, used for this one call and never stored
  * @returns {Promise<object>}
  */
-export async function getConfirmationStatementFilingData(companyNumber, { companyAuthCode, madeUpDate, companyType }) {
+export async function getConfirmationStatementFilingData(companyNumber, { companyAuthCode, madeUpDate, companyType, ownPresenter }) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${companyNumber}/filing-data`, {
     method: "POST",
     headers: CONFIRMATION_STATEMENT_JSON_HEADERS,
-    body: JSON.stringify({ companyAuthCode, madeUpDate, companyType }),
+    body: JSON.stringify({ companyAuthCode, madeUpDate, companyType, ownPresenter }),
   });
   const body = await response.json();
   if (!response.ok) {
@@ -71,7 +72,8 @@ export async function renderConfirmationStatement(statement) {
  * Build the ConfirmationAndVerificationStatement, wrap it in a GovTalk envelope and submit it
  * through the Companies House XML Gateway.
  * @param {object} statement - the same shape renderConfirmationStatement takes, plus
- *   companyNumber, companyName, companyAuthCode and dateSigned
+ *   companyNumber, companyName, companyAuthCode and dateSigned, and ownPresenter ({id, code}) when
+ *   the customer files under their own presenter
  * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override
  * @returns {Promise<{submissionNumber: string, gatewayTimestamp: string, pollInterval: number}>}
  */
@@ -92,7 +94,8 @@ export async function submitConfirmationStatement(statement, extraHeaders = {}) 
  * Poll the gateway for the outcome of a submitted confirmation statement.
  * @param {string} submissionNumber
  * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override, so the
- *   simulator scenario chosen for the submission also applies to the polls that follow it
+ *   simulator scenario chosen for the submission also applies to the polls that follow it; and the
+ *   X-Presenter-Id and X-Presenter-Code headers when the filing was made under the customer's own presenter
  * @returns {Promise<object>} - statusCode is PENDING, PARKED, ACCEPT or REJECT
  */
 export async function pollConfirmationStatement(submissionNumber, extraHeaders = {}) {

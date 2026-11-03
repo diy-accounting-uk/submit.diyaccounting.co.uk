@@ -243,6 +243,21 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     });
   });
 
+  test("polls under the customer's own presenter from the X-Presenter headers", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
+    });
+    await companiesHouseAccountsGetHandler(
+      buildEvent({ headers: { "X-Presenter-Id": "OWN-PRES-7731", "X-Presenter-Code": "OwnSecretCode#42" } }),
+    );
+    expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+    expect(mockBuildStatusRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" }),
+    );
+    expect(JSON.stringify(mockLoggerInfo.mock.calls)).not.toContain("OwnSecretCode#42");
+  });
+
   test("writes a receipt and returns ACCEPT when the gateway accepts the filing", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],

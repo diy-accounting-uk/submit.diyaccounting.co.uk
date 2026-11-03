@@ -19,6 +19,7 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { pollSubmission } from "../../services/companiesHouseSubmissionStatus.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { readOwnPresenterFromHeaders } from "../../services/companiesHouseOwnPresenter.js";
 
 const SUBMISSION_NUMBER_LENGTH = 6;
 
@@ -64,6 +65,7 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const { submissionNumber } = extractAndValidateParameters(event, errorMessages);
+  const ownPresenter = readOwnPresenterFromHeaders(event.headers, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -76,6 +78,7 @@ export async function ingestHandler(event) {
     userSub,
     submissionNumber,
     govTestScenario,
+    ownPresenter,
     kind: "confirmation-statement",
     acceptedEvent: "companies-house-confirmation-statement-accepted",
     acceptedSummary: "Companies House confirmation statement accepted",

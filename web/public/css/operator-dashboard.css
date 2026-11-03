@@ -523,3 +523,36 @@ table.observations thead tr.last-updated th.last-updated-cell,
     overflow-x: clip;
   }
 }
+
+/* The dashboard tabs: pill buttons under the title; a section for another tab is not drawn. */
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0 0;
+}
+
+.dashboard-tabs[hidden] {
+  display: none;
+}
+
+.dashboard-tab {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--c-ink);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
+  border-radius: 999px;
+  padding: 0.3em 1em;
+  cursor: pointer;
+}
+
+.dashboard-tab[aria-pressed="true"] {
+  background: var(--c-brand-tint);
+  border-color: var(--c-brand);
+  font-weight: 600;
+}
+
+.tab-off {
+  display: none !important;
+}

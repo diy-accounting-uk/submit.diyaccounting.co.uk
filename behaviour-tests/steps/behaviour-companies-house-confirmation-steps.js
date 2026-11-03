@@ -103,6 +103,24 @@ export async function enterCompanyAuthCodeAndReadRegister(page, companyAuthCode,
   });
 }
 
+export async function enterCompanyAuthCodeAndOwnPresenterAndReadRegister(
+  page,
+  { companyAuthCode, presenterId, presenterCode },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user files under their own presenter, enters the codes and reads the register data", async () => {
+    await page.check("#useOwnPresenter");
+    await expect(page.locator("#ownPresenterFields")).toBeVisible();
+    await loggedFill(page, "#ownPresenterId", presenterId, "Own presenter id", { screenshotPath });
+    await loggedFill(page, "#ownPresenterCode", presenterCode, "Own presenter authentication code", { screenshotPath });
+    await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-own-presenter-entered.png`, readerView: true });
+    await loggedClick(page, "#authSubmitBtn", "Reading register data", { screenshotPath });
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("#reviewView")).toBeVisible({ timeout: 15000 });
+  });
+}
+
 export async function verifyReviewFormPopulated(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the review date and current directors pre-filled from the register", async () => {
     await expect(page.locator("#reviewDate")).not.toHaveValue("");

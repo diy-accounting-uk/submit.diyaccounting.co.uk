@@ -54,6 +54,7 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
+import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
 import {
   readJointFilingId,
   jointFilingFields,
@@ -444,6 +445,8 @@ export async function ingestHandler(event) {
   const errorMessages = [];
   const accounts = extractAndValidateAccountsParameters(filingEvent, errorMessages, { clientId });
   const filingBody = parseRequestBody(filingEvent);
+  // Held in this call only: it goes to the envelope builder and nowhere else.
+  const ownPresenter = readOwnPresenterFromBody(filingBody, errorMessages);
   const jointFilingId = readJointFilingId(filingBody, errorMessages);
   const formRequest = sanitiseFormRequest(filingBody);
 
@@ -475,7 +478,7 @@ export async function ingestHandler(event) {
   try {
     const ixbrl = buildAccountsIxbrl(accounts);
     submissionNumber = await allocateSubmissionNumber();
-    const { presenterId, presenterCode } = await resolvePresenterCredentials();
+    const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
     await putAsyncRequest(
       userSub,

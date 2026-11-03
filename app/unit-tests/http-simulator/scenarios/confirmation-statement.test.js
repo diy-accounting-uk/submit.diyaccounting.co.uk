@@ -5,7 +5,12 @@
 
 import { describe, test, expect, beforeEach } from "vitest";
 import { createHash } from "crypto";
-import { SIMULATOR_PRESENTER_ID, SIMULATOR_PRESENTER_CODE } from "@app/http-simulator/scenarios/accounts-filing.js";
+import {
+  SIMULATOR_PRESENTER_ID,
+  SIMULATOR_PRESENTER_CODE,
+  SIMULATOR_CUSTOMER_PRESENTER_ID,
+  SIMULATOR_CUSTOMER_PRESENTER_CODE,
+} from "@app/http-simulator/scenarios/accounts-filing.js";
 import {
   requestCompanyData,
   requestPaymentPeriods,
@@ -27,6 +32,39 @@ const WRONG_HASH = md5Lowercase("wrong");
 describe("http-simulator/scenarios/confirmation-statement", () => {
   beforeEach(() => {
     resetConfirmationStatementFilings();
+  });
+
+  describe("a customer's own presenter", () => {
+    const CUSTOMER = {
+      senderIdHash: md5Lowercase(SIMULATOR_CUSTOMER_PRESENTER_ID),
+      authValueHash: md5Lowercase(SIMULATOR_CUSTOMER_PRESENTER_CODE),
+    };
+
+    test("is accepted for the company data, submission and poll", () => {
+      const company = requestCompanyData({
+        ...CUSTOMER,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      });
+      expect(company.company).toBe(FIXTURE_COMPANY);
+      const submitted = submitConfirmationStatement({
+        ...CUSTOMER,
+        submissionNumber: "00001A",
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+      });
+      expect(submitted.errors).toBeUndefined();
+      expect(pollConfirmationStatement({ ...CUSTOMER, submissionNumber: "00001A" }).errors).toBeUndefined();
+    });
+
+    test("is refused when the code is wrong", () => {
+      const result = requestCompanyData({
+        senderIdHash: CUSTOMER.senderIdHash,
+        authValueHash: WRONG_HASH,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      });
+      expect(result.errors[0]).toMatchObject({ number: 502, type: "fatal" });
+    });
   });
 
   describe("requestCompanyData", () => {

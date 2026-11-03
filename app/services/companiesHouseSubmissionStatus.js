@@ -37,13 +37,15 @@ const logger = createLogger({ source: "app/services/companiesHouseSubmissionStat
  * @param {string} input.userSub
  * @param {string} input.submissionNumber
  * @param {string} [input.govTestScenario] - forwarded to the gateway call as Gov-Test-Scenario
+ * @param {{presenterId: string, presenterCode: string}} [input.ownPresenter] - the customer's own
+ *   presenter the submission was filed under; used for this poll only and never recorded
  * @param {string} input.kind - e.g. "accounts" or "confirmation-statement"; carried into the
  *   async request record only, so it can be told apart from another form in flight for this user
  * @param {string} input.acceptedEvent - the activityAlert event name published on ACCEPT
  * @param {string} input.acceptedSummary - its summary text
  * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}|{notFound: true, submissionNumber: string}>}
  */
-export async function pollSubmission({ userSub, submissionNumber, govTestScenario, kind, acceptedEvent, acceptedSummary }) {
+export async function pollSubmission({ userSub, submissionNumber, govTestScenario, ownPresenter, kind, acceptedEvent, acceptedSummary }) {
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, submissionNumber, asyncRequestsTableName);
 
@@ -56,7 +58,7 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     return { data: persistedRequest.data };
   }
 
-  const { presenterId, presenterCode } = await resolvePresenterCredentials();
+  const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
   // A poll of a test-service submission needs the same GatewayTest flag the submission itself
   // carried; the live service wants it absent, the same split the submit Lambdas make.
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";

@@ -97,14 +97,14 @@
   function groups() {
     const result = [];
     ENVIRONMENTS.forEach((env) => {
-      const analytics = { title: "Analytics on AWS " + env.id, links: [] };
+      const analytics = { title: "Analytics on AWS " + env.id, env: env.id, links: [] };
       analyticsQueries.forEach(([slug, label, query]) => {
         analytics.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
       });
       result.push(analytics);
     });
     ENVIRONMENTS.forEach((env) => {
-      const operations = { title: "Operations on AWS " + env.id, links: [] };
+      const operations = { title: "Operations on AWS " + env.id, env: env.id, links: [] };
       operationsQueries.forEach(([slug, label, query]) => {
         operations.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
       });
@@ -312,11 +312,13 @@
     groups().forEach((group) => {
       const heading = document.createElement("h3");
       heading.textContent = group.title;
+      heading.dataset.tab = "aws-" + group.env;
       mount.appendChild(heading);
       group.links.forEach((entry) => {
         const section = document.createElement("section");
         section.className = "console-capture";
         section.id = "console-" + entry.id;
+        section.dataset.tab = "aws-" + group.env;
         const anchor = document.createElement("a");
         anchor.href = entry.href;
         anchor.target = "_blank";

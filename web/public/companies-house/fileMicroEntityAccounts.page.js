@@ -250,6 +250,24 @@ async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
   return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
 }
 
+function syncOwnPresenterFields() {
+  document.getElementById("ownPresenterFields").hidden = !document.getElementById("useOwnPresenter").checked;
+}
+
+// The customer's own presenter, held in this call only: {id, code}, null when the option is off,
+// or {problems} when it is on and a part is blank.
+function readOwnPresenterInputs() {
+  if (!document.getElementById("useOwnPresenter").checked) return { presenter: null };
+  const idInput = document.getElementById("ownPresenterId");
+  const codeInput = document.getElementById("ownPresenterCode");
+  const id = idInput.value.trim();
+  const code = codeInput.value.trim();
+  const problems = [];
+  if (!id) problems.push({ input: idInput, message: "Enter your presenter id" });
+  if (!code) problems.push({ input: codeInput, message: "Enter your presenter authentication code" });
+  return problems.length > 0 ? { problems } : { presenter: { id, code } };
+}
+
 async function handleSubmitFiling() {
   const companyAuthCodeInput = document.getElementById("companyAuthCode");
   const companyAuthCode = companyAuthCodeInput.value.trim();
@@ -257,6 +275,12 @@ async function handleSubmitFiling() {
     window.formErrors.showFormErrors([{ input: companyAuthCodeInput, message: "Enter the 6 to 8 character company authentication code" }]);
     return;
   }
+  const ownPresenterInputs = readOwnPresenterInputs();
+  if (ownPresenterInputs.problems) {
+    window.formErrors.showFormErrors(ownPresenterInputs.problems);
+    return;
+  }
+  const ownPresenter = ownPresenterInputs.presenter;
   window.formErrors.clearFormErrors();
 
   showLoading();
@@ -264,7 +288,7 @@ async function handleSubmitFiling() {
   let submission;
   let govTestScenarioHeaders;
   try {
-    const accounts = { ...buildAccountsPayload(), companyAuthCode };
+    const accounts = { ...buildAccountsPayload(), companyAuthCode, ...(ownPresenter ? { ownPresenter } : {}) };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
     govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
@@ -280,7 +304,8 @@ async function handleSubmitFiling() {
   );
   showView("resultView");
   try {
-    const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
+    const presenterHeaders = ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
+    const outcome = await pollUntilSettled(submission.submissionNumber, { ...govTestScenarioHeaders, ...presenterHeaders });
     const outcomeHeadlines = {
       ACCEPT: "Companies House accepted the accounts.",
       REJECT: "Companies House rejected the accounts.",
@@ -314,6 +339,8 @@ function startAgain() {
   company = null;
   document.getElementById("companyForm").reset();
   document.getElementById("accountsForm").reset();
+  document.getElementById("useOwnPresenter").checked = false;
+  syncOwnPresenterFields();
   toggleDormantFields();
   window.accountsFormSections.showAccountantsReportFields();
   document.getElementById("rejections").style.display = "none";
@@ -327,6 +354,7 @@ document.getElementById("accountsForm").addEventListener("submit", handleAccount
 document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
 document.getElementById("dormant").addEventListener("change", toggleDormantFields);
 document.getElementById("includeAccountantsReport").addEventListener("change", window.accountsFormSections.showAccountantsReportFields);
+document.getElementById("useOwnPresenter").addEventListener("change", syncOwnPresenterFields);
 document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
