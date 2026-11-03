@@ -104,6 +104,12 @@
       }
     },
     {
+      "path": "/security.html",
+      "thresholds": {
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/terms.html",
       "thresholds": {
         "bestPractices": 92
