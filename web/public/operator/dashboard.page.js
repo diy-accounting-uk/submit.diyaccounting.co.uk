@@ -1088,6 +1088,7 @@ async function initPage() {
       showTabs();
       showError("No snapshot has been published yet.");
     } else {
+      showTabs();
       showError("The operator snapshot did not load. Reload the page to try again.");
     }
   }

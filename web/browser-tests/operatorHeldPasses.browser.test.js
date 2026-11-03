@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/operatorHeldPasses.browser.test.js
-// The operator dashboard lists every held pass and releases one from its row.
+// The operator dashboard's Affiliates tab lists every held pass and releases one from its row.
 
 import { test, expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -42,6 +42,7 @@ test.describe("held passes on the operator dashboard", () => {
       },
     });
     await page.goto(`${SITE_ORIGIN}/operator/dashboard.html`, { waitUntil: "domcontentloaded" });
+    await page.locator('.dashboard-tab[data-tab-id="affiliates"]').click();
 
     const rows = page.locator("#heldPassesBody tr");
     await expect(rows).toHaveCount(2);
@@ -61,6 +62,7 @@ test.describe("held passes on the operator dashboard", () => {
       apiHandler: (url) => (url.pathname === "/api/v1/pass/held" ? { passes: [] } : undefined),
     });
     await page.goto(`${SITE_ORIGIN}/operator/dashboard.html`, { waitUntil: "domcontentloaded" });
+    await page.locator('.dashboard-tab[data-tab-id="affiliates"]').click();
     await expect(page.locator("#heldPassesEmpty")).toBeVisible();
     await expect(page.locator("#heldPassesTable")).toBeHidden();
   });
