@@ -2511,7 +2511,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-143 Remove unlisted pages from the published sitemap
 
 - **Use when:** a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
-- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list. deploy.yml, deploy-app.yml and deploy-app.js run it.
+- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It adds a lastmod to each entry from the last commit that changed the page's file, and leaves it out when the checkout is shallow. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list and no lastmod. deploy.yml, deploy-app.yml and deploy-app.js run it.
 - **Run:** `node scripts/publish-sitemap.mjs <web-root> <environment-name>`
 - **Entry:** `scripts/publish-sitemap.mjs:filterSitemap`
 - **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
