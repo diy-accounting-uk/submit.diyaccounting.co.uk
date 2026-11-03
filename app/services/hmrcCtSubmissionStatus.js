@@ -21,6 +21,12 @@ import {
   irmarkReceiptMatches,
   CT_RETURN_KIND,
 } from "./hmrcTransactionEngine.js";
+import {
+  verifyReceiptSignature,
+  parseTrustedFingerprints,
+  RECEIPT_SIGNATURE_VALID,
+  RECEIPT_SIGNATURE_DIGEST_NOT_REPRODUCED,
+} from "./hmrcReceiptSignature.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
@@ -207,6 +213,21 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     });
   }
 
+  // The protocol makes the signature check optional: its outcome is logged and stored, and never
+  // changes an accepted return.
+  const signatureCheck = verifyReceiptSignature(response.data, {
+    trustedFingerprints: parseTrustedFingerprints(process.env.HMRC_RECEIPT_CERTIFICATE_SHA256),
+  });
+  const { outcome: receiptSignature, ...signatureDetail } = signatureCheck;
+  const informational = receiptSignature === RECEIPT_SIGNATURE_VALID || receiptSignature === RECEIPT_SIGNATURE_DIGEST_NOT_REPRODUCED;
+  logger[informational ? "info" : "warn"]({
+    message: `HMRC receipt signature: ${receiptSignature}`,
+    correlationId,
+    receiptIrmark: parsed.irmarkReceipt,
+    receiptSignature,
+    ...signatureDetail,
+  });
+
   const receiptId = `${new Date().toISOString()}-${correlationId}`;
   const accepted = {
     kind: CT_RETURN_KIND,
@@ -217,6 +238,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     irmark: pending.irmark,
     irmarkReceipt: parsed.irmarkReceipt,
     ...(irmarkReceiptMismatch ? { irmarkReceiptMismatch: true } : {}),
+    receiptSignature,
     successMessage: parsed.successMessage,
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.

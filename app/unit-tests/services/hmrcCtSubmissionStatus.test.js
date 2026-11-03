@@ -3,7 +3,9 @@
 
 // app/unit-tests/services/hmrcCtSubmissionStatus.test.js
 
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const mockGetAsyncRequest = vi.fn();
 const mockPutAsyncRequest = vi.fn();
@@ -155,6 +157,93 @@ describe("pollCtSubmission", () => {
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.irmarkReceiptMismatch).toBe(true);
     });
+  });
+});
+
+describe("receipt signature", () => {
+  const SIGNED_RECEIPT = readFileSync(
+    join(process.cwd(), "fixtures", "hmrc-transaction-engine", "receipt-signed-test-certificate.xml"),
+    "utf8",
+  );
+  // base32 of the receipt's DigestValue XwHjMbO6v3X19HZ5W3M1WuioQPE=
+  const SIGNED_RECEIPT_IRMARK = "L4A6GMNTXK7XL5PUOZ4VW4ZVLLUKQQHR";
+  const TRUSTED_SHA256 = "13FDCF9678B707C605A97CA8F7AD3F5321D522FBC7E46DB8F09295165861D733";
+
+  const receiptResponse = () => ({ ok: true, status: 200, data: SIGNED_RECEIPT });
+  const logged = (level, text) => mockLogger[level].mock.calls.map(([entry]) => entry).filter((entry) => entry.message?.includes(text));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetAsyncRequest.mockResolvedValue({ ...pendingRequest(), data: { ...pendingRequest().data, irmark: SIGNED_RECEIPT_IRMARK } });
+    mockPost.mockResolvedValueOnce(receiptResponse()).mockResolvedValueOnce(deleteResponse());
+  });
+
+  afterEach(() => {
+    delete process.env.HMRC_RECEIPT_CERTIFICATE_SHA256;
+  });
+
+  test("a trusted certificate is stored as valid and logged with the correlation ID and receipt IRmark", async () => {
+    process.env.HMRC_RECEIPT_CERTIFICATE_SHA256 = TRUSTED_SHA256;
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "valid" });
+    expect(data.irmarkReceiptMismatch).toBeUndefined();
+    expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid" });
+    expect(logged("info", "receipt signature")[0]).toMatchObject({
+      correlationId: CORRELATION_ID,
+      receiptIrmark: "XwHjMbO6v3X19HZ5W3M1WuioQPE=",
+      receiptSignature: "valid",
+      certificateSha256: TRUSTED_SHA256,
+    });
+  });
+
+  test("no trusted certificate is stored as unknown-certificate and the return stays accepted", async () => {
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "unknown-certificate" });
+    expect(logged("warn", "receipt signature")[0]).toMatchObject({
+      receiptSignature: "unknown-certificate",
+      correlationId: CORRELATION_ID,
+    });
+    expect(deleteCalls()).toHaveLength(1);
+  });
+
+  test("a receipt whose digest is not reproduced is stored as such, logged at info with both digests, and stays accepted", async () => {
+    mockPost.mockReset();
+    mockPost.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: SIGNED_RECEIPT.replace("XwHjMbO6v3X19HZ5W3M1WuioQPE=", "XwHjMbO6v3X19HZ5W3M1WuioQPF="),
+    });
+    mockPost.mockResolvedValueOnce(deleteResponse());
+    process.env.HMRC_RECEIPT_CERTIFICATE_SHA256 = TRUSTED_SHA256;
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("ACCEPT");
+    expect(data.receiptSignature).toBe("digest-not-reproduced");
+    expect(mockPutReceipt).toHaveBeenCalledTimes(1);
+    expect(logged("info", "receipt signature")[0]).toMatchObject({
+      correlationId: CORRELATION_ID,
+      receiptSignature: "digest-not-reproduced",
+      computedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),
+      signedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),
+      canonicalization: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+    });
+    expect(logged("warn", "receipt signature")).toHaveLength(0);
+  });
+
+  test("a receipt whose signature cannot be read is stored as invalid, logged at warn, and stays accepted", async () => {
+    mockPost.mockReset();
+    mockPost.mockResolvedValueOnce({ ok: true, status: 200, data: SIGNED_RECEIPT.replace(/(<dsig:SignatureValue>)./, "$1A") });
+    mockPost.mockResolvedValueOnce(deleteResponse());
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.receiptSignature).toBe("invalid");
+    expect(logged("warn", "receipt signature")[0]).toMatchObject({ receiptSignature: "invalid" });
+  });
+
+  test("a pending or rejected poll checks no signature", async () => {
+    mockPost.mockReset();
+    mockPost.mockResolvedValueOnce(gatewayError("1000"));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.receiptSignature).toBeUndefined();
+    expect(logged("warn", "receipt signature")).toHaveLength(0);
   });
 });
 
