@@ -898,6 +898,25 @@ async function validatePassCode(code) {
   }
 }
 
+// Shows a signed-out visitor what the pass gives and what Submit costs afterwards. The
+// sign-in block that holds the bundle cards is hidden until they log in.
+function showPassOffer(passBundle) {
+  const offer = document.getElementById("passOffer");
+  if (!offer) return;
+  const days = /^P(\d+)D$/.exec(passBundle?.timeout || "");
+  if (!days || !passBundle.tokensGranted) return;
+  document.getElementById("passOfferTokens").textContent = String(passBundle.tokensGranted);
+  document.getElementById("passOfferDays").textContent = days[1];
+  const prices = __catalogueData?.bundles?.find((cb) => cb.id === "resident-vat")?.prices || [];
+  const monthly = prices.find((p) => p.interval === "month");
+  const annual = prices.find((p) => p.interval === "year");
+  if (monthly && annual) {
+    document.getElementById("passOfferPrice").textContent =
+      `${formatGbp(monthly.amount / 100)} a month or ${formatGbp(annual.amount / 100)} a year`;
+  }
+  offer.hidden = false;
+}
+
 // --- handle pass entry: validate first, then enable bundle or auto-redeem
 async function handlePassEntry(code) {
   const btn = document.getElementById("redeemPassBtn");
@@ -951,6 +970,7 @@ async function handlePassEntry(code) {
         sessionStorage.setItem("pendingPass", code);
         sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
       } catch {}
+      showPassOffer(catBundle);
       if (result.emailRestricted) {
         showPassStatus(`Pass valid! Log in with the invited email to add the "${bundleName}" bundle.`, "info");
       } else {

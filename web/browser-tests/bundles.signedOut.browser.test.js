@@ -25,6 +25,29 @@ test.describe("signed-out bundles and usage pages", () => {
     await screenshotAll(page, "bundles", "bundles-signed-out");
   });
 
+  test("bundles.html?pass= shows a signed-out visitor the offer and the price after it", async ({ page }) => {
+    await serveRealSite(page, {
+      signedIn: false,
+      apiHandler: (url) => (url.pathname === "/api/v1/pass" ? { valid: true, bundleId: "week-guest" } : undefined),
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html?pass=some-valid-pass-code`, { waitUntil: "domcontentloaded" });
+
+    const offer = page.locator("#passOffer");
+    await expect(offer).toBeVisible();
+    await expect(offer).toContainText("3 VAT submissions free for 7 days");
+    await expect(offer).toContainText("£0.99 a month or £9.99 a year");
+    await expect(offer).toContainText("Government Gateway");
+    await expect(page.locator("#signedOutPanel")).toBeVisible();
+    await screenshotAll(page, "bundles", "bundles-signed-out-pass-offer");
+  });
+
+  test("bundles.html without a pass shows no offer", async ({ page }) => {
+    await serveRealSite(page, { signedIn: false });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#signedOutPanel")).toBeVisible();
+    await expect(page.locator("#passOffer")).toBeHidden();
+  });
+
   test("usage.html shows the panel and no empty token tables", async ({ page }) => {
     await serveRealSite(page, { signedIn: false });
     await page.goto(`${SITE_ORIGIN}/usage.html`, { waitUntil: "domcontentloaded" });
