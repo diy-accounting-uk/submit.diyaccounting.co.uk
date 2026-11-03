@@ -56,7 +56,7 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Human-driven
 
-- [ ] **O34g1. Send the reply to SDST.** The draft is `../private.diyaccounting.co.uk/hmrc/ct/EMAIL_SDST_CT600_PROCEED.md` (reply to Luqmaan Ali's 2026-11-03 email; contacts Antony Cartwright and Matthew Grundy, both registered on the Developer Hub, Email preferences for Corporation Tax set, SDST's three addresses on the allow lists; done 2026-11-03). Do: read it and send from antony@diyaccounting.co.uk after the yahtzee PR is on prod, or with "in our next release" in place of "It now". **Source**: SDST, 2026-11-03. **Owner**: Operator. **Model**: none. Unblocks O34g.
+- [ ] **O34g1. Send the reply to SDST.** The draft is `../private.diyaccounting.co.uk/hmrc/ct/EMAIL_SDST_CT600_PROCEED.md` (reply to Luqmaan Ali's 2026-11-03 email; contacts Antony Cartwright and Matthew Grundy, both registered on the Developer Hub, Email preferences for Corporation Tax set, SDST's three addresses on the allow lists; done 2026-11-03). Do: read it and send from antony@diyaccounting.co.uk. **Source**: SDST, 2026-11-03. **Owner**: Operator. **Model**: none. Unblocks O34g.
 
 - [ ] **OVAT7. The re-test's manual accessibility checks (`../private.diyaccounting.co.uk/hmrc/vat/VAT_APPROVAL_RETEST_2026-11-03.md` MN1 to MN4).** The four manual accessibility checks (TS4 passed on 2026-11-03): a screen reader through the VAT journey, the keyboard order, 400% zoom, plain language. Write each result into `../private.diyaccounting.co.uk/hmrc/vat/VAT_APPROVAL_RETEST_2026-11-03.md` (MN1 to MN4). **Source**: VAT2. **Owner**: Operator. **Model**: none.
 
