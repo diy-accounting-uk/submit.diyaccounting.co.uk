@@ -8,9 +8,12 @@
 // final response writes the receipt, then a DELETE_REQUEST tells the Transaction Engine to drop
 // its copy.
 
+import { setTimeout as sleep } from "node:timers/promises";
 import { createLogger } from "../lib/logger.js";
 import {
   buildPollRequest,
+  buildDataRequest,
+  findHeldSubmission,
   buildDeleteRequest,
   parseTransactionEngineResponse,
   postToTransactionEngine,
@@ -58,6 +61,74 @@ async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest
     }
   }
   logger.warn({ message: "Transaction Engine delete request not completed; the copy expires at HMRC", correlationId });
+}
+
+const DATA_REQUEST_ATTEMPTS = 2;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Find out whether the Transaction Engine holds a submission whose reply never reached us. The
+ * Transaction Engine is asked with a DATA_REQUEST after the poll interval, as the protocol says,
+ * and the submission is recognised by its TransactionID. The answer has three states:
+ * - held: the Transaction Engine has it, so the caller polls it with the returned CorrelationID;
+ * - not-received: the Transaction Engine answered and does not hold it, so the return can be filed again;
+ * - unknown: the Transaction Engine did not answer or answered with an error, so nothing is known.
+ * Credentials are not stored anywhere, so this runs in the call that has them.
+ *
+ * @param {object} input
+ * @param {string} input.senderId
+ * @param {string} input.password
+ * @param {string} input.submissionUrl - the Transaction Engine URL the submission went to
+ * @param {boolean} input.gatewayTest
+ * @param {string} input.transactionId - the TransactionID of the submission request
+ * @param {Date} input.attemptedAt
+ * @param {number} input.waitSeconds - the poll interval to wait before each DATA_REQUEST
+ * @param {Record<string, string>} [input.extraHeaders]
+ * @returns {Promise<{state: "held", correlationId: string, status: string|undefined}|{state: "not-received"}|{state: "unknown"}>}
+ */
+export async function findHeldCtSubmission({
+  senderId,
+  password,
+  submissionUrl,
+  gatewayTest,
+  transactionId,
+  attemptedAt,
+  waitSeconds,
+  extraHeaders = {},
+}) {
+  const dataRequest = buildDataRequest({
+    senderId,
+    password,
+    gatewayTest,
+    transactionId,
+    since: new Date(attemptedAt.getTime() - DAY_MS),
+  });
+  for (let attempt = 1; attempt <= DATA_REQUEST_ATTEMPTS; attempt++) {
+    await sleep(waitSeconds * 1000);
+    try {
+      const response = await postToTransactionEngine(submissionUrl, dataRequest, extraHeaders);
+      if (response.ok === false) throw new Error(`HTTP ${response.status}`);
+      const parsed = parseTransactionEngineResponse(response.data);
+      if (parsed.qualifier === "error" || parsed.errors.length > 0) {
+        logger.warn({ message: "Transaction Engine answered a data request with an error", transactionId, attempt, errors: parsed.errors });
+        continue;
+      }
+      const held = findHeldSubmission(parsed, transactionId);
+      if (held?.correlationId) {
+        logger.info({
+          message: "Transaction Engine holds the submission whose reply was lost",
+          transactionId,
+          correlationId: held.correlationId,
+        });
+        return { state: "held", correlationId: held.correlationId, status: held.status };
+      }
+      logger.warn({ message: "Transaction Engine holds no submission with this TransactionID", transactionId });
+      return { state: "not-received" };
+    } catch (error) {
+      logger.warn({ message: "Transaction Engine data request failed", transactionId, attempt, error: error.message });
+    }
+  }
+  return { state: "unknown" };
 }
 
 async function pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: hmrcInterval, asyncRequestsTableName }) {

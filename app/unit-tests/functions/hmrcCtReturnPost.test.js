@@ -59,6 +59,8 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+vi.mock("node:timers/promises", () => ({ setTimeout: vi.fn().mockResolvedValue(undefined) }));
+
 const mockPostToTransactionEngine = vi.fn();
 vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -244,12 +246,84 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
   });
 
-  test("answers a JSON 500 when the post throws", async () => {
-    mockPostToTransactionEngine.mockRejectedValue(new Error("socket hang up"));
-    const response = await hmrcCtReturnPostHandler(buildEvent());
-    expect(response.statusCode).toBe(500);
-    expect(parseResponseBody(response).message).toBe("Internal server error");
-    expect(JSON.stringify(parseResponseBody(response))).not.toContain(PASSWORD);
+  describe("when the submission reply never comes", () => {
+    const dataResponseXml = (records = "") =>
+      `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>HMRC-CT-CT600</Class><Qualifier>response</Qualifier><Function>list</Function><CorrelationID></CorrelationID></MessageDetails><SenderDetails/></Header><GovTalkDetails><Keys/></GovTalkDetails><Body><StatusReport><SenderID/><StartTimeStamp/><EndTimeStamp/>${records}</StatusReport></Body></GovTalkMessage>`;
+    const sentTransactionId = () => mockPostToTransactionEngine.mock.calls[0][1].match(/<TransactionID>([0-9A-F]+)<\/TransactionID>/)[1];
+    const heldRecord = () =>
+      `<StatusRecord><TimeStamp>03/11/2026 10:00:01</TimeStamp><CorrelationID>${CORRELATION_ID}</CorrelationID><TransactionID>${sentTransactionId()}</TransactionID><Status>SUBMISSION_ACKNOWLEDGE</Status></StatusRecord>`;
+    const activityEvents = () => mockLogs.join("\n");
+
+    test("continues with the held submission's CorrelationID and records it as pending", async () => {
+      mockPostToTransactionEngine
+        .mockRejectedValueOnce(new Error("timed out"))
+        .mockImplementationOnce(async () => ({ ok: true, status: 200, data: dataResponseXml(heldRecord()), headers: {}, duration: 1 }));
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+      const body = parseResponseBody(response);
+      expect(body.correlationId).toBe(CORRELATION_ID);
+      expect(body.transactionId).toBe(sentTransactionId());
+
+      const dataRequestXml = mockPostToTransactionEngine.mock.calls[1][1];
+      expect(dataRequestXml).toContain("<Function>list</Function>");
+      expect(dataRequestXml).toContain(`<SenderID>${USER_ID}</SenderID>`);
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.Key.requestId).toBe(CORRELATION_ID);
+      expect(update.input.ExpressionAttributeValues[":status"]).toBe("pending");
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({
+        kind: "company-tax-return",
+        pollUrl: "https://test-transaction-engine.tax.service.gov.uk/submission",
+        irmark: body.irmark,
+      });
+      expect(activityEvents()).not.toContain(PASSWORD);
+    });
+
+    test("recovers from an HTTP 504 and from an unreadable reply the same way", async () => {
+      for (const lost of [
+        { ok: false, status: 504, data: "", headers: {}, duration: 1 },
+        { ok: true, status: 200, data: "<GovTalkMessage><Header>", headers: {}, duration: 1 },
+      ]) {
+        vi.clearAllMocks();
+        mockPostToTransactionEngine
+          .mockResolvedValueOnce(lost)
+          .mockImplementationOnce(async () => ({ ok: true, status: 200, data: dataResponseXml(heldRecord()), headers: {}, duration: 1 }));
+        const response = await hmrcCtReturnPostHandler(buildEvent());
+        expect(response.statusCode).toBe(201);
+        expect(parseResponseBody(response).correlationId).toBe(CORRELATION_ID);
+      }
+    });
+
+    test("answers 502 not-received, with nothing recorded, when the Transaction Engine holds no such submission", async () => {
+      mockPostToTransactionEngine
+        .mockRejectedValueOnce(new Error("timed out"))
+        .mockResolvedValueOnce({ ok: true, status: 200, data: dataResponseXml(), headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      const body = parseResponseBody(response);
+      expect(body.submissionStatus).toBe("not-received");
+      expect(body.message).toContain("you can file it again");
+      expect(body.transactionId).toBe(sentTransactionId());
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
+    });
+
+    test("answers 502 unconfirmed and never invites a second filing when the Transaction Engine does not answer", async () => {
+      mockPostToTransactionEngine.mockRejectedValue(new Error("socket hang up"));
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      const body = parseResponseBody(response);
+      expect(body.submissionStatus).toBe("unknown");
+      expect(body.message).toContain("Do not file it again");
+      expect(body.message).not.toContain("you can file it again");
+      expect(JSON.stringify(body)).not.toContain(PASSWORD);
+    });
+
+    test("does not ask the Transaction Engine what it holds when it answered with an error", async () => {
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: GATEWAY_ERROR_XML, headers: {}, duration: 1 });
+      await hmrcCtReturnPostHandler(buildEvent());
+      expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(1);
+    });
   });
 
   test.each([

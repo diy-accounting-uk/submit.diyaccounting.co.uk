@@ -35,6 +35,7 @@ import {
   CT600_CLASS,
   CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
+import { findHeldCtSubmission } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -136,14 +137,61 @@ export async function ingestHandler(event) {
     });
 
     const submissionUrl = getTransactionEngineSubmissionUrl({ gatewayTest });
-    const engineResponse = await postToTransactionEngine(
-      submissionUrl,
-      xml,
-      govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
-    );
-    const parsed = parseTransactionEngineResponse(engineResponse.data);
+    const extraHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+    const attemptedAt = new Date();
+    let parsed;
+    try {
+      const engineResponse = await postToTransactionEngine(submissionUrl, xml, extraHeaders);
+      if (engineResponse.status >= 500) throw new Error(`HTTP ${engineResponse.status}`);
+      parsed = parseTransactionEngineResponse(engineResponse.data);
+    } catch (error) {
+      // No reply, or one that cannot be read: the Transaction Engine may still hold the submission.
+      logger.warn({
+        message: "No usable reply to the Company Tax Return submission; asking the Transaction Engine what it holds",
+        transactionId,
+        timedOut: error instanceof HttpTimeoutError,
+      });
+    }
 
-    if (parsed.qualifier !== "acknowledgement" || !parsed.correlationId) {
+    let correlationId = parsed?.correlationId;
+    const pollIntervalSeconds = parsed?.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
+    let pollUrl = parsed?.responseEndPoint ? new URL(parsed.responseEndPoint, submissionUrl).href : undefined;
+    const acknowledged = parsed?.qualifier === "acknowledgement" && Boolean(correlationId);
+
+    if (!parsed) {
+      const held = await findHeldCtSubmission({
+        senderId: returnRequest.gatewayUserId,
+        password: returnRequest.gatewayPassword,
+        submissionUrl,
+        gatewayTest,
+        transactionId,
+        attemptedAt,
+        waitSeconds: DEFAULT_POLL_INTERVAL_SECONDS,
+        extraHeaders,
+      });
+      if (held.state !== "held") {
+        const notReceived = held.state === "not-received";
+        await recordSubmissionFailure({
+          failure: notReceived ? "transaction-engine-submission-not-received" : "transaction-engine-submission-unconfirmed",
+          summary: notReceived
+            ? "HMRC Company Tax Return not received by the Transaction Engine"
+            : "HMRC Company Tax Return reply lost and the Transaction Engine did not confirm",
+          userSub,
+          detail: { transactionId },
+        });
+        return http502BadGatewayResponse({
+          request,
+          headers: { ...responseHeaders },
+          message: notReceived
+            ? "HMRC did not receive the Company Tax Return. Nothing was filed, so you can file it again."
+            : "We could not confirm whether HMRC received the Company Tax Return. Do not file it again yet. Contact support with the reference in this message.",
+          error: { transactionId, submissionStatus: held.state },
+        });
+      }
+      correlationId = held.correlationId;
+      // The DATA_RESPONSE names no poll end point, so the follow-on messages go to the submission end point.
+      pollUrl = submissionUrl;
+    } else if (!acknowledged) {
       const errors = [...parsed.errors, ...parsed.businessErrors];
       await recordSubmissionFailure({
         failure: "transaction-engine-rejected-submission",
@@ -159,11 +207,9 @@ export async function ingestHandler(event) {
       });
     }
 
-    const pollIntervalSeconds = parsed.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
-    const pollUrl = new URL(parsed.responseEndPoint, submissionUrl).href;
     await putAsyncRequest(
       userSub,
-      parsed.correlationId,
+      correlationId,
       "pending",
       {
         kind: CT_RETURN_KIND,
@@ -195,7 +241,7 @@ export async function ingestHandler(event) {
     return http201CreatedResponse({
       request,
       headers: { ...responseHeaders },
-      data: { correlationId: parsed.correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
+      data: { correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
     });
   } catch (error) {
     // The submission carries the typed Gateway password, so nothing read from the error is

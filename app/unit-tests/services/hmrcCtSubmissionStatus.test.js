@@ -21,6 +21,9 @@ vi.mock("@app/lib/activityAlert.js", () => ({
 }));
 vi.mock("@app/services/tokenEnforcement.js", () => ({ chargeTokenOnSuccess: vi.fn() }));
 
+const mockSleep = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("node:timers/promises", () => ({ setTimeout: mockSleep }));
+
 const mockPost = vi.fn();
 vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -30,7 +33,7 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
 const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }));
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
-import { pollCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
+import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
 import { CT_RETURN_KIND } from "@app/services/hmrcTransactionEngine.js";
 
 const CORRELATION_ID = "46DCD4CC7E194088B99857931C185829";
@@ -152,5 +155,64 @@ describe("pollCtSubmission", () => {
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.irmarkReceiptMismatch).toBe(true);
     });
+  });
+});
+
+describe("findHeldCtSubmission", () => {
+  const TRANSACTION_ID = "AB12CD";
+  const input = {
+    senderId: "user1",
+    password: "pass1",
+    submissionUrl: "https://example.test/submission",
+    gatewayTest: true,
+    transactionId: TRANSACTION_ID,
+    attemptedAt: new Date("2026-11-03T10:00:00Z"),
+    waitSeconds: 10,
+  };
+  const dataResponse = (records = "") =>
+    message("response", "list", { body: `<StatusReport><SenderID/><StartTimeStamp/><EndTimeStamp/>${records}</StatusReport>` });
+  const record = (transactionId, correlationId, status = "SUBMISSION_ACKNOWLEDGE") =>
+    `<StatusRecord><TimeStamp>03/11/2026 10:00:01</TimeStamp><CorrelationID>${correlationId}</CorrelationID><TransactionID>${transactionId}</TransactionID><Status>${status}</Status></StatusRecord>`;
+
+  beforeEach(() => {
+    mockPost.mockReset();
+    mockSleep.mockClear();
+  });
+
+  test("waits the poll interval, sends a DATA_REQUEST and returns the held submission's CorrelationID", async () => {
+    mockPost.mockResolvedValueOnce(dataResponse(record("OTHER", "11") + record(TRANSACTION_ID, CORRELATION_ID, "SUBMISSION_RESPONSE")));
+    const result = await findHeldCtSubmission(input);
+    expect(result).toEqual({ state: "held", correlationId: CORRELATION_ID, status: "SUBMISSION_RESPONSE" });
+    expect(mockSleep).toHaveBeenCalledWith(10000);
+    const [url, xml] = mockPost.mock.calls[0];
+    expect(url).toBe("https://example.test/submission");
+    expect(xml).toContain("<Function>list</Function>");
+    expect(xml).toContain(`<TransactionID>${TRANSACTION_ID}</TransactionID>`);
+    expect(xml).toContain("<StartDate>02/11/2026</StartDate>");
+  });
+
+  test("says not-received when the Transaction Engine answers and holds nothing with the TransactionID", async () => {
+    mockPost.mockResolvedValueOnce(dataResponse(record("OTHER", "11")));
+    expect(await findHeldCtSubmission(input)).toEqual({ state: "not-received" });
+    expect(mockPost).toHaveBeenCalledTimes(1);
+  });
+
+  test("asks again after a failed request and then answers from the second reply", async () => {
+    mockPost.mockRejectedValueOnce(new Error("socket hang up")).mockResolvedValueOnce(dataResponse(record(TRANSACTION_ID, CORRELATION_ID)));
+    expect((await findHeldCtSubmission(input)).state).toBe("held");
+    expect(mockSleep).toHaveBeenCalledTimes(2);
+  });
+
+  test("says unknown when every attempt fails or answers with an error, and never says not-received", async () => {
+    mockPost.mockResolvedValueOnce({ ok: false, status: 504, data: "" }).mockResolvedValueOnce(gatewayError("1046"));
+    expect(await findHeldCtSubmission(input)).toEqual({ state: "unknown" });
+    expect(mockPost).toHaveBeenCalledTimes(2);
+  });
+
+  test("forwards the extra headers and keeps the password out of the log", async () => {
+    mockPost.mockResolvedValueOnce(dataResponse());
+    await findHeldCtSubmission({ ...input, extraHeaders: { "Gov-Test-Scenario": "CT600_LOST_REPLY" } });
+    expect(mockPost.mock.calls[0][2]).toEqual({ "Gov-Test-Scenario": "CT600_LOST_REPLY" });
+    expect(JSON.stringify([...mockLogger.warn.mock.calls, ...mockLogger.info.mock.calls])).not.toContain("pass1");
   });
 });

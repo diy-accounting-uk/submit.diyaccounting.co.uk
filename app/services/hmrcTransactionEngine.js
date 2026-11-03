@@ -168,6 +168,31 @@ export function buildDeleteRequest({ correlationId, gatewayTest, messageClass = 
   return buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier: "request", messageFunction: "delete" });
 }
 
+/**
+ * Build a DATA_REQUEST: ask the Transaction Engine which submissions of one class it holds for
+ * the sender. It is authenticated with the credentials the submission used. Without a start date
+ * the Transaction Engine lists every submission it still holds for the class.
+ * @param {object} input
+ * @param {string} input.senderId
+ * @param {string} input.password - sent in clear inside TLS, as the protocol requires
+ * @param {boolean} input.gatewayTest
+ * @param {string} [input.messageClass]
+ * @param {string} [input.transactionId] - reflected in the DATA_RESPONSE
+ * @param {Date} [input.since] - only submissions received on or after this day (UTC) are listed
+ * @returns {string}
+ */
+export function buildDataRequest({ senderId, password, gatewayTest, messageClass = CT600_CLASS, transactionId, since }) {
+  if (!senderId || !password) throw new Error("The Government Gateway user ID and password are required");
+  if (transactionId !== undefined && !/^[0-9A-F]{0,32}$/.test(transactionId))
+    throw new Error("The TransactionID must be upper-case hex, at most 32 characters");
+  const startDate = since
+    ? `<StartDate>${String(since.getUTCDate()).padStart(2, "0")}/${String(since.getUTCMonth() + 1).padStart(2, "0")}/${since.getUTCFullYear()}</StartDate>`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="${GOVTALK_ENVELOPE_NAMESPACE}"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>${messageClass}</Class><Qualifier>request</Qualifier><Function>list</Function>${transactionId ? `<TransactionID>${transactionId}</TransactionID>` : ""}<CorrelationID></CorrelationID><Transformation>XML</Transformation>${gatewayTest ? "<GatewayTest>1</GatewayTest>" : ""}</MessageDetails><SenderDetails><IDAuthentication><SenderID>${escapeXmlText(senderId)}</SenderID><Authentication><Method>clear</Method><Role>principal</Role><Value>${escapeXmlText(password)}</Value></Authentication></IDAuthentication></SenderDetails></Header><GovTalkDetails><Keys/></GovTalkDetails><Body><IncludeIdentifiers>1</IncludeIdentifiers>${startDate}</Body></GovTalkMessage>
+`;
+}
+
 function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier, messageFunction }) {
   if (!/^[0-9A-F]{1,32}$/.test(correlationId || ""))
     throw new Error("The CorrelationID must be the upper-case hex the acknowledgement returned");
@@ -191,6 +216,7 @@ function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualif
  *   businessErrors: {number: string|undefined, type: string|undefined, text: string, location: string|undefined}[],
  *   irmarkReceipt: string|undefined,
  *   successMessage: string|undefined,
+ *   statusRecords: {timestamp: string|undefined, correlationId: string|undefined, transactionId: string|undefined, status: string|undefined, identifiers: {type: string|null, value: string}[]}[],
  * }}
  */
 export function parseTransactionEngineResponse(xml) {
@@ -225,6 +251,18 @@ export function parseTransactionEngineResponse(xml) {
   const digestValue = bodyElement
     ? Array.from(bodyElement.getElementsByTagName("*")).find((element) => element.localName === "DigestValue")
     : undefined;
+  const statusRecords = bodyElement
+    ? allElements(bodyElement, "StatusRecord").map((record) => ({
+        timestamp: firstElementText(record, "TimeStamp"),
+        correlationId: firstElementText(record, "CorrelationID") || undefined,
+        transactionId: firstElementText(record, "TransactionID") || undefined,
+        status: firstElementText(record, "Status"),
+        identifiers: allElements(record, "Identifier").map((identifier) => ({
+          type: identifier.getAttribute("Type"),
+          value: identifier.textContent,
+        })),
+      }))
+    : [];
   return {
     qualifier: firstElementText(document, "Qualifier"),
     messageFunction: firstElementText(document, "Function"),
@@ -236,7 +274,18 @@ export function parseTransactionEngineResponse(xml) {
     businessErrors,
     irmarkReceipt: digestValue?.textContent,
     successMessage: bodyElement ? firstElementText(bodyElement, "Message") : undefined,
+    statusRecords,
   };
+}
+
+/**
+ * The record a DATA_RESPONSE holds for the submission with this TransactionID, if any.
+ * @param {{statusRecords: {transactionId: string|undefined}[]}} parsed
+ * @param {string} transactionId
+ * @returns {object|undefined}
+ */
+export function findHeldSubmission(parsed, transactionId) {
+  return parsed.statusRecords.find((record) => record.transactionId === transactionId);
 }
 
 // Gateway errors that leave the submission standing: 1000 is an internal system failure and 2005 a
