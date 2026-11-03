@@ -113,11 +113,12 @@ function pendingRecord(overrides = {}) {
   };
 }
 
-function buildEvent({ correlationId = CORRELATION_ID, headers = {}, authorizer, method = "GET" } = {}) {
+function buildEvent({ correlationId = CORRELATION_ID, headers = {}, authorizer, method = "GET", queryStringParameters } = {}) {
   const options = {
     method,
     path: `/api/v1/hmrc/ct/return/${correlationId}`,
     pathParameters: { correlationId },
+    ...(queryStringParameters ? { queryStringParameters } : {}),
     headers: { Authorization: "Bearer test-cognito-token", ...headers },
   };
   if (authorizer !== undefined) options.authorizer = authorizer;
@@ -301,6 +302,64 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     process.env.ENVIRONMENT_NAME = "prod";
     const response = await hmrcCtReturnGetHandler(buildEvent());
     expect(response.statusCode).toBe(403);
+  });
+
+  describe("a client filing by a practice", () => {
+    function mockPracticeLicence(bundleId) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId, subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input?.TableName === "test-practice-clients-table") {
+          return { Item: { clientId: "client-1", identifiers: {}, archivedAt: null } };
+        }
+        if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, ...storedRecord } };
+        return {};
+      });
+    }
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = "test-practice-clients-table";
+    });
+
+    test("carries the client id into the receipt and the settled answer", async () => {
+      mockPracticeLicence("resident-tax-agent");
+      storedRecord = pendingRecord({ data: { clientId: "client-1" } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", clientId: "client-1" });
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.clientId).toBe("client-1");
+    });
+
+    test("names the missing company authorisation when HMRC rejects the credentials", async () => {
+      mockPracticeLicence("resident-tax-agent");
+      storedRecord = pendingRecord({ data: { clientId: "client-1" } });
+      engineReturns(
+        engineXml({
+          qualifier: "error",
+          errors:
+            "<GovTalkErrors><Error><RaisedBy>Gateway</RaisedBy><Number>1046</Number><Type>fatal</Type><Text>Authentication Failure</Text></Error></GovTalkErrors>",
+        }),
+        DELETE_RESPONSE,
+      );
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "REJECT", clientId: "client-1" });
+      expect(parseResponseBody(response).message).toContain("form 64-8 or online");
+    });
+
+    test("answers 403 without the practice licence", async () => {
+      mockPracticeLicence("resident-pro");
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(response.statusCode).toBe(403);
+    });
+
+    test("answers 403 CLIENT_SCOPE_ENVIRONMENT_RESTRICTED where the practice activity is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      mockPracticeLicence("resident-tax-agent");
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("CLIENT_SCOPE_ENVIRONMENT_RESTRICTED");
+    });
   });
 
   test("copies the form request of the pending request into the receipt and not into the response", async () => {

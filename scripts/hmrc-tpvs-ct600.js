@@ -19,7 +19,11 @@
  * JSON file (--loans <file>; without a file, loans.json beside the book, and the book defaults to
  * fixtures/diya-gl/precision-code-ltd-loan).
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]]
+ * With --agent <practice name> the return is a practice's filing for its client: IRheader/Agent
+ * carries the client reference PCL-001 and the practice name, Sender is Agent, and the declaration
+ * status (box 985) is Agent.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -60,6 +64,8 @@ const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
 const micro = process.argv.includes("--micro");
 const amended = process.argv.includes("--amended");
+const agentPracticeName = argument("--agent", undefined);
+const agent = agentPracticeName ? { reference: "PCL-001", practiceName: agentPracticeName } : undefined;
 // The book holds no registered office; the TPVS fixture company takes a labelled test address unless one is given.
 const registeredOffice = {
   addressLine1: argument("--registered-office-line1", "1 Test Street (TPVS test address)"),
@@ -79,7 +85,7 @@ const company = {
   utr,
   companyType: 0,
   declarantName: directorName,
-  declarantStatus: "Director",
+  declarantStatus: agent ? "Agent" : "Director",
 };
 const { boxes, ct600a, computationLines, losses, carryBack, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(
   session,
@@ -145,7 +151,7 @@ const computationsIxbrl = buildCtComputations({
   carryBack,
   tradeOutsideUk: figures.lossOutsideUk === true,
 });
-const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended });
+const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
 const { xml, irmark } = buildCt600SubmissionRequest({
   senderId: "tpvs",
   password: "tpvs",
@@ -158,7 +164,7 @@ const { xml, irmark } = buildCt600SubmissionRequest({
 });
 
 mkdirSync(outputDirectory, { recursive: true });
-const outputPrefix = amended ? "ct600-amended" : "ct600";
+const outputPrefix = agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600";
 writeFileSync(join(outputDirectory, `${outputPrefix}-submission.xml`), xml);
 const result = await postToTransactionEngine(TPVS_CT600_URL, xml);
 writeFileSync(join(outputDirectory, `${outputPrefix}-tpvs-response.xml`), result.data);

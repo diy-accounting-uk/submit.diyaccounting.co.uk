@@ -23,8 +23,7 @@ import {
 import { PRODUCT_VERSION } from "../../lib/productVersion.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { enforceCtBundles, clientAuthorisationMessage } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
@@ -57,12 +56,13 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
     event: "hmrc-ct-return-failed",
     summary,
     failure,
     userSub,
+    clientId,
     actor: resolveActorClass(),
     detail,
   });
@@ -76,19 +76,17 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  let userSub;
-  try {
-    ({ userSub } = await enforceBundles(event));
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  const clientId = parseRequestBody(event)?.clientId || undefined;
+  const enforcement = await enforceCtBundles(event, request, clientId);
+  if (enforcement.refusal) return enforcement.refusal;
+  const { userSub, client } = enforcement;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });
   }
 
   const errorMessages = [];
-  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages);
+  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, { client });
   const requestBody = parseRequestBody(event);
   const jointFilingId = readJointFilingId(requestBody, errorMessages);
   const formRequest = sanitiseFormRequest(requestBody);
@@ -180,6 +178,7 @@ export async function ingestHandler(event) {
             ? "HMRC Company Tax Return not received by the Transaction Engine"
             : "HMRC Company Tax Return reply lost and the Transaction Engine did not confirm",
           userSub,
+          clientId,
           detail: { transactionId },
         });
         return http502BadGatewayResponse({
@@ -200,12 +199,13 @@ export async function ingestHandler(event) {
         failure: "transaction-engine-rejected-submission",
         summary: "HMRC Company Tax Return rejected by the Transaction Engine",
         userSub,
+        clientId,
         detail: { errors },
       });
       return http502BadGatewayResponse({
         request,
         headers: { ...responseHeaders },
-        message: "HMRC did not acknowledge the Company Tax Return",
+        message: (clientId && clientAuthorisationMessage(errors)) || "HMRC did not acknowledge the Company Tax Return",
         error: { transactionId, errors },
       });
     }
@@ -221,6 +221,7 @@ export async function ingestHandler(event) {
         nextPollAt: new Date(Date.now() + pollIntervalSeconds * 1000).toISOString(),
         irmark: irmark.base32,
         utr: returnRequest.utr,
+        ...(clientId ? { clientId } : {}),
         gatewayTest,
         messageClass: CT600_CLASS,
         ...jointFilingFields(jointFilingId),
@@ -240,6 +241,7 @@ export async function ingestHandler(event) {
       event: "hmrc-ct-return-submitted",
       summary: "HMRC Company Tax Return submitted",
       userSub,
+      clientId,
     });
 
     return http201CreatedResponse({
@@ -262,6 +264,7 @@ export async function ingestHandler(event) {
       failure: "internal-error",
       summary: "HMRC Company Tax Return submission failed unexpectedly",
       userSub,
+      clientId,
     });
     return http500ServerErrorResponse({
       request,

@@ -163,6 +163,18 @@ test.describe("Hidden feature content", () => {
     }
   });
 
+  test("the Company Tax Return page asks no 'Who is this return for?' in prod, where the practice clients call is refused", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/practice/clients", (route) =>
+      route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED" }) }),
+    );
+    await serveSite(page, "prod");
+    await page.goto("http://localhost:3000/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#clientChoice")).toBeHidden();
+    await expect(page.getByText("Who is this return for?")).toBeHidden();
+  });
+
   for (const pagePath of ["about.html", "index.html"]) {
     test(`${pagePath} describes no hidden feature in prod`, async ({ page }) => {
       await serveSite(page, "prod");

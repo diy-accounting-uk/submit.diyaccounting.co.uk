@@ -370,6 +370,28 @@ describe("buildCt600IrEnvelope", () => {
     expect(Buffer.from(encoded, "base64").toString("utf8")).toBe("<html>accounts</html>");
   });
 
+  test("writes the Agent block after PeriodEnd and Sender Agent for an agent filing, and cuts both texts to 35 characters", () => {
+    const { boxes } = boxesFor({ results, company: COMPANY });
+    const xml = buildCt600IrEnvelope({
+      boxes,
+      accountsIxbrl: "<html>accounts</html>",
+      computationsIxbrl: "<html>computations</html>",
+      agent: { reference: "A".repeat(26), practiceName: "Example & Sons Chartered Certified Accountants LLP" },
+    });
+    const document = parseXmlDocument(xml);
+    expect(valueAt(document, "/IRenvelope/IRheader/Sender")).toBe("Agent");
+    expect(valueAt(document, "/IRenvelope/IRheader/Agent/AgentID")).toBe("A".repeat(26));
+    expect(valueAt(document, "/IRenvelope/IRheader/Agent/Company")).toBe("Example & Sons Chartered Certified ");
+    const header = Array.from(document.documentElement.querySelector("IRheader").children).map((child) => child.localName);
+    expect(header).toEqual(["Keys", "PeriodEnd", "Agent", "DefaultCurrency", "IRmark", "Sender"]);
+  });
+
+  test("writes no Agent block without an agent", () => {
+    const { boxes } = boxesFor({ results, company: COMPANY });
+    const xml = buildCt600IrEnvelope({ boxes, accountsIxbrl: "<html>accounts</html>", computationsIxbrl: "<html>computations</html>" });
+    expect(xml).not.toContain("<Agent>");
+  });
+
   test("escapes the typed text", () => {
     const { boxes } = boxesFor({ results, company: { ...COMPANY, companyName: "Smith & Jones <Ltd>" } });
     expect(valueAt(buildDocument(boxes), CT600_BOX_PATHS[1])).toBe("Smith & Jones <Ltd>");

@@ -925,7 +925,13 @@
       "aria-live": "polite",
     });
     const section = element("section", { "class": "books-import", "aria-labelledby": "booksImportHeading" });
-    section.append(heading, hint, dropZone, fileInput, statusLine);
+    const savedBooks = element("div", { id: "savedBooks", class: "form-group" });
+    savedBooks.hidden = true;
+    const savedBooksLabel = element("label", { for: "savedBooksSelect" }, "Or use one of the client's saved books");
+    const savedBooksSelect = element("select", { id: "savedBooksSelect", name: "savedBooksSelect" });
+    const savedBooksUse = element("button", { type: "button", id: "savedBooksUse", class: "secondary-button" }, "Fill from this book");
+    savedBooks.append(savedBooksLabel, savedBooksSelect, savedBooksUse);
+    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine);
     container.replaceChildren(section);
 
     let loaded = null;
@@ -1064,7 +1070,54 @@
         sessionStorage.removeItem(HANDOFF_KEY);
       }
     }
-    mountedCard = { applyPendingHandoff };
+    // A practice filing for a client sees that client's saved books; the chosen version is read as a dropped file is.
+    async function listSavedBooks(clientId) {
+      savedBooks.hidden = true;
+      savedBooksSelect.replaceChildren();
+      if (!clientId) return;
+      try {
+        const response = await window.fetchWithIdToken(`/api/v1/diya-gl?clientId=${encodeURIComponent(clientId)}`, {});
+        if (!response.ok) return;
+        const body = await response.json();
+        const books = Array.isArray(body.books) ? body.books : [];
+        for (const book of books) {
+          const option = element("option", { value: book.bookId }, `${book.title || book.bookId} (version ${book.latestVersion})`);
+          savedBooksSelect.append(option);
+        }
+        savedBooks.hidden = books.length === 0;
+      } catch (error) {
+        console.warn("Could not list the client's saved books:", error);
+      }
+    }
+
+    async function useSavedBook() {
+      const clientId = options.clientId?.();
+      if (!clientId || !savedBooksSelect.value || working) return;
+      const bookId = savedBooksSelect.value;
+      working = true;
+      loaded = null;
+      say("Reading the saved book...");
+      try {
+        const response = await window.fetchWithIdToken(
+          `/api/v1/diya-gl/${encodeURIComponent(bookId)}/versions/latest?clientId=${encodeURIComponent(clientId)}`,
+          {},
+        );
+        if (!response.ok) throw new Error(`the book could not be read (${response.status})`);
+        const { zipBase64 } = await response.json();
+        const bytes = Uint8Array.from(atob(zipBase64), (character) => character.charCodeAt(0));
+        const bundle = await loadBundle();
+        const fileName = `${bookId}.zip`;
+        loaded = { source: await bundle.readBookSource(bytes, fileName), fileName };
+        say(await fillFromLoaded());
+      } catch (error) {
+        say(error instanceof Refusal ? error.message : `Could not use the saved book: ${withoutFinalStop(error.message)}.`);
+      } finally {
+        working = false;
+      }
+    }
+    savedBooksUse.addEventListener("click", useSavedBook);
+
+    mountedCard = { applyPendingHandoff, listSavedBooks };
     applyPendingHandoff();
 
     // The Drive button exists only where the page's environment carries the Drive configuration.
@@ -1148,5 +1201,11 @@
     if (mountedCard) mountedCard.applyPendingHandoff();
   }
 
-  window.booksImport = { mount, parseHandoff, applyPendingHandoff };
+  // The CT600 page calls this when the practice chooses a client, or none, so the card lists that client's saved books.
+  function showSavedBooksFor(clientId) {
+    if (mountedCard) return mountedCard.listSavedBooks(clientId);
+    return undefined;
+  }
+
+  window.booksImport = { mount, parseHandoff, applyPendingHandoff, showSavedBooksFor };
 })();

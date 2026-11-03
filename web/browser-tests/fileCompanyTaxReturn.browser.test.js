@@ -114,7 +114,7 @@ test.describe("File Company Tax Return entry form", () => {
     return zip.generateAsync({ type: "nodebuffer" });
   }
 
-  async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }) {
+  async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
     await page.addInitScript(() => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -131,6 +131,24 @@ test.describe("File Company Tax Return entry form", () => {
       }
       if (url.pathname === "/api/v1/bundle") {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles: [], tokensRemaining: 0 }) });
+        return;
+      }
+      if (url.pathname === "/api/v1/practice/clients" && practice.clientsStatus) {
+        await route.fulfill({
+          status: practice.clientsStatus,
+          contentType: "application/json",
+          body: JSON.stringify(practice.clientsBody ?? {}),
+        });
+        return;
+      }
+      if (url.pathname === "/api/v1/diya-gl" && practice.books) {
+        practice.requested?.push(url.pathname + url.search);
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ books: practice.books }) });
+        return;
+      }
+      if (url.pathname.startsWith("/api/v1/diya-gl/") && practice.zipBase64) {
+        practice.requested?.push(url.pathname + url.search);
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ zipBase64: practice.zipBase64 }) });
         return;
       }
       if (url.pathname === "/api/v1/companies-house/company/12345678") {
@@ -979,5 +997,100 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#microCurrentTurnover")).toBeHidden();
     await page.locator("#regimeMicro").check();
     await expect(page.locator("#microCurrentTurnover")).toHaveValue("1000");
+  });
+
+  const CLIENT = {
+    clientId: "client-1",
+    displayName: "Precision Code Ltd",
+    identifiers: { utr: "1234567890", companyNumber: "12345678" },
+    archivedAt: null,
+  };
+
+  async function openPracticePage(page, { clients = [CLIENT], previewRequests = [], ...rest } = {}) {
+    await serveRealSite(page, previewRequests, undefined, { clientsStatus: 200, clientsBody: { clients }, ...rest });
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+  }
+
+  test("asks who the return is for only when the practice clients call answers 200", async ({ page }) => {
+    await serveRealSite(page, [], undefined, { clientsStatus: 403, clientsBody: { message: "licence needed" } });
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#companyNumber")).toBeVisible();
+    await expect(page.getByText("Who is this return for?")).toBeHidden();
+  });
+
+  test("lists my own company and each client that is not archived", async ({ page }) => {
+    await openPracticePage(page, {
+      clients: [CLIENT, { ...CLIENT, clientId: "client-2", displayName: "Archived Ltd", archivedAt: "2026-01-01" }],
+    });
+    await expect(page.getByText("Who is this return for?")).toBeVisible();
+    await expect(page.locator("#clientChoiceOptions label")).toHaveText(["My own company", "Precision Code Ltd (12345678)"]);
+  });
+
+  test("a client fills the company number and the UTR and files as the agent", async ({ page }) => {
+    const previewRequests = [];
+    await openPracticePage(page, { previewRequests });
+    await page.locator("#clientChoice-client-1").check();
+    await expect(page.locator("#companyNumber")).toHaveValue("12345678");
+    await expect(page.locator("#companyNumber")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#practiceNameGroup")).toBeVisible();
+    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#utr")).toHaveValue("1234567890");
+    await expect(page.locator("#utr")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#declarantStatus")).toHaveValue("Agent");
+    await expect(page.locator("#agentSection")).toBeVisible();
+    await expect(page.locator("#sendToBoth")).toBeDisabled();
+    await expect(page.locator("#gatewayWhose")).toContainText("practice's own agent");
+
+    await dropBook(page);
+    for (const id of [
+      "statementSection477Exemption",
+      "statementMembersNotRequiredAudit",
+      "statementDirectorsResponsibilities",
+      "statementSmallCompaniesRegime",
+      "declarationAccepted",
+    ]) {
+      await page.locator(`#${id}`).check();
+    }
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Confirm that the company has authorised the practice");
+    expect(previewRequests).toHaveLength(0);
+
+    await page.locator("#agentAuthorised").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    expect(previewRequests).toHaveLength(1);
+    expect(previewRequests[0]).toMatchObject({
+      clientId: "client-1",
+      agent: { practiceName: "Example Practice LLP", authorisationConfirmed: true },
+      declarant: { status: "Agent" },
+    });
+  });
+
+  test("stops a client with no UTR and links to Practice clients", async ({ page }) => {
+    await openPracticePage(page, { clients: [{ ...CLIENT, identifiers: { utr: null, companyNumber: "12345678" } }] });
+    await page.locator("#clientChoice-client-1").check();
+    await expect(page.locator("#clientStop")).toContainText("Add the company's UTR to Precision Code Ltd on Practice clients");
+    await expect(page.locator("#clientStop a")).toHaveAttribute("href", "../practice.html");
+    await expect(page.locator("#companyLookupBtn")).toBeDisabled();
+  });
+
+  test("a saved book of the client fills the form", async ({ page }) => {
+    const requested = [];
+    const zipBase64 = (await zippedPrecisionCodeBook()).toString("base64");
+    await openPracticePage(page, {
+      books: [{ bookId: "book-1", title: "Precision Code FY26", latestVersion: 2 }],
+      zipBase64,
+      requested,
+    });
+    await page.locator("#clientChoice-client-1").check();
+    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#savedBooksSelect option")).toHaveText(["Precision Code FY26 (version 2)"]);
+    await page.locator("#savedBooksUse").click();
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    expect(requested.some((entry) => entry.includes("clientId=client-1"))).toBe(true);
   });
 });

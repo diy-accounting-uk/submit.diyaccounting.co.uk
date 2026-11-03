@@ -32,6 +32,7 @@ import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
+import { clientAuthorisationMessage } from "./ctClientScope.js";
 
 const logger = createLogger({ source: "app/services/hmrcCtSubmissionStatus.js" });
 
@@ -240,6 +241,8 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     const failure = {
       kind: CT_RETURN_KIND,
       statusCode: "REJECT",
+      ...(pending.clientId ? { clientId: pending.clientId } : {}),
+      ...(pending.clientId && clientAuthorisationMessage(parsed.errors) ? { message: clientAuthorisationMessage(parsed.errors) } : {}),
       ...jointFiling,
       correlationId,
       irmark: pending.irmark,
@@ -294,6 +297,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   const accepted = {
     kind: CT_RETURN_KIND,
     statusCode: "ACCEPT",
+    ...(pending.clientId ? { clientId: pending.clientId } : {}),
     ...jointFiling,
     correlationId,
     utr: pending.utr,
@@ -305,7 +309,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.
   const receipt = { ...accepted, ...(pending.filed ? { filed: pending.filed } : {}), ...formRequestFields(pending.formRequest) };
-  await putReceipt(userSub, receiptId, receipt, resolveActorClass());
+  await putReceipt(userSub, receiptId, receipt, resolveActorClass(), pending.clientId);
   const data = { ...accepted, receiptId };
   await putAsyncRequest(userSub, correlationId, "completed", data, asyncRequestsTableName);
   await settleDelete({
@@ -323,6 +327,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     event: "hmrc-ct-return-accepted",
     summary: "HMRC Company Tax Return accepted",
     userSub,
+    clientId: pending.clientId,
   });
   // A return sent as half of a pair costs its own token; the pair costs two.
   if (jointFiling.jointFilingId) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);

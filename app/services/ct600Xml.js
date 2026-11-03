@@ -142,6 +142,9 @@ export function ltdTaxDataForPeriodEnd(periodEnd) {
   return taxData;
 }
 
+// IRheader/Agent/AgentID and Company are 1 to 35 characters.
+const AGENT_FIELD_MAX = 35;
+
 function money(value) {
   return Number(value).toFixed(2);
 }
@@ -208,12 +211,16 @@ function financialYearXml(name, year, profit, rate, tax) {
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
  * @param {boolean} [input.amended] - true for a return that replaces one already filed for the period
+ * @param {{reference: string, practiceName: string}} [input.agent] - a practice filing for its client: written as IRheader/Agent with Sender Agent; absent for the company's own filing
  * @returns {string}
  */
-export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended = false }) {
+export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended = false, agent }) {
   if (!accountsIxbrl || !computationsIxbrl) throw new Error("Both the accounts and the computations iXBRL are attached to the return");
   const b = boxes;
   const encoded = (document) => Buffer.from(document, "utf8").toString("base64");
+  const agentXml = agent
+    ? `<Agent><AgentID>${escapeXmlText(agent.reference.slice(0, AGENT_FIELD_MAX))}</AgentID><Company>${escapeXmlText(agent.practiceName.slice(0, AGENT_FIELD_MAX))}</Company></Agent>`
+    : "";
 
   const trading = wrap(
     "Trading",
@@ -269,7 +276,7 @@ export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computation
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**

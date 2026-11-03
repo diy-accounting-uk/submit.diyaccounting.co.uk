@@ -202,6 +202,48 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     expect(response.statusCode).toBe(403);
   });
 
+  describe("a client filing by a practice", () => {
+    const CLIENT_TABLE = "test-practice-clients-table";
+    const CLIENT_ROW = { clientId: "client-1", identifiers: { utr: "1234567890", companyNumber: "00000099" }, archivedAt: null };
+    const AGENT = { practiceName: "Example Practice LLP", authorisationConfirmed: true };
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = CLIENT_TABLE;
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input?.TableName === CLIENT_TABLE) return { Item: CLIENT_ROW };
+        return {};
+      });
+    });
+
+    test("writes the Agent block and takes the UTR from the client row", async () => {
+      const response = await hmrcCtReturnPreviewPostHandler(
+        buildEvent({ body: { ...baseBody, utr: "9999999999", clientId: "client-1", agent: AGENT } }),
+      );
+      expect(response.statusCode).toBe(200);
+      const body = parseResponseBody(response);
+      expect(body.ct600Xml).toContain("<Sender>Agent</Sender>");
+      expect(body.ct600Xml).toContain("<Agent><AgentID>client-1</AgentID><Company>Example Practice LLP</Company></Agent>");
+      expect(body.ct600Xml).toContain('<Key Type="UTR">1234567890</Key>');
+      expect(body.boxes["3"]).toBe("1234567890");
+    });
+
+    test("needs the practice to confirm the company's authorisation", async () => {
+      const response = await hmrcCtReturnPreviewPostHandler(
+        buildEvent({ body: { ...baseBody, clientId: "client-1", agent: { ...AGENT, authorisationConfirmed: false } } }),
+      );
+      expect(response.statusCode).toBe(400);
+    });
+
+    test("answers 403 CLIENT_SCOPE_ENVIRONMENT_RESTRICTED where the practice activity is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body: { ...baseBody, clientId: "client-1", agent: AGENT } }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("CLIENT_SCOPE_ENVIRONMENT_RESTRICTED");
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

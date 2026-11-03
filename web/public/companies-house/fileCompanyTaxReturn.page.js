@@ -44,6 +44,14 @@ import {
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
+import {
+  DEFAULT_AGENT_STATUS,
+  agentRequestFields,
+  clientChoices,
+  clientFilingStop,
+  rememberPracticeName,
+  rememberedPracticeName,
+} from "../lib/ct600-agent.js";
 
 const JOINT_STORAGE_KEY = "jointFiling";
 const MAX_POLLS = 60;
@@ -80,6 +88,10 @@ let currentView = "companyView";
 let reviewReached = false;
 let changing = null;
 let companiesHousePollWindow = 0;
+// The practice's clients, once the clients call answers 200, and the one the return is for. A practice
+// filing for a client signs as its agent; with no client the return is the company's own.
+let practiceClients = null;
+let agentClient = null;
 
 // What the customer chose to send and how far each filing has got. companiesHouse holds the
 // accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
@@ -1209,6 +1221,7 @@ function handleFormChange(event) {
 function mountBooksCard() {
   window.booksImport.mount(element("booksImport"), {
     kind: "ct600",
+    clientId: () => agentClient?.clientId,
     onFilled: (workingSheet) => {
       state.workingSheet = workingSheet;
       refresh();
@@ -1216,9 +1229,113 @@ function mountBooksCard() {
   });
 }
 
+// --- Filing for a client as its agent ------------------------------------
+
+async function loadPracticeClients() {
+  if (practiceClients) return;
+  try {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    const response = await fetch("/api/v1/practice/clients", idToken ? { headers: { Authorization: `Bearer ${idToken}` } } : {});
+    if (!response.ok) return;
+    const body = await response.json();
+    if (!Array.isArray(body.clients)) return;
+    practiceClients = body.clients;
+  } catch (error) {
+    console.warn("The practice clients could not be read; the return is the company's own:", error);
+    return;
+  }
+  renderClientChoice();
+}
+
+function clientRadio(value, label, checked) {
+  return create(
+    "div",
+    { class: "choice" },
+    create("input", {
+      type: "radio",
+      name: "clientChoice",
+      id: `clientChoice-${value || "own"}`,
+      value,
+      ...(checked ? { checked: "" } : {}),
+    }),
+    create("label", { for: `clientChoice-${value || "own"}` }, label),
+  );
+}
+
+function renderClientChoice() {
+  const choices = clientChoices(practiceClients);
+  element("clientChoice").style.display = choices.length > 0 ? "block" : "none";
+  element("clientChoiceOptions").replaceChildren(
+    clientRadio("", "My own company", !agentClient),
+    ...choices.map((choice) => clientRadio(choice.clientId, choice.label, agentClient?.clientId === choice.clientId)),
+  );
+}
+
+function chooseClient(clientId) {
+  agentClient = practiceClients.find((client) => client.clientId === clientId) ?? null;
+  const stop = agentClient ? clientFilingStop(agentClient) : null;
+  const stopNode = element("clientStop");
+  stopNode.style.display = stop ? "block" : "none";
+  stopNode.replaceChildren(...(stop ? [stop, " ", create("a", { href: "../practice.html" }, "Open Practice clients"), "."] : []));
+  element("practiceNameGroup").style.display = agentClient ? "block" : "none";
+  if (agentClient && !element("practiceName").value) element("practiceName").value = rememberedPracticeName();
+  const companyNumber = element("companyNumber");
+  companyNumber.readOnly = Boolean(agentClient);
+  companyNumber.value = agentClient?.identifiers?.companyNumber ?? "";
+  element("companyLookupBtn").disabled = Boolean(stop);
+  window.booksImport.showSavedBooksFor(agentClient?.clientId);
+}
+
+// The form for a client: the UTR comes from the client row, the declaration status starts as Agent,
+// the company's authorisation is confirmed, and the accounts go to HMRC only.
+function applyClientToForm() {
+  const filingAsAgent = Boolean(agentClient);
+  element("agentSection").style.display = filingAsAgent ? "block" : "none";
+  const utr = element("utr");
+  utr.readOnly = filingAsAgent;
+  if (filingAsAgent) utr.value = agentClient.identifiers.utr;
+  const status = element("declarantStatus");
+  if (filingAsAgent && !state.edited.has("declarantStatus")) status.value = DEFAULT_AGENT_STATUS;
+  if (!filingAsAgent && status.value === DEFAULT_AGENT_STATUS) status.value = "Director";
+  if (filingAsAgent) {
+    element("sendToHmrc").checked = true;
+    applyRegime();
+  }
+  element("sendToBoth").disabled = filingAsAgent;
+  element("gatewayWhose").textContent = filingAsAgent
+    ? "Sign in with the practice's own agent Government Gateway user ID and password, with Corporation Tax enrolled."
+    : "Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.";
+  refresh();
+}
+
+function renderAgentAuthorisation() {
+  element("agentAuthorisedHost").replaceChildren(
+    checkboxGroup(
+      "agentAuthorised",
+      "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
+    ),
+  );
+}
+
+function agentFields() {
+  return agentRequestFields(agentClient, {
+    practiceName: element("practiceName").value,
+    authorisationConfirmed: element("agentAuthorised")?.checked === true,
+  });
+}
+
+function agentProblem() {
+  if (!agentClient) return null;
+  if (!element("practiceName").value.trim()) return "Enter the practice name for HMRC's records.";
+  if (!element("agentAuthorised").checked)
+    return "Confirm that the company has authorised the practice for Corporation Tax and has approved this return.";
+  return null;
+}
+
 async function handleCompanySubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["companyNumber"])) return;
+  if (agentClient) rememberPracticeName(element("practiceName").value.trim());
   const companyNumber = window.normaliseCompanyNumber(element("companyNumber").value);
 
   window.showLoading();
@@ -1230,7 +1347,7 @@ async function handleCompanySubmit(event) {
     element("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
     await ensureBundle();
-    refresh();
+    applyClientToForm();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || "Failed to look up the company.", "error");
@@ -1359,7 +1476,12 @@ async function handleReturnFormSubmit(event) {
       return;
     }
     const values = readValues();
-    previewRequest = ct600RequestFromValues(values, company, state.workingSheet);
+    const problem = agentProblem();
+    if (problem) {
+      window.showStatus(problem, "error");
+      return;
+    }
+    previewRequest = { ...ct600RequestFromValues(values, company, state.workingSheet), ...agentFields() };
     reviewedValues = values;
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
@@ -1412,6 +1534,7 @@ function renderErrors(outcome) {
   }
   container.style.display = "block";
   container.replaceChildren(
+    ...(outcome.message ? [create("p", { role: "alert" }, outcome.message)] : []),
     create("ul", {}, ...entries.map((entry) => create("li", {}, `Error ${entry.number}: ${entry.text}`))),
     create("p", {}, "Check the answers these errors name, change them in the review, and send the return again."),
   );
@@ -1426,7 +1549,7 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
   let result;
   for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
     await waitSeconds(waitFor);
-    result = await window.pollCtReturn(correlationId, extraHeaders);
+    result = await window.pollCtReturn(correlationId, extraHeaders, previewRequest?.clientId);
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") return result;
     element("returnResult").replaceChildren(
       paragraph("Return ", { strong: correlationId }, " is ", { strong: result.statusCode }, ". Checking again..."),
@@ -2045,6 +2168,7 @@ function startAgain() {
   });
   forgetJoint();
   hideAmendPanel();
+  agentClient = null;
   element("revisionDifferences").value = "";
   element("jointProgress").style.display = "none";
   element("booksImport").hidden = false;
@@ -2054,10 +2178,18 @@ function startAgain() {
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("companyForm").reset();
+  element("companyNumber").readOnly = false;
+  element("companyLookupBtn").disabled = false;
   element("gatewayUserId").value = "";
   element("gatewayPassword").value = "";
   element(SUMMARY_ID)?.remove();
   renderForm();
+  renderAgentAuthorisation();
+  applyClientToForm();
+  if (practiceClients) {
+    chooseClient("");
+    renderClientChoice();
+  }
   mountBooksCard();
   window.hideStatus();
   showView("companyView");
@@ -2127,7 +2259,11 @@ async function loadAmendment(receiptName) {
 }
 
 renderForm();
+renderAgentAuthorisation();
 mountBooksCard();
+loadPracticeClients();
+document.addEventListener("submit-ready", loadPracticeClients, { once: true });
+element("clientChoiceOptions").addEventListener("change", (event) => chooseClient(event.target.value));
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 

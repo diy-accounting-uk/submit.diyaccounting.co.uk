@@ -499,6 +499,102 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
   });
 
+  describe("a client filing by a practice", () => {
+    const CLIENT_TABLE = "test-practice-clients-table";
+    const CLIENT_UTR = "1234567890";
+    const CLIENT_COMPANY_NUMBER = "00000099";
+    const CLIENT_ROW = {
+      clientId: "client-1",
+      displayName: "Precision Code Ltd",
+      identifiers: { utr: CLIENT_UTR, companyNumber: CLIENT_COMPANY_NUMBER },
+      archivedAt: null,
+    };
+    const AGENT = { practiceName: "Example Practice LLP", authorisationConfirmed: true };
+
+    function mockPractice({ bundleId = "resident-tax-agent", client = CLIENT_ROW } = {}) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId, subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input?.TableName === CLIENT_TABLE) return { Item: client };
+        return {};
+      });
+    }
+
+    function clientEvent(overrides = {}) {
+      const body = { ...baseBody, clientId: "client-1", agent: AGENT, ...overrides };
+      const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+        requireGatewayCredentials: false,
+        requireReviewedBoxes: false,
+        client: CLIENT_ROW,
+      });
+      const reviewedBoxes = buildCtReturnDocuments(request).boxes;
+      return buildEvent({ body: { ...body, reviewedBoxes, gatewayUserId: USER_ID, gatewayPassword: PASSWORD } });
+    }
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = CLIENT_TABLE;
+      mockPractice();
+    });
+
+    test("files as the agent with the client's UTR and company number, not the body's", async () => {
+      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "11111111" }));
+      expect(response.statusCode).toBe(201);
+      const [, xml] = mockPostToTransactionEngine.mock.calls[0];
+      expect(xml).toContain(`<Key Type="UTR">${CLIENT_UTR}</Key>`);
+      expect(xml).not.toContain("9999999999");
+      expect(xml).toContain("<Sender>Agent</Sender>");
+      expect(xml).toContain("<Agent><AgentID>client-1</AgentID><Company>Example Practice LLP</Company></Agent>");
+      expect(xml).toContain("<Role>principal</Role>");
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ clientId: "client-1", utr: CLIENT_UTR });
+    });
+
+    test("refuses a filing the practice has not confirmed the authorisation for", async () => {
+      const response = await hmrcCtReturnPostHandler(clientEvent({ agent: { ...AGENT, authorisationConfirmed: false } }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("authorised it for Corporation Tax");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 without the practice licence", async () => {
+      mockPractice({ bundleId: "resident-pro" });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 for an archived client", async () => {
+      mockPractice({ client: { ...CLIENT_ROW, archivedAt: "2026-01-01T00:00:00.000Z" } });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 CLIENT_SCOPE_ENVIRONMENT_RESTRICTED where the practice activity is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("CLIENT_SCOPE_ENVIRONMENT_RESTRICTED");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("stops a client with no UTR", async () => {
+      mockPractice({ client: { ...CLIENT_ROW, identifiers: { utr: null, companyNumber: CLIENT_COMPANY_NUMBER } } });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("UTR");
+    });
+
+    test("explains error 1046 as a missing company authorisation", async () => {
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: GATEWAY_ERROR_XML, headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response).message).toContain("form 64-8 or online");
+      expect(parseResponseBody(response).message).toContain("72 hours");
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await hmrcCtReturnPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);
