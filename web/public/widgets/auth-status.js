@@ -286,6 +286,7 @@
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("cognito_oauth_state");
+    sessionStorage.removeItem("cognito_pkce_verifier");
     sessionStorage.removeItem("traceparent");
     sessionStorage.removeItem("mfaMetadata");
     sessionStorage.removeItem("pendingPass");

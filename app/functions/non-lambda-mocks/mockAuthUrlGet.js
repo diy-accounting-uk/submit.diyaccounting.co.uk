@@ -26,12 +26,13 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { state } = queryParams;
+  const { state, code_challenge: codeChallenge } = queryParams;
 
   // Collect validation errors for required fields
   if (!state) errorMessages.push("Missing state query parameter from URL");
+  if (!codeChallenge) errorMessages.push("Missing code_challenge query parameter from URL");
 
-  return { state };
+  return { state, codeChallenge };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -42,7 +43,7 @@ export async function ingestHandler(event) {
   const errorMessages = [];
 
   // Extract and validate parameters
-  const { state } = extractAndValidateParameters(event, errorMessages);
+  const { state, codeChallenge } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = {};
 
@@ -54,7 +55,7 @@ export async function ingestHandler(event) {
   // Processing
   try {
     logger.info({ message: "Generating mock authorization URL", state });
-    const { authUrl } = buildAuthUrl(state);
+    const { authUrl } = buildAuthUrl(state, codeChallenge);
 
     return http200OkResponse({
       request,
@@ -73,7 +74,7 @@ export async function ingestHandler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export function buildAuthUrl(state) {
+export function buildAuthUrl(state, codeChallenge) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
   // Support configurable mock OAuth2 base URL (default: Docker mock-oauth2-server)
@@ -87,6 +88,8 @@ export function buildAuthUrl(state) {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
     `&state=${encodeURIComponent(state)}` +
+    `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+    "&code_challenge_method=S256" +
     "&identity_provider=MockOAuth2Server";
 
   return { authUrl };

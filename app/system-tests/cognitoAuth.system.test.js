@@ -55,6 +55,22 @@ describe("System: Cognito token exchange", () => {
     expect(body.message).toMatch(/Missing code/i);
   });
 
+  it("should validate missing code_verifier for authorization_code grant", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/cognito/token",
+    });
+
+    event.body = Buffer.from(new URLSearchParams({ grant_type: "authorization_code", code: "auth-code-123" }).toString()).toString(
+      "base64",
+    );
+
+    const res = await cognitoTokenPostHandler(event);
+
+    expect(res.statusCode).toBe(400);
+    expect(parseResponseBody(res).message).toMatch(/Missing code_verifier/i);
+  });
+
   it("should exchange authorization_code for tokens", async () => {
     const mockFetch = setupFetchMock();
 
@@ -74,6 +90,7 @@ describe("System: Cognito token exchange", () => {
     const form = new URLSearchParams({
       grant_type: "authorization_code",
       code: "auth-code-123",
+      code_verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
     }).toString();
 
     event.body = Buffer.from(form).toString("base64");

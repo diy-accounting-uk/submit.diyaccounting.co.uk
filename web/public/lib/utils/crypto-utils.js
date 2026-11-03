@@ -67,9 +67,42 @@ export async function sha256Hex(text) {
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Encode bytes as unpadded base64url (RFC 4648 section 5)
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+export function base64UrlEncode(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+/**
+ * Generate a PKCE code verifier (RFC 7636): 32 random bytes as 43 base64url characters
+ * @returns {string}
+ */
+export function generateCodeVerifier() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
+}
+
+/**
+ * Compute the PKCE S256 code challenge for a verifier: BASE64URL(SHA-256(ASCII(verifier)))
+ * @param {string} verifier
+ * @returns {Promise<string>}
+ */
+export async function computeCodeChallenge(verifier) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return base64UrlEncode(new Uint8Array(digest));
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.generateRandomState = generateRandomState;
   window.randomHex = randomHex;
   window.sha256Hex = sha256Hex;
+  window.generateCodeVerifier = generateCodeVerifier;
+  window.computeCodeChallenge = computeCodeChallenge;
 }

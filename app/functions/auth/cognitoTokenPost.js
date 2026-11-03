@@ -28,6 +28,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const grantType = searchParams.get("grant_type");
   const code = searchParams.get("code");
   const refreshToken = searchParams.get("refresh_token");
+  const codeVerifier = searchParams.get("code_verifier");
 
   if (!grantType) {
     errorMessages.push("Missing grant_type from event body");
@@ -36,7 +37,8 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   if (grantType === "authorization_code") {
     if (!code) errorMessages.push("Missing code from event body");
-    return { grantType, code };
+    if (!codeVerifier) errorMessages.push("Missing code_verifier from event body");
+    return { grantType, code, codeVerifier };
   }
 
   if (grantType === "refresh_token") {
@@ -66,7 +68,7 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { grantType, code, refreshToken } = extractAndValidateParameters(event, errorMessages);
+  const { grantType, code, codeVerifier, refreshToken } = extractAndValidateParameters(event, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, {});
@@ -76,7 +78,7 @@ export async function ingestHandler(event) {
 
   if (grantType === "authorization_code") {
     logger.info({ message: "Exchanging authorization code for Cognito access token" });
-    tokenResponse = await exchangeCodeForToken(code);
+    tokenResponse = await exchangeCodeForToken(code, codeVerifier);
   } else if (grantType === "refresh_token") {
     logger.info({ message: "Refreshing Cognito access token" });
     tokenResponse = await exchangeRefreshTokenForToken(refreshToken);
@@ -88,7 +90,7 @@ export async function ingestHandler(event) {
 }
 
 // Service adaptor: authorization_code
-export async function exchangeCodeForToken(code) {
+export async function exchangeCodeForToken(code, codeVerifier) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
 
@@ -101,6 +103,7 @@ export async function exchangeCodeForToken(code) {
       client_id: process.env.COGNITO_CLIENT_ID,
       redirect_uri: redirectUri,
       code,
+      code_verifier: codeVerifier,
     },
   };
 }

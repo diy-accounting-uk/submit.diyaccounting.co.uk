@@ -15,7 +15,7 @@
 // Replaces Docker mock-oauth2-server for local app authentication
 // Handles: GET /oauth/authorize, POST /default/token
 
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { storeAuthorizationCode, consumeAuthorizationCode } from "../state/store.js";
 import fs from "fs";
 import path from "path";
@@ -69,10 +69,20 @@ function createUnsignedJwt(payload) {
   return `${headerB64}.${payloadB64}.`;
 }
 
+const CODE_CHALLENGE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+/**
+ * PKCE S256: BASE64URL(SHA-256(ASCII(verifier))) must equal the challenge sent on authorize
+ */
+export function verifyCodeChallenge(codeChallenge, codeVerifier) {
+  if (!codeChallenge || !codeVerifier) return false;
+  return createHash("sha256").update(codeVerifier, "ascii").digest("base64url") === codeChallenge;
+}
+
 /**
  * Generate interactive login HTML form
  */
-function generateLoginForm(redirectUri, state, clientId, scope) {
+function generateLoginForm(redirectUri, state, clientId, scope, codeChallenge) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -97,6 +107,7 @@ function generateLoginForm(redirectUri, state, clientId, scope) {
     <input type="hidden" name="state" value="${state}">
     <input type="hidden" name="client_id" value="${clientId}">
     <input type="hidden" name="scope" value="${scope}">
+    <input type="hidden" name="code_challenge" value="${codeChallenge}">
     <input type="text" name="username" placeholder="Enter any user/subject" value="user" required autofocus>
     <textarea name="claims" rows="5" placeholder="Optional claims JSON">{"email": "user@example.com"}</textarea>
     <input type="submit" name="submit" value="Sign-in">
@@ -111,7 +122,7 @@ export function apiEndpoint(app) {
   // GET /oauth/authorize - Interactive login form
   // This matches the mock-oauth2-server's authorize endpoint
   app.get("/oauth/authorize", (req, res, next) => {
-    const { response_type, client_id, redirect_uri, scope, state } = req.query;
+    const { response_type, client_id, redirect_uri, scope, state, code_challenge, code_challenge_method } = req.query;
 
     // Only handle local OAuth (client_id=debugger)
     // HMRC OAuth (client_id=uqMHA...) is handled by hmrc-oauth.js
@@ -128,14 +139,21 @@ export function apiEndpoint(app) {
       });
     }
 
+    if (code_challenge_method !== "S256" || !CODE_CHALLENGE_PATTERN.test(code_challenge || "")) {
+      return res.status(400).json({
+        error: "invalid_request",
+        error_description: "PKCE is required: send code_challenge and code_challenge_method=S256",
+      });
+    }
+
     // Return interactive login form
     res.setHeader("Content-Type", "text/html");
-    res.send(generateLoginForm(redirect_uri || "", state || "", client_id || "", scope || ""));
+    res.send(generateLoginForm(redirect_uri || "", state || "", client_id || "", scope || "", code_challenge));
   });
 
   // POST /oauth/authorize - Process login form submission
   app.post("/oauth/authorize", (req, res, next) => {
-    const { redirect_uri, state, client_id, username, claims } = req.body;
+    const { redirect_uri, state, client_id, username, claims, code_challenge } = req.body;
 
     // Only handle local OAuth (client_id=debugger)
     if (client_id !== "debugger") {
@@ -164,6 +182,7 @@ export function apiEndpoint(app) {
       username: username || "user",
       claims: parsedClaims,
       state,
+      codeChallenge: code_challenge,
     });
 
     // Redirect to callback with code
@@ -180,7 +199,7 @@ export function apiEndpoint(app) {
   // POST /default/token - Token exchange
   // This matches the mock-oauth2-server's token endpoint
   app.post("/default/token", (req, res) => {
-    const { grant_type, code, client_id, redirect_uri } = req.body;
+    const { grant_type, code, client_id, redirect_uri, code_verifier } = req.body;
 
     console.log(`[http-simulator:local-oauth] POST /default/token grant_type=${grant_type}`);
 
@@ -204,6 +223,12 @@ export function apiEndpoint(app) {
         return res.status(400).json({
           error: "invalid_grant",
           error_description: "Invalid or expired authorization code",
+        });
+      }
+      if (!verifyCodeChallenge(codeData.codeChallenge, code_verifier)) {
+        return res.status(400).json({
+          error: "invalid_grant",
+          error_description: "PKCE verification failed: code_verifier does not match the code_challenge",
         });
       }
     }

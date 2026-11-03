@@ -44,9 +44,15 @@
     const state = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
     sessionStorage.setItem("cognito_oauth_state", state);
 
+    // PKCE: the verifier stays in this tab until the callback sends it with the code
+    sessionStorage.removeItem("cognito_pkce_verifier");
+    const codeVerifier = window.generateCodeVerifier();
+    sessionStorage.setItem("cognito_pkce_verifier", codeVerifier);
+
     try {
+      const codeChallenge = await window.computeCodeChallenge(codeVerifier);
       // Get OAuth URL from the mock auth endpoint
-      const response = await fetch(`/api/v1/mock/authUrl?state=${state}`);
+      const response = await fetch(`/api/v1/mock/authUrl?state=${state}&code_challenge=${encodeURIComponent(codeChallenge)}`);
       if (!response.ok) {
         throw new Error(`Failed to get auth URL: ${response.status}`);
       }
