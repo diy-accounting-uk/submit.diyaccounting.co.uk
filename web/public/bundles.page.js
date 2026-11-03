@@ -52,6 +52,7 @@ let __catalogueSettled = false; // True once the catalogue has loaded or failed 
 let __currentEnv = null; // Current environment name
 let __viewer = null; // What this person has chosen to see: preview features, operator features, account settings
 let __catalogService = null; // lib/services/catalog-service.js, read once the catalogue loads
+let __aggregates = null; // lib/services/catalogue-aggregates.js, read once the catalogue loads
 
 const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
@@ -264,6 +265,24 @@ const cardEl = (b) => {
       noteEl("ok", "Active subscription"),
     );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
+  const holdsThisBundle = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated);
+  // A held bundle whose parts include this one: the customer already has it through that bundle.
+  const holderIncludingThis = () => {
+    if (!__aggregates || !__catalogueData) return null;
+    const heldId = __fullBundleData
+      .filter((fb) => fb.allocated && fb.bundleId !== b.id)
+      .map((fb) => fb.bundleId)
+      .find((id) => __aggregates.includedBundleIds(__catalogueData, id).includes(b.id));
+    if (!heldId) return null;
+    return __catalogueData.bundles.find((cb) => cb.id === heldId)?.name || heldId;
+  };
+  const heldCard = () => {
+    if (hasActiveSubscription()) return manageCard();
+    if (holdsThisBundle()) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", "You hold this bundle"));
+    const holderName = holderIncludingThis();
+    if (holderName) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", `Included in ${holderName}`));
+    return null;
+  };
 
   // on-pass without valid pass: disabled with reason on button
   if (enable === "on-pass" && !passCode) {
@@ -289,7 +308,8 @@ const cardEl = (b) => {
 
   // on-subscription allocation with always-visible: show Subscribe or Manage button
   if (allocation === "on-subscription" && enable === "always") {
-    if (hasActiveSubscription()) return manageCard();
+    const held = heldCard();
+    if (held) return held;
 
     // Two prices per bundle (annual and monthly): the annual (default) price is the
     // main Subscribe button, the monthly price is a text link beneath it.
@@ -590,6 +610,7 @@ const __catalogueReady = (async function () {
     __currentEnv = await readEnvironment();
     __viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
     __catalogService = await import("/lib/services/catalog-service.js");
+    __aggregates = await import("/lib/services/catalogue-aggregates.js");
     renderCatalogueBundles();
     __catalogueSettled = true;
     renderCurrentBundles();
