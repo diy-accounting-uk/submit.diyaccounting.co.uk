@@ -11,7 +11,7 @@ import { spawn } from "node:child_process";
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { BatchWriteCommand, DynamoDBDocumentClient, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { BatchWriteCommand, DeleteCommand, DynamoDBDocumentClient, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import Stripe from "stripe";
@@ -179,6 +179,7 @@ export function subOfIdToken(idToken) {
 
 /** Ensure every lane at once, then sign each in. Returns a session per lane. */
 export async function openSessions({ baseUrl, lanes = LANE_NAMES }) {
+  await prepareHashing();
   const [credentials, identity] = await Promise.all([Promise.all(lanes.map((lane) => ensureLane(lane))), identityStackOutputs()]);
   const sessions = {};
   for (const [index, lane] of lanes.entries()) {
@@ -394,6 +395,75 @@ async function cardFingerprintsOf(stripe, customerParams) {
     }
   }
   return fingerprints;
+}
+
+/** Stripe's test-mode values that pass the verification of an individual in GB (docs.stripe.com/connect/testing). */
+const AFFILIATE_TEST_INDIVIDUAL = {
+  business_type: "individual",
+  individual: {
+    first_name: "Commission",
+    last_name: "Affiliate",
+    phone: "0000000000",
+    dob: { day: 1, month: 1, year: 1901 },
+    address: { line1: "address_full_match", city: "London", postal_code: "EC1A 1BB", country: "GB" },
+    id_number: "000000000",
+  },
+  business_profile: { url: "https://accessible.stripe.com" },
+  external_account: { object: "bank_account", country: "GB", currency: "gbp", account_number: "00012345", routing_number: "108800" },
+};
+
+async function getAffiliateItem(referrerHash) {
+  const { Item } = await documentClient.send(new GetCommand({ TableName: TABLES.passes, Key: { pk: `affiliate#${referrerHash}` } }));
+  return Item ?? null;
+}
+
+const accountIsComplete = (account) => account.details_submitted === true && account.payouts_enabled === true;
+
+/**
+ * Leave RA with a finished test-mode Connect account that the platform onboarded through the API.
+ * A complete account is reused. An account that Stripe hosts (the one the application route made
+ * before the environment listed the test journeys) cannot take platform collection, so it is
+ * deleted in Stripe and its affiliate item removed, and the application route makes a new one.
+ * Returns the account id.
+ */
+export async function ensureAffiliateConnectAccount({ stripe, session, log = console.log }) {
+  let item = await getAffiliateItem(session.hash);
+  if (item?.stripeAccountId) {
+    const account = await stripe.accounts
+      .retrieve(item.stripeAccountId)
+      .catch((error) => (error?.code === "account_invalid" ? null : Promise.reject(error)));
+    if (account && !account.deleted && account.controller?.requirement_collection === "application") {
+      if (accountIsComplete(account)) {
+        log(`Reusing the complete Connect account ${account.id}`);
+        return account.id;
+      }
+    } else {
+      log(`Replacing the Connect account ${item.stripeAccountId}: it is not platform-collected`);
+      if (account && !account.deleted) await stripe.accounts.del(item.stripeAccountId);
+      await documentClient.send(new DeleteCommand({ TableName: TABLES.passes, Key: { pk: `affiliate#${session.hash}` } }));
+      item = null;
+    }
+  }
+  if (!item?.stripeAccountId) {
+    await session.apiOk("POST", "/api/v1/affiliate/application");
+    item = await getAffiliateItem(session.hash);
+    if (!item?.stripeAccountId) throw new Error("The affiliate application route stored no Connect account");
+  }
+  const accountId = item.stripeAccountId;
+  const account = await stripe.accounts.retrieve(accountId);
+  if (account.controller?.requirement_collection !== "application") {
+    throw new Error(
+      `Connect account ${accountId} is collected by ${account.controller?.requirement_collection}. The deployed app must list ci in testJourneyEnvironments.`,
+    );
+  }
+  await stripe.accounts.update(accountId, {
+    ...AFFILIATE_TEST_INDIVIDUAL,
+    individual: { ...AFFILIATE_TEST_INDIVIDUAL.individual, email: session.email },
+    tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: "203.0.113.1" },
+  });
+  await pollUntil(`Connect account ${accountId} to be complete`, async () => accountIsComplete(await stripe.accounts.retrieve(accountId)));
+  log(`Onboarded the Connect account ${accountId}`);
+  return accountId;
 }
 
 async function deleteKeys(tableName, keys) {

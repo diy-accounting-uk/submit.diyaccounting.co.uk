@@ -34,6 +34,15 @@ public class AccountNames {
     public boolean operatorSnapshotGetLambdaJwtAuthorizer;
     public boolean operatorSnapshotGetLambdaCustomAuthorizer;
 
+    public String operatorConsoleImageGetIngestLambdaHandler;
+    public String operatorConsoleImageGetIngestLambdaFunctionName;
+    public String operatorConsoleImageGetIngestLambdaArn;
+    public String operatorConsoleImageGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod operatorConsoleImageGetLambdaHttpMethod;
+    public String operatorConsoleImageGetLambdaUrlPath;
+    public boolean operatorConsoleImageGetLambdaJwtAuthorizer;
+    public boolean operatorConsoleImageGetLambdaCustomAuthorizer;
+
     public String practiceClientsListGetIngestLambdaHandler;
     public String practiceClientsListGetIngestLambdaFunctionName;
     public String practiceClientsListGetIngestLambdaArn;
@@ -548,6 +557,29 @@ public class AccountNames {
                 "Get the operator objectives snapshot",
                 "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
                 "getOperatorSnapshot"));
+
+        this.operatorConsoleImageGetLambdaHttpMethod = HttpMethod.GET;
+        this.operatorConsoleImageGetLambdaUrlPath = "/api/v1/operator/console-image";
+        this.operatorConsoleImageGetLambdaJwtAuthorizer = true;
+        this.operatorConsoleImageGetLambdaCustomAuthorizer = false;
+        var operatorConsoleImageGetLambdaHandlerName = "operatorConsoleImageGet.ingestHandler";
+        var operatorConsoleImageGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(operatorConsoleImageGetLambdaHandlerName);
+        this.operatorConsoleImageGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, operatorConsoleImageGetLambdaHandlerDashed);
+        this.operatorConsoleImageGetIngestLambdaHandler =
+                "%s/analytics/%s".formatted(root.appLambdaHandlerPrefix, operatorConsoleImageGetLambdaHandlerName);
+        this.operatorConsoleImageGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, operatorConsoleImageGetLambdaHandlerDashed);
+        this.operatorConsoleImageGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.operatorConsoleImageGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.operatorConsoleImageGetLambdaHttpMethod,
+                this.operatorConsoleImageGetLambdaUrlPath,
+                "Get a captured AWS console image",
+                "Returns one PNG the console capture rendered for the operator dashboard",
+                "getOperatorConsoleImage",
+                List.of(new ApiParameter("id", "query", true, "The capture id from snapshot.console"))));
 
         var bundlePostProps = LambdaNameProps.builder()
                 .apiHttpMethod(HttpMethod.POST)

@@ -31,6 +31,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.CompanyBookTables;
 import co.uk.diyaccounting.submit.stacks.analytics.ComplianceTables;
+import co.uk.diyaccounting.submit.stacks.analytics.ConsoleCapturePublish;
 import co.uk.diyaccounting.submit.stacks.analytics.CostBudgetsAndAnomalyMonitor;
 import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
 import co.uk.diyaccounting.submit.stacks.analytics.CostFocusTables;
@@ -143,6 +144,9 @@ public class AnalyticsStack extends Stack {
         SubmitSharedNames sharedNames();
 
         String baseImageTag();
+
+        /** Whether SecurityLakeStack builds the security lake tables in this environment. */
+        boolean securityServicesEnabled();
 
         static ImmutableAnalyticsStackProps.Builder builder() {
             return ImmutableAnalyticsStackProps.builder();
@@ -844,6 +848,7 @@ public class AnalyticsStack extends Stack {
                         .passesTableName(sharedNames.data.passesTableName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .securityServicesEnabled(props.securityServicesEnabled())
                         .build());
 
         new PassFiguresPublish(
@@ -859,6 +864,17 @@ public class AnalyticsStack extends Stack {
                         .passesTableName(sharedNames.data.passesTableName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .build());
+
+        new ConsoleCapturePublish(
+                this,
+                ConsoleCapturePublish.ConsoleCapturePublishProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .lakeBucket(this.lakeBucket)
                         .build());
 
         new RawExport(

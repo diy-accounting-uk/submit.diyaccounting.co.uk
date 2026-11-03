@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 
@@ -101,6 +101,38 @@ describe("affiliateApplicationPost", () => {
     await ingestHandler(buildEventWithToken(tokenFor("synthetic-local@test.diyaccounting.co.uk"), null));
     expect(mockGetStripeClient).toHaveBeenCalledWith({ test: true });
     expect(mockStartApplication.mock.calls[0][0].stripeTest).toBe(true);
+  });
+
+  describe("on an environment that runs the test journeys", () => {
+    let savedEnvironment;
+    beforeEach(() => {
+      savedEnvironment = process.env.ENVIRONMENT_NAME;
+      process.env.ENVIRONMENT_NAME = "ci";
+    });
+    afterEach(() => {
+      process.env.ENVIRONMENT_NAME = savedEnvironment;
+    });
+
+    test("a synthetic applicant gets an account whose requirements the platform collects, and no hosted link", async () => {
+      mockGetAffiliate.mockResolvedValueOnce(null).mockResolvedValueOnce({ state: "applied", stripeAccountId: "acct_new" });
+      const result = await ingestHandler(buildEventWithToken(tokenFor("synthetic-local@test.diyaccounting.co.uk"), null));
+      expect(result.statusCode).toBe(200);
+      expect(stripe.accounts.create.mock.calls[0][0].controller).toEqual({
+        stripe_dashboard: { type: "none" },
+        fees: { payer: "application" },
+        losses: { payments: "application" },
+        requirement_collection: "application",
+      });
+      expect(stripe.accountLinks.create).not.toHaveBeenCalled();
+      expect(JSON.parse(result.body)).toEqual({ state: "applied", url: null });
+    });
+
+    test("a real applicant keeps the Stripe-hosted onboarding", async () => {
+      mockGetAffiliate.mockResolvedValueOnce(null).mockResolvedValueOnce({ state: "applied", stripeAccountId: "acct_new" });
+      await ingestHandler(buildEventWithToken(tokenFor("a@example.com"), null));
+      expect(stripe.accounts.create.mock.calls[0][0].controller.requirement_collection).toBe("stripe");
+      expect(stripe.accountLinks.create).toHaveBeenCalledOnce();
+    });
   });
 
   test("a returning applicant gets a new link on the account they already have", async () => {

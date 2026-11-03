@@ -45,6 +45,12 @@ function bodyOf(response) {
   return JSON.parse(response.body);
 }
 
+function noSuchKey() {
+  const error = new Error("not found");
+  error.name = "NoSuchKey";
+  return error;
+}
+
 function s3BodyOf(snapshot) {
   return { transformToString: async () => JSON.stringify(snapshot) };
 }
@@ -127,6 +133,7 @@ describe("operatorSnapshotGet", () => {
         return { userSub: "operator-sub", bundleIds: ["operator"] };
       });
       mockS3Send.mockResolvedValueOnce({ Body: s3BodyOf({ generatedAt: "2026-09-15T03:15:00.000Z", objectives: [] }) });
+      mockS3Send.mockRejectedValueOnce(noSuchKey());
 
       const response = await ingestHandler(buildLambdaEvent({ path: "/api/v1/operator/snapshot" }));
 
@@ -162,11 +169,31 @@ describe("operatorSnapshotGet", () => {
       mockEnforceBundles.mockResolvedValueOnce({ userSub: "operator-sub", bundleIds: ["operator"] });
       const snapshot = { generatedAt: "2026-09-08T03:15:00.000Z", environment: "test", objectives: [{ id: "uptime" }] };
       mockS3Send.mockResolvedValueOnce({ Body: s3BodyOf(snapshot) });
+      mockS3Send.mockRejectedValueOnce(noSuchKey());
 
       const response = await ingestHandler(buildLambdaEvent({ path: "/api/v1/operator/snapshot" }));
 
       expect(response.statusCode).toBe(200);
       expect(bodyOf(response)).toEqual(snapshot);
+      expect(bodyOf(response)).not.toHaveProperty("console");
+    });
+
+    test("adds the console capture index as snapshot.console when one exists", async () => {
+      mockEnforceBundles.mockResolvedValueOnce({ userSub: "operator-sub", bundleIds: ["operator"] });
+      const snapshot = { generatedAt: "2026-09-08T03:15:00.000Z", environment: "test", objectives: [] };
+      const consoleIndex = {
+        generatedAt: "2026-09-08T02:20:00.000Z",
+        environment: "test",
+        items: { "ci-alarms": { id: "ci-alarms", rows: [] } },
+      };
+      mockS3Send.mockResolvedValueOnce({ Body: s3BodyOf(snapshot) });
+      mockS3Send.mockResolvedValueOnce({ Body: s3BodyOf(consoleIndex) });
+
+      const response = await ingestHandler(buildLambdaEvent({ path: "/api/v1/operator/snapshot" }));
+
+      expect(response.statusCode).toBe(200);
+      expect(bodyOf(response).console).toEqual(consoleIndex);
+      expect(mockS3Send.mock.calls[1][0].input.Key).toBe("snapshots/test/console/index.json");
     });
 
     test("returns 500 when the snapshot read fails", async () => {

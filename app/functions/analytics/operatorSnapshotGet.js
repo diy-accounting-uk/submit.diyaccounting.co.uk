@@ -31,6 +31,7 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles, BundleAuthorizationError, BundleEntitlementError } from "../../services/bundleManagement.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { readConsoleIndex } from "../../lib/consoleCaptureStore.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotGet.js" });
 
@@ -115,8 +116,10 @@ export async function ingestHandler(event) {
   }
 
   let snapshot;
+  let consoleIndex;
   try {
     snapshot = await readLatestSnapshot();
+    consoleIndex = snapshot ? await readConsoleIndex() : null;
   } catch (error) {
     logger.error({ message: "Failed to read operator snapshot", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
@@ -139,6 +142,6 @@ export async function ingestHandler(event) {
   return http200OkResponse({
     request,
     headers: responseHeaders,
-    data: snapshot,
+    data: consoleIndex ? { ...snapshot, console: consoleIndex } : snapshot,
   });
 }

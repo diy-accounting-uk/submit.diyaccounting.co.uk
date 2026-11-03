@@ -954,7 +954,7 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void everyOtherEnvironmentLeavesGatewayTestOffAndThePackageReferenceUnset() {
+    void prodLeavesGatewayTestOffAndSetsTheLivePackageReferenceOnEachSubmitRoute() {
         CompaniesHouseStack stack = synthCompaniesHouseStackForEnv("prod");
         Template template = Template.fromStack(stack);
 
@@ -971,9 +971,14 @@ class CompaniesHouseStackTest {
             assertEquals(1, functions.size());
             var env = environmentVariablesOf(functions);
             assertEquals("false", env.get("COMPANIES_HOUSE_GATEWAY_TEST"));
-            assertFalse(
-                    env.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"),
-                    "the live package reference is not yet known, so it must stay unset rather than submit blank");
+        }
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals("4326", environmentVariablesOf(functions).get("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
     }
 

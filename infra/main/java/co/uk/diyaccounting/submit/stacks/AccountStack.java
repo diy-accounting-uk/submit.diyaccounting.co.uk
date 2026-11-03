@@ -74,6 +74,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps operatorSnapshotGetLambdaProps;
     public Function operatorSnapshotGetLambda;
     public ILogGroup operatorSnapshotGetLambdaLogGroup;
+    public AbstractApiLambdaProps operatorConsoleImageGetLambdaProps;
+    public Function operatorConsoleImageGetLambda;
+    public ILogGroup operatorConsoleImageGetLambdaLogGroup;
 
     public AbstractApiLambdaProps practiceClientsListGetLambdaProps;
     public Function practiceClientsListGetLambda;
@@ -694,6 +697,55 @@ public class AccountStack extends Stack {
                 "Created API Lambda %s for the operator snapshot with ingestHandler %s",
                 this.operatorSnapshotGetLambda.getNode().getId(),
                 props.sharedNames().account.operatorSnapshotGetIngestLambdaHandler);
+
+        // Operator Console Image GET Lambda: the same authoriser and entitlement check as the
+        // snapshot route. Serves one PNG that AnalyticsStack's ConsoleCapturePublish wrote under
+        // snapshots/<env>/console/; the image is found through the index, never by a request key.
+        var operatorConsoleImageGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", props.sharedNames().analytics.analyticsLakeBucketName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var operatorConsoleImageGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.operatorConsoleImageGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.operatorConsoleImageGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.operatorConsoleImageGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.operatorConsoleImageGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .operatorConsoleImageGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.operatorConsoleImageGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.operatorConsoleImageGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.operatorConsoleImageGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.operatorConsoleImageGetLambdaCustomAuthorizer)
+                        .environment(operatorConsoleImageGetLambdaEnv)
+                        .build());
+
+        healthCheckedFunctions.add(operatorConsoleImageGetApiLambda);
+        this.operatorConsoleImageGetLambdaProps = operatorConsoleImageGetApiLambda.apiProps;
+        this.operatorConsoleImageGetLambda = operatorConsoleImageGetApiLambda.ingestLambda;
+        this.operatorConsoleImageGetLambdaLogGroup = operatorConsoleImageGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.operatorConsoleImageGetLambdaProps);
+
+        bundlesTable.grant(this.operatorConsoleImageGetLambda, "dynamodb:Query");
+        SubHashSaltHelper.grantSaltAccess(this.operatorConsoleImageGetLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(
+                this.operatorConsoleImageGetLambda, region, account, props.envName());
+        this.operatorConsoleImageGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(analyticsLakeBucketArn + "/snapshots/" + props.envName() + "/console/*"))
+                .build());
+        infof(
+                "Created API Lambda %s for the operator console image with ingestHandler %s",
+                this.operatorConsoleImageGetLambda.getNode().getId(),
+                props.sharedNames().account.operatorConsoleImageGetIngestLambdaHandler);
 
         // Practice clients: four single-Lambda routes, same JWT authoriser and shape as
         // bundleGet above. Each reads or writes only the caller's own hashedSub partition.

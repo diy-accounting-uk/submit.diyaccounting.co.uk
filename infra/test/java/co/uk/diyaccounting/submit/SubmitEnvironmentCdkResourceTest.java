@@ -791,6 +791,9 @@ class SubmitEnvironmentCdkResourceTest {
                 && actions.stream()
                         .allMatch(a -> String.valueOf(a).startsWith("xray:")
                                 || "cloudwatch:PutMetricData".equals(String.valueOf(a))
+                                || "cloudwatch:GetMetricWidgetImage".equals(String.valueOf(a))
+                                || "logs:GetQueryResults".equals(String.valueOf(a))
+                                || "logs:StopQuery".equals(String.valueOf(a))
                                 || LOG_DELIVERY_ACTIONS.contains(String.valueOf(a)));
     }
 

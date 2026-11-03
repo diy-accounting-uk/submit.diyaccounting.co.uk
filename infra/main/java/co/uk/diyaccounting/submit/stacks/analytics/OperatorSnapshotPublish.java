@@ -77,6 +77,9 @@ public class OperatorSnapshotPublish extends Construct {
 
         String athenaWorkGroupName();
 
+        /** Whether the security lake tables exist in this environment (SecurityLakeStack builds them). */
+        boolean securityServicesEnabled();
+
         static ImmutableOperatorSnapshotPublishProps.Builder builder() {
             return ImmutableOperatorSnapshotPublishProps.builder();
         }
@@ -99,6 +102,7 @@ public class OperatorSnapshotPublish extends Construct {
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("ATHENA_WORK_GROUP_NAME", props.athenaWorkGroupName())
                 .with("GLUE_DATABASE_NAME", props.glueDatabaseName())
+                .with("SECURITY_SERVICES_ENABLED", Boolean.toString(props.securityServicesEnabled()))
                 .with("PASSES_DYNAMODB_TABLE_NAME", props.passesTableName())
                 .with("ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName());
 

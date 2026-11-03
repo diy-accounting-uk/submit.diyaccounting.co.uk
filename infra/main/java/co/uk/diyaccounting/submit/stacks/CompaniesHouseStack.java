@@ -55,12 +55,14 @@ public class CompaniesHouseStack extends Stack {
 
     // The XML Gateway's test service and its live service want the opposite of each other on
     // both the GatewayTest flag and the accounts submission's package reference. ci is the only
-    // deployment environment that talks to the test service; the reference below is the one
-    // Companies House's XML team issued for it. The live reference is not yet known, so it stays
-    // unset for every other environment - the accounts Lambda's own validateEnv() then fails the
-    // deployment's first filing attempt loudly rather than let one go out with a blank one.
+    // deployment environment that talks to the test service; the references below are the ones
+    // Companies House's XML team issued for the test service and for the live service. Any
+    // other environment leaves the reference unset - the accounts Lambda's own validateEnv()
+    // then fails that deployment's first filing attempt loudly rather than let one go out blank.
     private static final String XML_GATEWAY_TEST_ENV_NAME = "ci";
+    private static final String XML_GATEWAY_LIVE_ENV_NAME = "prod";
     private static final String XML_GATEWAY_TEST_PACKAGE_REFERENCE = "0012";
+    private static final String XML_GATEWAY_LIVE_PACKAGE_REFERENCE = "4326";
 
     public AbstractApiLambdaProps companiesHouseSearchGetLambdaProps;
     public Function companiesHouseSearchGetLambda;
@@ -878,9 +880,9 @@ public class CompaniesHouseStack extends Stack {
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withCodesEntryEnv(companiesHouseAccountsPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
-        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+        if (xmlGatewayPackageReference(props) != null) {
             companiesHouseAccountsPostLambdaEnv.with(
-                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
         }
         var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -1296,9 +1298,9 @@ public class CompaniesHouseStack extends Stack {
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withCodesEntryEnv(companiesHouseConfirmationStatementPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseConfirmationStatementPostLambdaEnv, props);
-        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+        if (xmlGatewayPackageReference(props) != null) {
             companiesHouseConfirmationStatementPostLambdaEnv.with(
-                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
         }
         // Scoped to the operator's own company numbers so the waiver never reaches a customer's
         // filing once the activity lists on prod - blank everywhere except .env.prod.
@@ -1442,9 +1444,9 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withPresenterSecretArns(companiesHousePscVerificationStatementPostLambdaEnv, props);
-        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+        if (xmlGatewayPackageReference(props) != null) {
             companiesHousePscVerificationStatementPostLambdaEnv.with(
-                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
         }
         var companiesHousePscVerificationStatementPostLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -1823,6 +1825,12 @@ public class CompaniesHouseStack extends Stack {
     // the live gateway and must not set it.
     private static String gatewayTestFlag(CompaniesHouseStackProps props) {
         return XML_GATEWAY_TEST_ENV_NAME.equals(props.envName()) ? "true" : "false";
+    }
+
+    private static String xmlGatewayPackageReference(CompaniesHouseStackProps props) {
+        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) return XML_GATEWAY_TEST_PACKAGE_REFERENCE;
+        if (XML_GATEWAY_LIVE_ENV_NAME.equals(props.envName())) return XML_GATEWAY_LIVE_PACKAGE_REFERENCE;
+        return null;
     }
 
     // Every route that calls resolvePresenterCredentials() (accounts submit/poll, confirmation

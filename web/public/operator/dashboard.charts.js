@@ -45,6 +45,16 @@ function isHourly(state) {
   return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
 }
 
+// Lines that start hidden, by chart id and mode id; the legend still shows them.
+const INITIALLY_HIDDEN_SERIES = {
+  visitors: { sessions: ["synthetic", "bot", "system"] },
+};
+
+function initiallyHidden(chart, modeIndex) {
+  const byMode = INITIALLY_HIDDEN_SERIES[chart.id];
+  return new Set((byMode && byMode[chart.modes[modeIndex].id]) || []);
+}
+
 function activeSeries(state) {
   const mode = state.chart.modes[state.modeIndex];
   return isHourly(state) ? mode.hourly.series : mode.series;
@@ -388,9 +398,9 @@ function renderChartCard(chart, days, hours) {
   const heading = document.createElement("h3");
   heading.textContent = chart.title;
   card.appendChild(heading);
-  decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
+  if (!chart.standalone) decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
 
-  const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: new Set(), card };
+  const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: initiallyHidden(chart, 0), card };
 
   if (chart.modes.length > 1) {
     const tabs = document.createElement("div");
@@ -406,7 +416,7 @@ function renderChartCard(chart, days, hours) {
       button.setAttribute("aria-pressed", String(index === 0));
       button.addEventListener("click", () => {
         state.modeIndex = index;
-        state.hidden = new Set();
+        state.hidden = initiallyHidden(chart, index);
         tabs.querySelectorAll("button").forEach((other, otherIndex) => other.setAttribute("aria-pressed", String(otherIndex === index)));
         syncRangeSwitch(state);
         drawLegend(state);
@@ -489,7 +499,16 @@ function renderDailyCharts(snapshot) {
   renderedCharts.forEach((state) => state.draw());
 }
 
+// One chart outside the snapshot's daily charts, for a panel that holds its own series. The
+// caller attaches `element`, then calls `draw`, because a chart sizes itself from its card.
+function renderStandaloneChart(chart, days) {
+  const state = renderChartCard(chart, days, []);
+  renderedCharts.push(state);
+  return { element: state.card, draw: state.draw };
+}
+
 window.renderDailyCharts = renderDailyCharts;
+window.renderStandaloneChart = renderStandaloneChart;
 window.decorateSectionHeading = decorateSectionHeading;
 window.parseRefreshMinutes = parseRefreshMinutes;
 window.addEventListener("resize", redrawAllCharts);

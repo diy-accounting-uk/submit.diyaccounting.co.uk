@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 const mockRecord = vi.fn();
@@ -15,7 +15,13 @@ vi.mock("@app/lib/stripeClient.js", () => ({
   getStripeClient: (...args) => mockGetStripeClient(...args),
 }));
 
-import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "@app/services/affiliateConnect.js";
+import {
+  collectsRequirementsInApplication,
+  createConnectAccount,
+  needsAccountRefresh,
+  refreshAffiliateAccount,
+  toAffiliateView,
+} from "@app/services/affiliateConnect.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -73,5 +79,31 @@ describe("services/affiliateConnect", () => {
     expect(needsAccountRefresh({ state: "ended", stripeAccountId: "acct_1" })).toBe(false);
     expect(needsAccountRefresh({ state: "applied" })).toBe(false);
     expect(needsAccountRefresh(null)).toBe(false);
+  });
+
+  describe("platform-collected requirements", () => {
+    const savedEnvironment = process.env.ENVIRONMENT_NAME;
+    afterEach(() => {
+      process.env.ENVIRONMENT_NAME = savedEnvironment;
+    });
+
+    test("only a synthetic caller on a listed environment is collected by the platform", () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      expect(collectsRequirementsInApplication({ test: true })).toBe(true);
+      expect(collectsRequirementsInApplication({ test: false })).toBe(false);
+      process.env.ENVIRONMENT_NAME = "prod";
+      expect(collectsRequirementsInApplication({ test: true })).toBe(false);
+    });
+
+    test("createConnectAccount asks Stripe to collect by default and the platform to collect when told", async () => {
+      const create = vi.fn().mockResolvedValue({ id: "acct_1" });
+      await createConnectAccount({ accounts: { create } }, { referrerHash: "h1" });
+      await createConnectAccount({ accounts: { create } }, { referrerHash: "h1", platformCollected: true });
+      expect(create.mock.calls[0][0].controller).toMatchObject({ stripe_dashboard: { type: "express" }, requirement_collection: "stripe" });
+      expect(create.mock.calls[1][0].controller).toMatchObject({
+        stripe_dashboard: { type: "none" },
+        requirement_collection: "application",
+      });
+    });
   });
 });

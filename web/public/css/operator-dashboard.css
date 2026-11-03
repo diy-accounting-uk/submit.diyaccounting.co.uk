@@ -239,6 +239,46 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-size: var(--step-0);
 }
 
+.console-capture {
+  margin: 0 0 var(--space-4) 0;
+}
+
+.console-capture h4 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--step-0);
+}
+
+.console-capture-item {
+  min-width: 0;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.console-capture-time,
+.console-capture-empty {
+  margin: 0 0 var(--space-1) 0;
+  color: var(--c-ink-muted);
+}
+
+.console-capture-error {
+  margin: 0;
+  color: var(--c-ink);
+  border-left: 3px solid var(--c-error);
+  padding-left: var(--space-2);
+}
+
+.console-capture-image {
+  display: block;
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+}
+
+.console-capture-table tr[data-state="ALARM"] td {
+  font-weight: 600;
+}
+
 .chart-card[data-chart-id="conversion-to-paid"] {
   grid-column: 1 / -1;
 }

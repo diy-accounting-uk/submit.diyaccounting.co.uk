@@ -38,6 +38,26 @@ owner = "Operator"
 source = "NEXT.md O16 / B34b; BACKLOG 34b"
 
 [[items]]
+id = "companies-house-credit-account"
+name = "Companies House credit account behind the live presenter"
+description = "Companies House charges the 50 pound confirmation statement fee to this account for every statement filed under the live presenter; the presenter has authenticated on the live gateway since 2026-09-26"
+status = "current"
+date = "2026-11-02"
+date_kind = "reviewed"
+owner = "Operator"
+source = "PLAN_COMPANIES_HOUSE_APPROVAL.md CS-11b"
+
+[[items]]
+id = "companies-house-software-authorisation"
+name = "Companies House software authorisation for live filing"
+description = "XML Gateway package reference 4326 issued 2026-11-02 for the live service; covers micro-entity accounts, small company accounts and confirmation statements"
+status = "current"
+date = "2026-11-02"
+date_kind = "reviewed"
+owner = "Operator"
+source = "PLAN_COMPANIES_HOUSE_APPROVAL.md B34c, CS-11b"
+
+[[items]]
 id = "ico-registration"
 name = "ICO registration"
 description = "Registration ZB070902"

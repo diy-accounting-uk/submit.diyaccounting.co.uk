@@ -46,6 +46,7 @@ const COMPANY_CONTRIBUTION_ROWS = [
 const RESERVE_FLOOR_GBP = 2000;
 
 const NOT_MEASURED = "not measured";
+const NOT_COLLECTED = "not collected";
 const NONE = "none";
 const NO_BASE = "no base";
 const NOT_APPLICABLE = "n/a";
@@ -278,6 +279,7 @@ const VISITORS_WINDOW_UNAVAILABLE =
 function renderVisitors(snapshot) {
   const tbody = document.getElementById("visitorsBody");
   tbody.innerHTML = "";
+  document.getElementById("visitorsPanel").hidden = false;
 
   const conversion = (snapshot.objectives || []).find((objective) => objective.id === "conversion-to-submission") || {
     observations: [],
@@ -470,6 +472,11 @@ function windowCell(observation, key, unavailableTitle) {
   if (window && window.notApplicable) {
     cell.textContent = NOT_APPLICABLE;
     cell.title = "This figure is reported by month or quarter, so it has no daily window.";
+    return cell;
+  }
+  if (observation && observation.notCollected) {
+    cell.textContent = NOT_COLLECTED;
+    cell.title = "This environment does not run the source of this figure.";
     return cell;
   }
   cell.textContent = formatWindowValue(unit, window);
@@ -961,7 +968,7 @@ async function loadHeldPasses() {
     const answer = await fetchJson("/api/v1/pass/held");
     renderHeldPasses(answer.passes || []);
   } catch (error) {
-    if (error.status !== 403) {
+    if (error.status !== 401 && error.status !== 403) {
       const notice = document.getElementById("heldPassesEmpty");
       document.getElementById("heldPassesPanel").hidden = false;
       notice.textContent = "The held passes did not load. Reload the page to try again.";
@@ -1007,11 +1014,15 @@ async function initPage() {
     renderOperators(snapshot);
     renderFamilyAffiliates(snapshot);
     renderAffiliateGroups(snapshot);
+    window.renderAwsLinks(snapshot.console);
     document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
       showError(null);
+    } else if (error.status === 401) {
+      showError("Sign in with an operator account to see this page.");
     } else if (error.status === 404) {
+      window.renderAwsLinks();
       showError("No snapshot has been published yet.");
     } else {
       showError("The operator snapshot did not load. Reload the page to try again.");

@@ -17,6 +17,11 @@ describe("what the catalogue lists in each environment", () => {
     },
   );
 
+  test.each(["file-micro-entity-accounts", "file-small-company-accounts"])("%s is listed in ci and not in prod", (id) => {
+    expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
+    expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
+  });
+
   test("the MCP harness is not listed in prod", () => {
     expect(isActivityListedInEnvironment(activity("mcp-harness"), "prod")).toBe(false);
   });

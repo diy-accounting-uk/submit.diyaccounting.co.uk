@@ -123,6 +123,17 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       expect(document.getElementsByTagName("Shareholdings")).toHaveLength(0);
     });
 
+    test("carries Shareholdings for a statement that changes nothing else", () => {
+      const xml = buildConfirmationStatementBody({
+        ...BASE_INPUT,
+        shareholdings: [{ shareClass: "ORDINARY", numberHeld: "10", shareholders: [{ surname: "CARTWRIGHT", forename: "ANTONY" }] }],
+      });
+      const document = parseXmlDocument(xml);
+      expect(document.getElementsByTagName("Shareholdings")).toHaveLength(1);
+      expect(document.getElementsByTagName("SICCodes")).toHaveLength(0);
+      expect(document.getElementsByTagName("StatementOfCapital")).toHaveLength(0);
+    });
+
     test("sends TradingOnMarket and DTR5Applies false for a private company", () => {
       const xml = buildConfirmationStatementBody(BASE_INPUT);
       const document = parseXmlDocument(xml);

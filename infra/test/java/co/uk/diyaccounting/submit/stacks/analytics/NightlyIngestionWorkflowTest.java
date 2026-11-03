@@ -75,7 +75,9 @@ class NightlyIngestionWorkflowTest {
                 .metricsPublishLambda(metricsPublishLambda)
                 .rawExportPublishLambda(rawExportPublishLambda)
                 .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda)
-                .passFiguresPublishLambda(passFiguresPublishLambda);
+                .passFiguresPublishLambda(passFiguresPublishLambda)
+                .consoleCapturePublishLambda(
+                        testLambda(stack, "ConsoleCapturePublishLambda", "docs-env-console-capture-publish"));
         if (withOptionalJobs) {
             props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
                     .paypalDonationsPullLambda(
@@ -192,11 +194,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Eleven tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Twelve tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                11,
+                12,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),
@@ -218,7 +220,8 @@ class NightlyIngestionWorkflowTest {
                     definitionText.contains("\"" + key + " failed, recorded\":{\"Type\":\"Pass\""),
                     key + " should route to a Pass state");
         }
-        assertEquals(4, countOccurrences(definitionText, "\"Catch\":"), "only the four optional jobs catch");
+        assertEquals(
+                5, countOccurrences(definitionText, "\"Catch\":"), "only the four optional jobs and the capture catch");
         for (String key : List.of(
                 "Stripe reconciliation",
                 "GA4 report pull",
@@ -231,6 +234,35 @@ class NightlyIngestionWorkflowTest {
                 "operator snapshot publish")) {
             assertFalse(stateText(definitionText, key).contains("\"Catch\""), key + " should not catch");
         }
+    }
+
+    @Test
+    void prodRunsTheConsoleCaptureOnlyOnTheNightlyStartAfterThePassFigures() {
+        var definitionText = joinedDefinitionString(synthWorkflow("prod"));
+
+        assertTrue(
+                stateText(definitionText, "pass figures publish").contains("\"Next\":\"console capture due\""),
+                "the pass figures should go to the capture choice");
+        var choice = stateText(definitionText, "console capture due");
+        assertTrue(choice.contains("\"Type\":\"Choice\""), choice);
+        assertTrue(
+                choice.contains("\"Variable\":\"$$.Execution.StartTime\",\"StringMatches\":\"*T02:*\""),
+                "prod captures once a day, on the 02:xx UTC start: " + choice);
+        assertTrue(choice.contains("\"Next\":\"console capture publish\""), choice);
+        assertTrue(choice.contains("\"Default\":"), "every other run should skip the capture: " + choice);
+        var capture = stateText(definitionText, "console capture publish");
+        assertTrue(capture.contains("\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"]"), capture);
+        assertTrue(capture.contains("\"ResultPath\":\"$.failures.consoleCapture\""), capture);
+    }
+
+    @Test
+    void ciRunsTheConsoleCaptureOnEveryExecutionAfterThePassFigures() {
+        var definitionText = joinedDefinitionString(synthWorkflow("ci"));
+
+        assertTrue(
+                stateText(definitionText, "pass figures publish").contains("\"Next\":\"console capture publish\""),
+                "ci should run the capture straight after the pass figures");
+        assertFalse(definitionText.contains("\"console capture due\""), "ci has no capture choice");
     }
 
     @Test
@@ -337,7 +369,10 @@ class NightlyIngestionWorkflowTest {
             "raw export publish",
             "nightly steps due",
             "operator snapshot publish",
-            "pass figures publish");
+            "pass figures publish",
+            "console capture due",
+            "console capture publish",
+            "console capture publish failed, recorded");
 
     /** The text of one state's definition, up to where the next state's definition starts. */
     private static String stateText(String definitionText, String stateName) {

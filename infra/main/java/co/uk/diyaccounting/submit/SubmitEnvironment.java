@@ -410,6 +410,7 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
+                        .securityServicesEnabled(securityServicesEnabled)
                         .build());
         this.analyticsStack.addStackDependency(this.activityStack);
         this.analyticsStack.addStackDependency(this.dataStack);

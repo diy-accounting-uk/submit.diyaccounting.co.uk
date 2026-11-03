@@ -6,6 +6,7 @@
 import { createLogger } from "../lib/logger.js";
 import { getStripeClient } from "../lib/stripeClient.js";
 import { recordAffiliateAccountStatus } from "../data/dynamoDbPassRepository.js";
+import { loadReferralConfig } from "./referralConfig.js";
 
 const logger = createLogger({ source: "app/services/affiliateConnect.js" });
 
@@ -15,17 +16,30 @@ export const AFFILIATE_RETURN_PATH = "bundles.html";
 export const AFFILIATE_SECTION_ANCHOR = "affiliateApplySection";
 
 /**
- * Create the Connect account of an affiliate: UK only, Stripe-hosted onboarding and Express
- * dashboard, the platform liable for losses and paying the fees, transfers as the one capability, and a prefilled product description because a transfers-only GB account pauses without a business profile.
+ * Whether the platform collects the account's requirements through the API. True only for a
+ * synthetic caller in an environment that the test-journey list names, so that the commission
+ * journeys can onboard a test account without the hosted page. Every other caller uses the
+ * Stripe-hosted onboarding.
  */
-export async function createConnectAccount(stripe, { referrerHash }) {
+export function collectsRequirementsInApplication({ test }) {
+  if (test !== true) return false;
+  return (loadReferralConfig().ledger.testJourneyEnvironments || []).includes(process.env.ENVIRONMENT_NAME);
+}
+
+/**
+ * Create the Connect account of an affiliate: UK only, the platform liable for losses and paying
+ * the fees, transfers as the one capability, and a prefilled product description because a
+ * transfers-only GB account pauses without a business profile. Stripe hosts the onboarding and the
+ * Express dashboard, except when the platform collects the requirements (no Stripe dashboard).
+ */
+export async function createConnectAccount(stripe, { referrerHash, platformCollected = false }) {
   return stripe.accounts.create({
     country: "GB",
     controller: {
-      stripe_dashboard: { type: "express" },
+      stripe_dashboard: { type: platformCollected ? "none" : "express" },
       fees: { payer: "application" },
       losses: { payments: "application" },
-      requirement_collection: "stripe",
+      requirement_collection: platformCollected ? "application" : "stripe",
     },
     capabilities: { transfers: { requested: true } },
     business_profile: { product_description: AFFILIATE_PRODUCT_DESCRIPTION },

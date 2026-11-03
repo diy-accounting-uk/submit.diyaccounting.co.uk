@@ -8,12 +8,12 @@
 // - **Entry:** `behaviour-tests/commissionJourneysStripe.behaviour.test.js`; `behaviour-tests/helpers/commissionCi.js:cleanup`
 // - **Files:** behaviour-tests/commissionJourneysStripe.behaviour.test.js, behaviour-tests/helpers/commissionCi.js, app/unit-tests/behaviour-helpers/commissionCi.test.js, playwright.config.js
 // - **Keywords:** commission, stripe test clock, ledger, release, as-of, referral, affiliate, ci journeys
-// - **Related:** BILL-46, BILL-47, BILL-56
+// - **Related:** BILL-46, BILL-47, BILL-52
 // @end-capability
 
-// Preconditions on ci: the environment deploy of this branch (webhook and email lists), a deployment
-// of the same branch (DEPLOYMENT_NAME), and RA's Connect onboarding done once
-// (scripts/commission-ci-affiliate-onboarding.js). The AWS profile or role is submit-ci.
+// Preconditions on ci: the environment deploy of this branch (webhook and email lists), and a deployment
+// of the same branch (DEPLOYMENT_NAME), whose application route collects RA's Connect requirements in
+// the API. The suite onboards RA's test account itself. The AWS profile or role is submit-ci.
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
@@ -28,6 +28,7 @@ import {
   cleanup,
   clockName,
   createClock,
+  ensureAffiliateConnectAccount,
   expectedAmountPence,
   getCommissionItem,
   getReferralClaim,
@@ -36,7 +37,6 @@ import {
   latestIso,
   openSessions,
   pollUntil,
-  prepareHashing,
   queryLines,
   runRelease,
   secondAfter,
@@ -91,7 +91,6 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
   // 1. Start cleanup, then users.
   await test.step("Start cleanup", async () => cleanup({ log }));
   const sessions = await test.step("Ensure and sign in the lanes", async () => openSessions({ baseUrl, lanes: LANE_NAMES }));
-  await prepareHashing();
   const hashOf = (lane) => sessions[lane].hash;
   const referrerOf = Object.fromEntries(REDEEMERS.map(({ lane, referrer }) => [lane, referrer]));
 
@@ -127,16 +126,12 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     }
   });
 
-  // 4. RA's affiliate state.
-  await test.step("Set RA applied and check Connect onboarding", async () => {
+  // 4. RA's Connect account, onboarded through the API, then RA's affiliate state.
+  await test.step("Onboard RA's Connect account and set RA applied", async () => {
+    await ensureAffiliateConnectAccount({ stripe, session: sessions[RA], log });
     await sessions[OPERATOR].apiOk("POST", "/api/v1/affiliate", { referrerHash: hashOf(RA), tier: "casual", state: "applied" });
     const application = await sessions[RA].apiOk("GET", "/api/v1/affiliate/application");
-    if (application?.detailsSubmitted !== true) {
-      throw new Error(
-        "RA has no finished Stripe Connect onboarding. Run once: AWS_PROFILE=diya-submit-ci DIY_SUBMIT_BASE_URL=" +
-          `${baseUrl} node scripts/commission-ci-affiliate-onboarding.js, then finish the printed link with Stripe's test values.`,
-      );
-    }
+    expect(application?.detailsSubmitted, "RA's Connect details submitted").toBe(true);
   });
 
   // 5. Passes and 6. redemptions.
@@ -275,8 +270,9 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     expect(reasonsOf(m1)).toEqual([]);
   });
 
-  await test.step("Release one second after J1a month 1", async () => {
-    await release(secondAfter(j1aM1.releaseAt));
+  await test.step("Release one second after J1a month 1 and J3a month 1", async () => {
+    // J3a's first invoice is paid minutes after J1a's, so its line releases later than J1a's.
+    await release(secondAfter(latestIso(j1aM1.releaseAt, j3aLines[0].releaseAt)));
     expect((await lines(J1A))[0].state).toBe("payable");
     expect((await lines(J3A))[0].state).toBe("payable");
     const [j1c] = await lines(J1C);

@@ -97,10 +97,13 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   return lambdaEvent;
 }
 
-export function buildHttpResponseFromLambdaResult({ headers, statusCode, body }, httpResponse) {
+export function buildHttpResponseFromLambdaResult({ headers, statusCode, body, isBase64Encoded }, httpResponse) {
   if (headers) httpResponse.set(headers);
   if (statusCode === 304) {
     return httpResponse.status(304).end();
+  }
+  if (isBase64Encoded) {
+    return httpResponse.status(statusCode).send(Buffer.from(body || "", "base64"));
   }
   try {
     return httpResponse.status(statusCode).json(body ? JSON.parse(body) : {});

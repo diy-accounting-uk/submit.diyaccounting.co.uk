@@ -407,6 +407,8 @@
     "@aws-sdk/client-sns": "^3.1159.0",
     "@aws-sdk/client-sqs": "^3.1159.0",
     "@aws-sdk/client-ssm": "^3.1159.0",
+    "@aws-sdk/client-sts": "^3.1161.0",
+    "@aws-sdk/client-xray": "^3.1161.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
     "@diy-accounting-uk/diya-gl": "1.2.73",
     "@google-analytics/data": "^7.3.0",
