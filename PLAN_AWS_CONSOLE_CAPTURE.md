@@ -52,7 +52,7 @@ The prod capture Lambda captures prod and ci. The ci capture Lambda captures ci 
 | Action | Resource |
 |---|---|
 | `cloudwatch:GetMetricWidgetImage` | `*` (no resource type) |
-| `cloudwatch:DescribeAlarms` | `arn:aws:cloudwatch:eu-west-2:<acct>:alarm:<env>-*` |
+| `cloudwatch:DescribeAlarms` | `arn:aws:cloudwatch:eu-west-2:<acct>:alarm:*` (a `DescribeAlarms` call with a name prefix is authorised against `alarm:*`; the capture filters by the `<env>-` prefix) |
 | `logs:StartQuery` | `arn:aws:logs:eu-west-2:<acct>:log-group:/<env>/bedrock/invocations:*` |
 | `logs:GetQueryResults`, `logs:StopQuery` | `*` (no resource type) |
 | `xray:GetServiceGraph` | `*` (no resource type) |

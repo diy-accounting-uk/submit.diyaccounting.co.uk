@@ -123,8 +123,7 @@ public class ConsoleCapturePublish extends Construct {
 
         this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
         this.executionRole.addToPolicy(readPolicyStatement(
-                "cloudwatch:DescribeAlarms",
-                List.of("arn:aws:cloudwatch:%s:%s:alarm:%s-*".formatted(region, account, envName))));
+                "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         this.executionRole.addToPolicy(readPolicyStatement(
                 "logs:StartQuery",
                 List.of("arn:aws:logs:%s:%s:log-group:/%s/bedrock/invocations:*".formatted(region, account, envName))));
@@ -228,8 +227,7 @@ public class ConsoleCapturePublish extends Construct {
                 .build();
         role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
         role.addToPolicy(readPolicyStatement(
-                "cloudwatch:DescribeAlarms",
-                List.of("arn:aws:cloudwatch:%s:%s:alarm:ci-*".formatted(region, account))));
+                "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         role.addToPolicy(readPolicyStatement(
                 "logs:StartQuery",
                 List.of("arn:aws:logs:%s:%s:log-group:/ci/bedrock/invocations:*".formatted(region, account))));
