@@ -29,6 +29,8 @@ import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
   buildCt600SubmissionRequest,
+  assertCtMessageWithinLimit,
+  CtMessageTooLargeError,
   parseTransactionEngineResponse,
   postToTransactionEngine,
   getTransactionEngineSubmissionUrl,
@@ -130,6 +132,7 @@ export async function ingestHandler(event) {
       irEnvelopeXml: documents.irEnvelopeXml,
       gatewayTest,
     });
+    assertCtMessageWithinLimit(xml);
     logger.info({
       message: "HMRC Transaction Engine CT600 submission request",
       transactionId,
@@ -245,6 +248,10 @@ export async function ingestHandler(event) {
       data: { correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
     });
   } catch (error) {
+    if (error instanceof CtMessageTooLargeError) {
+      logger.warn({ message: "Company Tax Return message over the size HMRC accepts, nothing sent" });
+      return buildValidationError(request, [error.message], responseHeaders);
+    }
     // The submission carries the typed Gateway password, so nothing read from the error is
     // logged: an error's message, stack or fields can quote the document that failed.
     logger.error({

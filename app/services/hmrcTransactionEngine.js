@@ -23,6 +23,27 @@ export const CT600_TEST_IN_LIVE_CLASS = "HMRC-CT-CT600-TIL";
 
 export const TRANSACTION_ENGINE_LIVE_SUBMISSION_URL = "https://transaction-engine.tax.service.gov.uk/submission";
 export const TRANSACTION_ENGINE_TEST_SUBMISSION_URL = "https://test-transaction-engine.tax.service.gov.uk/submission";
+// HMRC rule 1614: the message with all its attachments must not exceed 25MB.
+export const CT_MESSAGE_MAX_BYTES = 25 * 1024 * 1024;
+
+export class CtMessageTooLargeError extends Error {
+  constructor(bytes) {
+    super(
+      `The Company Tax Return message is ${bytes} bytes. HMRC accepts at most ${CT_MESSAGE_MAX_BYTES} bytes (25MB), attachments included. Nothing was sent.`,
+    );
+    this.name = "CtMessageTooLargeError";
+  }
+}
+
+/**
+ * Refuse a message HMRC would refuse with error 1614.
+ * @param {string} xml - the complete message
+ */
+export function assertCtMessageWithinLimit(xml) {
+  const bytes = Buffer.byteLength(xml, "utf8");
+  if (bytes > CT_MESSAGE_MAX_BYTES) throw new CtMessageTooLargeError(bytes);
+}
+
 export const TPVS_CT600_URL = "https://www.tpvs.hmrc.gov.uk/HMRC/CT600";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- XML namespace, compared byte for byte, not fetched

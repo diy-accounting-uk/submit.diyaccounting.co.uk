@@ -9,7 +9,7 @@ import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
-import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL, CT_MESSAGE_MAX_BYTES } from "@app/services/hmrcTransactionEngine.js";
 
 const packageJson = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
 
@@ -65,10 +65,16 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 vi.mock("node:timers/promises", () => ({ setTimeout: vi.fn().mockResolvedValue(undefined) }));
 
 const mockPostToTransactionEngine = vi.fn();
-vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
-  ...(await importOriginal()),
-  postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
-}));
+let buildSubmissionOverride;
+vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
+    buildCt600SubmissionRequest: (...args) =>
+      buildSubmissionOverride ? buildSubmissionOverride(...args) : actual.buildCt600SubmissionRequest(...args),
+  };
+});
 
 const mockLogs = [];
 vi.mock("@app/lib/logger.js", async (importOriginal) => {
@@ -198,6 +204,53 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
     expect(update.input.ExpressionAttributeValues[":data"].pollUrl).toBe("http://localhost:9000/hmrc-transaction-engine/poll");
+  });
+
+  describe("the message size limit", () => {
+    afterEach(() => {
+      buildSubmissionOverride = undefined;
+    });
+
+    function builderReturning(bytes) {
+      return () => ({ xml: "x".repeat(bytes), irmark: { base32: "A".repeat(32) }, transactionId: "ABCDEF" });
+    }
+
+    test("sends a message of exactly the limit", async () => {
+      buildSubmissionOverride = builderReturning(CT_MESSAGE_MAX_BYTES);
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(1);
+    });
+
+    test("answers 400 and sends nothing for a message one byte over the limit", async () => {
+      buildSubmissionOverride = builderReturning(CT_MESSAGE_MAX_BYTES + 1);
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("Nothing was sent");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
+    });
+  });
+
+  describe("errors HMRC raises only on the live service", () => {
+    const LIVE_ONLY_ERRORS = [
+      ["1608", "The IRmark is not valid for this message."],
+      ["1610", "The message could not be processed on the live service."],
+      ["1611", "There must be an existing successfully processed return for the same UTR and accounting period."],
+      ["1612", "The submission was refused on the live service."],
+      ["3300", "A business rule only the live service checks has failed."],
+      ["3304", "A second business rule only the live service checks has failed."],
+      ["7752", "A document rule only the live service checks has failed."],
+    ];
+
+    test.each(LIVE_ONLY_ERRORS)("answers 502 with HMRC's error %s and its text", async (number, text) => {
+      const xml = GATEWAY_ERROR_XML.replace("<Number>1046</Number>", `<Number>${number}</Number>`).replace("Authentication Failure", text);
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: xml, headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response).errors[0]).toMatchObject({ number, text });
+    });
   });
 
   test("answers 409 naming the boxes that differ from the reviewed boxes, and calls nothing", async () => {

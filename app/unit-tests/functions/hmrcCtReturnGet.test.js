@@ -234,6 +234,31 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     expect(mockPostToTransactionEngine.mock.calls[1][1]).toContain("<Function>delete</Function>");
   });
 
+  describe("errors HMRC raises only on the live service", () => {
+    const LIVE_ONLY_ERRORS = [
+      ["1608", "The IRmark is not valid for this message."],
+      ["1610", "The message could not be processed on the live service."],
+      ["1611", "There must be an existing successfully processed return for the same UTR and accounting period."],
+      ["1612", "The submission was refused on the live service."],
+      ["3300", "A business rule only the live service checks has failed."],
+      ["3304", "A second business rule only the live service checks has failed."],
+      ["7752", "A document rule only the live service checks has failed."],
+    ];
+
+    test.each(LIVE_ONLY_ERRORS)("records HMRC's error %s with its number and text as a rejection", async (number, text) => {
+      const xml = IRMARK_ERROR.replace("<Number>2021</Number>", `<Number>${number}</Number>`).replace(
+        "The supplied IRmark is incorrect.",
+        text,
+      );
+      engineReturns(xml, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(response.statusCode).toBe(200);
+      const body = parseResponseBody(response);
+      expect(body.statusCode).toBe("REJECT");
+      expect(body.businessErrors[0]).toMatchObject({ number, text });
+    });
+  });
+
   test("returns a finished request without polling", async () => {
     storedRecord = { status: "completed", data: { kind: "company-tax-return", statusCode: "ACCEPT", receiptId: "r-1" } };
     const response = await hmrcCtReturnGetHandler(buildEvent());
