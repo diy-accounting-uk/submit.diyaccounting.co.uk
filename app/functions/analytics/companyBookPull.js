@@ -82,7 +82,7 @@ export async function handler(event = {}) {
     products: PRODUCTS,
   });
 
-  const { accounts, cashAtBank } = await deriveCompanyBookFigures({ book, lines });
+  const { accounts, cashAtBank } = await deriveCompanyBookFigures({ book, lines }, { requireDirectorsNote: false });
 
   const observation = {
     date: targetDate,

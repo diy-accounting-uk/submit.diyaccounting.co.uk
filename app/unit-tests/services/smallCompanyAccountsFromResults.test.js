@@ -4,10 +4,14 @@
 // app/unit-tests/services/smallCompanyAccountsFromResults.test.js
 
 import { describe, test, expect } from "vitest";
-import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
+import { loadDiyaGlData, diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
-import { deriveMicroEntityAccounts } from "@app/services/microEntityAccounts.js";
+import { deriveMicroEntityAccounts, deriveCompanyBookFigures } from "@app/services/microEntityAccounts.js";
+import { microEntityAccountsFromResults } from "@app/services/microEntityAccountsFromResults.js";
+import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
+import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import {
+  smallCompanyAccountsFromResults,
   smallCompanyFormat2ProfitAndLossFromResults,
   smallCompanyLinesFromOpeningBalance,
   smallCompanyLinesFromPublishedBalanceSheet,
@@ -248,5 +252,38 @@ describe("an overdrawn directors' loan account in a Company book", () => {
     expect(
       currentYear.fixedAssets + currentYear.currentAssets - currentYear.creditorsWithinOneYear - currentYear.creditorsAfterOneYear,
     ).toBe(currentYear.capitalAndReserves);
+  });
+
+  describe("with no director named in the book", () => {
+    const sessionWithoutDirector = () => {
+      const { book, lines } = session();
+      return { book: { ...book, directors: [] }, lines };
+    };
+
+    test("a filing path refuses to build the small company accounts", async () => {
+      await expect(deriveSmallCompanyAccounts(sessionWithoutDirector())).rejects.toThrow(/names no director/);
+    });
+
+    test("a filing path refuses to build the micro-entity accounts", async () => {
+      await expect(deriveMicroEntityAccounts(sessionWithoutDirector())).rejects.toThrow(/names no director/);
+    });
+
+    test("the company book figures come without the note and with the overdrawn loan as a debtor", async () => {
+      const { accounts } = await deriveCompanyBookFigures(sessionWithoutDirector(), { requireDirectorsNote: false });
+      expect(accounts.directorsAdvances).toBeUndefined();
+      expect(accounts.directorName).toBeNull();
+      expect(accounts.balanceSheet.currentYear.creditorsAfterOneYear).toBe(45000);
+    });
+
+    test("the books bundle fill derives small company and micro-entity figures without the note", async () => {
+      const { book, lines } = sessionWithoutDirector();
+      const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
+      const scenario = diyaGlToScenario(book, lines, productOf(book));
+      const options = { requireDirectorsNote: false };
+      expect(smallCompanyAccountsFromResults(book, results, scenario, options).directorsAdvances).toBeUndefined();
+      expect(microEntityAccountsFromResults(book, results, scenario, options).directorsAdvances).toBeUndefined();
+      expect(() => smallCompanyAccountsFromResults(book, results, scenario)).toThrow(/names no director/);
+      expect(() => microEntityAccountsFromResults(book, results, scenario)).toThrow(/names no director/);
+    });
   });
 });

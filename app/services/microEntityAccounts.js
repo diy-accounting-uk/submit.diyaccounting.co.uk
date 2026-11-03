@@ -25,8 +25,10 @@ import { microEntityAccountsFromResults, cashAtBankFromResults } from "./microEn
  * The figures the accounts filing takes and the cash held across the bank nominal accounts, from
  * one calculation of the session's loaded book.
  * @param {Object} session
+ * @param {Object} [options]
+ * @param {boolean} [options.requireDirectorsNote] - false lets a book with an overdrawn director's loan and no director give its figures without the note
  */
-export async function deriveCompanyBookFigures(session) {
+export async function deriveCompanyBookFigures(session, { requireDirectorsNote = true } = {}) {
   if (!session.book || !session.lines) {
     throw new Error("No book is loaded. Call open_book first.");
   }
@@ -35,7 +37,7 @@ export async function deriveCompanyBookFigures(session) {
   const results = calculatedResultsFor(book, lines, taxData);
   const scenario = diyaGlToScenario(book, lines, productOf(book));
   return {
-    accounts: microEntityAccountsFromResults(book, results, scenario),
+    accounts: microEntityAccountsFromResults(book, results, scenario, { requireDirectorsNote }),
     cashAtBank: cashAtBankFromResults(results),
   };
 }
