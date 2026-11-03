@@ -567,7 +567,7 @@ In the sandbox you can:
 - Make annual submissions, adjustments, losses and claims
 - See a tax calculation and make the final declaration
 
-You need the **Resident** or **Resident Pro** bundle. Quarterly updates, annual submissions and the final declaration cost one token each. Reading and calculations are free.
+You need the **Resident Pro** or **Resident Tax Agent** bundle. Quarterly updates, annual submissions and the final declaration cost one token each. Reading and calculations are free.
 
 See the [availability table](mtd-calendar.html#availability) for the current status and HMRC's dates.
 """
@@ -579,7 +579,7 @@ id = "companies-house-filings"
 category = "submission"
 question = "Can I file with Companies House?"
 answer = """
-Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address.
+Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -587,14 +587,16 @@ keywords = ["companies house", "registered office", "registered email", "company
 priority = 31
 
 [[faq]]
-id = "companies-house-sandbox-filings"
+id = "companies-house-accounts-filings"
 activity = "file-confirmation-statement"
 category = "submission"
 question = "Can I file accounts or a confirmation statement with Companies House?"
 answer = """
-Not yet for real filings. These filings are in **sandbox**: micro-entity accounts, small company accounts, confirmation statement and PSC verification statement. A sandbox filing goes to the Companies House test service and files nothing real.
+Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **production**. A filing goes to Companies House.
 
-Filing accounts, a confirmation statement or a company tax return needs the **Resident** or **Resident Pro** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+
+The PSC verification statement is in **sandbox**: it goes to the Companies House test service and files nothing real.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -609,7 +611,7 @@ question = "Can I file a Company Tax Return (CT600)?"
 answer = """
 Not yet. The Company Tax Return (CT600) is a **preview** on our simulator. It prepares the return from a diya-gl book export and sends nothing to HMRC.
 
-Filing it needs the **Resident** or **Resident Pro** bundle.
+Filing it needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -624,7 +626,7 @@ question = "What is diya-gl and can I save my books here?"
 answer = """
 diya-gl is our bookkeeping software. It keeps a book of your sales and purchases and works out the figures for your filings.
 
-With the **Resident** bundle you can save a diya-gl book to your account and load it again later. **Resident Pro** includes the same for your own books.
+With the **Resident Pro** or **Resident Tax Agent** bundle you can save a diya-gl book to your account and load it again later.
 
 You can drop a diya-gl book onto the VAT, Income Tax and Company Tax Return pages to fill the figures.
 """
@@ -637,11 +639,12 @@ category = "bundles"
 question = "What do the bundles cost?"
 answer = """
 - **Day pass:** free. Three tokens, valid for one day.
-- **Resident VAT:** £0.99 a month. Submit VAT returns.
-- **Resident:** £39 a year, or £3.99 a month. VAT, Income Tax Self Assessment and micro-entity accounts, and saving diya-gl books.
-- **Resident Pro:** £199 a year, or £19.99 a month. For accountants and bookkeepers filing for clients.
+- **Resident VAT:** £9.99 a year, or £0.99 a month. Submit VAT returns.
+- **Resident Ltd:** £9.99 a year, or £0.99 a month. File accounts and confirmation statements to Companies House.
+- **Resident Pro:** £39.99 a year, or £3.99 a month. Everything in Resident VAT and Resident Ltd, plus Income Tax Self Assessment and saving diya-gl books.
+- **Resident Tax Agent:** £199.99 a year, or £19.99 a month. Everything in Resident Pro with no token limit, for accountants and bookkeepers filing for clients.
 
 Cancel any time. See the [Bundles](bundles.html) page to subscribe.
 """
-keywords = ["price", "cost", "how much", "subscription", "resident", "resident pro", "day pass", "cancel", "pay"]
+keywords = ["price", "cost", "how much", "subscription", "resident vat", "resident ltd", "resident pro", "resident tax agent", "day pass", "cancel", "pay"]
 priority = 34

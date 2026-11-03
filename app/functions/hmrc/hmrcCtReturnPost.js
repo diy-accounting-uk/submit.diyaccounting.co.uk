@@ -20,14 +20,16 @@ import {
   http502BadGatewayResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
+import { PRODUCT_VERSION } from "../../lib/productVersion.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { enforceCtBundles, clientAuthorisationMessage } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
   buildCt600SubmissionRequest,
+  assertCtMessageWithinLimit,
+  CtMessageTooLargeError,
   parseTransactionEngineResponse,
   postToTransactionEngine,
   getTransactionEngineSubmissionUrl,
@@ -35,6 +37,7 @@ import {
   CT600_CLASS,
   CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
+import { findHeldCtSubmission } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -43,7 +46,6 @@ import { readJointFilingId, jointFilingFields, amendedFields, sanitiseFormReques
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
 const PRODUCT_NAME = "DIY Accounting Submit";
-const PRODUCT_VERSION = "1.0";
 const DEFAULT_POLL_INTERVAL_SECONDS = 10;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -54,12 +56,13 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
     event: "hmrc-ct-return-failed",
     summary,
     failure,
     userSub,
+    clientId,
     actor: resolveActorClass(),
     detail,
   });
@@ -73,19 +76,17 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  let userSub;
-  try {
-    ({ userSub } = await enforceBundles(event));
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  const clientId = parseRequestBody(event)?.clientId || undefined;
+  const enforcement = await enforceCtBundles(event, request, clientId);
+  if (enforcement.refusal) return enforcement.refusal;
+  const { userSub, client } = enforcement;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });
   }
 
   const errorMessages = [];
-  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages);
+  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, { client });
   const requestBody = parseRequestBody(event);
   const jointFilingId = readJointFilingId(requestBody, errorMessages);
   const formRequest = sanitiseFormRequest(requestBody);
@@ -129,6 +130,7 @@ export async function ingestHandler(event) {
       irEnvelopeXml: documents.irEnvelopeXml,
       gatewayTest,
     });
+    assertCtMessageWithinLimit(xml);
     logger.info({
       message: "HMRC Transaction Engine CT600 submission request",
       transactionId,
@@ -136,34 +138,81 @@ export async function ingestHandler(event) {
     });
 
     const submissionUrl = getTransactionEngineSubmissionUrl({ gatewayTest });
-    const engineResponse = await postToTransactionEngine(
-      submissionUrl,
-      xml,
-      govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
-    );
-    const parsed = parseTransactionEngineResponse(engineResponse.data);
+    const extraHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+    const attemptedAt = new Date();
+    let parsed;
+    try {
+      const engineResponse = await postToTransactionEngine(submissionUrl, xml, extraHeaders);
+      if (engineResponse.status >= 500) throw new Error(`HTTP ${engineResponse.status}`);
+      parsed = parseTransactionEngineResponse(engineResponse.data);
+    } catch (error) {
+      // No reply, or one that cannot be read: the Transaction Engine may still hold the submission.
+      logger.warn({
+        message: "No usable reply to the Company Tax Return submission; asking the Transaction Engine what it holds",
+        transactionId,
+        timedOut: error instanceof HttpTimeoutError,
+      });
+    }
 
-    if (parsed.qualifier !== "acknowledgement" || !parsed.correlationId) {
+    let correlationId = parsed?.correlationId;
+    const pollIntervalSeconds = parsed?.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
+    let pollUrl = parsed?.responseEndPoint ? new URL(parsed.responseEndPoint, submissionUrl).href : undefined;
+    const acknowledged = parsed?.qualifier === "acknowledgement" && Boolean(correlationId);
+
+    if (!parsed) {
+      const held = await findHeldCtSubmission({
+        senderId: returnRequest.gatewayUserId,
+        password: returnRequest.gatewayPassword,
+        submissionUrl,
+        gatewayTest,
+        transactionId,
+        attemptedAt,
+        waitSeconds: DEFAULT_POLL_INTERVAL_SECONDS,
+        extraHeaders,
+      });
+      if (held.state !== "held") {
+        const notReceived = held.state === "not-received";
+        await recordSubmissionFailure({
+          failure: notReceived ? "transaction-engine-submission-not-received" : "transaction-engine-submission-unconfirmed",
+          summary: notReceived
+            ? "HMRC Company Tax Return not received by the Transaction Engine"
+            : "HMRC Company Tax Return reply lost and the Transaction Engine did not confirm",
+          userSub,
+          clientId,
+          detail: { transactionId },
+        });
+        return http502BadGatewayResponse({
+          request,
+          headers: { ...responseHeaders },
+          message: notReceived
+            ? "HMRC did not receive the Company Tax Return. Nothing was filed, so you can file it again."
+            : "We could not confirm whether HMRC received the Company Tax Return. Do not file it again yet. Contact support with the reference in this message.",
+          error: { transactionId, submissionStatus: held.state },
+        });
+      }
+      correlationId = held.correlationId;
+      // The DATA_RESPONSE names no poll end point, so the follow-on messages go to the submission end point.
+      pollUrl = submissionUrl;
+    } else if (!acknowledged) {
       const errors = [...parsed.errors, ...parsed.businessErrors];
       await recordSubmissionFailure({
         failure: "transaction-engine-rejected-submission",
         summary: "HMRC Company Tax Return rejected by the Transaction Engine",
         userSub,
+        clientId,
         detail: { errors },
       });
       return http502BadGatewayResponse({
         request,
         headers: { ...responseHeaders },
-        message: "HMRC did not acknowledge the Company Tax Return",
+        message: (clientId && clientAuthorisationMessage(errors)) || "HMRC did not acknowledge the Company Tax Return",
         error: { transactionId, errors },
       });
     }
 
-    const pollIntervalSeconds = parsed.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
-    const pollUrl = new URL(parsed.responseEndPoint, submissionUrl).href;
     await putAsyncRequest(
       userSub,
-      parsed.correlationId,
+      correlationId,
       "pending",
       {
         kind: CT_RETURN_KIND,
@@ -172,6 +221,7 @@ export async function ingestHandler(event) {
         nextPollAt: new Date(Date.now() + pollIntervalSeconds * 1000).toISOString(),
         irmark: irmark.base32,
         utr: returnRequest.utr,
+        ...(clientId ? { clientId } : {}),
         gatewayTest,
         messageClass: CT600_CLASS,
         ...jointFilingFields(jointFilingId),
@@ -179,6 +229,7 @@ export async function ingestHandler(event) {
         ...formRequestFields(formRequest),
         filed: {
           boxes: documents.boxes,
+          ct600a: documents.ct600a,
           computationsIxbrl: documents.computationsIxbrl,
           accountsIxbrl: documents.accountsIxbrl,
         },
@@ -190,14 +241,19 @@ export async function ingestHandler(event) {
       event: "hmrc-ct-return-submitted",
       summary: "HMRC Company Tax Return submitted",
       userSub,
+      clientId,
     });
 
     return http201CreatedResponse({
       request,
       headers: { ...responseHeaders },
-      data: { correlationId: parsed.correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
+      data: { correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
     });
   } catch (error) {
+    if (error instanceof CtMessageTooLargeError) {
+      logger.warn({ message: "Company Tax Return message over the size HMRC accepts, nothing sent" });
+      return buildValidationError(request, [error.message], responseHeaders);
+    }
     // The submission carries the typed Gateway password, so nothing read from the error is
     // logged: an error's message, stack or fields can quote the document that failed.
     logger.error({
@@ -208,6 +264,7 @@ export async function ingestHandler(event) {
       failure: "internal-error",
       summary: "HMRC Company Tax Return submission failed unexpectedly",
       userSub,
+      clientId,
     });
     return http500ServerErrorResponse({
       request,

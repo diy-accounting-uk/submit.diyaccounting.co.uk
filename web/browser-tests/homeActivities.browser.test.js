@@ -23,7 +23,7 @@ const CONTENT_TYPES = {
 };
 
 const RESIDENT_BUNDLES = {
-  bundles: [{ bundleId: "resident", allocated: true, subscriptionStatus: "active", tokensGranted: 100 }],
+  bundles: [{ bundleId: "resident-pro", allocated: true, subscriptionStatus: "active", tokensGranted: 100 }],
   tokensRemaining: 100,
 };
 
@@ -89,7 +89,7 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box).toContainText("HMRC VAT");
     await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
     await expect(box.locator('.status-tag[data-status="preview"]')).toHaveCount(0);
-    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC|accounts/i);
+    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC/i);
     await expect(page.locator("#homeSubtitle")).toContainText("VAT returns");
     await expect(page.locator("#homeSubtitle")).not.toContainText("Income Tax");
   });

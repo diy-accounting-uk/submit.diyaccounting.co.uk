@@ -300,7 +300,7 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

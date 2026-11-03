@@ -130,6 +130,32 @@ test.describe("Filings page - customer copy", () => {
     await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute("href", "fileCompanyTaxReturn.html");
   });
 
+  test("downloads each filed document as the exact bytes that were filed", async ({ page }) => {
+    await openFiling(page, CT_RECEIPT_NAME, CT_RECEIPT);
+
+    const links = page.locator(".filed-document-download a");
+    await expect(links).toHaveCount(2);
+    await expect(page.locator(".filed-document-download").first()).toContainText("Save this file with your records");
+    const expected = [
+      ["computations-ABCDEF0123456789.xhtml", CT_RECEIPT.filed.computationsIxbrl],
+      ["accounts-ABCDEF0123456789.xhtml", CT_RECEIPT.filed.accountsIxbrl],
+    ];
+    for (const [index, [fileName, filed]] of expected.entries()) {
+      const [download] = await Promise.all([page.waitForEvent("download"), links.nth(index).click()]);
+      expect(download.suggestedFilename()).toBe(fileName);
+      const downloaded = fs.readFileSync(await download.path());
+      expect(downloaded.equals(Buffer.from(filed, "utf-8"))).toBe(true);
+    }
+  });
+
+  test("downloads the accounts filed at Companies House as the exact bytes that were filed", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT);
+
+    const [download] = await Promise.all([page.waitForEvent("download"), page.locator(".filed-document-download a").click()]);
+    expect(download.suggestedFilename()).toBe("accounts-00001A.xhtml");
+    expect(fs.readFileSync(await download.path()).equals(Buffer.from(ACCOUNTS_RECEIPT.filedDocument, "utf-8"))).toBe(true);
+  });
+
   test("links an accepted Company Tax Return that kept its answers to the page that amends it", async ({ page }) => {
     const formRequest = { company: { companyNumber: "06846849", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
     await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, formRequest });

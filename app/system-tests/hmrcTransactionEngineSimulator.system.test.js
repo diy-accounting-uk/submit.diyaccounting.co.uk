@@ -15,6 +15,8 @@ import {
   buildCt600SubmissionRequest,
   buildPollRequest,
   buildDeleteRequest,
+  buildDataRequest,
+  findHeldSubmission,
   parseTransactionEngineResponse,
   postToTransactionEngine,
 } from "../services/hmrcTransactionEngine.js";
@@ -24,6 +26,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 let simulator;
 let submissionUrl;
 let signed;
+let signingInput;
 
 async function send(url, xml, headers = {}) {
   const result = await postToTransactionEngine(url, xml, headers);
@@ -48,7 +51,7 @@ describe("System: HMRC Transaction Engine simulator", () => {
       { requireReviewedBoxes: false },
     );
     expect(errors).toEqual([]);
-    signed = buildCt600SubmissionRequest({
+    signingInput = {
       senderId: request.gatewayUserId,
       password: request.gatewayPassword,
       utr: request.utr,
@@ -57,7 +60,8 @@ describe("System: HMRC Transaction Engine simulator", () => {
       productVersion: "1.0",
       irEnvelopeXml: buildCtReturnDocuments(request).irEnvelopeXml,
       gatewayTest: true,
-    });
+    };
+    signed = buildCt600SubmissionRequest(signingInput);
   });
 
   afterAll(async () => {
@@ -98,5 +102,26 @@ describe("System: HMRC Transaction Engine simulator", () => {
     );
     expect(response.qualifier).toBe("error");
     expect(response.errors[0].type).toBe("fatal");
+  });
+
+  it("lists a submission whose reply was lost, by its TransactionID, so its poll can continue", async () => {
+    const signed = buildCt600SubmissionRequest(signingInput);
+    const lost = await postToTransactionEngine(submissionUrl, signed.xml, { "Gov-Test-Scenario": "CT600_LOST_REPLY" });
+    expect(lost.status).toBe(504);
+    const listed = await send(submissionUrl, buildDataRequest({ senderId: "user", password: "pass", gatewayTest: true }));
+    const held = findHeldSubmission(listed, signed.transactionId);
+    expect(held.correlationId).toMatch(/^[0-9A-F]{32}$/);
+    const poll = buildPollRequest({ correlationId: held.correlationId, gatewayTest: true });
+    expect((await send(submissionUrl, poll)).qualifier).toBe("acknowledgement");
+    const receipt = await send(submissionUrl, poll);
+    expect(receipt.irmarkReceipt).toBe(signed.irmark.base64);
+  });
+
+  it("lists nothing for a submission whose request was lost", async () => {
+    const signed = buildCt600SubmissionRequest(signingInput);
+    const lost = await postToTransactionEngine(submissionUrl, signed.xml, { "Gov-Test-Scenario": "CT600_LOST_REQUEST" });
+    expect(lost.status).toBe(504);
+    const listed = await send(submissionUrl, buildDataRequest({ senderId: "user", password: "pass", gatewayTest: true }));
+    expect(findHeldSubmission(listed, signed.transactionId)).toBeUndefined();
   });
 });

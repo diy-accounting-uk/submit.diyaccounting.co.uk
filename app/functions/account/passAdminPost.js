@@ -35,7 +35,7 @@ import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCa
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
 
 // Synthetic test users may create passes only for the bundles the automated lanes exercise.
-const SYNTHETIC_ISSUABLE_BUNDLE_IDS = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-pro"];
+const SYNTHETIC_ISSUABLE_BUNDLE_IDS = ["day-guest", "invited-guest", "resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"];
 
 /* v8 ignore start */
 export function apiEndpoint(app) {

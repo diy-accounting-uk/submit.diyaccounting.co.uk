@@ -33,9 +33,48 @@ function apiFor(bundleId) {
   };
 }
 
+const holderAnswer = (bundleId) => ({
+  bundles: [{ bundleId, allocated: true, tokensGranted: 100, tokensConsumed: 0, tokensRemaining: 100, tokenEvents: [] }],
+  tokensRemaining: 100,
+});
+
+const subscribeButton = (page, bundleId) => page.locator(`#catalogBundles button[data-subscribe="true"][data-bundle-id="${bundleId}"]`);
+
+test.describe("bundles offered to a holder", () => {
+  test("a Resident Pro holder is offered none of the bundles Resident Pro holds", async ({ page }) => {
+    await serveRealSite(page, {
+      signedIn: true,
+      apiHandler: (url) => (url.pathname === "/api/v1/bundle" ? holderAnswer("resident-pro") : undefined),
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    const catalogue = page.locator("#catalogBundles");
+    await expect(catalogue).toContainText("Included in Resident Pro", { timeout: 15000 });
+    await expect(catalogue).toContainText("You hold this bundle");
+    expect(await catalogue.getByText("Included in Resident Pro").count()).toBe(2);
+    for (const id of ["resident-vat", "resident-ltd", "resident-pro"]) {
+      await expect(subscribeButton(page, id)).toHaveCount(0);
+    }
+    await expect(subscribeButton(page, "resident-tax-agent").first()).toBeVisible();
+    await screenshotAll(page, "names", "bundles-resident-holder");
+  });
+
+  test("a Resident VAT holder is still offered Resident Pro and Resident Ltd", async ({ page }) => {
+    await serveRealSite(page, {
+      signedIn: true,
+      apiHandler: (url) => (url.pathname === "/api/v1/bundle" ? holderAnswer("resident-vat") : undefined),
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    await expect(subscribeButton(page, "resident-pro").first()).toBeVisible({ timeout: 15000 });
+    await expect(subscribeButton(page, "resident-ltd").first()).toBeVisible();
+    await expect(subscribeButton(page, "resident-vat")).toHaveCount(0);
+  });
+});
+
 test.describe("bundles and usage names", () => {
   test("usage.html names bundles and activities", async ({ page }) => {
-    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident") });
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
     await page.goto(`${SITE_ORIGIN}/usage.html`, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("#tokenSourcesBody")).toContainText("Resident");
@@ -70,7 +109,7 @@ test.describe("bundles and usage names", () => {
   });
 
   test("bundles.html tells a Resident holder where to generate a pass", async ({ page }) => {
-    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident") });
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
 
     const empty = page.locator("#generatedPassesEmpty");

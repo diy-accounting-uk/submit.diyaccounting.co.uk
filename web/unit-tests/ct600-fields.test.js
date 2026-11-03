@@ -33,7 +33,9 @@ import {
   financialYearOf,
   formEntriesFromBook,
   formProblems,
+  loansFromValues,
   parsePounds,
+  rateFromPercent,
   requestFigures,
   reviewAnswers,
   targetOfModelProblem,
@@ -170,7 +172,7 @@ describe("the precision-code-ltd book filling the form", () => {
     const values = Object.fromEntries(entries);
     values.utr = "8596148860";
     values.companyType = "no";
-    values.loanOverdrawn = "no";
+    values.loansMade = "no";
     values.declarantStatus = "Director";
     values.declarationAccepted = true;
     for (const { id } of STATEMENT_FIELDS) values[id] = true;
@@ -269,7 +271,7 @@ describe("the form's own checks", () => {
     Object.assign(values, {
       utr: "8596148860",
       companyType: "no",
-      loanOverdrawn: "no",
+      loansMade: "no",
       declarantStatus: "Director",
       declarationAccepted: true,
     });
@@ -277,10 +279,137 @@ describe("the form's own checks", () => {
     return values;
   }
 
-  test("names an overdrawn director's loan account as a refusal at the question", () => {
-    expect(formProblems({ ...complete(), loanOverdrawn: "yes" })).toContainEqual(
-      expect.objectContaining({ target: "loanOverdrawn", refusal: true }),
-    );
+  test("a balance sheet that shows amounts owed by directors asks for the section 413 note's answers", () => {
+    const owing = { ...complete(), currentDebtors: "19180", currentAmountsOwedByDirectors: "12000" };
+    const targets = formProblems(owing).map((problem) => problem.target);
+    expect(targets).toEqual(expect.arrayContaining(["directorsAdvanceName", "directorsAdvanceTerms"]));
+    const answered = {
+      ...owing,
+      directorsAdvanceName: "Carol Smith",
+      directorsAdvanceTerms: "Interest free and repayable on demand",
+      directorsAdvanceMade: "12000",
+    };
+    expect(formProblems(answered).filter((problem) => problem.target.startsWith("directorsAdvance"))).toEqual([]);
+    expect(accountsFromValues(answered).smallCompany).toMatchObject({
+      balanceSheet: { currentYear: { debtors: 19180, amountsOwedByDirectors: 12000, tradeDebtors: 7180 } },
+      directorsAdvances: [
+        {
+          name: "Carol Smith",
+          terms: "Interest free and repayable on demand",
+          balanceAtStart: 0,
+          advanced: 12000,
+          repaid: 0,
+          balanceAtEnd: 12000,
+        },
+      ],
+    });
+  });
+
+  test("the note's arithmetic must close on the amount owed at the end", () => {
+    const wrong = {
+      ...complete(),
+      currentDebtors: "19180",
+      currentAmountsOwedByDirectors: "12000",
+      directorsAdvanceName: "Carol Smith",
+      directorsAdvanceTerms: "Interest free",
+      directorsAdvanceMade: "11000",
+    };
+    expect(formProblems(wrong)).toContainEqual(expect.objectContaining({ target: "directorsAdvanceMade" }));
+  });
+
+  describe("loans to participators", () => {
+    const answered = (extra = {}) => ({
+      ...complete(),
+      loansMade: "yes",
+      loanName1: "Carol Smith",
+      loanAmount1: "12,000",
+      releasedBeforeEnd: "no",
+      repaidSince: "no",
+      ...extra,
+    });
+    const repaying = (extra = {}) =>
+      answered({
+        repaidSince: "yes",
+        repaymentName1: "Carol Smith",
+        repaymentDate1: "2026-06-30",
+        repaymentRepaid1: "2,000",
+        ...extra,
+      });
+
+    test("reads the rows into the figures model, with the rate typed as a percentage", () => {
+      const values = repaying({ loanRate1: "35.75%", loanLent1: "4,000" });
+      expect(loansFromValues(values)).toEqual({
+        releasedBeforeEnd: false,
+        loans: [{ name: "Carol Smith", amount: 12000, lentFromRateChange: 4000, rate: 0.3575 }],
+        repayments: [{ name: "Carol Smith", date: "2026-06-30", repaid: 2000, releasedOrWrittenOff: 0 }],
+      });
+      expect(rateFromPercent("33.75")).toBe(0.3375);
+      expect(rateFromPercent("abc")).toBeNull();
+      expect(rateFromPercent("0")).toBeNull();
+    });
+
+    test("a form that answers no sends no loans and one that answers yes sends them", () => {
+      const company = { companyName: "Precision Code Ltd", companyNumber: "12345678" };
+      expect(figuresFromValues(complete(), company).loansToParticipators).toBeUndefined();
+      expect(figuresFromValues(repaying(), company).loansToParticipators.loans).toHaveLength(1);
+      const request = ct600RequestFromValues(repaying(), company);
+      expect(request.figures.loansToParticipators.repayments).toHaveLength(1);
+      expect(request.figures.loansMade).toBeUndefined();
+      expect(request.directorsLoanOverdrawn).toBeUndefined();
+    });
+
+    test("a complete set of answers passes the form's own checks", () => {
+      expect(formProblems(repaying(), { today: "2026-11-03" })).toEqual([]);
+    });
+
+    test("shows a repayment after today under its own date field", () => {
+      const problems = formProblems(repaying({ repaymentDate1: "2026-12-01" }), { today: "2026-11-03" });
+      expect(problems).toContainEqual(
+        expect.objectContaining({ target: "repaymentDate1", message: expect.stringContaining("after today") }),
+      );
+    });
+
+    test("shows a repayment on or before the period end under its own date field", () => {
+      const problems = formProblems(repaying({ repaymentDate1: "2026-03-31" }), { today: "2026-11-03" });
+      expect(problems.find((problem) => problem.target === "repaymentDate1")?.message).toMatch(/period's own books/);
+    });
+
+    test("names the field of a loan row that is wrong", () => {
+      const targets = formProblems(answered({ loanName1: "C", loanAmount1: "0", loanLent1: "13,000", loanRate1: "x" }), {
+        today: "2026-11-03",
+      }).map((problem) => problem.target);
+      expect(targets).toEqual(expect.arrayContaining(["loanName1", "loanAmount1", "loanLent1", "loanRate1"]));
+    });
+
+    test("a participator appears once in the loans", () => {
+      const problems = formProblems(answered({ loanName2: "Carol Smith", loanAmount2: "5" }), { today: "2026-11-03" });
+      expect(problems.find((problem) => problem.target === "loanName2")?.message).toMatch(/already in the list/);
+    });
+
+    test("a repayment must name a participator from the loans and carry an amount", () => {
+      const targets = formProblems(repaying({ repaymentName1: "Pat Lee", repaymentRepaid1: "" }), { today: "2026-11-03" }).map(
+        (problem) => problem.target,
+      );
+      expect(targets).toEqual(expect.arrayContaining(["repaymentName1", "repaymentRepaid1"]));
+    });
+
+    test("the model's problem with the answers shows at the question", () => {
+      expect(targetOfModelProblem("loansToParticipators", new Set())).toBe("loansMade");
+    });
+
+    test("the review lists each loan and repayment with a Change target", () => {
+      const rows = reviewAnswers({ ...repaying({ loanRate1: "33.75" }) }).find((section) => section.id === "loans").rows;
+      const byId = Object.fromEntries(rows.map((row) => [row.id, row.value]));
+      expect(byId).toMatchObject({
+        loansMade: "Yes",
+        loanName1: "Carol Smith",
+        loanAmount1: "£12,000",
+        loanRate1: "33.75%",
+        repaymentName1: "Carol Smith",
+        repaymentDate1: "2026-06-30",
+        repaymentRepaid1: "£2,000",
+      });
+    });
   });
 
   test("names a balance sheet that does not balance beside the reserve", () => {
@@ -332,7 +461,7 @@ describe("the review", () => {
     periodEnd: "2026-03-31",
     currentTurnover: "341283",
     annualInvestmentAllowance: "52500",
-    loanOverdrawn: "no",
+    loansMade: "no",
     declarationAccepted: true,
     includeComparatives: false,
     includeFixedAssetNote: false,
@@ -364,7 +493,7 @@ describe("the review", () => {
   test("shows answers as the customer reads them", () => {
     expect(rowOf("annualInvestmentAllowance").value).toBe("£52,500");
     expect(rowOf("period").value).toBe("2025-04-01 to 2026-03-31");
-    expect(rowOf("loanOverdrawn").value).toBe("No");
+    expect(rowOf("loansMade").value).toBe("No");
     expect(rowOf("declarationAccepted").value).toBe("Yes");
     expect(rowOf("statementSection477Exemption").value).toBe("No");
     expect(rowOf("directors").value).toBe("Carol Smith, David Brown");
@@ -400,7 +529,7 @@ describe("a micro-entity's accounts", () => {
     Object.assign(values, {
       utr: "8596148860",
       companyType: "no",
-      loanOverdrawn: "no",
+      loansMade: "no",
       declarantStatus: "Director",
       declarationAccepted: true,
       statementSection477Exemption: true,

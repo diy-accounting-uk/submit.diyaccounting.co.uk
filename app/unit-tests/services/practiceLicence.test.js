@@ -8,8 +8,8 @@ const past = new Date(Date.now() - 1000).toISOString();
 const future = new Date(Date.now() + 86400000).toISOString();
 
 describe("holdsPracticeLicence", () => {
-  test("holds it for an active resident-pro subscription", () => {
-    expect(holdsPracticeLicence([{ bundleId: "resident-pro", subscriptionStatus: "active" }])).toBe(true);
+  test("holds it for an active resident-tax-agent subscription", () => {
+    expect(holdsPracticeLicence([{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }])).toBe(true);
   });
 
   test("holds it for a resident-pro-comp pass", () => {
@@ -21,9 +21,9 @@ describe("holdsPracticeLicence", () => {
     expect(holdsPracticeLicence([{ bundleId: "resident-pro-comp", expiry: past }])).toBe(false);
   });
 
-  test("does not hold it for a lapsed or expired resident-pro subscription", () => {
-    expect(holdsPracticeLicence([{ bundleId: "resident-pro", subscriptionStatus: "cancelled" }])).toBe(false);
-    expect(holdsPracticeLicence([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: past }])).toBe(false);
+  test("does not hold it for a lapsed or expired resident-tax-agent subscription", () => {
+    expect(holdsPracticeLicence([{ bundleId: "resident-tax-agent", subscriptionStatus: "cancelled" }])).toBe(false);
+    expect(holdsPracticeLicence([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: past }])).toBe(false);
   });
 
   test("does not hold it for other bundles or none", () => {

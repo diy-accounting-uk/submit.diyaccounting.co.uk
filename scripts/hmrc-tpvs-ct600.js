@@ -15,7 +15,15 @@
  * With --amended the return is an amended return (ReturnType="amended") and the attached accounts
  * are revised accounts that replace the original accounts.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended]
+ * With --loans the return carries supplementary page CT600A for the loans to participators in a
+ * JSON file (--loans <file>; without a file, loans.json beside the book, and the book defaults to
+ * fixtures/diya-gl/precision-code-ltd-loan).
+ *
+ * With --agent <practice name> the return is a practice's filing for its client: IRheader/Agent
+ * carries the client reference PCL-001 and the practice name, Sender is Agent, and the declaration
+ * status (box 985) is Agent.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -43,11 +51,21 @@ function argument(name, fallback) {
   return index === -1 ? fallback : process.argv[index + 1];
 }
 
-const bookDirectory = argument("--book", "fixtures/diya-gl/precision-code-ltd");
+const loansIndex = process.argv.indexOf("--loans");
+const withLoans = loansIndex !== -1;
+const bookDirectory = argument("--book", withLoans ? "fixtures/diya-gl/precision-code-ltd-loan" : "fixtures/diya-gl/precision-code-ltd");
+const loansArgument = withLoans ? process.argv[loansIndex + 1] : undefined;
+const loansFile = loansArgument && !loansArgument.startsWith("--") ? loansArgument : join(bookDirectory, "loans.json");
+const loansToParticipators = withLoans ? JSON.parse(readFileSync(loansFile, "utf8")) : undefined;
+// The terms the company states in the advances to directors note; the book holds neither the rate nor the conditions.
+const directorsAdvances = (accounts) =>
+  accounts.directorsAdvances?.map((advance) => ({ ...advance, terms: "Interest free and repayable on demand." }));
 const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
 const micro = process.argv.includes("--micro");
 const amended = process.argv.includes("--amended");
+const agentPracticeName = argument("--agent", undefined);
+const agent = agentPracticeName ? { reference: "PCL-001", practiceName: agentPracticeName } : undefined;
 // The book holds no registered office; the TPVS fixture company takes a labelled test address unless one is given.
 const registeredOffice = {
   addressLine1: argument("--registered-office-line1", "1 Test Street (TPVS test address)"),
@@ -67,11 +85,13 @@ const company = {
   utr,
   companyType: 0,
   declarantName: directorName,
-  declarantStatus: "Director",
+  declarantStatus: agent ? "Agent" : "Director",
 };
-const { boxes, computationLines, losses, carryBack, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(session, company, {
-  priorYearProfitAndLoss,
-});
+const { boxes, ct600a, computationLines, losses, carryBack, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(
+  session,
+  company,
+  { priorYearProfitAndLoss, loansToParticipators },
+);
 
 const depreciation = figures.depreciation ?? 0;
 const revision = amended
@@ -95,6 +115,7 @@ const accountsIxbrl = micro
       ...(revision ? { revision } : {}),
       balanceSheet: { current: microAccounts.balanceSheet.currentYear, prior: microAccounts.balanceSheet.priorYear },
       profitAndLoss: { current: microProfitAndLossYear(accounts.profitAndLoss.currentYear, depreciation) },
+      ...(microAccounts.directorsAdvances ? { directorsAdvances: directorsAdvances(microAccounts) } : {}),
     })
   : buildSmallCompanyAccounts({
       companyNumber: accounts.companyNumber,
@@ -116,6 +137,7 @@ const accountsIxbrl = micro
         ...(accounts.profitAndLoss.priorYear ? { prior: accounts.profitAndLoss.priorYear } : {}),
       },
       fixedAssetNote: accounts.fixedAssetNote,
+      ...(accounts.directorsAdvances ? { directorsAdvances: directorsAdvances(accounts) } : {}),
     });
 const computationsIxbrl = buildCtComputations({
   companyName: company.companyName,
@@ -129,7 +151,7 @@ const computationsIxbrl = buildCtComputations({
   carryBack,
   tradeOutsideUk: figures.lossOutsideUk === true,
 });
-const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended });
+const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
 const { xml, irmark } = buildCt600SubmissionRequest({
   senderId: "tpvs",
   password: "tpvs",
@@ -142,7 +164,7 @@ const { xml, irmark } = buildCt600SubmissionRequest({
 });
 
 mkdirSync(outputDirectory, { recursive: true });
-const outputPrefix = amended ? "ct600-amended" : "ct600";
+const outputPrefix = agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600";
 writeFileSync(join(outputDirectory, `${outputPrefix}-submission.xml`), xml);
 const result = await postToTransactionEngine(TPVS_CT600_URL, xml);
 writeFileSync(join(outputDirectory, `${outputPrefix}-tpvs-response.xml`), result.data);

@@ -221,7 +221,7 @@ import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount 
 import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
 import { microEntityAccountsFromResults } from "./app/services/microEntityAccountsFromResults.js";
 export { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
-export { deriveCt600FromFigures, validateCt600Figures } from "./app/services/ct600Figures.js";
+export { deriveCt600FromFigures, validateCt600Figures, section455RateChangeDate } from "./app/services/ct600Figures.js";
 export async function ltdTaxData(financialYear) {
   return parseToml(readFileSync("data/ltd-" + financialYear + ".toml", "utf8"));
 }

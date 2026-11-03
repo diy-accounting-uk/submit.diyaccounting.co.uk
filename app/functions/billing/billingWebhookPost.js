@@ -32,6 +32,8 @@ import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHash
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot, isUnlimitedTokenGrant } from "../../services/productCatalog.js";
+import { bundleIdsIncluding } from "../../../web/public/lib/services/catalogue-aggregates.js";
+import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
 import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
@@ -42,13 +44,14 @@ import { accrueCommission, reverseCommissionForCharge } from "../../services/com
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
 
-// The bundle that grants the personal DIYA-GL resident tier, and the one that grants it for a
-// practice's clients' books. Kept local rather than imported from diyaGlEntitlement.js, which
-// reads them from the deployment's own env vars - the webhook has no per-deployment override.
-const DIYA_GL_PERSONAL_BUNDLE_ID = "resident";
-const DIYA_GL_PRACTICE_BUNDLE_ID = "resident-pro";
+// The bundles that grant the personal DIYA-GL resident tier, and the one that grants it for a
+// practice's clients' books.
+function diyaGlPersonalBundleIds() {
+  return bundleIdsIncluding(loadCatalogFromRoot(), "resident-pro");
+}
+const DIYA_GL_PRACTICE_BUNDLE_ID = "resident-tax-agent";
 
-// How many of a practice's clients are retagged at once on a resident-pro lapse or reactivation.
+// How many of a practice's clients are retagged at once on a resident-tax-agent lapse or reactivation.
 // Bounds the number of concurrent S3 calls a large practice would otherwise issue in one burst,
 // without serialising client after client.
 const CLIENT_BOOK_RETENTION_CONCURRENCY = 5;
@@ -97,9 +100,9 @@ async function lapseResidentBooks(hashedSub) {
 }
 
 /**
- * On `customer.subscription.deleted` for a practice's resident-pro bundle, moves every one of the
+ * On `customer.subscription.deleted` for a practice's resident-tax-agent bundle, moves every one of the
  * practice's clients' resident books to the sandbox tier. A practice's own books are never
- * resident-pro-scoped (see diyaGlEntitlement.js), so only client book sets are touched.
+ * resident-tax-agent-scoped (see diyaGlEntitlement.js), so only client book sets are touched.
  *
  * @param {string} hashedSub - the practice's hashed sub
  */
@@ -109,7 +112,7 @@ async function lapsePracticeClientBooks(hashedSub) {
     const changed = await moveBooksToSandboxTier(`${hashedSub}/clients/${client.clientId}`);
     if (changed.length > 0) {
       logger.info({
-        message: "Practice client's resident books moved to sandbox tier after resident-pro lapse",
+        message: "Practice client's resident books moved to sandbox tier after resident-tax-agent lapse",
         hashedSub,
         clientId: client.clientId,
         bookCount: changed.length,
@@ -134,7 +137,7 @@ async function restoreResidentBooks(hashedSub) {
 }
 
 /**
- * On a checkout that activates a practice's resident-pro bundle, restores every one of the
+ * On a checkout that activates a practice's resident-tax-agent bundle, restores every one of the
  * practice's clients' currently visible sandbox books to the resident tier.
  *
  * @param {string} hashedSub - the practice's hashed sub
@@ -145,7 +148,7 @@ async function restorePracticeClientBooks(hashedSub) {
     const changed = await setOwnerBooksRetention(`${hashedSub}/clients/${client.clientId}`, "resident");
     if (changed.length > 0) {
       logger.info({
-        message: "Practice client's sandbox books restored to resident tier on resident-pro subscription",
+        message: "Practice client's sandbox books restored to resident tier on resident-tax-agent subscription",
         hashedSub,
         clientId: client.clientId,
         bookCount: changed.length,
@@ -229,6 +232,16 @@ function subscriptionIdFromInvoice(invoice) {
   return subscription || null;
 }
 
+// When a bundle's tokens next refresh: its own interval from now, else the end of the billing
+// period. A year subscriber's tokens then still refresh monthly.
+function nextTokenResetAt(bundleId, currentPeriodEnd) {
+  const catalogBundle = loadCatalogFromRoot().bundles.find((b) => b.id === bundleId);
+  if (catalogBundle?.tokenRefreshInterval) {
+    return parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval).toISOString();
+  }
+  return currentPeriodEnd;
+}
+
 function getCatalogTokensGranted(bundleId) {
   try {
     const catalog = loadCatalogFromRoot();
@@ -278,7 +291,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   // Grant bundle using hashedSub directly (webhook doesn't know the original user sub)
   const tokensGranted = getCatalogTokensGranted(bundleId);
-  const tokenRefreshDate = currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const tokenRefreshDate = nextTokenResetAt(bundleId, currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
 
   const bundleRecord = {
     bundleId,
@@ -305,9 +318,10 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   // A checkout is how a lapsed subscriber resubscribes (Stripe issues a new subscription id
   // rather than reviving the deleted one), so this is also where a sandboxed book gets restored.
-  if (bundleId === DIYA_GL_PERSONAL_BUNDLE_ID) {
+  if (diyaGlPersonalBundleIds().includes(bundleId)) {
     await restoreResidentBooks(hashedSub);
-  } else if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
+  }
+  if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
     await restorePracticeClientBooks(hashedSub);
   }
 
@@ -428,10 +442,10 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   }
   const currentPeriodEnd = new Date(period.end * 1000).toISOString();
 
-  // Reset tokens for the new billing period - an unlimited grant (the resident-pro practice
+  // Reset tokens for the new billing period - an unlimited grant (the resident-tax-agent practice
   // licence) carries no count, so there is nothing to reset.
   if (!isUnlimitedTokenGrant(tokensGranted)) {
-    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, currentPeriodEnd);
+    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextTokenResetAt(bundleId, currentPeriodEnd));
   }
 
   // Update period dates on the bundle
@@ -556,9 +570,10 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
     canceledAt: new Date(subscription.ended_at * 1000).toISOString(),
   });
 
-  if (bundleId === DIYA_GL_PERSONAL_BUNDLE_ID) {
+  if (diyaGlPersonalBundleIds().includes(bundleId)) {
     await lapseResidentBooks(hashedSub);
-  } else if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
+  }
+  if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
     await lapsePracticeClientBooks(hashedSub);
   }
 

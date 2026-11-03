@@ -50,7 +50,7 @@ test.describe("Hidden feature content", () => {
     await page.goto("http://localhost:3000/guide.html", { waitUntil: "networkidle" });
     await expect(page.locator("details#submit-return")).toHaveCount(1);
     await expect(page.locator("details#itsa-quarterly-update")).toHaveCount(0);
-    await expect(page.locator("details#file-confirmation-statement")).toHaveCount(0);
+    await expect(page.locator("details#file-confirmation-statement")).toHaveCount(1);
     await expect(page.locator("details#diya-gl-storage")).toHaveCount(0);
     await expect(page.locator(".guide-group h2", { hasText: "Income Tax" })).toHaveCount(0);
     await expect(page.locator(".guide-group h2", { hasText: "Company Tax Return" })).toHaveCount(0);
@@ -83,12 +83,16 @@ test.describe("Hidden feature content", () => {
     await expect(contents.locator("h3", { hasText: "Self Assessment" })).toHaveCount(0);
   });
 
-  test("a Companies House videos page keeps the lookup and drops the sandbox filings in prod", async ({ page }) => {
+  test("a Companies House videos page lists the lookup and the three filings and drops the PSC verification statement in prod", async ({
+    page,
+  }) => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/videos-ch.html", { waitUntil: "networkidle" });
     await expect(page.locator("section.video-section#company-lookup")).toHaveCount(1);
-    await expect(page.locator("section.video-section#file-confirmation-statement")).toHaveCount(0);
-    await expect(page.locator("section.video-section#file-micro-entity-accounts")).toHaveCount(0);
+    await expect(page.locator("section.video-section#file-confirmation-statement")).toHaveCount(1);
+    await expect(page.locator("section.video-section#file-micro-entity-accounts")).toHaveCount(1);
+    await expect(page.locator("section.video-section#file-small-company-accounts")).toHaveCount(1);
+    await expect(page.locator("section.video-section#file-psc-verification-statement")).toHaveCount(0);
   });
 
   test("the Income Tax videos page lists its videos in ci", async ({ page }) => {
@@ -102,14 +106,16 @@ test.describe("Hidden feature content", () => {
     await page.goto("http://localhost:3000/videos.html", { waitUntil: "networkidle" });
     await expect(page.locator("section.video-section#submit-return")).toHaveCount(1);
     await expect(page.locator("section.video-section#itsa-quarterly-update")).toHaveCount(0);
-    await expect(page.locator("section.video-section#file-confirmation-statement")).toHaveCount(0);
+    await expect(page.locator("section.video-section#file-confirmation-statement")).toHaveCount(1);
     await page.unrouteAll();
     await serveSite(page, "ci");
     await page.goto("http://localhost:3000/videos.html", { waitUntil: "networkidle" });
     await expect(page.locator("section.video-section")).toHaveCount(4);
   });
 
-  test("the help page has no FAQ about Income Tax, Company Tax Return, sandbox filings or diya-gl books in prod", async ({ page }) => {
+  test("the help page has no FAQ about Income Tax, Company Tax Return or diya-gl books and has the Companies House filings FAQ in prod", async ({
+    page,
+  }) => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/help.html", { waitUntil: "networkidle" });
     await page.locator("#faq-search").fill("tax");
@@ -118,7 +124,7 @@ test.describe("Hidden feature content", () => {
     await expect(page.locator('.faq-item[data-id="company-tax-return-ct600"]')).toHaveCount(0);
     await page.locator("#faq-search").fill("Companies House");
     await expect(page.locator('.faq-item[data-id="companies-house-filings"]')).toBeVisible();
-    await expect(page.locator('.faq-item[data-id="companies-house-sandbox-filings"]')).toHaveCount(0);
+    await expect(page.locator('.faq-item[data-id="companies-house-accounts-filings"]')).toBeVisible();
     await page.locator("#faq-search").fill("diya-gl");
     await expect(page.locator('.faq-item[data-id="diya-gl-books"]')).toHaveCount(0);
   });
@@ -129,21 +135,18 @@ test.describe("Hidden feature content", () => {
     await page.locator("#faq-search").fill("Self Assessment");
     await expect(page.locator('.faq-item[data-id="self-assessment-itsa"]')).toBeVisible();
     await page.locator("#faq-search").fill("confirmation statement");
-    await expect(page.locator('.faq-item[data-id="companies-house-sandbox-filings"]')).toBeVisible();
+    await expect(page.locator('.faq-item[data-id="companies-house-accounts-filings"]')).toBeVisible();
   });
 
-  test("the MCP page lists no Income Tax, accounts, confirmation statement or practice tools in prod", async ({ page }) => {
+  test("the MCP page lists the accounts and confirmation statement tools and no Income Tax or practice tools in prod", async ({ page }) => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/mcp.html", { waitUntil: "networkidle" });
     await expect(page.locator("main")).toContainText("derive_vat_return");
-    for (const tool of [
-      "derive_itsa_quarterly_update",
-      "derive_micro_entity_accounts",
-      "submit_confirmation_statement_sandbox",
-      "add_client",
-      "Income Tax (MTD)",
-    ]) {
+    for (const tool of ["derive_itsa_quarterly_update", "add_client", "Income Tax (MTD)"]) {
       await expect(page.locator("main").getByText(tool, { exact: false }).filter({ visible: true })).toHaveCount(0);
+    }
+    for (const tool of ["derive_micro_entity_accounts", "submit_confirmation_statement_sandbox"]) {
+      await expect(page.locator("main").getByText(tool, { exact: false }).filter({ visible: true }).first()).toBeVisible();
     }
   });
 
@@ -160,6 +163,18 @@ test.describe("Hidden feature content", () => {
     }
   });
 
+  test("the Company Tax Return page asks no 'Who is this return for?' in prod, where the practice clients call is refused", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/practice/clients", (route) =>
+      route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED" }) }),
+    );
+    await serveSite(page, "prod");
+    await page.goto("http://localhost:3000/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#clientChoice")).toBeHidden();
+    await expect(page.getByText("Who is this return for?")).toBeHidden();
+  });
+
   for (const pagePath of ["about.html", "index.html"]) {
     test(`${pagePath} describes no hidden feature in prod`, async ({ page }) => {
       await serveSite(page, "prod");
@@ -167,7 +182,6 @@ test.describe("Hidden feature content", () => {
       const main = page.locator("main");
       await expect(main).not.toContainText("Income Tax");
       await expect(main).not.toContainText("Company Tax Return");
-      await expect(main).not.toContainText("confirmation statement");
     });
   }
 });

@@ -415,15 +415,15 @@ test.describe("Practice page", () => {
     await setupRoutes(page, { clients: [], licence: { held: true } });
     await loadPage(page);
 
-    await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Pro licence.");
+    await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Tax Agent licence.");
   });
 
-  test("shows the licence line with a link to Resident Pro when the licence is not held", async ({ page }) => {
+  test("shows the licence line with a link to Resident Tax Agent when the licence is not held", async ({ page }) => {
     await setupRoutes(page, { clients: [], licence: { held: false } });
     await loadPage(page);
 
-    await expect(page.locator("#licenceLine")).toContainText("does not hold the Resident Pro licence");
-    await expect(page.locator("#licenceLine a")).toHaveText("Get Resident Pro");
+    await expect(page.locator("#licenceLine")).toContainText("does not hold the Resident Tax Agent licence");
+    await expect(page.locator("#licenceLine a")).toHaveText("Get Resident Tax Agent");
     await expect(page.locator("#licenceLine a")).toHaveAttribute("href", "bundles.html");
   });
 

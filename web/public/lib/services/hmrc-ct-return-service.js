@@ -57,10 +57,12 @@ export async function submitCtReturn(returnRequest, extraHeaders = {}) {
  * Poll the outcome of a submitted Company Tax Return.
  * @param {string} correlationId
  * @param {object} [extraHeaders] - e.g. the Gov-Test-Scenario sent with the submission
+ * @param {string} [clientId] - the practice's client, when the return was filed for one
  * @returns {Promise<object>} statusCode is PENDING, ACCEPT or REJECT
  */
-export async function pollCtReturn(correlationId, extraHeaders = {}) {
-  const response = await fetchWithIdToken(`/api/v1/hmrc/ct/return/${correlationId}`, {
+export async function pollCtReturn(correlationId, extraHeaders = {}, clientId) {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const response = await fetchWithIdToken(`/api/v1/hmrc/ct/return/${correlationId}${query}`, {
     method: "GET",
     headers: extraHeaders,
   });

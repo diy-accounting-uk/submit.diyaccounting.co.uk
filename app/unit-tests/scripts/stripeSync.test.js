@@ -3,7 +3,7 @@
 
 // app/unit-tests/scripts/stripeSync.test.js
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 
 import { buildStripeProductsFromCatalog, stripeProductName } from "../../../infra/stripe/lib/stripeCatalogue.js";
 import {
@@ -13,6 +13,8 @@ import {
   planPaymentLinks,
   rewriteEnvLines,
   computeEnvUpdates,
+  planProductUpdate,
+  findOrCreateProduct,
 } from "../../../infra/stripe/stripe-sync.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -22,37 +24,28 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("buildStripeProductsFromCatalog", () => {
   const catalog = loadCatalogFromRoot();
 
-  test("returns the six Stripe prices with the correct amounts, resident and resident-pro each carrying two", () => {
+  test("returns the nine Stripe prices with the correct amounts, each subscription bundle carrying two", () => {
     const products = buildStripeProductsFromCatalog(catalog);
-    const byBundleId = Object.fromEntries(products.filter((p) => p.bundleId === "resident-vat").map((p) => [p.bundleId, p]));
-    const residentPrices = products.filter((p) => p.bundleId === "resident");
-    const residentProPrices = products.filter((p) => p.bundleId === "resident-pro");
-    const confirmationStatementPrices = products.filter((p) => p.bundleId === "file-confirmation-statement");
+    const pricesOf = (bundleId) => products.filter((p) => p.bundleId === bundleId);
+    const confirmationStatementPrices = pricesOf("file-confirmation-statement");
 
-    expect(products).toHaveLength(6);
-    expect(byBundleId["resident-vat"]).toMatchObject({
-      name: "Resident VAT",
-      priceAmount: 99,
-      currency: "gbp",
-      interval: "month",
-      multiPrice: false,
-    });
+    expect(products).toHaveLength(9);
 
-    expect(residentPrices).toHaveLength(2);
-    expect(residentPrices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "Resident", priceAmount: 3900, currency: "gbp", interval: "year", multiPrice: true }),
-        expect.objectContaining({ name: "Resident", priceAmount: 399, currency: "gbp", interval: "month", multiPrice: true }),
-      ]),
-    );
-
-    expect(residentProPrices).toHaveLength(2);
-    expect(residentProPrices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "Resident Pro", priceAmount: 19900, currency: "gbp", interval: "year", multiPrice: true }),
-        expect.objectContaining({ name: "Resident Pro", priceAmount: 1999, currency: "gbp", interval: "month", multiPrice: true }),
-      ]),
-    );
+    const expected = {
+      "resident-vat": ["Resident VAT", 999, 99],
+      "resident-ltd": ["Resident Ltd", 999, 99],
+      "resident-pro": ["Resident Pro", 3999, 399],
+      "resident-tax-agent": ["Resident Tax Agent", 19999, 1999],
+    };
+    for (const [bundleId, [name, year, month]] of Object.entries(expected)) {
+      expect(pricesOf(bundleId)).toHaveLength(2);
+      expect(pricesOf(bundleId)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name, priceAmount: year, currency: "gbp", interval: "year", multiPrice: true }),
+          expect.objectContaining({ name, priceAmount: month, currency: "gbp", interval: "month", multiPrice: true }),
+        ]),
+      );
+    }
 
     expect(confirmationStatementPrices).toHaveLength(1);
     expect(confirmationStatementPrices[0]).toMatchObject({
@@ -83,7 +76,7 @@ describe("buildStripeProductsFromCatalog", () => {
 
   test("filters to a single bundle when bundleId is given", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "resident-vat" });
-    expect(products.map((p) => p.bundleId)).toEqual(["resident-vat"]);
+    expect(new Set(products.map((p) => p.bundleId))).toEqual(new Set(["resident-vat"]));
   });
 
   test("filters to a single activity's one-off price when bundleId names an activity id", () => {
@@ -93,11 +86,14 @@ describe("buildStripeProductsFromCatalog", () => {
     ]);
   });
 
-  test.each(["resident", "resident-pro"])("filters to %s's two prices when bundleId names a multi-price bundle", (bundleId) => {
-    const products = buildStripeProductsFromCatalog(catalog, { bundleId });
-    expect(products.map((p) => p.interval).sort()).toEqual(["month", "year"]);
-    expect(products.every((p) => p.bundleId === bundleId && p.multiPrice === true)).toBe(true);
-  });
+  test.each(["resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"])(
+    "filters to %s's two prices when bundleId names a multi-price bundle",
+    (bundleId) => {
+      const products = buildStripeProductsFromCatalog(catalog, { bundleId });
+      expect(products.map((p) => p.interval).sort()).toEqual(["month", "year"]);
+      expect(products.every((p) => p.bundleId === bundleId && p.multiPrice === true)).toBe(true);
+    },
+  );
 
   test("returns an empty list when the requested bundle has no Stripe price fields", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "default" });
@@ -450,30 +446,104 @@ describe("rewriteEnvLines", () => {
 
 describe("computeEnvUpdates", () => {
   test("a test-mode price lands in both env files' test rows, and .env.ci's live-named row too", () => {
-    const updates = computeEnvUpdates("test", [{ bundleId: "resident-vat", priceId: "price_test_1" }]);
+    const updates = computeEnvUpdates("test", [{ bundleId: "file-confirmation-statement", priceId: "price_test_1" }]);
     expect(updates[".env.ci"]).toEqual({
-      STRIPE_TEST_PRICE_ID_RESIDENT_VAT: "price_test_1",
-      STRIPE_PRICE_ID_RESIDENT_VAT: "price_test_1",
+      STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1",
+      STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1",
     });
-    expect(updates[".env.prod"]).toEqual({ STRIPE_TEST_PRICE_ID_RESIDENT_VAT: "price_test_1" });
+    expect(updates[".env.prod"]).toEqual({ STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1" });
   });
 
   test("a live-mode price lands only in .env.prod's live-named row", () => {
-    const updates = computeEnvUpdates("live", [{ bundleId: "resident-vat", priceId: "price_live_1" }]);
+    const updates = computeEnvUpdates("live", [{ bundleId: "file-confirmation-statement", priceId: "price_live_1" }]);
     expect(updates[".env.ci"]).toEqual({});
-    expect(updates[".env.prod"]).toEqual({ STRIPE_PRICE_ID_RESIDENT_VAT: "price_live_1" });
+    expect(updates[".env.prod"]).toEqual({ STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_live_1" });
   });
 
   test("a result carrying an interval gets the interval in its row name", () => {
     const updates = computeEnvUpdates("test", [
-      { bundleId: "resident", priceId: "price_annual_1", interval: "year" },
-      { bundleId: "resident", priceId: "price_monthly_1", interval: "month" },
+      { bundleId: "resident-ltd", priceId: "price_annual_1", interval: "year" },
+      { bundleId: "resident-ltd", priceId: "price_monthly_1", interval: "month" },
     ]);
     expect(updates[".env.ci"]).toEqual({
-      STRIPE_TEST_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
-      STRIPE_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
-      STRIPE_TEST_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
-      STRIPE_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
+      STRIPE_TEST_PRICE_ID_RESIDENT_LTD_YEAR: "price_annual_1",
+      STRIPE_PRICE_ID_RESIDENT_LTD_YEAR: "price_annual_1",
+      STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH: "price_monthly_1",
+      STRIPE_PRICE_ID_RESIDENT_LTD_MONTH: "price_monthly_1",
+    });
+  });
+});
+
+describe("planProductUpdate", () => {
+  const desired = { name: "Resident Ltd", description: "Companies House filings" };
+
+  test("returns undefined when name, description and active state match", () => {
+    expect(planProductUpdate({ name: "Resident Ltd", description: "Companies House filings", active: true }, desired)).toBeUndefined();
+  });
+
+  test("returns the changed name and description", () => {
+    expect(planProductUpdate({ name: "Resident Pro", description: "Practice text", active: true }, desired)).toEqual({
+      name: "Resident Ltd",
+      description: "Companies House filings",
+    });
+  });
+
+  test("returns active true for an archived product with matching text", () => {
+    expect(planProductUpdate({ name: "Resident Ltd", description: "Companies House filings", active: false }, desired)).toEqual({
+      active: true,
+    });
+  });
+
+  test("treats a null description as empty", () => {
+    expect(
+      planProductUpdate({ name: "Resident Ltd", description: null, active: true }, { name: "Resident Ltd", description: "" }),
+    ).toBeUndefined();
+  });
+});
+
+describe("findOrCreateProduct", () => {
+  const archived = { id: "prod_old", name: "Resident Ltd (old)", description: "Old text", active: false };
+  const stripeWith = (found) => ({
+    products: {
+      search: vi.fn().mockResolvedValue({ data: found }),
+      update: vi.fn().mockImplementation(async (id, fields) => ({ id, ...fields })),
+      create: vi.fn().mockResolvedValue({ id: "prod_new" }),
+    },
+  });
+
+  test("with apply, reactivates an archived product and updates its text", async () => {
+    const stripe = stripeWith([archived]);
+    const product = await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", true);
+    expect(stripe.products.update).toHaveBeenCalledWith("prod_old", {
+      name: "Resident Ltd",
+      description: "Companies House filings",
+      active: true,
+    });
+    expect(stripe.products.create).not.toHaveBeenCalled();
+    expect(product.id).toBe("prod_old");
+  });
+
+  test("without apply, sends no write and returns the found product", async () => {
+    const stripe = stripeWith([archived]);
+    const product = await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", false);
+    expect(stripe.products.update).not.toHaveBeenCalled();
+    expect(stripe.products.create).not.toHaveBeenCalled();
+    expect(product.id).toBe("prod_old");
+  });
+
+  test("sends no update for a product that matches the catalogue", async () => {
+    const stripe = stripeWith([{ id: "prod_ok", name: "Resident Ltd", description: "Companies House filings", active: true }]);
+    await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", true);
+    expect(stripe.products.update).not.toHaveBeenCalled();
+  });
+
+  test("creates a product only when none is found", async () => {
+    const stripe = stripeWith([]);
+    await findOrCreateProduct(stripe, "resident-tax-agent", "Resident Tax Agent", "Text", true);
+    expect(stripe.products.create).toHaveBeenCalledWith({
+      name: "Resident Tax Agent",
+      description: "Text",
+      metadata: { bundleId: "resident-tax-agent" },
     });
   });
 });

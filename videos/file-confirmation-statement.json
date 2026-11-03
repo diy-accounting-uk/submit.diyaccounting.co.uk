@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "file-confirmation-statement",
   "title": "Start a company's confirmation statement",
-  "description": "A signed-in walk through a confirmation statement from start to finish: sign in, take out Resident, look up a company, read its officers and PSCs from Companies House's register, review the statement, file it to the sandbox and open your copy of the filed record.",
+  "description": "A signed-in walk through a confirmation statement from start to finish: sign in, take out Resident Ltd, look up a company, read its officers and PSCs from Companies House's register, review the statement, file it to the sandbox and open your copy of the filed record.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -54,7 +54,7 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "A sandbox preview against Companies House's test filing service.",
+          "caption": "Filed straight to Companies House through its XML Gateway.",
           "headline": "Confirmation statements",
           "keyWord": "statements"
         },
@@ -95,7 +95,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Ltd",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -108,7 +108,7 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Ltd",
           "testPass": true
         },
         {
@@ -124,7 +124,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Confirmation Statement (Companies House, sandbox)')",
+          "until": "button:has-text('File Confirmation Statement (Companies House)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -142,7 +142,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "File Confirmation Statement (Companies House, sandbox)"
+            "name": "File Confirmation Statement (Companies House)"
           },
           "expectsNavigation": true,
           "caption": "Open File Confirmation Statement to find the company.",

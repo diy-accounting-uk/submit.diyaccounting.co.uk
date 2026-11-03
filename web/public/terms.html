@@ -88,8 +88,8 @@
           </li>
           <li>
             <strong>Companies House.</strong> Search for a company. Change a registered office address or registered email address. File
-            micro-entity accounts, small company accounts and confirmation statements. File a PSC verification statement. Changes of
-            registered office and registered email address go to the live register. Accounts, confirmation statements and PSC verification
+            micro-entity accounts, small company accounts and confirmation statements. File a PSC verification statement. Accounts,
+            confirmation statements and changes of registered office and registered email address go to the live register. PSC verification
             statements are available in the Companies House sandbox (test) environment until Companies House approves the Service for live
             filing.
           </li>
@@ -233,7 +233,8 @@
         <ul>
           <li><strong>VAT:</strong> production.</li>
           <li><strong>Income Tax Self Assessment:</strong> sandbox, until HMRC approves the Service for production.</li>
-          <li><strong>Companies House accounts, confirmation statements and PSC verification statements:</strong> sandbox.</li>
+          <li><strong>Companies House accounts and confirmation statements:</strong> production.</li>
+          <li><strong>Companies House PSC verification statements:</strong> sandbox.</li>
           <li><strong>Companies House registered office and registered email:</strong> production.</li>
           <li><strong>Company Tax Return (CT600):</strong> preview.</li>
         </ul>
@@ -294,32 +295,35 @@
               <tr>
                 <th scope="row">Resident VAT</th>
                 <td>Businesses that file VAT only</td>
-                <td>£0.99 a month</td>
+                <td>£9.99 a year, or £0.99 a month</td>
                 <td>Submit VAT returns to HMRC. 100 tokens a month.</td>
               </tr>
               <tr>
-                <th scope="row">Resident</th>
-                <td>Businesses that file for themselves</td>
-                <td>£39 a year, or £3.99 a month</td>
-                <td>
-                  Save and load diya-gl books, and file VAT, Income Tax Self Assessment, confirmation statements, PSC verification
-                  statements and accounts to HMRC and Companies House as each is recognised. 100 tokens a month.
-                </td>
+                <th scope="row">Resident Ltd</th>
+                <td>Companies that file at Companies House</td>
+                <td>£9.99 a year, or £0.99 a month</td>
+                <td>File accounts and confirmation statements to Companies House. 100 tokens a month.</td>
               </tr>
               <tr>
                 <th scope="row">Resident Pro</th>
-                <td>Accountants and bookkeepers</td>
-                <td>£199 a year, or £19.99 a month</td>
+                <td>Businesses that file for themselves</td>
+                <td>£39.99 a year, or £3.99 a month</td>
                 <td>
-                  Manage a practice's clients and file VAT, Income Tax Self Assessment, confirmation statements, PSC verification statements
-                  and accounts to HMRC and Companies House on their behalf, and save and load your own diya-gl books. No token limit.
+                  Submit VAT returns to HMRC and Accounts to Companies House. Everything in Resident VAT and Resident Ltd, plus Income Tax
+                  Self Assessment and saving and loading diya-gl books. 100 tokens a month.
                 </td>
               </tr>
               <tr>
-                <th scope="row">Resident Pro (Complimentary)</th>
+                <th scope="row">Resident Tax Agent</th>
+                <td>Accountants and bookkeepers</td>
+                <td>£199.99 a year, or £19.99 a month</td>
+                <td>Manage a practice's clients and file for them, with everything in Resident Pro and no token limit.</td>
+              </tr>
+              <tr>
+                <th scope="row">Resident Tax Agent (Complimentary)</th>
                 <td>Beta testers and partners</td>
                 <td>Free</td>
-                <td>The same as Resident, with 100 tokens a month, by invitation.</td>
+                <td>The same as Resident Tax Agent, by invitation.</td>
               </tr>
             </tbody>
           </table>
@@ -331,7 +335,7 @@
           A token pays for one filing. A VAT return, a Self Assessment quarterly update, annual submission or final declaration, a Companies
           House filing and a company tax return each cost one token. Viewing obligations, returns, receipts and tax calculations costs no
           token. A bundle gives you its tokens when it starts and again each month if it refreshes monthly. Unused tokens do not carry over.
-          Resident Pro has no token limit.
+          Resident Tax Agent has no token limit.
         </p>
         <p>Creating a digital or physical pass to give to someone else costs 10 tokens.</p>
 
@@ -344,8 +348,8 @@
         <h3>Subscriptions</h3>
         <ul>
           <li>
-            You buy Resident VAT, Resident and Resident Pro as a subscription through Stripe. Stripe takes your payment details; we do not
-            store your card number
+            You buy Resident VAT, Resident Ltd, Resident Pro and Resident Tax Agent as a subscription through Stripe. Stripe takes your
+            payment details; we do not store your card number
           </li>
           <li>
             A subscription starts when your payment succeeds and renews automatically at the end of each period (each month or each year) at

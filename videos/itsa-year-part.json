@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-year-part",
   "title": "An Income Tax year, quarter to adjustments",
-  "description": "A signed-in walk through the first part of Making Tax Digital for Income Tax across a tax year: sign in, take out Resident, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission and its adjustable summary adjustments. This covers the year up to the adjustments step; losses and claims, the tax calculation and the final declaration are not in this recording.",
+  "description": "A signed-in walk through the first part of Making Tax Digital for Income Tax across a tax year: sign in, take out Resident Pro, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission and its adjustable summary adjustments. This covers the year up to the adjustments step; losses and claims, the tax calculation and the final declaration are not in this recording.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -100,7 +100,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "steps": [
         {
           "action": "click",
@@ -111,7 +111,7 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true
         },
         {

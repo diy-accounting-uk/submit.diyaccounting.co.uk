@@ -19,9 +19,11 @@
 //   day-guest-pass         - Day guest production access (1 day, 1 use)
 //   resident-pro-test-pass - Resident pro synthetic access (1 day, 1 use, testPass: true)
 //   resident-pro-pass      - Resident pro production access (1 day, 1 use)
+//   resident-tax-agent-test-pass - Resident tax agent synthetic access (1 day, 1 use, testPass: true)
+//   resident-tax-agent-pass      - Resident tax agent production access (1 day, 1 use)
 //   invited-guest          - Month-long access for invited users (1 month, 1 use, email required)
 //   resident-guest         - Ongoing free access (unlimited, 1 use, email required)
-//   resident-pro-comp      - Complimentary pro subscription (1 year, 1 use, email required)
+//   resident-pro-comp      - Complimentary tax agent subscription (1 year, 1 use, email required)
 
 import fs from "fs";
 import path from "path";

@@ -109,32 +109,32 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
-        default String stripePriceIdResidentVat() {
+        default String stripePriceIdResidentVatMonth() {
             return "";
         }
 
         @Value.Default
-        default String stripeTestPriceIdResidentVat() {
+        default String stripeTestPriceIdResidentVatMonth() {
             return "";
         }
 
         @Value.Default
-        default String stripePriceIdResidentYear() {
+        default String stripePriceIdResidentLtdYear() {
             return "";
         }
 
         @Value.Default
-        default String stripeTestPriceIdResidentYear() {
+        default String stripeTestPriceIdResidentLtdYear() {
             return "";
         }
 
         @Value.Default
-        default String stripePriceIdResidentMonth() {
+        default String stripePriceIdResidentLtdMonth() {
             return "";
         }
 
         @Value.Default
-        default String stripeTestPriceIdResidentMonth() {
+        default String stripeTestPriceIdResidentLtdMonth() {
             return "";
         }
 
@@ -155,6 +155,36 @@ public class BillingStack extends Stack {
 
         @Value.Default
         default String stripeTestPriceIdResidentProMonth() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentVatYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentVatYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentTaxAgentYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentTaxAgentYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentTaxAgentMonth() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentTaxAgentMonth() {
             return "";
         }
 
@@ -230,32 +260,35 @@ public class BillingStack extends Stack {
                 && !props.stripeTestSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
-        if (props.stripePriceIdResidentVat() != null
-                && !props.stripePriceIdResidentVat().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT", props.stripePriceIdResidentVat());
-        }
-        if (props.stripeTestPriceIdResidentVat() != null
-                && !props.stripeTestPriceIdResidentVat().isBlank()) {
+        if (props.stripePriceIdResidentVatMonth() != null
+                && !props.stripePriceIdResidentVatMonth().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
+                    "STRIPE_PRICE_ID_RESIDENT_VAT_MONTH", props.stripePriceIdResidentVatMonth());
         }
-        if (props.stripePriceIdResidentYear() != null
-                && !props.stripePriceIdResidentYear().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_YEAR", props.stripePriceIdResidentYear());
-        }
-        if (props.stripeTestPriceIdResidentYear() != null
-                && !props.stripeTestPriceIdResidentYear().isBlank()) {
+        if (props.stripeTestPriceIdResidentVatMonth() != null
+                && !props.stripeTestPriceIdResidentVatMonth().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR", props.stripeTestPriceIdResidentYear());
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_VAT_MONTH", props.stripeTestPriceIdResidentVatMonth());
         }
-        if (props.stripePriceIdResidentMonth() != null
-                && !props.stripePriceIdResidentMonth().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_MONTH", props.stripePriceIdResidentMonth());
-        }
-        if (props.stripeTestPriceIdResidentMonth() != null
-                && !props.stripeTestPriceIdResidentMonth().isBlank()) {
+        if (props.stripePriceIdResidentLtdYear() != null
+                && !props.stripePriceIdResidentLtdYear().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH", props.stripeTestPriceIdResidentMonth());
+                    "STRIPE_PRICE_ID_RESIDENT_LTD_YEAR", props.stripePriceIdResidentLtdYear());
+        }
+        if (props.stripeTestPriceIdResidentLtdYear() != null
+                && !props.stripeTestPriceIdResidentLtdYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_LTD_YEAR", props.stripeTestPriceIdResidentLtdYear());
+        }
+        if (props.stripePriceIdResidentLtdMonth() != null
+                && !props.stripePriceIdResidentLtdMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_LTD_MONTH", props.stripePriceIdResidentLtdMonth());
+        }
+        if (props.stripeTestPriceIdResidentLtdMonth() != null
+                && !props.stripeTestPriceIdResidentLtdMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH", props.stripeTestPriceIdResidentLtdMonth());
         }
         if (props.stripePriceIdResidentProYear() != null
                 && !props.stripePriceIdResidentProYear().isBlank()) {
@@ -276,6 +309,36 @@ public class BillingStack extends Stack {
                 && !props.stripeTestPriceIdResidentProMonth().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
                     "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH", props.stripeTestPriceIdResidentProMonth());
+        }
+        if (props.stripePriceIdResidentVatYear() != null
+                && !props.stripePriceIdResidentVatYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_VAT_YEAR", props.stripePriceIdResidentVatYear());
+        }
+        if (props.stripeTestPriceIdResidentVatYear() != null
+                && !props.stripeTestPriceIdResidentVatYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR", props.stripeTestPriceIdResidentVatYear());
+        }
+        if (props.stripePriceIdResidentTaxAgentYear() != null
+                && !props.stripePriceIdResidentTaxAgentYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR", props.stripePriceIdResidentTaxAgentYear());
+        }
+        if (props.stripeTestPriceIdResidentTaxAgentYear() != null
+                && !props.stripeTestPriceIdResidentTaxAgentYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_YEAR", props.stripeTestPriceIdResidentTaxAgentYear());
+        }
+        if (props.stripePriceIdResidentTaxAgentMonth() != null
+                && !props.stripePriceIdResidentTaxAgentMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH", props.stripePriceIdResidentTaxAgentMonth());
+        }
+        if (props.stripeTestPriceIdResidentTaxAgentMonth() != null
+                && !props.stripeTestPriceIdResidentTaxAgentMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_MONTH", props.stripeTestPriceIdResidentTaxAgentMonth());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());

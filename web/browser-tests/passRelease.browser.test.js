@@ -52,7 +52,7 @@ test.describe("release a pass held for review", () => {
     await serveRealSite(page, {
       signedIn: true,
       apiHandler: (url) => {
-        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident");
+        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident-pro");
         if (url.pathname === "/api/v1/pass/my-passes") return { passes: [heldPass] };
         return undefined;
       },
@@ -69,7 +69,7 @@ test.describe("release a pass held for review", () => {
     await serveRealSite(page, {
       signedIn: true,
       apiHandler: (url) => {
-        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident");
+        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident-pro");
         if (url.pathname === "/api/v1/pass/my-passes") return { passes: [vatPass, otherPass] };
         return undefined;
       },

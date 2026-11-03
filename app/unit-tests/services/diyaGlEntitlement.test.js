@@ -13,7 +13,7 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
 
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
-const { entitlementFor, hasActiveResidentProBundle } = await import("../../services/diyaGlEntitlement.js");
+const { entitlementFor, hasActivePracticeSubscription } = await import("../../services/diyaGlEntitlement.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
 function restoreEnv(key, value) {
@@ -26,7 +26,6 @@ function restoreEnv(key, value) {
 
 describe("diyaGlEntitlement", () => {
   const originalResidentTier = process.env.DIYA_GL_RESIDENT_TIER;
-  const originalBundleId = process.env.DIYA_GL_BUNDLE_ID;
   const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
@@ -38,7 +37,6 @@ describe("diyaGlEntitlement", () => {
 
   afterEach(() => {
     restoreEnv("DIYA_GL_RESIDENT_TIER", originalResidentTier);
-    restoreEnv("DIYA_GL_BUNDLE_ID", originalBundleId);
     restoreEnv("NODE_ENV", originalNodeEnv);
     _clearSalt();
   });
@@ -54,17 +52,29 @@ describe("diyaGlEntitlement", () => {
     expect(getUserBundles).not.toHaveBeenCalled();
   });
 
-  test("gives resident retention for a caller with an active, unexpired resident bundle", async () => {
+  test("gives resident retention for a caller with an active, unexpired resident-pro bundle", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "active", expiry: future }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
 
     const result = await entitlementFor("active-sub");
 
     expect(result.retention).toBe("resident");
     expect(result.reason).toBe("active-subscription");
     expect(result.residentTier).toBe(true);
-    expect(result.bundleId).toBe("resident");
+    expect(result.bundleId).toBe("resident-pro");
+    expect(result.expiry).toBe(future);
+    expect(getClient).not.toHaveBeenCalled();
+  });
+
+  test("gives resident own books to a resident-tax-agent holder, a bundle that includes resident-pro", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: null }]);
+
+    const result = await entitlementFor("practice-sub");
+
+    expect(result.retention).toBe("resident");
+    expect(result.bundleId).toBe("resident-tax-agent");
   });
 
   test("gives sandbox retention with reason no-subscription for a caller holding only the resident-diya-gl bundle", async () => {
@@ -80,10 +90,10 @@ describe("diyaGlEntitlement", () => {
     expect(result.bundleId).toBeNull();
   });
 
-  test("gives sandbox retention with reason expired for a resident bundle whose expiry has passed", async () => {
+  test("gives sandbox retention with reason expired for a resident-pro bundle whose expiry has passed", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const past = new Date(Date.now() - 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", expiry: past }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "canceled", expiry: past }]);
 
     const result = await entitlementFor("expired-sub");
 
@@ -93,9 +103,12 @@ describe("diyaGlEntitlement", () => {
     expect(result.expiry).toBe(past);
   });
 
-  test("gives sandbox retention with reason no-subscription when the caller has no matching bundle", async () => {
+  test("gives sandbox retention with reason no-subscription for resident-vat and resident-ltd holders, which do not include resident-pro", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-vat", subscriptionStatus: "active", expiry: null }]);
+    getUserBundles.mockResolvedValue([
+      { bundleId: "resident-vat", subscriptionStatus: "active", expiry: null },
+      { bundleId: "resident-ltd", subscriptionStatus: "active", expiry: null },
+    ]);
 
     const result = await entitlementFor("no-bundle-sub");
 
@@ -104,81 +117,52 @@ describe("diyaGlEntitlement", () => {
     expect(result.residentTier).toBe(true);
   });
 
-  test("respects a configured DIYA_GL_BUNDLE_ID", async () => {
+  test("picks the active bundle when a lapsed one is held beside it", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
-    process.env.DIYA_GL_BUNDLE_ID = "custom-books-bundle";
-    getUserBundles.mockResolvedValue([{ bundleId: "custom-books-bundle", subscriptionStatus: "active", expiry: null }]);
-
-    const result = await entitlementFor("custom-sub");
-
-    expect(result.retention).toBe("resident");
-    expect(result.bundleId).toBe("custom-books-bundle");
-  });
-
-  test("keeps a resident-pro holder's own books resident when no resident bundle is held", async () => {
-    process.env.DIYA_GL_RESIDENT_TIER = "true";
-    process.env.DIYA_GL_BUNDLE_ID = "resident";
-    const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
-
-    const result = await entitlementFor("practice-sub");
-
-    expect(result.retention).toBe("resident");
-    expect(result.reason).toBe("active-subscription");
-    expect(result.bundleId).toBe("resident-pro");
-    expect(result.expiry).toBe(future);
-    expect(getClient).not.toHaveBeenCalled();
-  });
-
-  test("gives a resident-pro holder with a lapsed resident bundle resident own books", async () => {
-    process.env.DIYA_GL_RESIDENT_TIER = "true";
-    process.env.DIYA_GL_BUNDLE_ID = "resident";
     getUserBundles.mockResolvedValue([
-      { bundleId: "resident", subscriptionStatus: "expired", expiry: null },
-      { bundleId: "resident-pro", subscriptionStatus: "active", expiry: null },
+      { bundleId: "resident-pro", subscriptionStatus: "expired", expiry: null },
+      { bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: null },
     ]);
 
     const result = await entitlementFor("practice-sub");
 
     expect(result.retention).toBe("resident");
-    expect(result.bundleId).toBe("resident-pro");
-    expect(result.expiry).toBeNull();
+    expect(result.bundleId).toBe("resident-tax-agent");
   });
 
-  test("gives sandbox own books to an expired or inactive resident-pro holder with no resident bundle", async () => {
+  test("gives sandbox own books to an expired or inactive resident-pro holder", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
-    process.env.DIYA_GL_BUNDLE_ID = "resident";
     const past = new Date(Date.now() - 60_000).toISOString();
 
     getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: past }]);
     const expired = await entitlementFor("practice-sub");
     expect(expired.retention).toBe("sandbox");
-    expect(expired.reason).toBe("no-subscription");
+    expect(expired.reason).toBe("expired");
 
     getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "cancelled", expiry: null }]);
     const inactive = await entitlementFor("practice-sub");
     expect(inactive.retention).toBe("sandbox");
-    expect(inactive.reason).toBe("no-subscription");
+    expect(inactive.reason).toBe("expired");
   });
 
-  test("gives resident retention for a client's books when the practice holds an active resident-pro subscription and the client belongs to it", async () => {
+  test("gives resident retention for a client's books when the practice holds an active resident-tax-agent subscription and the client belongs to it", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: future }]);
     getClient.mockResolvedValue({ hashedSub: "practice-hash", clientId: "client-1", displayName: "A Client" });
 
     const result = await entitlementFor("practice-sub", "client-1");
 
     expect(result.retention).toBe("resident");
     expect(result.reason).toBe("active-subscription");
-    expect(result.bundleId).toBe("resident-pro");
+    expect(result.bundleId).toBe("resident-tax-agent");
     expect(getClient).toHaveBeenCalledWith("practice-sub", "client-1");
   });
 
-  test("refuses a resident-pro practice reading a client id that does not belong to it", async () => {
+  test("refuses a resident-tax-agent practice reading a client id that does not belong to it", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: future }]);
     getClient.mockResolvedValue(null);
 
     const result = await entitlementFor("practice-sub", "someone-elses-client");
@@ -187,10 +171,10 @@ describe("diyaGlEntitlement", () => {
     expect(result.reason).toBe("client-not-found");
   });
 
-  test("refuses a client id from a resident subscriber who holds no resident-pro subscription", async () => {
+  test("refuses a client id from a resident-pro subscriber who holds no resident-tax-agent subscription", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "active", expiry: future }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
 
     const result = await entitlementFor("resident-sub", "client-1");
 
@@ -211,26 +195,26 @@ describe("diyaGlEntitlement", () => {
   });
 });
 
-describe("hasActiveResidentProBundle", () => {
-  test("is true for an active, unexpired resident-pro bundle", () => {
+describe("hasActivePracticeSubscription", () => {
+  test("is true for an active, unexpired resident-tax-agent bundle", () => {
     const future = new Date(Date.now() + 60_000).toISOString();
-    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }])).toBe(true);
+    expect(hasActivePracticeSubscription([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: future }])).toBe(true);
   });
 
-  test("is true for an active resident-pro bundle with no expiry", () => {
-    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active" }])).toBe(true);
+  test("is true for an active resident-tax-agent bundle with no expiry", () => {
+    expect(hasActivePracticeSubscription([{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }])).toBe(true);
   });
 
-  test("is false when resident-pro has expired", () => {
+  test("is false when resident-tax-agent has expired", () => {
     const past = new Date(Date.now() - 60_000).toISOString();
-    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: past }])).toBe(false);
+    expect(hasActivePracticeSubscription([{ bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: past }])).toBe(false);
   });
 
-  test("is false when no resident-pro bundle is held", () => {
-    expect(hasActiveResidentProBundle([{ bundleId: "resident-vat", subscriptionStatus: "active" }])).toBe(false);
+  test("is false when only resident-pro is held", () => {
+    expect(hasActivePracticeSubscription([{ bundleId: "resident-pro", subscriptionStatus: "active" }])).toBe(false);
   });
 
-  test("is false when resident-pro is held but not active", () => {
-    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "canceled" }])).toBe(false);
+  test("is false when resident-tax-agent is held but not active", () => {
+    expect(hasActivePracticeSubscription([{ bundleId: "resident-tax-agent", subscriptionStatus: "canceled" }])).toBe(false);
   });
 });

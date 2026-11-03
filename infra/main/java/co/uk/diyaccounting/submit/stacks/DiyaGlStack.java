@@ -152,7 +152,6 @@ public class DiyaGlStack extends Stack {
         // webhook keeps current on a lapse or a resubscribe, rather than checking the bundle live.
         var entitlementReadEnv = new PopulatedMap<String, String>(commonEnv)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("DIYA_GL_BUNDLE_ID", "resident")
                 .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString());
 
         // ============================================================================
@@ -262,7 +261,6 @@ public class DiyaGlStack extends Stack {
                 .with("DIYA_GL_MAX_PER_USER", "20")
                 .with("DIYA_GL_VERSIONS_KEPT", "30")
                 .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString())
-                .with("DIYA_GL_BUNDLE_ID", "resident")
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var diyaGlPutApiLambda = new ApiLambda(
                 this,

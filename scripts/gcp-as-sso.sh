@@ -65,7 +65,8 @@ fi
 
 # The credential config is named after the workload identity provider, one per AWS account
 # (infra/google/gcp/identity.toml: aws-prod for submit-prod, aws-ci for submit-ci).
-providerId="${profile#submit-}"
+providerId="${profile#diya-}"
+providerId="${providerId#submit-}"
 repoRoot="$(cd "$(dirname "$0")/.." && pwd)"
 credentialConfig="${repoRoot}/infra/google/gcp/credentials/aws-${providerId}.json"
 

@@ -22,6 +22,7 @@ import {
   intangibleAssetClosingFigures,
 } from "./smallCompanyAccountsIxbrl.js";
 import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
 
 export const SMALL_COMPANY_STATEMENT_FIELDS = [
   "section477Exemption",
@@ -245,6 +246,19 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     if (text) policies[field] = text;
   }
   const controllingParty = readControllingParty(section.controllingParty, errorMessages);
+  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages);
+  const owedByDirectors = [currentBalanceSheet, priorBalanceSheet].some((sheet) => sheet?.amountsOwedByDirectors > 0);
+  if (owedByDirectors && !directorsAdvances?.length) {
+    errorMessages.push("smallCompany.directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");
+  }
+  if (directorsAdvances?.length) {
+    const closing = directorsAdvances.reduce((total, advance) => total + advance.balanceAtEnd, 0);
+    if (closing !== (currentBalanceSheet.amountsOwedByDirectors ?? 0)) {
+      errorMessages.push(
+        `smallCompany.directorsAdvances balanceAtEnd (${closing}) must equal balanceSheet.currentYear.amountsOwedByDirectors`,
+      );
+    }
+  }
 
   const statements = {};
   for (const field of SMALL_COMPANY_STATEMENT_FIELDS) {
@@ -265,6 +279,7 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     ...(shareCapital ? { shareCapital } : {}),
     ...policies,
     ...(controllingParty ? { controllingParty } : {}),
+    ...(directorsAdvances?.length ? { directorsAdvances } : {}),
     statementsAccepted: statements,
   };
 }

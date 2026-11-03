@@ -41,6 +41,41 @@ describe("extractAndValidateCtReturnParameters", () => {
     expect(request.figures.utr).toBe(baseBody.utr);
   });
 
+  describe("a client request", () => {
+    const client = { clientId: "client-1", identifiers: { utr: "1234567890", companyNumber: "00000099" } };
+    const agent = { practiceName: "Example Practice LLP", authorisationConfirmed: true };
+
+    test("takes the UTR and company number from the client row and builds the agent", () => {
+      const { request, errors } = extract({ utr: "9999999999", companyNumber: "11111111", agent }, { client });
+      expect(errors).toEqual([]);
+      expect(request.utr).toBe("1234567890");
+      expect(request.accounts.companyNumber).toBe("00000099");
+      expect(request.agent).toEqual({ reference: "client-1", practiceName: "Example Practice LLP" });
+    });
+
+    test("is refused unless the practice confirms the authorisation", () => {
+      const { errors } = extract({ agent: { ...agent, authorisationConfirmed: undefined } }, { client });
+      expect(errors.join(" ")).toContain("authorised it for Corporation Tax");
+    });
+
+    test("is refused without a practice name", () => {
+      const { errors } = extract({ agent: { ...agent, practiceName: " " } }, { client });
+      expect(errors.join(" ")).toContain("agent.practiceName");
+    });
+
+    test("is refused for a client with no UTR", () => {
+      const { errors } = extract({ agent }, { client: { ...client, identifiers: { companyNumber: "00000099", utr: null } } });
+      expect(errors.join(" ")).toContain("no valid UTR");
+    });
+
+    test("builds a return with Sender Agent and the Agent block", () => {
+      const { request } = extract({ agent }, { client });
+      const { irEnvelopeXml } = buildCtReturnDocuments(request);
+      expect(irEnvelopeXml).toContain("<Sender>Agent</Sender>");
+      expect(irEnvelopeXml).toContain("<AgentID>client-1</AgentID>");
+    });
+  });
+
   test("takes no Government Gateway credentials for a preview", () => {
     const { request, errors } = extract({ gatewayUserId: undefined, gatewayPassword: undefined }, { requireGatewayCredentials: false });
     expect(errors).toEqual([]);

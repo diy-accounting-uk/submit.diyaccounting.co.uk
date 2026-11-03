@@ -488,14 +488,14 @@ test("Click through: Resident-pro subscribes directly, no pass required (on-subs
   await expect(annualBtn.first()).toBeVisible({ timeout: 10000 });
   const annualBtnText = await annualBtn.first().textContent();
   console.log(`[pro-sub-test]: Annual subscribe button text: ${annualBtnText}`);
-  expect(annualBtnText).toContain("199");
+  expect(annualBtnText).toContain("39.99");
   expect(annualBtnText).toContain("Resident Pro");
 
   const monthlyLink = page.locator('button[data-subscribe="true"][data-bundle-id="resident-pro"][data-interval="monthly"]');
   await expect(monthlyLink.first()).toBeVisible({ timeout: 5000 });
   const monthlyLinkText = await monthlyLink.first().textContent();
   console.log(`[pro-sub-test]: Monthly subscribe link text: ${monthlyLinkText}`);
-  expect(monthlyLinkText).toContain("19.99");
+  expect(monthlyLinkText).toContain("3.99");
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pro-sub-02-subscribe-buttons.png`, readerView: true });
 
   // Verify NO "Request Resident Pro" button (subscription flow, not direct grant)

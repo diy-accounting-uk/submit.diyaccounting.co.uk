@@ -3,7 +3,7 @@
 
 // behaviour-tests/practiceLicence.behaviour.test.js
 //
-// A practice (a resident-pro subscriber) adds two clients and files a VAT return for each
+// A practice (a resident-tax-agent subscriber) adds two clients and files a VAT return for each
 // through the submission MCP's own run_for_clients, over mcp/lib/batch-tools.js and
 // mcp/lib/practice-tools.js exactly as the MCP server would call them. Signing in to Submit and
 // the consent half of the MCP's HMRC grant still go through the browser; the practice and filing
@@ -104,7 +104,7 @@ test.beforeAll(async () => {
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   // The signing secret must be in env before the server starts: the webhook handler caches the
-  // first one it reads. Without the forwarded webhook the resident-pro checkout never grants.
+  // first one it reads. Without the forwarded webhook the resident-tax-agent checkout never grants.
   stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
   if (stripeListenProcess) {
     process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
@@ -179,7 +179,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { skipPass: true });
+  await ensureBundleViaCheckout(page, "resident-tax-agent", screenshotPath, { skipPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   const practiceSessionToken = await page.evaluate(() => localStorage.getItem("cognitoAccessToken"));
@@ -329,7 +329,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: webIdentity.vrn });
   await page.evaluate(() => sessionStorage.setItem("hmrcAccount", "synthetic"));
   await page.goto(`${baseUrl}/practice.html`);
-  await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Pro licence.");
+  await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Tax Agent licence.");
   await expect(page.locator("#hmrcConnectionLine")).toContainText("Not connected to HMRC");
   await connectPracticeToHmrcInBrowser(page, agentUsername, agentPassword, screenshotPath);
 

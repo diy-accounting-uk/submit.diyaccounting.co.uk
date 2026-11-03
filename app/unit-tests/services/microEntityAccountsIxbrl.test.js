@@ -703,4 +703,32 @@ describe("the accountants' report of a micro-entity", () => {
       expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
     });
   });
+  describe("the advances to directors note", () => {
+    const ADVANCE = {
+      name: "Jo Smith",
+      terms: "Interest free and repayable on demand",
+      balanceAtStart: 200,
+      advanced: 0,
+      repaid: 150,
+      balanceAtEnd: 50,
+    };
+
+    test("writes the section 413 note with the director's balances and the terms as tagged facts", () => {
+      const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, directorsAdvances: [ADVANCE] });
+      expect(xhtml).toMatch(/<h3>\d+\. Advances and credits to directors<\/h3>/);
+      expect(xhtml).toMatch(/name="direp:AdvancesCreditsRepaidInPeriodDirectors" contextRef="y2026-director-1"[^>]*>150</);
+      expect(xhtml).toMatch(/name="direp:AdvancesCreditsDirectors" contextRef="e2026-director-1"[^>]*>50</);
+      expect(xhtml).toContain("Interest free and repayable on demand");
+    });
+
+    test("refuses a note whose arithmetic fails", () => {
+      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, directorsAdvances: [{ ...ADVANCE, balanceAtEnd: 60 }] })).toThrow(
+        /balanceAtEnd must equal/,
+      );
+    });
+
+    test("a company whose directors owe nothing writes no note", () => {
+      expect(buildMicroEntityAccounts(SAMPLE_INPUT)).not.toContain("Advances and credits to directors");
+    });
+  });
 });

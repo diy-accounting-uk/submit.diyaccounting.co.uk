@@ -50,11 +50,14 @@ export function linesFromPublishedBalanceSheet(sheet) {
         `(a difference of ${pence(netAssets - shareholdersFunds)}); a long-term debtor sits on no published line and is the usual cause`,
     );
   }
+  // An overdrawn director's loan account (E29 below 0) is a current asset, not a negative creditor.
+  const owedByDirectors = Math.max(0, -(sheet.E29 ?? 0));
   return {
     fixedAssets: sheet.F6 ?? 0,
-    currentAssets: sheet.E13 ?? 0,
+    currentAssets: (sheet.E13 ?? 0) + owedByDirectors,
     creditorsWithinOneYear: sheet.E20 ?? 0,
-    creditorsAfterOneYear: sheet.F31 ?? 0,
+    creditorsAfterOneYear: (sheet.F31 ?? 0) + owedByDirectors,
+    amountsOwedByDirectors: owedByDirectors,
     calledUpShareCapital: sheet.F36 ?? 0,
     profitAndLossAccount: shareholdersFunds - (sheet.F36 ?? 0),
     capitalAndReserves: shareholdersFunds,
@@ -106,6 +109,7 @@ export function profitAndLossFromPublishedAccount(sheet) {
 export function linesFromOpeningBalance(opening = {}) {
   const at = (key) => opening[key] || 0;
   const fixedAssets = sumValues(opening.fixed_asset_cost) - sumValues(opening.fixed_asset_depreciation);
+  const amountsOwedByDirectors = Math.max(0, -at("directors_loan"));
   const currentAssets =
     at("stock") +
     at("trade_debtors") +
@@ -113,7 +117,8 @@ export function linesFromOpeningBalance(opening = {}) {
     at("savings_account") +
     at("credit_card") +
     at("cash") +
-    at("long_term_debtors");
+    at("long_term_debtors") +
+    amountsOwedByDirectors;
   const creditorsWithinOneYear =
     at("trade_creditors") +
     at("net_wages_due") +
@@ -123,7 +128,7 @@ export function linesFromOpeningBalance(opening = {}) {
     at("cis_due") +
     at("vat_due") +
     at("paye_due");
-  const creditorsAfterOneYear = at("directors_loan") + at("long_term_creditors");
+  const creditorsAfterOneYear = Math.max(0, at("directors_loan")) + at("long_term_creditors");
   const calledUpShareCapital = at("share_capital");
   const profitAndLossAccount = at("retained_earnings") + at("capital_reserves");
   const capitalAndReserves = calledUpShareCapital + profitAndLossAccount;
@@ -139,6 +144,7 @@ export function linesFromOpeningBalance(opening = {}) {
     currentAssets,
     creditorsWithinOneYear,
     creditorsAfterOneYear,
+    amountsOwedByDirectors,
     calledUpShareCapital,
     profitAndLossAccount,
     capitalAndReserves,
@@ -173,6 +179,30 @@ function rounded(lines) {
 }
 
 /**
+ * The section 413 note rows for a director's loan account that is overdrawn at either balance
+ * sheet date, as { directorsAdvances }, or nothing. The book holds the two balances and no
+ * gross movements, so a year's net rise is the advance and a net fall is the repayment. The
+ * interest rate and the main conditions are the company's to state.
+ */
+export function directorsAdvancesFrom(currentYear, priorYear, directorName) {
+  const balanceAtEnd = Math.round(currentYear.amountsOwedByDirectors ?? 0);
+  const balanceAtStart = Math.round(priorYear.amountsOwedByDirectors ?? 0);
+  if (balanceAtEnd === 0 && balanceAtStart === 0) return {};
+  if (!directorName) throw new Error("The book names no director to carry the advances to directors note");
+  return {
+    directorsAdvances: [
+      {
+        name: directorName,
+        balanceAtStart,
+        advanced: Math.max(0, balanceAtEnd - balanceAtStart),
+        repaid: Math.max(0, balanceAtStart - balanceAtEnd),
+        balanceAtEnd,
+      },
+    ],
+  };
+}
+
+/**
  * The figures the micro-entity accounts filing takes, from a loaded Company book and its
  * calculated results. Pure, so the browser's books bundle runs it too.
  * @param {Object} book
@@ -197,6 +227,10 @@ export function microEntityAccountsFromResults(book, results, scenario) {
     "Whole pounds: capital and reserves is derived from the rounded assets and creditors, and the profit and loss account is the remainder after share capital.",
     "The average number of employees is the count of the book's employees table; confirm it before filing.",
   ];
+  if (current.amountsOwedByDirectors > 0 || prior.amountsOwedByDirectors > 0)
+    notes.push(
+      "The director's loan account is overdrawn, so it is a current asset. Add the interest rate and the main conditions of the advance to the advances to directors note; the book holds neither.",
+    );
   if (capitalReserve)
     notes.push(
       `A capital reserve of ${pence(capitalReserve)} is folded into the profit and loss account; the seven-line set has no other reserve line.`,
@@ -210,6 +244,7 @@ export function microEntityAccountsFromResults(book, results, scenario) {
     priorBalanceSheetDate: dayBefore(periodStart),
     averageNumberOfEmployees: (book.employees ?? []).length,
     directorName: book.directors?.[0]?.name ?? null,
+    ...directorsAdvancesFrom(current, prior, book.directors?.[0]?.name),
     dormant: false,
     profitAndLoss,
     balanceSheet: { currentYear, priorYear },

@@ -251,7 +251,7 @@ test("Click through: Load and save a Foreign Property Annual Submission with HMR
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

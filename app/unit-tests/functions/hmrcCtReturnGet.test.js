@@ -113,11 +113,12 @@ function pendingRecord(overrides = {}) {
   };
 }
 
-function buildEvent({ correlationId = CORRELATION_ID, headers = {}, authorizer, method = "GET" } = {}) {
+function buildEvent({ correlationId = CORRELATION_ID, headers = {}, authorizer, method = "GET", queryStringParameters } = {}) {
   const options = {
     method,
     path: `/api/v1/hmrc/ct/return/${correlationId}`,
     pathParameters: { correlationId },
+    ...(queryStringParameters ? { queryStringParameters } : {}),
     headers: { Authorization: "Bearer test-cognito-token", ...headers },
   };
   if (authorizer !== undefined) options.authorizer = authorizer;
@@ -154,7 +155,7 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       }
       if (cmd instanceof lib.GetCommand) {
         return storedRecord ? { Item: { requestId: cmd.input.Key.requestId, ...storedRecord } } : {};
@@ -234,6 +235,31 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     expect(mockPostToTransactionEngine.mock.calls[1][1]).toContain("<Function>delete</Function>");
   });
 
+  describe("errors HMRC raises only on the live service", () => {
+    const LIVE_ONLY_ERRORS = [
+      ["1608", "The IRmark is not valid for this message."],
+      ["1610", "The message could not be processed on the live service."],
+      ["1611", "There must be an existing successfully processed return for the same UTR and accounting period."],
+      ["1612", "The submission was refused on the live service."],
+      ["3300", "A business rule only the live service checks has failed."],
+      ["3304", "A second business rule only the live service checks has failed."],
+      ["7752", "A document rule only the live service checks has failed."],
+    ];
+
+    test.each(LIVE_ONLY_ERRORS)("records HMRC's error %s with its number and text as a rejection", async (number, text) => {
+      const xml = IRMARK_ERROR.replace("<Number>2021</Number>", `<Number>${number}</Number>`).replace(
+        "The supplied IRmark is incorrect.",
+        text,
+      );
+      engineReturns(xml, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(response.statusCode).toBe(200);
+      const body = parseResponseBody(response);
+      expect(body.statusCode).toBe("REJECT");
+      expect(body.businessErrors[0]).toMatchObject({ number, text });
+    });
+  });
+
   test("returns a finished request without polling", async () => {
     storedRecord = { status: "completed", data: { kind: "company-tax-return", statusCode: "ACCEPT", receiptId: "r-1" } };
     const response = await hmrcCtReturnGetHandler(buildEvent());
@@ -276,6 +302,64 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     process.env.ENVIRONMENT_NAME = "prod";
     const response = await hmrcCtReturnGetHandler(buildEvent());
     expect(response.statusCode).toBe(403);
+  });
+
+  describe("a client filing by a practice", () => {
+    function mockPracticeLicence(bundleId) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId, subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input?.TableName === "test-practice-clients-table") {
+          return { Item: { clientId: "client-1", identifiers: {}, archivedAt: null } };
+        }
+        if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, ...storedRecord } };
+        return {};
+      });
+    }
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = "test-practice-clients-table";
+    });
+
+    test("carries the client id into the receipt and the settled answer", async () => {
+      mockPracticeLicence("resident-tax-agent");
+      storedRecord = pendingRecord({ data: { clientId: "client-1" } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", clientId: "client-1" });
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.clientId).toBe("client-1");
+    });
+
+    test("names the missing company authorisation when HMRC rejects the credentials", async () => {
+      mockPracticeLicence("resident-tax-agent");
+      storedRecord = pendingRecord({ data: { clientId: "client-1" } });
+      engineReturns(
+        engineXml({
+          qualifier: "error",
+          errors:
+            "<GovTalkErrors><Error><RaisedBy>Gateway</RaisedBy><Number>1046</Number><Type>fatal</Type><Text>Authentication Failure</Text></Error></GovTalkErrors>",
+        }),
+        DELETE_RESPONSE,
+      );
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "REJECT", clientId: "client-1" });
+      expect(parseResponseBody(response).message).toContain("form 64-8 or online");
+    });
+
+    test("answers 403 without the practice licence", async () => {
+      mockPracticeLicence("resident-pro");
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(response.statusCode).toBe(403);
+    });
+
+    test("answers 403 CLIENT_SCOPE_ENVIRONMENT_RESTRICTED where the practice activity is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      mockPracticeLicence("resident-tax-agent");
+      const response = await hmrcCtReturnGetHandler(buildEvent({ queryStringParameters: { clientId: "client-1" } }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("CLIENT_SCOPE_ENVIRONMENT_RESTRICTED");
+    });
   });
 
   test("copies the form request of the pending request into the receipt and not into the response", async () => {

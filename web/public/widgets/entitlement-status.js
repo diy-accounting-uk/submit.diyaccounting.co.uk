@@ -32,7 +32,7 @@
           const text = await response.text();
           try {
             if (window.TOML) {
-              catalogCache = window.TOML.parse(text);
+              catalogCache = (await import("/lib/services/catalog-service.js")).parseCatalogueText(text);
             } else {
               try {
                 catalogCache = JSON.parse(text);

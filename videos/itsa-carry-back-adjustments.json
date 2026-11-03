@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-carry-back-adjustments",
   "title": "What a carry-back claim saves against an earlier year",
-  "description": "A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces.",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident Pro, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -106,7 +106,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -119,9 +119,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
+          "caption": "Resident Pro opens the Self Assessment activities.",
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },

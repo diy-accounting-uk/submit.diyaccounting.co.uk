@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-business-details",
   "title": "See the businesses HMRC has on file for your Self Assessment",
-  "description": "A signed-in walk through ITSA Business Details: sign in, take out Resident, ask HMRC which self-employment and property businesses it holds against your National Insurance number, and read the answer.",
+  "description": "A signed-in walk through ITSA Business Details: sign in, take out Resident Pro, ask HMRC which self-employment and property businesses it holds against your National Insurance number, and read the answer.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -85,7 +85,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Pro",
       "steps": [
         {
           "action": "click",
@@ -96,7 +96,7 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Pro",
           "testPass": true
         },
         {

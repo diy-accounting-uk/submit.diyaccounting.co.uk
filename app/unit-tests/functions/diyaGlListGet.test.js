@@ -121,7 +121,7 @@ describe("diyaGlListGet", () => {
   test("reports the caller's expired entitlement, leaving each book's own metadata untouched", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const bundleExpiry = "2026-01-01T00:00:00.000Z";
-    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
     // The billing webhook moves a lapsed subscriber's books to the sandbox tier and sets their
     // own expiresAt at the moment the subscription lapses, so a book still reading "resident"
     // here (e.g. before the webhook has run) is reported as-is rather than patched on the fly.

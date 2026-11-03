@@ -328,18 +328,27 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_123");
   });
 
-  test("uses STRIPE_PRICE_ID_RESIDENT_VAT for resident-vat checkout", async () => {
-    process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
+  test("uses STRIPE_PRICE_ID_RESIDENT_VAT_YEAR by default (annual) for resident-vat checkout", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_VAT_YEAR = "price_vat_year_789";
     const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_vat_live_789");
+    expect(params.line_items[0].price).toBe("price_vat_year_789");
     expect(params.metadata.bundleId).toBe("resident-vat");
   });
 
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_VAT for resident-vat synthetic checkout", async () => {
-    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT = "price_vat_test_789";
+  test("uses STRIPE_PRICE_ID_RESIDENT_VAT_MONTH when the resident-vat interval is monthly", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_VAT_MONTH = "price_vat_month_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", interval: "monthly" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_month_789");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR for resident-vat synthetic checkout", async () => {
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR = "price_vat_test_789";
     const event = buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-vat" });
     await ingestHandler(event);
 
@@ -349,8 +358,8 @@ describe("billingCheckoutPost", () => {
   });
 
   test("returns 500 when resident-vat price ID is not configured", async () => {
-    delete process.env.STRIPE_PRICE_ID_RESIDENT_VAT;
-    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT;
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_VAT_YEAR;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR;
     const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
@@ -363,63 +372,56 @@ describe("billingCheckoutPost", () => {
     expect(JSON.parse(result.body).code).toBe("bundle-not-listed");
   });
 
-  test("uses STRIPE_PRICE_ID_RESIDENT_YEAR by default (annual) for resident checkout", async () => {
-    process.env.ENVIRONMENT_NAME = "ci";
-    process.env.STRIPE_PRICE_ID_RESIDENT_YEAR = "price_resident_annual_789";
+  test("returns bundle-not-listed for the folded resident bundle id", async () => {
     const event = buildEventWithToken(validToken, { bundleId: "resident" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).code).toBe("bundle-not-listed");
+  });
+
+  test("uses STRIPE_PRICE_ID_RESIDENT_LTD_YEAR by default (annual) for resident-ltd checkout", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_LTD_YEAR = "price_ltd_annual_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-ltd" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_resident_annual_789");
-    expect(params.metadata.bundleId).toBe("resident");
+    expect(params.line_items[0].price).toBe("price_ltd_annual_789");
+    expect(params.metadata.bundleId).toBe("resident-ltd");
   });
 
-  test("uses STRIPE_PRICE_ID_RESIDENT_MONTH when the interval is monthly", async () => {
-    process.env.ENVIRONMENT_NAME = "ci";
-    process.env.STRIPE_PRICE_ID_RESIDENT_MONTH = "price_resident_monthly_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "monthly" });
+  test("uses STRIPE_PRICE_ID_RESIDENT_LTD_MONTH when the interval is monthly", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_LTD_MONTH = "price_ltd_monthly_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-ltd", interval: "monthly" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_resident_monthly_789");
+    expect(params.line_items[0].price).toBe("price_ltd_monthly_789");
   });
 
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_MONTH for a synthetic resident monthly checkout", async () => {
-    process.env.ENVIRONMENT_NAME = "ci";
-    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_MONTH = "price_resident_monthly_test_789";
-    const event = buildEventWithToken(syntheticEmailToken(), { bundleId: "resident", interval: "monthly" });
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH for a synthetic resident-ltd monthly checkout", async () => {
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH = "price_ltd_monthly_test_789";
+    const event = buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-ltd", interval: "monthly" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_resident_monthly_test_789");
+    expect(params.line_items[0].price).toBe("price_ltd_monthly_test_789");
   });
 
-  test("returns 500 when resident's annual price is not configured", async () => {
-    process.env.ENVIRONMENT_NAME = "ci";
-    delete process.env.STRIPE_PRICE_ID_RESIDENT_YEAR;
-    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_YEAR;
-    const event = buildEventWithToken(validToken, { bundleId: "resident" });
+  test("returns 500 when resident-ltd's annual price is not configured", async () => {
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_LTD_YEAR;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_LTD_YEAR;
+    const event = buildEventWithToken(validToken, { bundleId: "resident-ltd" });
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
   });
 
   test("returns 400 for an unrecognised checkout interval", async () => {
-    process.env.ENVIRONMENT_NAME = "ci";
-    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "weekly" });
+    const event = buildEventWithToken(validToken, { bundleId: "resident-ltd", interval: "weekly" });
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(400);
     const body = JSON.parse(result.body);
     expect(body.code).toBe("invalid-interval");
     expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
-  });
-
-  test("a single-price bundle ignores an interval it does not carry", async () => {
-    process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", interval: "monthly" });
-    await ingestHandler(event);
-
-    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_vat_live_789");
   });
 
   test("uses an allowed returnTo for the checkout success and cancel URLs", async () => {
@@ -446,8 +448,8 @@ describe("billingCheckoutPost", () => {
   });
 
   test("refuses a bundle not listed for the current environment before calling Stripe", async () => {
-    process.env.ENVIRONMENT_NAME = "test";
-    const event = buildEventWithToken(validToken, { bundleId: "resident" });
+    process.env.ENVIRONMENT_NAME = "prod";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-tax-agent" });
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(400);
@@ -458,8 +460,8 @@ describe("billingCheckoutPost", () => {
 
   test("proceeds when the bundle is listed for the current environment", async () => {
     process.env.ENVIRONMENT_NAME = "ci";
-    process.env.STRIPE_PRICE_ID_RESIDENT_YEAR = "price_resident_annual_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident" });
+    process.env.STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR = "price_tax_agent_annual_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-tax-agent" });
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);

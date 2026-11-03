@@ -25,6 +25,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const PAGE_URL = "http://localhost:3000/companies-house/fileCompanyTaxReturn.html";
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const BOOK_DIRECTORY = path.join(process.cwd(), "fixtures/diya-gl/precision-code-ltd");
+const LOAN_BOOK_DIRECTORY = path.join(process.cwd(), "fixtures/diya-gl/precision-code-ltd-loan");
 const CONTENT_TYPES = {
   ".html": "text/html",
   ".js": "application/javascript",
@@ -106,14 +107,14 @@ test.describe("File Company Tax Return page", () => {
 });
 
 test.describe("File Company Tax Return entry form", () => {
-  async function zippedPrecisionCodeBook() {
+  async function zippedPrecisionCodeBook(directory = BOOK_DIRECTORY) {
     const zip = new JSZip();
-    zip.file("book.toml", fs.readFileSync(path.join(BOOK_DIRECTORY, "book.toml")));
-    zip.file("lines.jsonl", fs.readFileSync(path.join(BOOK_DIRECTORY, "lines.jsonl")));
+    zip.file("book.toml", fs.readFileSync(path.join(directory, "book.toml")));
+    zip.file("lines.jsonl", fs.readFileSync(path.join(directory, "lines.jsonl")));
     return zip.generateAsync({ type: "nodebuffer" });
   }
 
-  async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }) {
+  async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
     await page.addInitScript(() => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -130,6 +131,24 @@ test.describe("File Company Tax Return entry form", () => {
       }
       if (url.pathname === "/api/v1/bundle") {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles: [], tokensRemaining: 0 }) });
+        return;
+      }
+      if (url.pathname === "/api/v1/practice/clients" && practice.clientsStatus) {
+        await route.fulfill({
+          status: practice.clientsStatus,
+          contentType: "application/json",
+          body: JSON.stringify(practice.clientsBody ?? {}),
+        });
+        return;
+      }
+      if (url.pathname === "/api/v1/diya-gl" && practice.books) {
+        practice.requested?.push(url.pathname + url.search);
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ books: practice.books }) });
+        return;
+      }
+      if (url.pathname.startsWith("/api/v1/diya-gl/") && practice.zipBase64) {
+        practice.requested?.push(url.pathname + url.search);
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ zipBase64: practice.zipBase64 }) });
         return;
       }
       if (url.pathname === "/api/v1/companies-house/company/12345678") {
@@ -190,11 +209,11 @@ test.describe("File Company Tax Return entry form", () => {
 
   // The precision-code-ltd book is a micro-entity by size, so the card opens the form on the
   // micro-entity accounts; most tests file the small company accounts the same book also gives.
-  async function dropBook(page, { regime = "small" } = {}) {
+  async function dropBook(page, { regime = "small", directory = BOOK_DIRECTORY } = {}) {
     await page.locator("#booksImportFile").setInputFiles({
       name: "precision-code.diya-gl.zip",
       mimeType: "application/zip",
-      buffer: await zippedPrecisionCodeBook(),
+      buffer: await zippedPrecisionCodeBook(directory),
     });
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
     await page.locator(regime === "micro" ? "#regimeMicro" : "#regimeSmall").check();
@@ -221,6 +240,58 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#booksImportDrop")).toBeVisible();
   });
 
+  test("the loans question adds, shows and removes a row for each participator", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await expect(page.locator("#loansDetail")).toBeHidden();
+    await page.locator("#loansMadeYes").check();
+    await expect(page.locator("#loansDetail")).toBeVisible();
+    await expect(page.locator("#loanName1")).toBeVisible();
+    await page.locator("#addLoanBtn").click();
+    await expect(page.locator("#loanName2")).toBeVisible();
+    await page.locator("#loanName2").fill("David Brown");
+    await page.locator("#repaidSinceYes").check();
+    await expect(page.locator("#repaymentName1")).toBeVisible();
+    await expect(page.locator("#repaymentName1 option")).toHaveText(["Choose a participator", "David Brown"]);
+    await page.locator('[data-loan-row="2"] button[data-remove="loan"]').click();
+    await expect(page.locator("#loanName2")).toHaveCount(0);
+    await page.locator('[data-repayment-row="1"] button[data-remove="repayment"]').click();
+    await expect(page.locator("#repaymentName1")).toHaveCount(0);
+  });
+
+  test("a book with an overdrawn director's loan account opens the loans question at Yes with the amount and works the tax", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await dropBook(page, { directory: LOAN_BOOK_DIRECTORY });
+    await expect(page.locator("#loansMadeYes")).toBeChecked();
+    await expect(page.locator("#loansBookNote")).toContainText("overdrawn by £12,000 at the end and £0 at the start");
+    await expect(page.locator("#loanName1")).toHaveValue("Carol Smith");
+    await expect(page.locator("#loanAmount1")).toHaveValue("12000");
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 480");
+    await expect(page.locator("#workedLoanTax")).toContainText("£4,050");
+    await expect(page.locator("#workedTaxRows")).toContainText("Section 455 rate for Carol Smith");
+    await expect(page.locator("#workedTaxRows")).toContainText("33.75%");
+    await page.locator("#loanRate1").fill("35.75");
+    await expect(page.locator("#workedLoanTax")).toContainText("£4,290");
+    await expect(page.locator("#workedTaxRows")).toContainText("the rate you entered");
+  });
+
+  test("a repayment dated after today shows its error under its own date field", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page, { directory: LOAN_BOOK_DIRECTORY });
+    await page.locator("#repaidSinceYes").check();
+    await page.locator("#repaymentName1").selectOption("Carol Smith");
+    await page.locator("#repaymentDate1").fill("2999-01-01");
+    await page.locator("#repaymentDate1").blur();
+    await expect(page.locator("#repaymentDate1-error")).toContainText("after today");
+    await page.locator("#repaymentDate1").fill("2026-06-30");
+    await page.locator("#repaymentRepaid1").fill("2000");
+    await page.locator("#repaymentRepaid1").blur();
+    await expect(page.locator("#repaymentDate1-error")).toHaveCount(0);
+    await expect(page.locator("#workedLoanTax")).toContainText("£3,375");
+  });
+
   test("a dropped precision-code-ltd zip fills every field the book supplies and works the tax", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
@@ -241,7 +312,7 @@ test.describe("File Company Tax Return entry form", () => {
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
       ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
       ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
-      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id),
+      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance")),
     ];
     for (const id of new Set(supplied)) {
       await expect(page.locator(`#${id}`), id).not.toHaveValue("");
@@ -430,6 +501,42 @@ test.describe("File Company Tax Return entry form", () => {
     });
   }
 
+  for (const [mismatch, label] of [
+    [true, "warns when the IRmark on HMRC's receipt differs"],
+    [false, "shows no IRmark warning when the receipt matches"],
+  ]) {
+    test(`an accepted return ${label}`, async ({ page }) => {
+      const submission = {
+        requests: [],
+        status: 200,
+        body: { correlationId: "ABCDEF0123456789", pollIntervalSeconds: 1 },
+        pollBody: mismatch ? { ...ACCEPTED_RETURN, irmarkReceiptMismatch: true } : ACCEPTED_RETURN,
+      };
+      await openForm(page, [], submission);
+      await dropBook(page);
+      await completeTheAnswersTheBookLeaves(page);
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#gatewayUserId").fill("gateway-user");
+      await page.locator("#gatewayPassword").fill("gateway-password");
+      await page.locator("#submitReturnBtn").click();
+
+      const copy = page.locator("#returnRecord .customer-copy");
+      await expect(copy).toBeVisible({ timeout: 15_000 });
+      const resultWarning = page.locator("#irmarkMismatchWarning");
+      const copyWarning = copy.locator(".customer-copy-warning");
+      if (mismatch) {
+        await expect(resultWarning).toBeVisible();
+        await expect(resultWarning).toContainText("IRmark on HMRC's receipt is different from the one we calculated");
+        await expect(copyWarning).toBeVisible();
+        await expect(copyWarning).toContainText("Contact support if you need the difference explained");
+      } else {
+        await expect(resultWarning).toHaveCount(0);
+        await expect(copyWarning).toHaveCount(0);
+      }
+    });
+  }
+
   for (const [width, scheme] of [
     [1280, "light"],
     [390, "dark"],
@@ -476,6 +583,18 @@ test.describe("File Company Tax Return entry form", () => {
         "filings.html?receipt=2026-10-24T11%3A30%3A00.000Z-ABCDEF0123456789.json",
       );
 
+      await expect(page.locator("#receiptProof")).toContainText("proof that it filed this return");
+      await expect(copy).toContainText("This receipt is the company's proof that it filed the return");
+      const help = page.locator("#supportHelp");
+      await expect(help.getByRole("link", { name: "HMRC Online Services Helpdesk" })).toHaveAttribute(
+        "href",
+        /gov\.uk\/.*online-services-helpdesk/,
+      );
+      await expect(help.getByRole("link", { name: "support@diyaccounting.co.uk" })).toHaveAttribute(
+        "href",
+        "mailto:support@diyaccounting.co.uk",
+      );
+
       const text = await page.locator("#returnRecord").innerText();
       expect(text).not.toContain("undefined");
       expect(text).not.toContain("NaN");
@@ -503,8 +622,10 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#periodEnd").dispatchEvent("change");
     await expect(page.locator("#period-error")).toContainText("12 months");
 
-    await page.locator("#loanOverdrawnYes").check();
-    await expect(page.locator("#loanOverdrawn-error")).toContainText("CT600A");
+    await page.locator("#loansMadeYes").check();
+    await page.locator("#loanName1").focus();
+    await page.locator("#loanName1").blur();
+    await expect(page.locator("#loanName1-error")).toContainText("participator's name");
 
     await page.locator("#currentCashAtBank").fill("1");
     await page.locator("#currentCashAtBank").blur();
@@ -519,7 +640,7 @@ test.describe("File Company Tax Return entry form", () => {
     const summary = page.locator("#ct600-error-summary");
     await expect(summary).toBeFocused();
     await expect(summary).toHaveAttribute("role", "alert");
-    for (const text of ["10 digits", "whole number", "12 months", "CT600A", "does not balance", "declaration"]) {
+    for (const text of ["10 digits", "whole number", "12 months", "participator's name", "does not balance", "declaration"]) {
       await expect(summary).toContainText(text);
     }
     await summary.getByRole("link", { name: /10 digits/ }).click();
@@ -912,5 +1033,100 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#microCurrentTurnover")).toBeHidden();
     await page.locator("#regimeMicro").check();
     await expect(page.locator("#microCurrentTurnover")).toHaveValue("1000");
+  });
+
+  const CLIENT = {
+    clientId: "client-1",
+    displayName: "Precision Code Ltd",
+    identifiers: { utr: "1234567890", companyNumber: "12345678" },
+    archivedAt: null,
+  };
+
+  async function openPracticePage(page, { clients = [CLIENT], previewRequests = [], ...rest } = {}) {
+    await serveRealSite(page, previewRequests, undefined, { clientsStatus: 200, clientsBody: { clients }, ...rest });
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+  }
+
+  test("asks who the return is for only when the practice clients call answers 200", async ({ page }) => {
+    await serveRealSite(page, [], undefined, { clientsStatus: 403, clientsBody: { message: "licence needed" } });
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#companyNumber")).toBeVisible();
+    await expect(page.getByText("Who is this return for?")).toBeHidden();
+  });
+
+  test("lists my own company and each client that is not archived", async ({ page }) => {
+    await openPracticePage(page, {
+      clients: [CLIENT, { ...CLIENT, clientId: "client-2", displayName: "Archived Ltd", archivedAt: "2026-01-01" }],
+    });
+    await expect(page.getByText("Who is this return for?")).toBeVisible();
+    await expect(page.locator("#clientChoiceOptions label")).toHaveText(["My own company", "Precision Code Ltd (12345678)"]);
+  });
+
+  test("a client fills the company number and the UTR and files as the agent", async ({ page }) => {
+    const previewRequests = [];
+    await openPracticePage(page, { previewRequests });
+    await page.locator("#clientChoice-client-1").check();
+    await expect(page.locator("#companyNumber")).toHaveValue("12345678");
+    await expect(page.locator("#companyNumber")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#practiceNameGroup")).toBeVisible();
+    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#utr")).toHaveValue("1234567890");
+    await expect(page.locator("#utr")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#declarantStatus")).toHaveValue("Agent");
+    await expect(page.locator("#agentSection")).toBeVisible();
+    await expect(page.locator("#sendToBoth")).toBeDisabled();
+    await expect(page.locator("#gatewayWhose")).toContainText("practice's own agent");
+
+    await dropBook(page);
+    for (const id of [
+      "statementSection477Exemption",
+      "statementMembersNotRequiredAudit",
+      "statementDirectorsResponsibilities",
+      "statementSmallCompaniesRegime",
+      "declarationAccepted",
+    ]) {
+      await page.locator(`#${id}`).check();
+    }
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Confirm that the company has authorised the practice");
+    expect(previewRequests).toHaveLength(0);
+
+    await page.locator("#agentAuthorised").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    expect(previewRequests).toHaveLength(1);
+    expect(previewRequests[0]).toMatchObject({
+      clientId: "client-1",
+      agent: { practiceName: "Example Practice LLP", authorisationConfirmed: true },
+      declarant: { status: "Agent" },
+    });
+  });
+
+  test("stops a client with no UTR and links to Practice clients", async ({ page }) => {
+    await openPracticePage(page, { clients: [{ ...CLIENT, identifiers: { utr: null, companyNumber: "12345678" } }] });
+    await page.locator("#clientChoice-client-1").check();
+    await expect(page.locator("#clientStop")).toContainText("Add the company's UTR to Precision Code Ltd on Practice clients");
+    await expect(page.locator("#clientStop a")).toHaveAttribute("href", "../practice.html");
+    await expect(page.locator("#companyLookupBtn")).toBeDisabled();
+  });
+
+  test("a saved book of the client fills the form", async ({ page }) => {
+    const requested = [];
+    const zipBase64 = (await zippedPrecisionCodeBook()).toString("base64");
+    await openPracticePage(page, {
+      books: [{ bookId: "book-1", title: "Precision Code FY26", latestVersion: 2 }],
+      zipBase64,
+      requested,
+    });
+    await page.locator("#clientChoice-client-1").check();
+    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#savedBooksSelect option")).toHaveText(["Precision Code FY26 (version 2)"]);
+    await page.locator("#savedBooksUse").click();
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    expect(requested.some((entry) => entry.includes("clientId=client-1"))).toBe(true);
   });
 });

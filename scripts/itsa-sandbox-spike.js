@@ -199,7 +199,7 @@ async function main() {
   // Gov-Vendor-License-IDs is a hash of the user's bundles, so the harness needs a salt of its own.
   process.env.USER_SUB_HASH_SALT = JSON.stringify({ current: "spike", versions: { spike: randomUUID() } });
   await initializeSalt();
-  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(clientPublicIp), { bundleIds: ["resident"] });
+  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(clientPublicIp), { bundleIds: ["resident-pro"] });
   record("fraud-headers", {
     headerNames: Object.keys(govClientHeaders).sort(),
     clientAndVendorIpAreTheSameHost: clientPublicIp === vendorPublicIp,

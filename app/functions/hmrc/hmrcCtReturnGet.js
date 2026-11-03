@@ -17,8 +17,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { createLogger } from "../../lib/logger.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { enforceCtBundles } from "../../services/ctClientScope.js";
 import { pollCtSubmission } from "../../services/hmrcCtSubmissionStatus.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -48,12 +47,10 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  let userSub;
-  try {
-    ({ userSub } = await enforceBundles(event));
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  const clientId = event.queryStringParameters?.clientId || undefined;
+  const enforcement = await enforceCtBundles(event, request, clientId);
+  if (enforcement.refusal) return enforcement.refusal;
+  const { userSub } = enforcement;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });

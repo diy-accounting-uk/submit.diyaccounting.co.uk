@@ -33,6 +33,7 @@ export const CT600_BOX_PATHS = {
   4: "/IRenvelope/CompanyTaxReturn/CompanyInformation/CompanyType",
   30: "/IRenvelope/CompanyTaxReturn/CompanyInformation/PeriodCovered/From",
   35: "/IRenvelope/CompanyTaxReturn/CompanyInformation/PeriodCovered/To",
+  95: "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/SupplementaryPages/CT600A",
   145: "/IRenvelope/CompanyTaxReturn/Turnover/Total",
   155: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/Trading/Profits",
   160: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/Trading/LossesBroughtForward",
@@ -61,6 +62,8 @@ export const CT600_BOX_PATHS = {
   435: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/MarginalReliefForRingFenceTrades",
   440: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/NetCorporationTaxChargeable",
   475: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/NetCorporationTaxLiability",
+  480: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/LoansToParticipators",
+  485: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/CT600AreliefDue",
   510: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/TaxChargeable",
   515: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/IncomeTax/DeductedIncomeTax",
   525: "/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid/TaxPayable",
@@ -87,19 +90,60 @@ export const CT600_BOX_PATHS = {
   985: "/IRenvelope/CompanyTaxReturn/Declaration/Status",
 };
 
+// Where each box of supplementary page CT600A sits in the return, as HMRC's CT-specDoc names it.
+// Part 2 and part 3 rows repeat per participator; the paths name the first.
+const CT600A = "/IRenvelope/CompanyTaxReturn/LoansByCloseCompanies";
+export const CT600A_BOX_PATHS = {
+  A5: `${CT600A}/BeforeEndPeriod`,
+  A10A: `${CT600A}/LoansInformation/Loan/Name`,
+  A10B: `${CT600A}/LoansInformation/Loan/AmountOfLoan`,
+  A15: `${CT600A}/LoansInformation/TotalLoans`,
+  A20: `${CT600A}/LoansInformation/TaxChargeable`,
+  A25A: `${CT600A}/ReliefEarlierThan/Loan/Name`,
+  A25B: `${CT600A}/ReliefEarlierThan/Loan/AmountRepaid`,
+  A25C: `${CT600A}/ReliefEarlierThan/Loan/AmountReleasedOrWrittenOff`,
+  A25D: `${CT600A}/ReliefEarlierThan/Loan/Date`,
+  A30: `${CT600A}/ReliefEarlierThan/TotalAmountRepaid`,
+  A35: `${CT600A}/ReliefEarlierThan/TotalAmountReleasedOrWritten`,
+  A40: `${CT600A}/ReliefEarlierThan/TotalLoans`,
+  A45: `${CT600A}/ReliefEarlierThan/ReliefDue`,
+  A50A: `${CT600A}/LoanLaterReliefNow/Loan/Name`,
+  A50B: `${CT600A}/LoanLaterReliefNow/Loan/AmountRepaid`,
+  A50C: `${CT600A}/LoanLaterReliefNow/Loan/AmountReleasedOrWrittenOff`,
+  A50D: `${CT600A}/LoanLaterReliefNow/Loan/Date`,
+  A55: `${CT600A}/LoanLaterReliefNow/TotalAmountRepaid`,
+  A60: `${CT600A}/LoanLaterReliefNow/TotalAmountReleasedOrWritten`,
+  A65: `${CT600A}/LoanLaterReliefNow/TotalLoans`,
+  A70: `${CT600A}/LoanLaterReliefNow/ReliefDue`,
+  A75: `${CT600A}/TotalLoansOutstanding`,
+  A80: `${CT600A}/TaxPayable`,
+};
+
 /**
- * The parsed ltd-<FY>.toml files a return's period needs, keyed by financial year: the one named
- * for the financial year the period ends in, which also states the year before.
+ * The parsed ltd-<year>.toml files a return's period needs, keyed by the year in the file name:
+ * the one named for the financial year the period ends in and the one before it. A period that
+ * starts in an earlier tax year than it ends in takes the rate of each.
  * @param {string} periodEnd - ISO date
  * @returns {Record<number, object>}
  */
 export function ltdTaxDataForPeriodEnd(periodEnd) {
   const financialYear = financialYearNumber(new Date(`${periodEnd}T00:00:00Z`));
-  const packageFile = createRequire(import.meta.url).resolve("@diy-accounting-uk/diya-gl/package.json");
-  const dataFile = join(dirname(packageFile), "dist", "app", "data", `ltd-${financialYear}.toml`);
-  if (!existsSync(dataFile)) return {};
-  return { [financialYear]: parseToml(readFileSync(dataFile, "utf8")) };
+  const dataDirectory = join(
+    dirname(createRequire(import.meta.url).resolve("@diy-accounting-uk/diya-gl/package.json")),
+    "dist",
+    "app",
+    "data",
+  );
+  const taxData = {};
+  for (const year of [financialYear - 1, financialYear]) {
+    const dataFile = join(dataDirectory, `ltd-${year}.toml`);
+    if (existsSync(dataFile)) taxData[year] = parseToml(readFileSync(dataFile, "utf8"));
+  }
+  return taxData;
 }
+
+// IRheader/Agent/AgentID and Company are 1 to 35 characters.
+const AGENT_FIELD_MAX = 35;
 
 function money(value) {
   return Number(value).toFixed(2);
@@ -111,6 +155,41 @@ function element(name, value) {
 
 function moneyElement(name, value) {
   return value === undefined ? "" : `<${name}>${money(value)}</${name}>`;
+}
+
+function yesNo(value) {
+  return value ? "yes" : "no";
+}
+
+// An amount element that is left out when the amount is 0.
+function positiveMoneyElement(name, value) {
+  return value > 0 ? moneyElement(name, value) : "";
+}
+
+function loanRowsXml(rows) {
+  return rows
+    .map(
+      (row) =>
+        `<Loan><Name>${escapeXmlText(row.name)}</Name>${positiveMoneyElement("AmountRepaid", row.repaid)}${positiveMoneyElement("AmountReleasedOrWrittenOff", row.releasedOrWrittenOff)}<Date>${row.date}</Date></Loan>`,
+    )
+    .join("");
+}
+
+function reliefPartXml(name, part) {
+  if (!part) return "";
+  const totals =
+    positiveMoneyElement("TotalAmountRepaid", part.repaid) +
+    positiveMoneyElement("TotalAmountReleasedOrWritten", part.releasedOrWrittenOff);
+  return `<${name}>${loanRowsXml(part.rows)}${totals}${moneyElement("TotalLoans", part.total)}${moneyElement("ReliefDue", part.relief)}</${name}>`;
+}
+
+// Supplementary page CT600A, in the order the schema lists its elements.
+function loansByCloseCompaniesXml(page) {
+  if (!page) return "";
+  const loans = page.loans
+    .map((loan) => `<Loan><Name>${escapeXmlText(loan.name)}</Name><AmountOfLoan>${money(loan.amount)}</AmountOfLoan></Loan>`)
+    .join("");
+  return `<LoansByCloseCompanies><BeforeEndPeriod>${yesNo(page.releasedBeforeEnd)}</BeforeEndPeriod><LoansInformation>${loans}<TotalLoans>${money(page.totalLoans)}</TotalLoans><TaxChargeable>${money(page.taxChargeable)}</TaxChargeable></LoansInformation>${reliefPartXml("ReliefEarlierThan", page.partTwo)}${reliefPartXml("LoanLaterReliefNow", page.partThree)}${moneyElement("TotalLoansOutstanding", page.totalLoansOutstanding)}<TaxPayable>${money(page.taxPayable)}</TaxPayable></LoansByCloseCompanies>`;
 }
 
 function wrap(name, inner) {
@@ -128,15 +207,20 @@ function financialYearXml(name, year, profit, rate, tax) {
  *
  * @param {object} input
  * @param {Record<number, string|number>} input.boxes - deriveCt600FromFigures output
+ * @param {object} [input.ct600a] - deriveCt600FromFigures output: the supplementary page CT600A, when the company lent to participators
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
  * @param {boolean} [input.amended] - true for a return that replaces one already filed for the period
+ * @param {{reference: string, practiceName: string}} [input.agent] - a practice filing for its client: written as IRheader/Agent with Sender Agent; absent for the company's own filing
  * @returns {string}
  */
-export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended = false }) {
+export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended = false, agent }) {
   if (!accountsIxbrl || !computationsIxbrl) throw new Error("Both the accounts and the computations iXBRL are attached to the return");
   const b = boxes;
   const encoded = (document) => Buffer.from(document, "utf8").toString("base64");
+  const agentXml = agent
+    ? `<Agent><AgentID>${escapeXmlText(agent.reference.slice(0, AGENT_FIELD_MAX))}</AgentID><Company>${escapeXmlText(agent.practiceName.slice(0, AGENT_FIELD_MAX))}</Company></Agent>`
+    : "";
 
   const trading = wrap(
     "Trading",
@@ -164,7 +248,7 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, 
     moneyElement("ProfitsBeforeDonationsAndGroupRelief", b[300]) + moneyElement("QualifyingDonations", b[305]),
   );
   const companyTaxCalculation = `<CompanyTaxCalculation>${income}${moneyElement("ProfitsBeforeOtherDeductions", b[235])}${deductionsAndReliefs}${chargesAndReliefs}${moneyElement("ChargeableProfits", b[315])}${chargeable}${moneyElement("CorporationTax", b[430])}${moneyElement("MarginalReliefForRingFenceTrades", b[435])}${moneyElement("NetCorporationTaxChargeable", b[440])}</CompanyTaxCalculation>`;
-  const calculationOfTax = `<CalculationOfTaxOutstandingOrOverpaid>${moneyElement("NetCorporationTaxLiability", b[475])}${moneyElement("TaxChargeable", b[510])}${wrap("IncomeTax", moneyElement("DeductedIncomeTax", b[515]))}${moneyElement("TaxPayable", b[525])}${moneyElement("TaxPayableIncludingRestitutionTax", b[528])}</CalculationOfTaxOutstandingOrOverpaid>`;
+  const calculationOfTax = `<CalculationOfTaxOutstandingOrOverpaid>${moneyElement("NetCorporationTaxLiability", b[475])}${moneyElement("LoansToParticipators", b[480])}${element("CT600AreliefDue", b[485])}${moneyElement("TaxChargeable", b[510])}${wrap("IncomeTax", moneyElement("DeductedIncomeTax", b[515]))}${moneyElement("TaxPayable", b[525])}${moneyElement("TaxPayableIncludingRestitutionTax", b[528])}</CalculationOfTaxOutstandingOrOverpaid>`;
   const reconciliation = wrap(
     "TaxReconciliation",
     moneyElement("TaxAlreadyPaid", b[595]) + wrap("TaxOutstandingOrOverpaid", moneyElement("TaxOutstanding", b[600])),
@@ -192,7 +276,7 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, 
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**
@@ -209,6 +293,7 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, 
  * @param {number} [company.taxAlreadyPaid] - box 595, pounds and pence paid before filing
  * @param {object} [options]
  * @param {object} [options.priorYearProfitAndLoss] - the prior year's profit and loss lines, when the company has them
+ * @param {object} [options.loansToParticipators] - the answers for supplementary page CT600A, when the company lent to participators
  */
 export async function deriveCompanyTaxReturn(session, company, options) {
   if (!session.book || !session.lines) throw new Error("No book is loaded. Call open_book first.");
@@ -224,6 +309,8 @@ export async function deriveCompanyTaxReturn(session, company, options) {
     declarantName: company.declarantName,
     declarantStatus: company.declarantStatus,
     taxAlreadyPaid: company.taxAlreadyPaid ?? 0,
+    ...(options?.loansToParticipators ? { loansToParticipators: options.loansToParticipators } : {}),
   };
-  return { ...deriveCt600FromFigures(figures, ltdTaxDataForPeriodEnd(figures.periodEnd)), figures };
+  const today = new Date().toISOString().slice(0, 10);
+  return { ...deriveCt600FromFigures(figures, ltdTaxDataForPeriodEnd(figures.periodEnd), { today }), figures };
 }

@@ -29,9 +29,8 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="sandbox">
-        <strong>Status: sandbox.</strong> You can build, preview and file these accounts against Companies House's test service. Nothing you
-        file here reaches the live register.
+      <p class="hint" data-feature-status="production">
+        <strong>Status: production.</strong> Accounts you file here reach the live Companies House register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -560,6 +559,25 @@
                         type="text"
                         id="currentOtherDebtors"
                         name="currentOtherDebtors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, amounts owed by directors</th>
+                  <td class="ledger__figure">
+                    <label for="currentAmountsOwedByDirectors" class="visually-hidden"
+                      >Of which, amounts owed by directors, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedByDirectors"
+                        name="currentAmountsOwedByDirectors"
                         inputmode="decimal"
                         data-money="whole-pounds"
                       />
@@ -1247,6 +1265,25 @@
                           type="text"
                           id="priorOtherDebtors"
                           name="priorOtherDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, amounts owed by directors</th>
+                    <td class="ledger__figure">
+                      <label for="priorAmountsOwedByDirectors" class="visually-hidden"
+                        >Of which, amounts owed by directors, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedByDirectors"
+                          name="priorAmountsOwedByDirectors"
                           inputmode="decimal"
                           data-money="whole-pounds"
                         />
@@ -2479,6 +2516,82 @@
 In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
               </div>
             </div>
+          </section>
+          <section class="form-section">
+            <h3>Advances to directors</h3>
+            <p class="hint">
+              Fill this in when the balance sheet shows amounts owed by directors. Section 413 of the Companies Act 2006 requires the note.
+            </p>
+            <div class="form-group">
+              <label for="directorsAdvanceName">Director who owes the company money</label>
+              <input type="text" id="directorsAdvanceName" name="directorsAdvanceName" />
+            </div>
+            <div class="form-group">
+              <label for="directorsAdvanceTerms">Interest rate and main conditions of the advance</label>
+              <input type="text" id="directorsAdvanceTerms" name="directorsAdvanceTerms" />
+            </div>
+            <p id="ledgerHintAdvances" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th scope="col">Line</th>
+                  <th scope="col" class="ledger__figure">Amount (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Owed by that director at the start of the year</th>
+                  <td class="ledger__figure">
+                    <label for="directorsAdvanceAtStart" class="visually-hidden">Owed by that director at the start of the year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceAtStart"
+                        name="directorsAdvanceAtStart"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Advanced to that director in the year</th>
+                  <td class="ledger__figure">
+                    <label for="directorsAdvanceMade" class="visually-hidden">Advanced to that director in the year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceMade"
+                        name="directorsAdvanceMade"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Repaid by that director in the year</th>
+                  <td class="ledger__figure">
+                    <label for="directorsAdvanceRepaid" class="visually-hidden">Repaid by that director in the year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceRepaid"
+                        name="directorsAdvanceRepaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </section>
           <section class="form-section">
             <h3>Controlling party</h3>

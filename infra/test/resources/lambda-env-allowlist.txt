@@ -47,7 +47,6 @@ TELEGRAM_BOT_TOKEN         app/functions/ops/activityTelegramForwarder.js:35 tru
 
 # --- feature flags / ternaries with a coded default (bucket a) ---
 DIYA_GL_RESIDENT_TIER  app/services/diyaGlEntitlement.js:71, `!== "true"` feature flag
-DIYA_GL_BUNDLE_ID      app/services/diyaGlEntitlement.js:82, ternary falling back to DEFAULT_DIYA_GL_BUNDLE_IDS
 HMRC_BASE_URI          app/services/bundleManagement.js:126 destructuring default; app/services/hmrcApi.js:41 ternary on hmrcAccount
 HMRC_SANDBOX_BASE_URI  app/services/hmrcApi.js:41/140/291, ternary/`||` default of "https://test-api.service.hmrc.gov.uk"
 ACTIVITY_BUS_NAME      app/lib/activityAlert.js:59-63, `if (!busName)` logs and returns `{ published: false }` -- never throws
@@ -60,6 +59,7 @@ TELEGRAM_BOT_TOKEN_ARN            ActivityStack.java:164-176, only when props.te
 COMPANIES_HOUSE_CLIENT_ID         CompaniesHouseStack.java:328, only when props.companiesHouseClientId() is non-blank
 COMPANIES_HOUSE_PACKAGE_REFERENCE CompaniesHouseStack.java:708-710/968-969, only when envName equals XML_GATEWAY_TEST_ENV_NAME
 HMRC_CT_VENDOR_ID CompaniesHouseStack.java hmrcCtReturnPost env, only when hmrcCtVendorId (HMRC_CT_VENDOR_ID at synth) is non-blank
+HMRC_RECEIPT_CERTIFICATE_SHA256 CompaniesHouseStack.java hmrcCtReturnPost and hmrcCtReturnGet env, only when hmrcReceiptCertificateSha256 (HMRC_RECEIPT_CERTIFICATE_SHA256 at synth) is non-blank
 
 # --- file-level over-collection, scoped per handler file (bucket b) ---
 # COMPANIES_HOUSE_IDENTITY_BASE_URI/FILING_BASE_URI are also CDK-conditional

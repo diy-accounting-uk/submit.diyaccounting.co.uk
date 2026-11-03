@@ -223,7 +223,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/itsa/business-details");
 
-      getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
 
       await expect(enforceBundles(event)).rejects.toMatchObject({
         name: "BundleEntitlementError",
@@ -315,7 +315,7 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/hmrc/itsa/final-declaration",
       ];
 
-      test.each(submittingItsaPaths)("refuses %s for a caller with no resident/resident-pro bundle", async (urlPath) => {
+      test.each(submittingItsaPaths)("refuses %s for a caller with no resident-pro bundle", async (urlPath) => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-without-itsa-bundle");
         const authorizerContext = {
@@ -335,7 +335,7 @@ describe("bundleEnforcement.js", () => {
         });
       });
 
-      test.each(submittingItsaPaths)("allows %s for a caller with the resident bundle", async (urlPath) => {
+      test.each(submittingItsaPaths)("allows %s for a caller with the resident-pro bundle", async (urlPath) => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-with-itsa-bundle");
         const authorizerContext = {
@@ -346,13 +346,13 @@ describe("bundleEnforcement.js", () => {
         };
         const event = buildEvent(token, authorizerContext, urlPath);
 
-        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+        getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
 
         // Should not throw
         await enforceBundles(event);
       });
 
-      test("refuses an ITSA read path for a caller with no resident/resident-pro bundle too - free means no token, not no bundle", async () => {
+      test("refuses an ITSA read path for a caller with no resident-pro bundle too - free means no token, not no bundle", async () => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-without-itsa-bundle-read");
         const authorizerContext = {
@@ -390,11 +390,11 @@ describe("bundleEnforcement.js", () => {
             "email": "test@test.submit.diyaccunting.co.uk",
             "scope": "read write",
           };
-          getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+          getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
 
           const { bundleIds } = await enforceBundles(buildEvent(token, authorizerContext, urlPath));
 
-          expect(bundleIds).toContain("resident");
+          expect(bundleIds).toContain("resident-pro");
         },
       );
 
@@ -413,7 +413,7 @@ describe("bundleEnforcement.js", () => {
       });
 
       test("an environment the small company activity does not list refuses the shared route", async () => {
-        process.env.ENVIRONMENT_NAME = "prod";
+        process.env.ENVIRONMENT_NAME = "preview";
         const token = makeJWT("accounts-filer-prod");
         const authorizerContext = {
           "sub": "accounts-filer-prod",
@@ -421,7 +421,7 @@ describe("bundleEnforcement.js", () => {
           "email": "test@test.submit.diyaccunting.co.uk",
           "scope": "read write",
         };
-        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+        getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
 
         await expect(enforceBundles(buildEvent(token, authorizerContext, "/api/v1/companies-house/accounts"))).rejects.toMatchObject({
           name: "BundleEntitlementError",
@@ -489,7 +489,7 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/company/00000006/persons-with-significant-control",
       ])("%s is allowed for a resident filer", async (urlPath) => {
         const event = defaultOnlyEvent(urlPath);
-        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+        getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
         await expect(enforceBundles(event)).resolves.toBeDefined();
       });
     });
@@ -518,8 +518,8 @@ describe("bundleEnforcement.js", () => {
       return buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/return");
     }
 
-    test("allows a client-scoped request when the practice holds an active resident-pro subscription and the client is found", async () => {
-      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+    test("allows a client-scoped request when the practice holds an active resident-tax-agent subscription and the client is found", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }]);
       getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "111222333" }, archivedAt: null });
 
       const result = await enforceBundles(buildClientScopedEvent(), { clientId: "c1" });
@@ -537,7 +537,7 @@ describe("bundleEnforcement.js", () => {
       expect(result.client.clientId).toBe("c1");
     });
 
-    test("refuses a client-scoped request when the practice holds no resident-pro subscription", async () => {
+    test("refuses a client-scoped request when the practice holds no resident-tax-agent subscription", async () => {
       getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
 
       await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({
@@ -547,9 +547,9 @@ describe("bundleEnforcement.js", () => {
       expect(getClient).not.toHaveBeenCalled();
     });
 
-    test("refuses a client-scoped request when resident-pro has expired", async () => {
+    test("refuses a client-scoped request when resident-tax-agent has expired", async () => {
       getUserBundles.mockResolvedValue([
-        { bundleId: "resident-pro", subscriptionStatus: "active", expiry: new Date(Date.now() - 1000).toISOString() },
+        { bundleId: "resident-tax-agent", subscriptionStatus: "active", expiry: new Date(Date.now() - 1000).toISOString() },
       ]);
 
       await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({
@@ -559,7 +559,7 @@ describe("bundleEnforcement.js", () => {
     });
 
     test("refuses a client-scoped request when the client belongs to another practice", async () => {
-      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }]);
       getClient.mockResolvedValue(null);
 
       await expect(enforceBundles(buildClientScopedEvent(), { clientId: "not-mine" })).rejects.toMatchObject({
@@ -569,7 +569,7 @@ describe("bundleEnforcement.js", () => {
     });
 
     test("refuses a client-scoped request when the client is archived", async () => {
-      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }]);
       getClient.mockResolvedValue({ clientId: "c1", archivedAt: "2026-01-01T00:00:00.000Z" });
 
       await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({

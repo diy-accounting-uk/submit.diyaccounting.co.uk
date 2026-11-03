@@ -75,7 +75,7 @@ describe("ads-conversions-upload buildLakeQuery", () => {
     expect(query).toContain("c.livemode = true");
     expect(query).toContain("c.refunded = false");
     expect(query).toContain("acq_gclid IS NOT NULL");
-    expect(query).toContain("c.bundle_id IN ('resident-vat', 'resident', 'resident-pro')");
+    expect(query).toContain("c.bundle_id IN ('resident-vat', 'resident-ltd', 'resident-pro', 'resident-tax-agent')");
     expect(query).toContain("date '2026-09-28'");
   });
   it("rejects a malformed date", () => {

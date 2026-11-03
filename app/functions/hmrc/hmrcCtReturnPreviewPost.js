@@ -3,10 +3,10 @@
 
 // @capability CH-15 File a Company Tax Return with HMRC
 // - **Use when:** a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
-// - **Does:** hmrcCtReturnPreviewPost.js builds the CT600 IRenvelope, the computations iXBRL and the accounts iXBRL from a book export plus the typed UTR, declarant and statements, and sends nothing. hmrcCtReturnPost.js signs the CT600 with its base32 IRmark, redacts the typed Government Gateway credentials and posts it. hmrcCtReturnGet.js polls within HMRC's poll interval and stores the receipt. fileCompanyTaxReturn.html takes the figures from a pasted or chosen book export (or from the accounts just accepted on fileSmallCompanyAccounts.html), stops on an overdrawn director's loan account, shows the CT600 and computations tables, and shows the IRmark on acceptance. The simulator acknowledges the first poll and answers the receipt after; the scenario CT600_REJECT_IRMARK returns error 2021. An accepted accounts or CT600 filing keeps its filed documents in the receipt, and companies-house/filings.html draws it as the customer copy (web/public/lib/filing-record.js), reached from the receipts list. The `behaviour-test-simulator-company-tax-return` job in `test.yml` runs the behaviour test.
+// - **Does:** hmrcCtReturnPreviewPost.js builds the CT600 IRenvelope, the computations iXBRL and the accounts iXBRL from a book export plus the typed UTR, declarant and statements, and sends nothing. hmrcCtReturnPost.js signs the CT600 with its base32 IRmark, redacts the typed Government Gateway credentials and posts it. hmrcCtReturnGet.js polls within HMRC's poll interval and stores the receipt. fileCompanyTaxReturn.html takes the figures from a pasted or chosen book export (or from the accounts just accepted on fileSmallCompanyAccounts.html), asks about loans to participators (rows of participators, repayments and the section 455 rate) and files supplementary page CT600A with box 480, shows the CT600 and computations tables, and shows the IRmark on acceptance. The simulator acknowledges the first poll and answers the receipt after; the scenario CT600_REJECT_IRMARK returns error 2021. An accepted accounts or CT600 filing keeps its filed documents in the receipt, and companies-house/filings.html draws it as the customer copy (web/public/lib/filing-record.js), reached from the receipts list. The `behaviour-test-simulator-company-tax-return` job in `test.yml` runs the behaviour test.
 // - **Run:** `npm run test:companyTaxReturnBehaviour-simulator`
 // - **Entry:** `app/functions/hmrc/hmrcCtReturnPreviewPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnGet.js:ingestHandler`; `web/public/companies-house/fileCompanyTaxReturn.page.js`
-// - **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml
+// - **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/services/ctClientScope.js, app/services/ct600Xml.js, web/public/lib/ct600-agent.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml
 // - **Keywords:** company tax return, CT600, corporation tax, computations, irmark, transaction engine, government gateway, UTR, hmrc, filing, simulator
 // - **Related:** CH-08
 // @end-capability
@@ -17,10 +17,9 @@
 // never takes the Government Gateway credentials.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest, parseRequestBody, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { enforceCtBundles } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "../../services/hmrcCtReturnRequest.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -43,12 +42,10 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  let userSub;
-  try {
-    ({ userSub } = await enforceBundles(event));
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  const clientId = parseRequestBody(event)?.clientId || undefined;
+  const enforcement = await enforceCtBundles(event, request, clientId);
+  if (enforcement.refusal) return enforcement.refusal;
+  const { userSub, client } = enforcement;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });
@@ -58,6 +55,7 @@ export async function ingestHandler(event) {
   const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, {
     requireGatewayCredentials: false,
     requireReviewedBoxes: false,
+    client,
   });
   if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);
   if (errorMessages.length > 0) {
@@ -76,6 +74,7 @@ export async function ingestHandler(event) {
     event: "hmrc-ct-return-previewed",
     summary: "HMRC Company Tax Return previewed",
     userSub,
+    clientId,
   });
 
   return http200OkResponse({
@@ -86,6 +85,7 @@ export async function ingestHandler(event) {
       computationsIxbrl: documents.computationsIxbrl,
       accountsIxbrl: documents.accountsIxbrl,
       boxes: documents.boxes,
+      ct600a: documents.ct600a,
       computationLines: documents.computationLines,
       losses: documents.losses,
       carryBack: documents.carryBack,

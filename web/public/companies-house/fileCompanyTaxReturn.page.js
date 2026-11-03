@@ -33,13 +33,25 @@ import {
   financialYearOf,
   formProblems,
   guideUrl,
+  loanId,
+  loanRowNumbers,
   microId,
   noteId,
   profitAndLossId,
   regimeOf,
+  repaymentId,
+  repaymentRowNumbers,
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
+import {
+  DEFAULT_AGENT_STATUS,
+  agentRequestFields,
+  clientChoices,
+  clientFilingStop,
+  rememberPracticeName,
+  rememberedPracticeName,
+} from "../lib/ct600-agent.js";
 
 const JOINT_STORAGE_KEY = "jointFiling";
 const MAX_POLLS = 60;
@@ -76,6 +88,10 @@ let currentView = "companyView";
 let reviewReached = false;
 let changing = null;
 let companiesHousePollWindow = 0;
+// The practice's clients, once the clients call answers 200, and the one the return is for. A practice
+// filing for a client signs as its agent; with no client the return is the company's own.
+let practiceClients = null;
+let agentClient = null;
 
 // What the customer chose to send and how far each filing has got. companiesHouse holds the
 // accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
@@ -589,9 +605,185 @@ function allowanceClasses(fields) {
   return [...grouped, ...ungrouped];
 }
 
+// --- Loans to participators: rows the customer adds and removes -------------------------------
+
+const loanRows = { next: 1 };
+const repaymentRows = { next: 1 };
+
+function moneyGroup(id, label, hint) {
+  return textGroup({ id, label, type: "whole-pounds", hint });
+}
+
+function removeButton(kind, row, label) {
+  return create("button", { "type": "button", "class": "secondary", "data-remove": kind, "data-row": String(row) }, label);
+}
+
+function registerTargets(group) {
+  for (const node of group.querySelectorAll("[data-error-target]")) state.targets?.add(node.dataset.errorTarget);
+}
+
+function loanRow(row) {
+  const group = create(
+    "div",
+    { "class": "loan-row", "data-loan-row": String(row) },
+    textGroup({ id: loanId("Name", row), label: "Name of participator or associate", type: "text", maxlength: 56 }),
+    moneyGroup(loanId("Amount", row), "Amount still owed at the end of the period", "For example, £12,000"),
+    create(
+      "div",
+      { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
+      moneyGroup(
+        loanId("Lent", row),
+        "Of this, the amount lent on or after the rate change",
+        "Leave it empty when none was lent after the change",
+      ),
+    ),
+    textGroup({
+      id: loanId("Rate", row),
+      label: "Section 455 rate for this loan, if you want to use another (%)",
+      type: "text",
+      hint: "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
+      inputmode: "decimal",
+    }),
+    removeButton("loan", row, "Remove this loan"),
+  );
+  registerTargets(group);
+  return group;
+}
+
+function repaymentRow(row) {
+  const select = create("select", {
+    "id": repaymentId("Name", row),
+    "name": repaymentId("Name", row),
+    "data-error-target": repaymentId("Name", row),
+  });
+  const group = create(
+    "div",
+    { "class": "loan-row", "data-repayment-row": String(row) },
+    create(
+      "div",
+      { class: "form-group" },
+      create("label", { for: repaymentId("Name", row) }, "Participator"),
+      errorHost(repaymentId("Name", row)),
+      select,
+    ),
+    textGroup({ id: repaymentId("Date", row), label: "Date", type: "date" }),
+    moneyGroup(repaymentId("Repaid", row), "Amount repaid", "Leave it empty when none was repaid"),
+    moneyGroup(repaymentId("Released", row), "Amount released or written off", "Leave it empty when none was released or written off"),
+    removeButton("repayment", row, "Remove this repayment"),
+  );
+  registerTargets(group);
+  return group;
+}
+
+function addLoanRow() {
+  const row = loanRows.next++;
+  element("loanRows").append(loanRow(row));
+  syncRepaymentNames();
+  return row;
+}
+
+function addRepaymentRow() {
+  const row = repaymentRows.next++;
+  element("repaymentRows").append(repaymentRow(row));
+  syncRepaymentNames();
+  return row;
+}
+
+function loansSection(fields) {
+  const [loansMade, releasedBeforeEnd, repaidSince] = fields;
+  return [
+    loansMade,
+    create("p", { id: "loansBookNote", class: "hint", hidden: "" }),
+    create(
+      "div",
+      { id: "loansDetail", hidden: "" },
+      create("h4", {}, "Loans still owed at the end of the period"),
+      create("div", { id: "loanRows" }),
+      create("button", { type: "button", id: "addLoanBtn", class: "secondary" }, "Add another participator"),
+      releasedBeforeEnd,
+      repaidSince,
+      create(
+        "div",
+        { id: "repaymentsDetail", hidden: "" },
+        create("h4", {}, "Repayments, releases and write-offs since the period end"),
+        create(
+          "p",
+          { class: "hint" },
+          "Enter what was repaid up to today. You claim relief on later repayments from HMRC after they are made.",
+        ),
+        create("div", { id: "repaymentRows" }),
+        create("button", { type: "button", id: "addRepaymentBtn", class: "secondary" }, "Add another repayment"),
+      ),
+    ),
+  ];
+}
+
+// Each repayment names one of the participators in the loans above it.
+function syncRepaymentNames() {
+  const names = [...element("loanRows").querySelectorAll('input[id^="loanName"]')].map((input) => input.value.trim()).filter(Boolean);
+  for (const select of element("repaymentRows").querySelectorAll("select")) {
+    const chosen = select.value;
+    select.replaceChildren(
+      create("option", { value: "" }, "Choose a participator"),
+      ...[...new Set(names)].map((name) => create("option", { value: name }, name)),
+    );
+    select.value = names.includes(chosen) ? chosen : "";
+  }
+}
+
+// Whether the period crosses a date at which the section 455 rate changes decides if each loan asks for the part lent after it.
+function showLoanDetail(values) {
+  const asked = values.loansMade === "yes";
+  element("loansDetail").hidden = !asked;
+  if (asked && loanRowNumbers(values).length === 0) addLoanRow();
+  element("repaymentsDetail").hidden = !(asked && values.repaidSince === "yes");
+  if (asked && values.repaidSince === "yes" && repaymentRowNumbers(values).length === 0) addRepaymentRow();
+  let crosses = false;
+  if (state.bundle && values.periodStart && values.periodEnd) {
+    try {
+      crosses = Boolean(state.bundle.section455RateChangeDate(values.periodStart, values.periodEnd, taxDataByYear()));
+    } catch {
+      crosses = false;
+    }
+  }
+  for (const node of element("loanRows").querySelectorAll("[data-loan-lent]")) node.hidden = !crosses;
+}
+
+function removeRow(kind, row) {
+  const selector = kind === "loan" ? `[data-loan-row="${row}"]` : `[data-repayment-row="${row}"]`;
+  element(kind === "loan" ? "loanRows" : "repaymentRows")
+    .querySelector(selector)
+    ?.remove();
+  syncRepaymentNames();
+  refresh();
+}
+
+function handleLoanButton(event) {
+  const button = event.target.closest?.("button");
+  if (!button) return;
+  if (button.id === "addLoanBtn") addLoanRow();
+  else if (button.id === "addRepaymentBtn") addRepaymentRow();
+  else if (button.dataset.remove) removeRow(button.dataset.remove, button.dataset.row);
+  else return;
+  refresh();
+}
+
+// A book fill names rows that do not exist yet: make the rows its entries need.
+function growRowsFor(entries) {
+  const ids = new Set(entries.map(([id]) => id));
+  for (let row = 1; row <= 999; row += 1) {
+    if (!ids.has(loanId("Name", row))) break;
+    if (!element("loanRows").querySelector(`[data-loan-row="${row}"]`)) {
+      loanRows.next = row;
+      addLoanRow();
+    }
+  }
+}
+
 function sectionBody(sectionId) {
   const fields = CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map(fieldGroup);
   if (sectionId === "allowances") return allowanceClasses(fields);
+  if (sectionId === "loans") return loansSection(fields);
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
     return [
@@ -613,6 +805,8 @@ function renderForm() {
     sections.push(create("section", { id: `section-${id}`, class: "form-section" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
   }
+  loanRows.next = 1;
+  repaymentRows.next = 1;
   element("formSections").replaceChildren(...sections);
   state.targets = new Set([...element("formSections").querySelectorAll("[data-error-target]")].map((node) => node.dataset.errorTarget));
   state.targets.add(WORKED_TAX_ID);
@@ -652,7 +846,7 @@ function toggleSections() {
 
 function readValues() {
   const values = {};
-  for (const control of element("returnForm").querySelectorAll("input, textarea")) {
+  for (const control of element("returnForm").querySelectorAll("input, textarea, select")) {
     if (control.type === "radio") {
       if (control.checked) values[control.name] = control.value;
     } else if (control.type === "checkbox") {
@@ -708,16 +902,22 @@ async function ensureBundle() {
   return state.bundlePromise;
 }
 
+// The financial year the period ends in and the one before it: a loan lent in the earlier tax year is charged at that year's rate.
 async function ensureTaxData(periodEnd) {
   if (!isIsoDate(periodEnd) || !state.bundle) return;
   const financialYear = financialYearOf(periodEnd);
-  if (financialYear in state.taxData) return;
-  state.taxData[financialYear] = null;
-  try {
-    state.taxData[financialYear] = await state.bundle.ltdTaxData(financialYear);
-  } catch (error) {
-    console.error(`No tax data for the financial year ${financialYear}:`, error);
-  }
+  const missing = [financialYear - 1, financialYear].filter((year) => !(year in state.taxData));
+  if (missing.length === 0) return;
+  for (const year of missing) state.taxData[year] = null;
+  await Promise.all(
+    missing.map(async (year) => {
+      try {
+        state.taxData[year] = await state.bundle.ltdTaxData(year);
+      } catch (error) {
+        console.error(`No tax data for the financial year ${year}:`, error);
+      }
+    }),
+  );
   refresh();
 }
 
@@ -760,6 +960,63 @@ function workedValue(box, value) {
   return `£${formatPounds(value)}`;
 }
 
+const RATE_SOURCE_TEXT = {
+  "tax-data": "from the tax data for the tax year of the loan",
+  "online-rules": "the rate HMRC's online rules accept",
+  "customer-entered": "the rate you entered",
+};
+
+function percentText(rate) {
+  return `${Number((rate * 100).toFixed(2))}%`;
+}
+
+// The supplementary page CT600A boxes the tax is worked from, and the rate each loan uses.
+function loansWorkedRows(page) {
+  const row = (term, value, hint, id) =>
+    create(
+      "div",
+      { class: "worked-tax__row", ...(id ? { id } : {}) },
+      create("dt", {}, term),
+      create("dd", {}, value),
+      ...(hint ? [create("dd", { class: "hint" }, hint)] : []),
+    );
+  const rows = [
+    row("Box A15: total of the loans still owed", `£${formatPounds(page.totalLoans)}`, "The loans you entered"),
+    row("Box A20: tax on the loans", `£${formatPounds(page.taxChargeable)}`, "Each loan at its section 455 rate, to the penny"),
+  ];
+  if (page.partTwo) {
+    rows.push(
+      row(
+        "Box A45: relief for loans repaid within nine months",
+        `£${formatPounds(page.partTwo.relief)}`,
+        "The amount repaid, released or written off, at the rate of the loan",
+      ),
+    );
+  }
+  if (page.partThree) {
+    rows.push(row("Box A70: relief for later repayments", `£${formatPounds(page.partThree.relief)}`, "Relief that is already due"));
+  }
+  rows.push(
+    row("Box A80: tax payable on loans to participators", `£${formatPounds(page.taxPayable)}`, "Carried to box 480", "workedLoanTax"),
+  );
+  for (const loan of page.rates) {
+    for (const part of loan.parts) {
+      rows.push(
+        row(
+          loan.parts.length > 1 ? `Section 455 rate for ${loan.name} (lent from ${part.from})` : `Section 455 rate for ${loan.name}`,
+          percentText(part.rate),
+          RATE_SOURCE_TEXT[part.source],
+          undefined,
+        ),
+      );
+    }
+  }
+  for (const warning of page.warnings) {
+    rows.push(create("div", { class: "worked-tax__row", role: "note" }, create("dt", {}, "Warning"), create("dd", {}, warning)));
+  }
+  return rows;
+}
+
 function renderWorkedTax(values) {
   const rows = element("workedTaxRows");
   if (!state.bundle) {
@@ -776,7 +1033,7 @@ function renderWorkedTax(values) {
   };
   let derived;
   try {
-    derived = state.bundle.deriveCt600FromFigures({ ...figures, ...placeholders }, taxDataByYear());
+    derived = state.bundle.deriveCt600FromFigures({ ...figures, ...placeholders }, taxDataByYear(), { today: today() });
   } catch {
     element("workedTaxEmpty").style.display = "block";
     rows.replaceChildren();
@@ -809,6 +1066,7 @@ function renderWorkedTax(values) {
       ),
     );
   }
+  if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
   if (derived.losses.totalCarriedForward > 0) {
     items.push(
       create(
@@ -917,6 +1175,7 @@ function updateSummary() {
 function refresh() {
   if (!element("formSections").firstChild) return;
   const values = readValues();
+  showLoanDetail(values);
   state.problems = evaluate(values);
   renderWorkedTax(values);
   showTouchedErrors();
@@ -938,6 +1197,7 @@ function markTouched(control) {
 function handleFormInput(event) {
   const control = event.target;
   if (control.id) state.edited.add(control.id);
+  if (control.id?.startsWith("loanName")) syncRepaymentNames();
   setDefaults();
   refresh();
 }
@@ -949,6 +1209,7 @@ function handleFormLeave(event) {
 function handleFormChange(event) {
   if (event.target.id === "includeComparatives" || event.target.id === "includeFixedAssetNote") toggleSections();
   if (event.target.name === "accountsRegime" || event.target.name === "sendTo") applyRegime();
+  if (["loansMade", "repaidSince"].includes(event.target.name)) showLoanDetail(readValues());
   if (markTouched(event.target)) {
     setDefaults();
     refresh();
@@ -960,6 +1221,7 @@ function handleFormChange(event) {
 function mountBooksCard() {
   window.booksImport.mount(element("booksImport"), {
     kind: "ct600",
+    clientId: () => agentClient?.clientId,
     onFilled: (workingSheet) => {
       state.workingSheet = workingSheet;
       refresh();
@@ -967,9 +1229,113 @@ function mountBooksCard() {
   });
 }
 
+// --- Filing for a client as its agent ------------------------------------
+
+async function loadPracticeClients() {
+  if (practiceClients) return;
+  try {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    const response = await fetch("/api/v1/practice/clients", idToken ? { headers: { Authorization: `Bearer ${idToken}` } } : {});
+    if (!response.ok) return;
+    const body = await response.json();
+    if (!Array.isArray(body.clients)) return;
+    practiceClients = body.clients;
+  } catch (error) {
+    console.warn("The practice clients could not be read; the return is the company's own:", error);
+    return;
+  }
+  renderClientChoice();
+}
+
+function clientRadio(value, label, checked) {
+  return create(
+    "div",
+    { class: "choice" },
+    create("input", {
+      type: "radio",
+      name: "clientChoice",
+      id: `clientChoice-${value || "own"}`,
+      value,
+      ...(checked ? { checked: "" } : {}),
+    }),
+    create("label", { for: `clientChoice-${value || "own"}` }, label),
+  );
+}
+
+function renderClientChoice() {
+  const choices = clientChoices(practiceClients);
+  element("clientChoice").style.display = choices.length > 0 ? "block" : "none";
+  element("clientChoiceOptions").replaceChildren(
+    clientRadio("", "My own company", !agentClient),
+    ...choices.map((choice) => clientRadio(choice.clientId, choice.label, agentClient?.clientId === choice.clientId)),
+  );
+}
+
+function chooseClient(clientId) {
+  agentClient = practiceClients.find((client) => client.clientId === clientId) ?? null;
+  const stop = agentClient ? clientFilingStop(agentClient) : null;
+  const stopNode = element("clientStop");
+  stopNode.style.display = stop ? "block" : "none";
+  stopNode.replaceChildren(...(stop ? [stop, " ", create("a", { href: "../practice.html" }, "Open Practice clients"), "."] : []));
+  element("practiceNameGroup").style.display = agentClient ? "block" : "none";
+  if (agentClient && !element("practiceName").value) element("practiceName").value = rememberedPracticeName();
+  const companyNumber = element("companyNumber");
+  companyNumber.readOnly = Boolean(agentClient);
+  companyNumber.value = agentClient?.identifiers?.companyNumber ?? "";
+  element("companyLookupBtn").disabled = Boolean(stop);
+  window.booksImport.showSavedBooksFor(agentClient?.clientId);
+}
+
+// The form for a client: the UTR comes from the client row, the declaration status starts as Agent,
+// the company's authorisation is confirmed, and the accounts go to HMRC only.
+function applyClientToForm() {
+  const filingAsAgent = Boolean(agentClient);
+  element("agentSection").style.display = filingAsAgent ? "block" : "none";
+  const utr = element("utr");
+  utr.readOnly = filingAsAgent;
+  if (filingAsAgent) utr.value = agentClient.identifiers.utr;
+  const status = element("declarantStatus");
+  if (filingAsAgent && !state.edited.has("declarantStatus")) status.value = DEFAULT_AGENT_STATUS;
+  if (!filingAsAgent && status.value === DEFAULT_AGENT_STATUS) status.value = "Director";
+  if (filingAsAgent) {
+    element("sendToHmrc").checked = true;
+    applyRegime();
+  }
+  element("sendToBoth").disabled = filingAsAgent;
+  element("gatewayWhose").textContent = filingAsAgent
+    ? "Sign in with the practice's own agent Government Gateway user ID and password, with Corporation Tax enrolled."
+    : "Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.";
+  refresh();
+}
+
+function renderAgentAuthorisation() {
+  element("agentAuthorisedHost").replaceChildren(
+    checkboxGroup(
+      "agentAuthorised",
+      "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
+    ),
+  );
+}
+
+function agentFields() {
+  return agentRequestFields(agentClient, {
+    practiceName: element("practiceName").value,
+    authorisationConfirmed: element("agentAuthorised")?.checked === true,
+  });
+}
+
+function agentProblem() {
+  if (!agentClient) return null;
+  if (!element("practiceName").value.trim()) return "Enter the practice name for HMRC's records.";
+  if (!element("agentAuthorised").checked)
+    return "Confirm that the company has authorised the practice for Corporation Tax and has approved this return.";
+  return null;
+}
+
 async function handleCompanySubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["companyNumber"])) return;
+  if (agentClient) rememberPracticeName(element("practiceName").value.trim());
   const companyNumber = window.normaliseCompanyNumber(element("companyNumber").value);
 
   window.showLoading();
@@ -981,7 +1347,7 @@ async function handleCompanySubmit(event) {
     element("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
     await ensureBundle();
-    refresh();
+    applyClientToForm();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || "Failed to look up the company.", "error");
@@ -1110,7 +1476,12 @@ async function handleReturnFormSubmit(event) {
       return;
     }
     const values = readValues();
-    previewRequest = ct600RequestFromValues(values, company, state.workingSheet);
+    const problem = agentProblem();
+    if (problem) {
+      window.showStatus(problem, "error");
+      return;
+    }
+    previewRequest = { ...ct600RequestFromValues(values, company, state.workingSheet), ...agentFields() };
     reviewedValues = values;
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
@@ -1163,6 +1534,7 @@ function renderErrors(outcome) {
   }
   container.style.display = "block";
   container.replaceChildren(
+    ...(outcome.message ? [create("p", { role: "alert" }, outcome.message)] : []),
     create("ul", {}, ...entries.map((entry) => create("li", {}, `Error ${entry.number}: ${entry.text}`))),
     create("p", {}, "Check the answers these errors name, change them in the review, and send the return again."),
   );
@@ -1177,7 +1549,7 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
   let result;
   for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
     await waitSeconds(waitFor);
-    result = await window.pollCtReturn(correlationId, extraHeaders);
+    result = await window.pollCtReturn(correlationId, extraHeaders, previewRequest?.clientId);
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") return result;
     element("returnResult").replaceChildren(
       paragraph("Return ", { strong: correlationId }, " is ", { strong: result.statusCode }, ". Checking again..."),
@@ -1235,9 +1607,24 @@ async function showOutcome(outcome) {
     element("returnResult").replaceChildren(
       outcomeTitle(sending.amendment ? "HMRC accepted the amended Company Tax Return" : "HMRC accepted the Company Tax Return"),
     );
+    const { IRMARK_MISMATCH_WARNING } = await import("../lib/filing-result-record.js");
     element("returnIrmark").replaceChildren(
       create("p", {}, "IRmark: ", create("code", {}, outcome.irmark)),
+      ...(outcome.irmarkReceiptMismatch
+        ? [
+            create(
+              "div",
+              { id: "irmarkMismatchWarning", class: "status-message status-warning", role: "alert" },
+              create("div", { class: "status-message-content" }, IRMARK_MISMATCH_WARNING),
+            ),
+          ]
+        : []),
       create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
+      create(
+        "p",
+        { id: "receiptProof" },
+        "The receipt below is the company's proof that it filed this return. Keep it with the company's records.",
+      ),
     );
     element("returnIrmark").style.display = "block";
     element("startAgainBtn").style.display = "inline-block";
@@ -1464,6 +1851,16 @@ function readSavedJoint() {
 }
 
 function fillValues(values) {
+  while (loanRowNumbers(values).some((row) => !element("loanRows").querySelector(`[data-loan-row="${row}"]`))) {
+    const missing = loanRowNumbers(values).find((row) => !element("loanRows").querySelector(`[data-loan-row="${row}"]`));
+    loanRows.next = missing;
+    addLoanRow();
+  }
+  while (repaymentRowNumbers(values).some((row) => !element("repaymentRows").querySelector(`[data-repayment-row="${row}"]`))) {
+    const missing = repaymentRowNumbers(values).find((row) => !element("repaymentRows").querySelector(`[data-repayment-row="${row}"]`));
+    repaymentRows.next = missing;
+    addRepaymentRow();
+  }
   for (const control of element("returnForm").querySelectorAll("input, textarea")) {
     if (control.type === "radio") {
       control.checked = values[control.name] === control.value;
@@ -1473,6 +1870,10 @@ function fillValues(values) {
       control.value = values[control.id];
       state.edited.add(control.id);
     }
+  }
+  syncRepaymentNames();
+  for (const select of element("returnForm").querySelectorAll("select")) {
+    if (typeof values[select.id] === "string") select.value = values[select.id];
   }
   toggleSections();
   applyRegime();
@@ -1777,6 +2178,7 @@ function startAgain() {
   });
   forgetJoint();
   hideAmendPanel();
+  agentClient = null;
   element("revisionDifferences").value = "";
   element("jointProgress").style.display = "none";
   element("booksImport").hidden = false;
@@ -1786,10 +2188,18 @@ function startAgain() {
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("companyForm").reset();
+  element("companyNumber").readOnly = false;
+  element("companyLookupBtn").disabled = false;
   element("gatewayUserId").value = "";
   element("gatewayPassword").value = "";
   element(SUMMARY_ID)?.remove();
   renderForm();
+  renderAgentAuthorisation();
+  applyClientToForm();
+  if (practiceClients) {
+    chooseClient("");
+    renderClientChoice();
+  }
   mountBooksCard();
   window.hideStatus();
   showView("companyView");
@@ -1859,12 +2269,18 @@ async function loadAmendment(receiptName) {
 }
 
 renderForm();
+renderAgentAuthorisation();
 mountBooksCard();
+loadPracticeClients();
+document.addEventListener("submit-ready", loadPracticeClients, { once: true });
+element("clientChoiceOptions").addEventListener("change", (event) => chooseClient(event.target.value));
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 
 const returnForm = element("returnForm");
 returnForm.addEventListener("input", handleFormInput);
+returnForm.addEventListener("click", handleLoanButton);
+returnForm.addEventListener("entriesapplying", (event) => growRowsFor(event.detail.entries));
 returnForm.addEventListener("change", handleFormChange);
 returnForm.addEventListener("focusout", handleFormLeave);
 element("companyForm").addEventListener("submit", handleCompanySubmit);

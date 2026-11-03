@@ -161,7 +161,7 @@ describe("functions/account/commissionRelease", () => {
 
   test("a credit line with no live subscription is held as no_subscription", async () => {
     repo.getLine.mockResolvedValue(line({ tier: "customer", form: "credit", amountPence: 100 }));
-    mockGetBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", stripeSubscriptionId: "sub_x" }]);
+    mockGetBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "canceled", stripeSubscriptionId: "sub_x" }]);
     await handler();
     expect(repo.setHoldReasons).toHaveBeenCalledWith(expect.anything(), ["no_subscription"], NOW);
     expect(mockGetAffiliate).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe("functions/account/commissionRelease", () => {
     repo.getLine.mockResolvedValue(line({ tier: "customer", form: "credit", amountPence: 100 }));
     mockGetBundles.mockResolvedValue([
       { bundleId: "resident-vat", subscriptionStatus: "active", stripeSubscriptionId: "sub_a" },
-      { bundleId: "resident", subscriptionStatus: "active", stripeSubscriptionId: "sub_b" },
+      { bundleId: "resident-pro", subscriptionStatus: "active", stripeSubscriptionId: "sub_b" },
     ]);
     await handler();
     const { totals } = repo.releaseLine.mock.calls[0][1];
@@ -199,7 +199,7 @@ describe("functions/account/commissionRelease", () => {
 
   test("a credit cap refusal holds the line as cap_credit", async () => {
     repo.getLine.mockResolvedValue(line({ tier: "customer", form: "credit", amountPence: 100 }));
-    mockGetBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "active", stripeSubscriptionId: "sub_b" }]);
+    mockGetBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", stripeSubscriptionId: "sub_b" }]);
     repo.releaseLine.mockResolvedValue({ released: false, cancelledIndex: 2, totalsIndex: 0 });
     await handler();
     expect(repo.setHoldReasons).toHaveBeenCalledWith(expect.anything(), ["cap_credit"], NOW);

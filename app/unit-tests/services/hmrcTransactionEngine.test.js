@@ -3,7 +3,7 @@
 
 // app/unit-tests/services/hmrcTransactionEngine.test.js
 
-import { describe, test, expect, afterEach } from "vitest";
+import { describe, test, expect, afterEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -16,10 +16,15 @@ import {
   parseTransactionEngineResponse,
   getTransactionEngineSubmissionUrl,
   redactGatewayCredentials,
+  postToTransactionEngine,
+  isTransientPollError,
+  irmarkReceiptMatches,
   CT600_CLASS,
   CT600_TEST_IN_LIVE_CLASS,
   TRANSACTION_ENGINE_LIVE_SUBMISSION_URL,
   TRANSACTION_ENGINE_TEST_SUBMISSION_URL,
+  buildDataRequest,
+  findHeldSubmission,
 } from "@app/services/hmrcTransactionEngine.js";
 import { parseXmlDocument, firstElementText, firstElement } from "@app/lib/xmlDom.js";
 
@@ -260,5 +265,135 @@ describe("redactGatewayCredentials", () => {
 
   test("passes a non-string through", () => {
     expect(redactGatewayCredentials(undefined)).toBeUndefined();
+  });
+});
+
+describe("postToTransactionEngine", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("sends application/xml, the content type the protocol glossary names", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("<GovTalkMessage/>", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await postToTransactionEngine("https://example.test/submission", "<GovTalkMessage/>", { "Gov-Test-Scenario": "X" });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers).toMatchObject({ "Content-Type": "application/xml", "Gov-Test-Scenario": "X" });
+  });
+});
+
+describe("isTransientPollError", () => {
+  const gatewayError = (number) => ({ errors: [{ number }], businessErrors: [] });
+
+  test.each(["1000", "2005"])("treats Gateway error %s as transient", (number) => {
+    expect(isTransientPollError(gatewayError(number))).toBe(true);
+  });
+
+  test.each(["2000", "3000", "3001", "2021"])("treats error %s as final", (number) => {
+    expect(isTransientPollError(gatewayError(number))).toBe(false);
+  });
+
+  test("treats an error that carries business errors as final", () => {
+    expect(isTransientPollError({ errors: [{ number: "1000" }], businessErrors: [{ number: "2021" }] })).toBe(false);
+  });
+
+  test("treats no errors as not transient", () => {
+    expect(isTransientPollError({ errors: [], businessErrors: [] })).toBe(false);
+  });
+});
+
+describe("irmarkReceiptMatches", () => {
+  const irmark = computeIrmark(
+    buildCt600SubmissionRequest({
+      senderId: "u",
+      password: "p",
+      utr: "8596148860",
+      vendorId: "1000",
+      productName: "DIY Accounting Submit",
+      productVersion: "1.0",
+      irEnvelopeXml: IR_ENVELOPE,
+      gatewayTest: true,
+    }).xml,
+  );
+
+  test("matches the base64 receipt to the base32 IRmark that was sent", () => {
+    expect(irmarkReceiptMatches(irmark.base32, irmark.base64)).toBe(true);
+  });
+
+  test("does not match a different digest or a missing receipt", () => {
+    expect(irmarkReceiptMatches(irmark.base32, "AAAAAAAAAAAAAAAAAAAAAAAAAAA=")).toBe(false);
+    expect(irmarkReceiptMatches(irmark.base32, undefined)).toBe(false);
+  });
+});
+
+const DATA_RESPONSE_XML = `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>HMRC-CT-CT600</Class><Qualifier>response</Qualifier><Function>list</Function><TransactionID>AB12</TransactionID><CorrelationID></CorrelationID><ResponseEndPoint PollInterval="10"></ResponseEndPoint><GatewayTimestamp>2026-11-03T09:32:25.147</GatewayTimestamp></MessageDetails><SenderDetails/></Header><GovTalkDetails><Keys/></GovTalkDetails><Body><StatusReport><SenderID/><StartTimeStamp/><EndTimeStamp/><StatusRecord><TimeStamp>03/11/2026 10:58:46</TimeStamp><CorrelationID>EDD8B2F6C21E4B5BAD43B3C085144549</CorrelationID><TransactionID>1111</TransactionID><Identifiers><Identifier Type="UTR">1234567890</Identifier></Identifiers><Status>SUBMISSION_RESPONSE</Status></StatusRecord><StatusRecord><TimeStamp>03/11/2026 10:59:09</TimeStamp><CorrelationID>3F051EA3BF8A47A4BB8A3EB37781201E</CorrelationID><TransactionID>2222</TransactionID><Identifiers><Identifier Type="UTR">8596148860</Identifier></Identifiers><Status>SUBMISSION_ACKNOWLEDGE</Status></StatusRecord></StatusReport></Body></GovTalkMessage>`;
+
+describe("buildDataRequest", () => {
+  const input = {
+    senderId: "user1",
+    password: "pass<1>",
+    gatewayTest: true,
+    transactionId: "AB12",
+    since: new Date("2026-11-02T23:30:00Z"),
+  };
+
+  test("is Qualifier request, Function list, with an empty CorrelationID and the credentials in clear", () => {
+    const document = parseXmlDocument(buildDataRequest(input).replace(/^<\?xml[^?]*\?>\s*/, ""));
+    expect(firstElementText(document, "Class")).toBe("HMRC-CT-CT600");
+    expect(firstElementText(document, "Qualifier")).toBe("request");
+    expect(firstElementText(document, "Function")).toBe("list");
+    expect(firstElementText(document, "TransactionID")).toBe("AB12");
+    expect(firstElementText(document, "CorrelationID")).toBe("");
+    expect(firstElementText(document, "GatewayTest")).toBe("1");
+    expect(firstElementText(document, "SenderID")).toBe("user1");
+    expect(firstElementText(document, "Value")).toBe("pass<1>");
+    expect(firstElementText(document, "IncludeIdentifiers")).toBe("1");
+    expect(firstElementText(document, "StartDate")).toBe("02/11/2026");
+  });
+
+  test("leaves out GatewayTest for live, the TransactionID and the start date when not given", () => {
+    const xml = buildDataRequest({ senderId: "user1", password: "p", gatewayTest: false });
+    expect(xml).not.toContain("GatewayTest");
+    expect(xml).not.toContain("TransactionID");
+    expect(xml).not.toContain("StartDate");
+  });
+
+  test("refuses missing credentials and a TransactionID that is not upper-case hex", () => {
+    expect(() => buildDataRequest({ ...input, password: "" })).toThrow(/password/);
+    expect(() => buildDataRequest({ ...input, transactionId: "xyz" })).toThrow(/TransactionID/);
+  });
+});
+
+describe("parse of a DATA_RESPONSE", () => {
+  test("reads each held submission with its CorrelationID, TransactionID, status and identifiers", () => {
+    const parsed = parseTransactionEngineResponse(DATA_RESPONSE_XML);
+    expect(parsed.qualifier).toBe("response");
+    expect(parsed.messageFunction).toBe("list");
+    expect(parsed.correlationId).toBeUndefined();
+    expect(parsed.statusRecords).toEqual([
+      {
+        timestamp: "03/11/2026 10:58:46",
+        correlationId: "EDD8B2F6C21E4B5BAD43B3C085144549",
+        transactionId: "1111",
+        status: "SUBMISSION_RESPONSE",
+        identifiers: [{ type: "UTR", value: "1234567890" }],
+      },
+      {
+        timestamp: "03/11/2026 10:59:09",
+        correlationId: "3F051EA3BF8A47A4BB8A3EB37781201E",
+        transactionId: "2222",
+        status: "SUBMISSION_ACKNOWLEDGE",
+        identifiers: [{ type: "UTR", value: "8596148860" }],
+      },
+    ]);
+  });
+
+  test("gives no records for an empty report and for a message with no Body content", () => {
+    const empty = DATA_RESPONSE_XML.replace(/<StatusRecord>[\s\S]*<\/StatusRecord>/, "");
+    expect(parseTransactionEngineResponse(empty).statusRecords).toEqual([]);
+  });
+
+  test("findHeldSubmission picks the record by TransactionID", () => {
+    const parsed = parseTransactionEngineResponse(DATA_RESPONSE_XML);
+    expect(findHeldSubmission(parsed, "2222").correlationId).toBe("3F051EA3BF8A47A4BB8A3EB37781201E");
+    expect(findHeldSubmission(parsed, "3333")).toBeUndefined();
   });
 });

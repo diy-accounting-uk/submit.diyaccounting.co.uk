@@ -153,7 +153,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   /*  CHECKOUT WITH THE DIYA-GL TOKEN — THE AUDIENCE CHANGE UNDER TEST  */
   /* ******************************************************************** */
 
-  const checkout = await postDiyaGlCheckout({ apiBase, idToken, bundleId: "resident", returnTo: diyaGlPageUrl });
+  const checkout = await postDiyaGlCheckout({ apiBase, idToken, bundleId: "resident-pro", returnTo: diyaGlPageUrl });
   expect(checkout.status, `checkout response: ${JSON.stringify(checkout.body)}`).toBe(200);
   expect(checkout.body.checkoutUrl).toContain("checkout.stripe.com");
 

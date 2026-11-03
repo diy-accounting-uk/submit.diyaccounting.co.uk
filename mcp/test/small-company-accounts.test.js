@@ -75,7 +75,7 @@ describe("derive_small_company_accounts", () => {
         expect(year.corporationTax).toBe(Math.round(sheet.E17));
         expect(year.taxationSocialSecurity).toBe(Math.round(sheet.E18));
         expect(year.otherCreditors).toBe(0);
-        expect(year.creditorsAfterOneYear).toBe(Math.round(sheet.F31));
+        expect(year.creditorsAfterOneYear).toBe(Math.round(sheet.F31) || 0);
         expect(year.calledUpShareCapital).toBe(Math.round(sheet.F36));
         const netAssets =
           year.fixedAssets +

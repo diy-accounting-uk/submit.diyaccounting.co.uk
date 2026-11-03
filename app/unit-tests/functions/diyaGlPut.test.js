@@ -255,7 +255,7 @@ describe("diyaGlPut", () => {
   test("gives a resident save a null expiresAt and the resident tag, when the tier is on and the caller is subscribed", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     getUserBundles.mockResolvedValue([
-      { bundleId: "resident", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
+      { bundleId: "resident-pro", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
     ]);
     const metaKey = metadataKeyFor("test-sub", BOOK_ID);
     const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
@@ -291,7 +291,7 @@ describe("diyaGlPut", () => {
   test("re-tags kept versions and the sidecar when a save's retention changes", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     getUserBundles.mockResolvedValue([
-      { bundleId: "resident", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
+      { bundleId: "resident-pro", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
     ]);
     const metaKey = metadataKeyFor("test-sub", BOOK_ID);
     const v2Key = versionKeyFor("test-sub", BOOK_ID, 2);

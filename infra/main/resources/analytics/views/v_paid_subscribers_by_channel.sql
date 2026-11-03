@@ -42,7 +42,7 @@ paid_charges AS (
   WHERE  livemode = true
     AND  paid = true
     AND  refunded = false
-    AND  bundle_id IN ('resident-vat', 'resident', 'resident-pro')
+    AND  bundle_id IN ('resident-vat', 'resident-ltd', 'resident-pro', 'resident-tax-agent')
   GROUP  BY 1, 2, 3)
 SELECT date(c.month) AS month,
        coalesce(a.utm_source,

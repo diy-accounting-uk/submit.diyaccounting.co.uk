@@ -87,7 +87,6 @@ const WHOLE_POUND_FIELDS = [
   ["amortisation", "Amortisation added back"],
   ["entertaining", "Entertaining added back"],
   ["donations", "Donations added back"],
-  ["directorsLoanOverdrawn", "The director's loan account overdrawn at the end of the period"],
   ["annualInvestmentAllowance", "Annual investment allowance (box 690)"],
   ["mainPoolAllowances", "Main pool writing down allowances, without the annual investment allowance"],
   ["mainPoolBalancingCharges", "Main pool balancing charges (box 710)"],
@@ -222,6 +221,7 @@ function figureProblems(figures, { today } = {}) {
   }
   if (!validText(figures.declarantName)) problem("declarantName", "The declarant's name is required (at least 2 characters)");
   if (!validText(figures.declarantStatus)) problem("declarantStatus", "The declarant's status is required (at least 2 characters)");
+  problems.push(...loansProblems(figures, { today }));
   return problems;
 }
 
@@ -344,6 +344,7 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     entertaining: positive(workingSheet.I9),
     donations: positive(results["MnthP&L"]?.B37),
     directorsLoanOverdrawn: positive(-(results.PubBalSht?.E29 ?? 0)),
+    directorsLoanOpeningOverdrawn: positive(-(results.OpenAccounts?.E30 ?? 0)),
     annualInvestmentAllowance: wholePounds(allowances.I15),
     mainPoolAllowances: wholePounds((allowances.I16 ?? 0) + (allowances.I17 ?? 0) + Math.max(allowances.I18 ?? 0, 0)),
     mainPoolBalancingCharges: wholePounds(Math.max(-(allowances.I18 ?? 0), 0)),
@@ -374,7 +375,7 @@ export function validateCt600Figures(figures, { today, taxDataByYear } = {}) {
   const problems = figureProblems(figures, { today });
   if (problems.length > 0 || !taxDataByYear) return problems;
   try {
-    deriveCt600FromFigures(figures, taxDataByYear);
+    deriveCt600FromFigures(figures, taxDataByYear, { today });
   } catch (error) {
     if (!(error instanceof Ct600RefusedError)) throw error;
     problems.push({ field: error.field ?? "figures", message: error.message, refusal: true });
@@ -486,29 +487,407 @@ function workCarryBack(figures, losses, taxDataByYear) {
   };
 }
 
+// The section 455 rates HMRC's online rules accept (RIM artefacts V1.994): the dividend upper rate
+// from each date, until S455_RATES_IN_RIM_UNTIL.
+export const S455_RATES_IN_RIM = [
+  { from: "2016-04-06", rate: 0.325 },
+  { from: "2022-04-06", rate: 0.3375 },
+];
+export const S455_RATES_IN_RIM_UNTIL = "2026-04-05";
+
+export const S455_LATER_RATE_WARNING =
+  "Loans made on or after 6 April 2026 owe section 455 tax at 35.75%. HMRC's online rules accept only 33.75% until they move to RIM V1.995, so this return files at 33.75% and shows less tax than is due. Amend the return when HMRC accepts 35.75%.";
+
+const LOAN_NAME_PATTERN = /^[^<>|"\\]{2,56}$/;
+
+function validLoanName(name) {
+  return LOAN_NAME_PATTERN.test(name) && ![...name].some((character) => character < " ");
+}
+const MAX_LOAN_ROWS = 999;
+const MAX_RATE_DECIMALS = 4;
+
+function rimRateOn(isoDate) {
+  let rate;
+  for (const entry of S455_RATES_IN_RIM) if (entry.from <= isoDate) rate = entry.rate;
+  return rate;
+}
+
+function addDays(isoDate, days) {
+  const date = utcDate(isoDate);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function isMonthEnd(isoDate) {
+  return addDays(isoDate, 1).endsWith("-01");
+}
+
+// The same day of the month `months` later, or its last day when that month is shorter.
+function addMonths(isoDate, months) {
+  const date = utcDate(isoDate);
+  const day = date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, lastDay));
+  return date.toISOString().slice(0, 10);
+}
+
+function lastDayOfMonthsAfter(isoDate, months) {
+  const date = utcDate(isoDate);
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + months + 1);
+  date.setUTCDate(0);
+  return date.toISOString().slice(0, 10);
+}
+
+// The latest date a repayment can come and still belong to part 2: nine months after the period
+// end (rule 9406: before the first day of the tenth month when the period ends on a month end).
+function part2LastDate(periodEnd) {
+  return isMonthEnd(periodEnd) ? lastDayOfMonthsAfter(periodEnd, 9) : addMonths(periodEnd, 9);
+}
+
+// The tax year (6 April to 5 April) a date falls in, named by the year it starts.
+function taxYearStartOf(isoDate) {
+  const year = Number(isoDate.slice(0, 4));
+  return isoDate >= `${year}-04-06` ? year : year - 1;
+}
+
+// The day relief is due for a repayment on `repaymentDate`: nine months and a day after the end of
+// the accounting period it falls in, taking the periods after the return's own as 12 months each.
+function reliefDueDate(periodEnd, repaymentDate) {
+  let end = periodEnd;
+  while (end < repaymentDate) end = addMonths(end, 12);
+  return addDays(isMonthEnd(end) ? lastDayOfMonthsAfter(end, 9) : addMonths(end, 9), 1);
+}
+
+// Tax at a rate in pence, half up. The rate is a whole number of ten-thousandths.
+function taxPence(pounds, rate) {
+  return Math.floor((pounds * Math.round(rate * 10_000) + 50) / 100);
+}
+
+function rateProblem(rate) {
+  if (!Number.isFinite(rate) || rate <= 0 || rate >= 1) return "must be between 0 and 1, for example 0.3375 for 33.75%";
+  if (Math.abs(rate * 10 ** MAX_RATE_DECIMALS - Math.round(rate * 10 ** MAX_RATE_DECIMALS)) > 1e-6) {
+    return `must have no more than ${MAX_RATE_DECIMALS} decimal places`;
+  }
+  return undefined;
+}
+
+function wholePoundProblem(value) {
+  return Number.isInteger(value) && value >= 0;
+}
+
 /**
- * A director's loan account overdrawn at the end of the period owes tax under section 455 at the
- * dividend upper rate, in box 480, and the return ticks box 95 for supplementary page CT600A.
- * This service does not file CT600A, so the return is refused with the boxes it would need: the
- * refusal carries them in its boxes property.
+ * The checks on the loans to participators answers, as messages. A problem is something the
+ * customer corrects; a refusal ends the return.
+ * @returns {Array<{field: string, message: string, refusal: boolean}>}
  */
-function refuseOverdrawnDirectorsLoan(figures, taxDataByYear) {
+function loansProblems(figures, { today } = {}) {
+  const problems = [];
+  const problem = (field, message, refusal = false) => problems.push({ field, message, refusal });
+  const loans = figures.loansToParticipators;
   const overdrawn = numberOrZero(figures.directorsLoanOverdrawn);
-  if (overdrawn === 0) return;
-  const rate = taxDataByYear?.[financialYearNumber(utcDate(figures.periodEnd))]?.dividend_tax?.higher_rate;
-  if (!Number.isFinite(rate)) {
-    throw new Ct600RefusedError(
-      `The director's loan account is overdrawn by ${overdrawn} and needs form CT600A, which this service does not file; no section 455 rate is held for this period`,
-      "directorsLoanOverdrawn",
+  const openingOverdrawn = numberOrZero(figures.directorsLoanOpeningOverdrawn);
+  if (!loans) {
+    if (figures.directorsLoanOverdrawn !== undefined && overdrawn > openingOverdrawn) {
+      problem(
+        "loansToParticipators",
+        `The account is ${overdrawn - openingOverdrawn} more overdrawn at the end than at the start, so the company lent in the period`,
+      );
+    }
+    return problems;
+  }
+  if (typeof loans !== "object" || Array.isArray(loans)) {
+    problem("loansToParticipators", "The loans to participators answer must be an object");
+    return problems;
+  }
+  const rows = Array.isArray(loans.loans) ? loans.loans : [];
+  const repayments = Array.isArray(loans.repayments) ? loans.repayments : [];
+  if (typeof loans.releasedBeforeEnd !== "boolean")
+    problem("loansToParticipators", "Say whether any loans made in the period were repaid, released or written off before its end");
+  if (rows.length === 0) problem("loansToParticipators", "Enter at least one loan to a participator, or answer that the company made none");
+  if (rows.length > MAX_LOAN_ROWS) problem("loansToParticipators", `At most ${MAX_LOAN_ROWS} loans can be entered`);
+  if (repayments.length > MAX_LOAN_ROWS) problem("loansToParticipators", `At most ${MAX_LOAN_ROWS} repayments can be entered`);
+  const names = new Set();
+  rows.forEach((row, index) => {
+    const label = `Loan ${index + 1}`;
+    if (typeof row?.name !== "string" || !validLoanName(row.name.trim())) {
+      problem("loansToParticipators", `${label}: the participator's name must be 2 to 56 characters without < > | " or \\`);
+    } else if (names.has(row.name.trim())) {
+      problem("loansToParticipators", `${label}: ${row.name.trim()} appears twice; enter one loan for each participator`);
+    } else {
+      names.add(row.name.trim());
+    }
+    if (!wholePoundProblem(row?.amount) || row.amount === 0)
+      problem("loansToParticipators", `${label}: the amount still owed must be whole pounds above 0`);
+    if (row?.lentFromRateChange !== undefined && (!wholePoundProblem(row.lentFromRateChange) || row.lentFromRateChange > row.amount)) {
+      problem(
+        "loansToParticipators",
+        `${label}: the amount lent on or after the rate change must be whole pounds and no more than the amount owed`,
+      );
+    }
+    if (row?.rate !== undefined) {
+      const rateMessage = rateProblem(row.rate);
+      if (rateMessage) problem("loansToParticipators", `${label}: the section 455 rate ${rateMessage}`);
+    }
+  });
+  const bookTotal = rows.reduce((total, row) => total + (Number.isInteger(row?.amount) ? row.amount : 0), 0);
+  if (figures.directorsLoanOverdrawn !== undefined && bookTotal > overdrawn) {
+    problem(
+      "loansToParticipators",
+      `The loans total ${bookTotal}, which is more than the ${overdrawn} the director's loan account is overdrawn at the end of the period`,
     );
   }
-  const tax = fromPence(Math.round(toPence(overdrawn) * rate));
-  const refusal = new Ct600RefusedError(
-    `The director's loan account is overdrawn by ${overdrawn} at the end of the period, so section 455 tax of ${tax.toFixed(2)} is due (box 480) and the return needs supplementary page CT600A (box 95). Add form CT600A to the return before it is filed; this service does not file it yet`,
-    "directorsLoanOverdrawn",
-  );
-  refusal.boxes = { 95: "yes", 480: tax };
-  throw refusal;
+  repayments.forEach((row, index) => {
+    const label = `Repayment ${index + 1}`;
+    if (!names.has(typeof row?.name === "string" ? row.name.trim() : ""))
+      problem("loansToParticipators", `${label}: name a participator from the loans`);
+    if (!isIsoDate(row?.date)) problem("loansToParticipators", `${label}: enter the date as YYYY-MM-DD`);
+    if (!wholePoundProblem(row?.repaid) || !wholePoundProblem(row?.releasedOrWrittenOff)) {
+      problem("loansToParticipators", `${label}: the amounts must be whole pounds, 0 or more`);
+    } else if (row.repaid + row.releasedOrWrittenOff === 0) {
+      problem("loansToParticipators", `${label}: enter an amount repaid, or released or written off`);
+    }
+  });
+  const perName = new Map();
+  for (const row of repayments) {
+    const total =
+      (Number.isInteger(row?.repaid) ? row.repaid : 0) + (Number.isInteger(row?.releasedOrWrittenOff) ? row.releasedOrWrittenOff : 0);
+    perName.set(row?.name?.trim(), (perName.get(row?.name?.trim()) ?? 0) + total);
+  }
+  for (const row of rows) {
+    if ((perName.get(row?.name?.trim()) ?? 0) > (row?.amount ?? 0)) {
+      problem("loansToParticipators", `The repayments for ${row.name.trim()} are more than the loan of ${row.amount}`);
+    }
+  }
+  for (const row of repayments) {
+    if (!isIsoDate(row?.date)) continue;
+    if (row.date <= figures.periodEnd) {
+      problem(
+        "loansToParticipators",
+        `The repayment on ${row.date} is on or before the end of the period; the period's own book records it`,
+        true,
+      );
+    } else if (today && row.date > today) {
+      problem("loansToParticipators", `The repayment on ${row.date} is after today`, true);
+    }
+  }
+  return problems;
+}
+
+/**
+ * The section 455 rate parts of a period: one part, or two when 6 April falls inside the period and
+ * the rate changes there (or HMRC's online rules stop knowing the rate there). Each part carries
+ * the rate the return files at, the rate the tax data holds, and any warning.
+ */
+function section455RateOf(taxDataByYear, year) {
+  const rate = taxDataByYear?.[year]?.dividend_tax?.higher_rate;
+  if (!Number.isFinite(rate)) {
+    throw new Ct600RefusedError(`No section 455 rate is held for the tax year starting 6 April ${year}`, "loansToParticipators");
+  }
+  return rate;
+}
+
+/**
+ * The 6 April inside a period at which the section 455 rate changes, or at which HMRC's online
+ * rules stop knowing it; undefined when the period has no such date.
+ * @param {string} periodStart - ISO date
+ * @param {string} periodEnd - ISO date
+ * @param {Record<number, object>} taxDataByYear
+ * @returns {string|undefined}
+ */
+export function section455RateChangeDate(periodStart, periodEnd, taxDataByYear) {
+  const startYear = taxYearStartOf(periodStart);
+  const endYear = taxYearStartOf(periodEnd);
+  const changeDate = `${endYear}-04-06`;
+  const crosses =
+    endYear > startYear &&
+    changeDate > periodStart &&
+    (section455RateOf(taxDataByYear, startYear) !== section455RateOf(taxDataByYear, endYear) ||
+      changeDate === addDays(S455_RATES_IN_RIM_UNTIL, 1));
+  return crosses ? changeDate : undefined;
+}
+
+function section455Parts(periodStart, periodEnd, taxDataByYear) {
+  const changeDate = section455RateChangeDate(periodStart, periodEnd, taxDataByYear);
+  const starts = changeDate ? [periodStart, changeDate] : [periodStart];
+  return {
+    changeDate,
+    parts: starts.map((from) => {
+      const derived = section455RateOf(taxDataByYear, taxYearStartOf(from));
+      const rim = rimRateOn(from);
+      if (from > S455_RATES_IN_RIM_UNTIL) {
+        return { from, derived, rate: rimRate(), warning: S455_LATER_RATE_WARNING, source: "online-rules" };
+      }
+      if (derived !== rim) {
+        return {
+          from,
+          derived,
+          rate: rim,
+          warning: `The tax data and HMRC's rules disagree on the section 455 rate for ${from}`,
+          source: "online-rules",
+        };
+      }
+      return { from, derived, rate: derived, source: "tax-data" };
+    }),
+  };
+}
+
+function rimRate() {
+  return S455_RATES_IN_RIM[S455_RATES_IN_RIM.length - 1].rate;
+}
+
+/**
+ * Part 1 to part 3 of supplementary page CT600A, loans to participators of a close company, and the
+ * boxes that follow from it: 95 (the page is attached), 480 (the section 455 tax, A80) and 485
+ * (relief claimed in part 3). Sets box 95, 480 and 485 on `boxes` and returns the page's boxes, or
+ * undefined when the company made no loans.
+ *
+ * @param {object} figures - loansToParticipators: { releasedBeforeEnd, loans: [{name, amount, lentFromRateChange?, rate?}], repayments: [{name, date, repaid, releasedOrWrittenOff}] }
+ * @param {Record<number, string|number>} boxes
+ * @param {Record<number, {sources: string[], rule?: string}>} worked
+ * @param {Record<number, object>} taxDataByYear - ltd-<year>.toml files by year; the dividend upper rate of the tax year of each loan
+ * @param {{today?: string}} [options] - ISO date; a repayment cannot come after it
+ * @returns {{ct600a: object|undefined, a80Pence: number}}
+ */
+export function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today } = {}) {
+  const loans = figures.loansToParticipators;
+  if (!loans) return { ct600a: undefined, a80Pence: 0 };
+  const problems = loansProblems(figures, { today });
+  const refusal = problems.find((entry) => entry.refusal);
+  if (refusal) throw new Ct600RefusedError(refusal.message, refusal.field);
+  if (problems.length > 0) throw new Error(problems[0].message);
+
+  const { periodStart, periodEnd } = figures;
+  const rows = loans.loans.map((row) => ({ ...row, name: row.name.trim() }));
+  const needsDerivedRate = rows.some((row) => row.rate === undefined);
+  const { changeDate, parts: derivedParts } = needsDerivedRate
+    ? section455Parts(periodStart, periodEnd, taxDataByYear)
+    : { changeDate: undefined, parts: [] };
+  if (!changeDate && rows.some((row) => row.lentFromRateChange > 0 && row.rate === undefined)) {
+    throw new Error("A loan lent on or after a rate change needs a period that crosses one");
+  }
+
+  // Each participator's loan as parts in the order they were lent, each at the rate the return files at.
+  const warnings = [];
+  const rateRows = rows.map((row) => {
+    if (row.rate !== undefined) {
+      return { name: row.name, parts: [{ amount: row.amount, rate: row.rate, source: "customer-entered" }] };
+    }
+    const lateAmount = changeDate ? (row.lentFromRateChange ?? 0) : 0;
+    const parts = [
+      { amount: row.amount - lateAmount, from: derivedParts[0].from, part: derivedParts[0] },
+      ...(changeDate ? [{ amount: lateAmount, from: derivedParts[1].from, part: derivedParts[1] }] : []),
+    ].filter((entry) => entry.amount > 0 || derivedParts.length === 1);
+    for (const entry of parts) {
+      if (entry.part.warning && !warnings.includes(entry.part.warning)) warnings.push(entry.part.warning);
+    }
+    return {
+      name: row.name,
+      parts: parts.map((entry) => ({
+        amount: entry.amount,
+        rate: entry.part.rate,
+        source: entry.part.source,
+        from: entry.from,
+        ...(entry.part.derived !== entry.part.rate ? { taxDataRate: entry.part.derived } : {}),
+      })),
+    };
+  });
+
+  const bucketTotals = new Map();
+  const addToBucket = (buckets, rate, amount) => buckets.set(rate, (buckets.get(rate) ?? 0) + amount);
+  for (const row of rateRows) for (const part of row.parts) addToBucket(bucketTotals, part.rate, part.amount);
+  const chargePence = (buckets) => [...buckets].reduce((total, [rate, amount]) => total + taxPence(amount, rate), 0);
+
+  const totalLoans = rows.reduce((total, row) => total + row.amount, 0);
+  const a20Pence = chargePence(bucketTotals);
+
+  // Repayments in date order, against each participator's parts in the order lent.
+  const remaining = new Map(rateRows.map((row) => [row.name, row.parts.map((part) => ({ ...part }))]));
+  const part2Last = part2LastDate(periodEnd);
+  const sortedRepayments = [...loans.repayments].sort((a, b) => a.date.localeCompare(b.date));
+  const partTwo = [];
+  const partThree = [];
+  for (const repayment of sortedRepayments) {
+    const row = { ...repayment, name: repayment.name.trim() };
+    if (row.date <= part2Last) {
+      partTwo.push(row);
+    } else {
+      const due = reliefDueDate(periodEnd, row.date);
+      if (today && due > today) {
+        throw new Ct600RefusedError(
+          `Relief on the repayment of ${row.date} is due on ${due}. Claim it from HMRC after that date.`,
+          "loansToParticipators",
+        );
+      }
+      partThree.push(row);
+    }
+  }
+  const relieve = (list) => {
+    const allocated = new Map();
+    for (const row of list) {
+      let left = row.repaid + row.releasedOrWrittenOff;
+      for (const part of remaining.get(row.name)) {
+        const used = Math.min(left, part.amount);
+        if (used > 0) {
+          part.amount -= used;
+          left -= used;
+          addToBucket(allocated, part.rate, used);
+        }
+      }
+    }
+    return allocated;
+  };
+  const partTwoAllocated = relieve(partTwo);
+  const partThreeAllocated = relieve(partThree);
+  const a45Pence = Math.min(chargePence(partTwoAllocated), a20Pence);
+  const a70Pence = Math.min(chargePence(partThreeAllocated), a20Pence);
+  const a80Pence = Math.max(a20Pence - a45Pence - a70Pence, 0);
+
+  const grouped = (list) => {
+    const byName = new Map();
+    for (const row of list) {
+      const entry = byName.get(row.name) ?? { name: row.name, repaid: 0, releasedOrWrittenOff: 0, date: row.date };
+      entry.repaid += row.repaid;
+      entry.releasedOrWrittenOff += row.releasedOrWrittenOff;
+      if (row.date > entry.date) entry.date = row.date;
+      byName.set(row.name, entry);
+    }
+    return [...byName.values()];
+  };
+  const sum = (list, field) => list.reduce((total, row) => total + row[field], 0);
+  const reliefPart = (list, reliefPence) => {
+    if (list.length === 0) return undefined;
+    const repaid = sum(list, "repaid");
+    const released = sum(list, "releasedOrWrittenOff");
+    return { rows: grouped(list), repaid, releasedOrWrittenOff: released, total: repaid + released, relief: fromPence(reliefPence) };
+  };
+  const partTwoBoxes = reliefPart(partTwo, a45Pence);
+  const partThreeBoxes = reliefPart(partThree, a70Pence);
+  const outstanding = totalLoans - (partTwoBoxes?.total ?? 0) - (partThreeBoxes?.total ?? 0);
+
+  const ct600a = {
+    releasedBeforeEnd: loans.releasedBeforeEnd,
+    loans: rows.map((row) => ({ name: row.name, amount: row.amount })),
+    totalLoans,
+    taxChargeable: fromPence(a20Pence),
+    partTwo: partTwoBoxes,
+    partThree: partThreeBoxes,
+    ...(outstanding > 0 ? { totalLoansOutstanding: outstanding } : {}),
+    taxPayable: fromPence(a80Pence),
+    rates: rateRows,
+    warnings,
+  };
+
+  boxes[95] = "yes";
+  boxes[480] = ct600a.taxPayable;
+  worked[480] = workedEntry(["A20", "A45", "A70"], "Box 480 is the tax in box A80 of supplementary page CT600A");
+  if (partThreeBoxes) {
+    boxes[485] = "yes";
+    worked[485] = workedEntry(["A70"], "Box 485 is ticked when box A70 is completed");
+  }
+  return { ct600a, a80Pence };
 }
 
 /**
@@ -632,9 +1011,11 @@ function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
  *
  * @param {object} figures
  * @param {Record<number, object>} taxDataByYear - parsed ltd-<FY>.toml files by financial year; the one named for the period end's financial year is required
- * @returns {{boxes: Record<number, string|number>, computationLines: object, losses: object, carryBack: object|undefined, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string}}
+ * @param {object} [options]
+ * @param {string} [options.today] - ISO date; a repayment of a loan to a participator cannot come after it
+ * @returns {{boxes: Record<number, string|number>, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string}}
  */
-export function deriveCt600FromFigures(figures, taxDataByYear) {
+export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
   const problems = figureProblems(figures);
   const refusal = problems.find((entry) => entry.refusal);
   if (refusal) throw new Ct600RefusedError(refusal.message, refusal.field);
@@ -759,8 +1140,11 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
   }
   boxes[440] = netCorporationTax;
   boxes[475] = boxes[440];
-  boxes[510] = boxes[440];
-  for (const box of [440, 475, 510]) worked[box] = workedEntry(["430", "435"]);
+  for (const box of [440, 475]) worked[box] = workedEntry(["430", "435"]);
+  const { ct600a, a80Pence } = workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today });
+  const totalChargePence = netCorporationTaxPence + a80Pence;
+  boxes[510] = fromPence(totalChargePence);
+  worked[510] = workedEntry(["475", "480"], "Box 510 is box 475 plus box 480");
 
   const incomeTaxDeductedPence = toPence(numberOrZero(figures.incomeTaxDeducted));
   if (incomeTaxDeductedPence > netCorporationTaxPence) {
@@ -770,7 +1154,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
     );
   }
   if (incomeTaxDeductedPence > 0) boxes[515] = fromPence(incomeTaxDeductedPence);
-  const taxPayablePence = netCorporationTaxPence - incomeTaxDeductedPence;
+  const taxPayablePence = totalChargePence - incomeTaxDeductedPence;
   boxes[525] = fromPence(taxPayablePence);
   boxes[528] = boxes[525];
   for (const box of [525, 528]) worked[box] = workedEntry(["440", "515"]);
@@ -786,7 +1170,6 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
   boxes[600] = fromPence(taxPayablePence - alreadyPaidPence);
   worked[600] = workedEntry(["525", "595"]);
 
-  refuseOverdrawnDirectorsLoan(figures, taxDataByYear);
   const carryBack = workCarryBack(figures, losses, taxDataByYear);
-  return { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd };
+  return { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd };
 }

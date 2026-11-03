@@ -23,6 +23,27 @@ export const CT600_TEST_IN_LIVE_CLASS = "HMRC-CT-CT600-TIL";
 
 export const TRANSACTION_ENGINE_LIVE_SUBMISSION_URL = "https://transaction-engine.tax.service.gov.uk/submission";
 export const TRANSACTION_ENGINE_TEST_SUBMISSION_URL = "https://test-transaction-engine.tax.service.gov.uk/submission";
+// HMRC rule 1614: the message with all its attachments must not exceed 25MB.
+export const CT_MESSAGE_MAX_BYTES = 25 * 1024 * 1024;
+
+export class CtMessageTooLargeError extends Error {
+  constructor(bytes) {
+    super(
+      `The Company Tax Return message is ${bytes} bytes. HMRC accepts at most ${CT_MESSAGE_MAX_BYTES} bytes (25MB), attachments included. Nothing was sent.`,
+    );
+    this.name = "CtMessageTooLargeError";
+  }
+}
+
+/**
+ * Refuse a message HMRC would refuse with error 1614.
+ * @param {string} xml - the complete message
+ */
+export function assertCtMessageWithinLimit(xml) {
+  const bytes = Buffer.byteLength(xml, "utf8");
+  if (bytes > CT_MESSAGE_MAX_BYTES) throw new CtMessageTooLargeError(bytes);
+}
+
 export const TPVS_CT600_URL = "https://www.tpvs.hmrc.gov.uk/HMRC/CT600";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- XML namespace, compared byte for byte, not fetched
@@ -168,6 +189,31 @@ export function buildDeleteRequest({ correlationId, gatewayTest, messageClass = 
   return buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier: "request", messageFunction: "delete" });
 }
 
+/**
+ * Build a DATA_REQUEST: ask the Transaction Engine which submissions of one class it holds for
+ * the sender. It is authenticated with the credentials the submission used. Without a start date
+ * the Transaction Engine lists every submission it still holds for the class.
+ * @param {object} input
+ * @param {string} input.senderId
+ * @param {string} input.password - sent in clear inside TLS, as the protocol requires
+ * @param {boolean} input.gatewayTest
+ * @param {string} [input.messageClass]
+ * @param {string} [input.transactionId] - reflected in the DATA_RESPONSE
+ * @param {Date} [input.since] - only submissions received on or after this day (UTC) are listed
+ * @returns {string}
+ */
+export function buildDataRequest({ senderId, password, gatewayTest, messageClass = CT600_CLASS, transactionId, since }) {
+  if (!senderId || !password) throw new Error("The Government Gateway user ID and password are required");
+  if (transactionId !== undefined && !/^[0-9A-F]{0,32}$/.test(transactionId))
+    throw new Error("The TransactionID must be upper-case hex, at most 32 characters");
+  const startDate = since
+    ? `<StartDate>${String(since.getUTCDate()).padStart(2, "0")}/${String(since.getUTCMonth() + 1).padStart(2, "0")}/${since.getUTCFullYear()}</StartDate>`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="${GOVTALK_ENVELOPE_NAMESPACE}"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>${messageClass}</Class><Qualifier>request</Qualifier><Function>list</Function>${transactionId ? `<TransactionID>${transactionId}</TransactionID>` : ""}<CorrelationID></CorrelationID><Transformation>XML</Transformation>${gatewayTest ? "<GatewayTest>1</GatewayTest>" : ""}</MessageDetails><SenderDetails><IDAuthentication><SenderID>${escapeXmlText(senderId)}</SenderID><Authentication><Method>clear</Method><Role>principal</Role><Value>${escapeXmlText(password)}</Value></Authentication></IDAuthentication></SenderDetails></Header><GovTalkDetails><Keys/></GovTalkDetails><Body><IncludeIdentifiers>1</IncludeIdentifiers>${startDate}</Body></GovTalkMessage>
+`;
+}
+
 function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier, messageFunction }) {
   if (!/^[0-9A-F]{1,32}$/.test(correlationId || ""))
     throw new Error("The CorrelationID must be the upper-case hex the acknowledgement returned");
@@ -191,6 +237,7 @@ function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualif
  *   businessErrors: {number: string|undefined, type: string|undefined, text: string, location: string|undefined}[],
  *   irmarkReceipt: string|undefined,
  *   successMessage: string|undefined,
+ *   statusRecords: {timestamp: string|undefined, correlationId: string|undefined, transactionId: string|undefined, status: string|undefined, identifiers: {type: string|null, value: string}[]}[],
  * }}
  */
 export function parseTransactionEngineResponse(xml) {
@@ -225,6 +272,18 @@ export function parseTransactionEngineResponse(xml) {
   const digestValue = bodyElement
     ? Array.from(bodyElement.getElementsByTagName("*")).find((element) => element.localName === "DigestValue")
     : undefined;
+  const statusRecords = bodyElement
+    ? allElements(bodyElement, "StatusRecord").map((record) => ({
+        timestamp: firstElementText(record, "TimeStamp"),
+        correlationId: firstElementText(record, "CorrelationID") || undefined,
+        transactionId: firstElementText(record, "TransactionID") || undefined,
+        status: firstElementText(record, "Status"),
+        identifiers: allElements(record, "Identifier").map((identifier) => ({
+          type: identifier.getAttribute("Type"),
+          value: identifier.textContent,
+        })),
+      }))
+    : [];
   return {
     qualifier: firstElementText(document, "Qualifier"),
     messageFunction: firstElementText(document, "Function"),
@@ -236,7 +295,47 @@ export function parseTransactionEngineResponse(xml) {
     businessErrors,
     irmarkReceipt: digestValue?.textContent,
     successMessage: bodyElement ? firstElementText(bodyElement, "Message") : undefined,
+    statusRecords,
   };
+}
+
+/**
+ * The record a DATA_RESPONSE holds for the submission with this TransactionID, if any.
+ * @param {{statusRecords: {transactionId: string|undefined}[]}} parsed
+ * @param {string} transactionId
+ * @returns {object|undefined}
+ */
+export function findHeldSubmission(parsed, transactionId) {
+  return parsed.statusRecords.find((record) => record.transactionId === transactionId);
+}
+
+// Gateway errors that leave the submission standing: 1000 is an internal system failure and 2005 a
+// back end that has not acknowledged in time. The sequence continues with the same CorrelationID.
+const TRANSIENT_POLL_ERROR_NUMBERS = new Set(["1000", "2005"]);
+
+/**
+ * Whether a parsed poll answer is only a transient Gateway error, so the submission is still
+ * pending and the client polls again later.
+ * @param {{errors: {number: string|undefined}[], businessErrors: object[]}} parsed
+ * @returns {boolean}
+ */
+export function isTransientPollError(parsed) {
+  return (
+    parsed.errors.length > 0 &&
+    parsed.businessErrors.length === 0 &&
+    parsed.errors.every((error) => TRANSIENT_POLL_ERROR_NUMBERS.has(error.number))
+  );
+}
+
+/**
+ * Whether the DigestValue of HMRC's receipt (base64) is the IRmark that was sent (base32).
+ * @param {string} sentBase32
+ * @param {string|undefined} receiptBase64
+ * @returns {boolean}
+ */
+export function irmarkReceiptMatches(sentBase32, receiptBase64) {
+  if (!sentBase32 || !receiptBase64) return false;
+  return base32(Buffer.from(receiptBase64.trim(), "base64")) === sentBase32;
 }
 
 /**
@@ -263,7 +362,7 @@ export async function postToTransactionEngine(url, xml, extraHeaders = {}) {
   logger.info({ message: `POST ${url}`, url });
   const result = await fetchTextWithTimeout(
     url,
-    { method: "POST", headers: { "Content-Type": "text/xml; charset=UTF-8", ...extraHeaders }, body: xml },
+    { method: "POST", headers: { "Content-Type": "application/xml", ...extraHeaders }, body: xml },
     DEFAULT_TIMEOUTS.LONG,
   );
   logger.info({ message: `Response from POST ${url}`, url, status: result.status });

@@ -128,7 +128,7 @@ ${references}<h2>${escapeRecordText(title)}</h2>
  * @param {{label: string, value: string}} copy.reference - e.g. {label: "Form bundle number", value: "123456789012"}
  * @param {{kind: "accepted"|"sent"|"pending"|"rejected", text: string}} copy.status
  * @param {string} copy.date - the date as the customer reads it, e.g. "24 October 2026"
- * @param {{heading?: string, explanation?: string, recordHtml: string}[]} copy.sections
+ * @param {{heading?: string, explanation?: string, warning?: string, recordHtml: string}[]} copy.sections
  * @param {{href: string, text: string}[]} [copy.links]
  * @returns {string}
  */
@@ -139,8 +139,11 @@ export function customerCopyHtml({ title, reference, status, date, sections, lin
       const label = section.heading ?? title;
       const heading = section.heading ? `<h3 class="customer-copy-section-heading">${escapeRecordText(section.heading)}</h3>\n` : "";
       const explanation = section.explanation ? `<p class="customer-copy-explanation">${escapeRecordText(section.explanation)}</p>\n` : "";
+      const warning = section.warning
+        ? `<div class="status-message status-warning customer-copy-warning"><div class="status-message-content">${escapeRecordText(section.warning)}</div></div>\n`
+        : "";
       return `<section class="customer-copy-section" aria-label="${escapeRecordAttribute(label)}">
-${heading}${explanation}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(`The record: ${label}`)}"><div class="submission-record">
+${heading}${explanation}${warning}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(`The record: ${label}`)}"><div class="submission-record">
 ${section.recordHtml}
 </div></div>
 </section>`;

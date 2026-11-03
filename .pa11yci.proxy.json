@@ -61,6 +61,9 @@
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyPeriods.html",
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyAnnualSubmission.html",
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyAdjustments.html",
-    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyPeriodView.html"
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyPeriodView.html",
+    "https://local.submit.diyaccounting.co.uk:3443/companies-house/fileCompanyTaxReturn.html",
+    "https://local.submit.diyaccounting.co.uk:3443/companies-house/fileMicroEntityAccounts.html",
+    "https://local.submit.diyaccounting.co.uk:3443/companies-house/fileSmallCompanyAccounts.html"
   ]
 }

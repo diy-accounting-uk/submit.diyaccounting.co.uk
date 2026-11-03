@@ -92,6 +92,7 @@ public class SubmitApplication {
         public String companiesHouseXmlGatewayUri;
         public String companiesHousePresenterIdArn;
         public String hmrcCtVendorId;
+        public String hmrcReceiptCertificateSha256;
         public String companiesHousePresenterCodeArn;
         public String companiesHouseCsFeeWaivedCompanyNumbers;
         public String baseImageTag;
@@ -110,16 +111,22 @@ public class SubmitApplication {
         public String feedbackEngagementEnabled;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
-        public String stripePriceIdResidentVat;
-        public String stripeTestPriceIdResidentVat;
-        public String stripePriceIdResidentYear;
-        public String stripeTestPriceIdResidentYear;
-        public String stripePriceIdResidentMonth;
-        public String stripeTestPriceIdResidentMonth;
+        public String stripePriceIdResidentVatMonth;
+        public String stripeTestPriceIdResidentVatMonth;
+        public String stripePriceIdResidentLtdYear;
+        public String stripeTestPriceIdResidentLtdYear;
+        public String stripePriceIdResidentLtdMonth;
+        public String stripeTestPriceIdResidentLtdMonth;
         public String stripePriceIdResidentProYear;
         public String stripeTestPriceIdResidentProYear;
         public String stripePriceIdResidentProMonth;
         public String stripeTestPriceIdResidentProMonth;
+        public String stripePriceIdResidentVatYear;
+        public String stripeTestPriceIdResidentVatYear;
+        public String stripePriceIdResidentTaxAgentYear;
+        public String stripeTestPriceIdResidentTaxAgentYear;
+        public String stripePriceIdResidentTaxAgentMonth;
+        public String stripeTestPriceIdResidentTaxAgentMonth;
         public String stripePriceIdFileConfirmationStatement;
         public String stripeTestPriceIdFileConfirmationStatement;
         public String stripeWebhookSecretArn;
@@ -259,6 +266,10 @@ public class SubmitApplication {
                 appProps.companiesHouseXmlGatewayUri,
                 "(from companiesHouseXmlGatewayUri in cdk.json)");
         var hmrcCtVendorId = envOr("HMRC_CT_VENDOR_ID", appProps.hmrcCtVendorId, "(from hmrcCtVendorId in cdk.json)");
+        var hmrcReceiptCertificateSha256 = envOr(
+                "HMRC_RECEIPT_CERTIFICATE_SHA256",
+                appProps.hmrcReceiptCertificateSha256,
+                "(from hmrcReceiptCertificateSha256 in cdk.json)");
         var companiesHousePresenterIdArn = envOr(
                 "COMPANIES_HOUSE_PRESENTER_ID_ARN",
                 appProps.companiesHousePresenterIdArn,
@@ -298,30 +309,30 @@ public class SubmitApplication {
                 "STRIPE_TEST_SECRET_KEY_ARN",
                 appProps.stripeTestSecretKeyArn,
                 "(from stripeTestSecretKeyArn in cdk.json)");
-        var stripePriceIdResidentVat = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_VAT",
-                appProps.stripePriceIdResidentVat,
-                "(from stripePriceIdResidentVat in cdk.json)");
-        var stripeTestPriceIdResidentVat = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
-                appProps.stripeTestPriceIdResidentVat,
-                "(from stripeTestPriceIdResidentVat in cdk.json)");
-        var stripePriceIdResidentYear = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_YEAR",
-                appProps.stripePriceIdResidentYear,
-                "(from stripePriceIdResidentYear in cdk.json)");
-        var stripeTestPriceIdResidentYear = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR",
-                appProps.stripeTestPriceIdResidentYear,
-                "(from stripeTestPriceIdResidentYear in cdk.json)");
-        var stripePriceIdResidentMonth = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_MONTH",
-                appProps.stripePriceIdResidentMonth,
-                "(from stripePriceIdResidentMonth in cdk.json)");
-        var stripeTestPriceIdResidentMonth = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH",
-                appProps.stripeTestPriceIdResidentMonth,
-                "(from stripeTestPriceIdResidentMonth in cdk.json)");
+        var stripePriceIdResidentVatMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_VAT_MONTH",
+                appProps.stripePriceIdResidentVatMonth,
+                "(from stripePriceIdResidentVatMonth in cdk.json)");
+        var stripeTestPriceIdResidentVatMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_VAT_MONTH",
+                appProps.stripeTestPriceIdResidentVatMonth,
+                "(from stripeTestPriceIdResidentVatMonth in cdk.json)");
+        var stripePriceIdResidentLtdYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_LTD_YEAR",
+                appProps.stripePriceIdResidentLtdYear,
+                "(from stripePriceIdResidentLtdYear in cdk.json)");
+        var stripeTestPriceIdResidentLtdYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_LTD_YEAR",
+                appProps.stripeTestPriceIdResidentLtdYear,
+                "(from stripeTestPriceIdResidentLtdYear in cdk.json)");
+        var stripePriceIdResidentLtdMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_LTD_MONTH",
+                appProps.stripePriceIdResidentLtdMonth,
+                "(from stripePriceIdResidentLtdMonth in cdk.json)");
+        var stripeTestPriceIdResidentLtdMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH",
+                appProps.stripeTestPriceIdResidentLtdMonth,
+                "(from stripeTestPriceIdResidentLtdMonth in cdk.json)");
         var stripePriceIdResidentProYear = envOr(
                 "STRIPE_PRICE_ID_RESIDENT_PRO_YEAR",
                 appProps.stripePriceIdResidentProYear,
@@ -338,6 +349,30 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH",
                 appProps.stripeTestPriceIdResidentProMonth,
                 "(from stripeTestPriceIdResidentProMonth in cdk.json)");
+        var stripePriceIdResidentVatYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_VAT_YEAR",
+                appProps.stripePriceIdResidentVatYear,
+                "(from stripePriceIdResidentVatYear in cdk.json)");
+        var stripeTestPriceIdResidentVatYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR",
+                appProps.stripeTestPriceIdResidentVatYear,
+                "(from stripeTestPriceIdResidentVatYear in cdk.json)");
+        var stripePriceIdResidentTaxAgentYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR",
+                appProps.stripePriceIdResidentTaxAgentYear,
+                "(from stripePriceIdResidentTaxAgentYear in cdk.json)");
+        var stripeTestPriceIdResidentTaxAgentYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_YEAR",
+                appProps.stripeTestPriceIdResidentTaxAgentYear,
+                "(from stripeTestPriceIdResidentTaxAgentYear in cdk.json)");
+        var stripePriceIdResidentTaxAgentMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH",
+                appProps.stripePriceIdResidentTaxAgentMonth,
+                "(from stripePriceIdResidentTaxAgentMonth in cdk.json)");
+        var stripeTestPriceIdResidentTaxAgentMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_MONTH",
+                appProps.stripeTestPriceIdResidentTaxAgentMonth,
+                "(from stripeTestPriceIdResidentTaxAgentMonth in cdk.json)");
         var stripePriceIdFileConfirmationStatement = envOr(
                 "STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
                 appProps.stripePriceIdFileConfirmationStatement,
@@ -491,6 +526,8 @@ public class SubmitApplication {
                         .companiesHouseXmlGatewayUri(
                                 companiesHouseXmlGatewayUri != null ? companiesHouseXmlGatewayUri : "")
                         .hmrcCtVendorId(hmrcCtVendorId != null ? hmrcCtVendorId : "")
+                        .hmrcReceiptCertificateSha256(
+                                hmrcReceiptCertificateSha256 != null ? hmrcReceiptCertificateSha256 : "")
                         .companiesHousePresenterIdArn(
                                 companiesHousePresenterIdArn != null ? companiesHousePresenterIdArn : "")
                         .companiesHousePresenterCodeArn(
@@ -548,16 +585,18 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
-                        .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
-                        .stripeTestPriceIdResidentVat(
-                                stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
-                        .stripePriceIdResidentYear(stripePriceIdResidentYear != null ? stripePriceIdResidentYear : "")
-                        .stripeTestPriceIdResidentYear(
-                                stripeTestPriceIdResidentYear != null ? stripeTestPriceIdResidentYear : "")
-                        .stripePriceIdResidentMonth(
-                                stripePriceIdResidentMonth != null ? stripePriceIdResidentMonth : "")
-                        .stripeTestPriceIdResidentMonth(
-                                stripeTestPriceIdResidentMonth != null ? stripeTestPriceIdResidentMonth : "")
+                        .stripePriceIdResidentVatMonth(
+                                stripePriceIdResidentVatMonth != null ? stripePriceIdResidentVatMonth : "")
+                        .stripeTestPriceIdResidentVatMonth(
+                                stripeTestPriceIdResidentVatMonth != null ? stripeTestPriceIdResidentVatMonth : "")
+                        .stripePriceIdResidentLtdYear(
+                                stripePriceIdResidentLtdYear != null ? stripePriceIdResidentLtdYear : "")
+                        .stripeTestPriceIdResidentLtdYear(
+                                stripeTestPriceIdResidentLtdYear != null ? stripeTestPriceIdResidentLtdYear : "")
+                        .stripePriceIdResidentLtdMonth(
+                                stripePriceIdResidentLtdMonth != null ? stripePriceIdResidentLtdMonth : "")
+                        .stripeTestPriceIdResidentLtdMonth(
+                                stripeTestPriceIdResidentLtdMonth != null ? stripeTestPriceIdResidentLtdMonth : "")
                         .stripePriceIdResidentProYear(
                                 stripePriceIdResidentProYear != null ? stripePriceIdResidentProYear : "")
                         .stripeTestPriceIdResidentProYear(
@@ -566,6 +605,22 @@ public class SubmitApplication {
                                 stripePriceIdResidentProMonth != null ? stripePriceIdResidentProMonth : "")
                         .stripeTestPriceIdResidentProMonth(
                                 stripeTestPriceIdResidentProMonth != null ? stripeTestPriceIdResidentProMonth : "")
+                        .stripePriceIdResidentVatYear(
+                                stripePriceIdResidentVatYear != null ? stripePriceIdResidentVatYear : "")
+                        .stripeTestPriceIdResidentVatYear(
+                                stripeTestPriceIdResidentVatYear != null ? stripeTestPriceIdResidentVatYear : "")
+                        .stripePriceIdResidentTaxAgentYear(
+                                stripePriceIdResidentTaxAgentYear != null ? stripePriceIdResidentTaxAgentYear : "")
+                        .stripeTestPriceIdResidentTaxAgentYear(
+                                stripeTestPriceIdResidentTaxAgentYear != null
+                                        ? stripeTestPriceIdResidentTaxAgentYear
+                                        : "")
+                        .stripePriceIdResidentTaxAgentMonth(
+                                stripePriceIdResidentTaxAgentMonth != null ? stripePriceIdResidentTaxAgentMonth : "")
+                        .stripeTestPriceIdResidentTaxAgentMonth(
+                                stripeTestPriceIdResidentTaxAgentMonth != null
+                                        ? stripeTestPriceIdResidentTaxAgentMonth
+                                        : "")
                         .stripePriceIdFileConfirmationStatement(
                                 stripePriceIdFileConfirmationStatement != null
                                         ? stripePriceIdFileConfirmationStatement

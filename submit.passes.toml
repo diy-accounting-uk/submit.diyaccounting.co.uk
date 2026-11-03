@@ -23,6 +23,8 @@
 # operator               → operator             → No (free, admin-issued, email-restricted to the operator)
 # resident-pro-test-pass → resident-pro         → No (free, admin-issued, test/sandbox)
 # resident-pro-pass      → resident-pro         → No (free, admin-issued, production)
+# resident-tax-agent-test-pass → resident-tax-agent → No (free, admin-issued, test/sandbox)
+# resident-tax-agent-pass      → resident-tax-agent → No (free, admin-issued, production)
 # campaign               → invited-guest        → User-issued, tokens charged by the generate-pass activity
 # digital-pass           → day-guest            → User-issued, tokens charged by the generate-pass-digital activity
 # physical-pass          → day-guest            → User-issued, tokens charged by the generate-pass-physical activity
@@ -85,6 +87,31 @@ defaultValidityPeriod = "P1D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 
+# resident-tax-agent-test-pass → unlocks "resident-tax-agent" bundle (test/sandbox)
+# Grants: unlimited tokens, the practice licence, HMRC sandbox access (testPass: true)
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
+[[passTypes]]
+id = "resident-tax-agent-test-pass"
+name = "Resident Tax Agent Test Pass"
+description = "Tax agent subscription access to HMRC Sandbox APIs for testing"
+bundleId = "resident-tax-agent"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+test = true
+
+# resident-tax-agent-pass → unlocks "resident-tax-agent" bundle (production)
+# Grants: unlimited tokens, the practice licence, production HMRC access
+# Payment: None (admin-issued via GitHub Actions for real users)
+[[passTypes]]
+id = "resident-tax-agent-pass"
+name = "Resident Tax Agent Pass"
+description = "Tax agent subscription access to production HMRC APIs"
+bundleId = "resident-tax-agent"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+
 # invited-guest → unlocks "invited-guest" bundle
 # Grants: 3 tokens refreshing monthly, 1 month timeout, production HMRC access
 # Tokens: 3 per month (refreshes on tokenRefreshInterval)
@@ -113,13 +140,13 @@ defaultMaxUses = 1
 requiresEmailRestriction = true
 
 # resident-pro-comp → unlocks "resident-pro-comp" bundle
-# Grants: 100 tokens refreshing monthly, no timeout, production HMRC access + pass generation
-# Tokens: 100 per month (refreshes on tokenRefreshInterval)
+# Grants: Resident Tax Agent (everything in Resident Pro, the practice licence), unlimited tokens
+# Tokens: unlimited
 # Payment: None (admin-issued, email-restricted; gifted to beta testers and partners)
 [[passTypes]]
 id = "resident-pro-comp"
-name = "Resident Pro (Complimentary)"
-description = "Complimentary pro subscription for beta testers and partners"
+name = "Resident Tax Agent (Complimentary)"
+description = "Complimentary tax agent subscription for beta testers and partners"
 bundleId = "resident-pro-comp"
 defaultValidityPeriod = "P1Y"
 defaultMaxUses = 1

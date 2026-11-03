@@ -125,7 +125,7 @@ describe("passGeneratePost", () => {
 
   test("returns 200 with pass details on success (digital-pass)", async () => {
     mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
-    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 10 }]);
     mockCreatePass.mockResolvedValue({
       code: "tiger-happy-mountain-silver",
       passTypeId: "digital-pass",
@@ -152,7 +152,7 @@ describe("passGeneratePost", () => {
   test("returns the balance across every bundle, not the one bucket that paid", async () => {
     mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
     mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 },
+      { bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 10 },
       { bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 },
     ]);
     mockCreatePass.mockResolvedValue({

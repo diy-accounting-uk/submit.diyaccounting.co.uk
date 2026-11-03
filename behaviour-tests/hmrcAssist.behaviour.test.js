@@ -136,7 +136,7 @@ async function signInWithHmrcTestUser(page, testInfo) {
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 
   return { username, password, vrn, nino, outputDir };

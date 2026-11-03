@@ -46,10 +46,10 @@ describe("productCatalogHelper", () => {
       "week-guest",
       "invited-guest",
       "resident-vat",
-      "resident",
       "resident-guest",
-      "resident-pro-comp",
       "resident-pro",
+      "resident-tax-agent",
+      "resident-pro-comp",
     ]);
     // expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
   });
@@ -67,10 +67,10 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
   });
 
-  it("self-employed activity should be granted by resident and resident-pro", () => {
+  it("self-employed activity should be granted by resident-pro and the bundles that include it", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident", "resident-pro"]);
-    expect(isActivityAvailable(catalog, "self-employed", "resident")).toBe(true);
+    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-pro", "resident-tax-agent", "resident-pro-comp"]);
+    expect(isActivityAvailable(catalog, "self-employed", "resident-pro")).toBe(true);
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 
@@ -194,10 +194,16 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).toEqual(yearEnd.environments);
   });
 
-  it("file-micro-entity-accounts activity should be granted by resident and resident-pro", () => {
+  it("file-micro-entity-accounts activity should be granted by resident-ltd and the bundles that include it", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident", "resident-pro"]);
-    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident")).toBe(true);
+    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual([
+      "resident-ltd",
+      "resident-pro",
+      "resident-tax-agent",
+      "resident-pro-comp",
+    ]);
+    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
+    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-vat")).toBe(false);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
@@ -225,14 +231,18 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).toContain("^/api/v1/hmrc/ct/return.*");
   });
 
-  it("file-confirmation-statement activity should be granted by resident and resident-pro, ci only", () => {
+  it("file-confirmation-statement activity should be granted by resident-ltd and the bundles that include it, listed in ci and prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
-    expect(bundlesForActivity(catalog, "file-confirmation-statement")).toEqual(["resident", "resident-pro"]);
-    expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident")).toBe(true);
+    expect(bundlesForActivity(catalog, "file-confirmation-statement")).toEqual([
+      "resident-ltd",
+      "resident-pro",
+      "resident-tax-agent",
+      "resident-pro-comp",
+    ]);
+    expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
-    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
-    expect(activity.environments).not.toContain("prod");
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
   });
 
   it("file-confirmation-statement carries a one-off per-submission price", () => {
@@ -248,13 +258,35 @@ describe("productCatalogHelper", () => {
     expect(getActivityPrices(null)).toEqual([]);
   });
 
-  it("resident-vat carries one monthly Stripe price", () => {
+  it("resident-vat carries the annual and monthly Stripe prices, annual default", () => {
     const catalog = parseCatalog(tomlText);
     const residentVat = getCatalogBundleById(catalog, "resident-vat");
-    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+    expect(getBundlePrices(residentVat)).toEqual([
+      { interval: "year", amount: 999, currency: "gbp", default: true },
+      { interval: "month", amount: 99, currency: "gbp", default: false },
+    ]);
+    expect(getBundlePriceForInterval(residentVat)).toMatchObject({ interval: "year", amount: 999 });
   });
 
-  it("resident-pro is always visible, on-subscription, and carries the annual and monthly prices, annual default", () => {
+  it("resident-ltd is always visible, on-subscription, 100 tokens monthly, annual default", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentLtd = getCatalogBundleById(catalog, "resident-ltd");
+    expect(residentLtd.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
+    expect(residentLtd).toMatchObject({
+      name: "Resident Ltd",
+      enable: "always",
+      hidden: false,
+      allocation: "on-subscription",
+      tokensGranted: 100,
+      tokenRefreshInterval: "P1M",
+    });
+    expect(getBundlePrices(residentLtd)).toEqual([
+      { interval: "year", amount: 999, currency: "gbp", default: true },
+      { interval: "month", amount: 99, currency: "gbp", default: false },
+    ]);
+  });
+
+  it("resident-pro includes resident-vat and resident-ltd, carries 100 tokens monthly and the annual and monthly prices, annual default", () => {
     const catalog = parseCatalog(tomlText);
     const residentPro = getCatalogBundleById(catalog, "resident-pro");
     expect(residentPro).toMatchObject({
@@ -262,22 +294,42 @@ describe("productCatalogHelper", () => {
       enable: "always",
       hidden: false,
       allocation: "on-subscription",
-      tokensGranted: "unlimited",
+      includes: ["resident-vat", "resident-ltd"],
+      tokensGranted: 100,
+      tokenRefreshInterval: "P1M",
+      description: "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.",
     });
+    expect(residentPro.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
     expect(getBundlePrices(residentPro)).toEqual([
-      { interval: "year", amount: 19900, currency: "gbp", default: true },
-      { interval: "month", amount: 1999, currency: "gbp", default: false },
+      { interval: "year", amount: 3999, currency: "gbp", default: true },
+      { interval: "month", amount: 399, currency: "gbp", default: false },
     ]);
-    expect(getBundlePriceForInterval(residentPro)).toMatchObject({ interval: "year", amount: 19900 });
-    expect(getBundlePriceForInterval(residentPro, "month")).toMatchObject({ interval: "month", amount: 1999 });
+    expect(getBundlePriceForInterval(residentPro)).toMatchObject({ interval: "year", amount: 3999 });
+    expect(getBundlePriceForInterval(residentPro, "month")).toMatchObject({ interval: "month", amount: 399 });
   });
 
-  it("resident-pro carries an unlimited token grant and no refresh interval, the practice licence", () => {
+  it("resident-tax-agent includes resident-pro, carries an unlimited token grant and no refresh interval, and is not listed in prod", () => {
     const catalog = parseCatalog(tomlText);
-    const residentPro = getCatalogBundleById(catalog, "resident-pro");
-    expect(residentPro.tokensGranted).toBe("unlimited");
-    expect(residentPro.tokenRefreshInterval).toBeUndefined();
-    expect(isUnlimitedTokenGrant(residentPro.tokensGranted)).toBe(true);
+    const taxAgent = getCatalogBundleById(catalog, "resident-tax-agent");
+    expect(taxAgent.includes).toEqual(["resident-pro"]);
+    expect(taxAgent.tokensGranted).toBe("unlimited");
+    expect(taxAgent.tokenRefreshInterval).toBeUndefined();
+    expect(isUnlimitedTokenGrant(taxAgent.tokensGranted)).toBe(true);
+    expect(taxAgent.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(getBundlePrices(taxAgent)).toEqual([
+      { interval: "year", amount: 19999, currency: "gbp", default: true },
+      { interval: "month", amount: 1999, currency: "gbp", default: false },
+    ]);
+  });
+
+  it("resident-pro-comp includes resident-tax-agent and carries an unlimited grant", () => {
+    const comp = getCatalogBundleById(parseCatalog(tomlText), "resident-pro-comp");
+    expect(comp.includes).toEqual(["resident-tax-agent"]);
+    expect(comp.tokensGranted).toBe("unlimited");
+  });
+
+  it("the resident bundle is folded away", () => {
+    expect(getCatalogBundleById(parseCatalog(tomlText), "resident")).toBeNull();
   });
 
   it("isUnlimitedTokenGrant is true only for the unlimited sentinel", () => {
@@ -287,39 +339,12 @@ describe("productCatalogHelper", () => {
     expect(isUnlimitedTokenGrant("Unlimited")).toBe(false);
   });
 
-  it("getStripeSubscriptionBundles should return exactly the three Stripe-priced bundles", () => {
+  it("getStripeSubscriptionBundles should return exactly the four Stripe-priced bundles", () => {
     const catalog = parseCatalog(tomlText);
     const bundleIds = getStripeSubscriptionBundles(catalog)
       .map((b) => b.id)
       .sort();
-    expect(bundleIds).toEqual(["resident", "resident-pro", "resident-vat"]);
-  });
-
-  it("resident carries the annual and monthly prices, annual default, and is listed in ci only", () => {
-    const catalog = parseCatalog(tomlText);
-    const resident = getCatalogBundleById(catalog, "resident");
-    expect(resident).toMatchObject({
-      levelName: "Resident",
-      enable: "always",
-      hidden: false,
-      allocation: "on-subscription",
-      tokensGranted: 100,
-      tokenRefreshInterval: "P1M",
-    });
-    expect(resident.listedInEnvironments).toEqual(["ci"]);
-    expect(getBundlePrices(resident)).toEqual([
-      { interval: "year", amount: 3900, currency: "gbp", default: true },
-      { interval: "month", amount: 399, currency: "gbp", default: false },
-    ]);
-    expect(getBundlePriceForInterval(resident)).toMatchObject({ interval: "year", amount: 3900 });
-    expect(getBundlePriceForInterval(resident, "month")).toMatchObject({ interval: "month", amount: 399 });
-  });
-
-  it("resident-vat carries one price and ignores an interval it does not have", () => {
-    const catalog = parseCatalog(tomlText);
-    const residentVat = getCatalogBundleById(catalog, "resident-vat");
-    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
-    expect(getBundlePriceForInterval(residentVat, "year")).toMatchObject({ interval: "month", amount: 99 });
+    expect(bundleIds).toEqual(["resident-ltd", "resident-pro", "resident-tax-agent", "resident-vat"]);
   });
 
   it("getBundlePrices returns nothing for a bundle with no price fields", () => {
@@ -329,8 +354,8 @@ describe("productCatalogHelper", () => {
 
   it("getBundlePriceForInterval returns null for a multi-price bundle's unlisted interval", () => {
     const catalog = parseCatalog(tomlText);
-    const resident = getCatalogBundleById(catalog, "resident");
-    expect(getBundlePriceForInterval(resident, "week")).toBeNull();
+    const residentPro = getCatalogBundleById(catalog, "resident-pro");
+    expect(getBundlePriceForInterval(residentPro, "week")).toBeNull();
   });
 
   describe("isActivityListedInEnvironment", () => {
@@ -390,5 +415,31 @@ describe("productCatalogHelper", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "company-lookup");
     expect(activity.environments).toContain("prod");
+  });
+});
+
+describe("productCatalog aggregation", () => {
+  const fixture = `
+[[bundles]]
+id = "part"
+
+[[bundles]]
+id = "whole"
+includes = ["part"]
+
+[[activities]]
+id = "uses-part"
+bundles = ["part"]
+
+[[activities]]
+id = "uses-whole"
+bundles = ["whole"]
+`;
+
+  it("parseCatalog gives an aggregate the activities of its parts", () => {
+    const catalog = parseCatalog(fixture);
+    expect(bundlesForActivity(catalog, "uses-part")).toEqual(["part", "whole"]);
+    expect(bundlesForActivity(catalog, "uses-whole")).toEqual(["whole"]);
+    expect(isActivityAvailable(catalog, "uses-part", "whole")).toBe(true);
   });
 });

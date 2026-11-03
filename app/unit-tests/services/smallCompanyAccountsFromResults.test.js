@@ -4,6 +4,9 @@
 // app/unit-tests/services/smallCompanyAccountsFromResults.test.js
 
 import { describe, test, expect } from "vitest";
+import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
+import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
+import { deriveMicroEntityAccounts } from "@app/services/microEntityAccounts.js";
 import {
   smallCompanyFormat2ProfitAndLossFromResults,
   smallCompanyLinesFromOpeningBalance,
@@ -11,7 +14,7 @@ import {
   roundSmallCompanyBalanceSheet,
 } from "@app/services/smallCompanyAccountsFromResults.js";
 import { smallCompanyProfitAndLossFromPublishedAccount } from "@app/services/ct600Figures.js";
-import { format2ProfitAndLossProblems, profitAndLossProblems } from "@app/services/smallCompanyAccountsIxbrl.js";
+import { buildSmallCompanyAccounts, format2ProfitAndLossProblems, profitAndLossProblems } from "@app/services/smallCompanyAccountsIxbrl.js";
 
 // Purchases, sub-contractors, wages, directors' pay, employer's National Insurance, depreciation and
 // goodwill amortisation, with amounts that do not round evenly.
@@ -125,6 +128,43 @@ describe("services/smallCompanyAccountsFromResults balance sheet lines", () => {
     expect(roundSmallCompanyBalanceSheet(lines)).toMatchObject({ tradeDebtors: 700, otherDebtors: 300, amountsOwedToDirectors: 400 });
   });
 
+  test("an overdrawn directors' loan account (E29 below 0) is a debtor and leaves the creditors", () => {
+    const overdrawn = { ...sheet, E29: -1200.4, F31: -1200.4, F33: 1950, F39: 1950 };
+    const lines = smallCompanyLinesFromPublishedBalanceSheet(overdrawn);
+    expect(lines).toMatchObject({
+      debtors: 3200.4,
+      tradeDebtors: 2000,
+      amountsOwedByDirectors: 1200.4,
+      amountsOwedToDirectors: 0,
+      creditorsAfterOneYear: 0,
+    });
+    const rounded = roundSmallCompanyBalanceSheet(lines);
+    expect(rounded).toMatchObject({
+      debtors: 3200,
+      tradeDebtors: 2000,
+      otherDebtors: 0,
+      amountsOwedByDirectors: 1200,
+      creditorsAfterOneYear: 0,
+    });
+    expect(rounded.tradeDebtors + rounded.otherDebtors + rounded.amountsOwedByDirectors).toBe(rounded.debtors);
+  });
+
+  test("an opening balance with the directors' loan negative is a debtor and carries no creditor", () => {
+    const lines = smallCompanyLinesFromOpeningBalance({
+      trade_debtors: 700,
+      directors_loan: -300,
+      long_term_creditors: 100,
+      share_capital: 900,
+    });
+    expect(lines).toMatchObject({
+      debtors: 1000,
+      tradeDebtors: 700,
+      amountsOwedByDirectors: 300,
+      amountsOwedToDirectors: 0,
+      creditorsAfterOneYear: 100,
+    });
+  });
+
   test("an opening balance with the three statement accounts overdrawn together gives an overdraft and no cash at bank", () => {
     const lines = smallCompanyLinesFromOpeningBalance({
       current_account: -800,
@@ -151,5 +191,62 @@ describe("services/smallCompanyAccountsFromResults balance sheet lines", () => {
       share_capital: 360,
     });
     expect(lines).toMatchObject({ bankLoansOverdrafts: 0, cashAtBank: 360 });
+  });
+});
+
+describe("an overdrawn directors' loan account in a Company book", () => {
+  const session = () => {
+    const { book, lines } = loadDiyaGlData("fixtures/diya-gl/precision-code-ltd-loan");
+    return { book, lines };
+  };
+
+  test("the small company accounts show the loan as a debtor and carry the section 413 note rows", async () => {
+    const accounts = await deriveSmallCompanyAccounts(session());
+    expect(accounts.balanceSheet.currentYear).toMatchObject({
+      debtors: 19180,
+      tradeDebtors: 7180,
+      amountsOwedByDirectors: 12000,
+      amountsOwedToDirectors: 0,
+      creditorsAfterOneYear: 45000,
+    });
+    expect(accounts.balanceSheet.priorYear).toMatchObject({ amountsOwedByDirectors: 0, amountsOwedToDirectors: 20000 });
+    expect(accounts.directorsAdvances).toEqual([
+      { name: "Carol Smith", balanceAtStart: 0, advanced: 12000, repaid: 0, balanceAtEnd: 12000 },
+    ]);
+  });
+
+  test("the derived figures build a balanced document once the terms are stated", async () => {
+    const accounts = await deriveSmallCompanyAccounts(session());
+    const xhtml = buildSmallCompanyAccounts({
+      companyNumber: accounts.companyNumber,
+      companyName: accounts.companyName,
+      registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+      averageNumberOfEmployees: accounts.averageNumberOfEmployees,
+      principalActivity: "Software",
+      accountingPolicies: "Prepared under FRS 102 section 1A.",
+      directors: accounts.directors,
+      directorName: accounts.directorName,
+      dateOfApproval: "2026-09-01",
+      balanceSheet: { current: accounts.balanceSheet.currentYear, prior: accounts.balanceSheet.priorYear },
+      profitAndLoss: { current: accounts.profitAndLoss.currentYear },
+      fixedAssetNote: accounts.fixedAssetNote,
+      directorsAdvances: accounts.directorsAdvances.map((advance) => ({ ...advance, terms: "Interest free" })),
+    });
+    expect(xhtml).toContain("Amounts owed by directors");
+    expect(xhtml).toContain("Advances and credits to directors");
+  });
+
+  test("the micro-entity accounts count the loan in current assets and leave it out of the creditors", async () => {
+    const accounts = await deriveMicroEntityAccounts(session());
+    expect(accounts.balanceSheet.currentYear.creditorsAfterOneYear).toBe(45000);
+    expect(accounts.directorsAdvances).toEqual([
+      { name: "Carol Smith", balanceAtStart: 0, advanced: 12000, repaid: 0, balanceAtEnd: 12000 },
+    ]);
+    const { currentYear } = accounts.balanceSheet;
+    expect(
+      currentYear.fixedAssets + currentYear.currentAssets - currentYear.creditorsWithinOneYear - currentYear.creditorsAfterOneYear,
+    ).toBe(currentYear.capitalAndReserves);
   });
 });

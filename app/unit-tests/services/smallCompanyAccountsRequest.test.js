@@ -106,7 +106,9 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
   test("a debtors split that does not add up to the debtors is refused and one that does is kept", () => {
     const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
     const wrong = validate(withYear({ tradeDebtors: 1 })).errors.join(" ");
-    expect(wrong).toContain(`tradeDebtors, otherDebtors and prepayments (1) must add up to debtors (${base.debtors})`);
+    expect(wrong).toContain(
+      `tradeDebtors, otherDebtors, amountsOwedByDirectors and prepayments (1) must add up to debtors (${base.debtors})`,
+    );
     const { result, errors } = validate(withYear({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 }));
     expect(errors).toEqual([]);
     expect(result.balanceSheet.current).toMatchObject({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 });

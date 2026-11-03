@@ -3,12 +3,15 @@
 
 // app/unit-tests/functions/hmrcCtReturnPost.test.js
 import { describe, test, beforeAll, beforeEach, afterEach, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
-import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL, CT_MESSAGE_MAX_BYTES } from "@app/services/hmrcTransactionEngine.js";
+
+const packageJson = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
 
 const mockSend = vi.fn();
 
@@ -59,11 +62,19 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+vi.mock("node:timers/promises", () => ({ setTimeout: vi.fn().mockResolvedValue(undefined) }));
+
 const mockPostToTransactionEngine = vi.fn();
-vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
-  ...(await importOriginal()),
-  postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
-}));
+let buildSubmissionOverride;
+vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
+    buildCt600SubmissionRequest: (...args) =>
+      buildSubmissionOverride ? buildSubmissionOverride(...args) : actual.buildCt600SubmissionRequest(...args),
+  };
+});
 
 const mockLogs = [];
 vi.mock("@app/lib/logger.js", async (importOriginal) => {
@@ -134,7 +145,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       }
       return {};
     });
@@ -158,6 +169,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(xml).toContain(`<SenderID>${USER_ID}</SenderID>`);
     expect(xml).toContain(`<Value>${PASSWORD}</Value>`);
     expect(xml).toContain("<GatewayTest>1</GatewayTest>");
+    expect(xml).toContain(`<Version>${packageJson.version}</Version>`);
     expect(xml).toMatch(/<IRmark Type="generic">[A-Za-z0-9+/]{27}=<\/IRmark>/);
 
     const lib = await import("@aws-sdk/lib-dynamodb");
@@ -192,6 +204,53 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
     expect(update.input.ExpressionAttributeValues[":data"].pollUrl).toBe("http://localhost:9000/hmrc-transaction-engine/poll");
+  });
+
+  describe("the message size limit", () => {
+    afterEach(() => {
+      buildSubmissionOverride = undefined;
+    });
+
+    function builderReturning(bytes) {
+      return () => ({ xml: "x".repeat(bytes), irmark: { base32: "A".repeat(32) }, transactionId: "ABCDEF" });
+    }
+
+    test("sends a message of exactly the limit", async () => {
+      buildSubmissionOverride = builderReturning(CT_MESSAGE_MAX_BYTES);
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(1);
+    });
+
+    test("answers 400 and sends nothing for a message one byte over the limit", async () => {
+      buildSubmissionOverride = builderReturning(CT_MESSAGE_MAX_BYTES + 1);
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("Nothing was sent");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
+    });
+  });
+
+  describe("errors HMRC raises only on the live service", () => {
+    const LIVE_ONLY_ERRORS = [
+      ["1608", "The IRmark is not valid for this message."],
+      ["1610", "The message could not be processed on the live service."],
+      ["1611", "There must be an existing successfully processed return for the same UTR and accounting period."],
+      ["1612", "The submission was refused on the live service."],
+      ["3300", "A business rule only the live service checks has failed."],
+      ["3304", "A second business rule only the live service checks has failed."],
+      ["7752", "A document rule only the live service checks has failed."],
+    ];
+
+    test.each(LIVE_ONLY_ERRORS)("answers 502 with HMRC's error %s and its text", async (number, text) => {
+      const xml = GATEWAY_ERROR_XML.replace("<Number>1046</Number>", `<Number>${number}</Number>`).replace("Authentication Failure", text);
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: xml, headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response).errors[0]).toMatchObject({ number, text });
+    });
   });
 
   test("answers 409 naming the boxes that differ from the reviewed boxes, and calls nothing", async () => {
@@ -244,18 +303,89 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
   });
 
-  test("answers a JSON 500 when the post throws", async () => {
-    mockPostToTransactionEngine.mockRejectedValue(new Error("socket hang up"));
-    const response = await hmrcCtReturnPostHandler(buildEvent());
-    expect(response.statusCode).toBe(500);
-    expect(parseResponseBody(response).message).toBe("Internal server error");
-    expect(JSON.stringify(parseResponseBody(response))).not.toContain(PASSWORD);
+  describe("when the submission reply never comes", () => {
+    const dataResponseXml = (records = "") =>
+      `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>HMRC-CT-CT600</Class><Qualifier>response</Qualifier><Function>list</Function><CorrelationID></CorrelationID></MessageDetails><SenderDetails/></Header><GovTalkDetails><Keys/></GovTalkDetails><Body><StatusReport><SenderID/><StartTimeStamp/><EndTimeStamp/>${records}</StatusReport></Body></GovTalkMessage>`;
+    const sentTransactionId = () => mockPostToTransactionEngine.mock.calls[0][1].match(/<TransactionID>([0-9A-F]+)<\/TransactionID>/)[1];
+    const heldRecord = () =>
+      `<StatusRecord><TimeStamp>03/11/2026 10:00:01</TimeStamp><CorrelationID>${CORRELATION_ID}</CorrelationID><TransactionID>${sentTransactionId()}</TransactionID><Status>SUBMISSION_ACKNOWLEDGE</Status></StatusRecord>`;
+    const activityEvents = () => mockLogs.join("\n");
+
+    test("continues with the held submission's CorrelationID and records it as pending", async () => {
+      mockPostToTransactionEngine
+        .mockRejectedValueOnce(new Error("timed out"))
+        .mockImplementationOnce(async () => ({ ok: true, status: 200, data: dataResponseXml(heldRecord()), headers: {}, duration: 1 }));
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+      const body = parseResponseBody(response);
+      expect(body.correlationId).toBe(CORRELATION_ID);
+      expect(body.transactionId).toBe(sentTransactionId());
+
+      const dataRequestXml = mockPostToTransactionEngine.mock.calls[1][1];
+      expect(dataRequestXml).toContain("<Function>list</Function>");
+      expect(dataRequestXml).toContain(`<SenderID>${USER_ID}</SenderID>`);
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.Key.requestId).toBe(CORRELATION_ID);
+      expect(update.input.ExpressionAttributeValues[":status"]).toBe("pending");
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({
+        kind: "company-tax-return",
+        pollUrl: "https://test-transaction-engine.tax.service.gov.uk/submission",
+        irmark: body.irmark,
+      });
+      expect(activityEvents()).not.toContain(PASSWORD);
+    });
+
+    test("recovers from an HTTP 504 and from an unreadable reply the same way", async () => {
+      for (const lost of [
+        { ok: false, status: 504, data: "", headers: {}, duration: 1 },
+        { ok: true, status: 200, data: "<GovTalkMessage><Header>", headers: {}, duration: 1 },
+      ]) {
+        vi.clearAllMocks();
+        mockPostToTransactionEngine
+          .mockResolvedValueOnce(lost)
+          .mockImplementationOnce(async () => ({ ok: true, status: 200, data: dataResponseXml(heldRecord()), headers: {}, duration: 1 }));
+        const response = await hmrcCtReturnPostHandler(buildEvent());
+        expect(response.statusCode).toBe(201);
+        expect(parseResponseBody(response).correlationId).toBe(CORRELATION_ID);
+      }
+    });
+
+    test("answers 502 not-received, with nothing recorded, when the Transaction Engine holds no such submission", async () => {
+      mockPostToTransactionEngine
+        .mockRejectedValueOnce(new Error("timed out"))
+        .mockResolvedValueOnce({ ok: true, status: 200, data: dataResponseXml(), headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      const body = parseResponseBody(response);
+      expect(body.submissionStatus).toBe("not-received");
+      expect(body.message).toContain("you can file it again");
+      expect(body.transactionId).toBe(sentTransactionId());
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      expect(mockSend.mock.calls.some(([cmd]) => cmd instanceof lib.UpdateCommand)).toBe(false);
+    });
+
+    test("answers 502 unconfirmed and never invites a second filing when the Transaction Engine does not answer", async () => {
+      mockPostToTransactionEngine.mockRejectedValue(new Error("socket hang up"));
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      const body = parseResponseBody(response);
+      expect(body.submissionStatus).toBe("unknown");
+      expect(body.message).toContain("Do not file it again");
+      expect(body.message).not.toContain("you can file it again");
+      expect(JSON.stringify(body)).not.toContain(PASSWORD);
+    });
+
+    test("does not ask the Transaction Engine what it holds when it answered with an error", async () => {
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: GATEWAY_ERROR_XML, headers: {}, duration: 1 });
+      await hmrcCtReturnPostHandler(buildEvent());
+      expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(1);
+    });
   });
 
   test.each([
     ["no user ID", { gatewayUserId: "" }, /gatewayUserId/],
     ["no password", { gatewayPassword: undefined }, /gatewayPassword/],
-    ["a director's loan account overdrawn", { directorsLoanOverdrawn: true }, /CT600A/],
     ["an unaccepted declaration", { declarationAccepted: false }, /declaration/],
   ])("answers 400 without calling HMRC for %s", async (_label, overrides, message) => {
     const response = await hmrcCtReturnPostHandler(
@@ -366,6 +496,102 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid amended");
       expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("a client filing by a practice", () => {
+    const CLIENT_TABLE = "test-practice-clients-table";
+    const CLIENT_UTR = "1234567890";
+    const CLIENT_COMPANY_NUMBER = "00000099";
+    const CLIENT_ROW = {
+      clientId: "client-1",
+      displayName: "Precision Code Ltd",
+      identifiers: { utr: CLIENT_UTR, companyNumber: CLIENT_COMPANY_NUMBER },
+      archivedAt: null,
+    };
+    const AGENT = { practiceName: "Example Practice LLP", authorisationConfirmed: true };
+
+    function mockPractice({ bundleId = "resident-tax-agent", client = CLIENT_ROW } = {}) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId, subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input?.TableName === CLIENT_TABLE) return { Item: client };
+        return {};
+      });
+    }
+
+    function clientEvent(overrides = {}) {
+      const body = { ...baseBody, clientId: "client-1", agent: AGENT, ...overrides };
+      const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+        requireGatewayCredentials: false,
+        requireReviewedBoxes: false,
+        client: CLIENT_ROW,
+      });
+      const reviewedBoxes = buildCtReturnDocuments(request).boxes;
+      return buildEvent({ body: { ...body, reviewedBoxes, gatewayUserId: USER_ID, gatewayPassword: PASSWORD } });
+    }
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = CLIENT_TABLE;
+      mockPractice();
+    });
+
+    test("files as the agent with the client's UTR and company number, not the body's", async () => {
+      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "11111111" }));
+      expect(response.statusCode).toBe(201);
+      const [, xml] = mockPostToTransactionEngine.mock.calls[0];
+      expect(xml).toContain(`<Key Type="UTR">${CLIENT_UTR}</Key>`);
+      expect(xml).not.toContain("9999999999");
+      expect(xml).toContain("<Sender>Agent</Sender>");
+      expect(xml).toContain("<Agent><AgentID>client-1</AgentID><Company>Example Practice LLP</Company></Agent>");
+      expect(xml).toContain("<Role>principal</Role>");
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ clientId: "client-1", utr: CLIENT_UTR });
+    });
+
+    test("refuses a filing the practice has not confirmed the authorisation for", async () => {
+      const response = await hmrcCtReturnPostHandler(clientEvent({ agent: { ...AGENT, authorisationConfirmed: false } }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("authorised it for Corporation Tax");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 without the practice licence", async () => {
+      mockPractice({ bundleId: "resident-pro" });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 for an archived client", async () => {
+      mockPractice({ client: { ...CLIENT_ROW, archivedAt: "2026-01-01T00:00:00.000Z" } });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 403 CLIENT_SCOPE_ENVIRONMENT_RESTRICTED where the practice activity is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("CLIENT_SCOPE_ENVIRONMENT_RESTRICTED");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("stops a client with no UTR", async () => {
+      mockPractice({ client: { ...CLIENT_ROW, identifiers: { utr: null, companyNumber: CLIENT_COMPANY_NUMBER } } });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("UTR");
+    });
+
+    test("explains error 1046 as a missing company authorisation", async () => {
+      mockPostToTransactionEngine.mockResolvedValue({ ok: true, status: 200, data: GATEWAY_ERROR_XML, headers: {}, duration: 1 });
+      const response = await hmrcCtReturnPostHandler(clientEvent());
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response).message).toContain("form 64-8 or online");
+      expect(parseResponseBody(response).message).toContain("72 hours");
     });
   });
 

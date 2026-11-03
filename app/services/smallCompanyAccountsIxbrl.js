@@ -43,6 +43,8 @@ import {
   renderControllingPartyFacts,
   controllingPartyNote,
   renderSigningDirectorFact,
+  directorsAdvancesNotes,
+  directorsAdvancesProblems,
   renderCompanyDescriptionFacts,
   revisionPage,
   companyInformationNote,
@@ -77,6 +79,7 @@ export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
   "bankLoansAfterOneYear",
   "tradeDebtors",
   "otherDebtors",
+  "amountsOwedByDirectors",
   "prepayments",
   "provisionsForLiabilities",
   "amountsOwedToDirectors",
@@ -84,7 +87,7 @@ export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
 ];
 
 // A year that shows any of these splits `debtors`: the three lines then add up to it.
-export const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "prepayments"];
+export const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "amountsOwedByDirectors", "prepayments"];
 
 // The lines that split `creditorsAfterOneYear`; the rest of the total is other creditors.
 export const SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES = [
@@ -104,7 +107,9 @@ export function balanceSheetBreakdownProblems(figures) {
   const sum = (lines) => lines.reduce((total, line) => total + (figures[line] ?? 0), 0);
   const debtorsSplit = sum(SMALL_COMPANY_DEBTORS_SPLIT_LINES);
   if (debtorsSplit !== 0 && debtorsSplit !== figures.debtors) {
-    problems.push(`tradeDebtors, otherDebtors and prepayments (${debtorsSplit}) must add up to debtors (${figures.debtors})`);
+    problems.push(
+      `tradeDebtors, otherDebtors, amountsOwedByDirectors and prepayments (${debtorsSplit}) must add up to debtors (${figures.debtors})`,
+    );
   }
   const afterOneYearSplit = sum(SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES);
   if ((figures.bankLoansAfterOneYear ?? 0) <= figures.creditorsAfterOneYear && afterOneYearSplit > figures.creditorsAfterOneYear) {
@@ -636,6 +641,21 @@ function creditorAfterOneYearLines(yearFigures, contextRefs) {
   ];
 }
 
+// A director who owes the company money at either balance sheet date needs the section 413 note.
+function refuseDirectorsAdvancesProblems(input, priorBalanceSheet) {
+  const advances = input.directorsAdvances ?? [];
+  const problems = directorsAdvancesProblems(advances);
+  const owedByDirectors = [input.balanceSheet.current, priorBalanceSheet].some((figures) => (figures?.amountsOwedByDirectors ?? 0) > 0);
+  if (owedByDirectors && advances.length === 0) {
+    problems.push("directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");
+  }
+  const closing = advances.reduce((total, advance) => total + advance.balanceAtEnd, 0);
+  if (advances.length > 0 && closing !== (input.balanceSheet.current.amountsOwedByDirectors ?? 0)) {
+    problems.push(`directorsAdvances balanceAtEnd (${closing}) must equal balanceSheet.current.amountsOwedByDirectors`);
+  }
+  if (problems.length > 0) throw new Error(problems.join("; "));
+}
+
 function refuseBreakdownProblems(label, figures) {
   if (!figures) return;
   const problems = balanceSheetBreakdownProblems(figures);
@@ -658,6 +678,7 @@ function hasDebtorsSplit(yearFigures) {
 const DEBTORS_NOTE_ROWS = [
   ["Trade debtors", "tradeDebtors", "tradeDebtors"],
   ["Other debtors", "otherDebtors", "otherDebtors"],
+  ["Amounts owed by directors", "amountsOwedByDirectors", "amountsOwedByDirectors"],
   ["Prepayments and accrued income", "prepaymentsInDebtors", "prepayments"],
 ];
 
@@ -750,6 +771,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {object} [input.intangibleAssetNote] - INTANGIBLE_ASSET_FIELDS of the one intangible assets note; its net book value is part of fixed assets
  * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets and depreciation, impairment, stocks, cash, financial instruments, employee benefits, foreign currency, leases, tax, current and deferred tax, dividends), each tagged in the accounting policies note under its subheading
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
+ * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} [input.directorsAdvances] - the section 413 note on advances and credits to directors; required when a balance sheet shows amountsOwedByDirectors
  * @param {{ultimate: boolean, name?: string}} [input.controllingParty] - adds the controlling party note; an ultimate party needs a name; without a name the note states that the company has no ultimate controlling party
  * @param {{shareClass: string, nominalValue: number}} [input.shareCapital] - adds a share capital note; the shares issued are the called up share capital over the nominal value
  * @returns {string} the XHTML document
@@ -770,6 +792,7 @@ export function buildSmallCompanyAccounts(input) {
   if (input.controllingParty?.ultimate && !input.controllingParty.name) {
     throw new Error("controllingParty.name is required when the controlling party is ultimate");
   }
+  refuseDirectorsAdvancesProblems(input, priorBalanceSheet);
   const priorProfitAndLoss = input.profitAndLoss.prior;
   // The request carries no deferred tax, so the profit and loss tax charge is the current tax of the period.
   const showsTaxNote = [input.profitAndLoss.current, priorProfitAndLoss].some((figures) => (figures?.tax ?? 0) !== 0);
@@ -975,6 +998,18 @@ export function buildSmallCompanyAccounts(input) {
     notes.push({ title: "Debtors", html: debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) });
     debtorsNoteNumber = notes.length;
   }
+
+  notes.push(
+    ...directorsAdvancesNotes({
+      directorNames: input.directors,
+      directorsAdvances: input.directorsAdvances,
+      input,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+    }),
+  );
 
   if (showsTaxNote) {
     const taxYears = [

@@ -68,7 +68,7 @@ test.describe("set an affiliate", () => {
     await serveRealSite(page, {
       signedIn: true,
       apiHandler: (url) => {
-        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident");
+        if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident-pro");
         return undefined;
       },
     });
@@ -80,7 +80,7 @@ test.describe("set an affiliate", () => {
 
 test.describe("apply to be an affiliate", () => {
   const applicationFor = (application) => (url, request) => {
-    if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident");
+    if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident-pro");
     if (url.pathname === "/api/v1/affiliate/application" && request.method() === "GET") return application;
     return undefined;
   };

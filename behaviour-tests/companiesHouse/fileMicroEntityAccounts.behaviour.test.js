@@ -246,7 +246,7 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -279,7 +279,7 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -303,7 +303,7 @@ async function signInWithResidentBundle(page, testUrl) {
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 }

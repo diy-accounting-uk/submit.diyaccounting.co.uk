@@ -7,7 +7,7 @@
 // - **Run:** `import { hasTokensForActivity, consumeTokenForActivity, chargeTokenOnSuccess } from "app/services/tokenEnforcement.js"`
 // - **Entry:** `app/services/tokenEnforcement.js:hasTokensForActivity`; `app/services/tokenEnforcement.js:consumeTokenForActivity`
 // - **Files:** app/services/tokenEnforcement.js, app/unit-tests/services/tokenEnforcement.test.js, app/unit-tests/services/tokenEnforcement.consumption.test.js, app/system-tests/tokenConsumption.system.test.js, behaviour-tests/tokenEnforcement.behaviour.test.js, web/public/widgets/submission-cost.js, web/browser-tests/submissionCost.browser.test.js, app/unit-tests/data/dynamoDbBundleRepository.tokenEvent.test.js
-// - **Keywords:** token, enforce tokens, consume token, unlimited sentinel, hasTokensForActivity, resident-pro licence
+// - **Keywords:** token, enforce tokens, consume token, unlimited sentinel, hasTokensForActivity, resident-tax-agent licence
 // - **Related:** BILL-04, BILL-06, BILL-37
 // @end-capability
 
@@ -21,7 +21,7 @@ const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
 
 /**
  * Find a bundle owned by the user that both grants an activity and still has enough
- * tokens remaining to cover its cost. A bundle carrying an unlimited grant (the resident-pro
+ * tokens remaining to cover its cost. A bundle carrying an unlimited grant (the resident-tax-agent
  * practice licence) always qualifies, regardless of how many tokens it has recorded as consumed.
  *
  * @param {Array<Object>} userBundles - Bundles returned by getUserBundles
@@ -110,7 +110,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
     return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
   }
 
-  // An unlimited grant (the resident-pro practice licence) is exempt from the token count:
+  // An unlimited grant (the resident-tax-agent practice licence) is exempt from the token count:
   // no DynamoDB decrement, no consumption event, no possibility of exhaustion.
   if (isUnlimitedTokenGrant(qualifyingBundle.tokensGranted)) {
     logger.info({ message: "Unlimited grant - no token consumption recorded", userId, activityId, bundleId: qualifyingBundle.bundleId });

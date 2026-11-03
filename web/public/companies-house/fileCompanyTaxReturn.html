@@ -48,6 +48,23 @@
       >
         <h2>Which company?</h2>
         <form id="companyForm" novalidate>
+          <fieldset id="clientChoice" class="form-group" style="display: none">
+            <legend>Who is this return for?</legend>
+            <div id="clientChoiceOptions"></div>
+            <p id="clientStop" class="hint" role="alert" style="display: none"></p>
+            <div id="practiceNameGroup" style="display: none">
+              <label for="practiceName">Practice name (for HMRC's records)</label>
+              <p id="practiceName-hint" class="hint">Up to 35 characters. It goes in the return as the agent's name.</p>
+              <input
+                type="text"
+                id="practiceName"
+                name="practiceName"
+                maxlength="35"
+                autocomplete="organization"
+                aria-describedby="practiceName-hint"
+              />
+            </div>
+          </fieldset>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
@@ -79,6 +96,14 @@
         <div id="booksImport"></div>
         <form id="returnForm" novalidate>
           <div id="formSections"></div>
+          <section id="agentSection" class="form-section" style="display: none" aria-labelledby="agentHeading">
+            <h3 id="agentHeading">Filing as the company's agent</h3>
+            <p class="hint">
+              The practice's own Government Gateway user ID, with Corporation Tax enrolled, signs the return. Box 975 is the name of the
+              person at the practice who makes the declaration. Box 985 is their status, and starts as Agent.
+            </p>
+            <div id="agentAuthorisedHost"></div>
+          </section>
           <button type="submit" id="previewBtn" class="btn">Preview the return</button>
         </form>
       </div>
@@ -172,8 +197,10 @@
             ></textarea>
           </div>
           <p class="hint">
-            Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment. They are sent once with
-            this return and never stored.
+            <span id="gatewayWhose"
+              >Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.</span
+            >
+            They are sent once with this return and never stored.
           </p>
           <div class="form-group">
             <label for="gatewayUserId">Government Gateway user ID</label>
@@ -235,6 +262,24 @@
               Amend the accounts and the return
             </button>
           </div>
+        </section>
+        <section id="supportHelp" aria-labelledby="supportHelpHeading">
+          <h3 id="supportHelpHeading">Where to get help</h3>
+          <ul>
+            <li>
+              A problem with the live HMRC service, or with the Government Gateway: the
+              <a
+                href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/online-services-helpdesk"
+                target="_blank"
+                rel="noopener"
+                >HMRC Online Services Helpdesk</a
+              >.
+            </li>
+            <li>
+              A problem with this software: DIY Accounting at <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>,
+              or the <a href="../help.html">Help page</a>.
+            </li>
+          </ul>
         </section>
         <div class="button-group">
           <button type="button" id="tryAgainBtn" class="secondary-button" style="display: none">Check the return and try again</button>

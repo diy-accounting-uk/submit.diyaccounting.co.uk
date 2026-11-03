@@ -113,7 +113,6 @@ class DiyaGlStackTest {
                                         "DIYA_GL_MAX_PER_USER", "20",
                                         "DIYA_GL_VERSIONS_KEPT", "30",
                                         "DIYA_GL_RESIDENT_TIER", "true",
-                                        "DIYA_GL_BUNDLE_ID", "resident",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
     }
 
@@ -133,7 +132,6 @@ class DiyaGlStackTest {
                                 "Variables",
                                 Match.objectLike(Map.of(
                                         "DIYA_GL_RESIDENT_TIER", "true",
-                                        "DIYA_GL_BUNDLE_ID", "resident",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
         assertTrue(
                 iamStatementsForFunction(template, functionName).stream()

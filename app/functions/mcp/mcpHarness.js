@@ -25,7 +25,7 @@ function isProd() {
 }
 
 // The simulator user holds the bundles the harness scripts need. day-guest is self-service. A
-// practice's client filings need resident-pro, which the simulator's mock checkout grants as it
+// practice's client filings need resident-tax-agent, which the simulator's mock checkout grants as it
 // completes a subscription.
 async function grantSimulatorBundles(origin, bearer) {
   const headers = { "Authorization": `Bearer ${bearer}`, "Content-Type": "application/json" };
@@ -34,7 +34,7 @@ async function grantSimulatorBundles(origin, bearer) {
     const checkout = await fetch(`${origin}/api/v1/billing/checkout`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ bundleId: "resident-pro" }),
+      body: JSON.stringify({ bundleId: "resident-tax-agent" }),
     });
     const { checkoutUrl } = await checkout.json();
     const { pathname, search } = new URL(checkoutUrl);

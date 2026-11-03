@@ -52,6 +52,8 @@ const FIGURES_FIELDS = [
   "priorPeriodChargeableProfits",
   "donations",
   "directorsLoanOverdrawn",
+  "directorsLoanOpeningOverdrawn",
+  "loansToParticipators",
   "frankedInvestmentIncome",
   "incomeTaxDeducted",
   "taxAlreadyPaid",
@@ -158,22 +160,41 @@ export function boxesThatDiffer(reviewedBoxes, workedBoxes) {
  * @param {object} [options]
  * @param {boolean} [options.requireGatewayCredentials] - true for the submit, false for the preview
  * @param {boolean} [options.requireReviewedBoxes] - true for the submit, false for the preview
+ * @param {{clientId: string, identifiers: {companyNumber: string, utr: string}}} [options.client] - the practice's client row, for a client-scoped request
  */
 export function extractAndValidateCtReturnParameters(
   event,
   errorMessages,
-  { requireGatewayCredentials = true, requireReviewedBoxes = true } = {},
+  { requireGatewayCredentials = true, requireReviewedBoxes = true, client } = {},
 ) {
   const body = parseRequestBody(event) || {};
-  const accounts = extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode: false });
+  const clientId = client?.clientId;
+  const accounts = extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode: false, clientId });
+  // A client request takes the company number and the UTR from the client row, never from the body.
+  if (client) accounts.companyNumber = client.identifiers?.companyNumber;
   if (accounts.regime === "micro-entity") {
     attachMicroProfitAndLoss(accounts, body.profitAndLoss, errorMessages);
   } else if (accounts.filleted) {
     errorMessages.push("smallCompany.filleted must be false: HMRC takes the full accounts");
   }
 
-  const utr = typeof body.utr === "string" ? body.utr.trim() : "";
-  if (!/^\d{10}$/.test(utr)) errorMessages.push("Invalid utr - must be 10 digits");
+  const typedUtr = typeof body.utr === "string" ? body.utr.trim() : "";
+  const utr = client ? String(client.identifiers?.utr ?? "").trim() : typedUtr;
+  if (!/^\d{10}$/.test(utr))
+    errorMessages.push(
+      client ? "The client has no valid UTR - add the company's UTR on Practice clients" : "Invalid utr - must be 10 digits",
+    );
+  if (client && !accounts.companyNumber) errorMessages.push("The client has no company number - add it on Practice clients");
+
+  let agent;
+  if (client) {
+    const practiceName = typeof body.agent?.practiceName === "string" ? body.agent.practiceName.trim() : "";
+    if (!practiceName) errorMessages.push("Missing agent.practiceName - the practice's name for HMRC's records");
+    if (body.agent?.authorisationConfirmed !== true) {
+      errorMessages.push("The practice must confirm that the company has authorised it for Corporation Tax and approved this return");
+    }
+    agent = { reference: clientId, practiceName };
+  }
 
   const tradeName = typeof body.tradeName === "string" ? body.tradeName.trim() : "";
   if (!tradeName) errorMessages.push("Missing tradeName");
@@ -183,13 +204,6 @@ export function extractAndValidateCtReturnParameters(
   if (declarantName.length < 2) errorMessages.push("Missing declarant.name");
   if (declarantStatus.length < 2) errorMessages.push("Missing declarant.status");
 
-  if (body.directorsLoanOverdrawn === true) {
-    errorMessages.push(
-      "A director's loan account overdrawn at the year end needs supplementary page CT600A, which this return does not carry",
-    );
-  } else if (body.directorsLoanOverdrawn !== false) {
-    errorMessages.push("directorsLoanOverdrawn must be answered true or false");
-  }
   if (body.declarationAccepted !== true) errorMessages.push("The declarant must accept the declaration");
 
   const figures = readFigures(body.figures, { accounts, utr, declarant: { name: declarantName, status: declarantStatus } }, errorMessages);
@@ -219,6 +233,7 @@ export function extractAndValidateCtReturnParameters(
     declarant: { name: declarantName, status: declarantStatus },
     figures,
     reviewedBoxes,
+    agent,
     gatewayUserId,
     gatewayPassword,
   };
@@ -230,12 +245,13 @@ export function extractAndValidateCtReturnParameters(
  * computations name the same company, UTR and declarant. An amended request builds the return
  * with ReturnType="amended", which replaces the return HMRC holds for the period.
  * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
- * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
+ * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
  */
-export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amended }) {
-  const { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
+export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amended, agent }) {
+  const { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
     figures,
     ltdTaxDataForPeriodEnd(figures.periodEnd),
+    { today: new Date().toISOString().slice(0, 10) },
   );
   const accountsIxbrl = buildAccountsIxbrl(accounts);
   const computationsIxbrl = buildCtComputations({
@@ -250,6 +266,6 @@ export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amen
     carryBack,
     tradeOutsideUk: figures.lossOutsideUk === true,
   });
-  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended });
-  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, losses, carryBack, worked };
+  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
+  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, ct600a, computationLines, losses, carryBack, worked };
 }

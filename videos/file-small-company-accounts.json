@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "file-small-company-accounts",
   "title": "File a company's small company accounts with Companies House",
-  "description": "A signed-in walk through filing small company accounts: sign in, take out Resident, look up a company, fill in the profit and loss and balance sheet, preview the iXBRL, and file it with Companies House's sandbox. It ends on your copy of the filing.",
+  "description": "A signed-in walk through filing small company accounts: sign in, take out Resident Ltd, look up a company, fill in the profit and loss and balance sheet, preview the iXBRL, and file it with Companies House's sandbox. It ends on your copy of the filing.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -54,9 +54,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "A sandbox preview against Companies House's test filing service.",
-          "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "caption": "Filed straight to Companies House through its XML Gateway.",
+          "headline": "Filed to Companies House",
+          "keyWord": "Companies House"
         },
         {
           "action": "caption",
@@ -109,7 +109,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident",
+      "chapter": "Resident Ltd",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -125,9 +125,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident",
+          "bundle": "Resident Ltd",
           "testPass": true,
-          "caption": "Resident opens the small company accounts filing.",
+          "caption": "Resident Ltd opens the small company accounts filing.",
           "headline": "Unlock small company filing",
           "keyWord": "small"
         },
@@ -147,7 +147,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Small Company Accounts (Companies House, sandbox)')",
+          "until": "button:has-text('File Small Company Accounts (Companies House)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -165,7 +165,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "File Small Company Accounts (Companies House, sandbox)"
+            "name": "File Small Company Accounts (Companies House)"
           },
           "expectsNavigation": true,
           "caption": "Open File Small Company Accounts to find the company.",
@@ -523,9 +523,9 @@
         {
           "action": "click",
           "target": "#submitFilingBtn",
-          "caption": "Submit the filing to Companies House's sandbox.",
-          "headline": "Submit to the sandbox",
-          "keyWord": "sandbox"
+          "caption": "Submit the filing to Companies House.",
+          "headline": "Submit the filing",
+          "keyWord": "Submit"
         },
         {
           "action": "await",

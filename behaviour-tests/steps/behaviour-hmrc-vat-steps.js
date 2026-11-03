@@ -1911,11 +1911,26 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
     // Verify the form is visible
     await expect(page.locator("#vatSubmissionForm")).toBeVisible({ timeout: 10000 });
 
-    // The period choice lists HMRC's open obligations and has the deep-linked one selected
+    // The period choice lists HMRC's open obligations. HMRC's sandbox can answer this page's
+    // obligations call with a different open period from the one the obligations page listed, so the
+    // deep-linked period is either the selected option or "Another period" with its dates filled in.
     const longDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
     const expectedPeriod = `${longDate.format(new Date(periodStart))} to ${longDate.format(new Date(periodEnd))}`;
     await expect(page.locator("#obligationChoice")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("#obligationChoice option:checked")).toContainText(expectedPeriod);
+    const deepLinkedListed = await page
+      .locator("#obligationChoice option", { hasText: expectedPeriod })
+      .count()
+      .then((n) => n > 0);
+    if (deepLinkedListed) {
+      await expect(page.locator("#obligationChoice option:checked")).toContainText(expectedPeriod);
+    } else {
+      console.log(
+        `[clickObligationSubmitReturn] HMRC did not list ${expectedPeriod} on this page; expecting "Another period" with the dates`,
+      );
+      await expect(page.locator("#obligationChoice")).toHaveValue("another");
+      await expect(page.getByRole("textbox", { name: "Period start" })).toHaveValue(periodStart);
+      await expect(page.getByRole("textbox", { name: "Period end" })).toHaveValue(periodEnd);
+    }
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-period-choice-shown.png`, readerView: true });
 
     return { navigated: true, vrn, periodStart, periodEnd };

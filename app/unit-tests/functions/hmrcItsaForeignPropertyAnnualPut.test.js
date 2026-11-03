@@ -313,7 +313,7 @@ describe("hmrcItsaForeignPropertyAnnualPut ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       return {};
     });
@@ -367,7 +367,7 @@ describe("hmrcItsaForeignPropertyAnnualPut ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       return {};
     });
@@ -392,7 +392,7 @@ describe("hmrcItsaForeignPropertyAnnualPut ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       return {};
     });

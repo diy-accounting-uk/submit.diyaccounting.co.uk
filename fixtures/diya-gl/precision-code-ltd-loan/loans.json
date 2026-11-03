@@ -1,0 +1,5 @@
+{
+  "releasedBeforeEnd": false,
+  "loans": [{ "name": "Carol Smith", "amount": 12000 }],
+  "repayments": [{ "name": "Carol Smith", "date": "2026-06-30", "repaid": 2000, "releasedOrWrittenOff": 0 }]
+}

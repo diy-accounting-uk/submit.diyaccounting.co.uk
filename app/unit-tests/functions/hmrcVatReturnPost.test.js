@@ -457,7 +457,7 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
   function mockPracticeAndClient(clientItem) {
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }], Count: 1 };
       }
       if (cmd instanceof MockPutCommand) return {};
       if (cmd instanceof MockUpdateCommand) return {};

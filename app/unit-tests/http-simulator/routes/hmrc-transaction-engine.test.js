@@ -11,12 +11,17 @@ import {
   SUBMISSION_PATH,
   POLL_PATH,
   REJECT_IRMARK_SCENARIO,
+  TRANSIENT_POLL_ERROR_SCENARIO,
+  LOST_REPLY_SCENARIO,
+  LOST_REQUEST_SCENARIO,
   resetTransactionEngineSubmissions,
 } from "@app/http-simulator/routes/hmrc-transaction-engine.js";
 import {
   buildCt600SubmissionRequest,
   buildPollRequest,
   buildDeleteRequest,
+  buildDataRequest,
+  findHeldSubmission,
   parseTransactionEngineResponse,
 } from "@app/services/hmrcTransactionEngine.js";
 
@@ -99,6 +104,19 @@ describe("HMRC Transaction Engine simulator", () => {
     expect(response.businessErrors[0].number).toBe("2021");
   });
 
+  test("answers Gateway error 1000 on the second poll for the transient scenario, then the receipt", async () => {
+    const server = app();
+    const { xml, irmark } = submissionXml();
+    const acknowledgement = await post(server, SUBMISSION_PATH, xml, { "Gov-Test-Scenario": TRANSIENT_POLL_ERROR_SCENARIO });
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    expect((await post(server, POLL_PATH, pollRequest)).qualifier).toBe("acknowledgement");
+    const transient = await post(server, POLL_PATH, pollRequest);
+    expect(transient.qualifier).toBe("error");
+    expect(transient.errors[0].number).toBe("1000");
+    const response = await post(server, POLL_PATH, pollRequest);
+    expect(response.irmarkReceipt).toBe(irmark.base64);
+  });
+
   test("answers a fatal error for a badly formed message or another class", async () => {
     const server = app();
     const malformed = await post(server, SUBMISSION_PATH, "<GovTalkMessage><Body>");
@@ -132,5 +150,67 @@ describe("HMRC Transaction Engine simulator", () => {
     );
     expect(response.qualifier).toBe("error");
     expect(response.errors[0].text).toContain("duplicate");
+  });
+  describe("DATA_REQUEST", () => {
+    const dataRequest = (transactionId) => buildDataRequest({ senderId: "user1", password: "password1", gatewayTest: true, transactionId });
+
+    test("lists a held submission under its TransactionID, on either path", async () => {
+      const server = app();
+      const { xml, transactionId } = submissionXml();
+      const acknowledgement = await post(server, SUBMISSION_PATH, xml);
+      for (const path of [SUBMISSION_PATH, POLL_PATH]) {
+        const listed = await post(server, path, dataRequest("AB12"));
+        expect(listed).toMatchObject({ qualifier: "response", messageFunction: "list" });
+        expect(findHeldSubmission(listed, transactionId)).toMatchObject({
+          correlationId: acknowledgement.correlationId,
+          status: "SUBMISSION_ACKNOWLEDGE",
+          identifiers: [{ type: "UTR", value: "8596148860" }],
+        });
+      }
+    });
+
+    test("lists nothing for a submission that was deleted, and nothing before any submission", async () => {
+      const server = app();
+      expect((await post(server, SUBMISSION_PATH, dataRequest())).statusRecords).toEqual([]);
+      const { xml, transactionId } = submissionXml();
+      const acknowledgement = await post(server, SUBMISSION_PATH, xml);
+      await post(server, POLL_PATH, buildDeleteRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }));
+      expect(findHeldSubmission(await post(server, SUBMISSION_PATH, dataRequest()), transactionId)).toBeUndefined();
+    });
+
+    test("serves a poll sent to the submission path", async () => {
+      const server = app();
+      const acknowledgement = await post(server, SUBMISSION_PATH, submissionXml().xml);
+      const polled = await post(
+        server,
+        SUBMISSION_PATH,
+        buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }),
+      );
+      expect(polled.qualifier).toBe("acknowledgement");
+    });
+  });
+
+  describe("lost reply scenarios", () => {
+    async function postRaw(server, xml, headers) {
+      return request(server).post(SUBMISSION_PATH).set("Content-Type", "text/xml").set(headers).send(xml);
+    }
+
+    test("CT600_LOST_REPLY answers 504 with no body but keeps the submission", async () => {
+      const server = app();
+      const { xml, transactionId } = submissionXml();
+      const lost = await postRaw(server, xml, { "Gov-Test-Scenario": LOST_REPLY_SCENARIO });
+      expect(lost.status).toBe(504);
+      expect(lost.text).toBe("");
+      const listed = await post(server, SUBMISSION_PATH, buildDataRequest({ senderId: "u", password: "p", gatewayTest: true }));
+      expect(findHeldSubmission(listed, transactionId)).toBeDefined();
+    });
+
+    test("CT600_LOST_REQUEST answers 504 and keeps nothing", async () => {
+      const server = app();
+      const { xml, transactionId } = submissionXml();
+      expect((await postRaw(server, xml, { "Gov-Test-Scenario": LOST_REQUEST_SCENARIO })).status).toBe(504);
+      const listed = await post(server, SUBMISSION_PATH, buildDataRequest({ senderId: "u", password: "p", gatewayTest: true }));
+      expect(findHeldSubmission(listed, transactionId)).toBeUndefined();
+    });
   });
 });

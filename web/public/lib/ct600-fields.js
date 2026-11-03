@@ -41,6 +41,14 @@ export const CT600_BOX_ROWS = [
     anchor: "and-35-period-of-the-return",
   },
   {
+    box: 95,
+    label: "Supplementary page CT600A, loans to participators",
+    kind: "worked",
+    section: "tax",
+    rule: "Box 95 is ticked when the company lent to participators and the return carries supplementary page CT600A",
+    anchor: "supplementary-pages",
+  },
+  {
     box: 145,
     label: "Total turnover from trade",
     kind: "worked",
@@ -280,7 +288,23 @@ export const CT600_BOX_ROWS = [
     rule: "Box 475 is box 430 less box 435",
     anchor: "net-corporation-tax-liability",
   },
-  { box: 510, label: "Tax chargeable", kind: "worked", section: "tax", rule: "Box 510 is box 430 less box 435", anchor: "tax-chargeable" },
+  {
+    box: 480,
+    label: "Tax payable on loans to participators",
+    kind: "worked",
+    section: "tax",
+    rule: "Box 480 is the tax in box A80 of supplementary page CT600A",
+    anchor: "loans-and-arrangements-to-confer-benefits-on-participators",
+  },
+  {
+    box: 485,
+    label: "Relief due on loans repaid after the CT600A period",
+    kind: "worked",
+    section: "tax",
+    rule: "Box 485 is ticked when box A70 of supplementary page CT600A is completed",
+    anchor: "loans-and-arrangements-to-confer-benefits-on-participators",
+  },
+  { box: 510, label: "Tax chargeable", kind: "worked", section: "tax", rule: "Box 510 is box 475 plus box 480", anchor: "tax-chargeable" },
   {
     box: 515,
     label: "Income Tax deducted from gross income included in profits",
@@ -462,7 +486,7 @@ export function guideUrl(anchor) {
 }
 
 // Boxes the review shows as typed or coded text; every other box is an amount in pounds.
-export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 326, 327, 328, 329, 330, 340, 380, 390, 975, 985]);
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 95, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: "Company" },
@@ -817,12 +841,28 @@ export const CT600_FORM_FIELDS = [
     optional: true,
   },
   {
-    id: "loanOverdrawn",
+    id: "loansMade",
     section: "loans",
-    figure: "loanOverdrawn",
+    figure: "loansMade",
     type: "choice",
-    label: "Was a director's loan account overdrawn at the end of the period?",
-    focus: "loanOverdrawnNo",
+    label: "Did the company lend money to a director, shareholder or their associate in this period that was still owed at the end of it?",
+    focus: "loansMadeNo",
+  },
+  {
+    id: "releasedBeforeEnd",
+    section: "loans",
+    figure: "releasedBeforeEnd",
+    type: "choice",
+    label: "Were any loans made in the period repaid, released or written off before the end of the period?",
+    focus: "releasedBeforeEndNo",
+  },
+  {
+    id: "repaidSince",
+    section: "loans",
+    figure: "repaidSince",
+    type: "choice",
+    label: "Has any of it been repaid, released or written off since the end of the period?",
+    focus: "repaidSinceNo",
   },
   {
     id: "declarantName",
@@ -942,6 +982,7 @@ export const BALANCE_SHEET_FIELDS = [
   ["fixedAssets", "Fixed assets"],
   ["stocks", "Stocks"],
   ["debtors", "Debtors"],
+  ["amountsOwedByDirectors", "Of which, amounts owed by directors"],
   ["cashAtBank", "Cash at bank and in hand"],
   ["bankLoansOverdrafts", "Bank loans and overdrafts (due within one year)"],
   ["tradeCreditors", "Trade creditors (due within one year)"],
@@ -975,6 +1016,21 @@ export const ACCOUNTS_TEXT_FIELDS = [
   { id: "principalActivity", label: "Principal activity", type: "text", smallOnly: true },
   { id: "accountingPolicies", label: "Accounting policies", type: "textarea", smallOnly: true },
   { id: "directors", label: "Directors who held office during the period (one name per line)", type: "textarea", smallOnly: true },
+  {
+    id: "directorsAdvanceName",
+    label: "Director who owes the company money (when the balance sheet shows amounts owed by directors)",
+    type: "text",
+    smallOnly: true,
+  },
+  { id: "directorsAdvanceTerms", label: "Interest rate and main conditions of that director's advance", type: "text", smallOnly: true },
+  {
+    id: "directorsAdvanceAtStart",
+    label: "Owed by that director at the start of the period, in whole pounds",
+    type: "count",
+    smallOnly: true,
+  },
+  { id: "directorsAdvanceMade", label: "Advanced to that director in the period, in whole pounds", type: "count", smallOnly: true },
+  { id: "directorsAdvanceRepaid", label: "Repaid by that director in the period, in whole pounds", type: "count", smallOnly: true },
   { id: "averageEmployees", label: "Average number of employees during the period", type: "count" },
   { id: "directorName", label: "Director approving the accounts", type: "text" },
   { id: "directorDateApproved", label: "Date approved", type: "date" },
@@ -1075,7 +1131,24 @@ function balanceSheetOf(values, year) {
   const figures = {};
   for (const [field] of BALANCE_SHEET_FIELDS) figures[field] = amountOf(values, balanceSheetId(year, field), true);
   figures.capitalAndReserves = figures.calledUpShareCapital + figures.profitAndLossAccount;
+  // The form asks for the director's loan as a part of the debtors; the rest is trade debtors.
+  if (figures.amountsOwedByDirectors > 0) figures.tradeDebtors = figures.debtors - figures.amountsOwedByDirectors;
   return figures;
+}
+
+function directorsAdvancesOf(values, currentSheet) {
+  if (!currentSheet.amountsOwedByDirectors && String(values.directorsAdvanceName ?? "").trim() === "") return undefined;
+  const whole = (id) => Number(String(values[id] ?? "").trim() || 0);
+  return [
+    {
+      name: String(values.directorsAdvanceName ?? "").trim(),
+      terms: String(values.directorsAdvanceTerms ?? "").trim(),
+      balanceAtStart: whole("directorsAdvanceAtStart"),
+      advanced: whole("directorsAdvanceMade"),
+      repaid: whole("directorsAdvanceRepaid"),
+      balanceAtEnd: currentSheet.amountsOwedByDirectors || 0,
+    },
+  ];
 }
 
 function microProfitAndLossOf(values, year) {
@@ -1190,6 +1263,8 @@ export function accountsFromValues(values) {
     };
   }
   const note = values.includeFixedAssetNote === true ? fixedAssetNoteOf(values) : undefined;
+  const currentSheet = balanceSheetOf(values, "current");
+  const directorsAdvances = directorsAdvancesOf(values, currentSheet);
   return {
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
@@ -1204,9 +1279,10 @@ export function accountsFromValues(values) {
         .map((name) => name.trim())
         .filter((name) => name),
       balanceSheet: {
-        currentYear: balanceSheetOf(values, "current"),
+        currentYear: currentSheet,
         ...(includePrior ? { priorYear: balanceSheetOf(values, "prior") } : {}),
       },
+      ...(directorsAdvances ? { directorsAdvances } : {}),
       profitAndLoss: {
         currentYear: profitAndLossOf(values, "current"),
         ...(includePrior ? { priorYear: profitAndLossOf(values, "prior") } : {}),
@@ -1246,6 +1322,7 @@ export function figuresFromValues(values, company, workingSheet) {
   if (values.lossOutsideUk === true) figures.lossOutsideUk = true;
   if (!isBlank(values.ownCorporationTax)) figures.ownCorporationTax = amountOf(values, "ownCorporationTax", false);
   if (workingSheet) figures.workingSheet = workingSheet;
+  if (values.loansMade === "yes") figures.loansToParticipators = loansFromValues(values);
   return figures;
 }
 
@@ -1263,7 +1340,9 @@ export function requestFigures(figures) {
     "profitAndLoss",
     "tradeName",
     "declarationAccepted",
-    "loanOverdrawn",
+    "loansMade",
+    "releasedBeforeEnd",
+    "repaidSince",
   ]);
   return Object.fromEntries(Object.entries(figures).filter(([key, value]) => !named.has(key) && value !== undefined));
 }
@@ -1293,9 +1372,128 @@ export function ct600RequestFromValues(values, company, workingSheet) {
     figures: requestFigures(figures),
     utr: figures.utr,
     declarant: { name: figures.declarantName, status: figures.declarantStatus },
-    directorsLoanOverdrawn: false,
     declarationAccepted: values.declarationAccepted === true,
   };
+}
+
+// --- Loans to participators ------------------------------------------------------------------
+// The rows are added and removed on the page, so their element ids carry a row number from 1.
+
+export const LOAN_ROW_FIELDS = ["Name", "Amount", "Lent", "Rate"];
+export const REPAYMENT_ROW_FIELDS = ["Name", "Date", "Repaid", "Released"];
+
+export function loanId(field, row) {
+  return `loan${field}${row}`;
+}
+
+export function repaymentId(field, row) {
+  return `repayment${field}${row}`;
+}
+
+function rowNumbers(values, idOf, field) {
+  const numbers = [];
+  for (let row = 1; row <= 999; row += 1) if (idOf(field, row) in values) numbers.push(row);
+  return numbers;
+}
+
+export function loanRowNumbers(values) {
+  return rowNumbers(values, loanId, "Name");
+}
+
+export function repaymentRowNumbers(values) {
+  return rowNumbers(values, repaymentId, "Name");
+}
+
+/** A rate typed as a percentage ("35.75" or "35.75%") as a fraction (0.3575); null when it is not one. */
+export function rateFromPercent(typed) {
+  const text = String(typed ?? "")
+    .trim()
+    .replace(/%$/, "")
+    .trim();
+  const [whole, decimals = ""] = text.split(".");
+  if (!/^\d{1,3}$/.test(whole) || !/^\d{0,2}$/.test(decimals) || (text.includes(".") && decimals === "")) return null;
+  const rate = Number(text) / 100;
+  return rate > 0 && rate < 1 ? Math.round(rate * 10_000) / 10_000 : null;
+}
+
+function wholeOrBlank(values, id) {
+  return isBlank(values[id]) ? 0 : amountOf(values, id, true);
+}
+
+/**
+ * The loans to participators answers the form holds, in the figures model's shape: the loans, the
+ * repayments up to today and the answer to whether any were repaid before the period end.
+ * @param {Record<string, string|boolean>} values
+ */
+export function loansFromValues(values) {
+  const rows = loanRowNumbers(values).map((row) => {
+    const lent = wholeOrBlank(values, loanId("Lent", row));
+    const rate = rateFromPercent(values[loanId("Rate", row)]);
+    return {
+      name: String(values[loanId("Name", row)] ?? "").trim(),
+      amount: amountOf(values, loanId("Amount", row), true),
+      ...(lent > 0 ? { lentFromRateChange: lent } : {}),
+      ...(rate === null ? {} : { rate }),
+    };
+  });
+  const repayments =
+    values.repaidSince === "yes"
+      ? repaymentRowNumbers(values).map((row) => ({
+          name: String(values[repaymentId("Name", row)] ?? "").trim(),
+          date: String(values[repaymentId("Date", row)] ?? ""),
+          repaid: wholeOrBlank(values, repaymentId("Repaid", row)),
+          releasedOrWrittenOff: wholeOrBlank(values, repaymentId("Released", row)),
+        }))
+      : [];
+  return { releasedBeforeEnd: values.releasedBeforeEnd === "yes", loans: rows, repayments };
+}
+
+function loanRowProblems(values, problem, today) {
+  const names = new Set();
+  for (const row of loanRowNumbers(values)) {
+    const name = String(values[loanId("Name", row)] ?? "").trim();
+    if (name.length < 2 || name.length > 56 || /[<>|"\\]/.test(name) || [...name].some((character) => character < " ")) {
+      problem(loanId("Name", row), "Enter the participator's name, 2 to 56 characters");
+    } else if (names.has(name)) {
+      problem(loanId("Name", row), `${name} is already in the list; enter one loan for each participator`);
+    }
+    names.add(name);
+    const amount = amountOf(values, loanId("Amount", row), true);
+    if (!Number.isInteger(amount) || amount <= 0) problem(loanId("Amount", row), "Enter the amount still owed in whole pounds, above 0");
+    const lent = wholeOrBlank(values, loanId("Lent", row));
+    if (!Number.isInteger(lent) || lent < 0 || lent > amount) {
+      problem(loanId("Lent", row), "Enter the part lent on or after the rate change in whole pounds, no more than the amount owed");
+    }
+    if (!isBlank(values[loanId("Rate", row)]) && rateFromPercent(values[loanId("Rate", row)]) === null) {
+      problem(loanId("Rate", row), "Enter the rate as a percentage with at most two decimal places, like 33.75");
+    }
+  }
+  repaymentRowProblems(values, problem, today);
+}
+
+function repaymentRowProblems(values, problem, today) {
+  if (values.repaidSince !== "yes") return;
+  const names = new Set(loanRowNumbers(values).map((row) => String(values[loanId("Name", row)] ?? "").trim()));
+  for (const row of repaymentRowNumbers(values)) {
+    if (!names.has(String(values[repaymentId("Name", row)] ?? "").trim())) {
+      problem(repaymentId("Name", row), "Choose a participator from the loans");
+    }
+    const date = String(values[repaymentId("Date", row)] ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      problem(repaymentId("Date", row), "Enter the date of the repayment");
+    } else if (values.periodEnd && date <= values.periodEnd) {
+      problem(repaymentId("Date", row), "A repayment on or before the end of the period belongs in the period's own books");
+    } else if (date > today) {
+      problem(repaymentId("Date", row), "A repayment cannot be dated after today");
+    }
+    const repaid = wholeOrBlank(values, repaymentId("Repaid", row));
+    const released = wholeOrBlank(values, repaymentId("Released", row));
+    if (!Number.isInteger(repaid) || repaid < 0 || !Number.isInteger(released) || released < 0) {
+      problem(repaymentId("Repaid", row), "Enter whole pounds, or leave it empty for none");
+    } else if (repaid + released === 0) {
+      problem(repaymentId("Repaid", row), "Enter the amount repaid, or the amount released or written off");
+    }
+  }
 }
 
 // --- Checks the model does not run ---------------------------------------------------------
@@ -1358,6 +1556,27 @@ function balanceSheetProblems(values, problem) {
   }
 }
 
+function directorsAdvancesProblems(values, problem) {
+  const years = values.includeComparatives === true ? ["current", "prior"] : ["current"];
+  const owed = years.some((year) => amountOf(values, balanceSheetId(year, "amountsOwedByDirectors"), true) > 0);
+  if (!owed) return;
+  if (String(values.directorsAdvanceName ?? "").trim() === "")
+    problem("directorsAdvanceName", "Name the director who owes the company money");
+  if (String(values.directorsAdvanceTerms ?? "").trim() === "") {
+    problem("directorsAdvanceTerms", "State the interest rate and the main conditions of the advance");
+  }
+  for (const id of ["directorsAdvanceAtStart", "directorsAdvanceMade", "directorsAdvanceRepaid"]) {
+    if (!/^\d*$/.test(String(values[id] ?? "").trim())) problem(id, "Enter a whole number of pounds, or leave it empty for none");
+  }
+  const sheet = accountsFromValues(values).smallCompany?.directorsAdvances?.[0];
+  if (sheet && sheet.balanceAtStart + sheet.advanced - sheet.repaid !== sheet.balanceAtEnd) {
+    problem(
+      "directorsAdvanceMade",
+      `Owed at the start ${sheet.balanceAtStart} plus advanced ${sheet.advanced} less repaid ${sheet.repaid} must equal the ${sheet.balanceAtEnd} owed by directors at the end`,
+    );
+  }
+}
+
 function fixedAssetNoteProblems(values, problem) {
   if (values.includeFixedAssetNote !== true) return;
   const note = fixedAssetNoteOf(values);
@@ -1386,13 +1605,6 @@ function answerProblems(values, problem) {
   const turnoverId = micro ? microId("current", "turnover") : "currentTurnover";
   if (isBlank(values[turnoverId])) problem(turnoverId, "Enter the turnover from the profit and loss account");
   if (String(values.tradeName ?? "").trim().length < 2) problem("tradeName", "Enter the trade name (at least 2 characters)");
-  if (values.loanOverdrawn === "yes") {
-    problem(
-      "loanOverdrawn",
-      "A director's loan account overdrawn at the end of the period needs supplementary page CT600A, which this service does not file. This return cannot be filed here.",
-      true,
-    );
-  }
   for (const [required, label] of REQUIRED_TEXT) {
     if (micro && SMALL_ONLY_TEXT.has(required)) continue;
     if (isBlank(values[required])) problem(required, `Enter ${label}`);
@@ -1414,7 +1626,7 @@ function answerProblems(values, problem) {
  * @param {Record<string, string|boolean>} values
  * @returns {Array<{target: string, message: string, refusal: boolean}>}
  */
-export function formProblems(values) {
+export function formProblems(values, { today = new Date().toISOString().slice(0, 10) } = {}) {
   const problems = [];
   const problem = (target, message, refusal = false) => problems.push({ target, message, refusal });
   amountProblems(values, problem);
@@ -1422,14 +1634,22 @@ export function formProblems(values) {
     microBalanceSheetProblems(values, problem);
   } else {
     balanceSheetProblems(values, problem);
+    directorsAdvancesProblems(values, problem);
     fixedAssetNoteProblems(values, problem);
   }
+  if (values.loansMade === "yes") loanRowProblems(values, problem, today);
   answerProblems(values, problem);
   return problems;
 }
 
 // Where each of the model's problems shows. A key the form has no field for shows at the worked tax.
-const MODEL_TARGETS = { period: "period", profitAndLoss: "workedTax", corporationTax: "workedTax", figures: "workedTax" };
+const MODEL_TARGETS = {
+  period: "period",
+  profitAndLoss: "workedTax",
+  corporationTax: "workedTax",
+  figures: "workedTax",
+  loansToParticipators: "loansMade",
+};
 
 /**
  * The element id a model problem shows beside.
@@ -1482,6 +1702,15 @@ function accountsEntries(accounts) {
   if (smallCompany?.principalActivity) entries.push(["principalActivity", smallCompany.principalActivity]);
   if (smallCompany?.accountingPolicies) entries.push(["accountingPolicies", smallCompany.accountingPolicies]);
   if (smallCompany?.directors) entries.push(["directors", smallCompany.directors.join("\n")]);
+  const advance = smallCompany?.directorsAdvances?.[0];
+  if (advance) {
+    entries.push(
+      ["directorsAdvanceName", advance.name],
+      ["directorsAdvanceAtStart", text(advance.balanceAtStart)],
+      ["directorsAdvanceMade", text(advance.advanced)],
+      ["directorsAdvanceRepaid", text(advance.repaid)],
+    );
+  }
   if (accounts.averageEmployees !== undefined) entries.push(["averageEmployees", text(accounts.averageEmployees)]);
   if (accounts.director?.name) entries.push(["directorName", accounts.director.name]);
   if (accounts.director?.dateApproved) entries.push(["directorDateApproved", accounts.director.dateApproved]);
@@ -1521,6 +1750,7 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
         accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
         directors: accounts.directors?.length ? accounts.directors : [accounts.directorName].filter(Boolean),
         balanceSheet: accounts.balanceSheet,
+        directorsAdvances: accounts.directorsAdvances,
         profitAndLoss: { currentYear: accounts.profitAndLoss.currentYear },
         fixedAssetNote: Object.keys(accounts.fixedAssetNote ?? {}).length > 0 ? accounts.fixedAssetNote : undefined,
       },
@@ -1528,7 +1758,29 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
   );
   if (accounts.directorName) entries.push(["declarantName", accounts.directorName]);
   if (microAccounts) entries.push(...microEntries(figures, accounts, microAccounts));
+  entries.push(...loanEntries(figures, accounts));
   return entries;
+}
+
+// The book's director's loan account: lent in the period when it is more overdrawn at the end than at the start.
+function loanEntries(figures, accounts) {
+  const overdrawn = figures.directorsLoanOverdrawn ?? 0;
+  const opening = figures.directorsLoanOpeningOverdrawn ?? 0;
+  const entries = [
+    [
+      "loansBookNote",
+      `Your book shows the director's loan account overdrawn by £${overdrawn.toLocaleString("en-GB")} at the end and £${opening.toLocaleString("en-GB")} at the start.`,
+    ],
+  ];
+  if (overdrawn <= opening) return entries;
+  const director = accounts.directorName ?? "";
+  return [
+    ...entries,
+    ["loansMadeYes", true],
+    ["loansMadeNo", false],
+    [loanId("Name", 1), director],
+    [loanId("Amount", 1), text(overdrawn - opening)],
+  ];
 }
 
 function microEntries(figures, accounts, microAccounts) {
@@ -1613,9 +1865,15 @@ export function formEntriesFromIxbrl(mapped) {
  */
 export function applyFormEntries(entries) {
   const filled = new Set();
+  document.getElementById("returnForm")?.dispatchEvent(new CustomEvent("entriesapplying", { detail: { entries } }));
   for (const [id, value] of entries) {
     const element = document.getElementById(id);
     if (!element) continue;
+    if (element.tagName === "P") {
+      element.textContent = value;
+      element.hidden = value === "";
+      continue;
+    }
     if (typeof value === "boolean") {
       element.checked = value;
     } else {
@@ -1666,6 +1924,7 @@ export const BOX_SOURCE_FIELD = {
   4: "companyType",
   30: "period",
   35: "period",
+  95: "loansMade",
   145: TURNOVER_FIELD,
   155: TURNOVER_FIELD,
   160: "lossesBroughtForward",
@@ -1694,6 +1953,8 @@ export const BOX_SOURCE_FIELD = {
   435: "associatedCompanies",
   440: "period",
   475: "period",
+  480: "loansMade",
+  485: "loansMade",
   510: "period",
   515: "incomeTaxDeducted",
   525: "incomeTaxDeducted",
@@ -1798,6 +2059,56 @@ function accountsTextRows(values) {
   });
 }
 
+function loanRows(values) {
+  if (values.loansMade !== "yes") return [];
+  const rows = [];
+  for (const row of loanRowNumbers(values)) {
+    const name = String(values[loanId("Name", row)] ?? "").trim() || NOT_GIVEN;
+    rows.push({ id: loanId("Name", row), label: `Loan ${row}: participator`, value: name });
+    rows.push({
+      id: loanId("Amount", row),
+      label: `Loan ${row}: amount still owed`,
+      value: answerText({ id: loanId("Amount", row), type: WHOLE }, values),
+    });
+    if (!isBlank(values[loanId("Lent", row)])) {
+      rows.push({
+        id: loanId("Lent", row),
+        label: `Loan ${row}: lent on or after the rate change`,
+        value: answerText({ id: loanId("Lent", row), type: WHOLE }, values),
+      });
+    }
+    if (!isBlank(values[loanId("Rate", row)])) {
+      rows.push({
+        id: loanId("Rate", row),
+        label: `Loan ${row}: section 455 rate you entered`,
+        value: `${String(values[loanId("Rate", row)]).trim().replace(/%$/, "")}%`,
+      });
+    }
+  }
+  if (values.repaidSince === "yes") {
+    for (const row of repaymentRowNumbers(values)) {
+      const name = String(values[repaymentId("Name", row)] ?? "").trim() || NOT_GIVEN;
+      rows.push({ id: repaymentId("Name", row), label: `Repayment ${row}: participator`, value: name });
+      rows.push({
+        id: repaymentId("Date", row),
+        label: `Repayment ${row}: date`,
+        value: String(values[repaymentId("Date", row)] || NOT_GIVEN),
+      });
+      rows.push({
+        id: repaymentId("Repaid", row),
+        label: `Repayment ${row}: amount repaid`,
+        value: answerText({ id: repaymentId("Repaid", row), type: WHOLE }, values),
+      });
+      rows.push({
+        id: repaymentId("Released", row),
+        label: `Repayment ${row}: amount released or written off`,
+        value: answerText({ id: repaymentId("Released", row), type: WHOLE }, values),
+      });
+    }
+  }
+  return rows;
+}
+
 function accountsRows(values) {
   if (regimeOf(values) === "micro") return [regimeRow(values), ...microAccountsRows(values), ...accountsTextRows(values)];
   const years =
@@ -1847,6 +2158,7 @@ export function reviewAnswers(values) {
       value: answerText(field, values),
     }));
     if (id === "accounts") rows.push(...accountsRows(values));
+    if (id === "loans") rows.push(...loanRows(values));
     if (id === "declaration") {
       rows.push(
         ...statementFieldsFor(values).map((statement) => ({
