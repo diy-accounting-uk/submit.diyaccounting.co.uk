@@ -530,14 +530,24 @@ So `ct600Figures.js` holds the rates HMRC's live rules check, as `S455_RATES_IN_
 [{ from: "2016-04-06", rate: 0.325 }, { from: "2022-04-06", rate: 0.3375 }]` with
 `S455_RATES_IN_RIM_UNTIL = "2026-04-05"`. Two refusals use it:
 
-- any part lent after `S455_RATES_IN_RIM_UNTIL`: "Loans made on or after 6 April 2026 owe section
-  455 tax at 35.75%. HMRC's online rules accept 33.75% until they move to RIM V1.995. This service
-  files the return when they do."
-- a rate from `taxDataByYear` that differs from the RIM's rate for the same date: "The tax data
-  and HMRC's rules disagree on the section 455 rate for <date>."
+The operator's decision on question 15 (2026-11-03): "File at 33.75% and warn and ensure the user
+can enter/override their rate." So:
 
-When HMRC puts V1.995 live (R29), the move adds `{ from: "2026-04-06", rate: 0.3575 }` and clears
-the date. Open question 15 below offers the other choice.
+- any part lent after `S455_RATES_IN_RIM_UNTIL`: the return files at the 33.75% that V1.994 demands,
+  and the page warns before the filing: "Loans made on or after 6 April 2026 owe section 455 tax at
+  35.75%. HMRC's online rules accept only 33.75% until they move to RIM V1.995, so this return files
+  at 33.75% and shows less tax than is due. Amend the return when HMRC accepts 35.75%." The warning
+  and the rate used go on the stored receipt.
+- the page shows the section 455 rate it uses for each loan, and the customer can enter another
+  rate. An entered rate replaces the derived one in boxes A15, A40 and 480, is recorded on the
+  stored receipt as customer-entered, and is not checked against `taxDataByYear`. HMRC's rules
+  answer a rate they do not accept with their own error (9466 or 9469), which the page shows.
+- a rate from `taxDataByYear` that differs from the RIM's rate for the same date, with no entered
+  rate: the warning "The tax data and HMRC's rules disagree on the section 455 rate for <date>",
+  and the RIM's rate is used.
+
+When HMRC puts V1.995 live (R29), the move adds `{ from: "2026-04-06", rate: 0.3575 }`, clears
+the date and drops the first warning.
 
 **Where each figure comes from.** The book holds the period only. Anything after the period end
 comes from the page.
@@ -675,7 +685,6 @@ The new `--loans` option reads the JSON into `figures.loansToParticipators`. The
 
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
-| 15 | Loans lent on or after 6 April 2026 while HMRC runs RIM V1.994. (a) Refuse them until V1.995 is live (the CT8a design). (b) File at the 33.75% that V1.994 demands, and tell the customer that the return understates the tax by 2 points and needs an amendment later. Recommended: (a), because (b) files a figure known to be short | the operator | CT8b |
 
 **CT8c brief (Sonnet).** Show an overdrawn director's loan account as a debtor in the accounts.
 Today `smallCompanyAccountsFromResults.js` line 81 takes `amountsOwedToDirectors` from
@@ -859,5 +868,5 @@ The launch and approval steps are on the Board above.
 | CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the submit refuses figures that differ from the reviewed boxes | ~5 | Sonnet | — | On main (PR #535, PR #536) |
 | CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14); the page's entry path is `NEXT.md` CT3e | ~5 | Sonnet | — | On main (PR #536) |
 | CT8c | An overdrawn director's loan account as a debtor in the accounts, with the s413 note of advances to directors (the CT8a design) | ~7 | Sonnet | — | Open |
-| CT8b | Supplementary page CT600A: the figures, the page questions, the XML, boxes 95, 480 and 485, the fixture book and the TPVS proof (the CT8a design) | ~20 | Sonnet | CT8c for the TPVS proof; open question 15 | Open |
+| CT8b | Supplementary page CT600A: the figures, the page questions, the XML, boxes 95, 480 and 485, the fixture book and the TPVS proof (the CT8a design) | ~20 | Sonnet | CT8c for the TPVS proof | Open |
 | CT9b | Agent filing of the CT600: `Sender` `Agent`, the Agent block, the practice's own Gateway credentials, the client picker and saved books, the hidden-on-prod gate, the TPVS proof (the CT9a design) | ~18 | Sonnet | CT8b (shared files) | Open |
