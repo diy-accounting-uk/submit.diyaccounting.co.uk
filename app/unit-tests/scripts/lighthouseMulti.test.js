@@ -12,6 +12,7 @@ import {
   slugForPath,
   scoresFromLhr,
   evaluateGates,
+  runLighthouseWithRetry,
 } from "../../../scripts/lighthouse-multi.js";
 
 describe("lighthouse-multi", () => {
@@ -102,5 +103,35 @@ describe("lighthouse.config.json coverage", () => {
     const config = JSON.parse(readFileSync(join(root, "lighthouse.config.json"), "utf8"));
     const sitemapPaths = parseSitemapPaths(readFileSync(join(root, "web/public/sitemap.xml"), "utf8"));
     expect(config.urls.map((url) => url.path).sort()).toEqual([...sitemapPaths].sort());
+  });
+
+  test("runLighthouseWithRetry repeats a run that stops with NO_NAVSTART", async () => {
+    let calls = 0;
+    const run = async () => {
+      calls += 1;
+      if (calls < 3) throw new Error("lighthouse x exited 1\nRuntime error (NO_NAVSTART)");
+    };
+    await runLighthouseWithRetry("https://example.test/rates.html", "out", run);
+    expect(calls).toBe(3);
+  });
+
+  test("runLighthouseWithRetry gives up after three NO_NAVSTART runs", async () => {
+    let calls = 0;
+    const run = async () => {
+      calls += 1;
+      throw new Error("NO_NAVSTART");
+    };
+    await expect(runLighthouseWithRetry("https://example.test/", "out", run)).rejects.toThrow("NO_NAVSTART");
+    expect(calls).toBe(3);
+  });
+
+  test("runLighthouseWithRetry does not repeat any other error", async () => {
+    let calls = 0;
+    const run = async () => {
+      calls += 1;
+      throw new Error("exited 1");
+    };
+    await expect(runLighthouseWithRetry("https://example.test/", "out", run)).rejects.toThrow("exited 1");
+    expect(calls).toBe(1);
   });
 });

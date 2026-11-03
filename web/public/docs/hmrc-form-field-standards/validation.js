@@ -17,6 +17,16 @@ function normalise(value) {
 }
 
 /**
+ * Fill an error element with the hidden "Error: " prefix and the message as text
+ */
+function setErrorText(errorEl, message) {
+  const prefix = document.createElement('span');
+  prefix.className = 'visually-hidden';
+  prefix.textContent = 'Error: ';
+  errorEl.replaceChildren(prefix, document.createTextNode(message));
+}
+
+/**
  * Show error message on a form group
  */
 function showFieldError(groupId, inputId, message) {
@@ -34,7 +44,7 @@ function showFieldError(groupId, inputId, message) {
   const errorEl = document.createElement('p');
   errorEl.id = `${inputId}-error`;
   errorEl.className = 'error-message';
-  errorEl.innerHTML = `<span class="visually-hidden">Error: </span>${message}`;
+  setErrorText(errorEl, message);
 
   // Insert error before input
   input.parentNode.insertBefore(errorEl, input);
@@ -565,7 +575,7 @@ function validateDate(event) {
       const hint = document.getElementById('dob-hint');
       hint.parentNode.insertBefore(errorEl, hint.nextSibling);
     }
-    errorEl.innerHTML = `<span class="visually-hidden">Error: </span>${result.error}`;
+    setErrorText(errorEl, result.error);
 
     document.getElementById('dob-day').focus();
     return false;

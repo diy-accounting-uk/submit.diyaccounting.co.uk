@@ -8,7 +8,7 @@
     <title>Privacy Policy – DIY Accounting Submit</title>
     <meta
       name="description"
-      content="Privacy policy for DIY Accounting Submit. How we collect, use, and protect your data when submitting VAT returns to HMRC."
+      content="Privacy policy for DIY Accounting Submit. How we collect, use, and protect your data when submitting VAT and Corporation Tax returns to HMRC."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/privacy.html" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -30,7 +30,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Privacy policy</h1>
-      <p class="legal-meta">Last updated: 31 October 2026</p>
+      <p class="legal-meta">Last updated: 3 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -58,8 +58,8 @@
       <section>
         <p>
           DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns via HMRC's Making Tax Digital (MTD)
-          service. We aim to collect the minimum data necessary to operate the service, comply with legal requirements, and monitor
-          performance.
+          service and file Company Tax Returns (CT600) with HMRC. We aim to collect the minimum data necessary to operate the service,
+          comply with legal requirements, and monitor performance.
         </p>
       </section>
 
@@ -87,6 +87,27 @@
           </li>
           <li><strong>Subscription bundles</strong>: Records of your service entitlements and expiry dates</li>
         </ul>
+
+        <h3>Corporation Tax Filing Data</h3>
+        <ul>
+          <li><strong>Company UTR</strong>: The company's Unique Taxpayer Reference, which you enter to file a Company Tax Return</li>
+          <li>
+            <strong>Government Gateway user ID and password</strong>: You type them for each filing. They go to HMRC in the filing message
+            and are never logged or stored.
+          </li>
+          <li>
+            <strong>Accounts and computations</strong>: The accounts and tax computations, and the CT600 figures, built from the figures you
+            enter
+          </li>
+          <li>
+            <strong>HMRC acceptance receipts</strong>: HMRC's confirmation of the filing, kept with the figures, accounts and computations
+            that were filed
+          </li>
+        </ul>
+        <p>
+          While HMRC processes a filing, the UTR, the CT600 figures, the accounts and the computations are held for up to one hour so the
+          page can show the result.
+        </p>
 
         <h3>HMRC Assist</h3>
         <p>
@@ -331,6 +352,10 @@
             <strong>VAT submission data</strong>: Collected when you submit a VAT return; receipts are stored in DynamoDB for 7 years.
           </li>
           <li>
+            <strong>Corporation Tax filing data</strong>: Collected when you file a Company Tax Return. The Gateway user ID and password are
+            used once and not kept. The receipt, with the CT600, accounts and computations, is stored in DynamoDB for 7 years.
+          </li>
+          <li>
             <strong>Fraud prevention data</strong>: Collected at the moment of VAT return submission and transmitted immediately to HMRC.
           </li>
           <li><strong>RUM data</strong>: Only collected after you click "Accept" in the consent banner.</li>
@@ -349,6 +374,10 @@
         <h2>What we use it for</h2>
         <ul>
           <li><strong>VAT submissions</strong>: To submit your VAT returns to HMRC and provide you with confirmation receipts.</li>
+          <li>
+            <strong>Corporation Tax filings</strong>: To file your Company Tax Return, accounts and computations with HMRC and give you the
+            acceptance receipt.
+          </li>
           <li><strong>Authentication</strong>: To verify your identity and manage your session.</li>
           <li><strong>Entitlements</strong>: To track your subscription bundles and service access.</li>
           <li><strong>Fraud prevention compliance</strong>: To fulfill our legal obligations under Making Tax Digital regulations.</li>
@@ -372,9 +401,19 @@
           </thead>
           <tbody>
             <tr>
-              <td>HMRC submission receipts</td>
+              <td>HMRC submission receipts (VAT and Corporation Tax, with the filed CT600, accounts and computations)</td>
               <td>7 years</td>
               <td>UK tax record-keeping requirements</td>
+            </tr>
+            <tr>
+              <td>Corporation Tax filing in progress (UTR, CT600, accounts, computations)</td>
+              <td>1 hour</td>
+              <td>Showing the result of the filing</td>
+            </tr>
+            <tr>
+              <td>Government Gateway user ID and password</td>
+              <td>Not kept</td>
+              <td>Sent once to HMRC to authenticate the filing</td>
             </tr>
             <tr>
               <td>User bundles (entitlements)</td>
@@ -552,13 +591,17 @@
 
         <h3>HMRC (Data Controller)</h3>
         <p>
-          When you submit a VAT return, your VAT figures and fraud prevention data are transmitted directly to HMRC. HMRC is an independent
-          data controller for this data and processes it according to their own privacy policy. We do not control how HMRC uses this data
-          after transmission.
+          When you submit a VAT return, your VAT figures and fraud prevention data are transmitted directly to HMRC. When you file a Company
+          Tax Return, the company's UTR, your Government Gateway user ID and password, the CT600, the accounts and the computations are
+          transmitted directly to HMRC. HMRC is an independent data controller for this data and processes it according to their own privacy
+          policy. We do not control how HMRC uses this data after transmission.
         </p>
         <ul>
-          <li><strong>Data shared</strong>: VAT return figures, fraud prevention headers (see above)</li>
-          <li><strong>Purpose</strong>: VAT return processing and fraud prevention</li>
+          <li>
+            <strong>Data shared</strong>: VAT return figures, fraud prevention headers (see above); for Corporation Tax, the UTR, Gateway
+            credentials, CT600, accounts and computations
+          </li>
+          <li><strong>Purpose</strong>: VAT and Corporation Tax return processing and fraud prevention</li>
           <li><strong>Legal basis</strong>: Legal obligation (Making Tax Digital regulations)</li>
           <li>
             <strong>HMRC Privacy Notice</strong>:
@@ -711,6 +754,10 @@
                 <td>Contract performance; Legal obligation</td>
               </tr>
               <tr>
+                <td>Corporation Tax return submission to HMRC</td>
+                <td>Contract performance; Legal obligation</td>
+              </tr>
+              <tr>
                 <td>Fraud prevention data transmission</td>
                 <td>Legal obligation (MTD regulations)</td>
               </tr>
@@ -754,7 +801,7 @@
 
           <h3>Categories of Recipients</h3>
           <ul>
-            <li><strong>HMRC</strong>: VAT return data and fraud prevention headers (data controller)</li>
+            <li><strong>HMRC</strong>: VAT return data, fraud prevention headers and Corporation Tax filing data (data controller)</li>
             <li><strong>Amazon Web Services</strong>: All processing and storage (data processor, EU-West London region)</li>
             <li>
               <strong>Google</strong>: Authentication provider (data controller for auth data) and analytics processor (Google Analytics 4,

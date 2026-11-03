@@ -136,7 +136,6 @@ function init() {
   const form = byId("ratesCalculator");
   byId("ratesFlatRatePercent").value = Number((SOURCED[latestTaxYear].flatRateLimitedCostTrader * 100).toFixed(2));
   resetPersonalAllowance();
-  form.addEventListener("submit", (event) => event.preventDefault());
   form.addEventListener("input", (event) => {
     if (event.target.id === "ratesCisLabour") labourEditedByUser = true;
     recompute();

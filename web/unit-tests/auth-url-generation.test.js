@@ -103,12 +103,14 @@ describe("Auth URL Generation", () => {
     respondWithEnv();
     loadScripts();
 
-    const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("xyz789", "nonce456");
+    const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("xyz789", "nonce456", "challenge-abc");
 
     expect(url).toContain("https://auth.example.com/oauth2/authorize");
     expect(url).toContain("client_id=client123");
     expect(url).toContain("state=xyz789");
     expect(url).toContain("nonce=nonce456");
+    expect(url).toContain("code_challenge=challenge-abc");
+    expect(url).toContain("code_challenge_method=S256");
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/auth/loginWithCognitoCallback.html"));
   });
 
@@ -117,7 +119,7 @@ describe("Auth URL Generation", () => {
     loadScripts();
 
     // Build the URL immediately, as a user clicking sign-in before the fetch lands does
-    const urlPromise = mockWindow.authUrlBuilder.buildCognitoAuthUrl("slow-state", "slow-nonce");
+    const urlPromise = mockWindow.authUrlBuilder.buildCognitoAuthUrl("slow-state", "slow-nonce", "slow-challenge");
 
     await expect(urlPromise).resolves.toContain("https://auth.example.com/oauth2/authorize");
     await expect(urlPromise).resolves.toContain("client_id=client123");

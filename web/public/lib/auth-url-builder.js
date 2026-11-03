@@ -15,19 +15,22 @@
 (function () {
   "use strict";
 
-  async function buildCognitoAuthUrl(state, nonce, scope = "openid profile email") {
+  async function buildCognitoAuthUrl(state, nonce, codeChallenge, scope = "openid profile email") {
     const env = await window.envReady;
 
     const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/auth/loginWithCognitoCallback.html";
 
-    // Build authorization URL with state (CSRF protection) and nonce (replay attack protection)
+    // Build authorization URL with state (CSRF protection), nonce (replay attack protection)
+    // and a PKCE S256 code challenge (authorization code interception protection)
     let url =
       `${env.COGNITO_BASE_URI.replace(/\/$/, "")}/oauth2/authorize` +
       `?response_type=code` +
       `&client_id=${encodeURIComponent(env.COGNITO_CLIENT_ID)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}`;
+      `&state=${encodeURIComponent(state)}` +
+      `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+      `&code_challenge_method=S256`;
 
     // Include nonce for OpenID Connect - returned in ID token for validation
     if (nonce) {

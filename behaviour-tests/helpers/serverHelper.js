@@ -8,7 +8,11 @@ import { setTimeout } from "timers/promises";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/serverHelper.js" });
 
+// The proxy server takes 20 to 40 seconds to answer because it looks up the vendor public IP first.
+export const SERVER_START_TIMEOUT_MS = 120000;
+
 export async function checkIfServerIsRunning(url, delay = 500, runServer = undefined, label = "") {
+  const deadline = Date.now() + SERVER_START_TIMEOUT_MS;
   let serverReady = false;
   let attempts = 0;
   logger.info(`[${label}]: Checking server readiness for... ${url}`, url);
@@ -28,7 +32,7 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
       runServer();
     }
   }
-  while (!serverReady && attempts < 15) {
+  while (!serverReady && Date.now() < deadline) {
     try {
       const response = await fetch(url);
       if (response.ok) {
@@ -40,12 +44,12 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
       }
     } catch (error) {
       attempts++;
-      logger.error(`[${label}]: Server check attempt ${attempts}/15 failed: ${error.message} from ${url}`);
+      logger.error(`[${label}]: Server check attempt ${attempts} failed: ${error.message} from ${url}`);
       await setTimeout(delay);
     }
   }
 
   if (!serverReady) {
-    throw new Error(`[${label}]: Server failed to start after ${attempts} attempts`);
+    throw new Error(`[${label}]: Server failed to start within ${SERVER_START_TIMEOUT_MS / 1000} seconds (${attempts} attempts)`);
   }
 }

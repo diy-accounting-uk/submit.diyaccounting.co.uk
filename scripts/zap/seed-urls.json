@@ -1,0 +1,8 @@
+{
+  "paths": [
+    "/companies-house/fileCompanyTaxReturn.html",
+    "/api/v1/hmrc/ct/return",
+    "/api/v1/hmrc/ct/return/preview",
+    "/api/v1/hmrc/ct/return/zap-seed-correlation-id"
+  ]
+}

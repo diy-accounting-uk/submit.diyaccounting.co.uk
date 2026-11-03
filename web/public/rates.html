@@ -41,7 +41,7 @@
       <div class="form-container">
         <h2>Calculator</h2>
         <noscript><p>The calculator needs JavaScript. The rate tables below work without it.</p></noscript>
-        <form id="ratesCalculator" novalidate>
+        <div id="ratesCalculator" role="group" aria-label="Rates calculator">
           <fieldset class="form-group rates-choice">
             <legend>Business type</legend>
             <input type="radio" id="ratesTypeSelfEmployed" name="ratesBusinessType" value="self-employed" checked />
@@ -151,7 +151,7 @@
             <label for="ratesCisLabour">Labour paid under CIS (£)</label
             ><input type="number" id="ratesCisLabour" name="ratesCisLabour" min="0" step="any" value="40000" inputmode="decimal" />
           </div>
-        </form>
+        </div>
         <div id="ratesResults" aria-live="polite">
           <dl>
             <div class="rates-result" data-show="vat">

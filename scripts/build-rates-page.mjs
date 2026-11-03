@@ -469,7 +469,7 @@ function calculatorHtml() {
     "",
   );
   const form =
-    `<form id="ratesCalculator" novalidate>` +
+    `<div id="ratesCalculator" role="group" aria-label="Rates calculator">` +
     radioGroup(
       "ratesBusinessType",
       "Business type",
@@ -505,7 +505,7 @@ function calculatorHtml() {
     `<div class="form-group" data-show="cis"><label for="ratesCisStatus">CIS status</label><select id="ratesCisStatus" name="ratesCisStatus">` +
     `<option value="registered">Registered</option><option value="unregistered">Not registered</option><option value="gross">Gross payment status</option></select></div>` +
     numberField({ id: "ratesCisLabour", label: "Labour paid under CIS (£)", value: 40000, showFor: "cis" }) +
-    `</form>`;
+    `</div>`;
   const results = RESULT_ROWS.map(
     ([id, label, showFor]) =>
       `<div class="rates-result"${showFor ? ` data-show="${showFor}"` : ""}><dt id="${id}Label">${label}</dt><dd id="${id}"></dd></div>`,
