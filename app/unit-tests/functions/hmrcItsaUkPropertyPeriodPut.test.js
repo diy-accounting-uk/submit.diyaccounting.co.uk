@@ -151,6 +151,16 @@ describe("hmrcItsaUkPropertyPeriodPut ingestHandler", () => {
     expect(body.message).toContain("submissionId");
   });
 
+  test("returns 400 when submissionId is not a UUID", async () => {
+    const event = buildHmrcEvent({
+      body: buildAmendBody({ submissionId: "../.." }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodPutHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid submissionId format");
+  });
+
   test("returns 400 for invalid taxYear format", async () => {
     const event = buildHmrcEvent({
       body: buildAmendBody({ taxYear: "not-a-year" }),

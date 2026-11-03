@@ -9,11 +9,10 @@
  * The period summary the default and STATEFUL scenarios return - matching the shape a caller
  * submits to the create/amend endpoints, since HMRC returns what it holds for the period.
  */
-function defaultPeriodSummary(submissionId) {
-  const [fromDate, toDate] = String(submissionId).split("_");
+function defaultPeriodSummary() {
   return {
-    fromDate: fromDate || "2023-04-06",
-    toDate: toDate || "2023-07-05",
+    fromDate: "2023-04-06",
+    toDate: "2023-07-05",
     ukNonFhlProperty: {
       income: { periodAmount: 5000 },
       expenses: { repairsAndMaintenance: 1200 },
@@ -79,16 +78,15 @@ const errorScenarios = {
  * scenario. STATEFUL falls through to the same not-found default: this simulator has no
  * per-user mutable state to reflect an earlier create/amend back into a read.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
- * @param {string} submissionId - the submissionId path parameter, used to echo back plausible dates
  * @returns {{periodSummary: object}|{status: number, body: object}}
  */
-export function getUkPropertyPeriodDetailForScenario(scenario, submissionId) {
+export function getUkPropertyPeriodDetailForScenario(scenario) {
   if (!scenario) return errorScenarios.NOT_FOUND;
 
   const scenarioUpper = scenario.toUpperCase();
   const entry = errorScenarios[scenarioUpper];
   if (!entry) return errorScenarios.NOT_FOUND;
-  if (entry.retrieve) return entry.retrieve(submissionId);
+  if (entry.retrieve) return entry.retrieve();
   return entry;
 }
 

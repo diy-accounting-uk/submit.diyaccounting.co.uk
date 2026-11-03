@@ -172,6 +172,13 @@ describe("hmrcItsaSelfEmploymentPeriodPut ingestHandler", () => {
     expect(body.message).toContain("periodId");
   });
 
+  test("returns 400 when periodId is not two dates", async () => {
+    const event = buildAmendEvent({ body: { periodId: "../.." } });
+    const response = await hmrcItsaSelfEmploymentPeriodPutHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid periodId format");
+  });
+
   test("returns 400 for invalid businessId format", async () => {
     const event = buildAmendEvent({ body: { businessId: "not-a-business-id" } });
     const response = await hmrcItsaSelfEmploymentPeriodPutHandler(event);

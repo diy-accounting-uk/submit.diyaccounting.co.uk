@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel, isValidPeriodId } from "../../lib/hmrcValidation.js";
 import { buildSelfEmploymentPeriodRequestBody } from "./hmrcItsaSelfEmploymentPeriodPost.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -192,6 +192,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     if (periodEndDate && !isValidIsoDate(periodEndDate)) errorMessages.push("Invalid periodEndDate format - must be YYYY-MM-DD");
   } else {
     if (!periodId) errorMessages.push("Missing periodId parameter from body");
+    if (periodId && !isValidPeriodId(periodId)) errorMessages.push("Invalid periodId format - must be YYYY-MM-DD_YYYY-MM-DD");
   }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
