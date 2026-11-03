@@ -997,6 +997,9 @@ function activityLabels() {
   return Object.fromEntries((catalog.activities || []).map((activity) => [activity.id, activity.name]));
 }
 
+// The Submit site's hostnames in the property that every DIY Accounting site shares.
+const SUBMIT_HOSTNAME_FILTER = "hostname LIKE '%submit.diyaccounting.co.uk'";
+
 function longFormSql({ dayExpression, componentExpression, valueExpression, view, dayColumn, where }) {
   const conditions = [dailyWindowFilter(dayColumn), ...(where ? [where] : [])].join(" AND ");
   return (
@@ -1182,7 +1185,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
       unit: "count",
-      note: "Steps, left to right: spreadsheet downloads, Submit sessions that came from the spreadsheets and gateway sites, human sessions, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
+      note: "Steps, left to right: spreadsheet downloads, human Submit sessions with the ones that came from the spreadsheets site, the gateway site and other sources as parts of it, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
       modes: [
         {
           id: "funnel",
@@ -1191,10 +1194,14 @@ export function buildDailyChartDefinitions() {
           descriptionOf: (id) =>
             ({
               "spreadsheet-downloads": "Spreadsheets downloaded from the spreadsheets site, from the GA4 download events.",
-              "sessions-from-spreadsheets": "Sessions on the Submit site whose source is the spreadsheets site, from Google Analytics.",
+              "sessions-from-spreadsheets":
+                "Human sessions on the Submit site whose source is the spreadsheets site, from Google Analytics; a part of Human sessions.",
               "sessions-from-www":
-                "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from Google Analytics.",
-              "human-sessions": "Sessions of visitors classed as human, from Google Analytics; counts visitors who accepted analytics.",
+                "Human sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from Google Analytics; a part of Human sessions.",
+              "sessions-from-elsewhere":
+                "Human sessions on the Submit site from any other source: search, direct, ads and other referrers. Human sessions less the two lines above.",
+              "human-sessions":
+                "Sessions on the Submit site of visitors classed as human, from Google Analytics; counts visitors who accepted analytics. The spreadsheets and gateway sites are not included.",
               "active-customers": "Customers who signed in on the day.",
               "submitted-within-7-days": "Of those who signed in on the day, the customers who made a submission within 7 days.",
             })[id],
@@ -1202,6 +1209,7 @@ export function buildDailyChartDefinitions() {
             "spreadsheet-downloads",
             "sessions-from-spreadsheets",
             "sessions-from-www",
+            "sessions-from-elsewhere",
             "human-sessions",
             "active-customers",
             "submitted-within-7-days",
@@ -1211,6 +1219,7 @@ export function buildDailyChartDefinitions() {
               "spreadsheet-downloads": "Spreadsheet downloads",
               "sessions-from-spreadsheets": "Submit sessions from the spreadsheets site",
               "sessions-from-www": "Submit sessions from the gateway site",
+              "sessions-from-elsewhere": "Submit sessions from other sources",
               "human-sessions": "Human sessions",
               "active-customers": "Active customers",
               "submitted-within-7-days": "Submitted within 7 days",
@@ -1223,7 +1232,13 @@ export function buildDailyChartDefinitions() {
             `FROM   v_submit_referrals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'human-sessions', cast(sum(sessions) AS double)\n` +
-            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human'\nGROUP  BY 1\n` +
+            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human' AND ${SUBMIT_HOSTNAME_FILTER}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'sessions-from-elsewhere', cast(sum(sessions) AS double)\n` +
+            `FROM   (SELECT day, sessions FROM v_visitors_by_kind_daily\n` +
+            `        WHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human' AND ${SUBMIT_HOSTNAME_FILTER}\n` +
+            `        UNION ALL\n` +
+            `        SELECT day, -sessions FROM v_submit_referrals_daily WHERE ${dailyWindowFilter("day")})\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(cohort_day AS varchar), 'active-customers', cast(sum(logged_in) AS double)\n` +
             `FROM   v_login_to_submission_funnel\nWHERE  ${dailyWindowFilter("cohort_day")}\nGROUP  BY 1\n` +

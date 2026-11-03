@@ -47,7 +47,9 @@ function isHourly(state) {
 
 // Lines that start hidden, by chart id and mode id; the legend still shows them.
 const INITIALLY_HIDDEN_SERIES = {
-  visitors: { sessions: ["synthetic", "bot", "system"] },
+  "visitors": { sessions: ["synthetic", "bot", "system"] },
+  "activity-started-and-completed": { started: ["total", "bundle"], completed: ["total", "bundle"] },
+  "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
 };
 
 function initiallyHidden(chart, modeIndex) {

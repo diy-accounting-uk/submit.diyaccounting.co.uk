@@ -57,7 +57,7 @@ export const conversionToSubmissionObjective = {
       id: "sessions-from-spreadsheets",
       label: "Submit sessions from the spreadsheets site",
       description:
-        "Sessions on the Submit site whose source is the spreadsheets site, from GA4, added over the days. Counts visitors who accepted analytics.",
+        "Human sessions on the Submit site whose source is the spreadsheets site, from GA4, added over the days. Counts visitors who accepted analytics.",
       unit: "count",
       view: "v_submit_referrals_daily",
       dayColumn: "day",
@@ -70,7 +70,7 @@ export const conversionToSubmissionObjective = {
       id: "sessions-from-www",
       label: "Submit sessions from the gateway site",
       description:
-        "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from GA4, added over the days. Counts visitors who accepted analytics.",
+        "Human sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from GA4, added over the days. Counts visitors who accepted analytics.",
       unit: "count",
       view: "v_submit_referrals_daily",
       dayColumn: "day",

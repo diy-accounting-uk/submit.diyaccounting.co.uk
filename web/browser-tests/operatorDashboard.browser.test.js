@@ -344,29 +344,55 @@ const FIXTURE_DAILY_CHARTS = {
         {
           id: "started",
           label: "Started",
-          hourly: { series: [hourlySeries("total", "All activities", 2, { isTotal: true }), hourlySeries("a0", "Submit VAT (HMRC)", 1)] },
+          hourly: {
+            series: [
+              hourlySeries("total", "All activities", 2, { isTotal: true }),
+              hourlySeries("a0", "Submit VAT (HMRC)", 1),
+              hourlySeries("bundle", "View and edit your bundles", 1),
+            ],
+          },
           series: [
             chartSeries("total", "All activities", 20, { isTotal: true }),
             ...Array.from({ length: 12 }, (_, index) => chartSeries(`a${index}`, `Activity number ${index + 1}`, 2 + index)),
+            chartSeries("bundle", "View and edit your bundles", 3),
           ],
         },
         {
           id: "completed",
           label: "Completed",
-          series: [chartSeries("total", "All activities", 9, { isTotal: true }), chartSeries("a0", "Submit VAT (HMRC)", 4)],
+          series: [
+            chartSeries("total", "All activities", 9, { isTotal: true }),
+            chartSeries("a0", "Submit VAT (HMRC)", 4),
+            chartSeries("bundle", "View and edit your bundles", 2),
+          ],
         },
       ],
     },
-    chartWithSeries(
-      "conversion-to-submission",
-      "conversion-to-submission",
-      "Conversion to submission",
-      "count",
-      ["Human sessions", "Active customers", "Submitted within 7 days"],
-      {
-        note: "Steps, left to right.",
-      },
-    ),
+    (() => {
+      const funnel = chartWithSeries(
+        "conversion-to-submission",
+        "conversion-to-submission",
+        "Conversion to submission",
+        "count",
+        [
+          "Submit sessions from the spreadsheets site",
+          "Submit sessions from the gateway site",
+          "Submit sessions from other sources",
+          "Human sessions",
+          "Active customers",
+        ],
+        { note: "Steps, left to right." },
+      );
+      funnel.modes[0].id = "funnel";
+      funnel.modes[0].label = "Funnel";
+      funnel.modes[0].series = funnel.modes[0].series.slice(1);
+      ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere", "human-sessions", "active-customers"].forEach(
+        (id, index) => {
+          funnel.modes[0].series[index].id = id;
+        },
+      );
+      return funnel;
+    })(),
     {
       ...chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
         "Subscriptions",
@@ -1730,9 +1756,47 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(12);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
+    });
+
+    test("starts All activities and View and edit your bundles hidden in both modes and shows one from its legend button", async ({
+      page,
+    }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+      const pressed = async (id) => activities.locator(`.chart-legend-item[data-series-id="${id}"]`).getAttribute("aria-pressed");
+      for (const mode of ["started", "completed"]) {
+        await activities.locator(`.chart-mode[data-mode-id="${mode}"]`).click();
+        await expect(activities.locator('.chart-legend-item[data-series-id="total"]')).toBeVisible();
+        expect(await pressed("total")).toBe("false");
+        expect(await pressed("bundle")).toBe("false");
+        expect(await pressed("a0")).toBe("true");
+      }
+      await activities.locator('.chart-legend-item[data-series-id="bundle"]').click();
+      expect(await pressed("bundle")).toBe("true");
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("starts the two referral series and Submit sessions from other sources hidden on the funnel and shows one from its legend button", async ({
+      page,
+    }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const funnel = page.locator('.chart-card[data-chart-id="conversion-to-submission"]');
+      for (const id of ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"]) {
+        await expect(funnel.locator(`.chart-legend-item[data-series-id="${id}"]`)).toHaveAttribute("aria-pressed", "false");
+      }
+      for (const id of ["human-sessions", "active-customers"]) {
+        await expect(funnel.locator(`.chart-legend-item[data-series-id="${id}"]`)).toHaveAttribute("aria-pressed", "true");
+      }
+      await expect(funnel.locator("polyline.chart-line")).toHaveCount(2);
+      await funnel.locator('.chart-legend-item[data-series-id="sessions-from-www"]').click();
+      await expect(funnel.locator("polyline.chart-line")).toHaveCount(3);
     });
 
     test("switches a chart with hourly data between 90 days by day and 7 days by hour", async ({ page }) => {
@@ -1773,10 +1837,10 @@ test.describe("Operator Dashboard", () => {
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
       await expect(activities.locator(".chart-range")).toBeVisible();
       await activities.locator('.chart-range-option[data-range="hourly"]').click();
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator(".chart-range")).toBeHidden();
-      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       const points = await activities.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
 
