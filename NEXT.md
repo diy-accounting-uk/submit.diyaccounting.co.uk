@@ -42,7 +42,7 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## In flight
 
-- [ ] **Wave yahtzee merged (PR #672, 36c3abaca): the prod deploy and migrations 007 and 008.** Next: (1) watch main's prod deploy of 36c3abaca; (2) dry run `gh workflow run run-migrations.yml -f environment-name=prod -f phase=post-deploy -f dry-run=true` and read the counts (008 expects 120 rows, all with no current Cognito account: the operator's check of 2026-11-03); (3) the same with `-f dry-run=false`. **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Haiku. Unblocks RL4, SEO1c.
+- [ ] **Wave yahtzee merged (PR #672, 36c3abaca): the prod deploy and migrations 007 and 008.** Next: (1) watch main's prod deploy of 36c3abaca (deploy 41725738431); (2) dry run `gh workflow run run-migrations.yml -f environment-name=prod -f phase=post-deploy -f dry-run=true` and read the counts (008 expects 120 rows, all with no current Cognito account: the operator's check of 2026-11-03); (3) the same with `-f dry-run=false`. **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Haiku. Unblocks RL4, SEO1c.
 
 - [ ] **Wave aurora (batch `claude/aurora-seo`, worktree `.claude/worktrees/aurora`, from main at 972c1ea98).** A Sonnet agent builds CT22 then SEO7 on `claude/aurora-ct22-security` (worktree `.claude/worktrees/aurora-ct22`); an Opus agent builds SEO6 on `claude/aurora-seo6-speed` (worktree `.claude/worktrees/aurora-seo6`). Land each on the batch, batch-check, push, PR. **Owner**: Claude Code.
 
