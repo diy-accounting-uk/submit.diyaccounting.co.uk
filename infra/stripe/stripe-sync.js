@@ -289,12 +289,34 @@ function putSecretWithRotationTag(secretName, secretValue) {
   execFileSync(path.join(process.cwd(), "scripts/put-secret-with-rotation-tag.sh"), [secretName, secretValue], { stdio: "inherit" });
 }
 
-async function findOrCreateProduct(stripe, bundleId, name, description, apply) {
+/**
+ * Compare a found Stripe product with the catalogue. Returns the fields `products.update`
+ * must send, or undefined when the product already matches: name and description from the
+ * catalogue, and `active: true` when the product is archived.
+ *
+ * @param {{name?: string, description?: string|null, active?: boolean}} existing
+ * @param {{name: string, description: string}} desired
+ * @returns {{name?: string, description?: string, active?: boolean}|undefined}
+ */
+export function planProductUpdate(existing, desired) {
+  const update = {};
+  if (existing.name !== desired.name) update.name = desired.name;
+  if ((existing.description ?? "") !== (desired.description ?? "")) update.description = desired.description;
+  if (existing.active === false) update.active = true;
+  return Object.keys(update).length > 0 ? update : undefined;
+}
+
+export async function findOrCreateProduct(stripe, bundleId, name, description, apply) {
   const products = await stripe.products.search({ query: `metadata["bundleId"]:"${bundleId}"` });
 
   if (products.data.length > 0) {
-    console.log(`  product ${bundleId}: exists (${products.data[0].id})`);
-    return products.data[0];
+    const found = products.data[0];
+    console.log(`  product ${bundleId}: exists (${found.id})`);
+    const update = planProductUpdate(found, { name, description });
+    if (!update) return found;
+    console.log(`  product ${bundleId}: ${apply ? "updating" : "would update"} ${Object.keys(update).join(", ")}`);
+    if (!apply) return found;
+    return stripe.products.update(found.id, update);
   }
 
   console.log(`  product ${bundleId}: ${apply ? "creating" : "would create"} "${name}"`);

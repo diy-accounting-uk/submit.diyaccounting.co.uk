@@ -3,7 +3,7 @@
 
 // app/unit-tests/scripts/stripeSync.test.js
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 
 import { buildStripeProductsFromCatalog, stripeProductName } from "../../../infra/stripe/lib/stripeCatalogue.js";
 import {
@@ -13,6 +13,8 @@ import {
   planPaymentLinks,
   rewriteEnvLines,
   computeEnvUpdates,
+  planProductUpdate,
+  findOrCreateProduct,
 } from "../../../infra/stripe/stripe-sync.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -444,30 +446,104 @@ describe("rewriteEnvLines", () => {
 
 describe("computeEnvUpdates", () => {
   test("a test-mode price lands in both env files' test rows, and .env.ci's live-named row too", () => {
-    const updates = computeEnvUpdates("test", [{ bundleId: "resident-vat", priceId: "price_test_1" }]);
+    const updates = computeEnvUpdates("test", [{ bundleId: "file-confirmation-statement", priceId: "price_test_1" }]);
     expect(updates[".env.ci"]).toEqual({
-      STRIPE_TEST_PRICE_ID_RESIDENT_VAT: "price_test_1",
-      STRIPE_PRICE_ID_RESIDENT_VAT: "price_test_1",
+      STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1",
+      STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1",
     });
-    expect(updates[".env.prod"]).toEqual({ STRIPE_TEST_PRICE_ID_RESIDENT_VAT: "price_test_1" });
+    expect(updates[".env.prod"]).toEqual({ STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1" });
   });
 
   test("a live-mode price lands only in .env.prod's live-named row", () => {
-    const updates = computeEnvUpdates("live", [{ bundleId: "resident-vat", priceId: "price_live_1" }]);
+    const updates = computeEnvUpdates("live", [{ bundleId: "file-confirmation-statement", priceId: "price_live_1" }]);
     expect(updates[".env.ci"]).toEqual({});
-    expect(updates[".env.prod"]).toEqual({ STRIPE_PRICE_ID_RESIDENT_VAT: "price_live_1" });
+    expect(updates[".env.prod"]).toEqual({ STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_live_1" });
   });
 
   test("a result carrying an interval gets the interval in its row name", () => {
     const updates = computeEnvUpdates("test", [
-      { bundleId: "resident", priceId: "price_annual_1", interval: "year" },
-      { bundleId: "resident", priceId: "price_monthly_1", interval: "month" },
+      { bundleId: "resident-ltd", priceId: "price_annual_1", interval: "year" },
+      { bundleId: "resident-ltd", priceId: "price_monthly_1", interval: "month" },
     ]);
     expect(updates[".env.ci"]).toEqual({
-      STRIPE_TEST_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
-      STRIPE_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
-      STRIPE_TEST_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
-      STRIPE_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
+      STRIPE_TEST_PRICE_ID_RESIDENT_LTD_YEAR: "price_annual_1",
+      STRIPE_PRICE_ID_RESIDENT_LTD_YEAR: "price_annual_1",
+      STRIPE_TEST_PRICE_ID_RESIDENT_LTD_MONTH: "price_monthly_1",
+      STRIPE_PRICE_ID_RESIDENT_LTD_MONTH: "price_monthly_1",
+    });
+  });
+});
+
+describe("planProductUpdate", () => {
+  const desired = { name: "Resident Ltd", description: "Companies House filings" };
+
+  test("returns undefined when name, description and active state match", () => {
+    expect(planProductUpdate({ name: "Resident Ltd", description: "Companies House filings", active: true }, desired)).toBeUndefined();
+  });
+
+  test("returns the changed name and description", () => {
+    expect(planProductUpdate({ name: "Resident Pro", description: "Practice text", active: true }, desired)).toEqual({
+      name: "Resident Ltd",
+      description: "Companies House filings",
+    });
+  });
+
+  test("returns active true for an archived product with matching text", () => {
+    expect(planProductUpdate({ name: "Resident Ltd", description: "Companies House filings", active: false }, desired)).toEqual({
+      active: true,
+    });
+  });
+
+  test("treats a null description as empty", () => {
+    expect(
+      planProductUpdate({ name: "Resident Ltd", description: null, active: true }, { name: "Resident Ltd", description: "" }),
+    ).toBeUndefined();
+  });
+});
+
+describe("findOrCreateProduct", () => {
+  const archived = { id: "prod_old", name: "Resident Ltd (old)", description: "Old text", active: false };
+  const stripeWith = (found) => ({
+    products: {
+      search: vi.fn().mockResolvedValue({ data: found }),
+      update: vi.fn().mockImplementation(async (id, fields) => ({ id, ...fields })),
+      create: vi.fn().mockResolvedValue({ id: "prod_new" }),
+    },
+  });
+
+  test("with apply, reactivates an archived product and updates its text", async () => {
+    const stripe = stripeWith([archived]);
+    const product = await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", true);
+    expect(stripe.products.update).toHaveBeenCalledWith("prod_old", {
+      name: "Resident Ltd",
+      description: "Companies House filings",
+      active: true,
+    });
+    expect(stripe.products.create).not.toHaveBeenCalled();
+    expect(product.id).toBe("prod_old");
+  });
+
+  test("without apply, sends no write and returns the found product", async () => {
+    const stripe = stripeWith([archived]);
+    const product = await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", false);
+    expect(stripe.products.update).not.toHaveBeenCalled();
+    expect(stripe.products.create).not.toHaveBeenCalled();
+    expect(product.id).toBe("prod_old");
+  });
+
+  test("sends no update for a product that matches the catalogue", async () => {
+    const stripe = stripeWith([{ id: "prod_ok", name: "Resident Ltd", description: "Companies House filings", active: true }]);
+    await findOrCreateProduct(stripe, "resident-ltd", "Resident Ltd", "Companies House filings", true);
+    expect(stripe.products.update).not.toHaveBeenCalled();
+  });
+
+  test("creates a product only when none is found", async () => {
+    const stripe = stripeWith([]);
+    await findOrCreateProduct(stripe, "resident-tax-agent", "Resident Tax Agent", "Text", true);
+    expect(stripe.products.create).toHaveBeenCalledWith({
+      name: "Resident Tax Agent",
+      description: "Text",
+      metadata: { bundleId: "resident-tax-agent" },
     });
   });
 });
