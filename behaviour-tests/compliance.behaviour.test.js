@@ -349,7 +349,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("✅ WCAG 2.2 Level AA conformance declared");
 
     expect(accessibilityContent).toContain("Conformance Status");
-    expect(accessibilityContent).toContain("fully conformant");
+    expect(accessibilityContent).toContain("Known Limitations");
     console.log("✅ Conformance status documented");
 
     expect(accessibilityContent).toContain("Assessment Methods");

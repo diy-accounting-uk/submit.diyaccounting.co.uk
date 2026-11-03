@@ -909,14 +909,15 @@
     const dropText = element("span", {}, "Drop a book here");
     dropZone.append(dropText, chooseButton);
     const fileInput = element("input", {
-      type: "file",
-      id: "booksImportFile",
-      name: "booksImportFile",
-      accept: takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
+      "type": "file",
+      "id": "booksImportFile",
+      "name": "booksImportFile",
+      "aria-label": "Book file to import",
+      "accept": takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
       ...(takesIxbrl(kind) ? { multiple: "" } : {}),
-      class: "books-import-file",
-      tabindex: "-1",
-      hidden: "",
+      "class": "books-import-file",
+      "tabindex": "-1",
+      "hidden": "",
     });
     const statusLine = element("p", {
       "id": "booksImportStatus",

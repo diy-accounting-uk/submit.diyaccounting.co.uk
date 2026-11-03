@@ -193,6 +193,27 @@ function runLighthouseCli(targetUrl, outputBase) {
   });
 }
 
+const NAVSTART_ATTEMPTS = 3;
+
+/**
+ * Runs the Lighthouse CLI, repeating a run that stops with NO_NAVSTART. That error means Chrome
+ * did not record the page load trace, which happens at random when several Chrome processes
+ * share a runner; the next attempt loads the same page normally.
+ *
+ * @param {string} targetUrl
+ * @param {string} outputBase
+ */
+export async function runLighthouseWithRetry(targetUrl, outputBase, run = runLighthouseCli) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await run(targetUrl, outputBase);
+    } catch (error) {
+      if (attempt >= NAVSTART_ATTEMPTS || !String(error.message).includes("NO_NAVSTART")) throw error;
+      process.stderr.write(`lighthouse-multi: ${targetUrl} NO_NAVSTART on attempt ${attempt}, trying again\n`);
+    }
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.baseUrl) {
@@ -214,7 +235,21 @@ async function main() {
     const slug = slugForPath(urlConfig.path);
     const outputBase = join(options.outputDir, slug);
 
-    await runLighthouseCli(targetUrl, outputBase);
+    try {
+      await runLighthouseWithRetry(targetUrl, outputBase);
+    } catch (error) {
+      failed = true;
+      process.stderr.write(`lighthouse-multi: ${urlConfig.path} could not be audited: ${error.message}\n`);
+      console.log(`FAIL ${urlConfig.path} not audited`);
+      return {
+        path: urlConfig.path,
+        url: targetUrl,
+        scores: null,
+        thresholds,
+        pass: false,
+        failures: [{ category: "audit", score: null, threshold: null }],
+      };
+    }
 
     const lhr = JSON.parse(readFileSync(`${outputBase}.report.json`, "utf8"));
     const scores = scoresFromLhr(lhr);

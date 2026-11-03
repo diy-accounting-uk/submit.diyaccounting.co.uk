@@ -30,7 +30,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Accessibility statement</h1>
-      <p class="legal-meta">Last updated: 9 September 2026</p>
+      <p class="legal-meta">Last updated: 3 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -45,17 +45,17 @@
         <h2>Conformance Status</h2>
         <div class="conformance-statement">
           <span class="conformance-badge">WCAG 2.2 Level AA</span>
-          <h3>This website conforms to WCAG 2.2 Level AA</h3>
+          <h3>This website is aiming for WCAG 2.2 Level AA</h3>
           <p>
             The
             <a href="https://www.w3.org/WAI/standards-guidelines/wcag/" target="_blank" rel="noopener"
               >Web Content Accessibility Guidelines (WCAG)</a
             >
-            defines requirements for designers and developers to improve accessibility for people with disabilities. It defines three levels
-            of conformance: Level A, Level AA, and Level AAA. DIY Accounting Submit&trade; is fully conformant with WCAG 2.2 Level AA.
-          </p>
-          <p>
-            <strong>Fully conformant</strong> means that the content fully conforms to the accessibility standard without any exceptions.
+            define requirements for designers and developers to improve accessibility for people with disabilities. They define three levels
+            of conformance: Level A, Level AA, and Level AAA. DIY Accounting Submit&trade; is tested against WCAG 2.2 Level AA. Automated
+            tools find no violations on the pages listed below. Checks that need a person, such as a screen reader pass, a keyboard order
+            review, a 400 percent zoom review and a plain-language review of errors and help, have not been done for this version, so we do
+            not claim full conformance.
           </p>
         </div>
       </section>
@@ -65,6 +65,7 @@
         <p>DIY Accounting Limited assessed the accessibility of this website using the following methods:</p>
 
         <h3>Automated Testing Tools</h3>
+        <p>Results below are from 3 November 2026.</p>
         <table class="data-table">
           <thead>
             <tr>
@@ -77,39 +78,26 @@
             <tr>
               <td><a href="https://pa11y.org/" target="_blank" rel="noopener">Pa11y</a></td>
               <td>WCAG 2.1 Level AA</td>
-              <td class="pass">27/27 pages passed (0 errors)</td>
+              <td class="pass">
+                0 errors on the 33 pages of the site scanned from the current source, including the VAT submission page and the rates page.
+                The Income Tax (MTD) pages are not in this scan.
+              </td>
             </tr>
             <tr>
               <td><a href="https://www.deque.com/axe/" target="_blank" rel="noopener">axe-core</a></td>
-              <td>WCAG 2.1 Level AA</td>
-              <td class="pass">0 violations, 517 passes</td>
-            </tr>
-            <tr>
-              <td><a href="https://www.deque.com/axe/" target="_blank" rel="noopener">axe-core</a></td>
-              <td>WCAG 2.2 Level AA</td>
-              <td class="pass">0 violations, 542 passes</td>
+              <td>WCAG 2.0 to 2.2 Level A and AA</td>
+              <td class="pass">0 violations on 56 pages of the test deployment</td>
             </tr>
             <tr>
               <td><a href="https://developer.chrome.com/docs/lighthouse/" target="_blank" rel="noopener">Google Lighthouse</a></td>
               <td>Accessibility Audit</td>
-              <td class="pass">96%+ accessibility score across all 16 sitemap pages</td>
+              <td class="pass">Accessibility score 100 on the home, about, guide, rates and VAT submission pages</td>
             </tr>
           </tbody>
         </table>
 
-        <div class="legal-box">
-          <h4>Latest Test Results (2026-09-03)</h4>
-          <ul>
-            <li><strong>Lighthouse Accessibility:</strong> 100%</li>
-            <li><strong>Lighthouse Performance:</strong> 87%</li>
-            <li><strong>Lighthouse Best Practices:</strong> 96%</li>
-            <li><strong>Pa11y WCAG AA:</strong> All 27 pages pass with 0 errors</li>
-            <li><strong>axe-core WCAG 2.2 AA:</strong> 0 violations detected</li>
-          </ul>
-        </div>
-
         <h3>Pages Tested</h3>
-        <p>The following pages were included in the accessibility assessment:</p>
+        <p>The assessment covers these pages and others, including the rates and Income Tax (MTD) pages:</p>
         <ul>
           <li>Home page (/)</li>
           <li>Login page (/auth/login.html)</li>
@@ -147,10 +135,21 @@
 
       <section>
         <h2>Known Limitations</h2>
-        <p>
-          We are not aware of any accessibility barriers on this website. If you encounter any issues, please contact us using the details
-          below.
-        </p>
+        <ul>
+          <li>
+            The checks that need a person (screen reader, keyboard order, 400 percent zoom, plain language of errors and help) have not been
+            done for this version.
+          </li>
+          <li>
+            The Pa11y scan of the Income Tax (MTD) pages and of the Companies House pages has not been repeated on the current source.
+            axe-core covers the Income Tax (MTD) pages and reports no violations.
+          </li>
+          <li>
+            The scheduled compliance run refreshes the published test reports weekly. Its Lighthouse step failed on 26 October and 2
+            November 2026; the reports under Compliance Reports can be older than this statement until the next run finishes.
+          </li>
+        </ul>
+        <p>If you meet an accessibility barrier on this website, please contact us using the details below.</p>
 
         <h3>Third-Party and Generated Content</h3>
         <p>The following content is excluded from accessibility testing as it is not targeted at end users:</p>

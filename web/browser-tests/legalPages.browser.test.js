@@ -49,7 +49,7 @@ async function serveRealSite(page) {
 const legalPages = [
   ["privacy.html", "3 November 2026"],
   ["terms.html", "31 October 2026"],
-  ["accessibility.html", "9 September 2026"],
+  ["accessibility.html", "3 November 2026"],
 ];
 
 test.describe("Legal pages", () => {
