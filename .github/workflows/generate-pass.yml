@@ -28,6 +28,8 @@ on:
           - resident-vat-pass
           - resident-pro-test-pass
           - resident-pro-pass
+          - resident-tax-agent-test-pass
+          - resident-tax-agent-pass
           - invited-guest
           - resident-guest
           - resident-pro-comp

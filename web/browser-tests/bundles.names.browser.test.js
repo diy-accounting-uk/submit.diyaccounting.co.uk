@@ -35,7 +35,7 @@ function apiFor(bundleId) {
 
 test.describe("bundles and usage names", () => {
   test("usage.html names bundles and activities", async ({ page }) => {
-    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident") });
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
     await page.goto(`${SITE_ORIGIN}/usage.html`, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("#tokenSourcesBody")).toContainText("Resident");
@@ -70,7 +70,7 @@ test.describe("bundles and usage names", () => {
   });
 
   test("bundles.html tells a Resident holder where to generate a pass", async ({ page }) => {
-    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident") });
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
 
     const empty = page.locator("#generatedPassesEmpty");

@@ -260,14 +260,13 @@ operator's approval to enable it for live users on prod.
 - [ ] **UH3. Income Tax forms.** Preconditions: HMRC's recognition and production credentials
   for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
-- [ ] **UH2. Resident, Resident Pro and diya-gl storage.** Preconditions: every filing the
-  bundles describe is live on prod (Income Tax, UH3; confirmation statement, PSC verification
-  statement and accounts, `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600, `PLAN_HMRC_CT_APPROVAL.md` UH7); the operator's
-  approval. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
+- [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
+  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro itself is on prod; Companies House is
+  `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
   Authorisation API on Submit's production application; HMRC's approval of agent use; practice
-  sold in a bundle on prod (Resident Pro, UH2); the operator's approval. **Owner**: Claude Code
+  sold in a bundle on prod (Resident Tax Agent: `prod` in its `listedInEnvironments` and on the `practice` activity); the operator's approval. **Owner**: Claude Code
   (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
 ### Dependency graph

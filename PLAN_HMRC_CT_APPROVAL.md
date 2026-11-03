@@ -194,7 +194,7 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
 | 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
-| 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
+| 10 | Agent filing for `resident-tax-agent` practices | HMRC CT technical pack | B34g2 |
 
 ### Design: the CT600 without a book (CT2)
 

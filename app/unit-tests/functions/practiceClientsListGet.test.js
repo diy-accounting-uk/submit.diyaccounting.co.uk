@@ -57,7 +57,7 @@ describe("practiceClientsListGet", () => {
   });
 
   test.each([
-    ["an active resident-pro subscription", [{ bundleId: "resident-pro", subscriptionStatus: "active" }]],
+    ["an active resident-tax-agent subscription", [{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }]],
     ["a resident-pro-comp pass", [{ bundleId: "resident-pro-comp" }]],
   ])("reports the licence as held for %s", async (_name, bundles) => {
     listClients.mockResolvedValue([]);
@@ -68,9 +68,9 @@ describe("practiceClientsListGet", () => {
     expect(JSON.parse(result.body).licence).toEqual({ held: true });
   });
 
-  test("reports the licence as not held for a lapsed resident-pro subscription", async () => {
+  test("reports the licence as not held for a lapsed resident-tax-agent subscription", async () => {
     listClients.mockResolvedValue([]);
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "cancelled" }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-tax-agent", subscriptionStatus: "cancelled" }]);
 
     const result = await ingestHandler(buildAuthenticatedEvent({}));
 

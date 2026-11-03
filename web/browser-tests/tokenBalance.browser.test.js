@@ -39,7 +39,7 @@ test.describe("token balance", () => {
 
   test("the header agrees with the balance after a pass, on the landing in My generated passes", async ({ page }) => {
     const bundles = [
-      { bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 10, tokensRemaining: 90 },
+      { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensConsumed: 10, tokensRemaining: 90 },
       { bundleId: "day-guest", allocated: true, tokensGranted: 3, tokensConsumed: 0, tokensRemaining: 3 },
     ];
     let generated = false;

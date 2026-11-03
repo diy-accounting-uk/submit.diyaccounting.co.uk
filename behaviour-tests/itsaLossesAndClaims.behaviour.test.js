@@ -239,7 +239,7 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

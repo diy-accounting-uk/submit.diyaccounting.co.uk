@@ -685,7 +685,7 @@ async function main() {
   process.env.USER_SUB_HASH_SALT = JSON.stringify({ current: "itsa-sandbox-year", versions: { "itsa-sandbox-year": randomUUID() } });
   await initializeSalt();
   const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(vendorPublicIp, cognitoAuthorizerContext), {
-    bundleIds: ["resident"],
+    bundleIds: ["resident-pro"],
   });
   record("fraud-headers", { headerNames: Object.keys(govClientHeaders).sort() });
 

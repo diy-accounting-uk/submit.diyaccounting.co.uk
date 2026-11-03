@@ -92,7 +92,7 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       }
       return {};
     });

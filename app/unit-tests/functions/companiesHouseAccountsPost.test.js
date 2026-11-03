@@ -230,7 +230,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       }
       return {};
     });
@@ -553,7 +553,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }], Count: 1 };
       }
       if (cmd instanceof lib.GetCommand) {
         if (cmd.input?.TableName === CLIENT_TABLE) {
@@ -740,7 +740,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   test("uses the body companyNumber as before when no clientId is given", async () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+      if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       return {};
     });
 

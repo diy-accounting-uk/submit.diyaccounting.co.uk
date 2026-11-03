@@ -22,37 +22,28 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("buildStripeProductsFromCatalog", () => {
   const catalog = loadCatalogFromRoot();
 
-  test("returns the six Stripe prices with the correct amounts, resident and resident-pro each carrying two", () => {
+  test("returns the nine Stripe prices with the correct amounts, each subscription bundle carrying two", () => {
     const products = buildStripeProductsFromCatalog(catalog);
-    const byBundleId = Object.fromEntries(products.filter((p) => p.bundleId === "resident-vat").map((p) => [p.bundleId, p]));
-    const residentPrices = products.filter((p) => p.bundleId === "resident");
-    const residentProPrices = products.filter((p) => p.bundleId === "resident-pro");
-    const confirmationStatementPrices = products.filter((p) => p.bundleId === "file-confirmation-statement");
+    const pricesOf = (bundleId) => products.filter((p) => p.bundleId === bundleId);
+    const confirmationStatementPrices = pricesOf("file-confirmation-statement");
 
-    expect(products).toHaveLength(6);
-    expect(byBundleId["resident-vat"]).toMatchObject({
-      name: "Resident VAT",
-      priceAmount: 99,
-      currency: "gbp",
-      interval: "month",
-      multiPrice: false,
-    });
+    expect(products).toHaveLength(9);
 
-    expect(residentPrices).toHaveLength(2);
-    expect(residentPrices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "Resident", priceAmount: 3900, currency: "gbp", interval: "year", multiPrice: true }),
-        expect.objectContaining({ name: "Resident", priceAmount: 399, currency: "gbp", interval: "month", multiPrice: true }),
-      ]),
-    );
-
-    expect(residentProPrices).toHaveLength(2);
-    expect(residentProPrices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "Resident Pro", priceAmount: 19900, currency: "gbp", interval: "year", multiPrice: true }),
-        expect.objectContaining({ name: "Resident Pro", priceAmount: 1999, currency: "gbp", interval: "month", multiPrice: true }),
-      ]),
-    );
+    const expected = {
+      "resident-vat": ["Resident VAT", 999, 99],
+      "resident-ltd": ["Resident Ltd", 999, 99],
+      "resident-pro": ["Resident Pro", 3999, 399],
+      "resident-tax-agent": ["Resident Tax Agent", 19999, 1999],
+    };
+    for (const [bundleId, [name, year, month]] of Object.entries(expected)) {
+      expect(pricesOf(bundleId)).toHaveLength(2);
+      expect(pricesOf(bundleId)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name, priceAmount: year, currency: "gbp", interval: "year", multiPrice: true }),
+          expect.objectContaining({ name, priceAmount: month, currency: "gbp", interval: "month", multiPrice: true }),
+        ]),
+      );
+    }
 
     expect(confirmationStatementPrices).toHaveLength(1);
     expect(confirmationStatementPrices[0]).toMatchObject({
@@ -83,7 +74,7 @@ describe("buildStripeProductsFromCatalog", () => {
 
   test("filters to a single bundle when bundleId is given", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "resident-vat" });
-    expect(products.map((p) => p.bundleId)).toEqual(["resident-vat"]);
+    expect(new Set(products.map((p) => p.bundleId))).toEqual(new Set(["resident-vat"]));
   });
 
   test("filters to a single activity's one-off price when bundleId names an activity id", () => {
@@ -93,11 +84,14 @@ describe("buildStripeProductsFromCatalog", () => {
     ]);
   });
 
-  test.each(["resident", "resident-pro"])("filters to %s's two prices when bundleId names a multi-price bundle", (bundleId) => {
-    const products = buildStripeProductsFromCatalog(catalog, { bundleId });
-    expect(products.map((p) => p.interval).sort()).toEqual(["month", "year"]);
-    expect(products.every((p) => p.bundleId === bundleId && p.multiPrice === true)).toBe(true);
-  });
+  test.each(["resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"])(
+    "filters to %s's two prices when bundleId names a multi-price bundle",
+    (bundleId) => {
+      const products = buildStripeProductsFromCatalog(catalog, { bundleId });
+      expect(products.map((p) => p.interval).sort()).toEqual(["month", "year"]);
+      expect(products.every((p) => p.bundleId === bundleId && p.multiPrice === true)).toBe(true);
+    },
+  );
 
   test("returns an empty list when the requested bundle has no Stripe price fields", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "default" });

@@ -140,8 +140,8 @@ const MONTH_STARTS = [Date.UTC(2026, 0, 1), Date.UTC(2026, 1, 1), Date.UTC(2026,
 const seconds = (ms) => ms / 1000;
 const chargedAtOf = (monthIndex) => MONTH_STARTS[monthIndex] + 3600 * 1000;
 
-const liveBundle = [{ bundleId: "resident", stripeSubscriptionId: "sub_referrer", subscriptionStatus: "active" }];
-const lapsedBundle = [{ bundleId: "resident", stripeSubscriptionId: "sub_referrer", subscriptionStatus: "canceled" }];
+const liveBundle = [{ bundleId: "resident-pro", stripeSubscriptionId: "sub_referrer", subscriptionStatus: "active" }];
+const lapsedBundle = [{ bundleId: "resident-pro", stripeSubscriptionId: "sub_referrer", subscriptionStatus: "canceled" }];
 
 function invoiceFor(monthIndex, { fingerprint = CARD, tag = "" } = {}) {
   const n = monthIndex + 1;

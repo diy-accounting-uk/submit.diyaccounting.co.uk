@@ -179,11 +179,11 @@
     const el = document.getElementById("licenceLine");
     if (!el || !licence) return;
     if (licence.held) {
-      el.textContent = "Your practice holds the Resident Pro licence.";
+      el.textContent = "Your practice holds the Resident Tax Agent licence.";
     } else {
       setHtml(
         el,
-        'Your practice does not hold the Resident Pro licence. You need it to file for clients. <a href="bundles.html">Get Resident Pro</a>',
+        'Your practice does not hold the Resident Tax Agent licence. You need it to file for clients. <a href="bundles.html">Get Resident Tax Agent</a>',
       );
     }
     el.hidden = false;

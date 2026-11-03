@@ -78,7 +78,7 @@ describe("passAdminPost", () => {
     expect(params.restrictedToEmail).toBe("a@b.com");
   });
 
-  test.each(["day-guest", "invited-guest", "resident-vat", "resident", "resident-pro"])(
+  test.each(["day-guest", "invited-guest", "resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"])(
     "a synthetic test user creates a %s pass, always a test pass",
     async (bundleId) => {
       const result = await ingestHandler(buildEventWithToken(tokenFor(syntheticEmail), passBody({ bundleId, testPass: false })));

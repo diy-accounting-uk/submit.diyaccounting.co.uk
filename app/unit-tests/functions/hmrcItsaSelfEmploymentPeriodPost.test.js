@@ -509,7 +509,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro" }], Count: 1 };
       }
       return {};
     });
@@ -528,10 +528,10 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       if (cmd instanceof lib.UpdateCommand) {
-        return { Attributes: { bundleId: "resident", tokensGranted: 100, tokensConsumed: 1 } };
+        return { Attributes: { bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 1 } };
       }
       return {};
     });
@@ -555,10 +555,10 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       if (cmd instanceof lib.UpdateCommand) {
-        return { Attributes: { bundleId: "resident", tokensGranted: 100, tokensConsumed: 1 } };
+        return { Attributes: { bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 1 } };
       }
       return {};
     });

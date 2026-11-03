@@ -87,7 +87,7 @@ const ACTIONS = {
     const subRecord = {
       pk: `stripe#${subscriptionId}`,
       hashedSub: redeemerHash,
-      bundleId: "resident",
+      bundleId: "resident-pro",
       status: "active",
       actor: "customer",
     };

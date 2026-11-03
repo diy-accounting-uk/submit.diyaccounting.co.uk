@@ -46,7 +46,7 @@ import { CONFIG_PATH, loadConfigFromRoot, getAdsAccessToken, googleAdsSearch } f
 
 export const DATA_MANAGER_INGEST_URL = "https://datamanager.googleapis.com/v1/events:ingest";
 export const MAX_EVENTS_PER_REQUEST = 2000;
-export const SUBSCRIPTION_BUNDLE_IDS = ["resident-vat", "resident", "resident-pro"];
+export const SUBSCRIPTION_BUNDLE_IDS = ["resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const ENVIRONMENTS = ["ci", "prod"];
 const ATHENA_POLL_MS = 1500;

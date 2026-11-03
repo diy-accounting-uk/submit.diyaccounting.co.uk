@@ -4,10 +4,10 @@
 // app/services/practiceLicence.js
 //
 // Whether a practice holds the licence that client-scoped requests need: an active, unexpired
-// resident-pro subscription, or an unexpired complimentary resident-pro-comp pass. The diya-gl
+// resident-tax-agent subscription, or an unexpired complimentary resident-pro-comp pass. The diya-gl
 // book retention rule keeps its own narrower predicate (diyaGlEntitlement.js).
 
-const SUBSCRIBED_LICENCE_BUNDLE_ID = "resident-pro";
+const SUBSCRIBED_LICENCE_BUNDLE_ID = "resident-tax-agent";
 const COMPLIMENTARY_LICENCE_BUNDLE_ID = "resident-pro-comp";
 
 function isUnexpired(bundle) {

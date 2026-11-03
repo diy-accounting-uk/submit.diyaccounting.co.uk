@@ -137,7 +137,7 @@ test("Click through: file a confirmation statement end to end and see the filing
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -176,7 +176,7 @@ test("Click through: file a confirmation statement shows the reject reason Compa
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -218,7 +218,7 @@ test("Click through: file a confirmation statement blocks submission when a dire
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -251,7 +251,7 @@ test("Click through: file a confirmation statement pays the fee via checkout and
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 
@@ -298,7 +298,7 @@ test("Click through: file a confirmation statement under the customer's own pres
 
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 

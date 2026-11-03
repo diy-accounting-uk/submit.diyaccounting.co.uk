@@ -23,7 +23,7 @@ const CONTENT_TYPES = {
 };
 
 const RESIDENT_BUNDLES = {
-  bundles: [{ bundleId: "resident", allocated: true, subscriptionStatus: "active", tokensGranted: 100 }],
+  bundles: [{ bundleId: "resident-pro", allocated: true, subscriptionStatus: "active", tokensGranted: 100 }],
   tokensRemaining: 100,
 };
 

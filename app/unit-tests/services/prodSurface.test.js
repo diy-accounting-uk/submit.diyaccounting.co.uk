@@ -37,13 +37,15 @@ describe("what the catalogue lists in each environment", () => {
     },
   );
 
-  test.each(["resident", "resident-pro"])("the %s bundle is listed in ci and not in prod", (id) => {
-    expect(isBundleListedInEnvironment(bundle(id), "ci")).toBe(true);
-    expect(isBundleListedInEnvironment(bundle(id), "prod")).toBe(false);
+  test("the resident-tax-agent bundle is listed in ci and not in prod", () => {
+    expect(isBundleListedInEnvironment(bundle("resident-tax-agent"), "ci")).toBe(true);
+    expect(isBundleListedInEnvironment(bundle("resident-tax-agent"), "prod")).toBe(false);
   });
 
   test("the other subscription bundles stay listed in prod", () => {
-    expect(isBundleListedInEnvironment(bundle("resident-vat"), "prod")).toBe(true);
+    for (const id of ["resident-vat", "resident-ltd", "resident-pro"]) {
+      expect(isBundleListedInEnvironment(bundle(id), "prod")).toBe(true);
+    }
     expect(isBundleListedInEnvironment(bundle("day-guest"), "prod")).toBe(true);
   });
 });

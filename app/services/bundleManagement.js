@@ -7,7 +7,7 @@
 // - **Run:** `import { enforceBundles, addBundles, removeBundles, updateUserBundles } from "app/services/bundleManagement.js"`
 // - **Entry:** `app/services/bundleManagement.js:enforceBundles`; `app/services/bundleManagement.js:updateUserBundles`
 // - **Files:** app/services/bundleManagement.js, app/unit-tests/services/bundleManagement.test.js, app/system-tests/bundleManagement.system.test.js, app/lib/operators.js, app/unit-tests/lib/operators.test.js
-// - **Keywords:** entitlement, enforce bundle, authorization, authorisation, operator match, resident-pro, BundleEntitlementError
+// - **Keywords:** entitlement, enforce bundle, authorization, authorisation, operator match, resident-tax-agent, BundleEntitlementError
 // - **Related:** BILL-01, BILL-03, BILL-35
 // @end-capability
 
@@ -211,13 +211,13 @@ export async function enforceBundles(event, options = {}) {
     matchedBundleIds,
   });
 
-  // A client-scoped request needs the practice licence (an active resident-pro subscription or a
+  // A client-scoped request needs the practice licence (an active resident-tax-agent subscription or a
   // resident-pro-comp pass), and the client row must exist under this same practice and not be archived.
   let client = null;
   if (clientId) {
     if (!holdsPracticeLicence(subscribedBundles)) {
       const errorDetails = { code: "CLIENT_SCOPE_FORBIDDEN", clientId, userSub, path: requestPath };
-      const message = "Forbidden: a client-scoped request requires an active resident-pro subscription";
+      const message = "Forbidden: a client-scoped request requires an active resident-tax-agent subscription";
       logger.warn({ message, ...errorDetails });
       throw new BundleEntitlementError(message, errorDetails);
     }

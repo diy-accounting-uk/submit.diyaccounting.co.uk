@@ -112,13 +112,13 @@ beforeEach(async () => {
 async function seedAccounts({ withSubscriptionRecord = true } = {}) {
   const now = "2025-12-01T00:00:00.000Z";
   await bundles.putBundleByHashedSub(ids.referrer, {
-    bundleId: "resident",
+    bundleId: "resident-pro",
     stripeCustomerId: ids.referrerCustomer,
     stripeSubscriptionId: `sub_referrer_${tableCounter}`,
     subscriptionStatus: "active",
   });
   await bundles.putBundleByHashedSub(ids.redeemer, {
-    bundleId: "resident",
+    bundleId: "resident-pro",
     stripeCustomerId: ids.redeemerCustomer,
     stripeSubscriptionId: ids.subscription,
     subscriptionStatus: "active",
@@ -127,7 +127,7 @@ async function seedAccounts({ withSubscriptionRecord = true } = {}) {
     await subscriptions.putSubscription({
       pk: `stripe#${ids.subscription}`,
       hashedSub: ids.redeemer,
-      bundleId: "resident",
+      bundleId: "resident-pro",
       status: "active",
       actor: "customer",
     });
@@ -231,7 +231,7 @@ describe("commission journeys on dynalite and the Stripe simulator", () => {
   test("J1b first invoice before the subscription record: invoice.paid accrues from the invoice metadata, once", async () => {
     await seedAccounts({ withSubscriptionRecord: false });
     const invoice = invoiceFor(0);
-    invoice.parent.subscription_details.metadata = { hashedSub: ids.redeemer, bundleId: "resident", actor: "customer" };
+    invoice.parent.subscription_details.metadata = { hashedSub: ids.redeemer, bundleId: "resident-pro", actor: "customer" };
     stripeState.invoices[invoice.id] = invoice;
 
     await sendWebhook("invoice.paid", invoice);

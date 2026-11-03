@@ -308,7 +308,7 @@ async function renderDynamicActivities() {
         const isMetered = activity.metered === true;
         const tokenLabel = isMetered && tokenCost > 0 ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
 
-        // An unlimited-grant bundle (the resident-pro practice licence) covering this
+        // An unlimited-grant bundle (the resident-tax-agent practice licence) covering this
         // activity is exempt from the token count - never insufficient, never blocked.
         const hasUnlimitedAccess = activity.bundles.some((bundleId) => __unlimitedTokenBundleIds.has(bundleId));
 

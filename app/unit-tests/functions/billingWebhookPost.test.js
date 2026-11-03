@@ -296,7 +296,7 @@ describe("billingWebhookPost", () => {
     const [hashedSub, bundle] = mockPutBundleByHashedSub.mock.calls[0];
     expect(hashedSub).toBe("hashed_sub_value");
     expect(bundle.bundleId).toBe("resident-pro");
-    expect(bundle.tokensGranted).toBe("unlimited");
+    expect(bundle.tokensGranted).toBe(100);
     expect(bundle.tokensConsumed).toBe(0);
     expect(bundle.subscriptionStatus).toBe("active");
     expect(bundle.stripeSubscriptionId).toBe("sub_test_456");
@@ -311,6 +311,33 @@ describe("billingWebhookPost", () => {
     expect(subRecord.hashedSub).toBe("hashed_sub_value");
     expect(subRecord.bundleId).toBe("resident-pro");
     expect(subRecord.status).toBe("active");
+  });
+
+  test("a year subscriber's tokens are set to refresh one month on, not at the period end", async () => {
+    const yearOn = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: yearOn });
+    const checkoutPayload = buildCheckoutSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(checkoutPayload);
+
+    await ingestHandler(buildWebhookEvent(checkoutPayload));
+
+    const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundle.expiry).toBe(new Date(yearOn * 1000).toISOString());
+    expect(Date.parse(bundle.tokenResetAt)).toBeGreaterThan(Date.now() + 27 * 24 * 60 * 60 * 1000);
+    expect(Date.parse(bundle.tokenResetAt)).toBeLessThan(Date.now() + 32 * 24 * 60 * 60 * 1000);
+  });
+
+  test("a bundle with no refresh interval resets its tokens at the period end", async () => {
+    const periodEnd = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: periodEnd });
+    const checkoutPayload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-tax-agent" } });
+    mockWebhooksConstructEvent.mockReturnValue(checkoutPayload);
+
+    await ingestHandler(buildWebhookEvent(checkoutPayload));
+
+    const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundle.tokensGranted).toBe("unlimited");
+    expect(bundle.tokenResetAt).toBe(new Date(periodEnd * 1000).toISOString());
   });
 
   test("uses client_reference_id as fallback when metadata.hashedSub is missing", async () => {
@@ -362,7 +389,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
     });
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
     mockSubscriptionsRetrieve.mockResolvedValue({
@@ -384,13 +411,13 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
-    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident", 100, expect.any(String));
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", 100, expect.any(String));
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(1);
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
   test("invoice.paid accrues commission for the invoice and subscription record", async () => {
-    const subRecord = { pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" };
+    const subRecord = { pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" };
     mockGetSubscription.mockResolvedValue(subRecord);
     mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: Math.floor(Date.now() / 1000) + 2592000 });
     const invoice = { id: "in_test_123", parent: { subscription_details: { subscription: "sub_test_456" } } };
@@ -409,7 +436,7 @@ describe("billingWebhookPost", () => {
   });
 
   test("invoice.paid still returns 200 and logs the failure when commission accrual throws", async () => {
-    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
     mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: Math.floor(Date.now() / 1000) + 2592000 });
     mockAccrueCommission.mockRejectedValue(new Error("ledger down"));
     const payload = {
@@ -427,11 +454,11 @@ describe("billingWebhookPost", () => {
     );
   });
 
-  test("invoice.paid leaves a resident-pro holder's token count untouched - the practice licence has nothing to refresh", async () => {
+  test("invoice.paid leaves a resident-tax-agent holder's token count untouched - the practice licence has nothing to refresh", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident-pro",
+      bundleId: "resident-tax-agent",
     });
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
     mockSubscriptionsRetrieve.mockResolvedValue({
@@ -510,11 +537,11 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).not.toHaveBeenCalled();
   });
 
-  test("invoice.paid moves expiry, period end and token reset to the period end carried on the subscription item", async () => {
+  test("invoice.paid moves expiry and period end to the period end carried on the subscription item, and the token reset one refresh interval on", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
       currentPeriodEnd: "2026-06-06T09:38:58.000Z",
     });
     const itemPeriodEnd = 1790000000;
@@ -536,7 +563,10 @@ describe("billingWebhookPost", () => {
 
     const expectedEnd = new Date(itemPeriodEnd * 1000).toISOString();
     expect(result.statusCode).toBe(200);
-    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident", 100, expectedEnd);
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", 100, expect.any(String));
+    const nextReset = Date.parse(mockResetTokensByHashedSub.mock.calls[0][3]);
+    expect(nextReset).toBeGreaterThan(Date.now() + 27 * 24 * 60 * 60 * 1000);
+    expect(nextReset).toBeLessThan(Date.now() + 32 * 24 * 60 * 60 * 1000);
     const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
     expect(bundleUpdates.expiry).toBe(expectedEnd);
     expect(bundleUpdates.currentPeriodEnd).toBe(expectedEnd);
@@ -548,7 +578,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
       currentPeriodEnd: "2026-06-06T09:38:58.000Z",
     });
     const topLevelPeriodEnd = 1790000000;
@@ -574,7 +604,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
     });
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
     mockSubscriptionsRetrieve.mockResolvedValue({
@@ -597,7 +627,7 @@ describe("billingWebhookPost", () => {
     expect(result.statusCode).toBe(200);
     expect(mockGetSubscription).toHaveBeenCalledWith("stripe#sub_test_456");
     expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
-    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident", 100, expect.any(String));
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", 100, expect.any(String));
   });
 
   test("invoice.paid skips when no subscription record found", async () => {
@@ -620,7 +650,7 @@ describe("billingWebhookPost", () => {
   });
 
   describe("invoice.paid before checkout.session.completed has written the record", () => {
-    const metadata = { hashedSub: "hashed_meta", bundleId: "resident", actor: "customer" };
+    const metadata = { hashedSub: "hashed_meta", bundleId: "resident-pro", actor: "customer" };
     const invoice = { id: "in_first", parent: { subscription_details: { subscription: "sub_first", metadata } } };
     const send = async () => {
       const payload = { id: "evt_first_invoice", type: "invoice.paid", data: { object: invoice } };
@@ -727,7 +757,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
       currentPeriodEnd: "2026-06-06T09:38:58.000Z",
     });
     const payload = {
@@ -749,7 +779,7 @@ describe("billingWebhookPost", () => {
     expect(result.statusCode).toBe(200);
     expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
     const expectedEnd = new Date(1790000000 * 1000).toISOString();
-    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident", {
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
       currentPeriodEnd: expectedEnd,
       expiry: expectedEnd,
     });
@@ -760,7 +790,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
       currentPeriodEnd: "2026-06-06T09:38:58.000Z",
     });
     const payload = {
@@ -794,7 +824,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
-      bundleId: "resident",
+      bundleId: "resident-pro",
       currentPeriodEnd: "2026-11-30T00:00:00.000Z",
     });
     const payload = {
@@ -863,7 +893,7 @@ describe("billingWebhookPost", () => {
   }
 
   test("customer.subscription.deleted for the personal resident bundle moves the owner's books to sandbox", async () => {
-    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
     const payload = buildSubscriptionDeletedPayload();
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
@@ -875,8 +905,8 @@ describe("billingWebhookPost", () => {
     expect(mockListClientsByHashedSub).not.toHaveBeenCalled();
   });
 
-  test("customer.subscription.deleted for a practice's resident-pro bundle moves every client's books to sandbox", async () => {
-    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+  test("customer.subscription.deleted for a practice's resident-tax-agent bundle moves the owner's and every client's books to sandbox", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-tax-agent" });
     mockListClientsByHashedSub.mockResolvedValue([{ clientId: "client-1" }, { clientId: "client-2" }]);
     const payload = buildSubscriptionDeletedPayload();
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -885,9 +915,9 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockListClientsByHashedSub).toHaveBeenCalledWith("hashed_sub_value");
-    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(2);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(3);
     const ownerPrefixes = mockSetOwnerBooksRetention.mock.calls.map((call) => call[0]).sort();
-    expect(ownerPrefixes).toEqual(["hashed_sub_value/clients/client-1", "hashed_sub_value/clients/client-2"]);
+    expect(ownerPrefixes).toEqual(["hashed_sub_value", "hashed_sub_value/clients/client-1", "hashed_sub_value/clients/client-2"]);
     for (const call of mockSetOwnerBooksRetention.mock.calls) {
       expect(call[1]).toBe("sandbox");
       expect(call[2]).toEqual({ expiresAt: expect.any(String) });
@@ -895,7 +925,7 @@ describe("billingWebhookPost", () => {
   });
 
   test("a replayed customer.subscription.deleted moves nothing further once every book is already sandboxed", async () => {
-    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
     // setOwnerBooksRetention itself already answers [] once nothing is left to move - the
     // handler carries no separate replay guard, so this proves the whole round-trip is a no-op.
     mockSetOwnerBooksRetention.mockResolvedValue([]);
@@ -942,7 +972,7 @@ describe("billingWebhookPost", () => {
   });
 
   test("checkout.session.completed for the personal resident bundle restores the owner's sandboxed books", async () => {
-    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident" } });
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-pro" } });
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
     const result = await ingestHandler(buildWebhookEvent(payload));
@@ -953,9 +983,9 @@ describe("billingWebhookPost", () => {
     expect(mockListClientsByHashedSub).not.toHaveBeenCalled();
   });
 
-  test("checkout.session.completed for a practice's resident-pro bundle restores every client's sandboxed books", async () => {
+  test("checkout.session.completed for a practice's resident-tax-agent bundle restores every client's sandboxed books", async () => {
     mockListClientsByHashedSub.mockResolvedValue([{ clientId: "client-1" }]);
-    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-pro" } });
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-tax-agent" } });
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
     const result = await ingestHandler(buildWebhookEvent(payload));
@@ -977,7 +1007,7 @@ describe("billingWebhookPost", () => {
   });
 
   test("a replayed checkout.session.completed restores nothing further once every book is already resident", async () => {
-    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident" } });
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-pro" } });
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
     const first = await ingestHandler(buildWebhookEvent(payload));

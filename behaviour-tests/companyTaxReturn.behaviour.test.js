@@ -144,7 +144,7 @@ async function signInWithResidentBundle(page, testUrl) {
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
   if (isSyntheticMode()) {
-    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
 }

@@ -88,7 +88,7 @@ const GROUPS = [
         title: "Save your diya-gl books",
         steps: [
           ["Keep your book in diya-gl", "Write your sales and purchases to a diya-gl book."],
-          ["Save it to your account", "With the Resident bundle, the book saves to your account from diya-gl."],
+          ["Save it to your account", "With Resident Pro, the book saves to your account from diya-gl."],
           ["Use it in a filing", "Load the saved book into a VAT return, a quarterly update or a Company Tax Return."],
         ],
       },

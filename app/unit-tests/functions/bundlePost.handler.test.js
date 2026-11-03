@@ -285,22 +285,29 @@ describe("bundlePost ingestHandler", () => {
     expect(result.bundle).toBe("default");
   });
 
-  test.each(["default", "resident-vat", "resident", "resident-pro", "resident-guest", "invited-guest", "resident-pro-comp", "operator"])(
-    "returns 403 and grants nothing when %s is requested directly",
-    async (bundleId) => {
-      const token = makeIdToken(`user-refused-${bundleId}`);
-      const event = buildEventWithToken(token, { bundleId });
-      event.headers["x-wait-time-ms"] = "30000";
-      mockSend.mockClear();
+  test.each([
+    "default",
+    "resident-vat",
+    "resident-ltd",
+    "resident-pro",
+    "resident-tax-agent",
+    "resident-guest",
+    "invited-guest",
+    "resident-pro-comp",
+    "operator",
+  ])("returns 403 and grants nothing when %s is requested directly", async (bundleId) => {
+    const token = makeIdToken(`user-refused-${bundleId}`);
+    const event = buildEventWithToken(token, { bundleId });
+    event.headers["x-wait-time-ms"] = "30000";
+    mockSend.mockClear();
 
-      const response = await bundlePostHandler(event);
+    const response = await bundlePostHandler(event);
 
-      expect(response.statusCode).toBe(403);
-      const body = parseResponseBody(response);
-      expect(body.error).toBe("bundle_not_requestable");
-      expect(mockSend).not.toHaveBeenCalled();
-    },
-  );
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.error).toBe("bundle_not_requestable");
+    expect(mockSend).not.toHaveBeenCalled();
+  });
 
   test("returns 201 and grants test bundle with timeout producing expiry", async () => {
     const token = makeIdToken("user-test");

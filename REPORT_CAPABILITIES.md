@@ -1686,7 +1686,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Run:** `import { enforceBundles, addBundles, removeBundles, updateUserBundles } from "app/services/bundleManagement.js"`
 - **Entry:** `app/services/bundleManagement.js:enforceBundles`; `app/services/bundleManagement.js:updateUserBundles`
 - **Files:** app/services/bundleManagement.js, app/unit-tests/services/bundleManagement.test.js, app/system-tests/bundleManagement.system.test.js, app/lib/operators.js, app/unit-tests/lib/operators.test.js
-- **Keywords:** entitlement, enforce bundle, authorization, authorisation, operator match, resident-pro, BundleEntitlementError
+- **Keywords:** entitlement, enforce bundle, authorization, authorisation, operator match, resident-tax-agent, BundleEntitlementError
 - **Related:** BILL-01, BILL-03, BILL-35
 
 #### BILL-05 Reconcile bundle capacity counters
@@ -1939,11 +1939,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-22 Check diya-gl retention entitlement
 
 - **Use when:** code must decide whether a caller's books get resident or sandbox retention.
-- **Does:** The diyaGlEntitlement.js entitlementFor function decides retention tier. An active unexpired resident bundle gives resident retention for the caller's own books. A practice's active resident-pro subscription plus a matching client row gives resident retention for a client-scoped request.
+- **Does:** The diyaGlEntitlement.js entitlementFor function decides retention tier. An active unexpired resident-pro bundle, or a bundle that includes it, gives resident retention for the caller's own books. A practice's active resident-tax-agent subscription plus a matching client row gives resident retention for a client-scoped request.
 - **Run:** `import { entitlementFor } from "app/services/diyaGlEntitlement.js"`
 - **Entry:** `app/services/diyaGlEntitlement.js:entitlementFor`
 - **Files:** app/services/diyaGlEntitlement.js, app/unit-tests/services/diyaGlEntitlement.test.js, behaviour-tests/diyaGlStorage.behaviour.test.js, app/system-tests/diyaGlStorage.system.test.js
-- **Keywords:** diya-gl, retention, entitlement, resident tier, sandbox tier, resident-pro, entitlementFor
+- **Keywords:** diya-gl, retention, entitlement, resident tier, sandbox tier, resident-pro, resident-tax-agent, entitlementFor
 - **Related:** BILL-17, BILL-21
 
 #### BILL-23 Store diya-gl books in S3
@@ -2075,7 +2075,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Run:** `import { hasTokensForActivity, consumeTokenForActivity, chargeTokenOnSuccess } from "app/services/tokenEnforcement.js"`
 - **Entry:** `app/services/tokenEnforcement.js:hasTokensForActivity`; `app/services/tokenEnforcement.js:consumeTokenForActivity`
 - **Files:** app/services/tokenEnforcement.js, app/unit-tests/services/tokenEnforcement.test.js, app/unit-tests/services/tokenEnforcement.consumption.test.js, app/system-tests/tokenConsumption.system.test.js, behaviour-tests/tokenEnforcement.behaviour.test.js, web/public/widgets/submission-cost.js, web/browser-tests/submissionCost.browser.test.js, app/unit-tests/data/dynamoDbBundleRepository.tokenEvent.test.js
-- **Keywords:** token, enforce tokens, consume token, unlimited sentinel, hasTokensForActivity, resident-pro licence
+- **Keywords:** token, enforce tokens, consume token, unlimited sentinel, hasTokensForActivity, resident-tax-agent licence
 - **Related:** BILL-04, BILL-06, BILL-37
 
 #### BILL-34 Prefetch and retry a Cognito token refresh
@@ -2678,7 +2678,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** runner.js applies numbered migration scripts under scripts/migrations/. Each script exports an up() function and a phase, pre-deploy or post-deploy. Applied migrations are tracked in the bundles table; migrations 005 and 006 renamed qualifiers.sandbox to qualifiers.synthetic across a deploy boundary.
 - **Run:** `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=<all|pre-deploy|post-deploy> -f dry-run=<true|false>`
 - **Entry:** `scripts/migrations/runner.js:runMigrations`
-- **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
+- **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, scripts/migrations/007-resident-to-resident-pro.js, scripts/migrations/008-delete-resident-pro-without-expiry.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
 - **Keywords:** data migration, migration runner, pre-deploy, post-deploy, bundles table, dry run, schema change
 - **Related:** OPS-09
 
@@ -8209,8 +8209,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - required status checks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - required vars: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - resident tier: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
-- resident-pro: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
-- resident-pro licence: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- resident-pro: [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
+- resident-tax-agent: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
+- resident-tax-agent licence: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - resolution: [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets)
 - resource manager: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - resource name: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)

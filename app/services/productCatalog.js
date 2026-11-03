@@ -70,7 +70,7 @@ export function getCatalogBundleById(catalog, bundleId) {
 }
 
 // A bundle's tokensGranted carries this sentinel instead of a number for an unlimited grant
-// (the resident-pro practice licence): exempt from token counting rather than a large numeric
+// (the resident-tax-agent practice licence): exempt from token counting rather than a large numeric
 // cap. Token enforcement (app/services/tokenEnforcement.js) and the subscription token refresh
 // (app/functions/billing/billingWebhookPost.js) both check this before touching the count.
 export const UNLIMITED_TOKENS_GRANTED = "unlimited";
@@ -128,9 +128,9 @@ export function getBundlePriceForInterval(bundle, interval) {
   return prices.find((p) => p.interval === interval) || null;
 }
 
-// A bundle is Stripe-priced when its prices table carries at least one row (resident-vat:
-// allocation "on-subscription" with one price; resident and resident-pro: "on-subscription"
-// with two prices, annual and monthly — all sell through Stripe Checkout).
+// A bundle is Stripe-priced when its prices table carries at least one row (resident-vat,
+// resident-ltd, resident-pro and resident-tax-agent: "on-subscription" with two prices, annual
+// and monthly - all sell through Stripe Checkout).
 export function getStripeSubscriptionBundles(catalog) {
   if (!catalog?.bundles) return [];
   return catalog.bundles.filter((b) => getBundlePrices(b).length > 0);

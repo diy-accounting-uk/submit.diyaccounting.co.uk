@@ -252,7 +252,7 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */
@@ -541,7 +541,7 @@ test("Click through: File an ITSA Quarterly Update filled from a dropped book", 
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
-  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   await initItsaBusinessDetails(page, screenshotPath);
