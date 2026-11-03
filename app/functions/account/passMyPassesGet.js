@@ -3,7 +3,7 @@
 
 // @capability BILL-09 List a user's issued passes
 // - **Use when:** a page must show up to 50 passes a caller has issued.
-// - **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and maps them to a public-safe shape. Each pass carries the figures item passFiguresPublish.js wrote for it, read by key, and the response carries a totals object; a count that could identify a person is null below three new accounts.
+// - **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and leaves out the ones their issuer deleted, and maps them to a public-safe shape. Each pass carries the figures item passFiguresPublish.js wrote for it, read by key, and the response carries a totals object; a count that could identify a person is null below three new accounts.
 // - **Run:** `GET /api/v1/pass/my-passes`
 // - **Entry:** `app/functions/account/passMyPassesGet.js:ingestHandler`
 // - **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/functions/passMyPassesGetFigures.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
@@ -113,10 +113,12 @@ export async function ingestHandler(event) {
   try {
     const result = await getPassesByIssuer(hashedSub, { limit });
 
-    const storedByCode = await getPassFigures(result.items.map((pass) => pass.code));
+    const liveItems = result.items.filter((pass) => !pass.deletedAt);
+
+    const storedByCode = await getPassFigures(liveItems.map((pass) => pass.code));
 
     // Map passes to safe public-facing format
-    const passes = result.items.map((pass) => ({
+    const passes = liveItems.map((pass) => ({
       code: pass.code,
       passTypeId: pass.passTypeId,
       bundleId: pass.bundleId,
@@ -137,7 +139,7 @@ export async function ingestHandler(event) {
       data: {
         passes,
         count: passes.length,
-        totals: toPassTotals(result.items, storedByCode),
+        totals: toPassTotals(liveItems, storedByCode),
       },
     });
   } catch (error) {

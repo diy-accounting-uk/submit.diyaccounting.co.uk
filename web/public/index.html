@@ -31,6 +31,29 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="./submit.css" />
+    <!-- submit.css names the fonts only through its imports, one round trip later. -->
+    <link rel="preload" href="./fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/atkinson-hyperlegible-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- The cookie banner, the largest paint on a first visit, waits for submit.js and every module it imports. -->
+    <link rel="modulepreload" href="./submit.js" />
+    <link rel="modulepreload" href="./lib/utils/jwt-utils.js" />
+    <link rel="modulepreload" href="./lib/utils/crypto-utils.js" />
+    <link rel="modulepreload" href="./lib/utils/storage-utils.js" />
+    <link rel="modulepreload" href="./lib/utils/dom-utils.js" />
+    <link rel="modulepreload" href="./lib/utils/correlation-utils.js" />
+    <link rel="modulepreload" href="./lib/services/viewer-settings.js" />
+    <link rel="modulepreload" href="./lib/utils/visitor-kind.js" />
+    <link rel="modulepreload" href="./lib/services/auth-service.js" />
+    <link rel="modulepreload" href="./lib/services/api-client.js" />
+    <link rel="modulepreload" href="./lib/services/hmrc-service.js" />
+    <link rel="modulepreload" href="./lib/services/catalog-service.js" />
+    <link rel="modulepreload" href="./lib/services/catalogue-aggregates.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-service.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-filing-service.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-confirmation-service.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-psc-verification-service.js" />
+    <link rel="modulepreload" href="./lib/services/hmrc-ct-return-service.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-error-messages.js" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />

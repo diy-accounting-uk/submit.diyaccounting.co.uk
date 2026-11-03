@@ -212,6 +212,9 @@
       'privacy.html">Privacy</a>' +
       '<a href="' +
       rootPrefix +
+      'security.html">Security</a>' +
+      '<a href="' +
+      rootPrefix +
       'terms.html">Terms</a>' +
       '<a href="' +
       rootPrefix +

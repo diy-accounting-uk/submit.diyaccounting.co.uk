@@ -1159,6 +1159,7 @@ async function fetchMyGeneratedPasses(append) {
 
     if (data.passes.length === 0 && !append) {
       __noGeneratedPasses = true;
+      document.getElementById("generatedPassesToolbar").hidden = true;
       renderGeneratedPassesEmptyText();
       loadMore.style.display = "none";
       return;
@@ -1166,6 +1167,8 @@ async function fetchMyGeneratedPasses(append) {
 
     __noGeneratedPasses = false;
     emptyMsg.style.display = "none";
+    document.getElementById("generatedPassesToolbar").hidden = false;
+    document.getElementById("passDeleteConfirm")?.remove();
 
     data.passes.forEach((pass) => {
       const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
@@ -1189,6 +1192,12 @@ async function fetchMyGeneratedPasses(append) {
         domEl(
           "div",
           { class: "bundle-row-line" },
+          domEl("input", {
+            "type": "checkbox",
+            "class": "pass-select",
+            "data-select-code": pass.code,
+            "aria-label": `Select pass ${pass.code}`,
+          }),
           domEl("span", { class: "pass-code" }, pass.code),
           domEl("span", { class: "status-tag" }, typeLabel),
         ),
@@ -1236,6 +1245,17 @@ async function fetchMyGeneratedPasses(append) {
                 "Release",
               )
             : null,
+          domEl(
+            "button",
+            {
+              "type": "button",
+              "class": "btn btn-small btn-danger-outline pass-delete",
+              "data-delete-code": pass.code,
+              "aria-label": `Delete pass ${pass.code}`,
+              "title": "Delete this pass",
+            },
+            trashIconEl(),
+          ),
         ),
       );
       list.appendChild(card);
@@ -1264,6 +1284,8 @@ async function fetchMyGeneratedPasses(append) {
 
     __myPassesNextPageKey = data.nextPageKey || null;
     loadMore.style.display = __myPassesNextPageKey ? "block" : "none";
+
+    updatePassSelection();
 
     if (!append) focusNewlyGeneratedPass();
   } catch (err) {
@@ -1316,6 +1338,127 @@ document.addEventListener("click", async (e) => {
   } catch (err) {
     btn.disabled = false;
     showStatus(`The pass was not released (${err.message})`, "error");
+  }
+});
+
+// Delete generated passes: one by its trash button, or every ticked pass, each after an in-page confirm.
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function trashIconEl() {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  for (const [name, value] of Object.entries({
+    "width": "18",
+    "height": "18",
+    "viewBox": "0 0 24 24",
+    "fill": "none",
+    "stroke": "currentColor",
+    "stroke-width": "2",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true",
+    "focusable": "false",
+  })) {
+    svg.setAttribute(name, value);
+  }
+  for (const d of ["M3 6h18", "M8 6V4h8v2", "M19 6l-1 14H6L5 6", "M10 11v6", "M14 11v6"]) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+  }
+  return svg;
+}
+
+const passCheckboxes = () => Array.from(document.querySelectorAll("#generatedPassesList .pass-select"));
+
+function updatePassSelection() {
+  const boxes = passCheckboxes();
+  const ticked = boxes.filter((box) => box.checked);
+  const selectAll = document.getElementById("selectAllPasses");
+  const deleteSelected = document.getElementById("deleteSelectedPassesBtn");
+  if (!selectAll || !deleteSelected) return;
+  selectAll.checked = boxes.length > 0 && ticked.length === boxes.length;
+  selectAll.indeterminate = ticked.length > 0 && ticked.length < boxes.length;
+  deleteSelected.disabled = ticked.length === 0;
+  deleteSelected.textContent = ticked.length > 0 ? `Delete selected (${ticked.length})` : "Delete selected";
+}
+
+function showPassDeleteConfirm(codes, anchor, placement) {
+  document.getElementById("passDeleteConfirm")?.remove();
+  const noun = codes.length === 1 ? `pass ${codes[0]}` : `${codes.length} passes`;
+  const panel = domEl(
+    "div",
+    { "id": "passDeleteConfirm", "class": "pass-delete-confirm", "role": "group", "aria-label": `Confirm delete of ${noun}` },
+    domEl(
+      "p",
+      { class: "pass-delete-confirm-text" },
+      `Delete ${noun}? ${codes.length === 1 ? "The link stops working at once." : "The links stop working at once."} Their figures stay in your totals.`,
+    ),
+    domEl(
+      "div",
+      { class: "bundle-row-line" },
+      domEl(
+        "button",
+        { "type": "button", "class": "btn btn-small btn-danger-outline pass-delete-confirm-yes", "data-pass-codes": codes.join(",") },
+        "Yes, delete",
+      ),
+      domEl("button", { type: "button", class: "btn btn-small btn-secondary pass-delete-confirm-keep" }, "Keep"),
+    ),
+  );
+  anchor.insertAdjacentElement(placement, panel);
+  panel.querySelector(".pass-delete-confirm-yes").focus();
+}
+
+async function deletePasses(codes) {
+  const yes = document.querySelector(".pass-delete-confirm-yes");
+  if (yes) yes.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/pass/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codes }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    const results = body.results || [];
+    const deleted = results.filter((result) => result.status === "deleted").length;
+    const skipped = results.length - deleted;
+    const skippedText = skipped > 0 ? `, ${skipped} not deleted (already deleted or not yours)` : "";
+    showStatus(`Deleted ${deleted} ${deleted === 1 ? "pass" : "passes"}${skippedText}`, deleted > 0 ? "success" : "warning");
+    document.getElementById("passDeleteConfirm")?.remove();
+    await fetchMyGeneratedPasses(false);
+  } catch (err) {
+    if (yes) yes.disabled = false;
+    showStatus(`The passes were not deleted (${err.message})`, "error");
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const trash = e.target.closest(".pass-delete");
+  if (trash) {
+    showPassDeleteConfirm([trash.getAttribute("data-delete-code")], trash.closest(".bundle-row"), "beforeend");
+    return;
+  }
+  if (e.target.closest("#deleteSelectedPassesBtn")) {
+    const codes = passCheckboxes()
+      .filter((box) => box.checked)
+      .map((box) => box.getAttribute("data-select-code"));
+    if (codes.length > 0) showPassDeleteConfirm(codes, document.getElementById("generatedPassesToolbar"), "afterend");
+    return;
+  }
+  if (e.target.closest(".pass-delete-confirm-keep")) {
+    document.getElementById("passDeleteConfirm")?.remove();
+    return;
+  }
+  const yes = e.target.closest(".pass-delete-confirm-yes");
+  if (yes) deletePasses(yes.getAttribute("data-pass-codes").split(","));
+});
+
+document.addEventListener("change", (e) => {
+  if (e.target.id === "selectAllPasses") {
+    for (const box of passCheckboxes()) box.checked = e.target.checked;
+    updatePassSelection();
+  } else if (e.target.closest(".pass-select")) {
+    updatePassSelection();
   }
 });
 

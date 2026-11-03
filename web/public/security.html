@@ -1,0 +1,190 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security statement – DIY Accounting Submit</title>
+    <meta
+      name="description"
+      content="How DIY Accounting Submit protects data in transit and at rest, handles sign-in and HMRC tokens, and tests its own security."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/security.html" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="./lib/analytics.js"></script>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="./submit.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>Security statement</h1>
+      <p class="legal-meta">Last updated: 3 November 2026</p>
+    </header>
+
+    <main id="mainContent" class="legal">
+      <section>
+        <p>
+          This page answers the security questions customers ask. Each statement below matches how the service is built and run. For how we
+          handle personal data, read the <a href="privacy.html">privacy notice</a>.
+        </p>
+      </section>
+
+      <section id="hosting">
+        <h2>Hosting</h2>
+        <p>The service runs on Amazon Web Services in the eu-west-2 (London) region. Customer data is stored in that region.</p>
+        <p>
+          The site is served through Amazon CloudFront, with a web application firewall (AWS WAF) in front of it. The firewall limits each
+          IP address to 2,000 requests in 5 minutes.
+        </p>
+      </section>
+
+      <section id="in-transit">
+        <h2>Encryption in transit</h2>
+        <ul>
+          <li>CloudFront redirects every HTTP request to HTTPS.</li>
+          <li>
+            Every response carries <code>Strict-Transport-Security</code> with a maximum age of 365 days that includes subdomains. A browser
+            that has visited once keeps using HTTPS.
+          </li>
+          <li>
+            Responses also carry a Content Security Policy, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options</code>,
+            <code>Referrer-Policy</code> and <code>Permissions-Policy</code> headers.
+          </li>
+        </ul>
+      </section>
+
+      <section id="at-rest">
+        <h2>Encryption and recovery at rest</h2>
+        <ul>
+          <li>Customer records are in Amazon DynamoDB tables. DynamoDB encrypts its tables at rest.</li>
+          <li>Point-in-time recovery is on for the DynamoDB tables.</li>
+          <li>
+            Scheduled backups keep daily copies for 35 days, weekly copies for 90 days and monthly copies for 365 days. A second AWS account
+            holds a copy of the backups in a vault with its own encryption key.
+          </li>
+          <li>
+            Receipts for submissions to HMRC are kept for seven years. HMRC requires you to keep tax records for that time. Other retention
+            periods are in the <a href="privacy.html">privacy notice</a>.
+          </li>
+          <li>The database stores a hashed form of your user identifier (HMAC-SHA256 with a secret salt), not the identifier itself.</li>
+        </ul>
+      </section>
+
+      <section id="sign-in">
+        <h2>Sign-in</h2>
+        <ul>
+          <li>Sign-in uses Amazon Cognito, with sign-in through your Google account.</li>
+          <li>
+            The sign-in flow uses an authorisation code with PKCE (code challenge method S256). The token endpoint of the service rejects a
+            request that has no code verifier.
+          </li>
+          <li>
+            Your browser keeps the Cognito tokens in local storage. The service has no cookie session. The API reads a bearer
+            <code>Authorization</code> header and reads no cookies, so another website cannot make your browser send a credential to it.
+          </li>
+          <li>The Content Security Policy limits the origins that can run script on the pages.</li>
+        </ul>
+      </section>
+
+      <section id="hmrc-access">
+        <h2>HMRC access and credentials</h2>
+        <ul>
+          <li>You connect to HMRC through HMRC's own OAuth 2.0 consent page. We never see or store your Government Gateway password.</li>
+          <li>
+            In the browser, the HMRC access token is kept in session storage, which the browser clears when you close the tab. The browser
+            sends it to the service as a bearer token for each HMRC call.
+          </li>
+          <li>
+            When an AI assistant connects to the service through the MCP interface, the service keeps the HMRC tokens for that grant sealed
+            with AES-256-GCM in a DynamoDB item that expires after 24 hours.
+          </li>
+          <li>The secrets that identify the service to HMRC are in AWS Secrets Manager. They are not in the source code.</li>
+        </ul>
+      </section>
+
+      <section id="testing">
+        <h2>Security testing</h2>
+        <p>Automated checks run on a schedule and on code changes.</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Check</th>
+              <th>What it covers</th>
+              <th>When it runs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://www.zaproxy.org/" target="_blank" rel="noopener">OWASP ZAP</a></td>
+              <td>Attacks the running site and reports weaknesses</td>
+              <td>Weekly compliance run</td>
+            </tr>
+            <tr>
+              <td><a href="https://codeql.github.com/" target="_blank" rel="noopener">CodeQL</a></td>
+              <td>Static analysis of the JavaScript source</td>
+              <td>Every push and pull request, and on a schedule</td>
+            </tr>
+            <tr>
+              <td>ESLint security rules</td>
+              <td>Static analysis for unsafe code patterns</td>
+              <td>Weekly compliance run</td>
+            </tr>
+            <tr>
+              <td>npm audit</td>
+              <td>Known vulnerabilities in dependencies</td>
+              <td>Weekly compliance run</td>
+            </tr>
+            <tr>
+              <td><a href="https://retirejs.github.io/retire.js/" target="_blank" rel="noopener">retire.js</a></td>
+              <td>Known vulnerabilities in browser libraries</td>
+              <td>Weekly compliance run</td>
+            </tr>
+            <tr>
+              <td>Dependabot</td>
+              <td>Update proposals for GitHub Actions, npm and Maven dependencies</td>
+              <td>On a schedule</td>
+            </tr>
+            <tr>
+              <td>Pa11y, axe-core and Lighthouse</td>
+              <td>Accessibility and page quality, described in the <a href="accessibility.html">accessibility statement</a></td>
+              <td>Weekly compliance run</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="report">
+        <h2>Report a vulnerability or an incident</h2>
+        <p>
+          Contact us through the details in our <a href="/.well-known/security.txt">security.txt</a> file, or write to
+          <a href="mailto:admin@diyaccounting.co.uk">admin@diyaccounting.co.uk</a>. The
+          <a href="privacy.html#security-incidents">privacy notice</a> says how we tell you and the regulator about a breach.
+        </p>
+      </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/stacked-table.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="./submit.js"></script>
+    <script src="./lib/request-cache.js"></script>
+    <script src="./lib/toml-parser.js"></script>
+    <script src="./widgets/entitlement-status.js"></script>
+    <script src="./widgets/auth-status.js"></script>
+    <script type="module" src="./widgets/view-source-link.js"></script>
+  </body>
+</html>

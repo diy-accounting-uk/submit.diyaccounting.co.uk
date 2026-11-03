@@ -161,3 +161,48 @@
   flex: 1 1 12em;
   min-width: 0;
 }
+
+.pass-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.pass-toolbar[hidden] {
+  display: none;
+}
+
+.pass-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+}
+
+.pass-select,
+.pass-select-all input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  flex: none;
+}
+
+.btn.pass-delete {
+  margin-left: auto;
+  min-width: 2.75rem;
+}
+
+.pass-delete-confirm {
+  margin: var(--space-3) 0 var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--c-error);
+  border-radius: var(--radius-control);
+  background: var(--c-error-tint);
+}
+
+.pass-delete-confirm-text {
+  margin: 0 0 var(--space-3);
+}
