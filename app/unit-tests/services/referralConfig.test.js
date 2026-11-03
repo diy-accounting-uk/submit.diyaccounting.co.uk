@@ -52,6 +52,25 @@ describe("services/referralConfig", () => {
     }
   });
 
+  test("an annualRateBps that is not a positive integer is refused and an absent one is accepted", () => {
+    for (const bad of [0, -1, 1.5, "25"]) {
+      const config = valid();
+      config.tiers[1].annualRateBps = bad;
+      expect(() => validateReferralConfig(config)).toThrow(/annualRateBps must be a positive integer/);
+    }
+    expect(() => validateReferralConfig(valid())).not.toThrow();
+  });
+
+  test("the real file gives the family, casual and creator tiers a 25 percent annual rate and the customer tier none", () => {
+    const config = loadReferralConfig();
+    expect(config.tiers.map((t) => [t.id, t.annualRateBps])).toEqual([
+      ["customer", undefined],
+      ["casual", 2500],
+      ["creator", 2500],
+      ["family", 2500],
+    ]);
+  });
+
   test("a credit tier without capCreditMonths is refused", () => {
     const config = valid();
     delete config.tiers[0].capCreditMonths;
