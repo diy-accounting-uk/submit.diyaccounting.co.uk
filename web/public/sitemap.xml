@@ -103,6 +103,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://submit.diyaccounting.co.uk/security.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://submit.diyaccounting.co.uk/terms.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
