@@ -209,6 +209,11 @@ public class CompaniesHouseStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String hmrcReceiptCertificateSha256() {
+            return "";
+        }
+
         String companiesHousePresenterIdArn();
 
         String companiesHousePresenterCodeArn();
@@ -1017,6 +1022,10 @@ public class CompaniesHouseStack extends Stack {
         if (StringUtils.isNotBlank(props.hmrcCtVendorId())) {
             hmrcCtReturnPostLambdaEnv.with("HMRC_CT_VENDOR_ID", props.hmrcCtVendorId());
         }
+        hmrcCtReturnPostLambdaEnv.with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        if (StringUtils.isNotBlank(props.hmrcReceiptCertificateSha256())) {
+            hmrcCtReturnPostLambdaEnv.with("HMRC_RECEIPT_CERTIFICATE_SHA256", props.hmrcReceiptCertificateSha256());
+        }
         var hmrcCtReturnPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -1049,6 +1058,7 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.hmrcCtReturnPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        receiptsTable.grant(this.hmrcCtReturnPostLambda, "dynamodb:PutItem");
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.hmrcCtReturnPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
@@ -1057,6 +1067,9 @@ public class CompaniesHouseStack extends Stack {
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        if (StringUtils.isNotBlank(props.hmrcReceiptCertificateSha256())) {
+            hmrcCtReturnGetLambdaEnv.with("HMRC_RECEIPT_CERTIFICATE_SHA256", props.hmrcReceiptCertificateSha256());
+        }
         var hmrcCtReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()

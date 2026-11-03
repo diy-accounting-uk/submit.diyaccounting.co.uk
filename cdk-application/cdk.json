@@ -43,6 +43,7 @@
     "_comment_companiesHouseAccounts": "Accounts filing gateway config is per-environment, from .env.ci/.env.prod - these defaults stay blank",
     "companiesHouseXmlGatewayUri": "",
     "hmrcCtVendorId": "",
+    "hmrcReceiptCertificateSha256": "",
     "companiesHousePresenterIdArn": "",
     "companiesHousePresenterCodeArn": "",
     "companiesHouseCsFeeWaivedCompanyNumbers": "",
