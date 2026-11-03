@@ -24,7 +24,14 @@ class AccountStackTest {
     private static final String TEST_GITHUB_APP_INSTALLATION_ID = "78901234";
     private static final String EXPECTED_PRIVATE_KEY_SECRET_ID = "docs/submit/github/ops_app_private_key";
 
+    private static final String LIVE_STRIPE_KEY_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:live-key";
+    private static final String TEST_STRIPE_KEY_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-key";
+
     private static AccountStack synthAccountStack(String githubAppId) {
+        return synthAccountStack(githubAppId, null, null);
+    }
+
+    private static AccountStack synthAccountStack(String githubAppId, String stripeKeyArn, String stripeTestKeyArn) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -43,6 +50,8 @@ class AccountStackTest {
                 .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool")
                 .hmrcAgentAuthorisationBaseUri("https://test-api.service.hmrc.gov.uk")
                 .booksAllowedOrigins("https://ci.diya-gl.co.uk");
+        if (stripeKeyArn != null) builder.stripeSecretKeyArn(stripeKeyArn);
+        if (stripeTestKeyArn != null) builder.stripeTestSecretKeyArn(stripeTestKeyArn);
         if (githubAppId != null) {
             builder.githubAppId(githubAppId).githubAppInstallationId(TEST_GITHUB_APP_INSTALLATION_ID);
         }
@@ -74,6 +83,40 @@ class AccountStackTest {
                         + "-*"),
                 githubSecretResources,
                 "the support Lambda may read only the diya-ops App's private key");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void commissionCreditPayoutLambdaHasBothStripeKeyArnsAndMayReadBoth() {
+        AccountStack stack = synthAccountStack(null, LIVE_STRIPE_KEY_ARN, TEST_STRIPE_KEY_ARN);
+        Template template = Template.fromStack(stack);
+
+        var functions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("commission-credit-payout"))
+                .toList();
+        assertEquals(1, functions.size(), "expected exactly one commission-credit-payout Lambda");
+        var environment = (Map<String, Object>) functions.get(0).get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        assertEquals(LIVE_STRIPE_KEY_ARN, variables.get("STRIPE_SECRET_KEY_ARN"));
+        assertEquals(TEST_STRIPE_KEY_ARN, variables.get("STRIPE_TEST_SECRET_KEY_ARN"));
+
+        var roleRef = (Map<String, Object>) functions.get(0).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var secretReads = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Action")).contains("secretsmanager:GetSecretValue"))
+                .map(statement -> statement.get("Resource"))
+                .flatMap(resource -> resource instanceof List<?> list
+                        ? list.stream().map(String::valueOf)
+                        : Stream.of(String.valueOf(resource)))
+                .toList();
+        assertEquals(List.of(LIVE_STRIPE_KEY_ARN + "-*", TEST_STRIPE_KEY_ARN + "-*"), secretReads);
     }
 
     @Test

@@ -280,6 +280,20 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     expect(reasonsOf(j1c)).toEqual(expect.arrayContaining(["card_referrer", "card_shared", "early_cancel"]));
   });
 
+  await test.step("Credit payout puts J1a month 1 on R1's Stripe test customer balance", async () => {
+    const bundle = await sessions[R1].bundle();
+    expect(bundle.stripeCustomerId, "R1 customer id").toBeTruthy();
+    const before = (await stripe.customers.retrieve(bundle.stripeCustomerId)).balance;
+    const result = await invokeLambda(`${deploymentName}-app-commission-credit-payout`, {});
+    expect(result).toMatchObject({ status: "ran", failed: 0 });
+    expect(result.paid).toBeGreaterThanOrEqual(1);
+    const [paid] = await lines(J1A);
+    expect(paid.state).toBe("paid");
+    expect(paid.balanceTransactionId, "J1a month 1 balance transaction").toBeTruthy();
+    const after = (await stripe.customers.retrieve(bundle.stripeCustomerId)).balance;
+    expect(after).toBe(before - paid.amountPence);
+  });
+
   await test.step("Cancel R1's own subscription, then release after J1a month 2", async () => {
     const bundle = await sessions[R1].bundle();
     const referrerSubscriptionId = bundle.stripeSubscriptionId;

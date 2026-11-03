@@ -21,7 +21,7 @@ vi.mock("@app/data/dynamoDbCommissionRepository.js", () => ({
 const mockGetBundles = vi.fn();
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({ getBundlesByHashedSub: (...a) => mockGetBundles(...a) }));
 
-const config = { ledger: { payCredit: true } };
+const config = { ledger: { payCredit: true, testJourneyEnvironments: ["ci"] } };
 vi.mock("@app/services/referralConfig.js", () => ({ loadReferralConfig: () => config }));
 
 const stripe = {
@@ -63,6 +63,9 @@ describe("functions/account/commissionCreditPayout", () => {
     for (const fn of Object.values(repo)) fn.mockReset();
     for (const fn of Object.values(stripe.customers)) fn.mockReset();
     config.ledger.payCredit = true;
+    config.ledger.testJourneyEnvironments = ["ci"];
+    process.env.ENVIRONMENT_NAME = "ci";
+    process.env.STRIPE_TEST_SECRET_KEY_ARN = "arn:aws:secretsmanager:eu-west-2:1:secret:test-key";
     mockGetStripeClient.mockReset().mockResolvedValue(stripe);
     mockGetBundles.mockReset().mockResolvedValue([liveBundle]);
     repo.queryPayablePointers.mockResolvedValue([pointer()]);
@@ -105,13 +108,49 @@ describe("functions/account/commissionCreditPayout", () => {
     expect(stripe.customers.createBalanceTransaction).not.toHaveBeenCalled();
   });
 
-  test("skips cash lines and test-mode lines", async () => {
+  test("skips cash lines and test-mode lines in an environment not listed", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
     repo.queryPayablePointers.mockResolvedValue([pointer("line#in_1"), pointer("line#in_2")]);
     repo.getLineByKey.mockResolvedValueOnce(line({ form: "cash" })).mockResolvedValueOnce(line({ sk: "line#in_2", livemode: false }));
     const summary = await handler();
     expect(summary).toMatchObject({ considered: 2, skipped: 2, paid: 0 });
     expect(stripe.customers.createBalanceTransaction).not.toHaveBeenCalled();
     expect(repo.markLinePaid).not.toHaveBeenCalled();
+  });
+
+  test("a live line uses the live client in every environment", async () => {
+    await handler();
+    expect(mockGetStripeClient).toHaveBeenCalledTimes(1);
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: false });
+    process.env.ENVIRONMENT_NAME = "prod";
+    mockGetStripeClient.mockClear();
+    await handler();
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: false });
+  });
+
+  test("a test-mode line in a listed environment is paid with the test client", async () => {
+    repo.getLineByKey.mockResolvedValue(line({ livemode: false }));
+    const summary = await handler();
+    expect(summary).toMatchObject({ paid: 1, skipped: 0 });
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: true });
+    expect(mockGetStripeClient).not.toHaveBeenCalledWith({ test: false });
+    expect(stripe.customers.createBalanceTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  test("live and test-mode lines in one run each use their own client", async () => {
+    repo.queryPayablePointers.mockResolvedValue([pointer("line#in_1"), pointer("line#in_2")]);
+    repo.getLineByKey.mockResolvedValueOnce(line()).mockResolvedValueOnce(line({ sk: "line#in_2", livemode: false }));
+    expect(await handler()).toMatchObject({ paid: 2 });
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: false });
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: true });
+  });
+
+  test("a test-mode line is skipped in a listed environment with no test key, so it never reaches the live account", async () => {
+    delete process.env.STRIPE_TEST_SECRET_KEY_ARN;
+    delete process.env.STRIPE_TEST_SECRET_KEY;
+    repo.getLineByKey.mockResolvedValue(line({ livemode: false }));
+    expect(await handler()).toMatchObject({ skipped: 1, paid: 0 });
+    expect(stripe.customers.createBalanceTransaction).not.toHaveBeenCalled();
   });
 
   test("a line that is no longer payable is skipped", async () => {

@@ -1847,9 +1847,7 @@ public class AccountStack extends Stack {
                 .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
-        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
-            commissionCreditPayoutLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
-        }
+        withStripeSecretArns(commissionCreditPayoutLambdaEnv, props);
         var commissionCreditPayoutLambdaConstruct = new Lambda(
                 this,
                 LambdaProps.builder()
@@ -1877,16 +1875,7 @@ public class AccountStack extends Stack {
                 "dynamodb:UpdateItem",
                 "dynamodb:DeleteItem");
         bundlesTable.grant(this.commissionCreditPayoutLambda, "dynamodb:Query");
-        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
-            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
-                    ? props.stripeSecretKeyArn()
-                    : props.stripeSecretKeyArn() + "-*";
-            this.commissionCreditPayoutLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(stripeSecretArnWithWildcard))
-                    .build());
-        }
+        grantStripeSecrets(this.commissionCreditPayoutLambda, props);
 
         this.commissionCreditPayoutSchedule = Rule.Builder.create(
                         this, props.sharedNames().account.commissionCreditPayoutLambdaFunctionName + "-Schedule")
