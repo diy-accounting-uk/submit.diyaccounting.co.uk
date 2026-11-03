@@ -3,12 +3,15 @@
 
 // app/unit-tests/functions/hmrcCtReturnPost.test.js
 import { describe, test, beforeAll, beforeEach, afterEach, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+
+const packageJson = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
 
 const mockSend = vi.fn();
 
@@ -160,6 +163,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(xml).toContain(`<SenderID>${USER_ID}</SenderID>`);
     expect(xml).toContain(`<Value>${PASSWORD}</Value>`);
     expect(xml).toContain("<GatewayTest>1</GatewayTest>");
+    expect(xml).toContain(`<Version>${packageJson.version}</Version>`);
     expect(xml).toMatch(/<IRmark Type="generic">[A-Za-z0-9+/]{27}=<\/IRmark>/);
 
     const lib = await import("@aws-sdk/lib-dynamodb");

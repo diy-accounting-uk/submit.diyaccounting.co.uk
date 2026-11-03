@@ -14,14 +14,10 @@
 // app/lib/buildFraudHeaders.js
 
 import { createLogger } from "./logger.js";
-import { readFileSync } from "fs";
 import { createHash } from "crypto";
 import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 import { fetchWithTimeout } from "./httpFetch.js";
-
-const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
-// Strip npm scope prefix (e.g., @org/package -> package) for cleaner HMRC product name
-const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1] : rawPackageName;
+import { PACKAGE_NAME as packageName, PRODUCT_VERSION as packageVersion } from "./productVersion.js";
 
 const logger = createLogger({ source: "app/lib/buildFraudHeaders.js" });
 

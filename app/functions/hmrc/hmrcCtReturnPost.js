@@ -20,6 +20,7 @@ import {
   http502BadGatewayResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
+import { PRODUCT_VERSION } from "../../lib/productVersion.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -44,7 +45,6 @@ import { readJointFilingId, jointFilingFields, amendedFields, sanitiseFormReques
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
 const PRODUCT_NAME = "DIY Accounting Submit";
-const PRODUCT_VERSION = "1.0";
 const DEFAULT_POLL_INTERVAL_SECONDS = 10;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
