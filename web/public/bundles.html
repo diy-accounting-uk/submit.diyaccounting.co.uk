@@ -81,6 +81,13 @@
         <div id="myGeneratedPasses" class="bundles-section" hidden>
           <h2>My generated passes</h2>
           <p class="hint">Passes you have generated for others to use.</p>
+          <div id="generatedPassesToolbar" class="pass-toolbar" hidden>
+            <label class="pass-select-all">
+              <input type="checkbox" id="selectAllPasses" />
+              Select all
+            </label>
+            <button type="button" id="deleteSelectedPassesBtn" class="btn btn-small btn-danger-outline" disabled>Delete selected</button>
+          </div>
           <div id="generatedPassesList"></div>
           <p id="generatedPassesEmpty" class="hint" hidden></p>
           <div id="generatedPassesLoadMore" hidden>

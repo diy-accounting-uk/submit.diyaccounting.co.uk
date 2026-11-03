@@ -168,6 +168,45 @@ export async function revokePass(code, now) {
 }
 
 /**
+ * Delete a pass its issuer generated: set deletedAt and expire it at once, so a later redemption
+ * is refused as expired. The pass record stays for the figures and the redemption history.
+ * Returns the updated pass, or null when the pass does not exist, was issued by someone else, or
+ * is already deleted.
+ */
+export async function expirePassAsDeleted(code, issuedBy, now) {
+  logger.info({ message: `expirePassAsDeleted [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]`, code });
+
+  try {
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+          UpdateExpression: "SET deletedAt = :now, validUntil = :now, updatedAt = :now",
+          ConditionExpression: "attribute_exists(pk) AND issuedBy = :issuedBy AND attribute_not_exists(deletedAt)",
+          ExpressionAttributeValues: {
+            ":now": now,
+            ":issuedBy": issuedBy,
+          },
+          ReturnValues: "ALL_NEW",
+        }),
+    );
+
+    logger.info({ message: "Pass deleted in DynamoDB", pk: `pass#${code}` });
+    return result.Attributes;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Pass deletion condition failed (not found, not the issuer's, or already deleted)", code });
+      return null;
+    }
+    logger.error({ message: "Error deleting pass in DynamoDB", error: error.message });
+    throw error;
+  }
+}
+
+/**
  * Set a pass's reviewLimit, or remove it when reviewLimit is null. Returns the updated pass, or
  * null when the pass does not exist.
  */

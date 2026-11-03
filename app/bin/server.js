@@ -128,6 +128,7 @@ import { apiEndpoint as affiliateApplicationGetApiEndpoint } from "../functions/
 import { apiEndpoint as passHeldGetApiEndpoint } from "../functions/account/passHeldGet.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
+import { apiEndpoint as passDeletePostApiEndpoint } from "../functions/account/passDeletePost.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
 import { apiEndpoint as sessionSignOutPostApiEndpoint } from "../functions/account/sessionSignOutPost.js";
@@ -438,6 +439,7 @@ affiliateApplicationGetApiEndpoint(app);
 passHeldGetApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
+passDeletePostApiEndpoint(app);
 interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
 sessionSignOutPostApiEndpoint(app);
