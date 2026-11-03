@@ -132,6 +132,73 @@ describe("pollCtSubmission", () => {
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.statusCode).toBe("ACCEPT");
       expect(deleteCalls()).toHaveLength(3);
+      expect(data.deleteOwed).toBeUndefined();
+    });
+
+    describe("after three failed attempts", () => {
+      const OWED = { pollUrl: "https://example.test/poll", gatewayTest: true, messageClass: "HMRC-CT-CT600" };
+
+      function completedWithDeleteOwed(status = "completed") {
+        return {
+          status,
+          data: {
+            kind: CT_RETURN_KIND,
+            statusCode: status === "completed" ? "ACCEPT" : "REJECT",
+            correlationId: CORRELATION_ID,
+            deleteOwed: OWED,
+          },
+        };
+      }
+
+      test("stores a delete owed mark with what the next delete needs", async () => {
+        mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValue(deleteError("1000"));
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        const owedWrite = mockPutAsyncRequest.mock.calls.find((call) => call[3].deleteOwed);
+        expect(owedWrite[2]).toBe("completed");
+        expect(owedWrite[3].deleteOwed).toEqual(OWED);
+      });
+
+      test("stores the mark on a rejected request too", async () => {
+        mockPost.mockResolvedValueOnce(gatewayError("3000")).mockResolvedValue(deleteError("1000"));
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        const owedWrite = mockPutAsyncRequest.mock.calls.find((call) => call[3].deleteOwed);
+        expect(owedWrite[2]).toBe("failed");
+      });
+
+      test("the next status read sends the delete, answers without the mark, and clears it on DELETE_RESPONSE", async () => {
+        mockGetAsyncRequest.mockResolvedValue(completedWithDeleteOwed());
+        mockPost.mockResolvedValueOnce(deleteResponse());
+        const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        expect(deleteCalls()).toHaveLength(1);
+        expect(deleteCalls()[0][0]).toBe(OWED.pollUrl);
+        expect(data.deleteOwed).toBeUndefined();
+        expect(data.statusCode).toBe("ACCEPT");
+        expect(mockPutAsyncRequest).toHaveBeenCalledTimes(1);
+        expect(mockPutAsyncRequest.mock.calls[0][3].deleteOwed).toBeUndefined();
+      });
+
+      test("error 2000 on the next read clears the mark", async () => {
+        mockGetAsyncRequest.mockResolvedValue(completedWithDeleteOwed("failed"));
+        mockPost.mockResolvedValueOnce(deleteError("2000"));
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        expect(mockPutAsyncRequest.mock.calls[0][2]).toBe("failed");
+        expect(mockPutAsyncRequest.mock.calls[0][3].deleteOwed).toBeUndefined();
+      });
+
+      test("keeps the mark when the delete still fails, and sends it again on the read after", async () => {
+        mockGetAsyncRequest.mockResolvedValue(completedWithDeleteOwed());
+        mockPost.mockResolvedValue(deleteError("1000"));
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        expect(mockPutAsyncRequest.mock.calls[0][3].deleteOwed).toEqual(OWED);
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        expect(deleteCalls()).toHaveLength(6);
+      });
+
+      test("a completed request with no mark sends no delete", async () => {
+        mockGetAsyncRequest.mockResolvedValue({ status: "completed", data: { kind: CT_RETURN_KIND, statusCode: "ACCEPT" } });
+        await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+        expect(mockPost).not.toHaveBeenCalled();
+      });
     });
   });
 

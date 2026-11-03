@@ -46,7 +46,8 @@ const DELETE_ATTEMPTS = 3;
 const DELETE_RECORD_NOT_FOUND = "2000";
 
 // A DELETE_REQUEST answered with a SUBMISSION_ERROR is sent again; error 2000 means the copy is
-// already gone, so the sending stops. An undeleted response expires at HMRC.
+// already gone, so the sending stops. Resolves true when the copy is gone, and false when every
+// attempt of this call failed, so the caller marks the delete as owed and sends it on a later read.
 async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders }) {
   const deleteRequest = buildDeleteRequest({ correlationId, gatewayTest, messageClass });
   for (let attempt = 1; attempt <= DELETE_ATTEMPTS; attempt++) {
@@ -54,8 +55,8 @@ async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest
       const response = await postToTransactionEngine(pollUrl, deleteRequest, extraHeaders);
       if (response.ok === false) throw new Error(`HTTP ${response.status}`);
       const parsed = parseTransactionEngineResponse(response.data);
-      if (parsed.qualifier !== "error") return;
-      if (parsed.errors.some((error) => error.number === DELETE_RECORD_NOT_FOUND)) return;
+      if (parsed.qualifier !== "error") return true;
+      if (parsed.errors.some((error) => error.number === DELETE_RECORD_NOT_FOUND)) return true;
       logger.warn({
         message: "Transaction Engine delete request answered with an error",
         correlationId,
@@ -66,7 +67,43 @@ async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest
       logger.warn({ message: "Transaction Engine delete request failed", correlationId, attempt, error: error.message });
     }
   }
-  logger.warn({ message: "Transaction Engine delete request not completed; the copy expires at HMRC", correlationId });
+  logger.warn({
+    message: "Transaction Engine delete request not completed; it is owed and goes out on the next status read",
+    correlationId,
+  });
+  return false;
+}
+
+// Sends the delete for a settled request. When it does not complete, the request keeps a
+// deleteOwed mark with what the next delete needs; when it does, the mark is cleared.
+async function settleDelete({
+  userSub,
+  correlationId,
+  status,
+  data,
+  pollUrl,
+  gatewayTest,
+  messageClass,
+  extraHeaders,
+  asyncRequestsTableName,
+}) {
+  const deleted = await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });
+  const owed = !deleted;
+  if (owed || data.deleteOwed) {
+    const settled = withoutDeleteOwed(data);
+    await putAsyncRequest(
+      userSub,
+      correlationId,
+      status,
+      owed ? { ...settled, deleteOwed: { pollUrl, gatewayTest, messageClass } } : settled,
+      asyncRequestsTableName,
+    );
+  }
+}
+
+// What the caller sees of a settled request: the delete bookkeeping stays server side.
+function withoutDeleteOwed({ deleteOwed: _owed, ...data }) {
+  return data;
 }
 
 const DATA_REQUEST_ATTEMPTS = 2;
@@ -162,7 +199,22 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     return { notFound: true, correlationId };
   }
   if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
-    return { data: persistedRequest.data };
+    const settled = persistedRequest.data;
+    if (settled.deleteOwed) {
+      const { pollUrl, gatewayTest, messageClass } = settled.deleteOwed;
+      await settleDelete({
+        userSub,
+        correlationId,
+        status: persistedRequest.status,
+        data: settled,
+        pollUrl,
+        gatewayTest,
+        messageClass,
+        extraHeaders: govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
+        asyncRequestsTableName,
+      });
+    }
+    return { data: withoutDeleteOwed(settled) };
   }
 
   const pending = persistedRequest.data;
@@ -195,7 +247,17 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
       businessErrors: parsed.businessErrors,
     };
     await putAsyncRequest(userSub, correlationId, "failed", failure, asyncRequestsTableName);
-    await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });
+    await settleDelete({
+      userSub,
+      correlationId,
+      status: "failed",
+      data: failure,
+      pollUrl,
+      gatewayTest,
+      messageClass,
+      extraHeaders,
+      asyncRequestsTableName,
+    });
     return { data: failure };
   }
 
@@ -246,7 +308,17 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   await putReceipt(userSub, receiptId, receipt, resolveActorClass());
   const data = { ...accepted, receiptId };
   await putAsyncRequest(userSub, correlationId, "completed", data, asyncRequestsTableName);
-  await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });
+  await settleDelete({
+    userSub,
+    correlationId,
+    status: "completed",
+    data,
+    pollUrl,
+    gatewayTest,
+    messageClass,
+    extraHeaders,
+    asyncRequestsTableName,
+  });
   await publishActivityEvent({
     event: "hmrc-ct-return-accepted",
     summary: "HMRC Company Tax Return accepted",
