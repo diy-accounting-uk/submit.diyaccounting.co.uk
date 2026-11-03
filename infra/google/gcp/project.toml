@@ -47,6 +47,11 @@ services = [
   # delegated support-gmail-draft service account; without the Gmail API it answers 403.
   "gmail.googleapis.com",
   "sts.googleapis.com",
+  # Search Console, Site Verification and CrUX APIs for the SEO checks (SEO1a). Without them each call
+  # answers 403 SERVICE_DISABLED.
+  "searchconsole.googleapis.com",
+  "siteverification.googleapis.com",
+  "chromeuxreport.googleapis.com",
 ]
 
 # Google APIs enabled on the project that hosts the sign-in OAuth client (its number leads the
