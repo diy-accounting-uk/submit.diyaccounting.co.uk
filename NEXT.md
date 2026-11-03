@@ -42,6 +42,8 @@ Facts the commission rows share (COMM1, CT4b, CT4c, OAFF7; the ci design is `PLA
 
 ## In flight
 
+- [ ] **Wave xenon (batch `claude/xenon-dashboard`, worktree `.claude/worktrees/xenon`).** DASH21 then DASH20 (`claude/xenon-dash-tabs`), CT4c (`claude/xenon-credit-payout`), CS-P1 (`claude/xenon-own-presenter`). The rows stay below until their PR merges. **Owner**: Claude Code.
+
 ## Machine-only
 
 - [ ] **DASH19. Prove the AWS console captures and judge them (`PLAN_AWS_CONSOLE_CAPTURE.md` steps 14 and 15).** The build is on prod (PR #667, 9b2b0ddca, prod-9b2b0dd), and the gateway and spreadsheets read roles are on their prod stacks (www #45 and #47, spreadsheets #188). Prod captures once a day, on the 02:15 UTC run of `prod-env-analytics-nightly`. Remainder: after that run, read its execution (the `console capture publish` step, or its recorded failure), `snapshots/prod/console/index.json` in `prod-env-analytics-lake-972912397388` (read-only, every item an image or a table, the two sibling RUM items included), and `GET /api/v1/operator/console-image?id=<id>` as signed out (401 JSON), a signed-in customer (403 JSON) and an operator (200 PNG); then the `visual-review` skill on the dashboard's AWS section screenshots. A failed item is fixed on a PR. **Source**: `PLAN_AWS_CONSOLE_CAPTURE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files, or the fix's.
