@@ -12,6 +12,7 @@ async function loginWithCognito() {
   localStorage.removeItem("userInfo");
   sessionStorage.removeItem("cognito_oauth_state");
   sessionStorage.removeItem("cognito_oauth_nonce");
+  sessionStorage.removeItem("cognito_pkce_verifier");
 
   // Generate cryptographically secure state parameter for CSRF protection
   // Uses crypto.randomUUID() or crypto.getRandomValues() via crypto-utils.js
@@ -23,9 +24,14 @@ async function loginWithCognito() {
   const nonce = window.generateRandomState ? window.generateRandomState() : crypto.randomUUID().replace(/-/g, "");
   sessionStorage.setItem("cognito_oauth_nonce", nonce);
 
+  // PKCE: the verifier stays in this tab until the callback sends it with the code
+  const codeVerifier = window.generateCodeVerifier();
+  sessionStorage.setItem("cognito_pkce_verifier", codeVerifier);
+
   let authResponseUrl;
   try {
-    authResponseUrl = await window.authUrlBuilder.buildCognitoAuthUrl(state, nonce);
+    const codeChallenge = await window.computeCodeChallenge(codeVerifier);
+    authResponseUrl = await window.authUrlBuilder.buildCognitoAuthUrl(state, nonce, codeChallenge);
   } catch (err) {
     console.error("Failed to build Cognito auth URL:", err);
     if (typeof window.showStatus === "function") {

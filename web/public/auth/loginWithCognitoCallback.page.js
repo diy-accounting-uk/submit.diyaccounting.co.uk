@@ -51,12 +51,23 @@ async function handleAuthCallback(code, state) {
     // Clear state immediately after validation (single use)
     sessionStorage.removeItem("cognito_oauth_state");
 
+    // PKCE: the verifier saved before the redirect proves this tab started the sign-in
+    const codeVerifier = sessionStorage.getItem("cognito_pkce_verifier");
+    sessionStorage.removeItem("cognito_pkce_verifier");
+    if (!codeVerifier) {
+      console.error("PKCE code verifier missing from sessionStorage");
+      showStatus("Security validation failed. Please try logging in again.", "error");
+      hideLoading();
+      return;
+    }
+
     showStatus("Exchanging authorization code for access token...", "info");
 
     const url = `/api/v1/cognito/token`;
     const body = {
       grant_type: "authorization_code",
       code: code,
+      code_verifier: codeVerifier,
     };
     console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

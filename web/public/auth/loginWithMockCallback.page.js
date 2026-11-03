@@ -28,6 +28,14 @@ function base64UrlDecode(str) {
 async function handleAuthCallback(code, state) {
   try {
     showLoading();
+    const codeVerifier = sessionStorage.getItem("cognito_pkce_verifier");
+    sessionStorage.removeItem("cognito_pkce_verifier");
+    if (!codeVerifier) {
+      console.error("PKCE code verifier missing from sessionStorage");
+      showStatus("Security validation failed. Please try logging in again.", "error");
+      hideLoading();
+      return;
+    }
     showStatus("Exchanging authorization code for access token...", "info");
     // Exchange authorization code for tokens via same-origin proxy to avoid PNA/CORS
     const tokenResponse = await fetch(`/api/v1/mock/token`, {
@@ -39,6 +47,7 @@ async function handleAuthCallback(code, state) {
         grant_type: "authorization_code",
         client_id: "debugger",
         code: code,
+        code_verifier: codeVerifier,
         // Use the current origin so it matches the authorize redirect_uri
         redirect_uri: `${window.location.origin}/auth/loginWithMockCallback.html`,
       }),
