@@ -52,6 +52,36 @@ async function viewExistingPass(code) {
   document.getElementById("passResult").style.display = "block";
 }
 
+// The earnings sentence for the caller's tier, from the terms the application route answers.
+function describeTerms(terms) {
+  const percent = (bps) => `${bps / 100}%`;
+  const months = terms.months === 1 ? "first month" : `first ${terms.months} months`;
+  const payout = {
+    "customer-balance": "as credit on your subscription",
+    "connect": "as cash paid to your bank through Stripe",
+    "bank-transfer": "as cash paid by bank transfer",
+  }[terms.payout];
+  let text = `When someone who joined through your link subscribes, you earn ${percent(terms.rateBps)} of what they pay for their ${months}, ${payout}.`;
+  if (terms.annualRateBps) {
+    text += ` If they pay for a year, you earn ${percent(terms.annualRateBps)} of that payment, once.`;
+  }
+  return text;
+}
+
+async function showTerms() {
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/affiliate/application");
+    if (!res.ok) return;
+    const { terms } = await res.json();
+    if (!terms) return;
+    const element = document.getElementById("passTerms");
+    element.textContent = describeTerms(terms);
+    element.hidden = false;
+  } catch (err) {
+    console.warn("Failed to fetch referral terms:", err);
+  }
+}
+
 // --- Initialise page
 async function initPage() {
   checkAuthStatus();
@@ -70,6 +100,8 @@ async function initPage() {
     document.getElementById("generatePassBtn").disabled = true;
     return;
   }
+
+  showTerms();
 
   // Fetch token info
   try {
