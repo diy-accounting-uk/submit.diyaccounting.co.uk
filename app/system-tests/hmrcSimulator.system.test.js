@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { startSimulator, resetState } from "../http-simulator/index.js";
+import { createHash } from "node:crypto";
 
 describe("HTTP Simulator", () => {
   let simulator;
@@ -47,6 +48,10 @@ describe("HTTP Simulator", () => {
   });
 
   describe("Local OAuth (Mock OAuth2 Server replacement)", () => {
+    // The simulator requires PKCE (S256), as the Cognito sign-in does.
+    const PKCE_VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    const PKCE_CHALLENGE = createHash("sha256").update(PKCE_VERIFIER).digest("base64url");
+
     it("should return login form for GET /oauth/authorize with client_id=debugger", async () => {
       const url = new URL(`${baseUrl}/oauth/authorize`);
       url.searchParams.set("response_type", "code");
@@ -54,6 +59,8 @@ describe("HTTP Simulator", () => {
       url.searchParams.set("redirect_uri", "http://localhost:3000/callback");
       url.searchParams.set("scope", "openid somescope");
       url.searchParams.set("state", "test-state");
+      url.searchParams.set("code_challenge", PKCE_CHALLENGE);
+      url.searchParams.set("code_challenge_method", "S256");
 
       const response = await fetch(url.toString());
       expect(response.status).toBe(200);
@@ -72,6 +79,7 @@ describe("HTTP Simulator", () => {
         client_id: "debugger",
         username: "testuser",
         claims: JSON.stringify({ email: "test@example.com" }),
+        code_challenge: PKCE_CHALLENGE,
       });
 
       const authResponse = await fetch(`${baseUrl}/oauth/authorize`, {
@@ -92,6 +100,7 @@ describe("HTTP Simulator", () => {
         code,
         client_id: "debugger",
         redirect_uri: "http://localhost:3000/callback",
+        code_verifier: PKCE_VERIFIER,
       });
 
       const tokenResponse = await fetch(`${baseUrl}/default/token`, {
