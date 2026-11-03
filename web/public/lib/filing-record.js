@@ -42,9 +42,19 @@ export function textLine(label, value) {
   return `<tr><td class="label">${escapeRecordText(label)}</td><td class="label text-value">${escapeRecordText(text)}</td></tr>`;
 }
 
-// The filed document in a frame of its own, so that its styles and the page's cannot touch.
-function documentFrame(title, document) {
-  return `<iframe class="filed-document" title="${escapeRecordAttribute(title)}" sandbox="allow-same-origin" srcdoc="${escapeRecordAttribute(document)}"></iframe>`;
+function base64OfText(text) {
+  let binary = "";
+  for (const byte of new TextEncoder().encode(text)) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+// The filed document in a frame of its own, so that its styles and the page's cannot touch, and a
+// link that saves the exact bytes Submit built. HMRC's guidance says never to save iXBRL from a browser.
+function documentFrame(title, document, fileName) {
+  const frame = `<iframe class="filed-document" title="${escapeRecordAttribute(title)}" sandbox="allow-same-origin" srcdoc="${escapeRecordAttribute(document)}"></iframe>`;
+  const href = `data:application/xhtml+xml;charset=utf-8;base64,${base64OfText(document)}`;
+  const download = `<p class="filed-document-download"><a download="${escapeRecordAttribute(fileName)}" href="${href}">Download ${escapeRecordText(title.toLowerCase())}</a>. Save this file with your records. Do not save the document from your browser's page, because a browser changes it.</p>`;
+  return frame + download;
 }
 
 function missingDocumentRecord(name) {
@@ -87,7 +97,7 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
       explanation:
         "This is the document Companies House received, exactly as we sent it. It holds your balance sheet and the notes you filed. Companies House puts filed accounts on the public register, where anyone can read them.",
       recordHtml: receipt.filedDocument
-        ? documentFrame("The accounts as they were filed", receipt.filedDocument)
+        ? documentFrame("The accounts as they were filed", receipt.filedDocument, `accounts-${receipt.submissionNumber ?? "filed"}.xhtml`)
         : missingDocumentRecord("The accounts as filed"),
     },
     {
@@ -185,14 +195,22 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
       heading: "The tax computations as filed",
       explanation: "This is the document that works out your taxable profit. HMRC reads it with the return.",
       recordHtml: filed?.computationsIxbrl
-        ? documentFrame("The tax computations as they were filed", filed.computationsIxbrl)
+        ? documentFrame(
+            "The tax computations as they were filed",
+            filed.computationsIxbrl,
+            `computations-${receipt.correlationId ?? "filed"}.xhtml`,
+          )
         : missingDocumentRecord("The tax computations as filed"),
     },
     {
       heading: "The accounts filed with the return",
       explanation: "HMRC takes the company's accounts with the return. They are the same figures you filed at Companies House.",
       recordHtml: filed?.accountsIxbrl
-        ? documentFrame("The accounts as they were filed with the return", filed.accountsIxbrl)
+        ? documentFrame(
+            "The accounts as they were filed with the return",
+            filed.accountsIxbrl,
+            `accounts-${receipt.correlationId ?? "filed"}.xhtml`,
+          )
         : missingDocumentRecord("The accounts filed with the return"),
     },
     {
