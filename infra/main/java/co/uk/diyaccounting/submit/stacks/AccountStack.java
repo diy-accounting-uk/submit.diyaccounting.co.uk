@@ -155,6 +155,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passMyPassesGetLambdaProps;
     public Function passMyPassesGetLambda;
     public ILogGroup passMyPassesGetLambdaLogGroup;
+    public AbstractApiLambdaProps passDeletePostLambdaProps;
+    public Function passDeletePostLambda;
+    public ILogGroup passDeletePostLambdaLogGroup;
 
     public Function bundleCapacityReconcileLambda;
     public ILogGroup bundleCapacityReconcileLambdaLogGroup;
@@ -1735,6 +1738,45 @@ public class AccountStack extends Stack {
                 this.passMyPassesGetLambda.getNode().getId());
 
         // ============================================================================
+        // Pass Delete POST Lambda (JWT auth - delete the user's own generated passes)
+        // ============================================================================
+        var passDeletePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passDeletePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passDeletePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passDeletePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passDeletePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passDeletePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passDeletePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passDeletePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passDeletePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passDeletePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passDeletePostLambdaCustomAuthorizer)
+                        .environment(passDeletePostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passDeletePostApiLambda);
+        this.passDeletePostLambdaProps = passDeletePostApiLambda.apiProps;
+        this.passDeletePostLambda = passDeletePostApiLambda.ingestLambda;
+        this.passDeletePostLambdaLogGroup = passDeletePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passDeletePostLambdaProps);
+        // Deleting a pass is one conditional update by key, and a failed condition reads the pass
+        // to tell an already deleted pass from a missing one.
+        passesTable.grant(this.passDeletePostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.passDeletePostLambda, region, account, props.envName());
+        infof(
+                "Created Pass Delete POST Lambda %s",
+                this.passDeletePostLambda.getNode().getId());
+
+        // ============================================================================
         // Bundle Capacity Reconciliation Lambda (EventBridge scheduled, every 5 minutes)
         // ============================================================================
         var reconcileLambdaEnv = new PopulatedMap<String, String>()
@@ -2108,6 +2150,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
+        cfnOutput(this, "PassDeletePostLambdaArn", this.passDeletePostLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
         cfnOutput(this, "SessionBeaconPostLambdaArn", this.sessionBeaconPostLambda.getFunctionArn());
         cfnOutput(this, "SessionSignOutPostLambdaArn", this.sessionSignOutPostLambda.getFunctionArn());

@@ -39,6 +39,15 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
+async function publishRefusal({ reason, code, passTypeId, userSub }) {
+  await publishActivityEvent({
+    event: "pass-redeem-refused",
+    summary: "Pass redemption refused: " + reason,
+    userSub,
+    detail: { reason, code, passTypeId },
+  });
+}
+
 export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME"]);
@@ -82,6 +91,7 @@ export async function ingestHandler(event) {
     const isReferral = Boolean(storedPass?.issuedBy);
     if (isReferral) {
       if (storedPass.issuedBy === hashedSub) {
+        await publishRefusal({ reason: "own_pass", code, passTypeId: storedPass.passTypeId, userSub: userId });
         return http403ForbiddenResponse({
           request,
           headers: responseHeaders,
@@ -90,6 +100,7 @@ export async function ingestHandler(event) {
         });
       }
       if (await getRedemption(code, hashedSub)) {
+        await publishRefusal({ reason: "already_redeemed", code, passTypeId: storedPass.passTypeId, userSub: userId });
         return http409ConflictResponse({
           request,
           headers: responseHeaders,
@@ -99,6 +110,7 @@ export async function ingestHandler(event) {
       }
       referralClaimed = await claimReferral(hashedSub, code);
       if (!referralClaimed) {
+        await publishRefusal({ reason: "referral_already_used", code, passTypeId: storedPass.passTypeId, userSub: userId });
         return http409ConflictResponse({
           request,
           headers: responseHeaders,
@@ -112,6 +124,12 @@ export async function ingestHandler(event) {
 
     if (!result.valid) {
       if (referralClaimed) await releaseReferral(hashedSub);
+      await publishRefusal({
+        reason: result.reason,
+        code,
+        passTypeId: result.pass?.passTypeId ?? storedPass?.passTypeId,
+        userSub: userId,
+      });
       return http200OkResponse({
         request,
         headers: responseHeaders,

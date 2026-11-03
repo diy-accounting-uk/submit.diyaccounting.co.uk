@@ -241,6 +241,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-07 -->
 <!-- capability BILL-08 -->
 <!-- capability BILL-09 -->
+<!-- capability BILL-56 -->
 <!-- capability BILL-45 -->
 <!-- capability BILL-48 -->
 <!-- capability BILL-49 -->

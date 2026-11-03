@@ -154,4 +154,36 @@ describe("passMyPassesGet", () => {
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
   });
+
+  test("leaves out a pass its issuer deleted", async () => {
+    mockGetPassesByIssuer.mockResolvedValue({
+      items: [
+        {
+          pk: "pass#kept",
+          code: "kept",
+          passTypeId: "digital-pass",
+          bundleId: "day-guest",
+          validFrom: "2026-01-01T00:00:00.000Z",
+          useCount: 0,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          pk: "pass#gone",
+          code: "gone",
+          passTypeId: "digital-pass",
+          bundleId: "day-guest",
+          validFrom: "2026-01-01T00:00:00.000Z",
+          useCount: 0,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          deletedAt: "2026-02-01T00:00:00.000Z",
+        },
+      ],
+    });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, null, { method: "GET" }));
+
+    const body = JSON.parse(result.body);
+    expect(body.passes.map((pass) => pass.code)).toEqual(["kept"]);
+    expect(body.count).toBe(1);
+  });
 });

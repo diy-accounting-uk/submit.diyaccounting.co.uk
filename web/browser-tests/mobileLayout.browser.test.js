@@ -84,7 +84,15 @@ async function hasRealHorizontalScroll(page) {
 }
 
 const MOBILE_WIDTHS = [375, 414];
-const PAGES = ["index.html", "bundles.html", "privacy.html", "terms.html", "accessibility.html", "hmrc/vat/vatObligations.html"];
+const PAGES = [
+  "index.html",
+  "bundles.html",
+  "privacy.html",
+  "terms.html",
+  "accessibility.html",
+  "security.html",
+  "hmrc/vat/vatObligations.html",
+];
 
 test.describe("Mobile layout - no page-level horizontal scroll", () => {
   for (const width of MOBILE_WIDTHS) {
@@ -319,6 +327,7 @@ test.describe("Wide tables read at 390px and 1280px without sideways scroll", ()
     "rates.html",
     "privacy.html",
     "accessibility.html",
+    "security.html",
     "usage.html",
     "practice.html",
     "mtd-calendar.html",

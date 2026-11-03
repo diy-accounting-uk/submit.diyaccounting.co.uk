@@ -135,6 +135,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass: use when an operator or admin must create a pass of any catalogue type with no token charge.
     - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity: use when a pass code must be checked before login, without consuming a use.
     - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes: use when a page must show up to 50 passes a caller has issued.
+    - [BILL-56](#bill-56-delete-generated-passes) Delete generated passes: use when a user removes passes they generated from the My generated passes list.
     - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review: use when an operator must let a digital pass that reached its review limit be used again.
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
@@ -1630,7 +1631,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1706,6 +1707,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass
 - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity
 - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes
+- [BILL-56](#bill-56-delete-generated-passes) Delete generated passes
 - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review
 - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
 - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
@@ -1747,12 +1749,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-09 List a user's issued passes
 
 - **Use when:** a page must show up to 50 passes a caller has issued.
-- **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and maps them to a public-safe shape. Each pass carries the figures item passFiguresPublish.js wrote for it, read by key, and the response carries a totals object; a count that could identify a person is null below three new accounts.
+- **Does:** The passMyPassesGet.js ingestHandler returns up to 50 passes the caller's hashed sub issued. It reads them via dynamoDbPassRepository.getPassesByIssuer and leaves out the ones their issuer deleted, and maps them to a public-safe shape. Each pass carries the figures item passFiguresPublish.js wrote for it, read by key, and the response carries a totals object; a count that could identify a person is null below three new accounts.
 - **Run:** `GET /api/v1/pass/my-passes`
 - **Entry:** `app/functions/account/passMyPassesGet.js:ingestHandler`
 - **Files:** app/functions/account/passMyPassesGet.js, app/unit-tests/functions/passMyPassesGet.test.js, app/unit-tests/functions/passMyPassesGetFigures.test.js, app/unit-tests/data/dynamoDbPassRepository.getPassesByIssuer.test.js
 - **Keywords:** pass, my passes, issued passes, list passes, getPassesByIssuer
 - **Related:** BILL-06, BILL-07
+
+#### BILL-56 Delete generated passes
+
+- **Use when:** a user removes passes they generated from the My generated passes list.
+- **Does:** The passDeletePost.js ingestHandler takes 1 to 100 pass codes and, for each pass the caller's hashed sub issued, sets deletedAt and expires the pass at once through dynamoDbPassRepository.expirePassAsDeleted. It answers deleted, not_found_or_not_yours or already_deleted per code. passMyPassesGet.js leaves deleted passes out; a later redemption is refused as expired.
+- **Run:** `POST /api/v1/pass/delete` with body `{ "codes": ["..."] }`
+- **Entry:** `app/functions/account/passDeletePost.js:ingestHandler`
+- **Files:** app/functions/account/passDeletePost.js, app/unit-tests/functions/passDeletePost.test.js, app/unit-tests/data/dynamoDbPassRepository.expirePassAsDeleted.test.js
+- **Keywords:** pass, delete pass, remove pass, expire pass, soft delete
+- **Related:** BILL-09, BILL-10
 
 #### BILL-45 Release a pass held for review
 
@@ -2511,7 +2523,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-143 Remove unlisted pages from the published sitemap
 
 - **Use when:** a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
-- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list. deploy.yml, deploy-app.yml and deploy-app.js run it.
+- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It adds a lastmod to each entry from the last commit that changed the page's file, and leaves it out when the checkout is shallow. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list and no lastmod. deploy.yml, deploy-app.yml and deploy-app.js run it.
 - **Run:** `node scripts/publish-sitemap.mjs <web-root> <environment-name>`
 - **Entry:** `scripts/publish-sitemap.mjs:filterSitemap`
 - **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
@@ -6981,6 +6993,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
 - delete packages: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- delete pass: [BILL-56](#bill-56-delete-generated-passes)
 - delete stacks: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - delete tax data: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
@@ -7205,6 +7218,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expected clicks: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - expected values: [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - experiment log: [SITE-21](#site-21-log-growth-experiments)
+- expire pass: [BILL-56](#bill-56-delete-generated-passes)
 - expire records: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - expire-sandbox: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - expire-sandbox lifecycle: [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -7925,7 +7939,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
-- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-56](#bill-56-delete-generated-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -8185,6 +8199,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remedy budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
+- remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - render: [CH-07](#ch-07-render-micro-entity-accounts-for-review)
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
@@ -8428,6 +8443,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sns findings topic: [OPS-117](#ops-117-provision-the-observability-stack)
 - sns notification: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans), [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - social images: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- soft delete: [BILL-56](#bill-56-delete-generated-passes)
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)

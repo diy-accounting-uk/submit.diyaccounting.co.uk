@@ -3,7 +3,7 @@
 
 // web/browser-tests/legalPages.browser.test.js
 //
-// The three legal pages show their last-updated date in en-GB words and pass the reader-view check.
+// The legal pages show their last-updated date in en-GB words and pass the reader-view check.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -50,6 +50,7 @@ const legalPages = [
   ["privacy.html", "3 November 2026"],
   ["terms.html", "31 October 2026"],
   ["accessibility.html", "3 November 2026"],
+  ["security.html", "3 November 2026"],
 ];
 
 test.describe("Legal pages", () => {
@@ -66,4 +67,12 @@ test.describe("Legal pages", () => {
       }
     });
   }
+
+  test("the footer Security link reaches the security statement", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/privacy.html", { waitUntil: "domcontentloaded" });
+    await page.locator("footer a", { hasText: "Security" }).first().click();
+    await expect(page).toHaveURL(/\/security\.html$/);
+    await expect(page.locator("h1")).toHaveText("Security statement");
+  });
 });

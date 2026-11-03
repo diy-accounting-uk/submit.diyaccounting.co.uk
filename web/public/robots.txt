@@ -17,6 +17,7 @@ Allow: /policybee.html
 Allow: /mcp.html
 Allow: /videos.html
 Allow: /privacy.html
+Allow: /security.html
 Allow: /terms.html
 Allow: /accessibility.html
 
