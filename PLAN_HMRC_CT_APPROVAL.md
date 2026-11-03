@@ -453,6 +453,267 @@ Ranked, most harm to the reader first:
 
 The joint filing's design (DF1) and its rows (DF2a to DF2c) are in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
+### Design: supplementary page CT600A, loans to participators (CT8a)
+
+The design CT8b and CT8c build to (evidence row R52). Today `refuseOverdrawnDirectorsLoan`
+(`app/services/ct600Figures.js` line 495) refuses a return when the book's director's loan account
+is overdrawn at the period end. After CT8b, the return carries CT600A and the section 455 tax.
+
+**Sources** (read 2026-11-03):
+
+| Source | Use |
+|---|---|
+| RIM artefacts V1.994: `CT-2014-v1-994.xsd` type `CTA`, `CT-specDoc-v1-994.xml`, `CT-2014-v1-994.sch` (https://www.gov.uk/government/publications/corporation-tax-technical-specifications-ct600-rim-artefacts) | element names, order, types, rules |
+| RIM artefacts V1.995 (2026-09-25, not yet live) | the 35.75% rate from 6 April 2026 |
+| CT600A guidance, updated 8 April 2026 (https://www.gov.uk/guidance/supplementary-pages-ct600a-2015-version-3-close-company-loans-and-arrangements-to-confer-benefits-on-participators) | what each box holds; the field labels |
+| The Company Tax Return guide (https://www.gov.uk/guidance/the-company-tax-return-guide) | box 480 "Enter the figure you gave in box A80"; box 485 "Put an X in box 485 if you completed box A70" |
+| `ct600-v3.toml` in diya-gl 1.2.73 | box 510 is "total of boxes 475, 480, 500, 501, 502 and 505" |
+
+**TPVS proof of the shape (2026-11-03).** A hand-built body on the precision-code return
+(A15 12,000 at 33.75% = A20 4,050.00; £2,000 repaid on 2026-06-30, so A45 675.00; A80 and box 480
+3,375.00; boxes 510, 525, 528 and 600 each 3,375.00 higher) drew HMRC's success receipt. The same
+body at 35.75% drew errors 9466 and 9469. TPVS applies the rate rules.
+
+**The CT600A boxes (V1.994).** All amounts are positive. "Whole" is a whole-pound amount written
+`12000.00`.
+
+| Box | Element (under `LoansByCloseCompanies`) | Holds | Rule |
+|---|---|---|---|
+| A5 | `BeforeEndPeriod` (required) | `yes` or `no`: loans made in the period repaid, released or written off before its end | — |
+| A10A, A10B | `LoansInformation/Loan/Name`, `AmountOfLoan` (1 to 999) | participator (2 to 56 characters); amount still owed at the period end, whole, not 0 | 9400 |
+| A15 | `LoansInformation/TotalLoans` | sum of A10B | 9401 |
+| A20 | `LoansInformation/TaxChargeable` | A15 at the section 455 rate, to the penny, half up | 9466 to 9468 |
+| A25A to A25D | `ReliefEarlierThan/Loan/Name`, `AmountRepaid`, `AmountReleasedOrWrittenOff`, `Date` | per participator: totals repaid and released after the period end and no later than nine months after it; the date of the last one | 9404 to 9406, 9429, 9884 |
+| A30, A35, A40 | `ReliefEarlierThan/TotalAmountRepaid`, `TotalAmountReleasedOrWritten`, `TotalLoans` | sums; A40 = A30 + A35 | 9407 to 9409 |
+| A45 | `ReliefEarlierThan/ReliefDue` | A40 at the rate A20 used; no more than A20 | 9411, 9469 to 9471 |
+| A50A to A65 | `LoanLaterReliefNow/...` (same shape as part 2) | repayments more than nine months after the period end, when the relief is already due | 9419 to 9423, 9430, 9431 |
+| A70 | `LoanLaterReliefNow/ReliefDue` | A65 at the rate; no more than A20 | 9425, 9426, 9472 to 9474 |
+| A75 | `TotalLoansOutstanding` (optional, not 0) | A15 − A40 − A65 when above 0 | — |
+| A80 | `TaxPayable` (required) | A20 − (A45 + A70), or 0.00 when below 0 | 9427 |
+
+The CT600 boxes that change:
+
+| Box | Element | Value | Rule |
+|---|---|---|---|
+| 95 | `ReturnInfoSummary/SupplementaryPages/CT600A`, after `Computations` | `yes` when `LoansByCloseCompanies` is present | 9120, 9305 |
+| 480 | `CalculationOfTaxOutstandingOrOverpaid/LoansToParticipators`, after `NetCorporationTaxLiability` | A80, also when 0.00 | 9252, 9428 |
+| 485 | `CalculationOfTaxOutstandingOrOverpaid/CT600AreliefDue`, after 480 | `yes` when A70 is present | 9249 to 9251, 9426 |
+| 510 | `TaxChargeable` | 475 + 480 | — |
+| 525, 528, 600 | as today | worked from the new 510 | — |
+
+`LoansByCloseCompanies` goes after `Declaration` and before `AttachedFiles`. Its children are in
+the order of the table above.
+
+**Which boxes a micro or small company files.** All of part 1, A5, A75 and A80 when it lent in
+the period. Part 2 when a repayment, release or write-off came within nine months. Part 3 is
+rare: HMRC's guidance says it applies only "if the return is submitted after the date on which
+relief is due", which is nine months after the end of the accounting period of the repayment. A
+return filed on time never meets it. CT8b builds part 3 because it has the same shape as part 2.
+
+**The section 455 rate.** The rate for a loan is the dividend upper rate for the tax year in
+which the company made the loan. Tax year N (6 April N to 5 April N+1) takes
+`taxDataByYear[N].dividend_tax.higher_rate`, the `ltd-<N>.toml` file. A period that crosses
+6 April into a year with another rate asks for the part lent on or after that date. A20 is then
+the sum of the two parts, each at its rate, each rounded half up to the penny. That stays inside
+rules 9467 and 9468.
+
+Two facts about the rate data:
+
+- diya-gl 1.2.73's `ltd-2026.toml` and `ltd-2027.toml` hold `dividend_tax.higher_rate = 0.3375`
+  and `basic_rate = 0.0875`. The rates for 2026-27 are 35.75% and 10.75% (V1.995's schematron
+  has 0.3575 from 2026-04-06). The fix is in `../spreadsheets.diyaccounting.co.uk/app/data/`
+  and a diya-gl release.
+- V1.994, which TPVS and live run, knows no rate after 33.75% (from 2022-04-06). For a period
+  that ends on or after 6 April 2026 it demands 33.75% (rule 9466), so a correct 35.75% charge
+  draws 9466.
+
+So `ct600Figures.js` holds the rates HMRC's live rules check, as `S455_RATES_IN_RIM =
+[{ from: "2016-04-06", rate: 0.325 }, { from: "2022-04-06", rate: 0.3375 }]` with
+`S455_RATES_IN_RIM_UNTIL = "2026-04-05"`. Two refusals use it:
+
+- any part lent after `S455_RATES_IN_RIM_UNTIL`: "Loans made on or after 6 April 2026 owe section
+  455 tax at 35.75%. HMRC's online rules accept 33.75% until they move to RIM V1.995. This service
+  files the return when they do."
+- a rate from `taxDataByYear` that differs from the RIM's rate for the same date: "The tax data
+  and HMRC's rules disagree on the section 455 rate for <date>."
+
+When HMRC puts V1.995 live (R29), the move adds `{ from: "2026-04-06", rate: 0.3575 }` and clears
+the date. Open question 15 below offers the other choice.
+
+**Where each figure comes from.** The book holds the period only. Anything after the period end
+comes from the page.
+
+| Figure | Book path | Typed path |
+|---|---|---|
+| Overdrawn at the end (C) | `positive(-PubBalSht.E29)` (today's `directorsLoanOverdrawn`) | — |
+| Overdrawn at the start (O) | `positive(-OpenAccounts.E30)`, new `directorsLoanOpeningOverdrawn` | — |
+| A10A names | default the book's `directors` | typed |
+| A10B amounts | default one row, the first director, C − O when above 0 | typed |
+| Part lent on or after 6 April (a crossing period only) | typed | typed |
+| A5 | typed, default No | typed, default No |
+| Repayments, releases, write-offs after the period end, with dates | typed | typed |
+| The rate | `taxDataByYear` | `taxDataByYear` |
+
+C − O is a default only. The company decides which loans a repayment in the period cleared, so
+the customer can change the amounts.
+
+**The figures model.** `figures.loansToParticipators`, absent when the answer is No:
+
+```js
+{
+  releasedBeforeEnd: false,                       // A5
+  loans: [{ name, amount, lentFromRateChange }],  // part 1; lentFromRateChange only for a crossing period
+  repayments: [{ name, date, repaid, releasedOrWrittenOff }],
+}
+```
+
+`directorsLoanOverdrawn` and `directorsLoanOpeningOverdrawn` stay as book facts for the checks.
+`FIGURES_FIELDS` in `hmrcCtReturnRequest.js` gains `loansToParticipators` and
+`directorsLoanOpeningOverdrawn`.
+
+**What replaces the refusal.** `refuseOverdrawnDirectorsLoan` goes.
+`workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today })` runs after box 475
+and before box 510. It returns the `ct600a` object (the A boxes, the part 2 and part 3 rows
+grouped per participator, the rate rows) and sets boxes 95, 480 and 485. `deriveCt600FromFigures`
+returns `ct600a` beside `boxes`. `buildCt600IrEnvelope({ boxes, ct600a, ... })` writes it. The
+request's `directorsLoanOverdrawn` boolean and its refusal (`hmrcCtReturnRequest.js` line 186)
+go, and `ct600-fields.js` stops sending `directorsLoanOverdrawn: false`.
+
+Checks (problems the customer fixes):
+
+- a name of 2 to 56 characters in the CTexcludedChars set; an amount whole and above 0; at most
+  999 rows in each part;
+- book path: the part 1 total no more than C;
+- book path: the answer No while C is more than O ("The account is £C − O more overdrawn at the
+  end than at the start, so the company lent in the period");
+- a repayment row names a part 1 participator; at least one of its two amounts is above 0;
+- per participator, the repayments are no more than the loan;
+- `lentFromRateChange` no more than its row's amount.
+
+Refusals:
+
+- a repayment date on or before the period end (it belongs in the period's own book) or after
+  today (9884, 9431);
+- a part 3 row whose relief is not due yet. The relief is due nine months after the end of the
+  accounting period of the repayment. The page takes the later periods as 12 months each and
+  says so. The message: "Relief on this repayment is due on <date>. Claim it from HMRC after that
+  date."
+- the two rate refusals above.
+
+Each repayment row goes to part 2 when its date is no later than nine months after box 35 (rule
+9406: when box 35 is a month end, before the first day of the tenth month after it), otherwise to
+part 3 (rule 9430). The relief on a crossing period sets each repayment against the part lent
+before the rate change first.
+
+**The XML.** In `ct600Xml.js`:
+
+- `CT600_BOX_PATHS` gains 95, 480 and 485. A new `CT600A_BOX_PATHS` maps A5 to A80 to the paths
+  above (`/IRenvelope/CompanyTaxReturn/LoansByCloseCompanies/...`).
+- `buildCt600IrEnvelope` writes `SupplementaryPages`, the two `CalculationOfTax` elements and
+  `LoansByCloseCompanies`. Names are XML-escaped with `escapeXmlText`.
+- `ltdTaxDataForPeriodEnd` also loads the year before the period end's financial year. The rate
+  of a crossing period needs both.
+
+**The computations and the accounts.** The computations iXBRL does not change. Section 455 tax is
+not a trading adjustment and is not in computations format v1.1 sections 1 and 2. The accounts
+change (CT8c): today an overdrawn loan shows as a negative "amounts owed to directors" in the
+creditors after one year (`smallCompanyAccountsFromResults.js` line 81, `F31`). It is a debtor,
+and the Companies Act 2006 s413 note of advances to directors is required. CT8c is a separate
+build because it changes the Companies House accounts too, with their own visual review.
+
+**The page questions.** The Loans section of `fileCompanyTaxReturn.html`, in the field table
+`web/public/lib/ct600-fields.js`, HMRC's words from the guidance:
+
+| Field | Label | Shown when | Default |
+|---|---|---|---|
+| `loansMade` | "Did the company lend money to a director, shareholder or their associate in this period that was still owed at the end of it?" | always; the book path adds "Your book shows the director's loan account overdrawn by £C at the end and £O at the start." | Yes when C > O on the book path, else No |
+| `loans[i].name`, `loans[i].amount` | "Name of participator or associate" (A10A); "Amount still owed at the end of the period" (A10B) | Yes | the book's first director, C − O |
+| `loans[i].lentFromRateChange` | "Of this, the amount lent on or after 6 April <N>" | the period crosses a rate change | 0 |
+| `releasedBeforeEnd` | "Were any loans made in the period repaid, released or written off before the end of the period?" (A5) | Yes | No |
+| `repaidSince` | "Has any of it been repaid, released or written off since the end of the period?" | Yes | No |
+| `repayments[j]` | participator (a select of the part 1 names), "Date", "Amount repaid", "Amount released or written off" | `repaidSince` Yes | — |
+
+"Add another participator" and "Add another repayment" add rows; each row has "Remove". The hint
+under the repayments says: "Enter what was repaid up to today. You claim relief on later
+repayments from HMRC after they are made." The worked panel shows A15, the rate and A20, A40 and
+A45, A65 and A70, A80 as box 480, and the new 510, 525 and 600. The review shows a "Loans to
+participators (CT600A)" summary list with Change links, as the CT2 design sets. The help link for
+the section is the CT600A guidance URL above.
+
+**The fixture book.** `fixtures/diya-gl/precision-code-ltd-loan/` (`book.toml`, `lines.jsonl`): a
+copy of `precision-code-ltd` with one more journal. On 2025-10-15, account 2500 (Directors loan
+account) takes a £32,000 debit from account 1200 for the director, Carol Smith. The opening credit
+of £20,000 then leaves the account overdrawn by £12,000 at 2026-03-31 (`PubBalSht.E29` = −12000,
+`OpenAccounts.E30` = 20000). If the bank goes overdrawn, lower the amount and keep C − O > 0. A
+`loans.json` beside it holds the typed answers: part 1 as the book default, one repayment of
+£2,000 on 2026-06-30.
+
+**The TPVS proof.** `node scripts/hmrc-tpvs-ct600.js --book fixtures/diya-gl/precision-code-ltd-loan
+--loans fixtures/diya-gl/precision-code-ltd-loan/loans.json` exits 0 on HMRC's success receipt.
+The new `--loans` option reads the JSON into `figures.loansToParticipators`. The default run on
+`precision-code-ltd` still passes with no CT600A.
+
+**The unit tests.**
+
+| File | Cases |
+|---|---|
+| `app/unit-tests/services/ct600Figures.test.js` | A20 at 33.75% half up (12,000 → 4,050.00; 1,234 → 416.48); a crossing period's two parts; part 2 and part 3 routed by date, with the month-end rule; A45, A70 and A80 floored at 0; box 485 only with A70; 510 = 475 + 480 and 525, 528, 600 from it; every check and refusal above; the RIM-date refusal; the rate-mismatch refusal; C − O as the default from a book with E29 and E30 |
+| `app/unit-tests/services/ct600Xml.test.js` | every A box read back by `CT600A_BOX_PATHS`; element order against the XSD; no `LoansByCloseCompanies`, box 95 or 480 without loans; names escaped |
+| `app/unit-tests/services/hmrcCtReturnRequest.test.js`, `app/unit-tests/functions/hmrcCtReturnPreviewPost.test.js`, `hmrcCtReturnPost.test.js`, `app/test-helpers/ctReturnFixture.js` | the `loansToParticipators` figures go through; the old boolean and its refusal are gone; the reviewed-box check covers 480 |
+| `web/unit-tests/ct600-fields.test.js` | the new rows and their labels; the request carries `loansToParticipators` |
+| `web/browser-tests/fileCompanyTaxReturn.browser.test.js` | add and remove rows; the book default from the fixture zip; a repayment after today shows its error under its field |
+
+**The build.**
+
+| Build | Files | Size | Model | After |
+|---|---|---|---|---|
+| CT8c the overdrawn loan in the accounts | `app/services/smallCompanyAccountsFromResults.js`, `app/services/microEntityAccountsFromResults.js`, `app/services/smallCompanyAccountsIxbrl.js`, `app/services/microEntityAccountsIxbrl.js`, their unit tests | ~7 | Sonnet | — |
+| CT8b the CT600A | `ct600Figures.js`, `ct600Xml.js`, `hmrcCtReturnRequest.js`, `web/public/lib/ct600-fields.js`, `fileCompanyTaxReturn.page.js`, `fileCompanyTaxReturn.html`, `web/public/lib/books-bundle.js` (rebuilt), `scripts/hmrc-tpvs-ct600.js`, the fixture (3), the tests above (8), `REPORT_CAPABILITIES.md` | ~19 | Sonnet | CT8c for the TPVS proof only |
+
+`web/public/mtd-calendar.html` does not change: the CT600 stays preview on the same channels.
+
+**Open questions.**
+
+| # | Question | Answer from | Blocks |
+|---|---|---|---|
+| 15 | Loans lent on or after 6 April 2026 while HMRC runs RIM V1.994. (a) Refuse them until V1.995 is live (the CT8a design). (b) File at the 33.75% that V1.994 demands, and tell the customer that the return understates the tax by 2 points and needs an amendment later. Recommended: (a), because (b) files a figure known to be short | the operator | CT8b |
+
+**CT8c brief (Sonnet).** Show an overdrawn director's loan account as a debtor in the accounts.
+Today `smallCompanyAccountsFromResults.js` line 81 takes `amountsOwedToDirectors` from
+`PubBalSht.E29` and `creditorsAfterOneYear` from `F31`. When E29 is below 0, the debtors gain
+`amountsOwedByDirectors` (−E29) in `otherDebtors`, `amountsOwedToDirectors` is 0, and the
+creditors after one year lose E29. Do the same for the opening balance
+(`smallCompanyLinesFromOpeningBalance`, `directors_loan`) and in
+`microEntityAccountsFromResults.js`. Add the Companies Act 2006 s413 note "Advances and credits to
+directors" to both iXBRL builders when the debtor is above 0: the director's name, the balance at
+the start and the end, the amounts advanced and repaid in the year. Find the FRC 2026 concept
+names in the concepts fixture. Prove it: unit cases on `fixtures/diya-gl/precision-code-ltd-loan`
+(build it in this row if CT8b has not); the balance sheet balances; the concepts check passes;
+`node scripts/hmrc-tpvs-ct600.js` passes on `precision-code-ltd`. The accounts are a rendered
+document, so run the `visual-review` skill on the note's screenshots.
+
+**CT8b brief (Sonnet).** Build CT600A to this design. Branch from the batch that holds CT5 when
+it is not on `main`, because CT5 changed `ct600Xml.js` and the page. Run `npm run bundle` first.
+Steps:
+
+1. In `ct600Figures.js`, delete `refuseOverdrawnDirectorsLoan`. Add `S455_RATES_IN_RIM`,
+   `S455_RATES_IN_RIM_UNTIL` and `workLoansToParticipators` with the checks, the refusals and the
+   rounding above. Add `directorsLoanOpeningOverdrawn` to `ct600FiguresFromResults`. Make 510 =
+   475 + 480.
+2. In `ct600Xml.js`, write the elements in the schema order above. Add `CT600A_BOX_PATHS` and
+   boxes 95, 480 and 485. Load both financial years in `ltdTaxDataForPeriodEnd`.
+3. In `hmrcCtReturnRequest.js`, take `loansToParticipators`. Remove the `directorsLoanOverdrawn`
+   boolean.
+4. On the page and in `ct600-fields.js`, add the questions, the rows, the worked panel and the
+   review list above.
+5. Build the fixture and `loans.json`. Add `--loans` to `scripts/hmrc-tpvs-ct600.js`.
+6. Write the unit and browser tests above.
+7. Run `node scripts/hmrc-tpvs-ct600.js` with and without `--loans`. Both must exit 0. Wait a
+   minute between posts, because a burst of posts draws an Akamai 403.
+
+Done when the tests pass, both TPVS runs exit 0, and the `visual-review` skill passes the Loans
+section and its review at 1280 px and 390 px.
+
 ## Tasks
 
 The launch and approval steps are on the Board above.
@@ -466,3 +727,5 @@ The launch and approval steps are on the Board above.
 | CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | — | On main (PR #534, PR #535) |
 | CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the submit refuses figures that differ from the reviewed boxes | ~5 | Sonnet | — | On main (PR #535, PR #536) |
 | CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14); the page's entry path is `NEXT.md` CT3e | ~5 | Sonnet | — | On main (PR #536) |
+| CT8c | An overdrawn director's loan account as a debtor in the accounts, with the s413 note of advances to directors (the CT8a design) | ~7 | Sonnet | — | Open |
+| CT8b | Supplementary page CT600A: the figures, the page questions, the XML, boxes 95, 480 and 485, the fixture book and the TPVS proof (the CT8a design) | ~19 | Sonnet | CT8c for the TPVS proof; open question 15 | Open |
