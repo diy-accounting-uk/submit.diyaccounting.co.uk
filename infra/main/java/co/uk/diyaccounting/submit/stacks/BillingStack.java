@@ -157,6 +157,7 @@ public class BillingStack extends Stack {
         default String stripeTestPriceIdResidentProMonth() {
             return "";
         }
+
         @Value.Default
         default String stripePriceIdResidentVatYear() {
             return "";
@@ -261,7 +262,8 @@ public class BillingStack extends Stack {
         }
         if (props.stripePriceIdResidentVatMonth() != null
                 && !props.stripePriceIdResidentVatMonth().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT_MONTH", props.stripePriceIdResidentVatMonth());
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_VAT_MONTH", props.stripePriceIdResidentVatMonth());
         }
         if (props.stripeTestPriceIdResidentVatMonth() != null
                 && !props.stripeTestPriceIdResidentVatMonth().isBlank()) {
@@ -270,7 +272,8 @@ public class BillingStack extends Stack {
         }
         if (props.stripePriceIdResidentLtdYear() != null
                 && !props.stripePriceIdResidentLtdYear().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_LTD_YEAR", props.stripePriceIdResidentLtdYear());
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_LTD_YEAR", props.stripePriceIdResidentLtdYear());
         }
         if (props.stripeTestPriceIdResidentLtdYear() != null
                 && !props.stripeTestPriceIdResidentLtdYear().isBlank()) {
@@ -279,7 +282,8 @@ public class BillingStack extends Stack {
         }
         if (props.stripePriceIdResidentLtdMonth() != null
                 && !props.stripePriceIdResidentLtdMonth().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_LTD_MONTH", props.stripePriceIdResidentLtdMonth());
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_LTD_MONTH", props.stripePriceIdResidentLtdMonth());
         }
         if (props.stripeTestPriceIdResidentLtdMonth() != null
                 && !props.stripeTestPriceIdResidentLtdMonth().isBlank()) {

@@ -76,9 +76,15 @@ class SubmitApplicationBillingStackCdkTest extends SubmitApplicationCdkTestEnvir
 
     @Test
     @SetEnvironmentVariable.SetEnvironmentVariables({
-        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR", value = "price_live_resident_tax_agent_year"),
-        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH", value = "price_live_resident_tax_agent_month"),
-        @SetEnvironmentVariable(key = "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_YEAR", value = "price_test_resident_tax_agent_year"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR",
+                value = "price_live_resident_tax_agent_year"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH",
+                value = "price_live_resident_tax_agent_month"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_YEAR",
+                value = "price_test_resident_tax_agent_year"),
         @SetEnvironmentVariable(
                 key = "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_MONTH",
                 value = "price_test_resident_tax_agent_month"),
@@ -94,8 +100,10 @@ class SubmitApplicationBillingStackCdkTest extends SubmitApplicationCdkTestEnvir
         String checkoutFunctionName =
                 submitApplication.billingStack.billingCheckoutPostLambdaProps.ingestFunctionName();
 
-        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR");
-        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_YEAR");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_TAX_AGENT_MONTH");
         assertHasEnvironmentVariable(
                 billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_TAX_AGENT_YEAR");
         assertHasEnvironmentVariable(

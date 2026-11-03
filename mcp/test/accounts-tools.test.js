@@ -81,7 +81,7 @@ describe("derive_micro_entity_accounts", () => {
         expect(year.fixedAssets).toBe(Math.round(sheet.F6));
         expect(year.currentAssets).toBe(Math.round(sheet.E13));
         expect(year.creditorsWithinOneYear).toBe(Math.round(sheet.E20));
-        expect(year.creditorsAfterOneYear).toBe(Math.round(sheet.F31));
+        expect(year.creditorsAfterOneYear).toBe(Math.round(sheet.F31) || 0);
         expect(year.calledUpShareCapital).toBe(Math.round(sheet.F36));
         expect(Math.abs(year.capitalAndReserves - sheet.F39)).toBeLessThan(2.5);
         expect(Math.abs(year.profitAndLossAccount - (sheet.F39 - sheet.F36))).toBeLessThan(2.5);
@@ -189,6 +189,7 @@ describe("derive_micro_entity_accounts", () => {
     expect(lines).toEqual({
       fixedAssets: 750,
       currentAssets: 600,
+      amountsOwedByDirectors: 0,
       creditorsWithinOneYear: 200,
       creditorsAfterOneYear: 400,
       calledUpShareCapital: 1,

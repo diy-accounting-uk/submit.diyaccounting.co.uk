@@ -585,10 +585,12 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
-                        .stripePriceIdResidentVatMonth(stripePriceIdResidentVatMonth != null ? stripePriceIdResidentVatMonth : "")
+                        .stripePriceIdResidentVatMonth(
+                                stripePriceIdResidentVatMonth != null ? stripePriceIdResidentVatMonth : "")
                         .stripeTestPriceIdResidentVatMonth(
                                 stripeTestPriceIdResidentVatMonth != null ? stripeTestPriceIdResidentVatMonth : "")
-                        .stripePriceIdResidentLtdYear(stripePriceIdResidentLtdYear != null ? stripePriceIdResidentLtdYear : "")
+                        .stripePriceIdResidentLtdYear(
+                                stripePriceIdResidentLtdYear != null ? stripePriceIdResidentLtdYear : "")
                         .stripeTestPriceIdResidentLtdYear(
                                 stripeTestPriceIdResidentLtdYear != null ? stripeTestPriceIdResidentLtdYear : "")
                         .stripePriceIdResidentLtdMonth(
@@ -610,11 +612,15 @@ public class SubmitApplication {
                         .stripePriceIdResidentTaxAgentYear(
                                 stripePriceIdResidentTaxAgentYear != null ? stripePriceIdResidentTaxAgentYear : "")
                         .stripeTestPriceIdResidentTaxAgentYear(
-                                stripeTestPriceIdResidentTaxAgentYear != null ? stripeTestPriceIdResidentTaxAgentYear : "")
+                                stripeTestPriceIdResidentTaxAgentYear != null
+                                        ? stripeTestPriceIdResidentTaxAgentYear
+                                        : "")
                         .stripePriceIdResidentTaxAgentMonth(
                                 stripePriceIdResidentTaxAgentMonth != null ? stripePriceIdResidentTaxAgentMonth : "")
                         .stripeTestPriceIdResidentTaxAgentMonth(
-                                stripeTestPriceIdResidentTaxAgentMonth != null ? stripeTestPriceIdResidentTaxAgentMonth : "")
+                                stripeTestPriceIdResidentTaxAgentMonth != null
+                                        ? stripeTestPriceIdResidentTaxAgentMonth
+                                        : "")
                         .stripePriceIdFileConfirmationStatement(
                                 stripePriceIdFileConfirmationStatement != null
                                         ? stripePriceIdFileConfirmationStatement

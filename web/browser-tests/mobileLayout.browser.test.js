@@ -281,14 +281,8 @@ test.describe("Header account line truncates, the brand stays whole", () => {
 
 test.describe("Filing page status banners say what the reader can do", () => {
   const BANNERS = [
-    [
-      "companies-house/fileMicroEntityAccounts.html",
-      /You can build, preview and file these accounts against Companies House's test service/,
-    ],
-    [
-      "companies-house/fileSmallCompanyAccounts.html",
-      /You can build, preview and file these accounts against Companies House's test service/,
-    ],
+    ["companies-house/fileMicroEntityAccounts.html", /Accounts you file here reach the live Companies House register/],
+    ["companies-house/fileSmallCompanyAccounts.html", /Accounts you file here reach the live Companies House register/],
     ["companies-house/fileCompanyTaxReturn.html", /You can prepare the return and preview its boxes here/],
   ];
 
