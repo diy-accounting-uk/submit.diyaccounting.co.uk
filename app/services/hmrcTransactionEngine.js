@@ -239,6 +239,35 @@ export function parseTransactionEngineResponse(xml) {
   };
 }
 
+// Gateway errors that leave the submission standing: 1000 is an internal system failure and 2005 a
+// back end that has not acknowledged in time. The sequence continues with the same CorrelationID.
+const TRANSIENT_POLL_ERROR_NUMBERS = new Set(["1000", "2005"]);
+
+/**
+ * Whether a parsed poll answer is only a transient Gateway error, so the submission is still
+ * pending and the client polls again later.
+ * @param {{errors: {number: string|undefined}[], businessErrors: object[]}} parsed
+ * @returns {boolean}
+ */
+export function isTransientPollError(parsed) {
+  return (
+    parsed.errors.length > 0 &&
+    parsed.businessErrors.length === 0 &&
+    parsed.errors.every((error) => TRANSIENT_POLL_ERROR_NUMBERS.has(error.number))
+  );
+}
+
+/**
+ * Whether the DigestValue of HMRC's receipt (base64) is the IRmark that was sent (base32).
+ * @param {string} sentBase32
+ * @param {string|undefined} receiptBase64
+ * @returns {boolean}
+ */
+export function irmarkReceiptMatches(sentBase32, receiptBase64) {
+  if (!sentBase32 || !receiptBase64) return false;
+  return base32(Buffer.from(receiptBase64.trim(), "base64")) === sentBase32;
+}
+
 /**
  * The Transaction Engine submission URL: HMRC_TRANSACTION_ENGINE_URL when set (the simulator),
  * otherwise the External Test Service for a test message and the live service for any other.
@@ -263,7 +292,7 @@ export async function postToTransactionEngine(url, xml, extraHeaders = {}) {
   logger.info({ message: `POST ${url}`, url });
   const result = await fetchTextWithTimeout(
     url,
-    { method: "POST", headers: { "Content-Type": "text/xml; charset=UTF-8", ...extraHeaders }, body: xml },
+    { method: "POST", headers: { "Content-Type": "application/xml", ...extraHeaders }, body: xml },
     DEFAULT_TIMEOUTS.LONG,
   );
   logger.info({ message: `Response from POST ${url}`, url, status: result.status });

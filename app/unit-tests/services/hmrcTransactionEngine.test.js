@@ -3,7 +3,7 @@
 
 // app/unit-tests/services/hmrcTransactionEngine.test.js
 
-import { describe, test, expect, afterEach } from "vitest";
+import { describe, test, expect, afterEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -16,6 +16,9 @@ import {
   parseTransactionEngineResponse,
   getTransactionEngineSubmissionUrl,
   redactGatewayCredentials,
+  postToTransactionEngine,
+  isTransientPollError,
+  irmarkReceiptMatches,
   CT600_CLASS,
   CT600_TEST_IN_LIVE_CLASS,
   TRANSACTION_ENGINE_LIVE_SUBMISSION_URL,
@@ -260,5 +263,61 @@ describe("redactGatewayCredentials", () => {
 
   test("passes a non-string through", () => {
     expect(redactGatewayCredentials(undefined)).toBeUndefined();
+  });
+});
+
+describe("postToTransactionEngine", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("sends application/xml, the content type the protocol glossary names", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("<GovTalkMessage/>", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await postToTransactionEngine("https://example.test/submission", "<GovTalkMessage/>", { "Gov-Test-Scenario": "X" });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers).toMatchObject({ "Content-Type": "application/xml", "Gov-Test-Scenario": "X" });
+  });
+});
+
+describe("isTransientPollError", () => {
+  const gatewayError = (number) => ({ errors: [{ number }], businessErrors: [] });
+
+  test.each(["1000", "2005"])("treats Gateway error %s as transient", (number) => {
+    expect(isTransientPollError(gatewayError(number))).toBe(true);
+  });
+
+  test.each(["2000", "3000", "3001", "2021"])("treats error %s as final", (number) => {
+    expect(isTransientPollError(gatewayError(number))).toBe(false);
+  });
+
+  test("treats an error that carries business errors as final", () => {
+    expect(isTransientPollError({ errors: [{ number: "1000" }], businessErrors: [{ number: "2021" }] })).toBe(false);
+  });
+
+  test("treats no errors as not transient", () => {
+    expect(isTransientPollError({ errors: [], businessErrors: [] })).toBe(false);
+  });
+});
+
+describe("irmarkReceiptMatches", () => {
+  const irmark = computeIrmark(
+    buildCt600SubmissionRequest({
+      senderId: "u",
+      password: "p",
+      utr: "8596148860",
+      vendorId: "1000",
+      productName: "DIY Accounting Submit",
+      productVersion: "1.0",
+      irEnvelopeXml: IR_ENVELOPE,
+      gatewayTest: true,
+    }).xml,
+  );
+
+  test("matches the base64 receipt to the base32 IRmark that was sent", () => {
+    expect(irmarkReceiptMatches(irmark.base32, irmark.base64)).toBe(true);
+  });
+
+  test("does not match a different digest or a missing receipt", () => {
+    expect(irmarkReceiptMatches(irmark.base32, "AAAAAAAAAAAAAAAAAAAAAAAAAAA=")).toBe(false);
+    expect(irmarkReceiptMatches(irmark.base32, undefined)).toBe(false);
   });
 });

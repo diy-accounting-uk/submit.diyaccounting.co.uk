@@ -10,7 +10,8 @@
 //          receipt, or error 2021 when the IRmark does not match), or a DELETE_REQUEST, answered
 //          with a delete response.
 // A Gov-Test-Scenario header of CT600_REJECT_IRMARK on the submission makes its final response
-// error 2021.
+// error 2021. A scenario of CT600_TRANSIENT_POLL_ERROR makes the second poll answer Gateway error
+// 1000, after which the polls carry on as normal.
 // The response shapes copy what HMRC's Third Party Validation Service returned on 2026-10-05.
 
 import express from "express";
@@ -22,6 +23,7 @@ export const SUBMISSION_PATH = "/hmrc-transaction-engine/submission";
 export const POLL_PATH = "/hmrc-transaction-engine/poll";
 const POLL_INTERVAL_SECONDS = 1;
 export const REJECT_IRMARK_SCENARIO = "CT600_REJECT_IRMARK";
+export const TRANSIENT_POLL_ERROR_SCENARIO = "CT600_TRANSIENT_POLL_ERROR";
 
 const submissions = new Map();
 
@@ -108,6 +110,7 @@ export function apiEndpoint(app) {
       irmark,
       irmarkMatches: suppliedIrmark === irmark.base64 && req.get("Gov-Test-Scenario") !== REJECT_IRMARK_SCENARIO,
       polls: 0,
+      transientPollError: req.get("Gov-Test-Scenario") === TRANSIENT_POLL_ERROR_SCENARIO,
       receivedAt: new Date().toISOString().replace("Z", ""),
     });
     return sendXml(
@@ -149,6 +152,9 @@ export function apiEndpoint(app) {
           responseEndPoint: POLL_PATH,
         }),
       );
+    }
+    if (submission.transientPollError && submission.polls === 2) {
+      return sendXml(res, fatalError("System failure. The submission of this document has failed due to an internal system error.", 1000));
     }
     return sendXml(
       res,

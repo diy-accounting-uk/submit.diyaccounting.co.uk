@@ -14,6 +14,8 @@ import {
   buildDeleteRequest,
   parseTransactionEngineResponse,
   postToTransactionEngine,
+  isTransientPollError,
+  irmarkReceiptMatches,
   CT_RETURN_KIND,
 } from "./hmrcTransactionEngine.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
@@ -31,13 +33,38 @@ function secondsUntil(isoTime, now) {
   return Math.max(Math.ceil((Date.parse(isoTime) - now) / 1000), 0);
 }
 
+const DELETE_ATTEMPTS = 3;
+const DELETE_RECORD_NOT_FOUND = "2000";
+
+// A DELETE_REQUEST answered with a SUBMISSION_ERROR is sent again; error 2000 means the copy is
+// already gone, so the sending stops. An undeleted response expires at HMRC.
 async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders }) {
-  try {
-    await postToTransactionEngine(pollUrl, buildDeleteRequest({ correlationId, gatewayTest, messageClass }), extraHeaders);
-  } catch (error) {
-    // The return is already decided; an undeleted response expires at HMRC.
-    logger.warn({ message: "Transaction Engine delete request failed", correlationId, error: error.message });
+  const deleteRequest = buildDeleteRequest({ correlationId, gatewayTest, messageClass });
+  for (let attempt = 1; attempt <= DELETE_ATTEMPTS; attempt++) {
+    try {
+      const response = await postToTransactionEngine(pollUrl, deleteRequest, extraHeaders);
+      if (response.ok === false) throw new Error(`HTTP ${response.status}`);
+      const parsed = parseTransactionEngineResponse(response.data);
+      if (parsed.qualifier !== "error") return;
+      if (parsed.errors.some((error) => error.number === DELETE_RECORD_NOT_FOUND)) return;
+      logger.warn({
+        message: "Transaction Engine delete request answered with an error",
+        correlationId,
+        attempt,
+        errorNumbers: parsed.errors.map((error) => error.number),
+      });
+    } catch (error) {
+      logger.warn({ message: "Transaction Engine delete request failed", correlationId, attempt, error: error.message });
+    }
   }
+  logger.warn({ message: "Transaction Engine delete request not completed; the copy expires at HMRC", correlationId });
+}
+
+async function pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: hmrcInterval, asyncRequestsTableName }) {
+  const pollIntervalSeconds = hmrcInterval ?? pending.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
+  const nextPollAt = new Date(Date.now() + pollIntervalSeconds * 1000).toISOString();
+  await putAsyncRequest(userSub, correlationId, "pending", { ...pending, nextPollAt, pollIntervalSeconds }, asyncRequestsTableName);
+  return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds } };
 }
 
 /**
@@ -75,6 +102,11 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   const response = await postToTransactionEngine(pollUrl, buildPollRequest({ correlationId, gatewayTest, messageClass }), extraHeaders);
   const parsed = parseTransactionEngineResponse(response.data);
 
+  if (parsed.qualifier === "error" && isTransientPollError(parsed)) {
+    logger.warn({ message: "Transient Transaction Engine error on a poll; polling again later", correlationId, errors: parsed.errors });
+    return pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: parsed.pollIntervalSeconds, asyncRequestsTableName });
+  }
+
   if (parsed.qualifier === "error" || parsed.errors.length > 0) {
     const failure = {
       kind: CT_RETURN_KIND,
@@ -91,10 +123,17 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   if (parsed.qualifier === "acknowledgement") {
-    const pollIntervalSeconds = parsed.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
-    const nextPollAt = new Date(Date.now() + pollIntervalSeconds * 1000).toISOString();
-    await putAsyncRequest(userSub, correlationId, "pending", { ...pending, nextPollAt, pollIntervalSeconds }, asyncRequestsTableName);
-    return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds } };
+    return pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: parsed.pollIntervalSeconds, asyncRequestsTableName });
+  }
+
+  const irmarkReceiptMismatch = !irmarkReceiptMatches(pending.irmark, parsed.irmarkReceipt);
+  if (irmarkReceiptMismatch) {
+    logger.error({
+      message: "The IRmark in HMRC's receipt differs from the IRmark sent",
+      correlationId,
+      sentIrmark: pending.irmark,
+      receiptIrmark: parsed.irmarkReceipt,
+    });
   }
 
   const receiptId = `${new Date().toISOString()}-${correlationId}`;
@@ -106,6 +145,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     utr: pending.utr,
     irmark: pending.irmark,
     irmarkReceipt: parsed.irmarkReceipt,
+    ...(irmarkReceiptMismatch ? { irmarkReceiptMismatch: true } : {}),
     successMessage: parsed.successMessage,
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.

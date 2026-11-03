@@ -11,6 +11,7 @@ import {
   SUBMISSION_PATH,
   POLL_PATH,
   REJECT_IRMARK_SCENARIO,
+  TRANSIENT_POLL_ERROR_SCENARIO,
   resetTransactionEngineSubmissions,
 } from "@app/http-simulator/routes/hmrc-transaction-engine.js";
 import {
@@ -97,6 +98,19 @@ describe("HMRC Transaction Engine simulator", () => {
     const response = await post(server, POLL_PATH, pollRequest);
     expect(response.qualifier).toBe("error");
     expect(response.businessErrors[0].number).toBe("2021");
+  });
+
+  test("answers Gateway error 1000 on the second poll for the transient scenario, then the receipt", async () => {
+    const server = app();
+    const { xml, irmark } = submissionXml();
+    const acknowledgement = await post(server, SUBMISSION_PATH, xml, { "Gov-Test-Scenario": TRANSIENT_POLL_ERROR_SCENARIO });
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    expect((await post(server, POLL_PATH, pollRequest)).qualifier).toBe("acknowledgement");
+    const transient = await post(server, POLL_PATH, pollRequest);
+    expect(transient.qualifier).toBe("error");
+    expect(transient.errors[0].number).toBe("1000");
+    const response = await post(server, POLL_PATH, pollRequest);
+    expect(response.irmarkReceipt).toBe(irmark.base64);
   });
 
   test("answers a fatal error for a badly formed message or another class", async () => {
