@@ -270,8 +270,9 @@ test("J1 to J4: commission lines, holds and releases from real Stripe test-mode 
     expect(reasonsOf(m1)).toEqual([]);
   });
 
-  await test.step("Release one second after J1a month 1", async () => {
-    await release(secondAfter(j1aM1.releaseAt));
+  await test.step("Release one second after J1a month 1 and J3a month 1", async () => {
+    // J3a's first invoice is paid minutes after J1a's, so its line releases later than J1a's.
+    await release(secondAfter(latestIso(j1aM1.releaseAt, j3aLines[0].releaseAt)));
     expect((await lines(J1A))[0].state).toBe("payable");
     expect((await lines(J3A))[0].state).toBe("payable");
     const [j1c] = await lines(J1C);
