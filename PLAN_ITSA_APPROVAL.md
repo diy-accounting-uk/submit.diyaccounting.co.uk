@@ -261,7 +261,7 @@ operator's approval to enable it for live users on prod.
   for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
-  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro itself is on prod; Companies House is
+  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
   `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent

@@ -168,6 +168,7 @@ levelName = "Resident"
 enable = "always"
 hidden = false
 allocation = "on-subscription"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
@@ -194,6 +195,7 @@ levelName = "Pro"
 enable = "always"
 hidden = false
 allocation = "on-subscription"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 

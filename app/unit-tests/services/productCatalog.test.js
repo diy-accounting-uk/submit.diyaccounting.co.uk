@@ -272,6 +272,7 @@ describe("productCatalogHelper", () => {
   it("resident-ltd is always visible, on-subscription, 100 tokens monthly, annual default", () => {
     const catalog = parseCatalog(tomlText);
     const residentLtd = getCatalogBundleById(catalog, "resident-ltd");
+    expect(residentLtd.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
     expect(residentLtd).toMatchObject({
       name: "Resident Ltd",
       enable: "always",
@@ -299,7 +300,7 @@ describe("productCatalogHelper", () => {
       tokenRefreshInterval: "P1M",
       description: "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.",
     });
-    expect(residentPro.listedInEnvironments).toBeUndefined();
+    expect(residentPro.listedInEnvironments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
     expect(getBundlePrices(residentPro)).toEqual([
       { interval: "year", amount: 3999, currency: "gbp", default: true },
       { interval: "month", amount: 399, currency: "gbp", default: false },
