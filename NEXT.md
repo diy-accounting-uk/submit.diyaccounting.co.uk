@@ -66,11 +66,11 @@ Facts the commission rows share (CT4c, OAFF7; the ci design is `PLAN_COMMISSION_
 
 ## Machine-only
 
+- [ ] **CT9b. Agent filing of the CT600 (`PLAN_HMRC_CT_APPROVAL.md`, the CT9a design).** `Sender` `Agent` and an `IRheader/Agent` block (the client id and the practice name), status 985 "Agent", the practice's own agent Gateway credentials (`Role` stays `principal`), the client picker and the client's saved books on the page, a per-filing check that the company has authorised the practice, and the three CT routes refusing a client request unless the `practice` activity is listed in the environment (hidden on prod). HMRC's Transaction Engine answers error 1046 when the client's CT authorisation is missing. Follows CT12 to CT19 in the same files. **Source**: `PLAN_HMRC_CT_APPROVAL.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~18 files.
+
 - [ ] **CT16. Make the CT page pass the accessibility scans and put it in the scan configs.** Pa11y (WCAG2AA) on `https://ci-submit.diyaccounting.co.uk/companies-house/fileCompanyTaxReturn.html` reports 1 error: the `#booksImportFile` file input has no accessible name (`web/public/widgets/books-import.js:913`). `.pa11yci.ci.json`, `.pa11yci.prod.json` and `.pa11yci.proxy.json` do not list the page. `scripts/axe-quickscan.mjs:97` fails on the ci site because `addScriptTag({ path })` injects an inline script that the site's CSP blocks (axe-core via `bypassCSP` gave 0 violations at WCAG 2.1 AA and 2.2 AA, 1280 and 390 px). Do: (VAT3 gave the `#booksImportFile` input its name, on wave zebra) add the page to the three Pa11y configs; (VAT5 already gives the axe scan `bypassCSP`); scan the other pages that use the widget. **Source**: CT600_APPROVAL_CHECKLIST.md C87. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-ask
-
-- [ ] **CT9b. Agent filing of the CT600 (`PLAN_HMRC_CT_APPROVAL.md`, the CT9a design).** `Sender` `Agent` and an `IRheader/Agent` block (the client id and the practice name), status 985 "Agent", the practice's own agent Gateway credentials (`Role` stays `principal`), the client picker and the client's saved books on the page, a per-filing check that the company has authorised the practice, and the three CT routes refusing a client request unless the `practice` activity is listed in the environment (hidden on prod). HMRC's Transaction Engine answers error 1046 when the client's CT authorisation is missing. Follows CT12 to CT19 in the same files. **Source**: `PLAN_HMRC_CT_APPROVAL.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~18 files.
 
 ## Human-driven
 
