@@ -15,6 +15,9 @@ import {
   deriveCt600FromFigures,
   validateCt600Figures,
   Ct600RefusedError,
+  S455_LATER_RATE_WARNING,
+  S455_RATES_IN_RIM,
+  S455_RATES_IN_RIM_UNTIL,
 } from "@app/services/ct600Figures.js";
 import { ltdTaxDataForPeriodEnd, deriveCompanyTaxReturn } from "@app/services/ct600Xml.js";
 import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
@@ -614,53 +617,225 @@ describe("donations", () => {
   });
 });
 
-describe("an overdrawn director's loan account", () => {
-  function refusalOf(figures) {
+describe("loans to participators (supplementary page CT600A)", () => {
+  const TODAY = "2026-11-03";
+  const LOAN = { name: "Carol Smith", amount: 12000 };
+  const withLoans = (loansToParticipators, extra = {}) => ({ ...TYPED, loansToParticipators, ...extra });
+  const loans = (overrides = {}) => ({ releasedBeforeEnd: false, loans: [LOAN], repayments: [], ...overrides });
+  const deriveWith = (figures, options = { today: TODAY }, taxData = ltdTaxDataForPeriodEnd(figures.periodEnd)) =>
+    deriveCt600FromFigures(figures, taxData, options);
+  const repayment = (overrides = {}) => ({ name: "Carol Smith", date: "2026-06-30", repaid: 2000, releasedOrWrittenOff: 0, ...overrides });
+  const refusalOf = (figures, options, taxData) => {
     try {
-      derive(figures);
+      deriveWith(figures, options, taxData);
     } catch (error) {
       return error;
     }
     throw new Error("the return was not refused");
-  }
+  };
 
-  test("ticks box 95, sets box 480 at the section 455 rate and refuses the return naming form CT600A", () => {
-    const refusal = refusalOf({ ...TYPED, directorsLoanOverdrawn: 10000 });
+  test("charges the loans at the dividend upper rate to the penny, half up", () => {
+    expect(deriveWith(withLoans(loans())).ct600a).toMatchObject({ totalLoans: 12000, taxChargeable: 4050, taxPayable: 4050 });
+    const small = deriveWith(withLoans(loans({ loans: [{ name: "Carol Smith", amount: 1234 }] }))).ct600a;
+    expect(small.taxChargeable).toBe(416.48);
+  });
+
+  test("ticks box 95, carries A80 to box 480 and adds it to box 510 and the boxes worked from it", () => {
+    const without = derive(TYPED).boxes;
+    const { boxes } = deriveWith(withLoans(loans()));
+    expect(boxes[95]).toBe("yes");
+    expect(boxes[480]).toBe(4050);
+    expect(boxes[485]).toBeUndefined();
+    expect(boxes[510]).toBeCloseTo(boxes[475] + boxes[480], 2);
+    for (const box of [510, 525, 528, 600]) expect(boxes[box]).toBeCloseTo(without[box] + 4050, 2);
+  });
+
+  test("a company that made no loans carries no page and no loan boxes", () => {
+    const { boxes, ct600a } = derive(TYPED);
+    expect(ct600a).toBeUndefined();
+    for (const box of [95, 480, 485]) expect(boxes[box]).toBeUndefined();
+  });
+
+  test("a repayment within nine months is relieved in part 2 at the rate of the loan", () => {
+    const { ct600a, boxes } = deriveWith(withLoans(loans({ repayments: [repayment()] })));
+    expect(ct600a.partTwo).toMatchObject({ repaid: 2000, releasedOrWrittenOff: 0, total: 2000, relief: 675 });
+    expect(ct600a.partThree).toBeUndefined();
+    expect(ct600a).toMatchObject({ totalLoansOutstanding: 10000, taxPayable: 3375 });
+    expect(boxes[480]).toBe(3375);
+    expect(boxes[485]).toBeUndefined();
+  });
+
+  test("routes a repayment to part 2 up to the last day of the ninth month and to part 3 after it", () => {
+    const figures = (date) => withLoans(loans({ repayments: [repayment({ date })] }));
+    const lastDay = deriveWith(figures("2026-12-31"), { today: "2028-06-30" }).ct600a;
+    expect(lastDay.partTwo).toBeDefined();
+    const later = deriveWith(figures("2027-01-01"), { today: "2028-06-30" }).ct600a;
+    expect(later.partTwo).toBeUndefined();
+    expect(later.partThree).toMatchObject({ total: 2000, relief: 675 });
+  });
+
+  test("a period that does not end on a month end takes the same day nine months later", () => {
+    const base = { periodStart: "2025-04-01", periodEnd: "2026-03-30" };
+    const figures = (date) => ({ ...withLoans(loans({ repayments: [repayment({ date })] })), ...base });
+    expect(deriveWith(figures("2026-12-30"), { today: "2028-06-30" }).ct600a.partTwo).toBeDefined();
+    expect(deriveWith(figures("2026-12-31"), { today: "2028-06-30" }).ct600a.partThree).toBeDefined();
+  });
+
+  test("box 485 is ticked only when part 3 carries relief", () => {
+    const { boxes, ct600a } = deriveWith(withLoans(loans({ repayments: [repayment({ date: "2027-02-01" })] })), { today: "2028-06-30" });
+    expect(ct600a.partThree.relief).toBe(675);
+    expect(boxes[485]).toBe("yes");
+  });
+
+  test("relief is never more than the tax on the loans, and A80 stops at 0", () => {
+    const { ct600a, boxes } = deriveWith(withLoans(loans({ repayments: [repayment({ repaid: 12000 })] })));
+    expect(ct600a.partTwo.relief).toBe(4050);
+    expect(ct600a.taxPayable).toBe(0);
+    expect(ct600a.totalLoansOutstanding).toBeUndefined();
+    expect(boxes[480]).toBe(0);
+  });
+
+  test("releases and write-offs count as repayments", () => {
+    const { ct600a } = deriveWith(withLoans(loans({ repayments: [repayment({ repaid: 500, releasedOrWrittenOff: 1500 })] })));
+    expect(ct600a.partTwo).toMatchObject({ repaid: 500, releasedOrWrittenOff: 1500, total: 2000, relief: 675 });
+  });
+
+  test("files at the 33.75% HMRC's online rules accept for a part lent on or after 6 April 2026, with the warning", () => {
+    const crossing = withLoans(loans({ loans: [{ name: "Carol Smith", amount: 20000, lentFromRateChange: 8000 }] }), {
+      periodStart: "2025-10-01",
+      periodEnd: "2026-09-30",
+    });
+    const { ct600a } = deriveWith(crossing, { today: TODAY });
+    expect(ct600a.taxChargeable).toBe(6750);
+    expect(ct600a.warnings).toEqual([S455_LATER_RATE_WARNING]);
+    expect(ct600a.rates[0].parts.map((part) => [part.amount, part.rate, part.source])).toEqual([
+      [12000, 0.3375, "tax-data"],
+      [8000, 0.3375, "online-rules"],
+    ]);
+  });
+
+  test("a period wholly after 5 April 2026 files at 33.75% with the warning", () => {
+    const { ct600a } = deriveWith(withLoans(loans(), { periodStart: "2026-04-06", periodEnd: "2027-04-05" }), { today: "2027-06-30" });
+    expect(ct600a.taxChargeable).toBe(4050);
+    expect(ct600a.warnings).toEqual([S455_LATER_RATE_WARNING]);
+  });
+
+  test("a rate the customer enters replaces the derived rate, is recorded as entered and draws no warning", () => {
+    const figures = withLoans(loans({ loans: [{ name: "Carol Smith", amount: 20000, rate: 0.3575 }] }), {
+      periodStart: "2025-10-01",
+      periodEnd: "2026-09-30",
+    });
+    const { ct600a } = deriveWith(figures);
+    expect(ct600a.taxChargeable).toBe(7150);
+    expect(ct600a.warnings).toEqual([]);
+    expect(ct600a.rates[0].parts).toEqual([{ amount: 20000, rate: 0.3575, source: "customer-entered" }]);
+  });
+
+  test("tax data that disagrees with HMRC's rules for a date before 6 April 2026 warns and the rate in the rules is used", () => {
+    const taxData = ltdTaxDataForPeriodEnd(TYPED.periodEnd);
+    const mismatched = { ...taxData, 2024: { ...taxData[2024], dividend_tax: { ...taxData[2024].dividend_tax, higher_rate: 0.35 } } };
+    const { ct600a } = deriveWith(withLoans(loans()), { today: TODAY }, mismatched);
+    expect(ct600a.taxChargeable).toBe(4050);
+    expect(ct600a.warnings).toEqual(["The tax data and HMRC's rules disagree on the section 455 rate for 2025-04-01"]);
+    expect(ct600a.rates[0].parts[0]).toMatchObject({ rate: 0.3375, taxDataRate: 0.35, source: "online-rules" });
+  });
+
+  test("a period with no rate in the tax data is refused unless every loan carries its own rate", () => {
+    const taxData = ltdTaxDataForPeriodEnd(TYPED.periodEnd);
+    const noRate = { ...taxData, 2024: { ...taxData[2024], dividend_tax: undefined } };
+    const refusal = refusalOf(withLoans(loans()), { today: TODAY }, noRate);
+    expect(deriveWith(withLoans(loans({ loans: [{ ...LOAN, rate: 0.3375 }] })), { today: TODAY }, noRate).ct600a.taxChargeable).toBe(4050);
     expect(refusal).toBeInstanceOf(Ct600RefusedError);
-    expect(refusal.field).toBe("directorsLoanOverdrawn");
-    expect(refusal.message).toMatch(/CT600A/);
-    expect(refusal.message).toMatch(/overdrawn by 10000/);
-    expect(refusal.boxes).toEqual({ 95: "yes", 480: 3375 });
+    expect(refusal.message).toMatch(/No section 455 rate is held for the tax year starting 6 April 2024/);
   });
 
-  test("is a refusal on the field when the figures are validated with the tax data", () => {
-    const refusal = validateCt600Figures(
-      { ...TYPED, directorsLoanOverdrawn: 10000 },
-      { taxDataByYear: ltdTaxDataForPeriodEnd(TYPED.periodEnd) },
-    ).find((entry) => entry.refusal);
-    expect(refusal).toMatchObject({ field: "directorsLoanOverdrawn" });
-    expect(refusal.message).toMatch(/CT600A/);
+  test("the RIM rates are the dividend upper rate from 6 April 2016 and from 6 April 2022, to 5 April 2026", () => {
+    expect(S455_RATES_IN_RIM).toEqual([
+      { from: "2016-04-06", rate: 0.325 },
+      { from: "2022-04-06", rate: 0.3375 },
+    ]);
+    expect(S455_RATES_IN_RIM_UNTIL).toBe("2026-04-05");
   });
 
-  test("charges the tax to the penny", () => {
-    expect(refusalOf({ ...TYPED, directorsLoanOverdrawn: 1234 }).boxes[480]).toBe(416.48);
+  test.each([
+    ["a name of one character", loans({ loans: [{ name: "C", amount: 100 }] }), /name must be 2 to 56 characters/],
+    ["a name of 57 characters", loans({ loans: [{ name: "x".repeat(57), amount: 100 }] }), /name must be 2 to 56 characters/],
+    ["an amount of 0", loans({ loans: [{ name: "Carol Smith", amount: 0 }] }), /whole pounds above 0/],
+    ["a fractional amount", loans({ loans: [{ name: "Carol Smith", amount: 10.5 }] }), /whole pounds above 0/],
+    ["no loans", loans({ loans: [] }), /at least one loan/],
+    [
+      "no answer to the released before the end question",
+      loans({ releasedBeforeEnd: undefined }),
+      /repaid, released or written off before/,
+    ],
+    ["the same participator twice", loans({ loans: [LOAN, { name: "Carol Smith", amount: 5 }] }), /appears twice/],
+    [
+      "a repayment naming no loan participator",
+      loans({ repayments: [repayment({ name: "Pat Lee" })] }),
+      /name a participator from the loans/,
+    ],
+    ["a repayment with no amount", loans({ repayments: [repayment({ repaid: 0 })] }), /enter an amount repaid/],
+    [
+      "repayments above the loan",
+      loans({ repayments: [repayment({ repaid: 7000 }), repayment({ repaid: 6000, date: "2026-07-31" })] }),
+      /more than the loan of 12000/,
+    ],
+    [
+      "a part lent after the rate change above the loan",
+      loans({ loans: [{ ...LOAN, lentFromRateChange: 13000 }] }),
+      /no more than the amount owed/,
+    ],
+    ["a rate of 100%", loans({ loans: [{ ...LOAN, rate: 1 }] }), /between 0 and 1/],
+    ["a rate with five decimals", loans({ loans: [{ ...LOAN, rate: 0.33751 }] }), /no more than 4 decimal places/],
+  ])("is a problem to fix for %s", (_label, answers, message) => {
+    const problems = validateCt600Figures(withLoans(answers));
+    expect(problems.find((entry) => entry.field === "loansToParticipators")?.message).toMatch(message);
+    expect(problems.every((entry) => !entry.refusal)).toBe(true);
   });
 
-  test("a book whose director's loan account is a debit balance carries the overdrawn amount", () => {
-    const overdrawn = { ...results, PubBalSht: { ...results.PubBalSht, E29: -5000 } };
-    const figures = ct600FiguresFromResults(overdrawn, { profitAndLoss: { currentYear: PROFIT_AND_LOSS } });
-    expect(figures.directorsLoanOverdrawn).toBe(5000);
-    expect(figuresFromBook.directorsLoanOverdrawn).toBe(0);
+  test("more than 999 loans or repayments are a problem", () => {
+    const many = Array.from({ length: 1000 }, (_, index) => ({ name: `Person ${index}`, amount: 1 }));
+    expect(validateCt600Figures(withLoans(loans({ loans: many }))).some((entry) => /At most 999 loans/.test(entry.message))).toBe(true);
   });
 
-  test("a loan that is not overdrawn changes nothing", () => {
-    expect(derive({ ...TYPED, directorsLoanOverdrawn: 0 }).boxes[95]).toBeUndefined();
+  test("loans above the overdrawn balance the book shows are a problem on the book path", () => {
+    const problems = validateCt600Figures(withLoans(loans({ loans: [{ ...LOAN, amount: 12001 }] }), { directorsLoanOverdrawn: 12000 }));
+    expect(problems.find((entry) => entry.field === "loansToParticipators").message).toMatch(/more than the 12000/);
   });
 
-  test("must be whole pounds, 0 or more", () => {
-    expect(validateCt600Figures({ ...TYPED, directorsLoanOverdrawn: -1 }).some((entry) => entry.field === "directorsLoanOverdrawn")).toBe(
-      true,
+  test("no loans answer while the book's account is more overdrawn at the end than at the start is a problem", () => {
+    const figures = { ...TYPED, directorsLoanOverdrawn: 12000, directorsLoanOpeningOverdrawn: 2000 };
+    expect(validateCt600Figures(figures).find((entry) => entry.field === "loansToParticipators").message).toMatch(
+      /10000 more overdrawn at the end than at the start, so the company lent in the period/,
     );
+    expect(validateCt600Figures({ ...figures, directorsLoanOpeningOverdrawn: 12000 })).toEqual([]);
+  });
+
+  test("a repayment on or before the period end is a refusal", () => {
+    const refusal = refusalOf(withLoans(loans({ repayments: [repayment({ date: "2026-03-31" })] })));
+    expect(refusal).toBeInstanceOf(Ct600RefusedError);
+    expect(refusal.message).toMatch(/on or before the end of the period/);
+  });
+
+  test("a repayment after today is a refusal", () => {
+    const refusal = refusalOf(withLoans(loans({ repayments: [repayment({ date: "2026-11-04" })] })));
+    expect(refusal.message).toMatch(/after today/);
+  });
+
+  test("a part 3 row whose relief is not due yet is a refusal naming the date it falls due", () => {
+    const refusal = refusalOf(withLoans(loans({ repayments: [repayment({ date: "2027-02-01" })] })), { today: "2027-06-30" });
+    expect(refusal.message).toBe("Relief on the repayment of 2027-02-01 is due on 2028-01-01. Claim it from HMRC after that date.");
+  });
+
+  test("a book's overdrawn balances at both dates are book facts", () => {
+    const overdrawn = {
+      ...results,
+      PubBalSht: { ...results.PubBalSht, E29: -12000 },
+      OpenAccounts: { ...results.OpenAccounts, E30: -3000 },
+    };
+    const figures = ct600FiguresFromResults(overdrawn, { profitAndLoss: { currentYear: PROFIT_AND_LOSS } });
+    expect(figures).toMatchObject({ directorsLoanOverdrawn: 12000, directorsLoanOpeningOverdrawn: 3000 });
+    expect(figuresFromBook).toMatchObject({ directorsLoanOverdrawn: 0, directorsLoanOpeningOverdrawn: 0 });
   });
 });
 

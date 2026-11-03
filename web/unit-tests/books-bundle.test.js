@@ -26,6 +26,7 @@ describe("books-bundle.js", () => {
       "microEntityAccountsFromBook",
       "readBookSource",
       "readBookSources",
+      "section455RateChangeDate",
       "smallCompanyAccountsFromBook",
       "validateCt600Figures",
     ]);

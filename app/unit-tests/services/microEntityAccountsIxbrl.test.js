@@ -716,8 +716,8 @@ describe("the accountants' report of a micro-entity", () => {
     test("writes the section 413 note with the director's balances and the terms as tagged facts", () => {
       const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, directorsAdvances: [ADVANCE] });
       expect(xhtml).toMatch(/<h3>\d+\. Advances and credits to directors<\/h3>/);
-      expect(xhtml).toMatch(/name="direp:AdvancesCreditsRepaidInPeriodDirectors" contextRef="y2026-director-advance-1"[^>]*>150</);
-      expect(xhtml).toMatch(/name="direp:AdvancesCreditsDirectors" contextRef="e2026-director-advance-1"[^>]*>50</);
+      expect(xhtml).toMatch(/name="direp:AdvancesCreditsRepaidInPeriodDirectors" contextRef="y2026-director-1"[^>]*>150</);
+      expect(xhtml).toMatch(/name="direp:AdvancesCreditsDirectors" contextRef="e2026-director-1"[^>]*>50</);
       expect(xhtml).toContain("Interest free and repayable on demand");
     });
 

@@ -1001,6 +1001,7 @@ export function buildSmallCompanyAccounts(input) {
 
   notes.push(
     ...directorsAdvancesNotes({
+      directorNames: input.directors,
       directorsAdvances: input.directorsAdvances,
       input,
       refs,

@@ -15,6 +15,7 @@ import {
   buildCt600IrEnvelope,
   ltdTaxDataForPeriodEnd,
   CT600_BOX_PATHS,
+  CT600A_BOX_PATHS,
   CT600_NAMESPACE,
 } from "@app/services/ct600Xml.js";
 import {
@@ -387,5 +388,146 @@ describe("buildCt600IrEnvelope", () => {
     const document = parseXmlDocument(amended);
     expect(document.documentElement.querySelector("CompanyTaxReturn").getAttribute("ReturnType")).toBe("amended");
     expect(amended).toBe(original.replace('ReturnType="new"', 'ReturnType="amended"'));
+  });
+});
+
+describe("supplementary page CT600A in the return", () => {
+  const LOANS = {
+    releasedBeforeEnd: true,
+    loans: [
+      { name: "Carol Smith", amount: 12000 },
+      { name: "Smith & Sons Ltd", amount: 3000 },
+    ],
+    repayments: [
+      { name: "Carol Smith", date: "2026-06-30", repaid: 2000, releasedOrWrittenOff: 500 },
+      { name: "Smith & Sons Ltd", date: "2027-02-01", repaid: 1000, releasedOrWrittenOff: 0 },
+    ],
+  };
+  const figures = () => ({
+    ...ct600FiguresFromResults(results, {
+      profitAndLoss: { currentYear: smallCompanyProfitAndLossFromPublishedAccount(results["PubP&L"]) },
+    }),
+    ...COMPANY,
+    directorsLoanOverdrawn: 15000,
+    loansToParticipators: LOANS,
+  });
+  const derived = () => deriveCt600FromFigures(figures(), ltdTaxDataForPeriodEnd("2026-03-31"), { today: "2028-06-30" });
+  const build = ({ boxes, ct600a }) =>
+    parseXmlDocument(
+      buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl: "<html>accounts</html>", computationsIxbrl: "<html>computations</html>" }),
+    );
+  const textAt = (document, path) => valueAt(document, path);
+
+  test("writes boxes 95, 480 and 485 at the elements diya-gl's ct600-v3.toml names", () => {
+    const toml = TOML.parse(readFileSync(CT600_TOML, "utf8"));
+    const tomlPaths = Object.fromEntries(toml.box.map((box) => [box.number, box.xmlPath]));
+    const result = derived();
+    const document = build(result);
+    for (const box of [95, 480, 485]) {
+      expect(CT600_BOX_PATHS[box]).toBe(tomlPaths[box]);
+      expect(textAt(document, CT600_BOX_PATHS[box]), `box ${box}`).toBeDefined();
+    }
+    expect(textAt(document, CT600_BOX_PATHS[95])).toBe("yes");
+    expect(textAt(document, CT600_BOX_PATHS[480])).toBe(result.boxes[480].toFixed(2));
+    expect(textAt(document, CT600_BOX_PATHS[485])).toBe("yes");
+    expect(textAt(document, CT600_BOX_PATHS[510])).toBe(result.boxes[510].toFixed(2));
+  });
+
+  test("reads back every box of the page by its path", () => {
+    const { ct600a, boxes } = derived();
+    const document = build({ boxes, ct600a });
+    const read = (box) => textAt(document, CT600A_BOX_PATHS[box]);
+    const money = (value) => value.toFixed(2);
+    expect(read("A5")).toBe("yes");
+    expect(read("A10A")).toBe("Carol Smith");
+    expect(read("A10B")).toBe("12000.00");
+    expect(read("A15")).toBe("15000.00");
+    expect(read("A20")).toBe(money(ct600a.taxChargeable));
+    expect(read("A25A")).toBe("Carol Smith");
+    expect(read("A25B")).toBe("2000.00");
+    expect(read("A25C")).toBe("500.00");
+    expect(read("A25D")).toBe("2026-06-30");
+    expect(read("A30")).toBe("2000.00");
+    expect(read("A35")).toBe("500.00");
+    expect(read("A40")).toBe("2500.00");
+    expect(read("A45")).toBe(money(ct600a.partTwo.relief));
+    expect(read("A50A")).toBe("Smith & Sons Ltd");
+    expect(read("A50B")).toBe("1000.00");
+    expect(read("A50D")).toBe("2027-02-01");
+    expect(read("A55")).toBe("1000.00");
+    expect(read("A65")).toBe("1000.00");
+    expect(read("A70")).toBe(money(ct600a.partThree.relief));
+    expect(read("A75")).toBe("11500.00");
+    expect(read("A80")).toBe(money(ct600a.taxPayable));
+    expect(read("A80")).toBe(money(boxes[480]));
+  });
+
+  test("escapes the participators' names", () => {
+    const { ct600a, boxes } = derived();
+    const xml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl: "<html>a</html>", computationsIxbrl: "<html>c</html>" });
+    expect(xml).toContain("<Name>Smith &amp; Sons Ltd</Name>");
+  });
+
+  test("writes the elements in the order the schema lists them", () => {
+    const { ct600a, boxes } = derived();
+    const document = build({ boxes, ct600a });
+    const names = (path) => {
+      const segments = path.split("/").filter(Boolean).slice(1);
+      let node = document.documentElement;
+      for (const segment of segments) node = Array.from(node.children).find((child) => child.localName === segment);
+      return Array.from(node.children).map((child) => child.localName);
+    };
+    expect(names("/IRenvelope/CompanyTaxReturn")).toEqual(
+      expect.arrayContaining(["Declaration", "LoansByCloseCompanies", "AttachedFiles"]),
+    );
+    const top = names("/IRenvelope/CompanyTaxReturn");
+    expect(top.indexOf("Declaration")).toBeLessThan(top.indexOf("LoansByCloseCompanies"));
+    expect(top.indexOf("LoansByCloseCompanies")).toBeLessThan(top.indexOf("AttachedFiles"));
+    expect(names("/IRenvelope/CompanyTaxReturn/LoansByCloseCompanies")).toEqual([
+      "BeforeEndPeriod",
+      "LoansInformation",
+      "ReliefEarlierThan",
+      "LoanLaterReliefNow",
+      "TotalLoansOutstanding",
+      "TaxPayable",
+    ]);
+    expect(names("/IRenvelope/CompanyTaxReturn/LoansByCloseCompanies/LoansInformation")).toEqual([
+      "Loan",
+      "Loan",
+      "TotalLoans",
+      "TaxChargeable",
+    ]);
+    expect(names("/IRenvelope/CompanyTaxReturn/LoansByCloseCompanies/ReliefEarlierThan")).toEqual([
+      "Loan",
+      "TotalAmountRepaid",
+      "TotalAmountReleasedOrWritten",
+      "TotalLoans",
+      "ReliefDue",
+    ]);
+    expect(names("/IRenvelope/CompanyTaxReturn/ReturnInfoSummary")).toEqual(["Accounts", "Computations", "SupplementaryPages"]);
+    const calculation = names("/IRenvelope/CompanyTaxReturn/CalculationOfTaxOutstandingOrOverpaid");
+    expect(calculation.slice(0, 4)).toEqual(["NetCorporationTaxLiability", "LoansToParticipators", "CT600AreliefDue", "TaxChargeable"]);
+  });
+
+  test("writes no page, box 95 or box 480 for a company that made no loans", () => {
+    const { boxes, ct600a } = boxesFor({ results, company: COMPANY });
+    const xml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl: "<html>a</html>", computationsIxbrl: "<html>c</html>" });
+    for (const element of ["LoansByCloseCompanies", "SupplementaryPages", "LoansToParticipators", "CT600AreliefDue"]) {
+      expect(xml).not.toContain(element);
+    }
+  });
+
+  test("a loan with only a part 2 repayment omits part 3 and box 485", () => {
+    const loans = { releasedBeforeEnd: false, loans: [{ name: "Carol Smith", amount: 12000 }], repayments: [LOANS.repayments[0]] };
+    const { boxes, ct600a } = deriveCt600FromFigures(
+      { ...figures(), loansToParticipators: loans, directorsLoanOverdrawn: 12000 },
+      ltdTaxDataForPeriodEnd("2026-03-31"),
+      {
+        today: "2028-06-30",
+      },
+    );
+    const xml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl: "<html>a</html>", computationsIxbrl: "<html>c</html>" });
+    expect(xml).not.toContain("LoanLaterReliefNow");
+    expect(xml).not.toContain("CT600AreliefDue");
   });
 });

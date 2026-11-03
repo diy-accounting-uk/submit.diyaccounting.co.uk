@@ -6,7 +6,7 @@ import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
-import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { buildCtReturnBodyFromBook, LOANS_FIXTURE_ANSWERS, LOANS_FIXTURE_BOOK_DIRECTORY } from "@app/test-helpers/ctReturnFixture.js";
 
 const mockSend = vi.fn();
 
@@ -125,8 +125,6 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
   });
 
   test.each([
-    ["a director's loan account overdrawn at the year end", { directorsLoanOverdrawn: true }, /CT600A/],
-    ["an unanswered director's loan question", { directorsLoanOverdrawn: undefined }, /directorsLoanOverdrawn/],
     ["an unaccepted declaration", { declarationAccepted: false }, /accept the declaration/],
     ["a UTR that is not 10 digits", { utr: "123" }, /utr/],
     ["a missing trade name", { tradeName: "" }, /tradeName/],
@@ -155,12 +153,30 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     expect(JSON.stringify(parseResponseBody(response))).toMatch(/Income Tax deducted/);
   });
 
-  test("answers 400 naming form CT600A when the figures carry an overdrawn director's loan account", async () => {
+  test("answers 400 when the book's director's loan account is more overdrawn at the end than at the start and no loans are given", async () => {
     const response = await hmrcCtReturnPreviewPostHandler(
-      buildEvent({ body: { ...baseBody, figures: { ...baseBody.figures, directorsLoanOverdrawn: 10000 } } }),
+      buildEvent({
+        body: { ...baseBody, figures: { ...baseBody.figures, directorsLoanOverdrawn: 10000, directorsLoanOpeningOverdrawn: 0 } },
+      }),
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.stringify(parseResponseBody(response))).toMatch(/CT600A/);
+    expect(JSON.stringify(parseResponseBody(response))).toMatch(/so the company lent in the period/);
+  });
+
+  test("returns supplementary page CT600A, box 480 and the page in the return for a book whose director's loan account is overdrawn", async () => {
+    const body = await buildCtReturnBodyFromBook({
+      bookDirectory: LOANS_FIXTURE_BOOK_DIRECTORY,
+      loansToParticipators: LOANS_FIXTURE_ANSWERS,
+    });
+    const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(200);
+    const preview = parseResponseBody(response);
+    expect(preview.boxes["95"]).toBe("yes");
+    expect(preview.boxes["480"]).toBe(3375);
+    expect(preview.ct600a).toMatchObject({ totalLoans: 12000, taxChargeable: 4050, taxPayable: 3375 });
+    expect(preview.ct600Xml).toContain("<LoansByCloseCompanies>");
+    expect(preview.ct600Xml).toContain("<LoansToParticipators>3375.00</LoansToParticipators>");
+    expect(Buffer.from(preview.accountsIxbrl, "utf8").toString()).toContain("Advances and credits to directors");
   });
 
   test("returns the losses and the carry-back repayment with the boxes", async () => {

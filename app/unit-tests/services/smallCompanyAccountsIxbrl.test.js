@@ -1138,11 +1138,11 @@ describe("the advances to directors note of a small company", () => {
     expect(nonFractionValue(xhtml, "core:AmountsOwedByDirectors", "e2026")).toBe(800);
     expect(xhtml).toContain("Amounts owed by directors");
     expect(xhtml).toMatch(/<h3>\d+\. Advances and credits to directors<\/h3>/);
-    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsMadeInPeriodDirectors", "y2026-director-advance-1")).toBe(800);
-    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsRepaidInPeriodDirectors", "y2026-director-advance-1")).toBe(0);
-    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsDirectors", "e2026-director-advance-1")).toBe(800);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsMadeInPeriodDirectors", "y2026-director-1")).toBe(800);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsRepaidInPeriodDirectors", "y2026-director-1")).toBe(0);
+    expect(nonFractionValue(xhtml, "direp:AdvancesCreditsDirectors", "e2026-director-1")).toBe(800);
     expect(xhtml).toMatch(/name="direp:DescriptionSpecificAdvanceOrCreditItsConditionsIndicativeInterestRateDirectors"[^>]*>Interest free/);
-    expect(xhtml).toContain('<xbrldi:typedMember dimension="direp:X-SpecificAdvanceOrCreditDirectorsGroupingDimension">');
+    expect(xhtml).toContain('<xbrli:context id="e2026-director-1">');
   });
 
   test("tags only concepts the FRC taxonomy defines", () => {
@@ -1151,8 +1151,6 @@ describe("the advances to directors note of a small company", () => {
     const used = factNames(xhtml).filter((name) => /Directors|AdvanceOrCredit/.test(name));
     expect(used.length).toBeGreaterThan(0);
     for (const name of used) expect(concepts.has(name), name).toBe(true);
-    expect(concepts.has("direp:SpecificAdvanceOrCreditDirectorsGroupingDimension.domain")).toBe(true);
-    expect(concepts.has("direp:X-SpecificAdvanceOrCreditDirectorsGroupingDimension")).toBe(true);
     expect(ixbrlStructureProblems(xhtml)).toEqual([]);
   });
 

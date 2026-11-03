@@ -636,56 +636,72 @@ export function readDirectorsAdvances(values, label, errorMessages) {
 /**
  * The note on advances and credits to directors (Companies Act 2006 section 413): per director the
  * balance owed at the start and the end of the year, and the amounts advanced and repaid in it.
- * Each amount is a tagged fact on a context typed by the director's position.
+ * Each amount is a tagged fact on the context of the director's officer position.
  * @param {object} note
  * @param {Array<{name: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} note.directorsAdvances
+ * @param {string[]} note.directorNames - the directors in position order: a director's position names the officer context
  * @param {{periodStart: string, priorBalanceSheetDate?: string}} note.input
  * @returns {Array<{title: string, html: string}>} the one note, or none when no director owes the company money
  */
-export function directorsAdvancesNotes({ directorsAdvances = [], input, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+export function directorsAdvancesNotes({
+  directorsAdvances = [],
+  directorNames,
+  input,
+  refs,
+  entityIdentifierXml,
+  periodXml,
+  additionalContexts,
+}) {
   if (directorsAdvances.length === 0) return [];
   const startInstantXml = `<xbrli:period><xbrli:instant>${input.priorBalanceSheetDate || previousDay(input.periodStart)}</xbrli:instant></xbrli:period>`;
-  const rows = directorsAdvances.map((advance, index) => {
-    const position = index + 1;
-    const dimensionXml = typedMemberXml(DIMENSIONS.specificAdvanceOrCreditDirectors, SPECIFIC_ADVANCE_DOMAIN, position);
-    const contextIn = (period, suffix) =>
+  const termsHtml = [];
+  const rows = directorsAdvances.map((advance) => {
+    const position = directorNames.indexOf(advance.name) + 1;
+    if (position === 0) throw new Error(`directorsAdvances names ${advance.name}, who is not one of the directors`);
+    const dimensionXml = dimensionMemberXml(DIMENSIONS.entityOfficers, { prefix: "bus", name: `Director${position}` });
+    const contextIn = (period, id, extraDimensionXml = "") =>
       buildDimensionedContext({
         additionalContexts,
         entityIdentifierXml,
         periodXml: period,
-        dimensionXml,
-        id: `${suffix}-director-advance-${position}`,
+        dimensionXml: dimensionXml + extraDimensionXml,
+        id,
       });
     const cell = (conceptKey, contextRef, value) => recordFigure(renderMonetaryFact(conceptKey, contextRef, "GBP", value), value);
-    const duringYear = contextIn(periodXml[refs.current], refs.current);
+    const duringYear = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position });
+    // The terms describe one specific advance, so their context adds the typed advance dimension to the officer's.
+    const termsContext = contextIn(
+      periodXml[refs.current],
+      `${refs.current}-director-${position}-advance-1`,
+      typedMemberXml(DIMENSIONS.specificAdvanceOrCreditDirectors, SPECIFIC_ADVANCE_DOMAIN, 1),
+    );
+    termsHtml.push(
+      `<p>${escapeXmlText(advance.name)}: ${renderTextFact("descriptionAdvanceConditionsDirectors", termsContext, advance.terms)}</p>`,
+    );
     return {
       label: advance.name,
       cells: [
-        cell("advancesCreditsDirectors", contextIn(startInstantXml, `start-${refs.currentInstant}`), advance.balanceAtStart),
+        cell(
+          "advancesCreditsDirectors",
+          contextIn(startInstantXml, `start-${refs.currentInstant}-director-${position}`),
+          advance.balanceAtStart,
+        ),
         cell("advancesCreditsMadeDirectors", duringYear, advance.advanced),
         cell("advancesCreditsRepaidDirectors", duringYear, advance.repaid),
-        cell("advancesCreditsDirectors", contextIn(periodXml[refs.currentInstant], refs.currentInstant), advance.balanceAtEnd),
+        cell(
+          "advancesCreditsDirectors",
+          contextIn(periodXml[refs.currentInstant], `${refs.currentInstant}-director-${position}`),
+          advance.balanceAtEnd,
+        ),
       ],
     };
   });
-  const termsHtml = directorsAdvances
-    .map((advance, index) => {
-      const contextRef = buildDimensionedContext({
-        additionalContexts,
-        entityIdentifierXml,
-        periodXml: periodXml[refs.current],
-        dimensionXml: typedMemberXml(DIMENSIONS.specificAdvanceOrCreditDirectors, SPECIFIC_ADVANCE_DOMAIN, index + 1),
-        id: `${refs.current}-director-advance-${index + 1}`,
-      });
-      return `<p>${escapeXmlText(advance.name)}: ${renderTextFact("descriptionAdvanceConditionsDirectors", contextRef, advance.terms)}</p>`;
-    })
-    .join("\n");
   return [
     {
       title: "Advances and credits to directors",
       html: `<p>Amounts owed to the company by its directors:</p>
 ${recordTable({ columns: ["Owed at start", "Advanced", "Repaid", "Owed at end"], rows })}
-${termsHtml}`,
+${termsHtml.join("\n")}`,
     },
   ];
 }

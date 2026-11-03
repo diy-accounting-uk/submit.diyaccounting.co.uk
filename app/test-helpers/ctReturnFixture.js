@@ -6,12 +6,16 @@
 // figures, the CT600 figures a book export supplies, plus the facts the
 // page asks the user to type.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { deriveSmallCompanyAccounts } from "../services/smallCompanyAccounts.js";
 import { deriveMicroEntityAccounts, microProfitAndLossYear } from "../services/microEntityAccounts.js";
 import { deriveCompanyTaxReturn } from "../services/ct600Xml.js";
 
 export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
+export const LOANS_FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd-loan";
+export const LOANS_FIXTURE_ANSWERS = JSON.parse(readFileSync(join(LOANS_FIXTURE_BOOK_DIRECTORY, "loans.json"), "utf8"));
 export const DIRECTORS_ADVANCE_TERMS = "Interest free and repayable on demand.";
 export const FIXTURE_UTR = "8596148860";
 const FIXTURE_REGISTERED_OFFICE = { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" };
@@ -20,21 +24,26 @@ const FIXTURE_REGISTERED_OFFICE = { addressLine1: "1 Test Street", cityOrTown: "
  * The figures a book export supplies: the accounts and the CT600 figures.
  * @param {object} [options]
  * @param {string} [options.bookDirectory]
+ * @param {object} [options.loansToParticipators] - the answers for supplementary page CT600A
  * @returns {Promise<object>}
  */
-export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK_DIRECTORY } = {}) {
+export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK_DIRECTORY, loansToParticipators } = {}) {
   const { book, lines } = loadDiyaGlData(bookDirectory);
   const session = { book, lines };
   const accounts = await deriveSmallCompanyAccounts(session);
   const directorName = accounts.directorName || "A Director";
-  const { figures, periodEnd } = await deriveCompanyTaxReturn(session, {
-    companyName: accounts.companyName,
-    companyNumber: accounts.companyNumber,
-    utr: FIXTURE_UTR,
-    companyType: 0,
-    declarantName: directorName,
-    declarantStatus: "Director",
-  });
+  const { figures, periodEnd } = await deriveCompanyTaxReturn(
+    session,
+    {
+      companyName: accounts.companyName,
+      companyNumber: accounts.companyNumber,
+      utr: FIXTURE_UTR,
+      companyType: 0,
+      declarantName: directorName,
+      declarantStatus: "Director",
+    },
+    { loansToParticipators },
+  );
   const tradeName = book.entityInformation?.organizationDescription || accounts.companyName;
   return {
     companyNumber: accounts.companyNumber,
@@ -67,8 +76,8 @@ export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK
  * @param {string} [options.utr]
  * @returns {Promise<object>} the request body, without Government Gateway credentials
  */
-export async function buildCtReturnBodyFromBook({ bookDirectory = FIXTURE_BOOK_DIRECTORY, utr = FIXTURE_UTR } = {}) {
-  const exported = await buildCtReturnExportFromBook({ bookDirectory });
+export async function buildCtReturnBodyFromBook({ bookDirectory = FIXTURE_BOOK_DIRECTORY, utr = FIXTURE_UTR, loansToParticipators } = {}) {
+  const exported = await buildCtReturnExportFromBook({ bookDirectory, loansToParticipators });
   return {
     ...exported,
     statementsAccepted: {
@@ -79,7 +88,6 @@ export async function buildCtReturnBodyFromBook({ bookDirectory = FIXTURE_BOOK_D
     },
     utr,
     declarant: { name: exported.director.name, status: "Director" },
-    directorsLoanOverdrawn: false,
     declarationAccepted: true,
   };
 }

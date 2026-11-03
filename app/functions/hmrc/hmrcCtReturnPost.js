@@ -225,6 +225,7 @@ export async function ingestHandler(event) {
         ...formRequestFields(formRequest),
         filed: {
           boxes: documents.boxes,
+          ct600a: documents.ct600a,
           computationsIxbrl: documents.computationsIxbrl,
           accountsIxbrl: documents.accountsIxbrl,
         },

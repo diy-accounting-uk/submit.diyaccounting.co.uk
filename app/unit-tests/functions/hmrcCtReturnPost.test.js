@@ -329,7 +329,6 @@ describe("hmrcCtReturnPost ingestHandler", () => {
   test.each([
     ["no user ID", { gatewayUserId: "" }, /gatewayUserId/],
     ["no password", { gatewayPassword: undefined }, /gatewayPassword/],
-    ["a director's loan account overdrawn", { directorsLoanOverdrawn: true }, /CT600A/],
     ["an unaccepted declaration", { declarationAccepted: false }, /declaration/],
   ])("answers 400 without calling HMRC for %s", async (_label, overrides, message) => {
     const response = await hmrcCtReturnPostHandler(

@@ -343,6 +343,7 @@ export function buildMicroEntityAccounts(input) {
 
   notes.push(
     ...directorsAdvancesNotes({
+      directorNames: [input.directorName],
       directorsAdvances: input.directorsAdvances,
       input,
       refs,

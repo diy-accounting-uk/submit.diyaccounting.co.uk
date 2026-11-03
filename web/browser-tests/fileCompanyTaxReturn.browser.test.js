@@ -25,6 +25,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const PAGE_URL = "http://localhost:3000/companies-house/fileCompanyTaxReturn.html";
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const BOOK_DIRECTORY = path.join(process.cwd(), "fixtures/diya-gl/precision-code-ltd");
+const LOAN_BOOK_DIRECTORY = path.join(process.cwd(), "fixtures/diya-gl/precision-code-ltd-loan");
 const CONTENT_TYPES = {
   ".html": "text/html",
   ".js": "application/javascript",
@@ -106,10 +107,10 @@ test.describe("File Company Tax Return page", () => {
 });
 
 test.describe("File Company Tax Return entry form", () => {
-  async function zippedPrecisionCodeBook() {
+  async function zippedPrecisionCodeBook(directory = BOOK_DIRECTORY) {
     const zip = new JSZip();
-    zip.file("book.toml", fs.readFileSync(path.join(BOOK_DIRECTORY, "book.toml")));
-    zip.file("lines.jsonl", fs.readFileSync(path.join(BOOK_DIRECTORY, "lines.jsonl")));
+    zip.file("book.toml", fs.readFileSync(path.join(directory, "book.toml")));
+    zip.file("lines.jsonl", fs.readFileSync(path.join(directory, "lines.jsonl")));
     return zip.generateAsync({ type: "nodebuffer" });
   }
 
@@ -190,11 +191,11 @@ test.describe("File Company Tax Return entry form", () => {
 
   // The precision-code-ltd book is a micro-entity by size, so the card opens the form on the
   // micro-entity accounts; most tests file the small company accounts the same book also gives.
-  async function dropBook(page, { regime = "small" } = {}) {
+  async function dropBook(page, { regime = "small", directory = BOOK_DIRECTORY } = {}) {
     await page.locator("#booksImportFile").setInputFiles({
       name: "precision-code.diya-gl.zip",
       mimeType: "application/zip",
-      buffer: await zippedPrecisionCodeBook(),
+      buffer: await zippedPrecisionCodeBook(directory),
     });
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
     await page.locator(regime === "micro" ? "#regimeMicro" : "#regimeSmall").check();
@@ -221,6 +222,58 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#booksImportDrop")).toBeVisible();
   });
 
+  test("the loans question adds, shows and removes a row for each participator", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await expect(page.locator("#loansDetail")).toBeHidden();
+    await page.locator("#loansMadeYes").check();
+    await expect(page.locator("#loansDetail")).toBeVisible();
+    await expect(page.locator("#loanName1")).toBeVisible();
+    await page.locator("#addLoanBtn").click();
+    await expect(page.locator("#loanName2")).toBeVisible();
+    await page.locator("#loanName2").fill("David Brown");
+    await page.locator("#repaidSinceYes").check();
+    await expect(page.locator("#repaymentName1")).toBeVisible();
+    await expect(page.locator("#repaymentName1 option")).toHaveText(["Choose a participator", "David Brown"]);
+    await page.locator('[data-loan-row="2"] button[data-remove="loan"]').click();
+    await expect(page.locator("#loanName2")).toHaveCount(0);
+    await page.locator('[data-repayment-row="1"] button[data-remove="repayment"]').click();
+    await expect(page.locator("#repaymentName1")).toHaveCount(0);
+  });
+
+  test("a book with an overdrawn director's loan account opens the loans question at Yes with the amount and works the tax", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await dropBook(page, { directory: LOAN_BOOK_DIRECTORY });
+    await expect(page.locator("#loansMadeYes")).toBeChecked();
+    await expect(page.locator("#loansBookNote")).toContainText("overdrawn by £12,000 at the end and £0 at the start");
+    await expect(page.locator("#loanName1")).toHaveValue("Carol Smith");
+    await expect(page.locator("#loanAmount1")).toHaveValue("12000");
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 480");
+    await expect(page.locator("#workedLoanTax")).toContainText("£4,050");
+    await expect(page.locator("#workedTaxRows")).toContainText("Section 455 rate for Carol Smith");
+    await expect(page.locator("#workedTaxRows")).toContainText("33.75%");
+    await page.locator("#loanRate1").fill("35.75");
+    await expect(page.locator("#workedLoanTax")).toContainText("£4,290");
+    await expect(page.locator("#workedTaxRows")).toContainText("the rate you entered");
+  });
+
+  test("a repayment dated after today shows its error under its own date field", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page, { directory: LOAN_BOOK_DIRECTORY });
+    await page.locator("#repaidSinceYes").check();
+    await page.locator("#repaymentName1").selectOption("Carol Smith");
+    await page.locator("#repaymentDate1").fill("2999-01-01");
+    await page.locator("#repaymentDate1").blur();
+    await expect(page.locator("#repaymentDate1-error")).toContainText("after today");
+    await page.locator("#repaymentDate1").fill("2026-06-30");
+    await page.locator("#repaymentRepaid1").fill("2000");
+    await page.locator("#repaymentRepaid1").blur();
+    await expect(page.locator("#repaymentDate1-error")).toHaveCount(0);
+    await expect(page.locator("#workedLoanTax")).toContainText("£3,375");
+  });
+
   test("a dropped precision-code-ltd zip fills every field the book supplies and works the tax", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
@@ -241,7 +294,7 @@ test.describe("File Company Tax Return entry form", () => {
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
       ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
       ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
-      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id),
+      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance")),
     ];
     for (const id of new Set(supplied)) {
       await expect(page.locator(`#${id}`), id).not.toHaveValue("");
@@ -503,8 +556,10 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#periodEnd").dispatchEvent("change");
     await expect(page.locator("#period-error")).toContainText("12 months");
 
-    await page.locator("#loanOverdrawnYes").check();
-    await expect(page.locator("#loanOverdrawn-error")).toContainText("CT600A");
+    await page.locator("#loansMadeYes").check();
+    await page.locator("#loanName1").focus();
+    await page.locator("#loanName1").blur();
+    await expect(page.locator("#loanName1-error")).toContainText("participator's name");
 
     await page.locator("#currentCashAtBank").fill("1");
     await page.locator("#currentCashAtBank").blur();
@@ -519,7 +574,7 @@ test.describe("File Company Tax Return entry form", () => {
     const summary = page.locator("#ct600-error-summary");
     await expect(summary).toBeFocused();
     await expect(summary).toHaveAttribute("role", "alert");
-    for (const text of ["10 digits", "whole number", "12 months", "CT600A", "does not balance", "declaration"]) {
+    for (const text of ["10 digits", "whole number", "12 months", "participator's name", "does not balance", "declaration"]) {
       await expect(summary).toContainText(text);
     }
     await summary.getByRole("link", { name: /10 digits/ }).click();

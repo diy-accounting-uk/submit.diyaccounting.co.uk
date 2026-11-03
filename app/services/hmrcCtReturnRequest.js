@@ -52,6 +52,8 @@ const FIGURES_FIELDS = [
   "priorPeriodChargeableProfits",
   "donations",
   "directorsLoanOverdrawn",
+  "directorsLoanOpeningOverdrawn",
+  "loansToParticipators",
   "frankedInvestmentIncome",
   "incomeTaxDeducted",
   "taxAlreadyPaid",
@@ -183,13 +185,6 @@ export function extractAndValidateCtReturnParameters(
   if (declarantName.length < 2) errorMessages.push("Missing declarant.name");
   if (declarantStatus.length < 2) errorMessages.push("Missing declarant.status");
 
-  if (body.directorsLoanOverdrawn === true) {
-    errorMessages.push(
-      "A director's loan account overdrawn at the year end needs supplementary page CT600A, which this return does not carry",
-    );
-  } else if (body.directorsLoanOverdrawn !== false) {
-    errorMessages.push("directorsLoanOverdrawn must be answered true or false");
-  }
   if (body.declarationAccepted !== true) errorMessages.push("The declarant must accept the declaration");
 
   const figures = readFigures(body.figures, { accounts, utr, declarant: { name: declarantName, status: declarantStatus } }, errorMessages);
@@ -230,12 +225,13 @@ export function extractAndValidateCtReturnParameters(
  * computations name the same company, UTR and declarant. An amended request builds the return
  * with ReturnType="amended", which replaces the return HMRC holds for the period.
  * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
- * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
+ * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
  */
 export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amended }) {
-  const { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
+  const { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
     figures,
     ltdTaxDataForPeriodEnd(figures.periodEnd),
+    { today: new Date().toISOString().slice(0, 10) },
   );
   const accountsIxbrl = buildAccountsIxbrl(accounts);
   const computationsIxbrl = buildCtComputations({
@@ -250,6 +246,6 @@ export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amen
     carryBack,
     tradeOutsideUk: figures.lossOutsideUk === true,
   });
-  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended });
-  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, losses, carryBack, worked };
+  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended });
+  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, ct600a, computationLines, losses, carryBack, worked };
 }
