@@ -37,7 +37,14 @@
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
       <h1>Operator Dashboard</h1>
-      <p class="subtitle">The eight objectives, from the latest snapshot</p>
+      <nav id="dashboardTabs" class="dashboard-tabs" aria-label="Dashboard sections" hidden>
+        <button type="button" class="dashboard-tab" data-tab-id="main" aria-pressed="true">Main</button>
+        <button type="button" class="dashboard-tab" data-tab-id="adoption" aria-pressed="false">Adoption</button>
+        <button type="button" class="dashboard-tab" data-tab-id="ops" aria-pressed="false">Ops</button>
+        <button type="button" class="dashboard-tab" data-tab-id="affiliates" aria-pressed="false">Affiliates</button>
+        <button type="button" class="dashboard-tab" data-tab-id="aws-prod" aria-pressed="false">AWS prod</button>
+        <button type="button" class="dashboard-tab" data-tab-id="aws-ci" aria-pressed="false">AWS ci</button>
+      </nav>
     </header>
 
     <main id="mainContent" data-activity-view="operator-dashboard">
@@ -48,7 +55,7 @@
       <p id="snapshotAge" class="status-message status-warning" role="status" hidden></p>
       <p id="refreshNote" class="status-message" role="status" hidden></p>
 
-      <section id="chartsPanel" class="objective" hidden>
+      <section id="chartsPanel" class="objective" hidden data-tab="main">
         <h2>Daily trends, last 90 days</h2>
         <p class="subtitle">
           One point a day. Press a name below a chart to hide or show its line; double-click a name to show only that line, and again to
@@ -57,7 +64,7 @@
         <div id="chartsGrid" class="charts-grid"></div>
       </section>
 
-      <section id="heldPassesPanel" class="objective" hidden>
+      <section id="heldPassesPanel" class="objective" hidden data-tab="affiliates">
         <h2>Passes held for review</h2>
         <p class="subtitle">Every pass at its review limit, whoever issued it. Release lets a pass run for another thousand uses.</p>
         <p id="heldPassesEmpty" class="status-message" role="status" hidden>No pass is held for review.</p>
@@ -77,8 +84,8 @@
       </section>
 
       <div id="objectivesContainer">
-        <div data-objective-slot="conversion-to-paid"></div>
-        <section id="visitorsPanel" class="objective" hidden>
+        <div data-objective-slot="conversion-to-paid" data-tab="adoption"></div>
+        <section id="visitorsPanel" class="objective" hidden data-tab="main">
           <h2>Visitors</h2>
           <p class="subtitle">
             Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and
@@ -99,9 +106,9 @@
             <tbody id="visitorsBody"></tbody>
           </table>
         </section>
-        <div data-objective-slot="conversion-to-submission"></div>
-        <div data-objective-slot="retention"></div>
-        <section id="activitiesPanel" class="objective" hidden>
+        <div data-objective-slot="conversion-to-submission" data-tab="adoption"></div>
+        <div data-objective-slot="retention" data-tab="adoption"></div>
+        <section id="activitiesPanel" class="objective" hidden data-tab="main">
           <h2>Activity started and completed</h2>
           <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
           <p class="subtitle" id="activitiesDataSince" hidden></p>
@@ -144,12 +151,12 @@
             <tbody id="activitiesCompletedBody"></tbody>
           </table>
         </section>
-        <div data-objective-slot="low-running-cost"></div>
-        <div data-objective-slot="uptime"></div>
-        <div data-objective-slot="compliance"></div>
-        <div data-objective-slot="security"></div>
-        <div data-objective-slot="operator-effort"></div>
-        <section id="companyAccountsPanel" class="objective" hidden>
+        <div data-objective-slot="low-running-cost" data-tab="main"></div>
+        <div data-objective-slot="uptime" data-tab="ops"></div>
+        <div data-objective-slot="compliance" data-tab="main"></div>
+        <div data-objective-slot="security" data-tab="main"></div>
+        <div data-objective-slot="operator-effort" data-tab="ops"></div>
+        <section id="companyAccountsPanel" class="objective" hidden data-tab="main">
           <h2>Company accounts</h2>
           <p class="subtitle">The company's own resident diya-gl book, derived nightly</p>
           <table class="observations data-table" id="companyProfitAndLossTable">
@@ -180,7 +187,7 @@
             <tbody id="companyContributionBody"></tbody>
           </table>
         </section>
-        <section id="reservePanel" class="objective" hidden>
+        <section id="reservePanel" class="objective" hidden data-tab="main">
           <h2>Reserve</h2>
           <p class="subtitle">Cash at bank in the company book against the reserve floor</p>
           <p id="reserveState" class="status-message" role="status"></p>
@@ -194,7 +201,7 @@
             <tbody id="reserveBody"></tbody>
           </table>
         </section>
-        <section id="monthlyMarketingBudgetPanel" class="objective" hidden>
+        <section id="monthlyMarketingBudgetPanel" class="objective" hidden data-tab="adoption">
           <h2>Monthly marketing budget</h2>
           <p class="subtitle">Share × (last month's net income − running costs); the £1 a day Search floor sits outside</p>
           <table class="observations data-table" id="monthlyMarketingBudgetTable">
@@ -207,7 +214,7 @@
             <tbody id="monthlyMarketingBudgetBody"></tbody>
           </table>
         </section>
-        <section id="operatorsPanel" class="objective" hidden>
+        <section id="operatorsPanel" class="objective" hidden data-tab="main">
           <h2>Operators</h2>
           <p class="subtitle">The accounts on the operator list</p>
           <table class="observations data-table" id="operatorsTable">
@@ -219,7 +226,7 @@
             <tbody id="operatorsBody"></tbody>
           </table>
         </section>
-        <section id="familyAffiliatesPanel" class="objective" hidden>
+        <section id="familyAffiliatesPanel" class="objective" hidden data-tab="affiliates">
           <h2>Family affiliates</h2>
           <p class="subtitle">One row for each email on the family affiliate list, over the same windows</p>
           <table class="observations data-table family-affiliates-table" id="familyAffiliatesPassesGeneratedTable">
@@ -291,7 +298,7 @@
             <tbody id="familyAffiliatesPassesConvertedBody"></tbody>
           </table>
         </section>
-        <section id="affiliateGroupsPanel" class="objective" hidden>
+        <section id="affiliateGroupsPanel" class="objective" hidden data-tab="affiliates">
           <h2>Affiliates by group</h2>
           <p class="subtitle">Every referrer with a charged referral, by group, in pence converted to pounds. Live charges only</p>
           <table class="observations data-table" id="affiliateFamilyPayableTable">
@@ -322,7 +329,7 @@
         </section>
       </div>
 
-      <section id="awsLinksPanel" class="objective" hidden>
+      <section id="awsLinksPanel" class="objective" hidden data-tab="aws-prod aws-ci">
         <h2>AWS links</h2>
         <p class="subtitle">
           Figures the page above does not chart, in the AWS console. A link opens in the account named beside it; sign in to that account

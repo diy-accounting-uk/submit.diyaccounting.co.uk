@@ -920,6 +920,7 @@ function armAutoRefresh() {
 // finds nothing; scroll once they exist.
 function scrollToHash() {
   const id = decodeURIComponent(window.location.hash.slice(1));
+  showTabHolding(id);
   const target = id ? document.getElementById(id) : null;
   if (target && !target.hidden) target.scrollIntoView();
 }
@@ -997,7 +998,67 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+// The tabs show the sections whose data-tab names them (a section can name several, separated by
+// spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
+const TAB_STORAGE_KEY = "operatorDashboardTab";
+const TAB_IDS = ["main", "adoption", "ops", "affiliates", "aws-prod", "aws-ci"];
+
+function storedTab() {
+  try {
+    const stored = window.localStorage.getItem(TAB_STORAGE_KEY);
+    return TAB_IDS.includes(stored) ? stored : "main";
+  } catch {
+    return "main";
+  }
+}
+
+let currentTab = "main";
+
+function showTab(tabId) {
+  currentTab = tabId;
+  document.querySelectorAll("[data-tab]").forEach((section) => {
+    section.classList.toggle("tab-off", !section.dataset.tab.split(" ").includes(tabId));
+  });
+  document.querySelectorAll(".dashboard-tab").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.tabId === tabId));
+  });
+  try {
+    window.localStorage.setItem(TAB_STORAGE_KEY, tabId);
+  } catch {
+    // storage is unavailable; the tab only lasts for this visit
+  }
+  window.dispatchEvent(new Event("resize"));
+}
+
+// A link to a section on another tab opens that tab first.
+function showTabHolding(id) {
+  const target = id ? document.getElementById(id) : null;
+  const holder = target && target.closest(".tab-off");
+  if (!holder) return;
+  const wanted = holder.dataset.tab.split(" ")[0];
+  showTab(wanted);
+}
+
+function armTabs() {
+  document.querySelectorAll(".dashboard-tab").forEach((button) => {
+    button.addEventListener("click", () => showTab(button.dataset.tabId));
+  });
+  document.addEventListener("click", (event) => {
+    const anchor = event.target.closest('a[href^="#"]');
+    if (anchor) showTabHolding(decodeURIComponent(anchor.getAttribute("href").slice(1)));
+  });
+  showTab(storedTab());
+}
+
+// The tab bar appears with the panels, after the entitlement check has passed. Sections built
+// since the page loaded take the chosen tab.
+function showTabs() {
+  document.getElementById("dashboardTabs").hidden = false;
+  showTab(currentTab);
+}
+
 async function initPage() {
+  armTabs();
   armAutoRefresh();
   loadHeldPasses();
   decorateStaticPanels();
@@ -1015,6 +1076,7 @@ async function initPage() {
     renderFamilyAffiliates(snapshot);
     renderAffiliateGroups(snapshot);
     window.renderAwsLinks(snapshot.console);
+    showTabs();
     document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
@@ -1023,6 +1085,7 @@ async function initPage() {
       showError("Sign in with an operator account to see this page.");
     } else if (error.status === 404) {
       window.renderAwsLinks();
+      showTabs();
       showError("No snapshot has been published yet.");
     } else {
       showError("The operator snapshot did not load. Reload the page to try again.");
