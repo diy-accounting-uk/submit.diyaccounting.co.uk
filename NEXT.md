@@ -42,7 +42,7 @@ Facts the commission rows share (CT4c, OAFF7; the ci design is `PLAN_COMMISSION_
 
 ## In flight
 
-- [ ] **Wave xenon (batch `claude/xenon-dashboard`, worktree `.claude/worktrees/xenon`).** DASH21 then DASH20 (`claude/xenon-dash-tabs`), CT4c (`claude/xenon-credit-payout`), CS-P1 (`claude/xenon-own-presenter`), and DASH19's alarm grant (269f1def4). Batch-check is running before the push. **Owner**: Claude Code.
+- [ ] **Wave xenon (batch `claude/xenon-dashboard`, worktree `.claude/worktrees/xenon`).** DASH21 then DASH20 (`claude/xenon-dash-tabs`), CT4c (`claude/xenon-credit-payout`), CS-P1 (`claude/xenon-own-presenter`), and DASH19's alarm grant (269f1def4). Batch-check passed after the held-passes fix (89b7b2f48); the simulator suites run before the push. **Owner**: Claude Code.
 
 - [ ] **CT4c. Credit payout of test-mode lines on ci (`PLAN_COMMISSION_CI_JOURNEYS.md` open question 4).** `commissionCreditPayout` uses the live client and skips every line with `livemode !== true`, and the payout Lambda has no test key ARN (`infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` lines 1795 to 1800). Do: the test key ARN in the stack, a client chosen per line by `livemode`, gated by `testJourneyEnvironments`; `./mvnw clean verify`. **Source**: `PLAN_COMMISSION_CI_JOURNEYS.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
