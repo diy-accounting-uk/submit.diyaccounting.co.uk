@@ -6,6 +6,7 @@
 import { test } from "../helpers/playwrightTestWithout.js";
 import fs from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { SIMULATOR_CUSTOMER_PRESENTER_ID, SIMULATOR_CUSTOMER_PRESENTER_CODE } from "@app/http-simulator/scenarios/accounts-filing.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
@@ -29,6 +30,7 @@ import {
   enterCompanyNumberAndLookUp,
   verifyCompanyLookedUp,
   enterCompanyAuthCodeAndReadRegister,
+  enterCompanyAuthCodeAndOwnPresenterAndReadRegister,
   verifyReviewFormPopulated,
   tryPreviewWithBlankPersonalCodes,
   fillInDirectorPersonalCodes,
@@ -271,6 +273,49 @@ test("Click through: file a confirmation statement pays the fee via checkout and
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
   await renderConfirmationStatement(page, screenshotPath);
+  await submitConfirmationStatementFiling(page, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a confirmation statement under the customer's own presenter, with no Submit fee", async ({ page }, testInfo) => {
+  test.skip(!simulatorLane, "Only the simulator knows the customer presenter credentials.");
+
+  const testUrl = baseUrl;
+
+  addOnPageLogging(page);
+
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
+
+  await goToFileConfirmationStatement(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await enterCompanyAuthCodeAndOwnPresenterAndReadRegister(
+    page,
+    { companyAuthCode, presenterId: SIMULATOR_CUSTOMER_PRESENTER_ID, presenterCode: SIMULATOR_CUSTOMER_PRESENTER_CODE },
+    screenshotPath,
+  );
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
+  await acceptLawfulPurposeStatement(page, screenshotPath);
+  await renderConfirmationStatement(page, screenshotPath);
+  // The simulator answers the period unpaid, so the other lanes pay Submit's fee first. Under the
+  // customer's own presenter the submit goes straight through with no Submit charge.
   await submitConfirmationStatementFiling(page, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 

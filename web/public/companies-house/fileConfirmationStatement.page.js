@@ -25,6 +25,27 @@ const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNum
 // letters and digits interleaved) is caught before a submit round trip.
 const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 
+// The two headers the status poll (a GET) carries the own presenter in.
+function ownPresenterHeaders() {
+  return ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
+}
+
+function readOwnPresenterInputs() {
+  if (!document.getElementById("useOwnPresenter").checked) return { presenter: null };
+  const idInput = document.getElementById("ownPresenterId");
+  const codeInput = document.getElementById("ownPresenterCode");
+  const id = idInput.value.trim();
+  const code = codeInput.value.trim();
+  const problems = [];
+  if (!id) problems.push({ input: idInput, message: "Enter your presenter id" });
+  if (!code) problems.push({ input: codeInput, message: "Enter your presenter authentication code" });
+  return problems.length > 0 ? { problems } : { presenter: { id, code } };
+}
+
+function syncOwnPresenterFields() {
+  document.getElementById("ownPresenterFields").hidden = !document.getElementById("useOwnPresenter").checked;
+}
+
 function normalisePersonalCode(rawValue) {
   return (rawValue || "").trim().toUpperCase().replace(/-/g, "");
 }
@@ -35,6 +56,9 @@ function isValidPersonalCode(rawValue) {
 
 let company = null;
 let companyAuthCode = "";
+// The customer's own Companies House presenter, when they file under it: {id, code} or null.
+// Held in this variable only, like the company authentication code: never written to storage.
+let ownPresenter = null;
 let filingData = null;
 let originalSicCodes = [];
 let originalStatementOfCapital = null;
@@ -45,6 +69,13 @@ let currentOfficers = [];
 let currentPscs = [];
 let shareClassRowCount = 0;
 let shareholdingRowCount = 0;
+
+function feeMessageText(feePaid) {
+  if (feePaid) return "No fee: this payment period is already paid.";
+  return ownPresenter
+    ? "Companies House charges its fee to the credit account behind your presenter. Submit takes no fee of its own."
+    : "A fee applies for this payment period - the amount is shown before you submit.";
+}
 
 function views() {
   return {
@@ -367,6 +398,11 @@ async function handleAuthSubmit(event) {
     window.formErrors.showFormErrors([{ input: codeInput, message: "Enter the 6 to 8 character company authentication code" }]);
     return;
   }
+  const ownPresenterInputs = readOwnPresenterInputs();
+  if (ownPresenterInputs.problems) {
+    window.formErrors.showFormErrors(ownPresenterInputs.problems);
+    return;
+  }
   window.formErrors.clearFormErrors();
   const madeUpDate = company.confirmationStatementNextMadeUpTo;
   if (!madeUpDate) {
@@ -380,8 +416,10 @@ async function handleAuthSubmit(event) {
     filingData = await window.getConfirmationStatementFilingData(company.companyNumber, {
       companyAuthCode: enteredCode,
       madeUpDate,
+      ownPresenter: ownPresenterInputs.presenter ?? undefined,
     });
     companyAuthCode = enteredCode;
+    ownPresenter = ownPresenterInputs.presenter;
 
     originalSicCodes = filingData.sicCodes || [];
     originalStatementOfCapital = filingData.statementOfCapital || null;
@@ -406,9 +444,7 @@ async function handleAuthSubmit(event) {
     renderDirectorRows(currentDirectorOfficers);
 
     const feePaid = filingData.paymentPeriodPaid === true;
-    document.getElementById("feeMessage").textContent = feePaid
-      ? "No fee: this payment period is already paid."
-      : "A fee applies for this payment period - the amount is shown before you submit.";
+    document.getElementById("feeMessage").textContent = feeMessageText(feePaid);
 
     showView("reviewView");
   } catch (error) {
@@ -661,12 +697,13 @@ async function handleReviewFormSubmit(event) {
     // answer at the time the register data was read - the 402 handled in handleSubmitFiling
     // is the actual gate, re-checked fresh at submit time.
     const feeDue = filingData?.paymentPeriodPaid !== true;
+    const submitFee = feeDue && !ownPresenter;
     const previewFeeMessage = document.getElementById("previewFeeMessage");
     previewFeeMessage.style.display = feeDue ? "block" : "none";
-    previewFeeMessage.textContent = feeDue
+    previewFeeMessage.textContent = submitFee
       ? `${CONFIRMATION_STATEMENT_FEE_DISPLAY} will be charged before this is submitted to Companies House.`
-      : "";
-    document.getElementById("submitFilingBtn").textContent = feeDue ? "Pay and submit" : "Submit to Companies House";
+      : feeMessageText(!feeDue);
+    document.getElementById("submitFilingBtn").textContent = submitFee ? "Pay and submit" : "Submit to Companies House";
 
     showView("previewView");
   } catch (error) {
@@ -795,13 +832,13 @@ function buildParagraph(parts, className) {
 
 async function pollPscVerificationUntilSettled(submissionNumber) {
   for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollPscVerificationStatement(submissionNumber);
+    const result = await window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
       return result;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  return window.pollPscVerificationStatement(submissionNumber);
+  return window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
 }
 
 async function handlePscVerificationSubmit(index, matches) {
@@ -833,7 +870,7 @@ async function handlePscVerificationSubmit(index, matches) {
       dobYear: psc.dateOfBirth?.year,
       personalCode,
     };
-    const submission = await window.submitPscVerificationStatement(payload);
+    const submission = await window.submitPscVerificationStatement(ownPresenter ? { ...payload, ownPresenter } : payload);
     resultContainer.replaceChildren(
       buildParagraph(["Submission ", { strong: submission.submissionNumber }, " accepted by the gateway. Waiting for Companies House..."]),
     );
@@ -908,7 +945,12 @@ async function handleSubmitFiling() {
     payload = { ...buildStatementPayload(), companyAuthCode };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
     const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
-    const submission = await window.submitConfirmationStatement(payload, govTestScenarioHeaders);
+    // The own presenter rides in the submit request alone. The record rendered afterwards is built from payload,
+    // so it is kept off payload and sent separately.
+    const submission = await window.submitConfirmationStatement(
+      ownPresenter ? { ...payload, ownPresenter } : payload,
+      govTestScenarioHeaders,
+    );
     document
       .getElementById("filingResult")
       .replaceChildren(
@@ -922,7 +964,7 @@ async function handleSubmitFiling() {
       );
     showView("resultView");
 
-    const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
+    const outcome = await pollUntilSettled(submission.submissionNumber, { ...govTestScenarioHeaders, ...ownPresenterHeaders() });
     showSubmissionProgress("Submission ", outcome.submissionNumber, " was ", outcome.statusCode, ".");
     document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
@@ -994,12 +1036,14 @@ window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibilit
 function startAgain() {
   company = null;
   companyAuthCode = "";
+  ownPresenter = null;
   filingData = null;
   currentDirectors = [];
   currentOfficers = [];
   currentPscs = [];
   document.getElementById("companyForm").reset();
   document.getElementById("authForm").reset();
+  syncOwnPresenterFields();
   document.getElementById("reviewForm").reset();
   document.getElementById("directorRowsContainer").replaceChildren();
   document.getElementById("shareClassesContainer").replaceChildren();
@@ -1050,6 +1094,7 @@ if (window.__submitReady__) {
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("authForm").addEventListener("submit", handleAuthSubmit);
+document.getElementById("useOwnPresenter").addEventListener("change", syncOwnPresenterFields);
 document.getElementById("reviewForm").addEventListener("submit", handleReviewFormSubmit);
 document.getElementById("addShareClassBtn").addEventListener("click", () => addShareClassRow());
 document.getElementById("addShareholdingBtn").addEventListener("click", () => addShareholdingRow());

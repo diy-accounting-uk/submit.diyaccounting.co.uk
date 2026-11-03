@@ -156,6 +156,28 @@ describe("pollSubmission", () => {
     });
   });
 
+  test("polls under the customer's own presenter, without resolving ours or recording it", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    await pollSubmission({
+      userSub: "user-1",
+      submissionNumber: "00001A",
+      ownPresenter: { presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" },
+      kind: "confirmation-statement",
+    });
+
+    expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+    expect(mockBuildStatusRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" }),
+    );
+    const everythingStored = JSON.stringify(mockSend.mock.calls.map(([command]) => command?.input));
+    expect(everythingStored).not.toContain("OWN-PRES-7731");
+    expect(everythingStored).not.toContain("OwnSecretCode#42");
+  });
+
   test("writes a receipt and an async request kind on ACCEPT, and publishes acceptedEvent", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],

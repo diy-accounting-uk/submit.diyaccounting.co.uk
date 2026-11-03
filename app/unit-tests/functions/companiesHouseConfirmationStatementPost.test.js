@@ -9,6 +9,24 @@ import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.j
 
 const mockSend = vi.fn();
 
+const loggedLines = [];
+vi.mock("@app/lib/logger.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  const capture =
+    (level) =>
+    (...args) =>
+      loggedLines.push({ level, args });
+  const capturingLogger = {
+    trace: capture("trace"),
+    debug: capture("debug"),
+    info: capture("info"),
+    warn: capture("warn"),
+    error: capture("error"),
+    fatal: capture("fatal"),
+  };
+  return { ...actual, createLogger: () => capturingLogger };
+});
+
 vi.mock("@aws-sdk/lib-dynamodb", () => {
   class QueryCommand {
     constructor(input) {
@@ -116,6 +134,7 @@ function buildEvent({ body = buildStatementBody(), headers = {}, authorizer, met
 
 describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   beforeEach(() => {
+    loggedLines.length = 0;
     delete process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS;
     Object.assign(
       process.env,
@@ -359,6 +378,77 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(402);
     expect(mockBuildPaymentPeriodsRequest).toHaveBeenCalled();
+  });
+
+  describe("under the customer's own presenter", () => {
+    const OWN_PRESENTER = { id: "OWN-PRES-7731", code: "OwnSecretCode#42" };
+
+    test("presents under the customer's presenter, skips the Submit checkout and never resolves our presenter", async () => {
+      mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+      mockHasPaidCharge.mockResolvedValue(false);
+      const response = await companiesHouseConfirmationStatementPostHandler(
+        buildEvent({ body: buildStatementBody({ ownPresenter: OWN_PRESENTER }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+      expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
+      expect(mockHasPaidCharge).not.toHaveBeenCalled();
+      expect(mockMarkChargeUsed).not.toHaveBeenCalled();
+      expect(mockBuildConfirmationStatementSubmission).toHaveBeenCalledWith(
+        expect.objectContaining({ presenterId: OWN_PRESENTER.id, presenterCode: OWN_PRESENTER.code }),
+      );
+    });
+
+    test("still presents under our presenter and charges when no own presenter is sent", async () => {
+      mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+      mockHasPaidCharge.mockResolvedValue(false);
+      const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+      expect(response.statusCode).toBe(402);
+      expect(mockResolvePresenterCredentials).toHaveBeenCalled();
+    });
+
+    test("rejects an own presenter that is missing its authentication code", async () => {
+      const response = await companiesHouseConfirmationStatementPostHandler(
+        buildEvent({ body: buildStatementBody({ ownPresenter: { id: OWN_PRESENTER.id } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("presenter authentication code");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("rejects an own presenter that is missing its id", async () => {
+      const response = await companiesHouseConfirmationStatementPostHandler(
+        buildEvent({ body: buildStatementBody({ ownPresenter: { code: OWN_PRESENTER.code } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("keeps the own presenter out of every stored record, event and log line", async () => {
+      await companiesHouseConfirmationStatementPostHandler(buildEvent({ body: buildStatementBody({ ownPresenter: OWN_PRESENTER }) }));
+      const everythingWritten = JSON.stringify({
+        stored: mockSend.mock.calls.map(([command]) => command?.input),
+        events: mockEventBridgeSend.mock.calls.map(([command]) => command?.input),
+        logged: loggedLines,
+      });
+      expect(loggedLines.length).toBeGreaterThan(0);
+      expect(everythingWritten).not.toContain(OWN_PRESENTER.id);
+      expect(everythingWritten).not.toContain(OWN_PRESENTER.code);
+    });
+
+    test("keeps the own presenter out of the log when the gateway call fails", async () => {
+      mockPostToGateway.mockRejectedValue(new Error("gateway down"));
+      const response = await companiesHouseConfirmationStatementPostHandler(
+        buildEvent({ body: buildStatementBody({ ownPresenter: OWN_PRESENTER }) }),
+      );
+      expect(response.statusCode).toBe(500);
+      const everythingWritten = JSON.stringify({
+        stored: mockSend.mock.calls.map(([command]) => command?.input),
+        logged: loggedLines,
+      });
+      expect(everythingWritten).not.toContain(OWN_PRESENTER.id);
+      expect(everythingWritten).not.toContain(OWN_PRESENTER.code);
+    });
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

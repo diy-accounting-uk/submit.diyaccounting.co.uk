@@ -288,6 +288,12 @@ export function serializeResponseHeaders(headers) {
   return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
 }
 
+// A header whose name carries "presenter" holds a Companies House presenter credential: the value never reaches a log.
+function redactPresenterHeaders(headers) {
+  if (!headers || typeof headers !== "object") return headers;
+  return Object.fromEntries(Object.entries(headers).map(([name, value]) => [name, /presenter/i.test(name) ? "[REDACTED]" : value]));
+}
+
 // The event minus its body: request line, route, headers and requestContext, plus the body's size and content type.
 export function describeEventWithoutBody(event) {
   const { body, ...eventWithoutBody } = event || {};
@@ -295,7 +301,7 @@ export function describeEventWithoutBody(event) {
   if (typeof body === "string") bodyLength = body.length;
   else if (body !== undefined && body !== null) bodyLength = JSON.stringify(body).length;
   return {
-    ...sanitiseData(eventWithoutBody),
+    ...sanitiseData({ ...eventWithoutBody, headers: redactPresenterHeaders(eventWithoutBody.headers) }),
     bodyLength,
     bodyContentType: getHeader(event?.headers || {}, "content-type") || null,
   };

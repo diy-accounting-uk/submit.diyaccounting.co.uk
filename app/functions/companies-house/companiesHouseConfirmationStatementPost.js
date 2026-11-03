@@ -46,6 +46,7 @@ import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
+import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementPost.js" });
 
@@ -250,6 +251,8 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const statement = extractAndValidateConfirmationStatementParameters(filingEvent, errorMessages);
+  // Held in this call only: it goes to the envelope builders and nowhere else.
+  const ownPresenter = readOwnPresenterFromBody(parseRequestBody(filingEvent), errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -264,13 +267,15 @@ export async function ingestHandler(event) {
 
   let submissionNumber;
   try {
-    const { presenterId, presenterCode } = await resolvePresenterCredentials();
+    const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
     const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     const subjectKey = buildConfirmationStatementChargeSubjectKey(statement.companyNumber, statement.reviewDate);
 
     const feeWaivedCompanyNumbers = parseFeeWaivedCompanyNumbers(process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS || "");
     let shouldMarkChargeUsed = false;
-    if (!feeWaivedCompanyNumbers.includes(statement.companyNumber)) {
+    // Under the customer's own presenter, Companies House charges its fee to the credit account
+    // behind that presenter, so Submit takes no fee of its own, the same as for a waived company.
+    if (!ownPresenter && !feeWaivedCompanyNumbers.includes(statement.companyNumber)) {
       const paymentPeriodsXml = buildPaymentPeriodsRequest({
         presenterId,
         presenterCode,

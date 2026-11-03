@@ -166,6 +166,25 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
     });
   });
 
+  test("reads both gateway requests under the customer's own presenter and never resolves ours", async () => {
+    const response = await companiesHouseFilingDataPostHandler(
+      buildEvent({ body: buildBody({ ownPresenter: { id: "OWN-PRES-7731", code: "OwnSecretCode#42" } }) }),
+    );
+    expect(response.statusCode).toBe(200);
+    expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+    const own = { presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" };
+    expect(mockBuildCompanyDataRequest).toHaveBeenCalledWith(expect.objectContaining(own));
+    expect(mockBuildPaymentPeriodsRequest).toHaveBeenCalledWith(expect.objectContaining(own));
+  });
+
+  test("rejects an own presenter with a blank authentication code", async () => {
+    const response = await companiesHouseFilingDataPostHandler(
+      buildEvent({ body: buildBody({ ownPresenter: { id: "OWN-PRES-7731", code: "  " } }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("rejects a company authentication code that is too short", async () => {
     const response = await companiesHouseFilingDataPostHandler(buildEvent({ body: buildBody({ companyAuthCode: "AB" }) }));
     expect(response.statusCode).toBe(400);

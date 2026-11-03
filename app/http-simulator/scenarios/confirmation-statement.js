@@ -10,15 +10,7 @@
 // one, since submission numbers are unique across the whole presenter (companiesHouseXmlGateway.js's
 // one shared counter), so at most one registry ever carries a given number.
 
-import { createHash } from "crypto";
-import { SIMULATOR_PRESENTER_ID, SIMULATOR_PRESENTER_CODE } from "./accounts-filing.js";
-
-function md5Lowercase(value) {
-  return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
-}
-
-const SIMULATOR_SENDER_ID_HASH = md5Lowercase(SIMULATOR_PRESENTER_ID);
-const SIMULATOR_AUTH_VALUE_HASH = md5Lowercase(SIMULATOR_PRESENTER_CODE);
+import { isAuthenticated } from "./accounts-filing.js";
 
 const AUTHORISATION_FAILURE_ERROR = {
   raisedBy: "Gateway",
@@ -115,10 +107,6 @@ let usedSubmissionNumbers = new Set();
 export function resetConfirmationStatementFilings() {
   submissions = new Map();
   usedSubmissionNumbers = new Set();
-}
-
-function isAuthenticated({ senderIdHash, authValueHash }) {
-  return senderIdHash === SIMULATOR_SENDER_ID_HASH && authValueHash === SIMULATOR_AUTH_VALUE_HASH;
 }
 
 function isFixtureCompany({ companyNumber, companyAuthenticationCode }) {

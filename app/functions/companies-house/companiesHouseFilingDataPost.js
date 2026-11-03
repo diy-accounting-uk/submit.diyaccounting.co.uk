@@ -33,6 +33,7 @@ import {
 } from "../../services/companiesHouseXmlGateway.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseFilingDataPost.js" });
 
@@ -66,7 +67,10 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid or missing madeUpDate - must be YYYY-MM-DD");
   }
 
+  const ownPresenter = readOwnPresenterFromBody(parsedBody, errorMessages);
+
   return {
+    ownPresenter,
     companyNumber: normalised,
     companyAuthCode: trimmedCompanyAuthCode,
     madeUpDate,
@@ -104,13 +108,17 @@ export async function ingestHandler(event) {
   const filingEvent = codes.event;
 
   const errorMessages = [];
-  const { companyNumber, companyAuthCode, madeUpDate, companyType } = extractAndValidateParameters(filingEvent, errorMessages);
+  const { ownPresenter, companyNumber, companyAuthCode, madeUpDate, companyType } = extractAndValidateParameters(
+    filingEvent,
+    errorMessages,
+  );
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  const { presenterId, presenterCode } = await resolvePresenterCredentials();
+  // The customer's own presenter, when the request carries one, stands in for ours for this request only.
+  const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.

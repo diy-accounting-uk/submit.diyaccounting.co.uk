@@ -272,6 +272,27 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
   });
 
+  test("presents under the customer's own presenter, never resolves ours and never stores it", async () => {
+    const response = await companiesHouseAccountsPostHandler(
+      buildEvent({ body: { ...buildAccountsBody(), ownPresenter: { id: "OWN-PRES-7731", code: "OwnSecretCode#42" } } }),
+    );
+    expect(response.statusCode).toBe(201);
+    expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
+    const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+    expect(submissionArgs).toMatchObject({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" });
+    const everythingStored = JSON.stringify(mockSend.mock.calls.map(([command]) => command?.input));
+    expect(everythingStored).not.toContain("OWN-PRES-7731");
+    expect(everythingStored).not.toContain("OwnSecretCode#42");
+  });
+
+  test("rejects an own presenter that is missing its authentication code", async () => {
+    const response = await companiesHouseAccountsPostHandler(
+      buildEvent({ body: { ...buildAccountsBody(), ownPresenter: { id: "OWN-PRES-7731" } } }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     await companiesHouseAccountsPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {
