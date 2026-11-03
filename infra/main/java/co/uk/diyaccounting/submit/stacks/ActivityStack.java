@@ -27,11 +27,14 @@ import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.constructs.Construct;
 
 public class ActivityStack extends Stack {
 
     public final EventBus activityBus;
+    public final Topic feedbackEngagementTopic;
     public final Lambda telegramForwarderLambda;
     public final Lambda signInActivityPublishLambda;
 
@@ -102,6 +105,19 @@ public class ActivityStack extends Stack {
 
         cfnOutput(this, "ActivityBusName", this.activityBus.getEventBusName());
         cfnOutput(this, "ActivityBusArn", this.activityBus.getEventBusArn());
+
+        // ============================================================================
+        // Feedback engagement SNS topic
+        // ============================================================================
+        // One topic and one email subscription per environment. The app stack's interestPost
+        // Lambda publishes to it by name, so a new deployment adds no subscription to confirm.
+        this.feedbackEngagementTopic = Topic.Builder.create(
+                        this, "%s-FeedbackEngagementTopic".formatted(props.resourceNamePrefix()))
+                .topicName(props.sharedNames().activity.feedbackEngagementTopicName)
+                .build();
+        this.feedbackEngagementTopic.addSubscription(new EmailSubscription("antony@diyaccounting.co.uk"));
+
+        cfnOutput(this, "FeedbackEngagementTopicArn", this.feedbackEngagementTopic.getTopicArn());
 
         // ============================================================================
         // Telegram Forwarder Lambda + EventBridge Rule

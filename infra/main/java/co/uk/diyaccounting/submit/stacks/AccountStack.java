@@ -54,7 +54,6 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.sns.Topic;
-import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.constructs.Construct;
 
 public class AccountStack extends Stack {
@@ -1125,11 +1124,10 @@ public class AccountStack extends Stack {
         // Feature-switched via feedbackEngagementEnabled in cdk.json
         // ============================================================================
         if (props.feedbackEngagementEnabled()) {
-            var feedbackTopic = Topic.Builder.create(
-                            this, "%s-feedback-engagement".formatted(props.resourceNamePrefix()))
-                    .topicName("%s-feedback-engagement".formatted(props.resourceNamePrefix()))
-                    .build();
-            feedbackTopic.addSubscription(new EmailSubscription("antony@diyaccounting.co.uk"));
+            var feedbackTopic = Topic.fromTopicArn(
+                    this,
+                    "%s-FeedbackEngagementTopic".formatted(props.resourceNamePrefix()),
+                    props.sharedNames().activity.feedbackEngagementTopicArn);
 
             var interestPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())

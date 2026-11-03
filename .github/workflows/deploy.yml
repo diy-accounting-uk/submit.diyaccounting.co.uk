@@ -172,7 +172,7 @@ env:
   # app stack reads. Add a job when an app stack starts to read a new env resource. A rename in
   # deploy-environment.yml needs the same change here; a prefix that matches no job waits for the
   # whole run. "deploy observability /" does not match "deploy observability us-east-1 /".
-  ENV_JOBS_READ_BY_APP_STACKS: 'create secrets,verify certificate,deploy identity,deploy data /,deploy ecr /,deploy ecr us-east-1 /,deploy observability /'
+  ENV_JOBS_READ_BY_APP_STACKS: 'create secrets,verify certificate,deploy identity,deploy activity /,deploy data /,deploy ecr /,deploy ecr us-east-1 /,deploy observability /'
 
 jobs:
 

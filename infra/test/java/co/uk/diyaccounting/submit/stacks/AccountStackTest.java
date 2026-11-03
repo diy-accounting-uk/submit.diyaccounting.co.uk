@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
 class AccountStackTest {
@@ -117,6 +118,46 @@ class AccountStackTest {
                         : Stream.of(String.valueOf(resource)))
                 .toList();
         assertEquals(List.of(LIVE_STRIPE_KEY_ARN + "-*", TEST_STRIPE_KEY_ARN + "-*"), secretReads);
+    }
+
+    @Test
+    void feedbackEngagementUsesTheEnvironmentTopicAndCreatesNoTopicOrSubscription() {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+        var props = AccountStack.AccountStackProps.builder()
+                .env(Environment.builder()
+                        .account("111111111111")
+                        .region("eu-west-2")
+                        .build())
+                .crossRegionReferences(false)
+                .envName("docs")
+                .deploymentName("docs")
+                .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                .cloudTrailEnabled("false")
+                .sharedNames(sharedNames)
+                .baseImageTag("latest")
+                .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool")
+                .hmrcAgentAuthorisationBaseUri("https://test-api.service.hmrc.gov.uk")
+                .booksAllowedOrigins("https://ci.diya-gl.co.uk")
+                .feedbackEngagementEnabled(true)
+                .build();
+        Template template = Template.fromStack(new AccountStack(app, "TestFeedbackAccountStack", props));
+
+        template.resourceCountIs("AWS::SNS::Topic", 0);
+        template.resourceCountIs("AWS::SNS::Subscription", 0);
+        String topicArn = sharedNames.activity.feedbackEngagementTopicArn;
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "Environment", Map.of("Variables", Match.objectLike(Map.of("FEEDBACK_TOPIC_ARN", topicArn))))));
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of("Action", "sns:Publish", "Resource", topicArn))))))));
     }
 
     @Test
