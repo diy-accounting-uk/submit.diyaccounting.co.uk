@@ -53,4 +53,46 @@ describe("codesSeal", () => {
   test("refuses a malformed value", async () => {
     await expect(openCodes("not-sealed", ENTRY_ID)).rejects.toThrow("malformed");
   });
+
+  describe("key versions", () => {
+    const V1 = "test-mcp-oauth-blob-key-0123456789abcdef";
+    const V2 = "a-second-key-0123456789abcdef0123456789abcd";
+    const rolled = JSON.stringify({ current: "v2", versions: { v1: V1, v2: V2 } });
+    const registryV1 = JSON.stringify({ current: "v1", versions: { v1: V1 } });
+
+    test("opens a value sealed under the raw stored key, after the store becomes a registry", async () => {
+      process.env.MCP_OAUTH_BLOB_KEY = V1;
+      const sealedBeforeRegistry = await sealCodes(CODES, ENTRY_ID);
+      expect(sealedBeforeRegistry.startsWith("v1.")).toBe(true);
+      process.env.MCP_OAUTH_BLOB_KEY = rolled;
+      expect(await openCodes(sealedBeforeRegistry, ENTRY_ID)).toEqual(CODES);
+    });
+
+    test("opens a value sealed before a roll, after the roll", async () => {
+      process.env.MCP_OAUTH_BLOB_KEY = registryV1;
+      const sealed = await sealCodes(CODES, ENTRY_ID);
+      process.env.MCP_OAUTH_BLOB_KEY = rolled;
+      expect(await openCodes(sealed, ENTRY_ID)).toEqual(CODES);
+    });
+
+    test("seals under the current version and names it", async () => {
+      process.env.MCP_OAUTH_BLOB_KEY = rolled;
+      const sealed = await sealCodes(CODES, ENTRY_ID);
+      expect(sealed.startsWith("v2.")).toBe(true);
+      expect(await openCodes(sealed, ENTRY_ID)).toEqual(CODES);
+    });
+
+    test("refuses a value whose version the store no longer holds", async () => {
+      process.env.MCP_OAUTH_BLOB_KEY = rolled;
+      const sealed = await sealCodes(CODES, ENTRY_ID);
+      process.env.MCP_OAUTH_BLOB_KEY = registryV1;
+      await expect(openCodes(sealed, ENTRY_ID)).rejects.toThrow("not held");
+    });
+
+    test("refuses a value that names one version but was sealed under another", async () => {
+      process.env.MCP_OAUTH_BLOB_KEY = rolled;
+      const [, iv, tag, ciphertext] = (await sealCodes(CODES, ENTRY_ID)).split(".");
+      await expect(openCodes(["v1", iv, tag, ciphertext].join("."), ENTRY_ID)).rejects.toThrow();
+    });
+  });
 });
