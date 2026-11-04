@@ -35,6 +35,7 @@ export async function loginWithCognitoOrMockAuth(
   testAuthUsername,
   screenshotPath = defaultScreenshotPath,
   testAuthPassword = null,
+  totpSecret = process.env.TEST_AUTH_TOTP_SECRET,
 ) {
   if (testAuthProvider === "mock" || testAuthProvider === "simulator") {
     // Mock OAuth flow (used by both mock and simulator providers)
@@ -55,7 +56,6 @@ export async function loginWithCognitoOrMockAuth(
     await submitHostedUINativeAuth(page, screenshotPath);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png`, readerView: true });
     // Handle TOTP MFA challenge if a TOTP secret is available
-    const totpSecret = process.env.TEST_AUTH_TOTP_SECRET;
     if (totpSecret) {
       await handleTotpChallenge(page, totpSecret, screenshotPath);
       await takeScreenshot(page, {
