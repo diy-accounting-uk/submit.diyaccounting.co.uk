@@ -5,8 +5,13 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { putHmrcApiRequest } from "@app/data/dynamoDbHmrcApiRequestRepository.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
+
+vi.mock("@app/data/dynamoDbHmrcApiRequestRepository.js", () => ({
+  putHmrcApiRequest: vi.fn().mockResolvedValue(undefined),
+}));
 
 function mockJsonResponse({ ok, status, body = {}, headers = {} }) {
   return {
@@ -176,5 +181,59 @@ describe("lib/hmrcAgentAuthorisation", () => {
       expect(isClientAuthorisedForService({ authorisations: {} }, "MTD-VAT")).toBe(false);
       expect(isClientAuthorisedForService(null, "MTD-VAT")).toBe(false);
     });
+  });
+
+  it("writes an audit row for the signed-in user after a call", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(mockJsonResponse({ ok: true, status: 200, body: { status: "pending" } })));
+
+    const { getInvitationStatus } = await import("@app/lib/hmrcAgentAuthorisation.js");
+    await getInvitationStatus({
+      arn: "TARN0000001",
+      invitationId: "inv-1",
+      accessToken: "token-123",
+      govClientHeaders: {},
+      auditForUserSub: "user-sub-9",
+    });
+
+    expect(putHmrcApiRequest).toHaveBeenCalledTimes(1);
+    expect(putHmrcApiRequest.mock.calls[0][0]).toBe("user-sub-9");
+    expect(putHmrcApiRequest.mock.calls[0][1].httpResponse.statusCode).toBe(200);
+  });
+
+  it("writes an audit row and rethrows when the request cannot be sent", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("socket hang up")));
+
+    const { getInvitationStatus } = await import("@app/lib/hmrcAgentAuthorisation.js");
+    await expect(
+      getInvitationStatus({
+        arn: "TARN0000001",
+        invitationId: "inv-1",
+        accessToken: "token-123",
+        govClientHeaders: {},
+        auditForUserSub: "user-sub-9",
+      }),
+    ).rejects.toThrow("socket hang up");
+
+    expect(putHmrcApiRequest).toHaveBeenCalledTimes(1);
+    expect(putHmrcApiRequest.mock.calls[0][1].httpResponse.statusCode).toBe(0);
+  });
+
+  it("refuses a production request with no connection method", async () => {
+    process.env.HMRC_AGENT_AUTHORISATION_BASE_URI = "https://api.service.hmrc.gov.uk";
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getInvitationStatus } = await import("@app/lib/hmrcAgentAuthorisation.js");
+    await expect(
+      getInvitationStatus({
+        arn: "TARN0000001",
+        invitationId: "inv-1",
+        accessToken: "token-123",
+        govClientHeaders: {},
+        auditForUserSub: "user-sub-9",
+      }),
+    ).rejects.toThrow(/not sent to HMRC/);
+
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

@@ -127,6 +127,7 @@ export async function ingestHandler(event) {
       knownFact,
       accessToken,
       govClientHeaders,
+      auditForUserSub: user.sub,
     });
 
     if (!result.ok || !result.invitationId) {

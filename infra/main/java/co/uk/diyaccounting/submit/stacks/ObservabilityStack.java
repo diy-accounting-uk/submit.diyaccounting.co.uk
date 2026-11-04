@@ -737,6 +737,29 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // HMRC fraud prevention header violation alarm. app/services/hmrcApi.js sendToHmrc emits
+        // HmrcFraudHeaderViolation for every request to the HMRC production API that lacks a
+        // required Gov-Client or Gov-Vendor header. The metric is environment-wide and must
+        // survive a new deployment, so the alarm lives here and not in an app stack. A day is
+        // the period because a violation needs a person to read the log line, not a page.
+        // No SnsAction: the alarm-state-change rule in OpsStack routes this to the
+        // alarm-to-issue Lambda in prod.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcFraudHeaderViolationAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-fraud-header-violation")
+                .alarmDescription("A request to the HMRC production API lacked a required fraud prevention header")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/HmrcSend")
+                        .metricName("HmrcFraudHeaderViolation")
+                        .dimensionsMap(Map.of("Environment", props.envName(), "HmrcHost", "production"))
+                        .statistic("Sum")
+                        .period(Duration.days(1))
+                        .build())
+                .threshold(0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
         // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
         // against this same environment-wide behaviour-test metric, each opening its own GitHub

@@ -578,6 +578,12 @@
     "why": "The detector did not run; the scheduler needs a person until a replay workflow exists."
   },
   {
+    "family": "prod-env-hmrc-fraud-header-violation",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A request reached HMRC production without a required fraud prevention header; a person reads the structured log line for the missing names."
+  },
+  {
     "family": "prod-env-token-charge-unpaid",
     "remedy": "none",
     "budgetPerDay": 0,
