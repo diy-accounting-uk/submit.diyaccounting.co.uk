@@ -263,6 +263,10 @@ sandbox account**, writing rows as the synthetic test user — never point it at
 account. The workflow turns Cognito native auth on for the run and off again afterwards, and
 rotates the synthetic user's password and one-time code device first.
 
+The Companies House filing scripts (`file-confirmation-statement`, `file-micro-entity-accounts`,
+`file-small-company-accounts`, `file-psc-verification-statement`) record on the simulator only.
+Prod's gateway is live, and these scripts name DIY Accounting Limited's own company number.
+
 ## Step 4a — narration
 
 Every captioned step is spoken by an Amazon Polly neural British English voice (`Amy` by

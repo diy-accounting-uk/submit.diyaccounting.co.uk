@@ -130,9 +130,15 @@ Then one line for the human step: "The queue has N drafts to post: <queue URL>".
 
 ## The review queue
 
-One private artifact, kept across sessions, published the first time this skill runs and recorded
-here as its URL afterwards (board row CAMP1 records the URL). It needs the `db` capability, so load
-the `artifact-capabilities` skill before the first publish.
+One private artifact, kept across sessions: https://claude.ai/artifact/FdKLWPhouk8swyX6z6Lt2G. A
+session writes rows with `ArtifactData` and does not republish the page. Document ids are free
+(`<date>-<n>`). Every field is a string unless noted, and a link must start with http or https.
+
+- Collection `drafts`, one document per draft: `session`, `place`, `threadUrl`, `threadDate`,
+  `need`, `rulesNote`, `rulesUrl`, `draft`, `followUp` (optional), `queuedAt`, `posted` (boolean,
+  `false` on write), `postedDate` (`""` on write).
+- Collection `sessions`, one document per session: `date`, `goal`, `minutes` (number, optional),
+  `line1`, `line2`, `line3`, `prUrl` (optional), `pr` (optional, shown when `prUrl` is absent).
 
 - One card per draft: the place, the thread link (Open), the rules note, the draft (Copy), the
   follow-up reply (Copy), and a "Posted" tick with the date, stored in the artifact's database so
