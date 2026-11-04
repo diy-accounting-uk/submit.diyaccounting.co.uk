@@ -3,11 +3,17 @@
 
 // Present so vitest stops here instead of walking up to the repository root's config,
 // which imports vitest from the root node_modules that this package's own install lacks.
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     include: ["test/**/*.test.js"],
     exclude: ["test/system/**"],
+    // A session's default client headers keep a device id in this directory.
+    env: { DIYA_SUBMIT_CONFIG_DIR: mkdtempSync(join(tmpdir(), "diya-submit-test-")) },
   },
 });

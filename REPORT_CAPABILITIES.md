@@ -1245,10 +1245,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### HMRC-25 Build HMRC fraud-prevention headers
 
 - **Use when:** a call to any HMRC API needs Gov-Client or Gov-Vendor fraud-prevention headers.
-- **Does:** buildFraudHeaders.js constructs the Gov-Client and Gov-Vendor headers HMRC's fraud-prevention spec requires. It detects the vendor's public IP via checkip.amazonaws.com and caches it per Lambda cold start.
+- **Does:** buildFraudHeaders.js constructs the Gov-Client and Gov-Vendor headers HMRC's fraud-prevention spec requires. It detects the vendor's public IP via checkip.amazonaws.com and caches it per Lambda cold start. It sends WEB_APP_VIA_SERVER for the browser, DESKTOP_APP_VIA_SERVER for the stdio MCP server and OTHER_VIA_SERVER for the hosted MCP endpoint, whose caller's address arrives signed in x-mcp-hosted-client.
 - **Run:** `import { buildFraudHeaders } from "app/lib/buildFraudHeaders.js"`
 - **Entry:** `app/lib/buildFraudHeaders.js:buildFraudHeaders`
-- **Files:** app/lib/buildFraudHeaders.js, app/unit-tests/lib/buildFraudHeaders.test.js
+- **Files:** app/lib/buildFraudHeaders.js, app/lib/hostedClientAddress.js, app/unit-tests/lib/buildFraudHeaders.test.js, app/unit-tests/lib/hostedClientAddress.test.js
 - **Keywords:** fraud prevention headers, gov-client, gov-vendor, device id, vendor ip, checkip
 - **Related:** HMRC-26, HMRC-29
 

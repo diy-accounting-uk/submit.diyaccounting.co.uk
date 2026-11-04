@@ -46,6 +46,13 @@ the user signs in with their Submit account. The ci form of the URL is
 `lib/hosted-tools.js`: `open_book` reads the DIYA cloud only. The sign-in pair, the filesystem tools,
 the practice tools that still take an HMRC token, and `run_for_clients` are not registered.
 
+## HMRC fraud prevention data
+
+HMRC requires data about the device behind each request. The two surfaces send different data.
+
+- The stdio server is `DESKTOP_APP_VIA_SERVER`. On each call to an HMRC route it reads a device id (kept in `~/.config/diya-submit/device-id`), the local IP addresses, the MAC addresses, the operating system user, the timezone, the operating system and device model, and the screens. It has no window, so it sends no `Gov-Client-Window-Size`.
+- The hosted endpoint is `OTHER_VIA_SERVER`. It passes the public address of the caller at `/mcp`, signed so that Submit can trust it. An AI client gives no device data.
+
 ## Tools
 
 | Tool | Does |

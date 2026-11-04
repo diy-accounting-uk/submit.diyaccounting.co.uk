@@ -61,7 +61,7 @@ function baseUrl() {
 
 // Overridable for tests only; production never sets DIYA_SUBMIT_CONFIG_DIR and always keeps the
 // credentials under the user's own config directory.
-function credentialsDir() {
+export function credentialsDir() {
   return process.env.DIYA_SUBMIT_CONFIG_DIR || join(homedir(), ".config", "diya-submit");
 }
 

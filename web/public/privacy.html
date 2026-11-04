@@ -30,7 +30,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Privacy policy</h1>
-      <p class="legal-meta">Last updated: 3 November 2026</p>
+      <p class="legal-meta">Last updated: 4 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -327,6 +327,18 @@
           <li>No localStorage is used for device ID storage</li>
           <li>Each submission generates a fresh, unique device identifier</li>
         </ul>
+
+        <h3>The Installed MCP Server and the Hosted MCP Endpoint</h3>
+        <p>
+          When you run our MCP server on your own computer and call HMRC through it, the server also reads and sends this data from that
+          computer: a device ID kept in your <code>~/.config/diya-submit</code> folder, your local IP addresses, your MAC addresses, your
+          operating system user name, your operating system and device model, and your screen sizes. This is the data HMRC requires for an
+          application installed on a desktop.
+        </p>
+        <p>
+          When your AI client calls our hosted MCP endpoint, we send HMRC the public IP address and port of the caller, and the time we read
+          them. An AI client can connect from its supplier's servers, so this address can be the supplier's address.
+        </p>
 
         <h3>HMRC Consent</h3>
         <p>

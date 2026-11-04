@@ -247,6 +247,8 @@ describe("practice-tools client tools", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       await inviteClient(session, { ...PARAMS, arn: "XARN1234567" });
+      const [, inviteInit] = mockFetch.mock.calls.at(-1);
+      expect(inviteInit.headers["Gov-Client-Device-ID"]).toMatch(/^[0-9a-f-]{36}$/);
 
       const body = JSON.parse(mockFetch.mock.calls[1][1].body);
       expect(body.arn).toBe("XARN1234567");

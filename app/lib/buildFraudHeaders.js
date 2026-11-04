@@ -3,10 +3,10 @@
 
 // @capability HMRC-25 Build HMRC fraud-prevention headers
 // - **Use when:** a call to any HMRC API needs Gov-Client or Gov-Vendor fraud-prevention headers.
-// - **Does:** buildFraudHeaders.js constructs the Gov-Client and Gov-Vendor headers HMRC's fraud-prevention spec requires. It detects the vendor's public IP via checkip.amazonaws.com and caches it per Lambda cold start.
+// - **Does:** buildFraudHeaders.js constructs the Gov-Client and Gov-Vendor headers HMRC's fraud-prevention spec requires. It detects the vendor's public IP via checkip.amazonaws.com and caches it per Lambda cold start. It sends WEB_APP_VIA_SERVER for the browser, DESKTOP_APP_VIA_SERVER for the stdio MCP server and OTHER_VIA_SERVER for the hosted MCP endpoint, whose caller's address arrives signed in x-mcp-hosted-client.
 // - **Run:** `import { buildFraudHeaders } from "app/lib/buildFraudHeaders.js"`
 // - **Entry:** `app/lib/buildFraudHeaders.js:buildFraudHeaders`
-// - **Files:** app/lib/buildFraudHeaders.js, app/unit-tests/lib/buildFraudHeaders.test.js
+// - **Files:** app/lib/buildFraudHeaders.js, app/lib/hostedClientAddress.js, app/unit-tests/lib/buildFraudHeaders.test.js, app/unit-tests/lib/hostedClientAddress.test.js
 // - **Keywords:** fraud prevention headers, gov-client, gov-vendor, device id, vendor ip, checkip
 // - **Related:** HMRC-26, HMRC-29
 // @end-capability
@@ -17,6 +17,13 @@ import { createLogger } from "./logger.js";
 import { createHash } from "crypto";
 import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 import { fetchWithTimeout } from "./httpFetch.js";
+import {
+  HOSTED_CLIENT_ADDRESS_HEADER,
+  firstPublicIp,
+  forwardedIpsOf,
+  readHostedClientAddress,
+  viewerPortOf,
+} from "./hostedClientAddress.js";
 import { PACKAGE_NAME as packageName, PRODUCT_VERSION as packageVersion } from "./productVersion.js";
 
 const logger = createLogger({ source: "app/lib/buildFraudHeaders.js" });
@@ -24,6 +31,15 @@ const logger = createLogger({ source: "app/lib/buildFraudHeaders.js" });
 // Module-level cache for the Lambda's outbound public IP (detected once per cold start)
 let cachedVendorPublicIp = null;
 let vendorIpDetectionAttempted = false;
+
+// The headers only the stdio MCP server can read from the machine it runs on.
+const DESKTOP_CLIENT_HEADER_NAMES = [
+  "Gov-Client-Local-IPs",
+  "Gov-Client-Local-IPs-Timestamp",
+  "Gov-Client-MAC-Addresses",
+  "Gov-Client-User-Agent",
+];
+const ENCODED_PAIR = /^[A-Za-z0-9\-._~%]+=[A-Za-z0-9\-._~%]+$/;
 
 /**
  * Reset module-level state. Only for use in tests.
@@ -95,9 +111,37 @@ function buildServerMultiFactorHeader(authzCtx, userId) {
   return `type=${factorType}&timestamp=${encodeURIComponent(timestamp)}&unique-reference=${encodeURIComponent(uniqueReference)}`;
 }
 
+// HMRC's fraud-prevention spec (developer.service.hmrc.gov.uk/guides/fraud-prevention/
+// connection-method/) offers eight values, and three fit here. WEB_APP_VIA_SERVER ("your
+// application is web based, connecting to HMRC through intermediary servers") is the browser.
+// DESKTOP_APP_VIA_SERVER ("your application is installed on a desktop connecting to HMRC through
+// intermediary servers") is the stdio MCP server: a process the user runs on their own machine,
+// which calls this server, which calls HMRC. OTHER_VIA_SERVER ("not covered by the common
+// architectures") is the hosted MCP endpoint: nothing of ours is installed on the user's device,
+// and no page of ours runs in a browser. The access token's client_id claim names the Cognito app
+// client, and both MCP surfaces share one client, so only a value that the hosted Lambda signed
+// marks a request as hosted. A copied Submit token still reads as WEB_APP_VIA_SERVER.
+function resolveConnection(authzCtx, signedAddress) {
+  const mcpClientId = process.env.COGNITO_MCP_CLIENT_ID;
+  const mcpClient = Boolean(mcpClientId) && authzCtx?.client_id === mcpClientId;
+  if (!mcpClient) return { mcpClient, desktopClient: false, hostedClient: null, connectionMethod: "WEB_APP_VIA_SERVER" };
+  const hostedClient = readHostedClientAddress(signedAddress, authzCtx.sub);
+  return {
+    mcpClient,
+    desktopClient: !hostedClient,
+    hostedClient,
+    connectionMethod: hostedClient ? "OTHER_VIA_SERVER" : "DESKTOP_APP_VIA_SERVER",
+  };
+}
+
+// The server's value with one percent-encoded pair the client sent, when it sent one.
+function withClientPair(serverValue, clientPair) {
+  return clientPair && ENCODED_PAIR.test(clientPair) ? `${serverValue}&${clientPair}` : serverValue;
+}
+
 /**
  * Build Gov-Client and Gov-Vendor fraud prevention headers from the incoming API Gateway event.
- * Follows HMRC's fraud prevention header specifications for WEB_APP_VIA_SERVER connection method.
+ * Follows HMRC's fraud prevention header specifications for the caller's connection method.
  *
  * Gov-Vendor-Public-IP is the Lambda's outbound IP (detected at cold start via checkip.amazonaws.com).
  * Gov-Client-Public-IP is the end user's IP (extracted from X-Forwarded-For set by CloudFront).
@@ -122,25 +166,20 @@ export function buildFraudHeaders(event, options = {}) {
     return null;
   };
 
-  // 1. Client public IP – extract the first non-private IP from X-Forwarded-For header
-  const xff = getHeader("x-forwarded-for") || "";
-  const clientIps = xff
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
+  // API Gateway places this at event.requestContext.authorizer.lambda, and the claims of a route
+  // behind the JWT authorizer at event.requestContext.authorizer.jwt.claims
+  const authz = event.requestContext?.authorizer;
+  const authzCtx = authz?.lambda ?? authz?.jwt?.claims ?? authz;
+  const userId = authzCtx?.sub;
 
-  // Find first public IP (excluding private IP ranges)
-  const publicClientIp = clientIps.find((ip) => {
-    // Exclude private IP ranges: 10.x.x.x, 192.168.x.x, 172.16-31.x.x, and localhost
-    return (
-      !ip.startsWith("10.") &&
-      !ip.startsWith("192.168.") &&
-      !ip.match(/^172\.(1\d|2\d|3[0-1])\./) &&
-      !ip.startsWith("127.") &&
-      !ip.startsWith("::1") &&
-      !ip.startsWith("fe80:")
-    );
-  });
+  const { mcpClient, desktopClient, hostedClient, connectionMethod } = resolveConnection(authzCtx, getHeader(HOSTED_CLIENT_ADDRESS_HEADER));
+
+  // 1. Client public IP – the signed address of the caller at /mcp, otherwise the first public IP
+  // in the X-Forwarded-For header set by CloudFront
+  const xff = getHeader("x-forwarded-for") || "";
+  const clientIps = forwardedIpsOf(xff);
+  const publicClientIp = hostedClient ? hostedClient.ip : firstPublicIp(clientIps);
 
   if (publicClientIp) {
     headers["Gov-Client-Public-IP"] = publicClientIp;
@@ -154,12 +193,10 @@ export function buildFraudHeaders(event, options = {}) {
 
   // 2. Client public port – extract from CloudFront-Viewer-Address header (format: "ip:port" or "[ipv6]:port")
   const viewerAddress = getHeader("cloudfront-viewer-address");
-  if (viewerAddress) {
-    const port = viewerAddress.split(":").pop();
-    if (port && /^\d+$/.test(port)) {
-      headers["Gov-Client-Public-Port"] = port;
-    }
-  } else {
+  const publicClientPort = hostedClient ? hostedClient.port : viewerPortOf(viewerAddress);
+  if (publicClientPort) {
+    headers["Gov-Client-Public-Port"] = publicClientPort;
+  } else if (!viewerAddress) {
     logger.warn({
       message:
         "HMRC REQUIRED HEADER MISSING: Gov-Client-Public-Port — CloudFront-Viewer-Address header not present. Ensure CloudFront Origin Request Policy forwards this header.",
@@ -174,14 +211,11 @@ export function buildFraudHeaders(event, options = {}) {
     logger.warn({ message: "HMRC REQUIRED HEADER MISSING: Gov-Client-Device-ID — not provided by client" });
   }
 
-  // 4. Client user IDs – from authenticated user (Cognito sub)
-  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
-  // API Gateway places this at event.requestContext.authorizer.lambda
-  const authz = event.requestContext?.authorizer;
-  const authzCtx = authz?.lambda ?? authz;
-  const userId = authzCtx?.sub;
+  // 4. Client user IDs – from authenticated user (Cognito sub), and the operating system user the
+  // stdio MCP server reads from its own machine
   if (userId) {
-    headers["Gov-Client-User-IDs"] = `cognito=${encodeURIComponent(userId)}`;
+    const osUser = desktopClient ? getHeader("Gov-Client-User-IDs") : null;
+    headers["Gov-Client-User-IDs"] = withClientPair(`cognito=${encodeURIComponent(userId)}`, osUser?.startsWith("os=") ? osUser : null);
   } else {
     logger.warn({
       message:
@@ -189,19 +223,8 @@ export function buildFraudHeaders(event, options = {}) {
     });
   }
 
-  // 5. Connection method. HMRC's fraud-prevention spec (developer.service.hmrc.gov.uk/guides/
-  // fraud-prevention/connection-method/) offers eight values; the two that fit here are
-  // WEB_APP_VIA_SERVER ("your application is web based, connecting to HMRC through
-  // intermediary servers") for the browser, and DESKTOP_APP_VIA_SERVER ("your application is
-  // installed on a desktop connecting to HMRC through intermediary servers") for the
-  // submission MCP: a process the user runs on their own machine, which calls this server,
-  // which calls HMRC -- never the browser client, and never HMRC directly. The access token's
-  // client_id claim (flattened into context by customAuthorizer.js for every route this
-  // authorizer protects) names which Cognito app client signed in; only the MCP's own client
-  // gets DESKTOP_APP_VIA_SERVER, so a copied Submit token still reads as WEB_APP_VIA_SERVER.
-  const mcpClientId = process.env.COGNITO_MCP_CLIENT_ID;
-  headers["Gov-Client-Connection-Method"] =
-    mcpClientId && authzCtx?.client_id === mcpClientId ? "DESKTOP_APP_VIA_SERVER" : "WEB_APP_VIA_SERVER";
+  // 5. Connection method
+  headers["Gov-Client-Connection-Method"] = connectionMethod;
 
   // 6. Vendor public IP – the Lambda's outbound IP (detected at cold start)
   // MUST NOT fall back to publicClientIp — HMRC rejects submissions where vendor IP = client IP
@@ -216,11 +239,14 @@ export function buildFraudHeaders(event, options = {}) {
   }
 
   // 7. Vendor forwarded chain – build from X-Forwarded-For
-  if (vendorPublicIp && clientIps.length > 0) {
-    headers["Gov-Vendor-Forwarded"] = clientIps
+  // A hosted MCP request has one more hop: the caller reaches the MCP Lambda, and that Lambda reaches
+  // this API, so the caller's signed address comes first.
+  const forwardedIps = hostedClient?.ip ? [hostedClient.ip, ...clientIps] : clientIps;
+  if (vendorPublicIp && forwardedIps.length > 0) {
+    headers["Gov-Vendor-Forwarded"] = forwardedIps
       .map((ip) => `by=${encodeURIComponent(vendorPublicIp)}&for=${encodeURIComponent(ip)}`)
       .join(",");
-  } else if (clientIps.length > 0) {
+  } else if (forwardedIps.length > 0) {
     logger.warn({
       message: "HMRC REQUIRED HEADER MISSING: Gov-Vendor-Forwarded — cannot build without vendor public IP",
     });
@@ -234,8 +260,11 @@ export function buildFraudHeaders(event, options = {}) {
   // 9. Vendor product name – from package.json (must be percent-encoded)
   headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);
 
-  // 10. Vendor version – from package.json (must be key-value structure)
-  headers["Gov-Vendor-Version"] = `${encodeURIComponent(packageName)}=${encodeURIComponent(packageVersion)}`;
+  // 10. Vendor version – from package.json (must be key-value structure). HMRC's desktop and other
+  // connection method pages ask for a pair for the server and a pair for the client application,
+  // and the MCP sends its own pair.
+  const serverVersion = `${encodeURIComponent(packageName)}=${encodeURIComponent(packageVersion)}`;
+  headers["Gov-Vendor-Version"] = withClientPair(serverVersion, mcpClient ? getHeader("Gov-Vendor-Version") : null);
 
   // 11. Pass through any client-side headers from the browser
   const clientHeaderNames = [
@@ -246,6 +275,7 @@ export function buildFraudHeaders(event, options = {}) {
     "Gov-Client-Window-Size",
     "Gov-Client-Browser-Do-Not-Track",
     "Gov-Test-Scenario",
+    ...(desktopClient ? DESKTOP_CLIENT_HEADER_NAMES : []),
   ];
 
   for (const headerName of clientHeaderNames) {
@@ -253,6 +283,12 @@ export function buildFraudHeaders(event, options = {}) {
     if (value && value !== "undefined" && value !== "null") {
       headers[headerName] = value;
     }
+  }
+
+  // The browser collects its own timestamp. For an MCP request this server is where the public IP
+  // is collected, and for a hosted request the MCP Lambda is.
+  if (mcpClient) {
+    headers["Gov-Client-Public-IP-Timestamp"] = hostedClient ? hostedClient.collectedAt : new Date().toISOString();
   }
 
   // 12. Gov-Client-Multi-Factor (O28) -- built server-side from the verified ID token claim
