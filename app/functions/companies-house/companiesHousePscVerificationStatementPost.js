@@ -16,9 +16,15 @@ import {
   buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
+  http400BadRequestResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
+import {
+  hasInvalidCompanyAuthenticationCodeError,
+  INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+  INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+} from "../../lib/companiesHouseGatewayErrors.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -211,6 +217,14 @@ export async function ingestHandler(event) {
         userSub,
         detail: { errors: parsed.errors },
       });
+      if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
+        return http400BadRequestResponse({
+          request,
+          headers: { ...responseHeaders },
+          message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: parsed.errors },
+        });
+      }
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },

@@ -63,10 +63,10 @@ test.describe("File Confirmation Statement page", () => {
 
   async function setupRoutes(
     page,
-    { profile = COMPANY_PROFILE, lookupError = null, filingData = FILING_DATA, feeDueOnSubmit = false } = {},
+    { profile = COMPANY_PROFILE, lookupError = null, filingData = FILING_DATA, feeDueOnSubmit = false, filingDataError = null } = {},
   ) {
     await page.addInitScript(
-      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg }) => {
+      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg, filingDataErrorArg }) => {
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
@@ -112,6 +112,12 @@ test.describe("File Confirmation Statement page", () => {
         window.getPscs = () => Promise.resolve(pscsArg);
         window.getConfirmationStatementFilingData = (companyNumber, input) => {
           window.__filingDataCalls.push({ companyNumber, ...input });
+          if (filingDataErrorArg) {
+            const error = new Error(filingDataErrorArg.message);
+            error.status = filingDataErrorArg.status;
+            error.body = filingDataErrorArg.body;
+            return Promise.reject(error);
+          }
           return Promise.resolve(filingDataArg);
         };
         window.renderConfirmationStatement = (statement) => {
@@ -147,6 +153,7 @@ test.describe("File Confirmation Statement page", () => {
         pscsArg: PSCS_RESULT,
         filingDataArg: filingData,
         feeDueOnSubmitArg: feeDueOnSubmit,
+        filingDataErrorArg: filingDataError,
       },
     );
 
@@ -242,6 +249,28 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#companyView")).toBeVisible();
     const messages = await page.evaluate(() => window.__statusMessages);
     expect(messages.some((m) => m.message.includes("active private company"))).toBe(true);
+  });
+
+  test("shows the invalid authentication code message beside the code field and stays on the code view", async ({ page }) => {
+    const message = "Companies House does not accept this company authentication code. Check the 6 to 8 character code and enter it again.";
+    setupPage(page);
+    await setupRoutes(page, {
+      filingDataError: { status: 400, message, body: { reason: "invalid-company-authentication-code", message } },
+    });
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await enterAuthCode(page, "ZZ999999");
+
+    await expect(page.locator("#authView")).toBeVisible();
+    await expect(page.locator("#reviewView")).toBeHidden();
+    await expect(page.locator("#companyAuthCode")).toHaveAttribute("aria-invalid", "true");
+    const fieldError = page.locator("#companyAuthCode-error");
+    await expect(fieldError).toBeVisible();
+    await expect(fieldError).toContainText(message);
+    const codeBox = await page.locator("#companyAuthCode").boundingBox();
+    const errorBox = await fieldError.boundingBox();
+    expect(codeBox.y - (errorBox.y + errorBox.height)).toBeLessThan(40);
   });
 
   test("moves to the review view with the register data pre-filled after reading filing data", async ({ page }) => {

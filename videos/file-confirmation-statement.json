@@ -226,6 +226,31 @@
       "still": true,
       "steps": [
         {
+          "action": "click",
+          "target": "#useOwnPresenter",
+          "caption": "File under your own presenter. Companies House bills its fee to you.",
+          "headline": "Use your own presenter",
+          "keyWord": "presenter"
+        },
+        {
+          "action": "type",
+          "target": "#ownPresenterId",
+          "text": "12345678901",
+          "clear": true,
+          "secret": true,
+          "caption": "Type your presenter id.",
+          "headline": "Review the statement"
+        },
+        {
+          "action": "type",
+          "target": "#ownPresenterCode",
+          "text": "SimTest1",
+          "clear": true,
+          "secret": true,
+          "caption": "Type your presenter authentication code.",
+          "headline": "Review the statement"
+        },
+        {
           "action": "type",
           "target": "#companyAuthCode",
           "text": "SIMCS01",
