@@ -119,7 +119,7 @@ describe("functions/auth/customAuthorizer", () => {
 
       const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
 
-      expect(result).toEqual({ mfaMethod: "TOTP", federated: false, authTime: "1700000000" });
+      expect(result).toEqual({ mfaMethod: "TOTP", federated: false, authTime: "1700000000", email: undefined });
     });
 
     it("reports a federated sign-in from a JSON-string identities claim", async () => {
@@ -152,6 +152,28 @@ describe("functions/auth/customAuthorizer", () => {
       const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
 
       expect(result).toEqual({});
+    });
+  });
+
+  describe("ingestHandler carries the account email from the ID token", () => {
+    it("fills the context email from a verified ID token when the access token has none", async () => {
+      const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify
+        .mockResolvedValueOnce({ sub: "user-sub", username: "0b1f2c3d-uuid" }) // access token
+        .mockResolvedValueOnce({ sub: "user-sub", email: "synthetic-lane@test.diyaccounting.co.uk" }); // ID token
+
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc", "x-id-token": "id-token" }));
+
+      expect(res.context.email).toBe("synthetic-lane@test.diyaccounting.co.uk");
+    });
+
+    it("leaves the context email empty when neither token carries one", async () => {
+      const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockResolvedValueOnce({ sub: "user-sub" });
+
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc" }));
+
+      expect(res.context.email).toBe("");
     });
   });
 

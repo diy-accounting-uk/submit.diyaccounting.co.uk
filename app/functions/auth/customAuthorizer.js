@@ -124,7 +124,8 @@ function hasFederatedIdentity(idPayload) {
 
 /**
  * Verify the caller's ID token, when sent, and extract the O28 fraud-prevention MFA signal from
- * its claims: custom:mfa_method (set by the Pre Token Generation trigger for TOTP users) and
+ * its claims, and the account's email (an access token of this pool carries a UUID username and
+ * no email, so the ID token is the only verified source the actor class can read): custom:mfa_method (set by the Pre Token Generation trigger for TOTP users) and
  * identities (set by Cognito for federated sign-ins). Best-effort -- a missing or unverifiable ID
  * token, or a sub that doesn't match the already-verified access token, leaves the request
  * authorized on the access token alone and simply carries no MFA context forward, rather than
@@ -132,7 +133,7 @@ function hasFederatedIdentity(idPayload) {
  *
  * @param {object} headers - the request's headers
  * @param {string} accessTokenSub - the sub already verified from the access token
- * @returns {Promise<{mfaMethod?: string, federated?: boolean, authTime?: string}>}
+ * @returns {Promise<{mfaMethod?: string, federated?: boolean, authTime?: string, email?: string}>}
  */
 export async function extractMfaContext(headers, accessTokenSub) {
   const idToken = getHeader(headers, "x-id-token");
@@ -158,6 +159,7 @@ export async function extractMfaContext(headers, accessTokenSub) {
     mfaMethod: idPayload["custom:mfa_method"],
     federated: hasFederatedIdentity(idPayload),
     authTime: idPayload.auth_time !== undefined ? String(idPayload.auth_time) : undefined,
+    email: typeof idPayload.email === "string" ? idPayload.email : undefined,
   };
 }
 
@@ -300,7 +302,7 @@ function generateAllowPolicy(routeArn, jwtPayload, mfaContext = {}) {
       ...flatContext,
       sub: jwtPayload.sub,
       username: jwtPayload["cognito:username"] || jwtPayload.username || jwtPayload.sub,
-      email: jwtPayload.email || "",
+      email: jwtPayload.email || mfaContext.email || "",
       scope: jwtPayload.scope || "",
       token_use: jwtPayload.token_use || "access",
       // Prefer the ID token's auth_time (the O28 MFA build's source of truth) over the access
