@@ -153,13 +153,18 @@ public class SecurityLakeTables {
                 catalogId,
                 "secret_rotation",
                 "curated/security/rotation/",
-                "One row per secrets-rotation.toml entry, with the rotated-at tag and its age, checked nightly",
+                "One row per secrets-rotation.toml entry, with the last roll date, its age, the days to the next due date and a status, checked nightly",
                 columnsOf(
                         "secret_name", "string",
                         "console", "string",
                         "found", "boolean",
+                        "store", "string",
                         "rotated_at", "string",
                         "age_days", "int",
+                        "max_age_days", "int",
+                        "expires_at", "string",
+                        "days_to_due", "int",
+                        "status", "string",
                         "zero_findings", "boolean",
                         "checked_at", "string"));
 

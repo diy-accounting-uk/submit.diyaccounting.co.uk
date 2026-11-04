@@ -9,7 +9,7 @@
 # - **Entry:** `scripts/put-secret-with-rotation-tag.sh`
 # - **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
 # - **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret
-# - **Related:** OPS-43, OPS-10
+# - **Related:** OPS-43, OPS-10, OPS-165
 # @end-capability
 
 #
