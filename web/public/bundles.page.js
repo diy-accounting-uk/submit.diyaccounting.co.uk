@@ -50,6 +50,7 @@ let __fetchBundlesController = null;
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
 let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
 let __currentEnv = null; // Current environment name
+let __affiliateApplication = null; // The caller's own affiliate state from GET /api/v1/affiliate/application
 let __viewer = null; // What this person has chosen to see: preview features, operator features, account settings
 let __catalogService = null; // lib/services/catalog-service.js, read once the catalogue loads
 let __aggregates = null; // lib/services/catalogue-aggregates.js, read once the catalogue loads
@@ -661,6 +662,8 @@ function renderCurrentBundles() {
       }
     }
 
+    if (fullData?.configDriven) fragments.push("set by the site's configuration");
+
     const infoLine = fragments.length > 0 ? domEl("div", { class: "bundle-note" }, fragments.join(" · ")) : null;
 
     // Show Manage Subscription button if bundle has an active subscription
@@ -682,24 +685,120 @@ function renderCurrentBundles() {
         { class: "bundle-row-line" },
         domEl("span", { class: "bundle-row-name" }, displayName),
         manageBtn,
-        domEl(
-          "button",
-          { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-remove-bundle-id": bundleId },
-          "Remove",
-        ),
+        fullData?.configDriven
+          ? null
+          : domEl(
+              "button",
+              { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-remove-bundle-id": bundleId },
+              "Remove",
+            ),
       ),
       infoLine,
     );
   });
 
+  const affiliateCard = affiliateRowEl();
+  if (affiliateCard) bundleCards.push(affiliateCard);
+
   container.replaceChildren(...bundleCards);
 
   const section = document.getElementById("currentBundlesSection");
   if (section) {
-    section.style.display = bundles.length > 0 ? "block" : "none";
+    section.style.display = bundleCards.length > 0 ? "block" : "none";
   }
-  document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundles.length === 0);
+  document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundleCards.length === 0);
 }
+
+// The affiliate status row of the current list: shown for an approved affiliate and for one that
+// configuration sets; only an approved affiliate that configuration does not set can remove it.
+function affiliateRowEl() {
+  const application = __affiliateApplication;
+  if (!application || !(application.state === "approved" || application.configDriven)) return null;
+  const approvedNote = ["approved", application.terms?.name].filter(Boolean).join(" · ");
+  const note = application.configDriven ? "set by the site's configuration" : approvedNote;
+  return domEl(
+    "div",
+    { "class": "service-item bundle-row", "data-affiliate-row": "true" },
+    domEl(
+      "span",
+      { class: "bundle-row-line" },
+      domEl("span", { class: "bundle-row-name" }, application.configDriven ? "Family affiliate" : "Affiliate"),
+      application.configDriven
+        ? null
+        : domEl(
+            "button",
+            { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-withdraw-affiliate": "true" },
+            "Remove",
+          ),
+    ),
+    domEl("div", { class: "bundle-note" }, note),
+  );
+}
+
+// Commission lines already earned at a cash tier stay held while the affiliate is not approved, and the
+// referrer earns the customer credit tier on new referrals.
+const AFFILIATE_WITHDRAW_TEXT =
+  "Remove your approved affiliate status? Commission you have earned stays held and is not paid while you are not approved. " +
+  "New referrals earn credit on your own subscription instead. To become an affiliate again, contact support.";
+
+function showAffiliateWithdrawConfirm(anchor) {
+  document.getElementById("affiliateWithdrawConfirm")?.remove();
+  const panel = domEl(
+    "div",
+    {
+      "id": "affiliateWithdrawConfirm",
+      "class": "pass-delete-confirm",
+      "role": "group",
+      "aria-label": "Confirm removal of affiliate status",
+    },
+    domEl("p", { class: "pass-delete-confirm-text" }, AFFILIATE_WITHDRAW_TEXT),
+    domEl(
+      "div",
+      { class: "bundle-row-line" },
+      domEl("button", { type: "button", class: "btn btn-small btn-danger-outline affiliate-withdraw-confirm-yes" }, "Yes, remove"),
+      domEl("button", { type: "button", class: "btn btn-small btn-secondary affiliate-withdraw-confirm-keep" }, "Keep"),
+    ),
+  );
+  anchor.insertAdjacentElement("beforeend", panel);
+  panel.querySelector(".affiliate-withdraw-confirm-yes").focus();
+}
+
+async function withdrawAffiliate() {
+  const yes = document.querySelector(".affiliate-withdraw-confirm-yes");
+  if (yes) yes.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/affiliate/application", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "withdraw" }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+    __affiliateApplication = { ...__affiliateApplication, state: body.state };
+    document.getElementById("affiliateWithdrawConfirm")?.remove();
+    renderCurrentBundles();
+    renderAffiliateApplyState();
+    showStatus("Your affiliate status is removed.", "success");
+  } catch (err) {
+    if (yes) yes.disabled = false;
+    showStatus(`Your affiliate status was not removed (${err.message})`, "error");
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const withdraw = e.target.closest("button[data-withdraw-affiliate]");
+  if (withdraw) {
+    showAffiliateWithdrawConfirm(withdraw.closest(".bundle-row"));
+    return;
+  }
+  if (e.target.closest(".affiliate-withdraw-confirm-yes")) {
+    withdrawAffiliate();
+    return;
+  }
+  if (e.target.closest(".affiliate-withdraw-confirm-keep")) {
+    document.getElementById("affiliateWithdrawConfirm")?.remove();
+  }
+});
 
 // --- click handler for remove buttons
 document.addEventListener("click", async (e) => {
@@ -1531,18 +1630,24 @@ function affiliateApplyView(application) {
   return AFFILIATE_APPLY_TEXT.none;
 }
 
+function renderAffiliateApplyState() {
+  const view = affiliateApplyView(__affiliateApplication);
+  document.getElementById("affiliateApplyState").textContent = view.text;
+  const button = document.getElementById("affiliateApplyBtn");
+  button.hidden = !view.button;
+  if (view.button) button.textContent = view.button;
+}
+
 async function initAffiliateApplySection() {
   if (!getIdToken()) return;
   const stateEl = document.getElementById("affiliateApplyState");
-  const button = document.getElementById("affiliateApplyBtn");
   document.getElementById("affiliateApplySection").hidden = false;
   try {
     const res = await window.fetchWithIdToken("/api/v1/affiliate/application");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const view = affiliateApplyView(await res.json());
-    stateEl.textContent = view.text;
-    button.hidden = !view.button;
-    if (view.button) button.textContent = view.button;
+    __affiliateApplication = await res.json();
+    renderAffiliateApplyState();
+    renderCurrentBundles();
   } catch (err) {
     stateEl.textContent = `Your application could not be read (${err.message}). Reload the page.`;
   }

@@ -192,7 +192,7 @@ describe("bundleGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     const operatorBundle = body.bundles.find((b) => b.bundleId === "operator");
-    expect(operatorBundle).toMatchObject({ bundleId: "operator", allocated: true });
+    expect(operatorBundle).toMatchObject({ bundleId: "operator", allocated: true, configDriven: true });
   });
 
   test("leaves the operator bundle unallocated for an email not on the operator list", async () => {
@@ -205,6 +205,7 @@ describe("bundleGet ingestHandler", () => {
     const body = parseResponseBody(response);
     const operatorBundle = body.bundles.find((b) => b.bundleId === "operator");
     expect(operatorBundle).toMatchObject({ bundleId: "operator", allocated: false });
+    expect(operatorBundle.configDriven).toBeUndefined();
   });
 
   test("skips async request lookup when x-initial-request header is true", async () => {

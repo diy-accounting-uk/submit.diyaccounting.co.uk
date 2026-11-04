@@ -57,7 +57,7 @@ describe("affiliateApplicationGet", () => {
     mockGetAffiliate.mockResolvedValue(null);
     const result = await ingestHandler(buildEventWithToken(token, null));
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ state: null, terms: customerTerms });
+    expect(JSON.parse(result.body)).toEqual({ state: null, configDriven: false, terms: customerTerms });
     expect(mockGetAffiliate).toHaveBeenCalledWith("hash-of-applicant-sub");
   });
 
@@ -69,6 +69,7 @@ describe("affiliateApplicationGet", () => {
     expect(JSON.parse(result.body)).toEqual({
       tier: "casual",
       state: "applied",
+      configDriven: false,
       updatedAt: null,
       approvedAt: null,
       hasConnectAccount: true,
@@ -128,6 +129,7 @@ describe("affiliateApplicationGet", () => {
     const result = await ingestHandler(buildEventWithToken(token, null));
     expect(JSON.parse(result.body)).toEqual({
       state: null,
+      configDriven: true,
       terms: {
         tier: "family",
         name: "Family",

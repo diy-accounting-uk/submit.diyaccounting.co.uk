@@ -7,8 +7,12 @@ import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilder
 
 const mockGetAffiliate = vi.fn();
 const mockStartApplication = vi.fn();
+const mockGetFamilyAffiliate = vi.fn();
+const mockPutAffiliate = vi.fn();
 vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getAffiliate: (...args) => mockGetAffiliate(...args),
+  getFamilyAffiliate: (...args) => mockGetFamilyAffiliate(...args),
+  putAffiliate: (...args) => mockPutAffiliate(...args),
   startAffiliateApplication: (...args) => mockStartApplication(...args),
 }));
 
@@ -41,6 +45,8 @@ describe("affiliateApplicationPost", () => {
   beforeEach(() => {
     mockGetAffiliate.mockReset();
     mockStartApplication.mockReset();
+    mockGetFamilyAffiliate.mockReset().mockResolvedValue(null);
+    mockPutAffiliate.mockReset().mockResolvedValue({ state: "ended", tier: "casual" });
     mockPublish.mockClear();
     mockGetStripeClient.mockReset();
     mockGetStripeClient.mockResolvedValue(stripe);
@@ -143,6 +149,39 @@ describe("affiliateApplicationPost", () => {
     expect(mockStartApplication).not.toHaveBeenCalled();
     expect(stripe.accountLinks.create.mock.calls[0][0].account).toBe("acct_old");
     expect(mockPublish).not.toHaveBeenCalled();
+  });
+
+  describe("withdraw", () => {
+    const withdraw = () => buildEventWithToken(tokenFor("a@example.com"), { action: "withdraw" });
+
+    test("an approved affiliate is ended and keeps the tier", async () => {
+      mockGetAffiliate.mockResolvedValue({ state: "approved", tier: "casual" });
+      const result = await ingestHandler(withdraw());
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body)).toEqual({ state: "ended", url: null });
+      expect(mockPutAffiliate.mock.calls[0][0]).toMatchObject({ referrerHash: "hash-of-applicant-sub", tier: "casual", state: "ended" });
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+    });
+
+    test("an affiliate that is not approved is refused with 409", async () => {
+      mockGetAffiliate.mockResolvedValue({ state: "applied", tier: "casual" });
+      const result = await ingestHandler(withdraw());
+      expect(result.statusCode).toBe(409);
+      expect(mockPutAffiliate).not.toHaveBeenCalled();
+    });
+
+    test("a family affiliate is refused with 409 because configuration sets it", async () => {
+      mockGetAffiliate.mockResolvedValue({ state: "approved", tier: "casual" });
+      mockGetFamilyAffiliate.mockResolvedValue({ pk: "family#hash-of-applicant-sub" });
+      const result = await ingestHandler(withdraw());
+      expect(result.statusCode).toBe(409);
+      expect(mockPutAffiliate).not.toHaveBeenCalled();
+    });
+
+    test("an unknown action is refused with 400", async () => {
+      const result = await ingestHandler(buildEventWithToken(tokenFor("a@example.com"), { action: "delete" }));
+      expect(result.statusCode).toBe(400);
+    });
   });
 
   test("a lost race keeps the account already stored", async () => {

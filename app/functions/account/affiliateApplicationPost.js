@@ -3,7 +3,7 @@
 
 // @capability BILL-52 Start an affiliate application through Stripe Connect
 // - **Use when:** a signed-in user applies to become an affiliate, or returns to finish a Stripe onboarding they left.
-// - **Does:** The affiliateApplicationPost.js ingestHandler creates a UK Connect account for the caller on first use and stores its id on the affiliate item with the state applied. It answers a new Stripe-hosted onboarding link for the caller only. It refuses an approved or ended affiliate with 409. A synthetic test user gets a Stripe test-mode account.
+// - **Does:** The affiliateApplicationPost.js ingestHandler creates a UK Connect account for the caller on first use and stores its id on the affiliate item with the state applied. It answers a new Stripe-hosted onboarding link for the caller only. It refuses an approved or ended affiliate with 409. A body of `{"action":"withdraw"}` ends an approved affiliate that configuration does not set, and refuses any other caller with 409. A synthetic test user gets a Stripe test-mode account.
 // - **Run:** `POST /api/v1/affiliate/application`
 // - **Entry:** `app/functions/account/affiliateApplicationPost.js:ingestHandler`
 // - **Files:** app/functions/account/affiliateApplicationPost.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationPost.test.js, app/test-support/stripeSimulator.js, web/public/bundles.page.js
@@ -17,8 +17,10 @@ import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
+  parseRequestBody,
   http200OkResponse,
   http401UnauthorizedResponse,
+  http400BadRequestResponse,
   http409ConflictResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
@@ -29,7 +31,7 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { collectsRequirementsInApplication, createConnectAccount, createOnboardingLink } from "../../services/affiliateConnect.js";
-import { getAffiliate, startAffiliateApplication } from "../../data/dynamoDbPassRepository.js";
+import { getAffiliate, getFamilyAffiliate, putAffiliate, startAffiliateApplication } from "../../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationPost.js" });
 
@@ -40,6 +42,24 @@ export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/affiliate/application", ingestHandler);
 }
 /* v8 ignore stop */
+
+async function withdrawApplication({ request, responseHeaders, referrerHash, item, sub }) {
+  if (await getFamilyAffiliate(referrerHash)) {
+    return http409ConflictResponse({ request, headers: responseHeaders, message: "This affiliate status is set by configuration" });
+  }
+  if (item?.state !== "approved") {
+    return http409ConflictResponse({ request, headers: responseHeaders, message: "You are not an approved affiliate" });
+  }
+  const ended = await putAffiliate({ referrerHash, tier: item.tier, state: "ended", now: new Date().toISOString() });
+  await publishActivityEvent({
+    event: "affiliate-withdrawn",
+    site: "submit",
+    summary: `Affiliate withdrawn: ${referrerHash}`,
+    flow: "user-journey",
+    userSub: sub,
+  });
+  return http200OkResponse({ request, headers: responseHeaders, data: { state: ended.state, url: null } });
+}
 
 export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
@@ -63,8 +83,16 @@ export async function ingestHandler(event) {
   const referrerHash = hashSub(decodedToken.sub);
   const test = isSyntheticTestUserEmail(decodedToken.email || "");
 
+  const requestBody = parseRequestBody(event);
+  if (requestBody?.action !== undefined && requestBody.action !== "withdraw") {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Unknown action" });
+  }
+
   try {
     let item = await getAffiliate(referrerHash);
+    if (requestBody?.action === "withdraw") {
+      return await withdrawApplication({ request, responseHeaders, referrerHash, item, sub: decodedToken.sub });
+    }
     if (item?.state === "approved" || item?.state === "ended") {
       return http409ConflictResponse({
         request,

@@ -37,9 +37,8 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /** The terms of the tier the caller would earn, taken from referrals.toml, as the pass page states them. */
-async function termsFor(referrerHash, item) {
+async function termsFor(referrerHash, item, familyMarker) {
   const config = loadReferralConfig();
-  const familyMarker = await getFamilyAffiliate(referrerHash);
   const tier = getTier(config, resolveTierId(config, item, { family: Boolean(familyMarker) }));
   return {
     tier: tier.id,
@@ -74,8 +73,14 @@ export async function ingestHandler(event) {
   const referrerHash = hashSub(decodedToken.sub);
   try {
     let item = await getAffiliate(referrerHash);
+    const familyMarker = await getFamilyAffiliate(referrerHash);
+    const configDriven = Boolean(familyMarker);
     if (!item) {
-      return http200OkResponse({ request, headers: responseHeaders, data: { state: null, terms: await termsFor(referrerHash, null) } });
+      return http200OkResponse({
+        request,
+        headers: responseHeaders,
+        data: { state: null, configDriven, terms: await termsFor(referrerHash, null, familyMarker) },
+      });
     }
     if (needsAccountRefresh(item)) {
       try {
@@ -86,7 +91,8 @@ export async function ingestHandler(event) {
     }
     const view = toAffiliateView(referrerHash, item);
     delete view.referrerHash;
-    view.terms = await termsFor(referrerHash, item);
+    view.configDriven = configDriven;
+    view.terms = await termsFor(referrerHash, item, familyMarker);
     return http200OkResponse({ request, headers: responseHeaders, data: view });
   } catch (error) {
     logger.error({ message: "Error reading affiliate application", error: error.message, stack: error.stack });
