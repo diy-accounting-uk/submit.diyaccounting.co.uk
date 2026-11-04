@@ -238,7 +238,8 @@
           "text": "12345678901",
           "clear": true,
           "secret": true,
-          "caption": "Type your presenter id."
+          "caption": "Type your presenter id.",
+          "headline": "Review the statement"
         },
         {
           "action": "type",
@@ -246,7 +247,8 @@
           "text": "SimTest1",
           "clear": true,
           "secret": true,
-          "caption": "Type your presenter authentication code."
+          "caption": "Type your presenter authentication code.",
+          "headline": "Review the statement"
         },
         {
           "action": "type",
