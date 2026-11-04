@@ -3,9 +3,9 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # @capability OPS-45 Manage AWS Secrets Manager entries and rotation tags
-# - **Use when:** a secret's value or rotation date needs checking, listing, backing up or restoring.
-# - **Does:** manage-secrets.yml lists, checks, backs up and restores secrets for an environment, including the user-sub-hash salt. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
-# - **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation|backup-salt|restore-salt> -f environment-name=<ci|prod>`
+# - **Use when:** a secret's value or rotation date needs checking or listing.
+# - **Does:** manage-secrets.yml lists and checks secrets for an environment, including the format of the user-sub-hash salt. It never prints a secret value. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
+# - **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation> -f environment-name=<ci|prod>`
 # - **Entry:** `scripts/put-secret-with-rotation-tag.sh`
 # - **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
 # - **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret

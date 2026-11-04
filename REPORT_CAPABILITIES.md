@@ -276,7 +276,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance: use when checking this service's obligations against UK GDPR or ICO requirements.
     - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes: use when the HMAC key that hashes stored email addresses must be rotated.
     - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt: use when the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
-    - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking, listing, backing up or restoring.
+    - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking or listing.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
@@ -3245,7 +3245,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
 - **Does:** subHasher.js computes salted HMAC hashes of Cognito subject IDs for analytics and fraud-header anonymisation, backed by SubHashSaltHelper. put-salt-secret-resource-policy.sh reasserts the salt secret's resource policy on every environment deploy. This runs before any per-deployment Lambda role exists; backup-salts.sh and restore-salt.sh export and re-apply the salt for disaster recovery.
-- **Run:** `./scripts/backup-salts.sh`; `./scripts/aws-accounts/restore-salt.sh --source-profile <profile> --target-profile <profile> [--env <env>]`; `gh workflow run manage-secrets.yml -f action=backup-salt -f environment-name=<ci|prod>`
+- **Run:** `./scripts/backup-salts.sh`; `./scripts/aws-accounts/restore-salt.sh --source-profile <profile> --target-profile <profile> [--env <env>]`; `gh workflow run manage-secrets.yml -f action=check-salt -f environment-name=<ci|prod>`
 - **Entry:** `app/services/subHasher.js:hashSub`; `infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java`
 - **Files:** app/services/subHasher.js, app/unit-tests/services/subHasher.test.js, infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java, scripts/put-salt-secret-resource-policy.sh, scripts/backup-salts.sh, scripts/aws-accounts/restore-salt.sh, scripts/migrations/001-convert-salt-to-registry.js, scripts/migrations/002-backfill-salt-version-v1.js
 - **Keywords:** subject id salt, subhasher, salt rotation, resource policy, backup salt, restore salt, hmac hash
@@ -3253,9 +3253,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-45 Manage AWS Secrets Manager entries and rotation tags
 
-- **Use when:** a secret's value or rotation date needs checking, listing, backing up or restoring.
-- **Does:** manage-secrets.yml lists, checks, backs up and restores secrets for an environment, including the user-sub-hash salt. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
-- **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation|backup-salt|restore-salt> -f environment-name=<ci|prod>`
+- **Use when:** a secret's value or rotation date needs checking or listing.
+- **Does:** manage-secrets.yml lists and checks secrets for an environment, including the format of the user-sub-hash salt. It never prints a secret value. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
+- **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation> -f environment-name=<ci|prod>`
 - **Entry:** `scripts/put-secret-with-rotation-tag.sh`
 - **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
 - **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret
