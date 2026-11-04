@@ -1125,12 +1125,11 @@ async function initFeedbackEngagementSection() {
 
   if (!isLoggedIn || alreadyRegistered) return;
 
-  // Check feature flag
-  if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
-    const enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
-    if (!enabled) return;
-  }
+  const feature = window.featureFlags ? await window.featureFlags.getFeature("feedback-engagement") : null;
+  if (!feature || !feature.enabled || !feature.message) return;
+  document.getElementById("feedbackEngagementMessage").textContent = feature.message;
 
+  section.hidden = false;
   section.style.display = "block";
 
   const joinBtn = document.getElementById("feedbackEngagementBtn");
