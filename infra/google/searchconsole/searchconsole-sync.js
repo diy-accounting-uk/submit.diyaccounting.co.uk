@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability DATA-48 Sync Search Console domain properties and their verification
+// @capability DATA-67 Sync Search Console domain properties and their verification
 // - **Use when:** a Search Console domain property must exist and be verified for the service account, or the DNS_CNAME verification tokens must be read.
 // - **Does:** searchconsole-sync.js reads searchconsole.toml, lists the service account's verified domains and Search Console sites, and asks the Site Verification API for each unverified domain's DNS_CNAME token. A plan prints the CNAME name and target to add to DNS. With --apply it verifies each domain whose CNAME is live and adds its property. A domain whose CNAME is not yet live is reported as unverified and the run still exits zero.
 // - **Run:** `npm run searchconsole:sync`; `npm run searchconsole:sync -- --apply`
