@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-165 Read a Secrets Manager secret with a five minute cache and a forced refresh
+// @capability OPS-167 Read a Secrets Manager secret with a five minute cache and a forced refresh
 // - **Use when:** a Lambda reads a secret that can be rolled and must pick up the new value without a deploy.
 // - **Does:** cachedSecret.js reads a secret once in five minutes and shares one request between concurrent reads. After an authentication failure, refreshAfterAuthFailure reads it again and gives the new value, or null when the value is unchanged. withSecretRetry runs a call with the value and, on an authentication failure, runs it once more with the refreshed value. A forced refresh inside ten seconds of the last read returns the cached value, so bad requests cannot flood Secrets Manager.
 // - **Run:** `import { readSecret, withSecretRetry } from "app/lib/cachedSecret.js"`

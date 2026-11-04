@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-166 Roll the MCP blob key without breaking sealed data
+// @capability OPS-168 Roll the MCP blob key without breaking sealed data
 // - **Use when:** the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
 // - **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key.
 // - **Run:** `gh workflow run mcp-blob-key-rotate.yml -f apply=<true|false>`
