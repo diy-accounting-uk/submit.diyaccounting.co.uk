@@ -14,6 +14,7 @@
 // app/functions/practice/practiceClientAuthorisationInvitePost.js
 
 import { validateEnv } from "../../lib/env.js";
+import { grantAccessTokenFromEvent } from "../../lib/mcpHmrcGrantAccess.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -71,7 +72,9 @@ export async function ingestHandler(event) {
   }
 
   const body = parseRequestBody(event) || {};
-  const { service, knownFact, accessToken, arn: arnFromBody } = body;
+  const { service, knownFact, arn: arnFromBody } = body;
+  // An MCP request names its HMRC grant in a header; a browser request carries the token in the body.
+  const accessToken = (await grantAccessTokenFromEvent(event)) ?? body.accessToken;
 
   const errorMessages = [];
   if (!SERVICE_IDENTIFIER[service]) {

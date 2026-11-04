@@ -40,7 +40,6 @@ const session = createSession({
 session.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "live" };
 
 const VRN = "983238295";
-const HMRC_ACCESS_TOKEN = "hmrc-access-token";
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "fixtures/submit");
 function fixture(name) {
@@ -76,7 +75,7 @@ function jsonResponse(status, body, headers) {
 function withGrant(apiFetch, hmrcAccount = "live") {
   return (url, init) =>
     String(url).includes(`/api/v1/mcp/hmrc-grants/${GRANT_ID}`)
-      ? Promise.resolve(jsonResponse(200, { status: "granted", accessToken: HMRC_ACCESS_TOKEN, hmrcAccount }))
+      ? Promise.resolve(jsonResponse(200, { status: "granted", hmrcAccount }))
       : apiFetch(url, init);
 }
 
@@ -139,7 +138,7 @@ describe("submit-tools", () => {
     ];
 
     for (const [name, call, route] of cases) {
-      it(`${name} gets ${route} with the grant's HMRC token and the date range`, async () => {
+      it(`${name} gets ${route} with the grant id and the date range`, async () => {
         const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { items: [] }));
         vi.stubGlobal("fetch", withGrant(mockFetch));
 
@@ -149,7 +148,8 @@ describe("submit-tools", () => {
         const [url, init] = mockFetch.mock.calls[0];
         expect(url).toBe(`https://submit.diyaccounting.co.uk${route}?vrn=${VRN}&from=2025-01-01&to=2025-12-31`);
         expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
-        expect(init.headers["Authorization"]).toBe(`Bearer ${HMRC_ACCESS_TOKEN}`);
+        expect(init.headers["Authorization"]).toBeUndefined();
+        expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
         expect(init.headers.hmrcAccount).toBe("live");
       });
 
@@ -173,7 +173,7 @@ describe("submit-tools", () => {
   });
 
   describe("list_vat_obligations", () => {
-    it("gets obligations with the session bearer on X-Authorization and the HMRC token on Authorization", async () => {
+    it("gets obligations with the session bearer on X-Authorization and the grant id in x-mcp-hmrc-grant", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
       vi.stubGlobal("fetch", withGrant(mockFetch));
 
@@ -183,7 +183,8 @@ describe("submit-tools", () => {
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation?vrn=${VRN}&status=O`);
       expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
-      expect(init.headers["Authorization"]).toBe(`Bearer ${HMRC_ACCESS_TOKEN}`);
+      expect(init.headers["Authorization"]).toBeUndefined();
+      expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
       expect(init.headers["X-Id-Token"]).toBe("session-id-token");
       expect(init.headers["x-initial-request"]).toBe("true");
     });
@@ -332,7 +333,7 @@ describe("submit-tools", () => {
       totalAcquisitionsExVAT: 0,
     };
 
-    it("posts the seven filed boxes with the HMRC token in the body, not a header, and returns the receipt nested under receipt/periodKey/receiptId", async () => {
+    it("posts the seven filed boxes with the grant id in a header and no HMRC token, and returns the receipt nested under receipt/periodKey/receiptId", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
       vi.stubGlobal("fetch", withGrant(mockFetch));
 
@@ -353,7 +354,8 @@ describe("submit-tools", () => {
       expect(init.headers["Authorization"]).toBeUndefined();
       expect(init.headers["X-Id-Token"]).toBe("session-id-token");
       const body = JSON.parse(init.body);
-      expect(body.accessToken).toBe(HMRC_ACCESS_TOKEN);
+      expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
+      expect(body.accessToken).toBeUndefined();
       expect(body.vatNumber).toBe(VRN);
       expect(body.periodStart).toBe("2025-01-01");
       expect(body.vatDueSales).toBe(2400.5);

@@ -31,6 +31,7 @@ import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
 import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
+import co.uk.diyaccounting.submit.utils.McpHmrcGrantAccessHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -222,6 +223,37 @@ public class AccountStack extends Stack {
         // Base URI for HMRC's Agent Authorisation API, read by the three practiceClientAuthorisation*
         // Lambdas below.
         String hmrcAgentAuthorisationBaseUri();
+
+        // The HMRC client the practice authorisation Lambdas refresh an MCP session's HMRC grant with.
+        @Value.Default
+        default String hmrcBaseUri() {
+            return "";
+        }
+
+        @Value.Default
+        default String hmrcClientId() {
+            return "";
+        }
+
+        @Value.Default
+        default String hmrcClientSecretArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String hmrcSandboxBaseUri() {
+            return "";
+        }
+
+        @Value.Default
+        default String hmrcSandboxClientId() {
+            return "";
+        }
+
+        @Value.Default
+        default String hmrcSandboxClientSecretArn() {
+            return "";
+        }
 
         // GitHub App configuration for the support-ticket Lambda (diya-ops). The same App and installation
         // OpsStack reads, but this Lambda's own minted token is scoped to the spreadsheets
@@ -903,6 +935,21 @@ public class AccountStack extends Stack {
         // plus the HMRC call itself.
         var practiceClientAuthorisationLambdaEnv = new PopulatedMap<>(practiceClientsLambdaEnv)
                 .with("HMRC_AGENT_AUTHORISATION_BASE_URI", props.hmrcAgentAuthorisationBaseUri());
+        // The three open an MCP session's HMRC grant themselves, so the token never leaves Submit.
+        var grantStore = McpHmrcGrantAccessHelper.lookup(
+                this,
+                props.deploymentName(),
+                props.sharedNames().data.mcpSessionsTableName,
+                props.sharedNames().mcp.mcpOauthBlobKeySecretArnParameterName);
+        McpHmrcGrantAccessHelper.addEnv(
+                practiceClientAuthorisationLambdaEnv,
+                grantStore,
+                props.hmrcBaseUri(),
+                props.hmrcClientId(),
+                props.hmrcClientSecretArn(),
+                props.hmrcSandboxBaseUri(),
+                props.hmrcSandboxClientId(),
+                props.hmrcSandboxClientSecretArn());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             practiceClientAuthorisationLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -943,6 +990,11 @@ public class AccountStack extends Stack {
         this.practiceClientAuthorisationInvitePostLambdaLogGroup =
                 practiceClientAuthorisationInvitePostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientAuthorisationInvitePostLambdaProps);
+        McpHmrcGrantAccessHelper.grant(
+                this.practiceClientAuthorisationInvitePostLambda,
+                grantStore,
+                props.hmrcClientSecretArn(),
+                props.hmrcSandboxClientSecretArn());
         practiceClientsTable.grant(
                 this.practiceClientAuthorisationInvitePostLambda,
                 "dynamodb:GetItem",
@@ -985,6 +1037,11 @@ public class AccountStack extends Stack {
         this.practiceClientAuthorisationGetLambda = practiceClientAuthorisationGetApiLambda.ingestLambda;
         this.practiceClientAuthorisationGetLambdaLogGroup = practiceClientAuthorisationGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientAuthorisationGetLambdaProps);
+        McpHmrcGrantAccessHelper.grant(
+                this.practiceClientAuthorisationGetLambda,
+                grantStore,
+                props.hmrcClientSecretArn(),
+                props.hmrcSandboxClientSecretArn());
         practiceClientsTable.grant(
                 this.practiceClientAuthorisationGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         bundlesTable.grant(this.practiceClientAuthorisationGetLambda, "dynamodb:Query");
@@ -1033,6 +1090,11 @@ public class AccountStack extends Stack {
         this.practiceClientAuthorisationInviteDeleteLambdaLogGroup =
                 practiceClientAuthorisationInviteDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientAuthorisationInviteDeleteLambdaProps);
+        McpHmrcGrantAccessHelper.grant(
+                this.practiceClientAuthorisationInviteDeleteLambda,
+                grantStore,
+                props.hmrcClientSecretArn(),
+                props.hmrcSandboxClientSecretArn());
         practiceClientsTable.grant(
                 this.practiceClientAuthorisationInviteDeleteLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         bundlesTable.grant(this.practiceClientAuthorisationInviteDeleteLambda, "dynamodb:Query");

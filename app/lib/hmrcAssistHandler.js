@@ -200,12 +200,12 @@ export function createAssistHandlers({ sourceName, route, asyncTableEnvName, ope
     const responseHeaders = { ...govClientHeaders };
 
     if (errorMessages.length > 0) {
-      const hmrcAccessTokenMaybe = extractHmrcAccessTokenFromLambdaEvent(event);
+      const hmrcAccessTokenMaybe = await extractHmrcAccessTokenFromLambdaEvent(event);
       if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
       return buildValidationError(request, errorMessages, responseHeaders);
     }
 
-    const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+    const hmrcAccessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
     if (!hmrcAccessToken) {
       return buildValidationError(request, ["Missing Authorization Bearer token"], responseHeaders);
     }

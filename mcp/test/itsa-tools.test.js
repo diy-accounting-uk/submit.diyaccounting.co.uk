@@ -256,7 +256,7 @@ describe("the Income Tax filing tools", () => {
       "fetch",
       vi.fn(async (url, init) => {
         if (String(url).includes(`/api/v1/mcp/hmrc-grants/${GRANT_ID}`)) {
-          return reply({ status: "granted", accessToken: "hmrc-token", hmrcAccount: "synthetic" });
+          return reply({ status: "granted", hmrcAccount: "synthetic" });
         }
         calls.push({ url: String(url), init });
         return reply({ receipt: { ok: true } });
@@ -271,7 +271,7 @@ describe("the Income Tax filing tools", () => {
 
   const ids = { nino: "AA123456A", businessId: "XAIS12345678901", taxYear: "2025-26" };
 
-  test("the quarterly update posts the confirmed sections with the HMRC token on Authorization and the session on X-Authorization", async () => {
+  test("the quarterly update posts the confirmed sections with the grant id in x-mcp-hmrc-grant and the session on X-Authorization", async () => {
     const result = await submitItsaQuarterlyUpdate(session, {
       ...ids,
       periodIncome: { turnover: 1000 },
@@ -282,7 +282,8 @@ describe("the Income Tax filing tools", () => {
     const [{ url, init }] = calls;
     expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/itsa/self-employment/period");
     expect(init.method).toBe("POST");
-    expect(init.headers.Authorization).toBe("Bearer hmrc-token");
+    expect(init.headers.Authorization).toBeUndefined();
+    expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
     expect(init.headers["X-Authorization"]).toBe("Bearer session-bearer");
     expect(init.headers.hmrcAccount).toBe("synthetic");
     expect(init.headers["Gov-Test-Scenario"]).toBe("STATEFUL");
@@ -302,7 +303,8 @@ describe("the Income Tax filing tools", () => {
     const [{ url, init }] = calls;
     expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/itsa/self-employment/annual");
     expect(init.method).toBe("PUT");
-    expect(init.headers.Authorization).toBe("Bearer hmrc-token");
+    expect(init.headers.Authorization).toBeUndefined();
+    expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
     expect(JSON.parse(init.body)).toEqual({
       ...ids,
       allowances: { annualInvestmentAllowance: 12000 },

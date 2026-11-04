@@ -183,13 +183,13 @@ export async function ingestHandler(event) {
 
   // Non-authorization validation errors
   if (errorMessages.length > 0) {
-    const hmrcAccessTokenMaybe = extractHmrcAccessTokenFromLambdaEvent(event);
+    const hmrcAccessTokenMaybe = await extractHmrcAccessTokenFromLambdaEvent(event);
     if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Validate token after validating other inputs
-  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  const hmrcAccessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
   if (!hmrcAccessToken) {
     return http400BadRequestResponse({
       request,

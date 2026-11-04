@@ -253,6 +253,9 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   return response;
 }
 
+// The header an MCP request names its HMRC grant in; the HMRC handlers open the grant instead of reading a token.
+export const MCP_HMRC_GRANT_HEADER = "x-mcp-hmrc-grant";
+
 /**
  * Get a header value case-insensitively from a headers object.
  * @param {object} headers - The headers object (e.g. event.headers)

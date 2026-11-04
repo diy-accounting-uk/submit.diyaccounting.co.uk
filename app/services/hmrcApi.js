@@ -22,6 +22,7 @@ import {
   http403ForbiddenResponse,
   http404NotFoundResponse,
   http401UnauthorizedResponse,
+  MCP_HMRC_GRANT_HEADER,
 } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 import { emitMetric } from "../lib/emfMetrics.js";
@@ -249,7 +250,13 @@ export class UnauthorizedTokenError extends Error {
   }
 }
 
-export function extractHmrcAccessTokenFromLambdaEvent(event) {
+// The HMRC access token a request carries: the one held by the MCP grant its x-mcp-hmrc-grant
+// header names, otherwise the Authorization bearer token.
+export async function extractHmrcAccessTokenFromLambdaEvent(event) {
+  if (getHeader(event.headers, MCP_HMRC_GRANT_HEADER)) {
+    const { grantAccessTokenFromEvent } = await import("../lib/mcpHmrcGrantAccess.js");
+    return grantAccessTokenFromEvent(event);
+  }
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;

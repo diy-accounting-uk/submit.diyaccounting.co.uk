@@ -78,7 +78,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  const accessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  const accessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
   if (!accessToken) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Missing Authorization Bearer token", error: {} });
   }

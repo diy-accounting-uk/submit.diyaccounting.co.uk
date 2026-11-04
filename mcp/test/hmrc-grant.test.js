@@ -6,7 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { hmrcAccessTokenFor, requestHmrcAuthorisation } from "../lib/submit-tools.js";
+import { hmrcGrantFor, requestHmrcAuthorisation } from "../lib/submit-tools.js";
 import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
 
@@ -93,15 +93,15 @@ describe("the HMRC grant tools", () => {
   });
 
   describe("the token lookup", () => {
-    it("answers the grant's token and account", async () => {
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValueOnce(jsonResponse(200, { status: "granted", accessToken: "hmrc-token", hmrcAccount: "live" })),
-      );
+    it("answers the headers that name the grant and its account, and holds no token", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(200, { status: "granted", hmrcAccount: "live" })));
       const session = newSession();
       session.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "live" };
 
-      expect(await hmrcAccessTokenFor(session, "list_vat_obligations")).toEqual({ accessToken: "hmrc-token", hmrcAccount: "live" });
+      const grant = await hmrcGrantFor(session, "list_vat_obligations");
+
+      expect(grant).toEqual({ grantHeaders: { "x-mcp-hmrc-grant": GRANT_ID, "hmrcAccount": "live" }, hmrcAccount: "live" });
+      expect(JSON.stringify(grant)).not.toMatch(/token/i);
     });
 
     it("carries the route's own message for an expired grant", async () => {
@@ -116,11 +116,11 @@ describe("the HMRC grant tools", () => {
       const session = newSession();
       session.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "live" };
 
-      await expect(hmrcAccessTokenFor(session, "submit_vat_return")).rejects.toThrow("Call request_hmrc_authorisation again");
+      await expect(hmrcGrantFor(session, "submit_vat_return")).rejects.toThrow("Call request_hmrc_authorisation again");
     });
 
     it("names the calling tool and the authorisation tool when no grant is held", async () => {
-      await expect(hmrcAccessTokenFor(newSession(), "submit_vat_return")).rejects.toThrow(
+      await expect(hmrcGrantFor(newSession(), "submit_vat_return")).rejects.toThrow(
         /^submit_vat_return: No HMRC authorisation is held for this session\. Call request_hmrc_authorisation/,
       );
     });

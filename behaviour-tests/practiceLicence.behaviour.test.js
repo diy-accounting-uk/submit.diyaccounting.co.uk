@@ -42,7 +42,7 @@ import { connectPracticeToHmrcInBrowser, grantMcpHmrcAccessInBrowser } from "./s
 import { callHarnessTool } from "../mcp/lib/harness.js";
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
 import { runForClients } from "../mcp/lib/batch-tools.js";
-import { callSubmitApi, hmrcAccessTokenFor } from "../mcp/lib/submit-tools.js";
+import { callSubmitApi, hmrcGrantFor } from "../mcp/lib/submit-tools.js";
 import { createSession } from "../mcp/lib/book-tools.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -267,11 +267,11 @@ test("A practice adds two clients and submits a VAT return for each through run_
       await acceptHmrcAgentInvitation(invited.invitationId);
       return added;
     }
-    const { accessToken } = await hmrcAccessTokenFor(session, "cancel_invitation");
+    const { grantHeaders } = await hmrcGrantFor(session, "cancel_invitation");
     await callSubmitApi(
       session,
       `/api/v1/practice/clients/${encodeURIComponent(added.client.clientId)}/authorisation/invitations?service=MTD-VAT`,
-      { method: "DELETE", customAuthorizer: true, headers: { Authorization: `Bearer ${accessToken}` } },
+      { method: "DELETE", customAuthorizer: true, headers: grantHeaders },
     );
     return added;
   }

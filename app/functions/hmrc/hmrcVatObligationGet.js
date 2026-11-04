@@ -172,7 +172,7 @@ export async function ingestHandler(event) {
 
   // Non-authorization validation errors
   if (errorMessages.length > 0) {
-    const hmrcAccessTokenMaybe = extractHmrcAccessTokenFromLambdaEvent(event);
+    const hmrcAccessTokenMaybe = await extractHmrcAccessTokenFromLambdaEvent(event);
     if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
     return buildValidationError(request, errorMessages, responseHeaders);
   }
@@ -190,7 +190,7 @@ export async function ingestHandler(event) {
   // A client-scoped request resolves its VRN from the client row, never from the query string.
   const resolvedVrn = clientId ? client.identifiers?.vrn : vrn;
 
-  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  const hmrcAccessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
   if (!hmrcAccessToken) {
     return http400BadRequestResponse({
       request,

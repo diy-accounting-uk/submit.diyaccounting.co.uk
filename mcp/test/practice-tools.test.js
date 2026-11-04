@@ -32,7 +32,7 @@ function sessionWithGrant() {
   return granted;
 }
 
-const GRANT_RESPONSE = { status: "granted", accessToken: "hmrc-access-token", hmrcAccount: "live" };
+const GRANT_RESPONSE = { status: "granted", hmrcAccount: "live" };
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
 const CLIENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -215,7 +215,7 @@ describe("practice-tools client tools", () => {
       session = sessionWithGrant();
     });
 
-    it("posts the invitation with the HMRC access token in the body, and returns the client, invitationId and status", async () => {
+    it("posts the invitation with the grant id in a header and no HMRC token, and returns the client, invitationId and status", async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
@@ -234,7 +234,8 @@ describe("practice-tools client tools", () => {
       const body = JSON.parse(init.body);
       expect(body.service).toBe("MTD-VAT");
       expect(body.knownFact).toBe("2015-03-01");
-      expect(body.accessToken).toBe("hmrc-access-token");
+      expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
+      expect(body.accessToken).toBeUndefined();
       expect(body.arn).toBeUndefined();
     });
 
@@ -313,7 +314,7 @@ describe("practice-tools client tools", () => {
       session = sessionWithGrant();
     });
 
-    it("gets the status with the session bearer on X-Authorization and the HMRC token on Authorization, and returns the client, status and invitationId", async () => {
+    it("gets the status with the session bearer on X-Authorization and the grant id in x-mcp-hmrc-grant, and returns the client, status and invitationId", async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
@@ -327,7 +328,8 @@ describe("practice-tools client tools", () => {
       const [url, init] = mockFetch.mock.calls[1];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/authorisation?service=MTD-VAT`);
       expect(init.headers["X-Authorization"]).toBe("Bearer practice-access-token");
-      expect(init.headers.Authorization).toBe("Bearer hmrc-access-token");
+      expect(init.headers.Authorization).toBeUndefined();
+      expect(init.headers["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
       expect(init.headers["X-Id-Token"]).toBe("practice-id-token");
     });
 
