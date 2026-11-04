@@ -5,10 +5,13 @@
 
 package co.uk.diyaccounting.submit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
+import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -98,6 +101,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
 
         assertEveryImageLambdaIsWired(collectStacks(submitApplication));
         assertEverySendingLambdaRecordsItsCalls(collectStacks(submitApplication));
+        assertApiLambdasEnterThroughTheOriginCheck(submitApplication);
     }
 
     @Test
@@ -195,6 +199,38 @@ class LambdaEnvironmentWiringCdkResourceTest {
         assertFalse(variables.containsKey("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
     }
 
+    @SuppressWarnings("unchecked")
+    private static void assertApiLambdasEnterThroughTheOriginCheck(SubmitApplication submitApplication) {
+        var imageCommands = new HashMap<String, String>();
+        for (Stack stack : collectStacks(submitApplication)) {
+            for (var function : Template.fromStack(stack)
+                    .findResources("AWS::Lambda::Function")
+                    .values()) {
+                var properties = (Map<String, Object>) function.get("Properties");
+                var imageConfig = (Map<String, Object>) properties.get("ImageConfig");
+                if (imageConfig == null) continue;
+                var command = (List<Object>) imageConfig.get("Command");
+                imageCommands.put(String.valueOf(properties.get("FunctionName")), String.valueOf(command.get(0)));
+            }
+        }
+
+        var routedProps = new ArrayList<AbstractApiLambdaProps>();
+        routedProps.addAll(submitApplication.authStack.lambdaFunctionProps);
+        routedProps.addAll(submitApplication.hmrcStack.lambdaFunctionProps);
+        routedProps.addAll(submitApplication.accountStack.lambdaFunctionProps);
+        routedProps.addAll(submitApplication.billingStack.lambdaFunctionProps);
+        assertFalse(routedProps.isEmpty());
+        for (AbstractApiLambdaProps props : routedProps) {
+            assertEquals(
+                    OriginVerifyHelper.ENTRY_HANDLER,
+                    imageCommands.get(props.ingestFunctionName()),
+                    props.ingestFunctionName());
+        }
+
+        var authorizer = submitApplication.authStack.customAuthorizerLambdaProps;
+        assertEquals(authorizer.ingestHandler(), imageCommands.get(authorizer.ingestFunctionName()));
+    }
+
     /** Every public {@link Stack}-typed field an application object carries, in declaration order. */
     private static List<Stack> collectStacks(Object owner) {
         var stacks = new ArrayList<Stack>();
@@ -230,7 +266,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
 
                 List<Object> command = (List<Object>) imageConfig.get("Command");
                 if (command == null || command.isEmpty()) continue;
-                String handlerCommand = String.valueOf(command.get(0));
+                String handlerCommand = applicationHandlerCommand(properties, command);
                 String functionName = String.valueOf(properties.get("FunctionName"));
 
                 Path handlerFile = handlerJsFile(handlerCommand);
@@ -238,6 +274,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
 
                 Set<Path> transitiveFiles = new LinkedHashSet<>();
                 collectTransitiveRelativeImports(handlerFile, transitiveFiles);
+                collectTransitiveRelativeImports(handlerJsFile(String.valueOf(command.get(0))), transitiveFiles);
 
                 Set<String> requiredEnvVars = new TreeSet<>();
                 boolean readsAppClientIds = false;
@@ -311,7 +348,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
                 if (imageConfig == null) continue;
                 List<Object> command = (List<Object>) imageConfig.get("Command");
                 if (command == null || command.isEmpty()) continue;
-                Path handlerFile = handlerJsFile(String.valueOf(command.get(0)));
+                Path handlerFile = handlerJsFile(applicationHandlerCommand(properties, command));
                 if (!Files.isRegularFile(handlerFile) || !reachesRecordedSend(handlerFile)) continue;
                 sendingLambdas++;
 
@@ -395,6 +432,16 @@ class LambdaEnvironmentWiringCdkResourceTest {
     }
 
     /** {@code app/functions/auth/signInActivityPublish.handler} -> {@code app/functions/auth/signInActivityPublish.js}. */
+    /** The handler that serves a function: the image command, or the target of the origin check entry. */
+    @SuppressWarnings("unchecked")
+    private static String applicationHandlerCommand(Map<String, Object> properties, List<Object> command) {
+        String imageCommand = String.valueOf(command.get(0));
+        if (!OriginVerifyHelper.ENTRY_HANDLER.equals(imageCommand)) return imageCommand;
+        var environment = (Map<String, Object>) properties.get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        return String.valueOf(variables.get(OriginVerifyHelper.TARGET_HANDLER_VARIABLE));
+    }
+
     private static Path handlerJsFile(String handlerCommand) {
         int lastDot = handlerCommand.lastIndexOf('.');
         String withoutExportName = lastDot >= 0 ? handlerCommand.substring(0, lastDot) : handlerCommand;

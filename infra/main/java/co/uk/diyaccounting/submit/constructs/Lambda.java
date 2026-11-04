@@ -21,6 +21,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
+import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,7 +115,7 @@ public class Lambda {
         // Create the lambda function
         var imageCodeProps = EcrImageCodeProps.builder()
                 .tagOrDigest(props.baseImageTag()) // e.g. "latest" or specific digest for immutability
-                .cmd(List.of(props.ingestHandler()))
+                .cmd(List.of(OriginVerifyHelper.imageCommand(props)))
                 .build();
         var repositoryAttributes = RepositoryAttributes.builder()
                 .repositoryArn(props.ecrRepositoryArn())
@@ -147,6 +148,7 @@ public class Lambda {
         // Add X-Ray environment variables if enabled
         var environment = new java.util.HashMap<>(props.environment());
         environment.put("AWS_XRAY_TRACING_NAME", props.ingestFunctionName());
+        OriginVerifyHelper.addEnvironment(props, environment);
         var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
                 .code(this.dockerImage)
                 .environment(environment)
@@ -165,6 +167,7 @@ public class Lambda {
         }
         this.ingestLambda = dockerFunctionBuilder.build();
         OperatorEmailsHelper.grantWhenPublishingActivity(this.ingestLambda, environment);
+        OriginVerifyHelper.grantSecretRead(props, this.ingestLambda, environment);
         IntegrationCallAccess.grantWhenRecording(this.ingestLambda, environment);
         infof("Created Lambda %s with function %s", this.ingestLambda.getNode().getId(), this.ingestLambda.toString());
 

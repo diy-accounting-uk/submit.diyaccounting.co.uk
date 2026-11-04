@@ -825,6 +825,7 @@ public class SubmitApplication {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(certificateArn)
                         .apiGatewayUrl(httpApiUrl)
+                        .originVerifySecretVersionId(envOr("ORIGIN_VERIFY_SECRET_VERSION_ID", ""))
                         .baseImageTag(baseImageTag)
                         .wafManualBlockIps(appProps.wafManualBlockIps != null ? appProps.wafManualBlockIps : "")
                         .build());

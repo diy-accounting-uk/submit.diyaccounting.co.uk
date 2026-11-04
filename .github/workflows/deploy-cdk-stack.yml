@@ -366,6 +366,30 @@ jobs:
           lookup-cognito: ${{ needs.params.outputs.lookup-cognito }}
           lookup-api-gateway: ${{ needs.params.outputs.lookup-api-gateway }}
 
+      # The origin header reference names the secret version, so a new value changes EdgeStack's
+      # template. A missing secret means no header, which is only safe while the API does not
+      # refuse. Any other lookup failure stops the deploy, because it must not remove the header.
+      - name: Look up the origin verify secret version
+        if: ${{ endsWith(needs.params.outputs.stackName, 'EdgeStack') && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true') }}
+        id: origin-verify
+        shell: bash
+        env:
+          ENV_FILE: .env.${{ needs.names.outputs.environment-name }}
+          SECRET_NAME: ${{ needs.names.outputs.environment-name }}/submit/origin/verify
+        run: |
+          VERSION_ID=""
+          if SECRET_DESCRIPTION=$(aws secretsmanager describe-secret --region us-east-1 --secret-id "$SECRET_NAME" --output json 2>&1); then
+            VERSION_ID=$(jq -r '.VersionIdsToStages | to_entries[] | select(.value | index("AWSCURRENT")) | .key' <<< "$SECRET_DESCRIPTION")
+          elif ! grep -q ResourceNotFoundException <<< "$SECRET_DESCRIPTION"; then
+            echo "::error::Could not describe $SECRET_NAME: $SECRET_DESCRIPTION"
+            exit 1
+          fi
+          if [ -z "$VERSION_ID" ] && grep -q '^ORIGIN_VERIFY_ENFORCE=true' "$ENV_FILE"; then
+            echo "::error::$ENV_FILE enforces the origin check but $SECRET_NAME has no current version in us-east-1"
+            exit 1
+          fi
+          echo "secret-version-id=${VERSION_ID}" >> "$GITHUB_OUTPUT"
+
       - name: Set up the toolchain
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: ./.github/actions/setup-toolchain
@@ -452,6 +476,7 @@ jobs:
           HMRC_SANDBOX_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret"
           # Looked up from API Gateway custom domain, or manual override from http-api-url input
           HTTP_API_URL: ${{ steps.lookup.outputs.http-api-url || needs.params.outputs['http-api-url'] }}
+          ORIGIN_VERIFY_SECRET_VERSION_ID: ${{ steps.origin-verify.outputs.secret-version-id }}
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.public-url }}
           HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}

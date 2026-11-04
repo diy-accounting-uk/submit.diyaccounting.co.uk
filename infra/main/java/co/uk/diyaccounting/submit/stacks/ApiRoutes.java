@@ -165,6 +165,10 @@ final class ApiRoutes {
     }
 
     private void createRouteForLambda(AbstractApiLambdaProps apiLambdaProps) {
+        if (!apiLambdaProps.reachedThroughCloudFront()) {
+            throw new IllegalArgumentException("A route needs the origin check: " + apiLambdaProps.ingestFunctionName());
+        }
+
         // Stable, unique construct IDs per route from the method+path signature
         String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
                 .replaceAll("[^A-Za-z0-9]+", "-")

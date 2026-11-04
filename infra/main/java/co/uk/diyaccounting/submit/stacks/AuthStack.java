@@ -218,6 +218,7 @@ public class AuthStack extends Stack {
                         .urlPath("/") // Not used for authorizers but required by props
                         .jwtAuthorizer(false)
                         .customAuthorizer(false)
+                        .reachedThroughCloudFront(false)
                         .environment(customAuthorizerLambdaEnv)
                         .build());
         this.customAuthorizerLambdaProps = customAuthorizerLambda.apiProps;

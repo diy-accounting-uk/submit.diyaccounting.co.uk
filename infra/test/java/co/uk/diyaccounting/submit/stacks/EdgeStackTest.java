@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,6 +26,10 @@ class EdgeStackTest {
     }
 
     private static EdgeStack synthEdgeStack(final String envName) {
+        return synthEdgeStack(envName, "");
+    }
+
+    private static EdgeStack synthEdgeStack(final String envName, final String originVerifySecretVersionId) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -47,6 +52,7 @@ class EdgeStackTest {
                         .certificateArn(
                                 "arn:aws:acm:us-east-1:111111111111:certificate/00000000-0000-0000-0000-000000000000")
                         .apiGatewayUrl("https://abc123def.execute-api.eu-west-2.amazonaws.com")
+                        .originVerifySecretVersionId(originVerifySecretVersionId)
                         .baseImageTag("latest")
                         .build());
     }
@@ -415,5 +421,25 @@ class EdgeStackTest {
                 Match.objectLike(Map.of(
                         "Rules",
                         Match.arrayWith(List.of(Match.objectLike(commonRuleSet), Match.objectLike(blockRule))))));
+    }
+
+    @Test
+    void everyApiOriginSendsTheOriginVerifyHeaderFromTheNamedSecretVersion() {
+        String templateJson = Template.fromStack(synthEdgeStack("prod", "11111111-2222-3333-4444-555555555555"))
+                .toJSON()
+                .toString();
+        String reference =
+                "{{resolve:secretsmanager:prod/submit/origin/verify:SecretString:current::11111111-2222-3333-4444-555555555555}}";
+
+        assertEquals(6, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
+        assertEquals(6, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
+    }
+
+    @Test
+    void noOriginSendsTheOriginVerifyHeaderBeforeTheSecretExists() {
+        String templateJson = Template.fromStack(synthEdgeStack("prod")).toJSON().toString();
+
+        assertFalse(templateJson.contains("x-diya-origin-verify"));
+        assertFalse(templateJson.contains("origin/verify"));
     }
 }
