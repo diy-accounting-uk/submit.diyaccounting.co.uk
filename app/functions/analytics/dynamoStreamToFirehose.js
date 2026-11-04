@@ -278,11 +278,28 @@ export function resolveTableName(eventSourceArn) {
 }
 
 /**
+ * True for a stream record that a salt rotation made. scripts/salt-rotate.js marks the old item
+ * "to:<version>" and writes the new item with "from:<version>". The move adds no business event,
+ * and the views count inserts and removes, so it stays out of the lake. The lake's hash_aliases
+ * table joins the rows on each side of the rotation.
+ *
+ * @param {string} eventName - INSERT | MODIFY | REMOVE
+ * @param {object|null} newImage - unmarshalled NewImage, or null
+ * @param {object|null} oldImage - unmarshalled OldImage, or null
+ * @returns {boolean}
+ */
+export function isSaltRotationWrite(eventName, newImage, oldImage) {
+  if (eventName === "REMOVE") return oldImage?.saltRotation?.startsWith("to:") === true;
+  return newImage?.saltRotation !== undefined && newImage.saltRotation !== oldImage?.saltRotation;
+}
+
+/**
  * Build one flat lake row from a single DynamoDB Streams record.
  *
  * @param {string} tableKind
  * @param {object} record - one entry of event.Records
- * @returns {object|null} null when the record's item is not one the table projects
+ * @returns {object|null} null when the record's item is not one the table projects, or a salt
+ *   rotation made the record
  */
 export function buildRow(tableKind, record) {
   const eventName = record.eventName;
@@ -291,6 +308,8 @@ export function buildRow(tableKind, record) {
   const approximateCreationDateTime = record.dynamodb?.ApproximateCreationDateTime;
   const changeTs =
     typeof approximateCreationDateTime === "number" ? toParquetTimestamp(new Date(approximateCreationDateTime * 1000).toISOString()) : null;
+
+  if (isSaltRotationWrite(eventName, newImage, oldImage)) return null;
 
   const projected = projectFields(tableKind, newImage, oldImage, eventName);
   if (projected === null) return null;

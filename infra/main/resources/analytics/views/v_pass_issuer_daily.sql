@@ -30,7 +30,7 @@ redemptions AS (
   SELECT redemption_code, redeemed_by,
          arbitrary(issued_by) AS issuer_hash,
          min(redeemed_at) AS redeemed_at
-  FROM   dynamo_passes
+  FROM   aliased_dynamo_passes
   WHERE  redemption_code IS NOT NULL AND redeemed_by IS NOT NULL AND issued_by IS NOT NULL
   GROUP  BY redemption_code, redeemed_by),
 redeemed AS (
@@ -44,7 +44,7 @@ latest_lines AS (
          max_by(redeemer_hash, change_ts) AS redeemer_hash,
          max_by(charged_at, change_ts) AS charged_at,
          max_by(livemode, change_ts) AS livemode
-  FROM   dynamo_commissions
+  FROM   aliased_dynamo_commissions
   WHERE  change_type <> 'REMOVE'
   GROUP  BY referrer_hash, line_id),
 first_charged AS (

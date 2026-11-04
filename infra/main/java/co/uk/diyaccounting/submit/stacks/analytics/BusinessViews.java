@@ -79,6 +79,34 @@ public class BusinessViews extends Construct {
 
     private static final List<ViewDefinition> VIEWS = List.of(
             new ViewDefinition(
+                    "aliased_dynamo_receipts",
+                    "dynamo_receipts with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("dynamo_receipts", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_dynamo_bundles",
+                    "dynamo_bundles with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("dynamo_bundles", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_dynamo_subscriptions",
+                    "dynamo_subscriptions with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("dynamo_subscriptions", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_dynamo_passes",
+                    "dynamo_passes with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("dynamo_passes", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_dynamo_commissions",
+                    "dynamo_commissions with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("dynamo_commissions", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_stripe_subscriptions",
+                    "stripe_subscriptions with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("stripe_subscriptions", "hash_aliases")),
+            new ViewDefinition(
+                    "aliased_stripe_charges",
+                    "stripe_charges with each hash read through hash_aliases, stable across a salt rotation",
+                    List.of("stripe_charges", "hash_aliases")),
+            new ViewDefinition(
                     "v_active_users_daily", "Distinct customers active each day", List.of("activity_events_all")),
             new ViewDefinition(
                     "v_submissions_daily",
@@ -91,7 +119,8 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_pass_redemptions_daily",
                     "Passes issued and redeemed each day, by pass type",
-                    List.of("activity_events_all", "dynamo_passes")),
+                    List.of("activity_events_all", "aliased_dynamo_passes"),
+                    List.of("aliased_dynamo_passes")),
             new ViewDefinition(
                     "v_revenue_daily",
                     "Stripe and PayPal revenue each day, by product, gross and net of payment fees",
@@ -107,7 +136,8 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_signup_to_first_submission",
                     "Time from a new account's first bundle grant to its first submission",
-                    List.of("dynamo_bundles", "dynamo_receipts", "activity_events_all")),
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "activity_events_all"),
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
@@ -184,11 +214,13 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_returning_submitters_quarterly",
                     "Of the customers who submitted in a quarter, how many also submitted the previous one",
-                    List.of("dynamo_receipts")),
+                    List.of("aliased_dynamo_receipts"),
+                    List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_returning_submitters_rolling_daily",
                     "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
-                    List.of("dynamo_receipts")),
+                    List.of("aliased_dynamo_receipts"),
+                    List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_vat_submissions_by_actor_daily",
                     "VAT submissions each day and account, customers apart from test accounts",
@@ -204,7 +236,8 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
                     "Subscriptions cancelled each day, by bundle",
-                    List.of("dynamo_subscriptions", "activity_events_all")),
+                    List.of("aliased_dynamo_subscriptions", "activity_events_all"),
+                    List.of("aliased_dynamo_subscriptions")),
             new ViewDefinition(
                     "v_operator_interventions_daily",
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",
@@ -257,39 +290,46 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_paid_subscribers_by_channel",
                     "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
-                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")),
+                    List.of("aliased_stripe_charges", "aliased_stripe_subscriptions", "aliased_dynamo_subscriptions", "aliased_dynamo_bundles"),
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_subscriptions", "aliased_stripe_charges", "aliased_stripe_subscriptions")),
             new ViewDefinition(
                     "v_pass_performance",
                     "Per referral pass: uses, new accounts, accounts that filed, subscribers, paid charges, last used",
                     List.of(
-                            "dynamo_passes",
-                            "dynamo_bundles",
-                            "dynamo_subscriptions",
-                            "stripe_subscriptions",
-                            "stripe_charges",
-                            "activity_events_all")),
+                            "aliased_dynamo_passes",
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_stripe_subscriptions",
+                            "aliased_stripe_charges",
+                            "activity_events_all"),
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_passes", "aliased_dynamo_subscriptions", "aliased_stripe_charges", "aliased_stripe_subscriptions")),
             new ViewDefinition(
                     "v_affiliate_commissions_monthly",
                     "Commission held, payable, paid and reversed in pence, by month and tier, live mode only",
-                    List.of("dynamo_commissions")),
+                    List.of("aliased_dynamo_commissions"),
+                    List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_affiliate_cash_paid_monthly",
                     "Cash commission paid out in pence, by calendar month of payment, live mode only",
-                    List.of("dynamo_commissions")),
+                    List.of("aliased_dynamo_commissions"),
+                    List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_affiliate_referrers",
                     "Per referrer: tier, referrals, paying accounts, and commission held, payable, paid and payable"
                             + " this month in pence, live mode only",
-                    List.of("dynamo_commissions")),
+                    List.of("aliased_dynamo_commissions"),
+                    List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_commission_earned_daily",
                     "Commission earned in pence by day of charge and cost group (referral credit, affiliate cash,"
                             + " family cash), reversals netted, live mode only",
-                    List.of("dynamo_commissions")),
+                    List.of("aliased_dynamo_commissions"),
+                    List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_pass_issuer_daily",
                     "Per pass issuer and day: passes generated, link visits, passes redeemed and passes converted",
-                    List.of("activity_events_all", "dynamo_passes", "dynamo_commissions")),
+                    List.of("activity_events_all", "aliased_dynamo_passes", "aliased_dynamo_commissions"),
+                    List.of("aliased_dynamo_commissions", "aliased_dynamo_passes")),
             new ViewDefinition(
                     "v_usd_gbp_daily",
                     "Pounds per dollar on each day from the European Central Bank reference rate, carried over"

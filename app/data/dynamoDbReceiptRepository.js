@@ -4,7 +4,7 @@
 // app/data/dynamoDbReceiptRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { calculateHmrcTaxRecordTtl } from "../lib/dateUtils.js";
 
@@ -155,46 +155,31 @@ export async function listUserReceipts(userSub, clientId) {
   });
 
   try {
-    const hashedSub = hashSub(userSub);
-    logger.info({ message: "Retrieving receipts from DynamoDB", userSub, hashedSub });
     const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
+    const itemsByReceiptId = new Map();
 
-    let response = await executeDynamoDbCommand(
-      (module) =>
-        new module.QueryCommand({
-          TableName: tableName,
-          KeyConditionExpression: "hashedSub = :hashedSub",
-          ExpressionAttributeValues: {
-            ":hashedSub": hashedSub,
-          },
-        }),
-    );
-    logger.info({ message: "Queried DynamoDB for user receipts", hashedSub, itemCount: response.Count });
-
-    // Fall back to previous salt versions during migration window
-    if (!response.Items || response.Items.length === 0) {
-      for (const version of getPreviousVersions()) {
-        const oldHash = hashSubWithVersion(userSub, version);
-        response = await executeDynamoDbCommand(
-          (module) =>
-            new module.QueryCommand({
-              TableName: tableName,
-              KeyConditionExpression: "hashedSub = :hashedSub",
-              ExpressionAttributeValues: {
-                ":hashedSub": oldHash,
-              },
-            }),
-        );
-        if (response.Items && response.Items.length > 0) {
-          logger.warn({ message: "Found receipts at old salt version", version, hashedSub: oldHash });
-          break;
-        }
+    // During a salt rotation a user's receipts can sit under two hashes at once, so every version
+    // is read and merged.
+    for (const { version, hashedSub } of subHashCandidates(userSub)) {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: "hashedSub = :hashedSub",
+            ExpressionAttributeValues: {
+              ":hashedSub": hashedSub,
+            },
+          }),
+      );
+      logger.info({ message: "Queried DynamoDB for user receipts", version, hashedSub, itemCount: response.Count });
+      for (const item of response.Items ?? []) {
+        if (!itemsByReceiptId.has(item.receiptId)) itemsByReceiptId.set(item.receiptId, item);
       }
     }
 
     // Convert DynamoDB items to receipt metadata, narrowed to the requested client (or, with no
     // client id given, to the caller's own filings - a client's receipts never show by default).
-    const receipts = (response.Items || [])
+    const receipts = [...itemsByReceiptId.values()]
       .filter((item) => (clientId ? item.clientId === clientId : !item.clientId))
       .map((item) => {
         // Extract timestamp and formBundleNumber from receiptId

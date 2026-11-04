@@ -4,11 +4,30 @@
 // app/data/dynamoDbBundleRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
+import { hashSub, getSaltVersion, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
+
+/**
+ * Finds the hash a user's existing bundle item sits under, so an in-place update lands on the
+ * item during a salt rotation and does not create a partial item under the current hash.
+ * Answers the current version when no item exists.
+ */
+async function locateBundleOwner(userId, bundleId) {
+  const candidates = subHashCandidates(userId);
+  if (candidates.length === 1) return candidates[0];
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  for (const candidate of candidates) {
+    const { Item } = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({ TableName: tableName, Key: { hashedSub: candidate.hashedSub, bundleId }, ConsistentRead: true }),
+    );
+    if (Item) return candidate;
+  }
+  return candidates[0];
+}
 
 // The user's account settings live in the user's own partition of this table, under this sort key.
 // The sort key is not a bundle id, so a read of the user's bundles leaves the item out.
@@ -128,7 +147,7 @@ export async function deleteBundle(userId, bundleId) {
   logger.info({ message: `deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
-    const hashedSub = hashSub(userId);
+    const { hashedSub } = await locateBundleOwner(userId, bundleId);
     logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
@@ -217,7 +236,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   logger.info({ message: `resetTokens [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const hashedSub = hashSub(userId);
+    const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     await executeDynamoDbCommand(
@@ -230,7 +249,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
             ":zero": 0,
             ":granted": tokensGranted,
             ":resetAt": nextResetAt,
-            ":saltVersion": getSaltVersion(),
+            ":saltVersion": version,
           },
         }),
     );
@@ -274,7 +293,7 @@ export async function consumeToken(userId, bundleId, count = 1) {
   logger.info({ message: `consumeToken [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId, count });
 
   try {
-    const hashedSub = hashSub(userId);
+    const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const result = await executeDynamoDbCommand(
@@ -287,7 +306,7 @@ export async function consumeToken(userId, bundleId, count = 1) {
           ExpressionAttributeValues: {
             ":zero": 0,
             ":inc": count,
-            ":saltVersion": getSaltVersion(),
+            ":saltVersion": version,
           },
           ReturnValues: "ALL_NEW",
         }),
@@ -311,7 +330,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
   logger.info({ message: `recordTokenEvent [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const hashedSub = hashSub(userId);
+    const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const tokenEvent = {
@@ -328,7 +347,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
           ExpressionAttributeValues: {
             ":empty": [],
             ":event": [tokenEvent],
-            ":saltVersion": getSaltVersion(),
+            ":saltVersion": version,
           },
         }),
     );
@@ -417,50 +436,30 @@ export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 
   try {
-    const hashedSub = hashSub(userId);
-    logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const bundlesById = new Map();
 
-    const response = await executeDynamoDbCommand(
-      (module) =>
-        new module.QueryCommand({
-          TableName: tableName,
-          KeyConditionExpression: "hashedSub = :hashedSub",
-          ExpressionAttributeValues: {
-            ":hashedSub": hashedSub,
-          },
-        }),
-    );
-    logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
-
-    const bundles = response.Items?.filter((item) => item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID) ?? [];
-    if (bundles.length > 0) {
-      logger.info({ message: "Retrieved bundles from DynamoDB", hashedSub, count: bundles.length });
-      return bundles;
-    }
-
-    // Fall back to previous salt versions during migration window
-    for (const version of getPreviousVersions()) {
-      const oldHash = hashSubWithVersion(userId, version);
-      const fallbackResponse = await executeDynamoDbCommand(
+    // During a salt rotation a user's bundles can sit under two hashes at once, so every version
+    // is read and merged. The current version wins for a bundle held under both.
+    for (const { version, hashedSub } of subHashCandidates(userId)) {
+      const response = await executeDynamoDbCommand(
         (module) =>
           new module.QueryCommand({
             TableName: tableName,
             KeyConditionExpression: "hashedSub = :hashedSub",
             ExpressionAttributeValues: {
-              ":hashedSub": oldHash,
+              ":hashedSub": hashedSub,
             },
           }),
       );
-      const fallbackBundles = fallbackResponse.Items?.filter((item) => item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID) ?? [];
-      if (fallbackBundles.length > 0) {
-        logger.warn({ message: "Found bundles at old salt version", version, hashedSub: oldHash });
-        return fallbackBundles;
+      logger.info({ message: "Queried DynamoDB for user bundles", version, hashedSub, itemCount: response.Count });
+      for (const item of response.Items ?? []) {
+        if (item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID && !bundlesById.has(item.bundleId)) bundlesById.set(item.bundleId, item);
       }
     }
 
-    logger.info({ message: "No bundles found for user", hashedSub });
-    return [];
+    logger.info({ message: "Retrieved bundles from DynamoDB", userId, count: bundlesById.size });
+    return [...bundlesById.values()];
   } catch (error) {
     logger.error({
       message: `Error retrieving bundles from DynamoDB table ${getResourceName("BUNDLE_DYNAMODB_TABLE_NAME")}`,
@@ -475,16 +474,18 @@ export async function getAccountSettings(userId) {
   logger.info({ message: `getAccountSettings [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
-    const hashedSub = hashSub(userId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
-    const response = await executeDynamoDbCommand(
-      (module) =>
-        new module.GetCommand({
-          TableName: tableName,
-          Key: { hashedSub, bundleId: ACCOUNT_SETTINGS_ITEM_ID },
-        }),
-    );
-    return response.Item?.settings ?? {};
+    for (const { hashedSub } of subHashCandidates(userId)) {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.GetCommand({
+            TableName: tableName,
+            Key: { hashedSub, bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+          }),
+      );
+      if (response.Item) return response.Item.settings ?? {};
+    }
+    return {};
   } catch (error) {
     logger.error({ message: "Error retrieving account settings from DynamoDB", error: error.message, userId });
     throw error;

@@ -39,6 +39,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.FxRateTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
+import co.uk.diyaccounting.submit.stacks.analytics.HashAliasTable;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.PassFiguresPublish;
@@ -436,6 +437,13 @@ public class AnalyticsStack extends Stack {
         stripeTables.chargesTable.addResourceDependency(this.glueDatabase);
         stripeTables.subscriptionsTable.addResourceDependency(this.glueDatabase);
 
+        var hashAliasTable = HashAliasTable.create(
+                this,
+                prefix,
+                sharedNames.analytics.glueDatabaseName,
+                sharedNames.analytics.analyticsLakeBucketName);
+        hashAliasTable.addResourceDependency(this.glueDatabase);
+
         var paypalTables = new PayPalDonationTables(
                 this,
                 PayPalDonationTables.PayPalDonationTablesProps.builder()
@@ -725,6 +733,7 @@ public class AnalyticsStack extends Stack {
         createUnionViewResource.getNode().addDependency(unionViewGrant);
         createUnionViewResource.getNode().addDependency(this.workGroup);
         createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
+        createUnionViewResource.getNode().addDependency(hashAliasTable);
 
         var businessViews = new BusinessViews(
                 this,
@@ -743,6 +752,8 @@ public class AnalyticsStack extends Stack {
             r.getNode().addDependency(createUnionViewResource);
             tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
             r.getNode().addDependency(stripeTables.chargesTable);
+            r.getNode().addDependency(stripeTables.subscriptionsTable);
+            r.getNode().addDependency(hashAliasTable);
         });
         businessViews.viewResourcesByName.get("v_revenue_daily").getNode().addDependency(paypalTables.donationsTable);
         businessViews.viewResourcesByName.get("v_ads_cost_daily").getNode().addDependency(adsCostTables.costTable);

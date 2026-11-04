@@ -37,7 +37,7 @@ WITH issued AS (
   SELECT date(change_ts) AS day,
          pass_type_id,
          count(*) AS passes_issued
-  FROM   dynamo_passes
+  FROM   aliased_dynamo_passes
   WHERE  change_type = 'INSERT' AND pass_type_id IS NOT NULL AND pass_type_id NOT LIKE '%-test-pass'
     AND  actor IS NOT NULL AND actor NOT IN ('system', 'test-user', 'probe', 'synthetic', 'operator')
   GROUP  BY 1, 2),
@@ -48,7 +48,7 @@ pass_history AS (
          use_count,
          actor,
          lag(use_count) OVER (PARTITION BY pass_id ORDER BY change_ts) AS previous_use_count
-  FROM   dynamo_passes
+  FROM   aliased_dynamo_passes
   WHERE  pass_type_id NOT LIKE '%-test-pass'),
 redeemed AS (
   SELECT date(change_ts) AS day,

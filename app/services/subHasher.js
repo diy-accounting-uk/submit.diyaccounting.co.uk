@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability OPS-44 Hash and rotate the subject-ID salt
-// - **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
+// - **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting, or a read must see data under every salt version.
 // - **Does:** subHasher.js computes salted HMAC hashes of Cognito subject IDs for analytics and fraud-header anonymisation, backed by SubHashSaltHelper. put-salt-secret-resource-policy.sh reasserts the salt secret's resource policy on every environment deploy. This runs before any per-deployment Lambda role exists; backup-salts.sh and restore-salt.sh export and re-apply the salt for disaster recovery.
 // - **Run:** `./scripts/backup-salts.sh`; `./scripts/aws-accounts/restore-salt.sh --source-profile <profile> --target-profile <profile> [--env <env>]`; `gh workflow run manage-secrets.yml -f action=check-salt -f environment-name=<ci|prod>`
 // - **Entry:** `app/services/subHasher.js:hashSub`; `infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java`
@@ -21,7 +21,7 @@ const logger = createLogger({ source: "app/services/subHasher.js" });
 let __saltRegistry = null; // { current: "v1", versions: { "v1": "salt..." } }
 let __initPromise = null;
 let __saltFetchedAt = 0;
-const SALT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — warm containers re-fetch after rotation
+export const SALT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — warm containers re-fetch after rotation
 
 /**
  * Parse and validate a salt registry JSON string.
@@ -212,6 +212,29 @@ export function getPreviousVersions() {
     throw new Error("Salt not initialized. Call initializeSalt() first.");
   }
   return Object.keys(__saltRegistry.versions).filter((v) => v !== __saltRegistry.current);
+}
+
+/**
+ * Every hash a user's data can sit under, the current version first. A read that must see an
+ * item during a rotation, or an item written late under an earlier version, goes through this.
+ *
+ * @param {string} sub - The user's subject identifier
+ * @returns {{version: string, hashedSub: string}[]}
+ * @throws {Error} If sub is invalid or salt not initialized
+ */
+export function subHashCandidates(sub) {
+  return [getSaltVersion(), ...getPreviousVersions()].map((version) => ({ version, hashedSub: hashSubWithVersion(sub, version) }));
+}
+
+/**
+ * True when a stored hash belongs to this user under any salt version.
+ *
+ * @param {string} sub - The user's subject identifier
+ * @param {string} hashedSub - The stored hash
+ * @returns {boolean}
+ */
+export function isHashOfSub(sub, hashedSub) {
+  return subHashCandidates(sub).some((candidate) => candidate.hashedSub === hashedSub);
 }
 
 // ============================================================================

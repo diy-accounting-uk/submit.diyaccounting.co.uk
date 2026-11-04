@@ -48,6 +48,7 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSubWithVersion: vi.fn((sub, version) => `hashed-${version}-${sub}`),
   getSaltVersion: vi.fn(() => "v1"),
   getPreviousVersions: vi.fn(() => []),
+  subHashCandidates: vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]),
 }));
 
 const { putReceipt, listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");

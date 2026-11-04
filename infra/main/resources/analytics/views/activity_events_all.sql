@@ -20,6 +20,9 @@
 -- operator's has them read as 'operator', so every v_* view that filters on actor = 'customer'
 -- counts real customers only. The account's flags come from window aggregates over the one scan
 -- of the table, so a query through this view reads each object of activity_events once.
+--
+-- A row keeps the hash it was written with. hash_aliases maps each earlier hash to the current
+-- one, so one account keeps one hash across a salt rotation.
 CREATE OR REPLACE VIEW activity_events_all AS
 SELECT event_id, event_ts, ingest_ts, event, site, summary,
        CASE WHEN actor = 'customer' AND hashed_sub IS NOT NULL AND account_is_test THEN 'test-user'
@@ -35,5 +38,14 @@ FROM   (
                         OR coalesce(regexp_like(e.summary, '@test\.diyaccounting\.co\.uk'), false))
                   OVER (PARTITION BY e.hashed_sub) AS account_is_test,
                 bool_or(coalesce(e.actor = 'operator', false)) OVER (PARTITION BY e.hashed_sub) AS account_is_operator
-         FROM   activity_events e
+         FROM   (
+                  SELECT raw.event_id, raw.event_ts, raw.ingest_ts, raw.event, raw.site, raw.summary, raw.actor,
+                         raw.flow, raw.outcome, raw.failure, raw.request_id,
+                         coalesce(alias.current_hash, raw.hashed_sub) AS hashed_sub,
+                         raw.bundle_id, raw.pass_type_id, raw.subscription_id, raw.visitor_type,
+                         raw.country, raw.page, raw.hmrc_status, raw.client_id, raw.env, raw.detail_json,
+                         raw.app_client, raw.session_id, raw.activity_id, raw.dt
+                  FROM   activity_events raw
+                  LEFT JOIN hash_aliases alias ON alias.old_hash = raw.hashed_sub
+                ) e
        )

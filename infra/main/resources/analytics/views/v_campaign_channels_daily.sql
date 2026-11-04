@@ -36,7 +36,7 @@ WITH acquisition AS (
          min_by(acq_utm_medium, change_ts)   AS utm_medium,
          min_by(acq_utm_campaign, change_ts) AS utm_campaign,
          min_by(acq_ref, change_ts)          AS ref
-  FROM   dynamo_bundles
+  FROM   aliased_dynamo_bundles
   WHERE  hashed_sub IS NOT NULL
     AND  (acq_utm_source IS NOT NULL OR acq_ref IS NOT NULL)
   GROUP  BY hashed_sub),
@@ -57,7 +57,7 @@ redemptions AS (
   SELECT redemption_code AS code,
          redeemed_by AS hashed_sub,
          min(redeemed_at) AS redeemed_at
-  FROM   dynamo_passes
+  FROM   aliased_dynamo_passes
   WHERE  redemption_code IS NOT NULL AND redeemed_by IS NOT NULL
   GROUP  BY redemption_code, redeemed_by),
 use_rows AS (
@@ -80,7 +80,7 @@ latest_lines AS (
          max_by(amount_pence, change_ts)   AS amount_pence,
          max_by(charged_at, change_ts)     AS charged_at,
          max_by(livemode, change_ts)       AS livemode
-  FROM   dynamo_commissions
+  FROM   aliased_dynamo_commissions
   WHERE  change_type <> 'REMOVE'
   GROUP  BY referrer_hash, line_id),
 commission_rows AS (

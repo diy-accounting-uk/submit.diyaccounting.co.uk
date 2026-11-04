@@ -17,7 +17,7 @@ WITH latest_lines AS (
          max_by(amount_pence, change_ts) AS amount_pence,
          max_by(paid_at, change_ts) AS paid_at,
          max_by(livemode, change_ts) AS livemode
-  FROM   dynamo_commissions
+  FROM   aliased_dynamo_commissions
   WHERE  change_type <> 'REMOVE'
   GROUP  BY referrer_hash, line_id)
 SELECT date_trunc('month', date(from_iso8601_timestamp(paid_at))) AS month,
