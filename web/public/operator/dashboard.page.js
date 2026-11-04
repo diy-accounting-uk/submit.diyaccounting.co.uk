@@ -1001,7 +1001,7 @@ document.addEventListener("click", async (event) => {
 // The tabs show the sections whose data-tab names them (a section can name several, separated by
 // spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
 const TAB_STORAGE_KEY = "operatorDashboardTab";
-const TAB_IDS = ["main", "adoption", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TAB_IDS = ["main", "adoption", "behaviour", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function storedTab() {
   try {
