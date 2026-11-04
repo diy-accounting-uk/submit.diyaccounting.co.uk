@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
-import { http200OkBinaryResponse } from "../lib/httpResponseHelper.js";
+import { http200OkBinaryResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 
 describe("http200OkBinaryResponse", () => {
   test("answers 200 with the bytes base64 encoded and the given content type", () => {
@@ -25,5 +25,17 @@ describe("http200OkBinaryResponse", () => {
     });
     expect(response.headers["Cache-Control"]).toBe("private, no-store");
     expect(response.headers["x-request-id"]).toBeTruthy();
+  });
+});
+
+describe("JSON responses", () => {
+  test("a response given no headers is typed as JSON", () => {
+    const response = http403ForbiddenResponse({ request: new URL("https://example.test/x"), message: "Forbidden", error: {} });
+    expect(response.headers["Content-Type"]).toBe("application/json");
+  });
+
+  test("a caller's content type stands", () => {
+    const response = http403ForbiddenResponse({ headers: { "Content-Type": "application/problem+json" }, message: "Forbidden", error: {} });
+    expect(response.headers["Content-Type"]).toBe("application/problem+json");
   });
 });

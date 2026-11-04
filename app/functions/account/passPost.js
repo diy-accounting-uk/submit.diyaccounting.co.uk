@@ -27,7 +27,15 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { claimReferral, getPassRecord, getRedemption, recordRedemption, redeemPass, releaseReferral } from "../../services/passService.js";
+import {
+  checkPass,
+  claimReferral,
+  getPassRecord,
+  getRedemption,
+  recordRedemption,
+  redeemPass,
+  releaseReferral,
+} from "../../services/passService.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
@@ -108,15 +116,19 @@ export async function ingestHandler(event) {
           error: { reason: "already_redeemed" },
         });
       }
-      referralClaimed = await claimReferral(hashedSub, code);
-      if (!referralClaimed) {
-        await publishRefusal({ reason: "referral_already_used", code, passTypeId: storedPass.passTypeId, userSub: userId });
-        return http409ConflictResponse({
-          request,
-          headers: responseHeaders,
-          message: "This account has already redeemed a referral pass.",
-          error: { reason: "referral_already_used" },
-        });
+      // A pass that cannot be redeemed takes no claim, so redeemPass below gives its own refusal.
+      const { valid: redeemable } = await checkPass(code, userEmail);
+      if (redeemable) {
+        referralClaimed = await claimReferral(hashedSub, code);
+        if (!referralClaimed) {
+          await publishRefusal({ reason: "referral_already_used", code, passTypeId: storedPass.passTypeId, userSub: userId });
+          return http409ConflictResponse({
+            request,
+            headers: responseHeaders,
+            message: "This account has already redeemed a referral pass.",
+            error: { reason: "referral_already_used" },
+          });
+        }
       }
     }
 

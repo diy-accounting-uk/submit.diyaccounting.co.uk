@@ -1329,7 +1329,12 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.passPostLambdaProps);
         // Redeem is an atomic UpdateItem; when it fails, diagnoseFailure reads the pass back.
         // A redemption that reaches the review limit writes the held pointer item
-        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
+        passesTable.grant(
+                this.passPostLambda,
+                "dynamodb:UpdateItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem");
         // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
         bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");

@@ -282,6 +282,77 @@
         }
       }
     },
+    "/commission/mine" : {
+      "get" : {
+        "summary" : "Get my commission totals",
+        "description" : "Answers the authenticated referrer's own commission totals in pence: held pence grouped by release day, payable pence and paid pence",
+        "operationId" : "getMyCommission",
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Commission totals retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "currency" : {
+                      "type" : "string",
+                      "example" : "gbp"
+                    },
+                    "held" : {
+                      "type" : "object",
+                      "properties" : {
+                        "totalPence" : {
+                          "type" : "integer"
+                        },
+                        "releases" : {
+                          "type" : "array",
+                          "items" : {
+                            "type" : "object",
+                            "properties" : {
+                              "releaseDate" : {
+                                "type" : "string",
+                                "example" : "2026-12-01"
+                              },
+                              "amountPence" : {
+                                "type" : "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "payable" : {
+                      "type" : "object",
+                      "properties" : {
+                        "totalPence" : {
+                          "type" : "integer"
+                        }
+                      }
+                    },
+                    "paid" : {
+                      "type" : "object",
+                      "properties" : {
+                        "totalPence" : {
+                          "type" : "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Authentication required"
+          }
+        }
+      }
+    },
     "/companies-house/accounts" : {
       "post" : {
         "summary" : "Submit a micro-entity accounts filing",
