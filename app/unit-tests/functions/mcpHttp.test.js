@@ -145,7 +145,8 @@ describe("mcpHttp ingestHandler", () => {
     try {
       process.env.ENVIRONMENT_NAME = "prod";
       await ingestHandler(mcpEvent({ body: INITIALIZE }));
-      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).toContain("submit_vat_return");
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).toContain("open_book");
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).not.toContain("submit_vat_return");
       expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).not.toContain("submit_itsa_quarterly_update");
 
       process.env.ENVIRONMENT_NAME = "ci";
