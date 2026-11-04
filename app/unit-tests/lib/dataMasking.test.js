@@ -10,6 +10,7 @@ import {
   maskHttpData,
   maskIntegrationRaw,
   integrationPathTemplate,
+  stripePathTemplate,
   govTalkSummary,
 } from "@app/lib/dataMasking.js";
 
@@ -359,6 +360,27 @@ describe("lib/dataMasking", () => {
       ["/oauth/token", "/oauth/token"],
     ])("reduces %s", (path, template) => {
       expect(integrationPathTemplate(path)).toBe(template);
+    });
+  });
+
+  describe("stripePathTemplate", () => {
+    test.each([
+      ["/v1/customers/cus_Abc123", "/v1/customers/{id}"],
+      ["/v1/payment_intents/pi_3Nabc123XYZ", "/v1/payment_intents/{id}"],
+      ["/v1/payment_intents", "/v1/payment_intents"],
+      ["/v1/billing_portal/sessions", "/v1/billing_portal/sessions"],
+      ["/v1/checkout/sessions/cs_test_a1B2c3", "/v1/checkout/sessions/{id}"],
+      ["/v1/subscriptions/sub_1Nabc/cancel", "/v1/subscriptions/{id}/cancel"],
+      ["/v1/subscription_items/si_Qabc", "/v1/subscription_items/{id}"],
+      ["/v1/setup_intents/seti_1abc/confirm", "/v1/setup_intents/{id}/confirm"],
+      ["/v1/accounts/acct_1Nabc/login_links", "/v1/accounts/{id}/login_links"],
+      ["/v1/charges", "/v1/charges"],
+    ])("reduces %s", (path, template) => {
+      expect(stripePathTemplate(path)).toBe(template);
+    });
+
+    test("leaves an HMRC path to integrationPathTemplate", () => {
+      expect(integrationPathTemplate("/v1/payment_intents")).toBe("/v1/{id}");
     });
   });
 

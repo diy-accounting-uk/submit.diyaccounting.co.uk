@@ -3,9 +3,9 @@
 
 // @capability OPS-81 Mask and redact sensitive data from logs
 // - **Use when:** text or an object bound for a log line or shared output may carry PII or secret values.
-// - **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers. maskIntegrationRaw builds the allowlisted skeleton of an outbound call, and integrationPathTemplate reduces a URL path to a template with no identifier.
+// - **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers. maskIntegrationRaw builds the allowlisted skeleton of an outbound call, and integrationPathTemplate and stripePathTemplate reduce a URL path to a template with no identifier.
 // - **Run:** no command; see Does and Entry
-// - **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`; `app/lib/dataMasking.js:maskIntegrationRaw`; `app/lib/dataMasking.js:integrationPathTemplate`
+// - **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`; `app/lib/dataMasking.js:maskIntegrationRaw`; `app/lib/dataMasking.js:integrationPathTemplate`; `app/lib/dataMasking.js:stripePathTemplate`
 // - **Files:** app/lib/dataMasking.js, app/unit-tests/lib/dataMasking.test.js
 // - **Keywords:** pii redaction, data masking, secrets in logs, sensitive fields, log hygiene, body skeleton, path template
 // - **Related:** OPS-86
@@ -228,6 +228,57 @@ export function integrationPathTemplate(pathname) {
       if (/^\d{9}$/.test(segment)) return "{vrn}";
       if (/^[A-Za-z]{2}\d{6}[A-Za-z]$/.test(segment)) return "{nino}";
       return "{id}";
+    })
+    .join("/");
+}
+
+// The id prefixes Stripe puts before an object id, such as cus_ and pi_. A path word with
+// underscores, such as payment_intents, does not start with one.
+const STRIPE_ID_PREFIXES = [
+  "cus",
+  "pi",
+  "sub",
+  "in",
+  "ch",
+  "cs",
+  "price",
+  "prod",
+  "pm",
+  "re",
+  "evt",
+  "il",
+  "si",
+  "seti",
+  "bps",
+  "txn",
+  "py",
+  "acct",
+  "card",
+  "src",
+  "tok",
+  "ii",
+  "promo",
+  "po",
+  "tr",
+  "dp",
+  "ba",
+  "file",
+  "cn",
+];
+
+/**
+ * Reduce a Stripe API path to a template with no object id.
+ * @param {string} pathname - The path, with no query string
+ * @returns {string} For example /v1/payment_intents/{id}
+ */
+export function stripePathTemplate(pathname) {
+  return pathname
+    .split("/")
+    .map((segment) => {
+      const [prefix] = segment.split("_");
+      if (segment.includes("_") && STRIPE_ID_PREFIXES.includes(prefix)) return "{id}";
+      if (/^[a-z]+(?:_[a-z]+)+$/.test(segment)) return segment;
+      return integrationPathTemplate(`/${segment}`).slice(1);
     })
     .join("/");
 }

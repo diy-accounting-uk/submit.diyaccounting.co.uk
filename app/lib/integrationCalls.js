@@ -3,10 +3,10 @@
 
 // @capability OPS-164 Record an outbound call to HMRC, Companies House or Stripe
 // - **Use when:** code sends a request to an outside organisation and the operator must see the call, its duration and its status.
-// - **Does:** integrationCalls.js writes one masked record for each attempt to the integration calls table, for a response, a timeout, a network error or a refusal. recordedFetch wraps a fetch; recordIntegrationCall takes a finished attempt from a client that does not use fetch. A failed write logs a warning and counts IntegrationCallRecordFailed, and the caller's request is not affected.
+// - **Does:** integrationCalls.js writes one masked record for each attempt to the integration calls table, for a response, a timeout, a network error or a refusal. recordedFetch wraps a fetch; recordIntegrationCall takes a finished attempt from a client that does not use fetch. companiesHouseSend.js is the one send path to Companies House, and the Stripe SDK sends through stripeRecordingHttpClient.js, so each attempt to either leaves a record. A failed write logs a warning and counts IntegrationCallRecordFailed, and the caller's request is not affected.
 // - **Run:** `import { recordedFetch } from "app/lib/integrationCalls.js"`
 // - **Entry:** `app/lib/integrationCalls.js:recordedFetch`; `app/lib/integrationCalls.js:recordIntegrationCall`; `app/data/dynamoDbIntegrationCallRepository.js:putIntegrationCall`
-// - **Files:** app/lib/integrationCalls.js, app/data/dynamoDbIntegrationCallRepository.js, app/unit-tests/lib/integrationCalls.test.js
+// - **Files:** app/lib/integrationCalls.js, app/data/dynamoDbIntegrationCallRepository.js, app/services/companiesHouseSend.js, app/lib/stripeRecordingHttpClient.js, app/unit-tests/lib/integrationCalls.test.js, app/unit-tests/lib/stripeRecordingHttpClient.test.js, app/unit-tests/services/companiesHouseSend.test.js, app/unit-tests/services/companiesHouseSendPathBypass.test.js
 // - **Keywords:** outbound call record, integration calls, api request log, duration, status code, send point
 // - **Related:** OPS-81, HMRC-29
 // @end-capability

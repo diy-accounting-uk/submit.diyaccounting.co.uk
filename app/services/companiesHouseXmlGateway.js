@@ -10,7 +10,8 @@
 
 import { createHash } from "node:crypto";
 import { createLogger } from "../lib/logger.js";
-import { fetchTextWithTimeout, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { sendXmlToCompaniesHouse } from "./companiesHouseSend.js";
 import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../lib/xmlDom.js";
 
@@ -763,7 +764,7 @@ export async function postToGateway(xml, extraHeaders = {}) {
 
   logger.info({ message: `POST ${url}`, url });
 
-  const result = await fetchTextWithTimeout(
+  const result = await sendXmlToCompaniesHouse(
     url,
     { method: "POST", headers: { "Content-Type": "text/xml", ...extraHeaders }, body: xml },
     DEFAULT_TIMEOUTS.LONG,

@@ -29,7 +29,8 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
-import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
+import { DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
+import { sendJsonToCompaniesHouse } from "../../services/companiesHouseSend.js";
 import { getIdentityBaseUrl, resolveClientSecret } from "../../services/companiesHouseFilingApi.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTokenPost.js" });
@@ -166,7 +167,7 @@ export async function exchangeCompaniesHouseToken(code) {
   }).toString();
 
   logger.info({ message: `Request to POST ${url}`, url });
-  const result = await fetchJsonWithTimeout(
+  const result = await sendJsonToCompaniesHouse(
     url,
     {
       method: "POST",
@@ -174,6 +175,7 @@ export async function exchangeCompaniesHouseToken(code) {
       body,
     },
     DEFAULT_TIMEOUTS.SHORT,
+    { api: "POST /oauth2/token" },
   );
   logger.info({ message: `Response from POST ${url}`, url, status: result.status });
   return result;

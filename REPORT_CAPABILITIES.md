@@ -3667,9 +3667,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-81 Mask and redact sensitive data from logs
 
 - **Use when:** text or an object bound for a log line or shared output may carry PII or secret values.
-- **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers. maskIntegrationRaw builds the allowlisted skeleton of an outbound call, and integrationPathTemplate reduces a URL path to a template with no identifier.
+- **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers. maskIntegrationRaw builds the allowlisted skeleton of an outbound call, and integrationPathTemplate and stripePathTemplate reduce a URL path to a template with no identifier.
 - **Run:** no command; see Does and Entry
-- **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`; `app/lib/dataMasking.js:maskIntegrationRaw`; `app/lib/dataMasking.js:integrationPathTemplate`
+- **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`; `app/lib/dataMasking.js:maskIntegrationRaw`; `app/lib/dataMasking.js:integrationPathTemplate`; `app/lib/dataMasking.js:stripePathTemplate`
 - **Files:** app/lib/dataMasking.js, app/unit-tests/lib/dataMasking.test.js
 - **Keywords:** pii redaction, data masking, secrets in logs, sensitive fields, log hygiene, body skeleton, path template
 - **Related:** OPS-86
@@ -3677,10 +3677,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-164 Record an outbound call to HMRC, Companies House or Stripe
 
 - **Use when:** code sends a request to an outside organisation and the operator must see the call, its duration and its status.
-- **Does:** integrationCalls.js writes one masked record for each attempt to the integration calls table, for a response, a timeout, a network error or a refusal. recordedFetch wraps a fetch; recordIntegrationCall takes a finished attempt from a client that does not use fetch. A failed write logs a warning and counts IntegrationCallRecordFailed, and the caller's request is not affected.
+- **Does:** integrationCalls.js writes one masked record for each attempt to the integration calls table, for a response, a timeout, a network error or a refusal. recordedFetch wraps a fetch; recordIntegrationCall takes a finished attempt from a client that does not use fetch. companiesHouseSend.js is the one send path to Companies House, and the Stripe SDK sends through stripeRecordingHttpClient.js, so each attempt to either leaves a record. A failed write logs a warning and counts IntegrationCallRecordFailed, and the caller's request is not affected.
 - **Run:** `import { recordedFetch } from "app/lib/integrationCalls.js"`
 - **Entry:** `app/lib/integrationCalls.js:recordedFetch`; `app/lib/integrationCalls.js:recordIntegrationCall`; `app/data/dynamoDbIntegrationCallRepository.js:putIntegrationCall`
-- **Files:** app/lib/integrationCalls.js, app/data/dynamoDbIntegrationCallRepository.js, app/unit-tests/lib/integrationCalls.test.js
+- **Files:** app/lib/integrationCalls.js, app/data/dynamoDbIntegrationCallRepository.js, app/services/companiesHouseSend.js, app/lib/stripeRecordingHttpClient.js, app/unit-tests/lib/integrationCalls.test.js, app/unit-tests/lib/stripeRecordingHttpClient.test.js, app/unit-tests/services/companiesHouseSend.test.js, app/unit-tests/services/companiesHouseSendPathBypass.test.js
 - **Keywords:** outbound call record, integration calls, api request log, duration, status code, send point
 - **Related:** OPS-81, HMRC-29
 

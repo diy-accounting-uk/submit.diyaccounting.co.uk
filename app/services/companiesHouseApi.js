@@ -5,7 +5,8 @@
 // Shared client for the read-only Companies House REST API.
 
 import { createLogger, context } from "../lib/logger.js";
-import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { sendJsonToCompaniesHouse } from "./companiesHouseSend.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
@@ -83,7 +84,7 @@ export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
 
   logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
 
-  const result = await fetchJsonWithTimeout(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
+  const result = await sendJsonToCompaniesHouse(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
 
   logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: result.status });
 
