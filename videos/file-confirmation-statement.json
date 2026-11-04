@@ -228,7 +228,7 @@
         {
           "action": "click",
           "target": "#useOwnPresenter",
-          "caption": "File under your own Companies House presenter. Companies House charges its fee to your credit account.",
+          "caption": "File under your own presenter. Companies House bills its fee to you.",
           "headline": "Use your own presenter",
           "keyWord": "presenter"
         },
