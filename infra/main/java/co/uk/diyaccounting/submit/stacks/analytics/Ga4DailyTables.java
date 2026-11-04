@@ -14,12 +14,12 @@ import software.amazon.awscdk.services.glue.CfnTable;
 import software.constructs.Construct;
 
 /**
- * Glue tables over the lake's copy of the four one-stop-dashboard aggregate tables {@code
+ * Glue tables over the lake's copy of the five one-stop-dashboard aggregate tables {@code
  * infra/google/gcp/bigquery.toml} maintains in BigQuery's {@code ga4_daily} dataset, which {@code
  * app/functions/analytics/ga4DailyPull.js} writes nightly to {@code
  * curated/ga4_daily/<table>/dt=YYYY-MM-DD/data.json.gz}: {@code sessions_by_host_source_daily},
- * {@code funnel_steps_daily}, {@code key_events_daily} and {@code downloads_by_product_daily}. A
- * fifth table, {@code sessions_by_hour_kind}, holds sessions by hour and visitor kind that the same
+ * {@code funnel_steps_daily}, {@code key_events_daily}, {@code downloads_by_product_daily} and
+ * {@code pages_by_kind_daily}. A sixth table, {@code sessions_by_hour_kind}, holds sessions by hour and visitor kind that the same
  * Lambda's hourly mode writes from GA4's raw export to {@code
  * curated/ga4_hourly/sessions_by_hour_kind/dt=YYYY-MM-DD/data.json.gz}.
  *
@@ -42,12 +42,14 @@ public class Ga4DailyTables {
     private static final String FUNNEL_STEPS_TABLE_NAME = "funnel_steps_daily";
     private static final String KEY_EVENTS_TABLE_NAME = "key_events_daily";
     private static final String DOWNLOADS_BY_PRODUCT_TABLE_NAME = "downloads_by_product_daily";
+    private static final String PAGES_BY_KIND_TABLE_NAME = "pages_by_kind_daily";
     private static final String SESSIONS_BY_HOUR_KIND_TABLE_NAME = "sessions_by_hour_kind";
 
     public final CfnTable sessionsByHostSourceTable;
     public final CfnTable funnelStepsTable;
     public final CfnTable keyEventsTable;
     public final CfnTable downloadsByProductTable;
+    public final CfnTable pagesByKindTable;
     public final CfnTable sessionsByHourKindTable;
 
     @Value.Immutable
@@ -105,6 +107,15 @@ public class Ga4DailyTables {
                 DOWNLOADS_BY_PRODUCT_TABLE_NAME,
                 "Downloads by product, one day at a time",
                 buildDownloadsByProductColumns());
+
+        this.pagesByKindTable = buildTable(
+                scope,
+                props,
+                catalogId,
+                CURATED_PREFIX,
+                PAGES_BY_KIND_TABLE_NAME,
+                "Visitors and engaged time by hostname, page and visitor kind, one day at a time",
+                buildPagesByKindColumns());
 
         this.sessionsByHourKindTable = buildTable(
                 scope,
@@ -219,6 +230,16 @@ public class Ga4DailyTables {
                 "key_event", "string",
                 "events", "bigint",
                 "users", "bigint");
+    }
+
+    private static List<CfnTable.ColumnProperty> buildPagesByKindColumns() {
+        return columnsOf(
+                "day", "string",
+                "hostname", "string",
+                "page", "string",
+                "visitor_kind", "string",
+                "users", "bigint",
+                "engagement_msec", "bigint");
     }
 
     private static List<CfnTable.ColumnProperty> buildDownloadsByProductColumns() {

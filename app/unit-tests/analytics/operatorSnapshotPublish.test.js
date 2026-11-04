@@ -86,6 +86,7 @@ import {
   hourlyChartHours,
   buildCostDrivers,
   buildPaidSubscribers,
+  buildPageVisitors,
   shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
@@ -806,6 +807,46 @@ describe("operatorSnapshotPublish", () => {
       );
       expect(shortResourceName("arn:aws:synthetics:eu-west-2:972912397388:canary:prod-dbf4e0a-api")).toBe("canary:prod-dbf4e0a-api");
       expect(shortResourceName("(no resource)")).toBe("(no resource)");
+    });
+
+    test("buildPageVisitors reads the pages with most customer visitors over the last 30 days, operators apart", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["page", "signed_in_visitors", "signed_in_engaged_ms", "other_visitors", "other_engaged_ms", "operator_visitors"],
+                [["submit.diyaccounting.co.uk/index.html", "4", "500000", "20", "1000000", "6"]],
+              ),
+            });
+        }
+      });
+
+      const result = await buildPageVisitors({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_ga4_pages_by_kind_daily");
+      expect(sql).toContain("visitor_kind NOT IN ('authenticated', 'operator', 'synthetic')");
+      expect(sql).toContain("date_add('day', -30, current_date)");
+      expect(sql).toContain("LIMIT  15");
+      expect(result).toEqual({
+        days: 30,
+        rows: [
+          {
+            page: "submit.diyaccounting.co.uk/index.html",
+            signedInVisitors: 4,
+            signedInEngagedMs: 500000,
+            otherVisitors: 20,
+            otherEngagedMs: 1000000,
+            operatorVisitors: 6,
+          },
+        ],
+      });
     });
 
     test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {

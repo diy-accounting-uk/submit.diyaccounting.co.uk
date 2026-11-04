@@ -4,6 +4,8 @@
 // app/unit-tests/scripts/searchconsoleSync.test.js
 
 import { describe, test, expect, vi } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 
 import {
   parseArgs,
@@ -17,16 +19,20 @@ import {
   describePropertyPlan,
   isTokenNotFoundError,
   applyPropertyPlan,
+  buildSitemapPlan,
+  sitemapErrorCount,
+  anySitemapHasErrors,
+  describeSitemap,
 } from "../../../infra/google/searchconsole/searchconsole-sync.js";
 
 const verifiedResource = (domain) => ({ site: { type: "INET_DOMAIN", identifier: domain } });
 
 describe("parseArgs", () => {
   test("defaults to plan mode", () => {
-    expect(parseArgs([])).toEqual({ apply: false });
+    expect(parseArgs([])).toEqual({ apply: false, sitemapsOnly: false, failOnErrors: false });
   });
   test("reads --apply", () => {
-    expect(parseArgs(["--apply"])).toEqual({ apply: true });
+    expect(parseArgs(["--apply"])).toEqual({ apply: true, sitemapsOnly: false, failOnErrors: false });
   });
   test("rejects an unknown argument", () => {
     expect(() => parseArgs(["--nope"])).toThrow(/Unknown argument/);
@@ -140,5 +146,73 @@ describe("applyPropertyPlan", () => {
     await applyPropertyPlan({ request }, verifiedPlan);
     expect(request).toHaveBeenCalledTimes(1);
     expect(request.mock.calls[0][0].method).toBe("PUT");
+  });
+});
+
+describe("sitemaps", () => {
+  const property = {
+    domain: "diyaccounting.co.uk",
+    sitemaps: ["https://submit.diyaccounting.co.uk/sitemap.xml", "https://spreadsheets.diyaccounting.co.uk/sitemap.xml"],
+  };
+  const live = JSON.parse(
+    fs.readFileSync(path.join(import.meta.dirname, "..", "fixtures", "searchconsole", "sitemaps-list.json"), "utf-8"),
+  ).sitemap;
+  const status = (name) => JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "fixtures", "searchconsole", name), "utf-8"));
+
+  test("the checked-in file declares the four sitemaps under their properties", () => {
+    const { properties } = loadConfigFromRoot();
+    expect(properties.map((p) => p.sitemaps)).toEqual([
+      [
+        "https://submit.diyaccounting.co.uk/sitemap.xml",
+        "https://spreadsheets.diyaccounting.co.uk/sitemap.xml",
+        "https://diyaccounting.co.uk/sitemap.xml",
+      ],
+      ["https://diya-gl.co.uk/sitemap.xml"],
+    ]);
+  });
+  test("a sitemap that is not an https URL is refused", () => {
+    expect(() => parseConfig('[[property]]\ndomain = "a.example"\nsitemaps = ["a.example/sitemap.xml"]')).toThrow(/not an https URL/);
+  });
+  test("parseArgs reads the sitemap flags", () => {
+    expect(parseArgs(["--sitemaps-only", "--apply", "--fail-on-errors"])).toEqual({ apply: true, sitemapsOnly: true, failOnErrors: true });
+  });
+  test("buildSitemapPlan submits only the sitemap Search Console does not hold", () => {
+    expect(buildSitemapPlan(property, live)).toEqual([
+      { feedpath: "https://submit.diyaccounting.co.uk/sitemap.xml", action: "noop" },
+      { feedpath: "https://spreadsheets.diyaccounting.co.uk/sitemap.xml", action: "submit" },
+    ]);
+  });
+  test("buildSitemapPlan submits all when none is held", () => {
+    expect(buildSitemapPlan(property, []).map((e) => e.action)).toEqual(["submit", "submit"]);
+  });
+  test("sitemapErrorCount reads the string count", () => {
+    expect(sitemapErrorCount(status("sitemap-status.json"))).toBe(0);
+    expect(sitemapErrorCount(status("sitemap-status-errors.json"))).toBe(2);
+    expect(sitemapErrorCount(null)).toBe(0);
+  });
+  test("anySitemapHasErrors is true when one sitemap shows errors", () => {
+    expect(anySitemapHasErrors([status("sitemap-status.json")])).toBe(false);
+    expect(anySitemapHasErrors([status("sitemap-status.json"), status("sitemap-status-errors.json")])).toBe(true);
+  });
+  test("describeSitemap prints the last download, errors, warnings and contents", () => {
+    const lines = describeSitemap(
+      { feedpath: "https://submit.diyaccounting.co.uk/sitemap.xml", action: "noop" },
+      status("sitemap-status.json"),
+      false,
+    );
+    expect(lines).toEqual([
+      "Sitemap https://submit.diyaccounting.co.uk/sitemap.xml: held",
+      "  lastSubmitted: 2026-11-01T05:23:11.000Z",
+      "  lastDownloaded: 2026-11-01T05:30:02.000Z",
+      "  pending: no",
+      "  errors: 0",
+      "  warnings: 1",
+      "  contents web: submitted 20, indexed 0",
+    ]);
+  });
+  test("describeSitemap in a plan says will submit and prints no status", () => {
+    expect(describeSitemap({ feedpath: "https://x.example/sitemap.xml", action: "submit" }, null, true)).toEqual([
+      "[dry-run] Sitemap https://x.example/sitemap.xml: will submit",
+    ]);
   });
 });

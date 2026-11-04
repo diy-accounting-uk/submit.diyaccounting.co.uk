@@ -326,6 +326,10 @@ public class BusinessViews extends Construct {
                     "GA4 sessions each day by landing page, and how many of them signed in",
                     List.of("ga4_bq_events")),
             new ViewDefinition(
+                    "v_ga4_pages_by_kind_daily",
+                    "GA4 visitors and engaged time each day by page and visitor kind",
+                    List.of("pages_by_kind_daily")),
+            new ViewDefinition(
                     "v_campaign_channels_daily",
                     "Sessions, pass uses, subscribers and commission in pence each day, by utm source, medium,"
                             + " campaign and ref",

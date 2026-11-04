@@ -7,7 +7,7 @@
 // - **Does:** ga4-bigquery-sync.js makes the live ga4_daily BigQuery dataset and its Data Transfer scheduled queries match bigquery.toml. Each declared query becomes a scheduled_query transfer config writing one day of GA4's BigQuery events_* export. The destination table is write-truncated and partitioned.
 // - **Run:** `npm run ga4:bigquery-sync`; `npm run ga4:bigquery-sync -- --apply`
 // - **Entry:** `infra/google/ga4/ga4-bigquery-sync.js:main`
-// - **Files:** infra/google/ga4/ga4-bigquery-sync.js, app/unit-tests/scripts/ga4BigQuerySync.test.js, infra/google/gcp/bigquery.toml, infra/google/gcp/bigquery/downloads_by_product_daily.sql, infra/google/gcp/bigquery/funnel_steps_daily.sql, infra/google/gcp/bigquery/key_events_daily.sql, infra/google/gcp/bigquery/sessions_by_host_source_daily.sql
+// - **Files:** infra/google/ga4/ga4-bigquery-sync.js, app/unit-tests/scripts/ga4BigQuerySync.test.js, infra/google/gcp/bigquery.toml, infra/google/gcp/bigquery/downloads_by_product_daily.sql, infra/google/gcp/bigquery/funnel_steps_daily.sql, infra/google/gcp/bigquery/key_events_daily.sql, infra/google/gcp/bigquery/pages_by_kind_daily.sql, infra/google/gcp/bigquery/sessions_by_host_source_daily.sql
 // - **Keywords:** ga4 bigquery sync, scheduled query, data transfer, events_* export, write-truncated table, bigquery.toml
 // - **Related:** DATA-38, DATA-05
 // @end-capability

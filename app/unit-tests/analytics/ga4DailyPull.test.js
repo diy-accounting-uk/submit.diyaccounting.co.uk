@@ -40,7 +40,13 @@ vi.mock("@aws-sdk/client-s3", () => ({
 
 import { handler, defaultTargetDate, toNdjsonGzip, hourlyTargetDates, buildHourlyQuery } from "../../functions/analytics/ga4DailyPull.js";
 
-const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
+const TABLES = [
+  "sessions_by_host_source_daily",
+  "funnel_steps_daily",
+  "key_events_daily",
+  "downloads_by_product_daily",
+  "pages_by_kind_daily",
+];
 
 const FEDERATION_ENV = {
   GOOGLE_WIF_AUDIENCE:
@@ -114,11 +120,11 @@ describe("ga4DailyPull", () => {
   });
 
   describe("handler", () => {
-    test("uses D-2 by default and pulls every one of the four tables", async () => {
+    test("uses D-2 by default and pulls every one of the five tables", async () => {
       const result = await handler();
 
       expect(result.date).toBe(defaultTargetDate());
-      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(5);
       expect(Object.keys(result.keys).sort()).toEqual([...TABLES].sort());
     });
 
@@ -142,7 +148,7 @@ describe("ga4DailyPull", () => {
     test("the query job is created with the configured location", async () => {
       await handler({ date: "2026-08-20" });
 
-      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(5);
       for (const [options] of mockCreateQueryJob.mock.calls) {
         expect(options.location).toBe("europe-west2");
       }
@@ -153,7 +159,7 @@ describe("ga4DailyPull", () => {
 
       await handler({ date: "2026-08-20" });
 
-      expect(mockS3Send).toHaveBeenCalledTimes(4);
+      expect(mockS3Send).toHaveBeenCalledTimes(5);
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key).sort();
       expect(keys).toEqual(TABLES.map((tableName) => `curated/ga4_daily/${tableName}/dt=2026-08-20/data.json.gz`).sort());
 
@@ -224,8 +230,8 @@ describe("ga4DailyPull", () => {
       await vi.runAllTimersAsync();
       await pending;
 
-      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4 + 1);
-      expect(mockS3Send).toHaveBeenCalledTimes(4);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(5 + 1);
+      expect(mockS3Send).toHaveBeenCalledTimes(5);
     });
 
     test("a job that fails while reading results is created again", async () => {
@@ -239,7 +245,7 @@ describe("ga4DailyPull", () => {
       await pending;
 
       expect(failing.getQueryResults).toHaveBeenCalledTimes(1);
-      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4 + 1);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(5 + 1);
     });
 
     test("a non-transient error is not retried", async () => {

@@ -480,6 +480,28 @@ const FIXTURE_PAID_SUBSCRIBERS = {
   totals: { subscribers: 4, mrrGbp: 46, arrGbp: 552 },
 };
 
+const FIXTURE_PAGE_VISITORS = {
+  days: 30,
+  rows: [
+    {
+      page: "submit.diyaccounting.co.uk/index.html",
+      signedInVisitors: 4,
+      signedInEngagedMs: 500000,
+      otherVisitors: 20,
+      otherEngagedMs: 1000000,
+      operatorVisitors: 6,
+    },
+    {
+      page: "submit.diyaccounting.co.uk/pricing.html",
+      signedInVisitors: 0,
+      signedInEngagedMs: 0,
+      otherVisitors: 3,
+      otherEngagedMs: 45000,
+      operatorVisitors: 0,
+    },
+  ],
+};
+
 const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
 
 // Thirty days of a small service: about 130 visits, 41 paid landings, £84 of ad spend over 96 clicks.
@@ -632,6 +654,7 @@ function fullShapeSnapshot() {
     })),
     costDrivers: FIXTURE_COST_DRIVERS,
     paidSubscribers: FIXTURE_PAID_SUBSCRIBERS,
+    pageVisitors: FIXTURE_PAGE_VISITORS,
     ...FIXTURE_AFFILIATE_SECTIONS,
     failedObservationCount: 0,
   };
@@ -864,7 +887,7 @@ test.describe("Operator Dashboard", () => {
     await delay(200);
   }
 
-  const DASHBOARD_TABS = ["main", "adoption", "ops", "affiliates", "aws-prod", "aws-ci"];
+  const DASHBOARD_TABS = ["main", "adoption", "behaviour", "ops", "affiliates", "aws-prod", "aws-ci"];
 
   async function openTab(page, tabId) {
     await page.locator(`.dashboard-tab[data-tab-id="${tabId}"]`).click();
@@ -1045,7 +1068,6 @@ test.describe("Operator Dashboard", () => {
       "main": [
         "chartsPanel",
         "visitorsPanel",
-        "activitiesPanel",
         "table-low-running-cost",
         "table-compliance",
         "table-security",
@@ -1053,6 +1075,7 @@ test.describe("Operator Dashboard", () => {
         "reservePanel",
       ],
       "adoption": ["table-conversion-to-paid", "table-conversion-to-submission", "table-retention", "monthlyMarketingBudgetPanel"],
+      "behaviour": ["activitiesPanel", "pageVisitorsPanel"],
       "ops": ["table-uptime", "table-operator-effort"],
       "affiliates": ["heldPassesPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"],
       "aws-prod": ["awsLinksPanel"],
@@ -1074,10 +1097,10 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
     }
 
-    test("opens on Main with the six tabs and one pressed", async ({ page }) => {
+    test("opens on Main with the seven tabs and one pressed", async ({ page }) => {
       await loadTabs(page);
 
-      await expect(page.locator(".dashboard-tab")).toHaveText(["Main", "Adoption", "Ops", "Affiliates", "AWS prod", "AWS ci"]);
+      await expect(page.locator(".dashboard-tab")).toHaveText(["Main", "Adoption", "Behaviour", "Ops", "Affiliates", "AWS prod", "AWS ci"]);
       await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Main"]);
       await expect(page.locator(".subtitle", { hasText: "The eight objectives" })).toHaveCount(0);
       await expectOnlyTabSections(page, "main");
@@ -1105,10 +1128,10 @@ test.describe("Operator Dashboard", () => {
       await expect(page.locator("#table-low-running-cost")).toBeHidden();
     });
 
-    test("draws the Adoption, Ops and Affiliates sections as tables with no graph", async ({ page }) => {
+    test("draws the Adoption, Behaviour, Ops and Affiliates sections as tables with no graph", async ({ page }) => {
       await loadTabs(page);
 
-      for (const tabId of ["adoption", "ops", "affiliates"]) {
+      for (const tabId of ["adoption", "behaviour", "ops", "affiliates"]) {
         await openTab(page, tabId);
         for (const id of SECTIONS_BY_TAB[tabId]) {
           const section = page.locator("#" + id);
@@ -1190,7 +1213,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      16,
+      17,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -1199,6 +1222,7 @@ test.describe("Operator Dashboard", () => {
       "table-conversion-to-submission",
       "table-retention",
       "activitiesPanel",
+      "pageVisitorsPanel",
       "table-low-running-cost",
       "table-uptime",
       "table-compliance",
@@ -1232,7 +1256,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(16);
+    expect(sections).toHaveLength(17);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);
@@ -1705,6 +1729,7 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
+    await openTab(page, "behaviour");
     const panel = page.locator("#activitiesPanel");
     await expect(panel).toBeVisible();
 
@@ -1751,6 +1776,33 @@ test.describe("Operator Dashboard", () => {
 
     await expect(page.locator("#activitiesStartedTable caption")).toHaveAttribute("title", /signed-in customer/);
     await expect(page.locator("#activitiesCompletedTable caption")).toHaveAttribute("title", /whether or not the customer clicked/);
+  });
+
+  test("lists pages with signed-in and other visitors and the time each spent, or says none are published", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, pageVisitors: FIXTURE_PAGE_VISITORS } });
+    await loadDashboard(page);
+    await openTab(page, "behaviour");
+
+    const panel = page.locator("#pageVisitorsPanel");
+    await expect(panel.locator(".subtitle")).toContainText("Counts only visitors who accepted analytics");
+    const rows = panel.locator("tr.page-visitors-row");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).locator("td")).toHaveText(["submit.diyaccounting.co.uk/index.html", "4", "2m 05s", "20", "50s", "6"]);
+    await expect(rows.nth(1).locator("td")).toHaveText([
+      "submit.diyaccounting.co.uk/pricing.html",
+      "none",
+      "not measured",
+      "3",
+      "15s",
+      "none",
+    ]);
+    await expect(panel.locator("#pageVisitorsEmpty")).toBeHidden();
+
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await openTab(page, "behaviour");
+    await expect(page.locator("#pageVisitorsEmpty")).toBeVisible();
+    await expect(page.locator("#pageVisitorsTable")).toBeHidden();
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
@@ -2177,6 +2229,7 @@ test.describe("Operator Dashboard", () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, ...FIXTURE_AFFILIATE_SECTIONS } });
       await loadDashboard(page);
+      await openTab(page, "behaviour");
 
       const headerCells = page.locator(".activities-table thead tr:not(.last-updated) th");
       const count = await headerCells.count();

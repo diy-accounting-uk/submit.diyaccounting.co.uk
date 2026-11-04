@@ -587,6 +587,47 @@ function renderActivities(snapshot) {
   });
 }
 
+// Engaged time per visitor as minutes and seconds: "2m 05s", or "45s" under a minute.
+function formatEngagedTime(engagedMs, visitors) {
+  if (!visitors) return NOT_MEASURED;
+  const totalSeconds = Math.round(engagedMs / visitors / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes === 0 ? seconds + "s" : minutes + "m " + String(seconds).padStart(2, "0") + "s";
+}
+
+// One row per page the customers read most. A snapshot with no rows, or from before the table
+// existed, shows the empty note.
+function renderPageVisitors(snapshot) {
+  const panel = document.getElementById("pageVisitorsPanel");
+  const body = document.getElementById("pageVisitorsBody");
+  const empty = document.getElementById("pageVisitorsEmpty");
+  const table = document.getElementById("pageVisitorsTable");
+  body.innerHTML = "";
+  panel.hidden = false;
+  const rows = snapshot.pageVisitors ? snapshot.pageVisitors.rows : [];
+  empty.hidden = rows.length > 0;
+  table.hidden = rows.length === 0;
+  rows.forEach((entry) => {
+    const row = document.createElement("tr");
+    row.className = "page-visitors-row";
+    row.dataset.page = entry.page;
+    [
+      entry.page,
+      formatValue("count", entry.signedInVisitors),
+      formatEngagedTime(entry.signedInEngagedMs, entry.signedInVisitors),
+      formatValue("count", entry.otherVisitors),
+      formatEngagedTime(entry.otherEngagedMs, entry.otherVisitors),
+      formatValue("count", entry.operatorVisitors),
+    ].forEach((text) => {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  });
+}
+
 // The operator list. The emails come from the authenticated snapshot only.
 function renderOperators(snapshot) {
   const panel = document.getElementById("operatorsPanel");
@@ -885,6 +926,7 @@ function showError(message) {
 const STATIC_TABLE_PANELS = [
   "visitorsPanel",
   "activitiesPanel",
+  "pageVisitorsPanel",
   "companyAccountsPanel",
   "reservePanel",
   "monthlyMarketingBudgetPanel",
@@ -1001,7 +1043,7 @@ document.addEventListener("click", async (event) => {
 // The tabs show the sections whose data-tab names them (a section can name several, separated by
 // spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
 const TAB_STORAGE_KEY = "operatorDashboardTab";
-const TAB_IDS = ["main", "adoption", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TAB_IDS = ["main", "adoption", "behaviour", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function storedTab() {
   try {
@@ -1070,6 +1112,7 @@ async function initPage() {
     renderReserve(snapshot);
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);
+    renderPageVisitors(snapshot);
     window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
     renderOperators(snapshot);

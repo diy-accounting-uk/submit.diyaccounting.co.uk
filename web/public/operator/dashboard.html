@@ -40,6 +40,7 @@
       <nav id="dashboardTabs" class="dashboard-tabs" aria-label="Dashboard sections" hidden>
         <button type="button" class="dashboard-tab" data-tab-id="main" aria-pressed="true">Main</button>
         <button type="button" class="dashboard-tab" data-tab-id="adoption" aria-pressed="false">Adoption</button>
+        <button type="button" class="dashboard-tab" data-tab-id="behaviour" aria-pressed="false">Behaviour</button>
         <button type="button" class="dashboard-tab" data-tab-id="ops" aria-pressed="false">Ops</button>
         <button type="button" class="dashboard-tab" data-tab-id="affiliates" aria-pressed="false">Affiliates</button>
         <button type="button" class="dashboard-tab" data-tab-id="aws-prod" aria-pressed="false">AWS prod</button>
@@ -108,7 +109,7 @@
         </section>
         <div data-objective-slot="conversion-to-submission" data-tab="adoption"></div>
         <div data-objective-slot="retention" data-tab="adoption"></div>
-        <section id="activitiesPanel" class="objective" hidden data-tab="main">
+        <section id="activitiesPanel" class="objective" hidden data-tab="behaviour">
           <h2>Activity started and completed</h2>
           <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
           <p class="subtitle" id="activitiesDataSince" hidden></p>
@@ -150,6 +151,30 @@
             </thead>
             <tbody id="activitiesCompletedBody"></tbody>
           </table>
+        </section>
+        <section id="pageVisitorsPanel" class="objective" hidden data-tab="behaviour">
+          <h2>Pages by visitor</h2>
+          <p class="subtitle">
+            Visitors to each page over the last 30 days, and the time each spent on it. Counts only visitors who accepted analytics. A
+            visitor who reads a page on two days counts once on each day. The operator's own visits are counted apart; test traffic is left
+            out.
+          </p>
+          <table class="observations data-table" id="pageVisitorsTable">
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th title="Visitors signed in to an account">Signed in</th>
+                <th title="Time the page was open for each signed-in visitor">Time each</th>
+                <th title="Visitors who were not signed in">Other</th>
+                <th title="Time the page was open for each other visitor">Time each</th>
+                <th title="Operator visits, not counted in the other columns">Operator</th>
+              </tr>
+            </thead>
+            <tbody id="pageVisitorsBody"></tbody>
+          </table>
+          <p class="objective-empty" id="pageVisitorsEmpty" hidden>
+            No page figures yet. They arrive with the next nightly Google Analytics pull.
+          </p>
         </section>
         <div data-objective-slot="low-running-cost" data-tab="main"></div>
         <div data-objective-slot="uptime" data-tab="ops"></div>
