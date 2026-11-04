@@ -517,6 +517,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard: use when the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
     - [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt: use when the operator asks for a tech-debt audit, a repository hygiene report, or how much debt the repositories carry.
     - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session: use when the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
+    - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill: use when /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5067,7 +5068,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5396,6 +5397,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard
 - [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt
 - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session
+- [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5704,6 +5706,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/campaign/SKILL.md
 - **Keywords:** campaign, marketing session, referral pass, forum answers, review queue, family affiliate, newsletters, stop rule
 - **Related:** DEV-45, DEV-30
+
+#### DEV-58 Search community threads for the campaign skill
+
+- **Use when:** /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
+- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id and secret come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a generic User-Agent. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
+- **Run:** `AWS_PROFILE=diya-submit-prod node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads recorded responses with no credentials
+- **Entry:** `scripts/campaign-threads.mjs:searchThreads`
+- **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/reddit-search.json, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
+- **Keywords:** campaign threads, reddit search, smallbusinessuk, uk business forums, rss, thread discovery, read only, rate limit
+- **Related:** DEV-57
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -6711,6 +6723,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - campaign: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
+- campaign threads: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
@@ -8191,7 +8204,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - random hex: [SITE-17](#site-17-trace-and-secure-client-requests)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
-- rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
+- rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -8199,6 +8212,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - raw identifiers: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
+- read only: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - read-only aws query: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - read-only check: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
@@ -8224,6 +8238,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - redact: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - redaction: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- reddit search: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - redeem pass: [BILL-10](#bill-10-redeem-a-pass)
 - redeempass: [BILL-10](#bill-10-redeem-a-pass)
 - redirect: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
@@ -8340,6 +8355,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - route53: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - route53 alias: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - route53 records: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
+- rss: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - ruleset evaluation: [DATA-11](#data-11-run-glue-data-quality-checks)
 - rum ga4 agreement: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - rum injection: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
@@ -8504,6 +8520,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - small company accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- smallbusinessuk: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
@@ -8695,6 +8712,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - text spacing: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - text-spacing: [SS-45](#ss-45-run-compliance-checks)
 - third-party console: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
+- thread discovery: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - threat detection: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - thumbnails: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
@@ -8751,6 +8769,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - typeofbusiness: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - typing cadence: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - uet tag: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- uk business forums: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - uk gdpr: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - uk property: [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - uk property annual: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)

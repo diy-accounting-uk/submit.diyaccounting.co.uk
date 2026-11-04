@@ -77,12 +77,19 @@ the current step and write the report with what was done.
 - Newsletters: the "Reading" label on matthew@diyaccounting.co.uk, through the Gmail connector,
   read only (the brief's "What to subscribe to" list). Note each change our audience will ask about
   this week: a VAT, MTD or Companies House rule, a deadline, a fee.
-- Threads: search the places the brief names for questions from the last 7 days. The question
-  shape is "what cheap software sends my VAT return from a spreadsheet", and its relatives:
-  bridging software, MTD for VAT without accounting software, filing accounts or a confirmation
-  statement without an accountant. Use WebSearch with the site name and WebFetch on public pages.
-  Reddit blocks plain fetching: until the Reddit API app exists (board row CAMP2), search
-  `site:reddit.com/r/smallbusinessuk` through WebSearch and say the coverage is partial.
+- Threads: `npm run campaign:threads -- --days 7 --out target/campaign-threads.json` reads the
+  last seven days of questions from the subreddits (default `smallbusinessuk`; `--subreddits a,b`
+  adds more) and from the UK Business Forums feed, read only. It needs the Reddit app's client id
+  and secret in the Secrets Manager secret `prod/submit/reddit-campaign-app` (JSON
+  `{"clientId","clientSecret"}`, read through `AWS_PROFILE=diya-submit-prod`); without it the script
+  stops with a message naming the secret. Then read the output's `skipped` list: a source named
+  there was not read (the forum's feed answers a browser challenge at times and is not retried).
+  The question shape is "what cheap software sends my VAT return from a spreadsheet", and its
+  relatives: bridging software, MTD for VAT without accounting software, filing accounts or a
+  confirmation statement without an accountant (the script's default queries). While the secret is
+  absent (board row OCAMP2), use WebSearch with `site:reddit.com/r/smallbusinessuk` and
+  WebFetch on public pages, and say the coverage is partial. Read `--fixture
+  scripts/fixtures/campaign-threads` to see the output shape with no credentials.
 - Skip AccountingWEB and the HMRC community forums for posting (their rules remove
   self-promotion). Read them for what owners ask.
 - Skip a thread where the asker needs advice an accountant gives, is not VAT-registered, or asks
