@@ -366,6 +366,26 @@ const FIXTURE_DAILY_CHARTS = {
             chartSeries("bundle", "View and edit your bundles", 2),
           ],
         },
+        {
+          id: "api-calls",
+          label: "HMRC API calls",
+          hourly: {
+            series: [
+              hourlySeries("all", "All APIs", 9),
+              hourlySeries("all-test", "All APIs (test)", 14),
+              hourlySeries("live:POST /organisations/vat/{vrn}/returns", "POST /organisations/vat/{vrn}/returns", 2),
+            ],
+          },
+          series: [
+            chartSeries("all", "All APIs", 30),
+            chartSeries("all-test", "All APIs (test)", 45),
+            chartSeries("live:POST /organisations/vat/{vrn}/returns", "POST /organisations/vat/{vrn}/returns", 6),
+            chartSeries("live:GET /organisations/vat/{vrn}/obligations", "GET /organisations/vat/{vrn}/obligations", 12),
+            chartSeries("live:POST /oauth/token", "POST /oauth/token", 9),
+            chartSeries("test:POST /organisations/vat/{vrn}/returns", "POST /organisations/vat/{vrn}/returns (test)", 18),
+            chartSeries("test:GET /organisations/vat/{vrn}/obligations", "GET /organisations/vat/{vrn}/obligations (test)", 24),
+          ],
+        },
       ],
     },
     {
@@ -1977,10 +1997,21 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#integrationsAccountNote")).toBeHidden();
   });
 
-  test("the two integration graphs draw on Main", async ({ page }) => {
+  test("the activity graph's HMRC API calls mode starts with only All APIs on, and the two integration graphs draw on Main", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
     await loadDashboard(page);
+
+    const activity = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+    await activity.getByRole("button", { name: "HMRC API calls", exact: true }).click();
+    await expect(activity.locator(".chart-legend-item[aria-pressed='true']")).toHaveText(["All APIs"]);
+    await expect(activity.locator(".chart-legend-item[aria-pressed='false']")).toHaveCount(6);
+    await activity.locator(".chart-legend-item", { hasText: "All APIs (test)" }).click();
+    await expect(activity.locator(".chart-legend-item[aria-pressed='true']")).toHaveCount(2);
+    await activity.getByRole("button", { name: "Started", exact: true }).click();
+    await expect(activity.locator(".chart-legend-item[aria-pressed='false']")).toHaveCount(2);
 
     const requests = page.locator('.chart-card[data-chart-id="integration-requests"]');
     await expect(requests.locator("h3")).toContainText("API requests by organisation and status");
@@ -1993,6 +2024,7 @@ test.describe("Operator Dashboard", () => {
     await page.locator("#chartsPanel").screenshot({ path: "target/int3-screens/main-charts-1280.png" });
     await requests.screenshot({ path: "target/int3-screens/integration-requests-1280.png" });
     await duration.screenshot({ path: "target/int3-screens/integration-duration-1280.png" });
+    await activity.screenshot({ path: "target/int3-screens/activity-1280.png" });
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {

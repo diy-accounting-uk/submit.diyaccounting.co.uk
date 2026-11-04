@@ -552,6 +552,24 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
     });
 
+    test("the activity graph has a mode with a line for each HMRC API, an all APIs line and the test calls", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "activity-started-and-completed");
+
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
+      const mode = chart.modes[2];
+      expect(mode.total).toBeNull();
+      expect(mode.sql).toContain("'all' AS component");
+      expect(mode.sql).toContain("target <> 'live'");
+      expect(mode.sql).toContain("'live:' || api");
+      expect(mode.hourlySql).toContain("v_integration_calls_hourly");
+      expect(["all", "all-test", "live:GET /organisations/vat/{vrn}/obligations", "test:POST /oauth/token"].map(mode.labelOf)).toEqual([
+        "All APIs",
+        "All APIs (test)",
+        "GET /organisations/vat/{vrn}/obligations",
+        "POST /oauth/token (test)",
+      ]);
+    });
+
     test("failures and agent cost sit on the objectives that own them, each with a description", () => {
       const observationsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations;
       const byId = (objectiveId, id) => observationsOf(objectiveId).find((observation) => observation.id === id);
@@ -1161,7 +1179,7 @@ describe("operatorSnapshotPublish", () => {
         }
       }
       const activities = dailyCharts.charts[0];
-      expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed"]);
+      expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
     });
 
     test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
@@ -1178,6 +1196,7 @@ describe("operatorSnapshotPublish", () => {
       expect(withHourly).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "activity-started-and-completed/api-calls",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
@@ -1215,13 +1234,14 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(168);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(8);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(9);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
       expect(hourlyModes).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "activity-started-and-completed/api-calls",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
@@ -1271,8 +1291,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(45);
-      expect(queries).toHaveLength(8);
+      expect(firstRunQueryCount).toBe(47);
+      expect(queries).toHaveLength(9);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
@@ -2414,7 +2434,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 37);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 38);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {

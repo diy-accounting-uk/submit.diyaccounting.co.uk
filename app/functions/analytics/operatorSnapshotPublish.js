@@ -1086,6 +1086,41 @@ const integrationDurationMode = ({ id, label }) => {
   };
 };
 
+// One line per HMRC api that was called live, and one for all of them, with the test calls
+// (sandbox host, test key) as further lines.
+const HMRC_API_COMPONENT = "CASE WHEN target = 'live' THEN 'live:' || api ELSE 'test:' || api END";
+
+function hmrcApiCallsSql(hourly) {
+  const view = hourly ? "v_integration_calls_hourly" : "v_integration_calls_daily";
+  const window = hourly ? hourlyWindowFilter("hour") : dailyWindowFilter("day");
+  const timeColumn = hourly ? "hour" : "day";
+  const timeExpression = hourly ? "date_format(hour, '%Y-%m-%dT%H:00:00Z')" : "cast(day AS varchar)";
+  const lines = [
+    `SELECT ${timeColumn}, 'all' AS component, calls FROM ${view} WHERE org = 'hmrc' AND target = 'live' AND ${window}`,
+    `SELECT ${timeColumn}, 'all-test' AS component, calls FROM ${view} WHERE org = 'hmrc' AND target <> 'live' AND ${window}`,
+    `SELECT ${timeColumn}, ${HMRC_API_COMPONENT} AS component, calls FROM ${view} WHERE org = 'hmrc' AND ${window}`,
+  ];
+  return (
+    `SELECT ${timeExpression} AS day, component, cast(sum(calls) AS double) AS value\n` +
+    `FROM (\n  ${lines.join("\n  UNION ALL\n  ")}\n)\nGROUP  BY 1, 2`
+  );
+}
+
+const hmrcApiCallsLabel = (component) => {
+  if (component === "all") return "All APIs";
+  if (component === "all-test") return "All APIs (test)";
+  return component.startsWith("test:") ? `${component.slice(5)} (test)` : component.slice(5);
+};
+
+const hmrcApiCallsDescription = (component) => {
+  if (component === "all") return "Every live HMRC API call added together.";
+  if (component === "all-test")
+    return "Every HMRC API call to the sandbox or with a test key added together; customer calls are not in it.";
+  return component.startsWith("test:")
+    ? `Calls to ${component.slice(5)} on the HMRC sandbox or with a test key.`
+    : `Live calls to ${component.slice(5)}.`;
+};
+
 const STRIPE_DONATION_COMPONENT_CASE =
   `CASE WHEN ${STRIPE_DONATION_PRODUCT_FILTER} THEN 'stripe-donations' ` +
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
@@ -1145,7 +1180,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "activity-started-and-completed",
       title: "Activity started and completed",
       unit: "count",
-      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear.",
+      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear. HMRC API calls counts calls to HMRC from the call records: All APIs is the live calls, and the other lines start hidden, the test lines being sandbox and test-key calls.",
       modes: [
         {
           id: "started",
@@ -1186,6 +1221,15 @@ export function buildDailyChartDefinitions() {
             valueExpression: "completions",
             view: "v_submissions_by_activity_hourly",
           }),
+        },
+        {
+          id: "api-calls",
+          label: "HMRC API calls",
+          total: null,
+          labelOf: hmrcApiCallsLabel,
+          descriptionOf: hmrcApiCallsDescription,
+          sql: hmrcApiCallsSql(false),
+          hourlySql: hmrcApiCallsSql(true),
         },
       ],
     },
