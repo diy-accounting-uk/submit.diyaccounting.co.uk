@@ -32,6 +32,7 @@ import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/act
 import { DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
 import { sendJsonToCompaniesHouse } from "../../services/companiesHouseSend.js";
 import { getIdentityBaseUrl, resolveClientSecret } from "../../services/companiesHouseFilingApi.js";
+import { refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTokenPost.js" });
 
@@ -158,25 +159,35 @@ export async function exchangeCompaniesHouseToken(code) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}companies-house/filingCallback.html`;
   const url = `${identityBaseUri}/oauth2/token`;
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    code,
-    client_id: clientId,
-    client_secret: clientSecret,
-    redirect_uri: redirectUri,
-  }).toString();
+  const send = async (secret) => {
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      client_id: clientId,
+      client_secret: secret,
+      redirect_uri: redirectUri,
+    }).toString();
+    logger.info({ message: `Request to POST ${url}`, url });
+    const response = await sendJsonToCompaniesHouse(
+      url,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+        body,
+      },
+      DEFAULT_TIMEOUTS.SHORT,
+      { api: "POST /oauth2/token" },
+    );
+    logger.info({ message: `Response from POST ${url}`, url, status: response.status });
+    return response;
+  };
 
-  logger.info({ message: `Request to POST ${url}`, url });
-  const result = await sendJsonToCompaniesHouse(
-    url,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
-      body,
-    },
-    DEFAULT_TIMEOUTS.SHORT,
-    { api: "POST /oauth2/token" },
-  );
-  logger.info({ message: `Response from POST ${url}`, url, status: result.status });
+  const result = await send(clientSecret);
+  if (result.status === 401 && !process.env.COMPANIES_HOUSE_CLIENT_SECRET) {
+    // A 401 means the client secret was rolled. One forced read of the secret, and one more
+    // request, only when the secret now holds another value.
+    const refreshedSecret = await refreshAfterAuthFailure(process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN, clientSecret);
+    if (refreshedSecret) return send(refreshedSecret);
+  }
   return result;
 }

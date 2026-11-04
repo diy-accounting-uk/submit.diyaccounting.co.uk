@@ -47,6 +47,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
+import { withSecretRetry } from "../../lib/cachedSecret.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
 
@@ -60,39 +61,7 @@ export const SUPPORT_TICKET_RATE_LIMIT_PER_MINUTE = 3;
 // matching the form.
 export const SUPPORT_TICKET_CATEGORIES = ["connection", "submission", "bundles", "receipts", "other"];
 
-// Cache the GitHub App's private key to avoid fetching from Secrets Manager on every request.
-// The installation token itself is cached inside githubAppToken.js.
-let __cachedGitHubAppPrivateKey = null;
-
-/**
- * Fetch the GitHub App's private key from AWS Secrets Manager
- */
-async function getGitHubAppPrivateKey() {
-  if (__cachedGitHubAppPrivateKey) {
-    logger.debug({ message: "Using cached GitHub App private key" });
-    return __cachedGitHubAppPrivateKey;
-  }
-
-  const secretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
-  if (!secretId) {
-    throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
-  }
-
-  const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-  const client = new SecretsManagerClient({
-    region: process.env.AWS_REGION || "eu-west-2",
-  });
-
-  const response = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
-
-  if (!response.SecretString) {
-    throw new Error(`Secret ${secretId} exists but has no SecretString value`);
-  }
-
-  __cachedGitHubAppPrivateKey = response.SecretString;
-  logger.info({ message: "GitHub App private key successfully fetched and cached" });
-  return __cachedGitHubAppPrivateKey;
-}
+const isGitHubUnauthorized = (error) => error.status === 401;
 
 /**
  * Mint a GitHub App installation token scoped to the support repository
@@ -107,14 +76,22 @@ async function getGitHubToken(githubRepo) {
     throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
   }
 
-  const privateKey = await getGitHubAppPrivateKey();
-  return getInstallationAccessToken({
-    appId,
-    privateKey,
-    installationId,
-    repositories: [githubRepo.split("/")[1]],
-    permissions: { issues: "write" },
-  });
+  const privateKeySecretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!privateKeySecretId) {
+    throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
+  }
+  return withSecretRetry(
+    privateKeySecretId,
+    (privateKey) =>
+      getInstallationAccessToken({
+        appId,
+        privateKey,
+        installationId,
+        repositories: [githubRepo.split("/")[1]],
+        permissions: { issues: "write" },
+      }),
+    isGitHubUnauthorized,
+  );
 }
 
 /**
@@ -164,13 +141,18 @@ export const SUPPORT_READER_REF = "main";
  */
 export async function dispatchSupportReader() {
   try {
-    const token = await getInstallationAccessToken({
-      appId: process.env.GITHUB_APP_ID,
-      privateKey: await getGitHubAppPrivateKey(),
-      installationId: process.env.GITHUB_APP_INSTALLATION_ID,
-      repositories: [SUPPORT_READER_REPO.split("/")[1]],
-      permissions: { actions: "write" },
-    });
+    const token = await withSecretRetry(
+      process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID,
+      (privateKey) =>
+        getInstallationAccessToken({
+          appId: process.env.GITHUB_APP_ID,
+          privateKey,
+          installationId: process.env.GITHUB_APP_INSTALLATION_ID,
+          repositories: [SUPPORT_READER_REPO.split("/")[1]],
+          permissions: { actions: "write" },
+        }),
+      isGitHubUnauthorized,
+    );
     const response = await fetch(
       `https://api.github.com/repos/${SUPPORT_READER_REPO}/actions/workflows/${SUPPORT_READER_WORKFLOW}/dispatches`,
       {

@@ -18,6 +18,7 @@ import {
   extractRequest,
   parseRequestBody,
   buildTokenExchangeResponse,
+  performTokenExchange,
   buildValidationError,
   http200OkResponse,
   http401UnauthorizedResponse,
@@ -25,23 +26,12 @@ import {
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
+import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
-
-let secretsClient = null;
-const cachedHmrcClientSecretByAccount = {};
-
-// Lazy initialization of SecretsManagerClient
-async function getSecretsClient() {
-  if (!secretsClient) {
-    const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
-    secretsClient = new SecretsManagerClient();
-  }
-  return secretsClient;
-}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -120,7 +110,19 @@ export async function ingestHandler(event) {
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
-  const exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub, { org: "hmrc" });
+  let exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub, { org: "hmrc" });
+  if (exchangeResponse.statusCode === 401) {
+    const refreshedSecret = await refreshedHmrcClientSecret(hmrcAccount, tokenResponse.body.client_secret);
+    if (refreshedSecret) {
+      exchangeResponse = await buildTokenExchangeResponse(
+        request,
+        tokenResponse.url,
+        { ...tokenResponse.body, client_secret: refreshedSecret },
+        userSub,
+        { org: "hmrc" },
+      );
+    }
+  }
 
   // Publish after HMRC's reply, not before, so the event records what actually happened.
   if (exchangeResponse.statusCode === 200) {
@@ -179,15 +181,33 @@ export async function prepareTokenRefreshRequest(refreshToken, hmrcAccount) {
 
 async function retrieveHmrcClientSecret(account, overrideSecret, secretArn) {
   logger.info({ message: "Retrieving HMRC client secret", account });
-  if (overrideSecret) {
-    cachedHmrcClientSecretByAccount[account] = overrideSecret;
-    logger.info(`Secret retrieved from override and cached`);
-  } else if (!cachedHmrcClientSecretByAccount[account]) {
-    const client = await getSecretsClient();
-    const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-    const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedHmrcClientSecretByAccount[account] = data.SecretString;
-    logger.info("Secret retrieved from Secrets Manager and cached");
-  }
-  return cachedHmrcClientSecretByAccount[account];
+  if (overrideSecret) return overrideSecret;
+  return readSecret(secretArn);
+}
+
+/**
+ * The client secret a rejected token request should try again with, or null when there is none.
+ * HMRC answers a rolled client secret with 401 invalid_client. One forced read of the secret
+ * gives the new value, only when the secret now holds another one.
+ * @param {string} hmrcAccount - "synthetic" or "live"
+ * @param {string} usedSecret - the client secret the rejected request carried
+ * @returns {Promise<string|null>}
+ */
+export async function refreshedHmrcClientSecret(hmrcAccount, usedSecret) {
+  const overrideSecret = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
+  if (overrideSecret) return null;
+  const secretArn = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
+  return refreshAfterAuthFailure(secretArn, usedSecret);
+}
+
+/**
+ * performTokenExchange for a request that prepareTokenExchangeRequest or prepareTokenRefreshRequest built.
+ * A rejection for the client credentials runs the request once more with a refreshed client secret.
+ */
+export async function performHmrcTokenExchange(url, body, auditForUserSub, hmrcAccount) {
+  const result = await performTokenExchange(url, body, auditForUserSub, { org: "hmrc" });
+  if (result.response.ok || result.responseBody?.error !== "invalid_client") return result;
+  const refreshedSecret = await refreshedHmrcClientSecret(hmrcAccount, body.client_secret);
+  if (!refreshedSecret) return result;
+  return performTokenExchange(url, { ...body, client_secret: refreshedSecret }, auditForUserSub, { org: "hmrc" });
 }

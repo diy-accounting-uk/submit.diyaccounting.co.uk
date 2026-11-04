@@ -43,7 +43,6 @@
 // comment or open, and a family issue is closed by a human, never by this
 // Lambda.
 
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
@@ -56,27 +55,15 @@ import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
+import { withSecretRetry } from "../../lib/cachedSecret.js";
 
 const logger = createLogger({ source: "app/functions/ops/alarmToGithubIssue.js" });
 
-const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
-let cachedGitHubAppPrivateKey = null;
 const cachedDeploymentSlugs = new Map();
 
-async function resolveGitHubAppPrivateKey() {
-  if (cachedGitHubAppPrivateKey) return cachedGitHubAppPrivateKey;
-
-  const secretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
-  if (!secretId) throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
-
-  const result = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }));
-  if (!result.SecretString) throw new Error(`Secret ${secretId} exists but has no SecretString value`);
-
-  cachedGitHubAppPrivateKey = result.SecretString;
-  return cachedGitHubAppPrivateKey;
-}
+const isGitHubUnauthorized = (error) => error.status === 401;
 
 async function resolveGitHubToken(githubRepo) {
   const appId = process.env.GITHUB_APP_ID;
@@ -84,13 +71,13 @@ async function resolveGitHubToken(githubRepo) {
   const installationId = process.env.GITHUB_APP_INSTALLATION_ID;
   if (!installationId) throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
 
-  const privateKey = await resolveGitHubAppPrivateKey();
-  return getInstallationAccessToken({
-    appId,
-    privateKey,
-    installationId,
-    repositories: [githubRepo.split("/")[1]],
-  });
+  const privateKeySecretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!privateKeySecretId) throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
+  return withSecretRetry(
+    privateKeySecretId,
+    (privateKey) => getInstallationAccessToken({ appId, privateKey, installationId, repositories: [githubRepo.split("/")[1]] }),
+    isGitHubUnauthorized,
+  );
 }
 
 function parseReasonData(reasonData) {

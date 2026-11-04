@@ -331,11 +331,21 @@ async function handleAuthorizeGet({ event, host }) {
   return consentPage({ redirectUri, consentBlob, cookieNonce });
 }
 
+// A blob that fails its MAC may have been signed under a key this container has not read yet.
+// One forced read of the key settles it, and the check runs again only when the key changed.
+async function verifyWithKeyRefresh(blob, expectedTyp) {
+  const key = await loadBlobKey();
+  const verified = verifyBlob(blob, key, expectedTyp);
+  if (verified.ok || verified.reason !== "bad_mac") return { verified, key };
+  const refreshedKey = await loadBlobKey({ forceRefresh: true });
+  if (refreshedKey === key) return { verified, key };
+  return { verified: verifyBlob(blob, refreshedKey, expectedTyp), key: refreshedKey };
+}
+
 async function handleAuthorizePost({ event, host }) {
   const parsed = formParams(event);
   if (!parsed.ok) return errorPage(parsed.description);
-  const key = await loadBlobKey();
-  const verified = verifyBlob(parsed.params.consent, key, "consent");
+  const { verified, key } = await verifyWithKeyRefresh(parsed.params.consent, "consent");
   if (!verified.ok) {
     logOutcome({ endpoint: "authorize_consent", outcome: `consent_${verified.reason}` });
     return errorPage("This sign-in request has expired or is not valid.");
@@ -369,8 +379,7 @@ async function handleCallback({ event, host }) {
   const parsed = queryParams(event);
   if (!parsed.ok) return errorPage(parsed.description);
   const p = parsed.params;
-  const key = await loadBlobKey();
-  const verified = verifyBlob(p.state, key, "upstream");
+  const { verified, key } = await verifyWithKeyRefresh(p.state, "upstream");
   if (!verified.ok) {
     logOutcome({ endpoint: "callback", outcome: `upstream_${verified.reason}` });
     return errorPage("This sign-in request has expired or is not valid.");
@@ -452,8 +461,7 @@ async function handleToken({ event, request, host }) {
     if (!p.code || !p.client_id || !p.redirect_uri)
       return oauthError(request, "invalid_request", "code, client_id and redirect_uri are required");
     if (!p.code_verifier || !PKCE_VALUE.test(p.code_verifier)) return oauthError(request, "invalid_request", "code_verifier is required");
-    const key = await loadBlobKey();
-    const verified = verifyBlob(p.code, key, "code");
+    const { verified } = await verifyWithKeyRefresh(p.code, "code");
     if (!verified.ok) {
       logOutcome({ endpoint: "token", clientId: p.client_id, outcome: `code_${verified.reason}` });
       return oauthError(request, "invalid_grant", "The code is invalid or expired");

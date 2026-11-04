@@ -36,7 +36,7 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
 }));
 
 const { ingestHandler, resourceMatches, cutScope } = await import("@app/functions/mcp/mcpOauth.js");
-const { resetBlobKeyCache } = await import("@app/lib/mcpBlobKey.js");
+const { resetSecretCache } = await import("@app/lib/cachedSecret.js");
 const { signBlob, verifyBlob } = await import("@app/lib/mcpOauthBlob.js");
 const { clearClientMetadataCache } = await import("@app/lib/mcpOauthClients.js");
 
@@ -124,7 +124,7 @@ beforeEach(() => {
   process.env.MCP_UPSTREAM_CLIENT_ID = "cognito-mcp-client";
   process.env.MCP_OAUTH_BLOB_KEY = BLOB_KEY;
   delete process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN;
-  resetBlobKeyCache();
+  resetSecretCache();
   clearClientMetadataCache();
   mockSecretsSend.mockReset();
   loggedLines.length = 0;

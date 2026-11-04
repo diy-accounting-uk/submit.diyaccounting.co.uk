@@ -4,32 +4,17 @@
 // app/lib/mcpBlobKey.js
 // The key the MCP facade signs its state blobs with and the codes entries seal their codes with.
 
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { validateEnv } from "./env.js";
-
-const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-let blobKeyPromise = null;
+import { readSecret } from "./cachedSecret.js";
 
 /**
- * The blob key, read once per container: `MCP_OAUTH_BLOB_KEY` on local lanes, otherwise the
- * Secrets Manager secret named by `MCP_OAUTH_BLOB_KEY_SECRET_ARN`.
+ * The blob key: `MCP_OAUTH_BLOB_KEY` on local lanes, otherwise the Secrets Manager secret named by
+ * `MCP_OAUTH_BLOB_KEY_SECRET_ARN`, cached for five minutes.
+ * @param {{forceRefresh?: boolean}} [options] - read the secret again, after a check failed under the cached value
+ * @returns {Promise<string>}
  */
-export function loadBlobKey() {
-  if (!blobKeyPromise) {
-    blobKeyPromise = (async () => {
-      if (process.env.MCP_OAUTH_BLOB_KEY) return process.env.MCP_OAUTH_BLOB_KEY;
-      validateEnv(["MCP_OAUTH_BLOB_KEY_SECRET_ARN"]);
-      const result = await smClient.send(new GetSecretValueCommand({ SecretId: process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN }));
-      if (!result.SecretString) throw new Error("MCP OAuth blob key secret has no SecretString");
-      return result.SecretString;
-    })().catch((error) => {
-      blobKeyPromise = null;
-      throw error;
-    });
-  }
-  return blobKeyPromise;
-}
-
-export function resetBlobKeyCache() {
-  blobKeyPromise = null;
+export async function loadBlobKey({ forceRefresh = false } = {}) {
+  if (process.env.MCP_OAUTH_BLOB_KEY) return process.env.MCP_OAUTH_BLOB_KEY;
+  validateEnv(["MCP_OAUTH_BLOB_KEY_SECRET_ARN"]);
+  return readSecret(process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN, { forceRefresh });
 }

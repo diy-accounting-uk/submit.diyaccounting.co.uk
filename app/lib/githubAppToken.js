@@ -104,7 +104,9 @@ export async function getInstallationAccessToken({ appId, privateKey, installati
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`GitHub API error minting installation access token: ${response.status} ${errorText}`);
+    throw Object.assign(new Error(`GitHub API error minting installation access token: ${response.status} ${errorText}`), {
+      status: response.status,
+    });
   }
 
   const body = await response.json();

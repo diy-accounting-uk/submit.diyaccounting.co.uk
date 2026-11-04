@@ -14,8 +14,7 @@ const CODES_ENTRY_PURPOSE = "companies-house-codes-entry";
 export const HMRC_GRANT_PURPOSE = "hmrc-grant";
 const VERSION = "v1";
 
-async function derivedKey(purpose) {
-  const blobKey = await loadBlobKey();
+function derivedKey(blobKey, purpose) {
   return Buffer.from(hkdfSync("sha256", blobKey, "", purpose, 32));
 }
 
@@ -27,7 +26,7 @@ async function derivedKey(purpose) {
  */
 export async function sealFor(purpose, value, boundTo) {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", await derivedKey(purpose), iv);
+  const cipher = createCipheriv("aes-256-gcm", derivedKey(await loadBlobKey(), purpose), iv);
   cipher.setAAD(Buffer.from(boundTo, "utf8"));
   const ciphertext = Buffer.concat([cipher.update(JSON.stringify(value), "utf8"), cipher.final()]);
   return [VERSION, iv, cipher.getAuthTag(), ciphertext]
@@ -44,11 +43,23 @@ export async function sealFor(purpose, value, boundTo) {
 export async function openFor(purpose, sealed, boundTo) {
   const [version, iv, tag, ciphertext] = String(sealed).split(".");
   if (version !== VERSION || !iv || !tag || !ciphertext) throw new Error("Sealed value is malformed");
-  const decipher = createDecipheriv("aes-256-gcm", await derivedKey(purpose), Buffer.from(iv, "base64url"));
-  decipher.setAAD(Buffer.from(boundTo, "utf8"));
-  decipher.setAuthTag(Buffer.from(tag, "base64url"));
-  const plain = Buffer.concat([decipher.update(Buffer.from(ciphertext, "base64url")), decipher.final()]);
-  return JSON.parse(plain.toString("utf8"));
+  const open = (blobKey) => {
+    const decipher = createDecipheriv("aes-256-gcm", derivedKey(blobKey, purpose), Buffer.from(iv, "base64url"));
+    decipher.setAAD(Buffer.from(boundTo, "utf8"));
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    const plain = Buffer.concat([decipher.update(Buffer.from(ciphertext, "base64url")), decipher.final()]);
+    return JSON.parse(plain.toString("utf8"));
+  };
+  const blobKey = await loadBlobKey();
+  try {
+    return open(blobKey);
+  } catch (error) {
+    // A value sealed under a key this container has not read yet fails its tag check. One forced
+    // read of the key settles it, and the open runs again only when the key changed.
+    const refreshedKey = await loadBlobKey({ forceRefresh: true });
+    if (refreshedKey === blobKey) throw error;
+    return open(refreshedKey);
+  }
 }
 
 /**

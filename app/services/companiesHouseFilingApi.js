@@ -9,6 +9,7 @@
 
 import { createLogger, context } from "../lib/logger.js";
 import { sendJsonToCompaniesHouse } from "./companiesHouseSend.js";
+import { readSecret } from "../lib/cachedSecret.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
@@ -23,19 +24,6 @@ const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" 
 // The sandbox has taken more than 20 seconds to answer a filing request. The Lambda timeout is 28
 // seconds, so the wait stays below that.
 export const FILING_REQUEST_TIMEOUT_MS = 26000;
-
-let secretsClient = null;
-let cachedCompaniesHouseClientSecret;
-
-// Lazy initialization of SecretsManagerClient; caches the secret across warm starts the same way
-// companiesHouseApi.js's resolveApiKey does.
-async function getSecretsClient() {
-  if (!secretsClient) {
-    const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
-    secretsClient = new SecretsManagerClient();
-  }
-  return secretsClient;
-}
 
 export function getFilingBaseUrl() {
   const base = process.env.COMPANIES_HOUSE_FILING_BASE_URI;
@@ -57,19 +45,11 @@ export async function resolveClientSecret() {
   if (process.env.COMPANIES_HOUSE_CLIENT_SECRET) {
     return process.env.COMPANIES_HOUSE_CLIENT_SECRET;
   }
-  if (!cachedCompaniesHouseClientSecret) {
-    const secretArn = process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN;
-    if (!secretArn) {
-      throw new Error("Missing required environment variable COMPANIES_HOUSE_CLIENT_SECRET or COMPANIES_HOUSE_CLIENT_SECRET_ARN");
-    }
-    logger.info("Retrieving Companies House OAuth client secret from Secrets Manager");
-    const client = await getSecretsClient();
-    const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-    const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedCompaniesHouseClientSecret = data.SecretString;
-    logger.info("Companies House OAuth client secret retrieved from Secrets Manager and cached");
+  const secretArn = process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN;
+  if (!secretArn) {
+    throw new Error("Missing required environment variable COMPANIES_HOUSE_CLIENT_SECRET or COMPANIES_HOUSE_CLIENT_SECRET_ARN");
   }
-  return cachedCompaniesHouseClientSecret;
+  return readSecret(secretArn);
 }
 
 // Reads the user's Companies House access token from the Authorization header. The Cognito

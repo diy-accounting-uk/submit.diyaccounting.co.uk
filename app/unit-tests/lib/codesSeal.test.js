@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeEach } from "vitest";
 import { sealCodes, openCodes } from "@app/lib/codesSeal.js";
-import { resetBlobKeyCache } from "@app/lib/mcpBlobKey.js";
+import { resetSecretCache } from "@app/lib/cachedSecret.js";
 
 const ENTRY_ID = "11111111-2222-4333-8444-555555555555";
 const CODES = { companyAuthCode: "Sim0123", personalCodes: ["ABCDE12345F"] };
@@ -13,7 +13,7 @@ const CODES = { companyAuthCode: "Sim0123", personalCodes: ["ABCDE12345F"] };
 describe("codesSeal", () => {
   beforeEach(() => {
     process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
-    resetBlobKeyCache();
+    resetSecretCache();
   });
 
   test("opens what it sealed, under the same entry", async () => {
@@ -46,7 +46,7 @@ describe("codesSeal", () => {
   test("refuses to open a value under another key", async () => {
     const sealed = await sealCodes(CODES, ENTRY_ID);
     process.env.MCP_OAUTH_BLOB_KEY = "a-different-key-0123456789abcdef0123456789";
-    resetBlobKeyCache();
+    resetSecretCache();
     await expect(openCodes(sealed, ENTRY_ID)).rejects.toThrow();
   });
 

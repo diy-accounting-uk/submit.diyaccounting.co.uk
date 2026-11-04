@@ -4,29 +4,30 @@
 // app/lib/stripeClient.js
 
 import Stripe from "stripe";
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+import { readSecret, refreshAfterAuthFailure } from "./cachedSecret.js";
 import { createLogger } from "./logger.js";
 import { StripeRecordingHttpClient, stripeCallTarget } from "./stripeRecordingHttpClient.js";
 
 const logger = createLogger({ source: "app/lib/stripeClient.js" });
-
-const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
 let cachedLiveClient = null;
 let cachedLiveKey = null;
 let cachedTestClient = null;
 let cachedTestKey = null;
 
+/**
+ * The secret key for one mode, and the Secrets Manager id it was read from (null when an
+ * environment variable supplied it).
+ */
 async function resolveSecretKey({ test = false } = {}) {
   if (test) {
     // Test mode: prefer STRIPE_TEST_SECRET_KEY, then STRIPE_TEST_SECRET_KEY_ARN
     if (process.env.STRIPE_TEST_SECRET_KEY) {
-      return process.env.STRIPE_TEST_SECRET_KEY;
+      return { secretKey: process.env.STRIPE_TEST_SECRET_KEY, secretId: null };
     }
     const arn = process.env.STRIPE_TEST_SECRET_KEY_ARN;
     if (arn) {
-      const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-      return result.SecretString;
+      return { secretKey: await readSecret(arn), secretId: arn };
     }
     // Fall through to live key if no test key configured
     logger.warn({ message: "No test Stripe key configured, falling back to default key" });
@@ -34,7 +35,7 @@ async function resolveSecretKey({ test = false } = {}) {
 
   // Live mode (or fallback): prefer STRIPE_SECRET_KEY, then STRIPE_SECRET_KEY_ARN
   if (process.env.STRIPE_SECRET_KEY) {
-    return process.env.STRIPE_SECRET_KEY;
+    return { secretKey: process.env.STRIPE_SECRET_KEY, secretId: null };
   }
 
   const arn = process.env.STRIPE_SECRET_KEY_ARN;
@@ -42,12 +43,15 @@ async function resolveSecretKey({ test = false } = {}) {
     throw new Error("Neither STRIPE_SECRET_KEY nor STRIPE_SECRET_KEY_ARN is set");
   }
 
-  const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-  return result.SecretString;
+  return { secretKey: await readSecret(arn), secretId: arn };
 }
 
-function buildStripeOptions(secretKey) {
-  const options = { httpClient: new StripeRecordingHttpClient({ target: stripeCallTarget(secretKey) }) };
+// A 401 from Stripe means the key was rolled. The HTTP client reads the secret again and sends the
+// request once more, only when the secret now holds another key; the next getStripeClient call
+// then builds a client with that key.
+function buildStripeOptions(secretKey, secretId) {
+  const refreshKey = secretId ? (usedKey) => refreshAfterAuthFailure(secretId, usedKey) : undefined;
+  const options = { httpClient: new StripeRecordingHttpClient({ target: stripeCallTarget(secretKey), refreshKey }) };
   if (process.env.STRIPE_API_BASE_URL) {
     options.apiVersion = "2024-12-18.acacia";
     options.host = new URL(process.env.STRIPE_API_BASE_URL).hostname;
@@ -66,8 +70,8 @@ function buildStripeOptions(secretKey) {
  * @returns {Promise<Stripe>}
  */
 export async function getStripeClient({ test = false } = {}) {
-  const secretKey = await resolveSecretKey({ test });
-  const options = buildStripeOptions(secretKey);
+  const { secretKey, secretId } = await resolveSecretKey({ test });
+  const options = buildStripeOptions(secretKey, secretId);
 
   if (test) {
     if (cachedTestClient && cachedTestKey === secretKey) {
