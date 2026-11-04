@@ -15,7 +15,7 @@
 // Post-deploy migration: Generates an 8-word passphrase salt (v2), adds it to the registry,
 // re-keys all items from v1 to v2, and updates the canary.
 //
-// The passphrase is printed to stdout for the operator to record physically.
+// The passphrase is never printed: the operator records it with scripts/backup-salts.sh.
 // Idempotent: if v2 already exists and is current, re-keying skips already-migrated items.
 
 export const phase = "post-deploy";
@@ -86,19 +86,7 @@ export async function up({ envName }) {
   // 1. Generate 8-word passphrase
   const { generatePassphrase } = await import("../../app/lib/passphrase.js");
   const passphrase = generatePassphrase(8);
-
-  console.log();
-  console.log("    ╔══════════════════════════════════════════════════════════════╗");
-  console.log("    ║  NEW SALT PASSPHRASE — RECORD THIS SECURELY                ║");
-  console.log("    ╠══════════════════════════════════════════════════════════════╣");
-  console.log(`    ║  ${passphrase.padEnd(60)}║`);
-  console.log("    ╠══════════════════════════════════════════════════════════════╣");
-  console.log("    ║  1. Print on a card, store in fire safe                     ║");
-  console.log("    ║  2. Store in password manager                               ║");
-  console.log("    ║  3. DELETE THIS WORKFLOW RUN from Actions history           ║");
-  console.log("    ╚══════════════════════════════════════════════════════════════╝");
-  console.log();
-
+  console.log("    New salt generated. Record it with ./scripts/backup-salts.sh after this migration.");
   // 2. Update salt registry in Secrets Manager
   const { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand } = await import("@aws-sdk/client-secrets-manager");
   const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
