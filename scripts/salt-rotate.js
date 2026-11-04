@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-165 Rotate the user sub hash salt and re-key every store
+// @capability OPS-169 Rotate the user sub hash salt and re-key every store
 // - **Use when:** the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
 // - **Does:** salt-rotate.js adds a new salt version and makes it current in two waits that cover the Lambda salt cache. It moves every hash-keyed item in every table of scripts/salt-rotation-tables.json and every diya-gl object to the new hash, updates the canary, and writes the lake's hash aliases. Every step is resumable and idempotent, and it prints counts only.
 // - **Run:** `gh workflow run salt-rotate.yml -f environment-name=<ci|prod> -f mode=<plan|rotate|sweep>`

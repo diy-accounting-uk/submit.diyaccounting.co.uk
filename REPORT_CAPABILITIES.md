@@ -29,6 +29,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
+    - [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront: use when a request can reach an API route without CloudFront, or the CloudFront origin secret must roll or start to refuse.
     - [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server: use when running the site locally against a full Express server instead of deployed Lambdas.
     - [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests: use when an API call takes too long for a single Lambda response and the client must poll for a result.
   - [Site pages and content](#site-pages-and-content-site)
@@ -176,7 +177,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack: use when tracing or changing the always-on webhook endpoint that must survive application stack teardown.
     - [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack: use when tracing or changing the infrastructure behind diya-gl endpoints.
   - [Migrations and shared utilities](#migrations-and-shared-utilities-bill)
-    - [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt: use when the salt used to hash user subs must be rotated to a new passphrase.
+    - [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt: use when reading how the v1 to v2 rotation ran. This migration can move only v1 to v2, and a new rotation uses OPS-165.
     - [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier: use when bundles created by a Stripe subscription need their own stripeTestMode qualifier separated from sandbox.
     - [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry: use when a catalogue-declared duration must become an expiry date for a bundle grant, pass or token reset.
     - [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle: use when unit or browser tests need the frontend bundled before they run.
@@ -276,10 +277,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance: use when checking this service's obligations against UK GDPR or ICO requirements.
     - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes: use when the HMAC key that hashes stored email addresses must be rotated.
     - [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data: use when the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
-    - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt: use when the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
-    - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking or listing.
+    - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt: use when the subject-ID salt needs backing up, restoring, or its resource policy reasserting, or a read must see data under every salt version.
     - [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule: use when you need to know which keys are overdue for a roll or end within 30 days, for ci or prod.
+    - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking or listing.
     - [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy: use when one GitHub environment secret has a new value and only its AWS copy and its vendor check need to follow.
+    - [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store: use when the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
@@ -462,6 +464,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Documentation and disclaimer](#documentation-and-disclaimer-mcp)
     - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference: use when starting work on the submission MCP: what is built, planned, and how to run it.
     - [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site: use when checking or editing the public claim that DIY Accounting Submit has no MCP server.
+    - [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers: use when a stdio MCP call to an HMRC route needs the device data of HMRC's desktop connection method, or a new device header must be added.
 - **[Developer workflow](#developer-workflow-dev)**
   - [Simulator server & OAuth mocks](#simulator-server--oauth-mocks-dev)
     - [DEV-01](#dev-01-run-the-http-simulator-server) Run the HTTP simulator server: use when local or CI tests need HMRC, Companies House or Stripe endpoints without real calls.
@@ -599,7 +602,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting
-- [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
+- [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
@@ -686,6 +689,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group server-and-api-plumbing-site -->
 - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes
 - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors
+- [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront
 - [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server
 - [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 <!-- /generated:group server-and-api-plumbing-site -->
@@ -709,6 +713,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/lib/httpResponseHelper.js, app/lib/jsonErrorHandler.js, app/unit-tests/lib/jsonErrorHandler.test.js
 - **Keywords:** http response helper, json error, correlation headers, error middleware, status codes
 - **Related:** SITE-06
+
+#### SITE-26 Check that an API request came through CloudFront
+
+- **Use when:** a request can reach an API route without CloudFront, or the CloudFront origin secret must roll or start to refuse.
+- **Does:** originVerifiedEntry.js is the image command of every API Lambda. It compares the x-diya-origin-verify header that CloudFront adds with the current and previous values in the <env>/submit/origin/verify secret, removes the header from the event, and calls the handler that ORIGIN_VERIFY_TARGET_HANDLER names. A failed check writes a Submit/OriginVerify metric. With ORIGIN_VERIFY_ENFORCE=true (.env.ci, .env.prod) a failed check also refuses the request with a JSON response. Only API Gateway events are checked, so a queue, a schedule and the local Express server are not affected. To roll the value, set ORIGIN_VERIFY_SECRET_PREVIOUS to the old value and ORIGIN_VERIFY_SECRET to the new value, run deploy-environment.yml, deploy, then clear ORIGIN_VERIFY_SECRET_PREVIOUS and run deploy-environment.yml.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/lib/originVerifiedEntry.js:ingestHandler`; `infra/main/java/co/uk/diyaccounting/submit/utils/OriginVerifyHelper.java`
+- **Files:** app/lib/originVerifiedEntry.js, app/unit-tests/lib/originVerifiedEntry.test.js, infra/main/java/co/uk/diyaccounting/submit/utils/OriginVerifyHelper.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy-env-secrets.yml, .github/workflows/deploy-cdk-stack.yml
+- **Keywords:** origin verify, cloudfront bypass, direct api gateway, execute-api, secret origin header, origin secret rotation
+- **Related:** SITE-02, SITE-07
 
 #### SITE-08 Bootstrap the app server
 
@@ -2192,7 +2206,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### BILL-40 Migrate the hashed-sub salt
 
-- **Use when:** the salt used to hash user subs must be rotated to a new passphrase.
+- **Use when:** reading how the v1 to v2 rotation ran. This migration can move only v1 to v2, and a new rotation uses OPS-165.
 - **Does:** The 003-rotate-salt-to-passphrase.js post-deploy migration generates a new 8-word passphrase salt. It re-keys every hashed-sub-keyed DynamoDB item from the old salt to the new one and updates the salt canary. The new passphrase is printed for the operator to record physically.
 - **Run:** `ENVIRONMENT_NAME=<ci|prod> node scripts/migrations/runner.js --phase post-deploy`; `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=post-deploy`
 - **Entry:** `scripts/migrations/003-rotate-salt-to-passphrase.js`; `scripts/migrations/runner.js`
@@ -2326,7 +2340,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -3198,9 +3212,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes
 - [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data
 - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt
-- [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags
 - [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule
+- [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags
 - [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy
+- [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store
 - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records
 - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
@@ -3260,23 +3275,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-44 Hash and rotate the subject-ID salt
 
-- **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
+- **Use when:** the subject-ID salt needs backing up, restoring, or its resource policy reasserting, or a read must see data under every salt version.
 - **Does:** subHasher.js computes salted HMAC hashes of Cognito subject IDs for analytics and fraud-header anonymisation, backed by SubHashSaltHelper. put-salt-secret-resource-policy.sh reasserts the salt secret's resource policy on every environment deploy. This runs before any per-deployment Lambda role exists; backup-salts.sh and restore-salt.sh export and re-apply the salt for disaster recovery.
 - **Run:** `./scripts/backup-salts.sh`; `./scripts/aws-accounts/restore-salt.sh --source-profile <profile> --target-profile <profile> [--env <env>]`; `gh workflow run manage-secrets.yml -f action=check-salt -f environment-name=<ci|prod>`
 - **Entry:** `app/services/subHasher.js:hashSub`; `infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java`
 - **Files:** app/services/subHasher.js, app/unit-tests/services/subHasher.test.js, infra/main/java/co/uk/diyaccounting/submit/utils/SubHashSaltHelper.java, scripts/put-salt-secret-resource-policy.sh, scripts/backup-salts.sh, scripts/aws-accounts/restore-salt.sh, scripts/migrations/001-convert-salt-to-registry.js, scripts/migrations/002-backfill-salt-version-v1.js
 - **Keywords:** subject id salt, subhasher, salt rotation, resource policy, backup salt, restore salt, hmac hash
 - **Related:** OPS-44, OPS-16
-
-#### OPS-45 Manage AWS Secrets Manager entries and rotation tags
-
-- **Use when:** a secret's value or rotation date needs checking or listing.
-- **Does:** manage-secrets.yml lists and checks secrets for an environment, including the format of the user-sub-hash salt. It never prints a secret value. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
-- **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation> -f environment-name=<ci|prod>`
-- **Entry:** `scripts/put-secret-with-rotation-tag.sh`
-- **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
-- **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret
-- **Related:** OPS-43, OPS-10, OPS-165
 
 #### OPS-165 Check every secret against its rotation schedule
 
@@ -3288,6 +3293,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** secret rotation, rotation check, key age, expires at, max age days, rotated-at, overdue key
 - **Related:** OPS-45
 
+#### OPS-45 Manage AWS Secrets Manager entries and rotation tags
+
+- **Use when:** a secret's value or rotation date needs checking or listing.
+- **Does:** manage-secrets.yml lists and checks secrets for an environment, including the format of the user-sub-hash salt. It never prints a secret value. put-secret-with-rotation-tag.sh writes or updates a secret and stamps a rotated-at tag only when the value changes. Otherwise every environment deploy would rewrite every secret's rotation tag regardless of change.
+- **Run:** `gh workflow run manage-secrets.yml -f action=<list|check|check-salt|check-rotation> -f environment-name=<ci|prod>`
+- **Entry:** `scripts/put-secret-with-rotation-tag.sh`
+- **Files:** .github/workflows/manage-secrets.yml, scripts/put-secret-with-rotation-tag.sh, secrets-rotation.toml
+- **Keywords:** secrets manager, rotation tag, manage-secrets workflow, rotated-at, salt secret
+- **Related:** OPS-43, OPS-10, OPS-165
+
 #### OPS-166 Roll one secret without an environment deploy
 
 - **Use when:** one GitHub environment secret has a new value and only its AWS copy and its vendor check need to follow.
@@ -3297,6 +3312,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/rotate-secret-plan.js, .github/workflows/rotate-secret.yml, scripts/refresh-google-identity-provider.sh, app/unit-tests/scripts/rotateSecretPlan.test.js, app/unit-tests/rotateSecretWorkflow.test.js
 - **Keywords:** rotate secret, key roll, single secret, rotated-at, vendor assert, cognito refresh, store step
 - **Related:** OPS-157, OPS-45, OPS-165
+
+#### OPS-169 Rotate the user sub hash salt and re-key every store
+
+- **Use when:** the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
+- **Does:** salt-rotate.js adds a new salt version and makes it current in two waits that cover the Lambda salt cache. It moves every hash-keyed item in every table of scripts/salt-rotation-tables.json and every diya-gl object to the new hash, updates the canary, and writes the lake's hash aliases. Every step is resumable and idempotent, and it prints counts only.
+- **Run:** `gh workflow run salt-rotate.yml -f environment-name=<ci|prod> -f mode=<plan|rotate|sweep>`
+- **Entry:** `scripts/salt-rotate.js:runRotation`
+- **Files:** .github/workflows/salt-rotate.yml, scripts/salt-rotate.js, scripts/salt-rotation-tables.json, app/unit-tests/scripts/saltRotate.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/SaltRotationTablesTest.java, infra/main/resources/analytics/views/aliased_dynamo_bundles.sql, infra/main/resources/analytics/views/aliased_dynamo_commissions.sql, infra/main/resources/analytics/views/aliased_dynamo_passes.sql, infra/main/resources/analytics/views/aliased_dynamo_receipts.sql, infra/main/resources/analytics/views/aliased_dynamo_subscriptions.sql, infra/main/resources/analytics/views/aliased_stripe_charges.sql, infra/main/resources/analytics/views/aliased_stripe_subscriptions.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/HashAliasTable.java, app/unit-tests/data/saltRotationWindow.test.js
+- **Keywords:** salt rotation, re-key, hashed sub, hash aliases, salt sweep, repeatable rotation, cutover
+- **Related:** OPS-44, OPS-16, DATA-04
 
 #### OPS-46 Query and persist per-consumer security-state records
 
@@ -4897,7 +4922,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
-- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
+- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers
 <!-- /generated:area MCP -->
 
 ### Server and CLI (MCP)
@@ -5134,6 +5159,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group documentation-and-disclaimer-mcp -->
 - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference
 - [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
+- [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers
 <!-- /generated:group documentation-and-disclaimer-mcp -->
 
 #### MCP-14 Document the submission MCP's plan and tool reference
@@ -5154,6 +5180,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/public/mcp.html`
 - **Files:** web/public/mcp.html
 - **Keywords:** mcp.html, marketing page, mcp disclaimer, public site, no mcp server claim
+
+#### MCP-22 Read the machine for HMRC fraud prevention headers
+
+- **Use when:** a stdio MCP call to an HMRC route needs the device data of HMRC's desktop connection method, or a new device header must be added.
+- **Does:** desktopClientHeaders in mcp/lib/client-headers.js reads the machine that runs the stdio MCP server: a persistent device id, local IP addresses and their timestamp, MAC addresses, the operating system user, the timezone, the operating system and device model, and the screens. callSubmitApi sends the result on every route behind the custom authoriser, and app/lib/buildFraudHeaders.js passes it to HMRC under DESKTOP_APP_VIA_SERVER. The process has no window, so it sends no Gov-Client-Window-Size. The hosted Lambda passes its own headers instead.
+- **Run:** no command; see Does and Entry
+- **Entry:** `mcp/lib/client-headers.js:desktopClientHeaders`
+- **Files:** mcp/lib/client-headers.js, mcp/test/client-headers.test.js
+- **Keywords:** fraud prevention headers, desktop app via server, device id, mac addresses, local ips, gov-client-screens, stdio mcp
+- **Related:** HMRC-25, MCP-07
 
 ## Developer workflow (DEV)
 
@@ -6935,6 +6971,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudfront access log: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - cloudfront access logs: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - cloudfront alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
+- cloudfront bypass: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - cloudfront distribution: [OPS-116](#ops-116-provision-the-holding-page-stack)
 - cloudfront distribution id: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
@@ -7122,6 +7159,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - customer paid no bundle: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
+- cutover: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -7209,6 +7247,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - describe-alarm-history: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - design document: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - design tokens: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- desktop app via server: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - destroy deployment: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - destroy previous: [OPS-149](#ops-149-finish-a-deployment)
 - destroy prod: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
@@ -7223,8 +7262,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - developer onboarding: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - developer token: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - developer_token_not_approved: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
-- device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
+- device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
+- direct api gateway: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - dispatch backlog: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - dispute: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
@@ -7384,6 +7424,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - excel: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - excel skill: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - exclude paths: [OPS-30](#ops-30-run-codeql-security-scanning)
+- execute-api: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - existing tooling: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - exit cool-down: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - expected clicks: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -7479,7 +7520,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud prevention compliance: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - fraud prevention header violation: [HMRC-29](#hmrc-29-call-the-hmrc-api)
-- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
@@ -7573,6 +7614,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - google_application_credentials: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - gov-client: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - gov-client header: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
+- gov-client-screens: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - gov-test-scenario: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7598,7 +7640,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
-- hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [DATA-01](#data-01-publish-activity-events-to-the-bus)
+- hash aliases: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
+- hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - hashedsub: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - head request: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
@@ -7861,6 +7904,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - local aws credentials: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - local dev: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - local dev server: [SITE-08](#site-08-bootstrap-the-app-server)
+- local ips: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - local login: [DEV-02](#dev-02-simulate-local-app-oauth)
 - local server: [DEV-01](#dev-01-run-the-http-simulator-server)
 - local server routing: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
@@ -7886,6 +7930,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - losses and claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - lowest model: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - ltd derivations: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- mac addresses: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
@@ -8099,6 +8144,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - org policy: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - origin access control: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
+- origin secret rotation: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
+- origin verify: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - originfor tag: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions), [OPS-116](#ops-116-provision-the-holding-page-stack)
 - outbound call: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - outbound call record: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
@@ -8335,7 +8382,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - raw identifiers: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
-- re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - read only: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -8409,6 +8456,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
+- repeatable rotation: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - replay: [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets)
 - replay nightly: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - report: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -8478,7 +8526,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rolled secret: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - root domain: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
 - rotate secret: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
-- rotated-at: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule), [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
+- rotated-at: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - rotation check: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
 - rotation schedule: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - rotation tag: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
@@ -8514,8 +8562,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sales fee split: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - salt canary: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - salt metadata: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
-- salt rotation: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
+- salt rotation: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt), [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - salt secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
+- salt sweep: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - same commit: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - same slot: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - sandbox: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8571,6 +8620,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - second store: [SS-28](#ss-28-store-books-in-google-drive)
 - secret cache: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
+- secret origin header: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - secret rotation: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
 - secret scan: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
@@ -8723,6 +8773,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - status messages: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - status stack: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - stdio: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- stdio mcp: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - stdio mcp server: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - steady-state target: [DATA-30](#data-30-sql-views-cost)
 - step definitions: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)

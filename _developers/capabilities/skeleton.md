@@ -434,8 +434,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-44 -->
 <!-- capability OPS-165 -->
 <!-- capability OPS-45 -->
-<!-- capability OPS-165 -->
 <!-- capability OPS-166 -->
+<!-- capability OPS-169 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
 <!-- capability OPS-48 -->
@@ -713,6 +713,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability MCP-14 -->
 <!-- capability MCP-15 -->
+<!-- capability MCP-22 -->
 ## Developer workflow (DEV)
 
 <!-- generated:area DEV -->
