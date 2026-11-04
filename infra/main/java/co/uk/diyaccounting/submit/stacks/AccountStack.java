@@ -1769,7 +1769,7 @@ public class AccountStack extends Stack {
         this.commissionMineGetLambda = commissionMineGetApiLambda.ingestLambda;
         this.commissionMineGetLambdaLogGroup = commissionMineGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.commissionMineGetLambdaProps);
-        // The caller's own lines are one Query on the commissions table key; the hash of the caller's sub needs the salt.
+        // One Query on the commissions table key; hashing the caller's sub needs the salt.
         commissionsTable.grant(this.commissionMineGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.commissionMineGetLambda, region, account, props.envName());
         infof(
