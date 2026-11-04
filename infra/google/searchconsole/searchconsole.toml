@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Google Search Console, as code.
+#
+# infra/google/searchconsole/searchconsole-sync.js reads this file, asks the Site Verification API
+# for each domain's DNS_CNAME token, checks which domains the service account has already
+# verified, and (with --apply) verifies and adds the ones that are not. A domain property
+# covers every host under the domain, so the four sites need two properties.
+#
+# The token is not a secret. Its CNAME record belongs in the root repository's DNS stack.
+
+[[property]]
+domain = "diyaccounting.co.uk"
+verification_method = "DNS_CNAME"
+# The hosts this property covers.
+sites = ["diyaccounting.co.uk", "submit.diyaccounting.co.uk", "spreadsheets.diyaccounting.co.uk"]
+
+[[property]]
+domain = "diya-gl.co.uk"
+verification_method = "DNS_CNAME"
+sites = ["diya-gl.co.uk"]

@@ -178,6 +178,51 @@ describe("services/commissionLedger - amounts", () => {
     expect(familyAnnual.amountPence).toBe(325);
   });
 
+  describe("annual commission", () => {
+    const yearly = { periodStart: iso(JAN_1), periodEnd: iso(JAN_1_NEXT_YEAR) };
+    const secondYear = { periodStart: iso(JAN_1_NEXT_YEAR), periodEnd: iso(Date.UTC(2028, 0, 1) / 1000) };
+    const shippedTier = (id) => loadReferralConfig().tiers.find((tier) => tier.id === id);
+    const termsOf = (tier) => ({
+      rateBps: tier.rateBps,
+      annualRateBps: tier.annualRateBps,
+      months: tier.months,
+      windowStart: iso(JAN_1),
+    });
+
+    test.each(["family", "casual", "creator"])("a yearly invoice pays 25 percent of the net once on the %s tier", (id) => {
+      const result = computeCommission({ ...termsOf(shippedTier(id)), netPence: 3900, ...yearly });
+      expect(result).toEqual({ lineMonths: 12, eligibleMonths: 12, amountPence: 975 });
+    });
+
+    test("the customer tier has no annual rate and keeps its share of three months", () => {
+      expect(shippedTier("customer").annualRateBps).toBeUndefined();
+      const result = computeCommission({ ...termsOf(shippedTier("customer")), netPence: 3900, ...yearly });
+      expect(result).toEqual({ lineMonths: 12, eligibleMonths: 3, amountPence: 321 });
+    });
+
+    test("a yearly renewal outside the window pays nothing", () => {
+      const result = computeCommission({ ...termsOf(shippedTier("casual")), netPence: 3900, ...secondYear });
+      expect(result.amountPence).toBe(0);
+    });
+
+    test("a monthly invoice still pays the share of the tier's months", () => {
+      const casual = termsOf(shippedTier("casual"));
+      const amounts = [0, 1, 2, 3].map((n) => computeCommission({ ...casual, netPence: 399, ...monthIndex(n) }).amountPence);
+      expect(amounts).toEqual([131, 131, 131, 0]);
+      const family = termsOf(shippedTier("family"));
+      expect([0, 1].map((n) => computeCommission({ ...family, netPence: 399, ...monthIndex(n) }).amountPence)).toEqual([399, 0]);
+    });
+
+    test("an anchor without an annual rate pays a yearly invoice by the months share", () => {
+      const result = computeCommission({ rateBps: 3300, months: 3, windowStart: iso(JAN_1), netPence: 3900, ...yearly });
+      expect(result.amountPence).toBe(321);
+    });
+
+    test("the annual amount rounds down", () => {
+      expect(computeCommission({ ...termsOf(shippedTier("casual")), netPence: 999, ...yearly }).amountPence).toBe(249);
+    });
+  });
+
   test("the amount rounds down", () => {
     expect(computeCommission({ ...base, netPence: 999, ...monthIndex(0) }).amountPence).toBe(299);
   });
@@ -385,6 +430,55 @@ describe("services/commissionLedger - accrueCommission", () => {
     passes.getAffiliate.mockResolvedValue({ state: "ended", tier: "family" });
     await run(expandedInvoice()).promise;
     expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor.tier).toBe("customer");
+  });
+
+  test("the anchor of an affiliate tier carries its annual rate and the line uses it", async () => {
+    passes.getAffiliate.mockResolvedValue({ state: "approved", tier: "casual" });
+    const yearlyInvoice = expandedInvoice({ start: JAN_1, end: JAN_1_NEXT_YEAR, net: 3900 });
+    await run(yearlyInvoice).promise;
+    expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor.annualRateBps).toBe(2500);
+    expect(repo.putLineWithPointers.mock.calls[0][0]).toMatchObject({ amountPence: 975, eligibleMonths: 12, lineMonths: 12 });
+  });
+
+  test("the anchor of the customer tier carries no annual rate", async () => {
+    await run(expandedInvoice()).promise;
+    expect(repo.putAnchorWithConversion.mock.calls[0][0].anchor).not.toHaveProperty("annualRateBps");
+  });
+
+  test("a stored anchor keeps its own annual rate when the config changes", async () => {
+    const config = structuredClone(loadReferralConfig());
+    config.tiers.find((tier) => tier.id === "casual").annualRateBps = 5000;
+    mockConfig.current = config;
+    repo.getAnchor.mockResolvedValue({
+      referralCode: "code-1",
+      tier: "casual",
+      rateBps: 3300,
+      annualRateBps: 2500,
+      form: "cash",
+      payout: "connect",
+      months: 3,
+      holdDays: 120,
+      windowStart: iso(JAN_1),
+      firstPaidAt: iso(JAN_1),
+    });
+    await run(expandedInvoice({ start: JAN_1, end: JAN_1_NEXT_YEAR, net: 3900 })).promise;
+    expect(repo.putLineWithPointers.mock.calls[0][0].amountPence).toBe(975);
+  });
+
+  test("a stored anchor with no annual rate pays by the months share whatever the config says", async () => {
+    repo.getAnchor.mockResolvedValue({
+      referralCode: "code-1",
+      tier: "casual",
+      rateBps: 3300,
+      form: "cash",
+      payout: "connect",
+      months: 3,
+      holdDays: 120,
+      windowStart: iso(JAN_1),
+      firstPaidAt: iso(JAN_1),
+    });
+    await run(expandedInvoice({ start: JAN_1, end: JAN_1_NEXT_YEAR, net: 3900 })).promise;
+    expect(repo.putLineWithPointers.mock.calls[0][0].amountPence).toBe(321);
   });
 
   test("an approved affiliate fixes its tier on the anchor", async () => {

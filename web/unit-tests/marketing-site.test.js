@@ -476,6 +476,7 @@ describe("affiliates section", () => {
   it("takes its figures from referrals.toml", () => {
     expect(data.affiliates.ratePercent).toBe(cash.rateBps / 100);
     expect(data.affiliates.months).toBe(cash.months);
+    expect(data.affiliates.annualRatePercent).toBe(cash.annualRateBps / 100);
     expect(data.affiliates.creditHoldDays).toBe(customer.holdDays);
     expect(data.affiliates.cashHoldDays).toBe(cash.holdDays);
     expect(data.affiliates.capMonthPounds).toBe(cash.capMonthPence / 100);
@@ -491,6 +492,7 @@ describe("affiliates section", () => {
     const section = terms.slice(terms.indexOf('id="affiliate-and-referral-passes"'));
     expect(section).toContain(`${data.affiliates.ratePercent}%`);
     expect(section).toContain(`first ${data.affiliates.months} months`);
+    expect(section).toContain(`${data.affiliates.annualRatePercent}% of the annual`);
     expect(section).toContain(`${data.affiliates.creditHoldDays} days after`);
     expect(section).toContain(`${data.affiliates.cashHoldDays} days after`);
     expect(section).toContain(`&pound;${data.affiliates.capMonthPounds} a`);

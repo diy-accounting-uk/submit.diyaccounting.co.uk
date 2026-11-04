@@ -33,6 +33,15 @@ test.describe("Generate digital pass page", () => {
             }),
           };
         }
+        if (url === "/api/v1/affiliate/application") {
+          return {
+            ok: true,
+            json: async () => ({
+              state: "approved",
+              terms: { tier: "casual", form: "cash", payout: "connect", rateBps: 3300, months: 3, annualRateBps: 2500 },
+            }),
+          };
+        }
         return { ok: true, json: async () => ({ bundles: [{ allocated: true, tokensRemaining: 10 }] }) };
       };
     });
@@ -55,7 +64,9 @@ test.describe("Generate digital pass page", () => {
     await page.goto(`${SITE}/passes/generate-digital.html`, { waitUntil: "domcontentloaded" });
     const pageText = await page.locator("body").innerText();
     expect(pageText).toContain("7 days of free VAT submissions");
-    expect(pageText).toContain("you earn 33% of what they pay for their first 3 months");
+    await expect(page.locator("#passTerms")).toContainText(
+      "you earn 33% of what they pay for their first 3 months, as cash paid to your bank through Stripe. If they pay for a year, you earn 25% of that payment, once.",
+    );
     await page.locator("#generatePassBtn").click();
 
     await page.waitForURL(`${SITE}/bundles.html?newPass=tiger-happy-mountain-silver#myGeneratedPasses`);

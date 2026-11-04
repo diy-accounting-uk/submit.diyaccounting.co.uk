@@ -32,6 +32,9 @@ export function validateReferralConfig(config) {
         throw new Error(`referrals.toml: tier '${tier.id}' ${field} must be a positive integer`);
       }
     }
+    if (tier.annualRateBps !== undefined && !isPositiveInteger(tier.annualRateBps)) {
+      throw new Error(`referrals.toml: tier '${tier.id}' annualRateBps must be a positive integer`);
+    }
     if (tier.form === "credit" && !isPositiveInteger(tier.capCreditMonths)) {
       throw new Error(`referrals.toml: credit tier '${tier.id}' needs capCreditMonths`);
     }

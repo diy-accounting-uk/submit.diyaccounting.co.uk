@@ -3,7 +3,7 @@
 
 // @capability BILL-53 Read the caller's affiliate application
 // - **Use when:** a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
-// - **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
+// - **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item and answers the referral terms of the tier the caller earns, from referrals.toml. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
 // - **Run:** `GET /api/v1/affiliate/application`
 // - **Entry:** `app/functions/account/affiliateApplicationGet.js:ingestHandler`
 // - **Files:** app/functions/account/affiliateApplicationGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationGet.test.js, web/public/bundles.page.js
@@ -25,7 +25,8 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
-import { getAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { getAffiliate, getFamilyAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { loadReferralConfig, getTier, resolveTierId } from "../../services/referralConfig.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationGet.js" });
 
@@ -34,6 +35,22 @@ export function apiEndpoint(app) {
   registerLambdaRoute(app, "get", "/api/v1/affiliate/application", ingestHandler);
 }
 /* v8 ignore stop */
+
+/** The terms of the tier the caller would earn, taken from referrals.toml, as the pass page states them. */
+async function termsFor(referrerHash, item) {
+  const config = loadReferralConfig();
+  const familyMarker = await getFamilyAffiliate(referrerHash);
+  const tier = getTier(config, resolveTierId(config, item, { family: Boolean(familyMarker) }));
+  return {
+    tier: tier.id,
+    name: tier.name,
+    form: tier.form,
+    payout: tier.payout,
+    rateBps: tier.rateBps,
+    months: tier.months,
+    annualRateBps: tier.annualRateBps ?? null,
+  };
+}
 
 export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
@@ -58,7 +75,7 @@ export async function ingestHandler(event) {
   try {
     let item = await getAffiliate(referrerHash);
     if (!item) {
-      return http200OkResponse({ request, headers: responseHeaders, data: { state: null } });
+      return http200OkResponse({ request, headers: responseHeaders, data: { state: null, terms: await termsFor(referrerHash, null) } });
     }
     if (needsAccountRefresh(item)) {
       try {
@@ -69,6 +86,7 @@ export async function ingestHandler(event) {
     }
     const view = toAffiliateView(referrerHash, item);
     delete view.referrerHash;
+    view.terms = await termsFor(referrerHash, item);
     return http200OkResponse({ request, headers: responseHeaders, data: view });
   } catch (error) {
     logger.error({ message: "Error reading affiliate application", error: error.message, stack: error.stack });

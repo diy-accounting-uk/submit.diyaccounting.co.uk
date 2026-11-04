@@ -237,13 +237,13 @@ export async function ct600FiguresFromBook(book, lines) {
 export async function smallCompanyAccountsFromBook(book, lines) {
   const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
   const scenario = diyaGlToScenario(book, lines, productOf(book));
-  const accounts = smallCompanyAccountsFromResults(book, results, scenario);
+  const accounts = smallCompanyAccountsFromResults(book, results, scenario, { requireDirectorsNote: false });
   return { ...accounts, tradeName: book.entityInformation?.organizationDescription || accounts.companyName };
 }
 export async function microEntityAccountsFromBook(book, lines) {
   const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
   const scenario = diyaGlToScenario(book, lines, productOf(book));
-  return microEntityAccountsFromResults(book, results, scenario);
+  return microEntityAccountsFromResults(book, results, scenario, { requireDirectorsNote: false });
 }
 `;
 

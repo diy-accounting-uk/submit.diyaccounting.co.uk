@@ -42,13 +42,24 @@ export function wholeMonthsBetween(start, end) {
   return Math.max(0, Math.round(ms / MS_PER_MONTH));
 }
 
+const ANNUAL_LINE_MONTHS = 12;
+
 /**
  * The commission on one charge. The tier pays for `months` months from the anchor's window start;
- * a line that spans months pays only for those inside the window.
+ * a line that spans months pays only for those inside the window. An anchor with an `annualRateBps`
+ * pays that share of the net once on an invoice of 12 or more months that starts inside the window.
  */
-export function computeCommission({ netPence, rateBps, months, windowStart, periodStart, periodEnd }) {
+export function computeCommission({ netPence, rateBps, annualRateBps, months, windowStart, periodStart, periodEnd }) {
   const lineMonths = Math.max(1, wholeMonthsBetween(periodStart, periodEnd));
   const startIndex = wholeMonthsBetween(windowStart, periodStart);
+  if (annualRateBps !== undefined && lineMonths >= ANNUAL_LINE_MONTHS) {
+    const insideWindow = startIndex < months;
+    return {
+      lineMonths,
+      eligibleMonths: insideWindow ? lineMonths : 0,
+      amountPence: insideWindow ? Math.floor((netPence * annualRateBps) / 10000) : 0,
+    };
+  }
   const eligibleMonths = Math.min(Math.max(months - startIndex, 0), lineMonths);
   const amountPence = Math.floor((netPence * rateBps * eligibleMonths) / (10000 * lineMonths));
   return { lineMonths, eligibleMonths, amountPence };
@@ -119,6 +130,7 @@ export async function accrueCommission({ invoice, subscriptionId, subRecord, str
       referralCode,
       tier: tier.id,
       rateBps: tier.rateBps,
+      ...(tier.annualRateBps !== undefined && { annualRateBps: tier.annualRateBps }),
       form: tier.form,
       payout: tier.payout,
       months: tier.months,
@@ -141,6 +153,7 @@ export async function accrueCommission({ invoice, subscriptionId, subRecord, str
   const { lineMonths, eligibleMonths, amountPence } = computeCommission({
     netPence: balanceTransaction.net,
     rateBps: anchor.rateBps,
+    annualRateBps: anchor.annualRateBps,
     months: anchor.months,
     windowStart: anchor.windowStart,
     periodStart,
