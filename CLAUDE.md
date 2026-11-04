@@ -259,6 +259,19 @@ npm run test:submitVatBehaviour-proxy
 
 Behaviour test npm scripts already include `2>&1 | tee <projectName>.log`, so no manual output capture is needed.
 
+## Reading machine load
+
+The Mac has 16 logical cores and 64 GB of memory. `ps` %CPU is per core, so 122% is about 1.2 cores. When the machine is hot, macOS runs a high-CPU process that holds other work back, so do not name a high-CPU system process as a cause unless it matches real activity. Before you trust a local timing or a timeout, measure:
+
+```bash
+pmset -g therm | tail -3        # CPU_Speed_Limit below 100 is thermal throttling
+memory_pressure -Q | tail -1    # free memory; memory is a limit too
+uptime                          # load average against 16 cores
+/usr/bin/time -p node -e 'let x=0;for(let i=0;i<4e8;i++){x=(x+i*7)%1000003}'   # about 5 seconds when quiet
+```
+
+A probe at twice its quiet time or more means that a 5 second test timeout is load and not a defect; keep gates serial.
+
 ## Deployment & Infrastructure Workflow
 
 **Hybrid Orchestration Approach**: You can autonomously handle the commit/push/monitor cycle for infrastructure deployments.
