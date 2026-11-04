@@ -562,6 +562,10 @@ jobs:
         shell: bash
         run: node scripts/publish-sitemap.mjs web/public ${{ needs.names.outputs.environment-name }}
 
+      - name: Bundle the @import list in submit.css into one stylesheet
+        shell: bash
+        run: node scripts/publish-css-bundle.mjs web/public
+
       - name: Lookup origin bucket name from EdgeStack
         id: lookup-bucket
         shell: bash

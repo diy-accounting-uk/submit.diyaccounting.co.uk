@@ -50,15 +50,34 @@ export function isActivityAvailable(catalog, activityId, bundleId) {
   return bundlesForActivity(catalog, activityId).includes(bundleId);
 }
 
+// One request per URL for the life of the page: every widget that reads the catalogue or the
+// environment name shares the first request's promise. A failed request is forgotten so a later
+// caller can try again.
+const sharedRequests = new Map();
+
+function shareRequest(url, start) {
+  const key = globalThis.location ? new URL(url, globalThis.location.href).href : url;
+  if (!sharedRequests.has(key)) {
+    const request = start().catch((error) => {
+      sharedRequests.delete(key);
+      throw error;
+    });
+    sharedRequests.set(key, request);
+  }
+  return sharedRequests.get(key);
+}
+
 /**
- * Fetch raw TOML catalog from the server
+ * Fetch raw TOML catalog from the server, once per page for each URL
  * @param {string} url - URL to fetch (default "/submit.catalogue.toml")
  * @returns {Promise<string>} Raw TOML content
  */
-export async function fetchCatalogText(url = "/submit.catalogue.toml") {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status} ${res.statusText}`);
-  return res.text();
+export function fetchCatalogText(url = "/submit.catalogue.toml") {
+  return shareRequest(url, async () => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status} ${res.statusText}`);
+    return res.text();
+  });
 }
 
 /**
@@ -198,19 +217,21 @@ export function featureStatusSummary(catalog, environmentName, viewer) {
 }
 
 /**
- * Fetch the current environment's name as recorded at deploy time.
+ * Fetch the current environment's name as recorded at deploy time, once per page for each URL.
  * @param {string} url - URL to fetch (default "/submit.environment-name.txt")
  * @returns {Promise<string|null>} The environment name, or null if it could not be read
  */
-export async function fetchCurrentEnvironmentName(url = "/submit.environment-name.txt") {
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    const text = (await res.text()).trim();
-    return text || null;
-  } catch {
-    return null;
-  }
+export function fetchCurrentEnvironmentName(url = "/submit.environment-name.txt") {
+  return shareRequest(url, async () => {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return null;
+      const text = (await res.text()).trim();
+      return text || null;
+    } catch {
+      return null;
+    }
+  });
 }
 
 // Export on window for backward compatibility

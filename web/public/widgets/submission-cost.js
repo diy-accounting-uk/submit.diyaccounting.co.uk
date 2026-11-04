@@ -24,11 +24,9 @@
 
     catalogPromise = (async () => {
       try {
-        const response = await fetch("/submit.catalogue.toml");
-        if (response.ok) {
-          const text = await response.text();
-          catalogCache = window.TOML ? (await import("/lib/services/catalog-service.js")).parseCatalogueText(text) : JSON.parse(text);
-        }
+        const catalogService = await import("/lib/services/catalog-service.js");
+        const text = await catalogService.fetchCatalogText();
+        catalogCache = window.TOML ? catalogService.parseCatalogueText(text) : JSON.parse(text);
       } catch (err) {
         console.warn("Failed to fetch catalogue for submission cost:", err);
       }

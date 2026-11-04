@@ -41,13 +41,12 @@
     try {
       const service = await import("/lib/services/catalog-service.js");
       const viewerSettings = await import("/lib/services/viewer-settings.js");
-      const [response, environmentName, viewer] = await Promise.all([
-        fetch("/submit.catalogue.toml"),
+      const [catalogText, environmentName, viewer] = await Promise.all([
+        service.fetchCatalogText(),
         service.fetchCurrentEnvironmentName(),
         viewerSettings.fetchViewer(),
       ]);
-      if (!response.ok) return;
-      const catalog = window.TOML.parse(await response.text());
+      const catalog = window.TOML.parse(catalogText);
       const { groups } = service.featureStatusSummary(catalog, environmentName, viewer);
       lists.forEach((list) => renderFeatureStatusList(list, groups));
     } catch (err) {

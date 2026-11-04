@@ -694,6 +694,10 @@ jobs:
         shell: bash
         run: node scripts/publish-sitemap.mjs web/public ${{ inputs.environment-name }}
 
+      - name: Bundle the @import list in submit.css into one stylesheet
+        shell: bash
+        run: node scripts/publish-css-bundle.mjs web/public
+
       - name: Compute hash of static website content
         id: publish-hash
         shell: bash

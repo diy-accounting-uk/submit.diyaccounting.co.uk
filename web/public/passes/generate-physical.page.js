@@ -160,14 +160,11 @@ async function initPage() {
     // Read token cost from catalogue
     let tokenCost;
     try {
-      const catRes = await fetch("/submit.catalogue.toml");
-      if (catRes.ok) {
-        const catText = await catRes.text();
-        const cat = window.TOML ? window.TOML.parse(catText) : null;
-        if (cat && cat.activities) {
-          const activity = cat.activities.find((a) => a.id === "generate-pass-physical");
-          if (activity && activity.tokenCost !== undefined) tokenCost = activity.tokenCost;
-        }
+      const catText = await (await import("/lib/services/catalog-service.js")).fetchCatalogText();
+      const cat = window.TOML ? window.TOML.parse(catText) : null;
+      if (cat && cat.activities) {
+        const activity = cat.activities.find((a) => a.id === "generate-pass-physical");
+        if (activity && activity.tokenCost !== undefined) tokenCost = activity.tokenCost;
       }
     } catch {}
 

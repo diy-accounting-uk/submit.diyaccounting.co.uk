@@ -26,8 +26,8 @@
   // Resolves to the parsed catalogue, or null when it cannot be loaded.
   function loadCatalogue() {
     if (!catalogueRequest) {
-      catalogueRequest = fetch("/submit.catalogue.toml")
-        .then((response) => (response.ok ? response.text() : null))
+      catalogueRequest = import("/lib/services/catalog-service.js")
+        .then((service) => service.fetchCatalogText())
         .then((text) => (text && window.TOML ? window.TOML.parse(text) : null))
         .catch(() => null);
     }

@@ -11,7 +11,6 @@ import {
   isActivityListedInEnvironment,
   isActivityShown,
   isBundleShown,
-  fetchCurrentEnvironmentName,
   activityPagePath,
   activityArea,
   featureStatusSummary,
@@ -41,6 +40,12 @@ describe("isActivityListedInEnvironment", () => {
   });
 });
 
+// Each test loads a fresh copy of the module, because the module keeps the first request for a URL.
+async function loadFreshService() {
+  vi.resetModules();
+  return import("../public/lib/services/catalog-service.js");
+}
+
 describe("fetchCurrentEnvironmentName", () => {
   beforeEach(() => {
     global.fetch = vi.fn();
@@ -52,6 +57,7 @@ describe("fetchCurrentEnvironmentName", () => {
   });
 
   it("returns the trimmed body of submit.environment-name.txt", async () => {
+    const { fetchCurrentEnvironmentName } = await loadFreshService();
     global.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve("ci\n") });
 
     const name = await fetchCurrentEnvironmentName();
@@ -61,15 +67,58 @@ describe("fetchCurrentEnvironmentName", () => {
   });
 
   it("returns null when the file cannot be fetched", async () => {
+    const { fetchCurrentEnvironmentName } = await loadFreshService();
     global.fetch.mockResolvedValue({ ok: false });
 
     expect(await fetchCurrentEnvironmentName()).toBeNull();
   });
 
   it("returns null when fetch throws", async () => {
+    const { fetchCurrentEnvironmentName } = await loadFreshService();
     global.fetch.mockRejectedValue(new Error("network error"));
 
     expect(await fetchCurrentEnvironmentName()).toBeNull();
+  });
+
+  it("requests the file once however many callers ask", async () => {
+    const { fetchCurrentEnvironmentName } = await loadFreshService();
+    global.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve("prod") });
+
+    const names = await Promise.all([fetchCurrentEnvironmentName(), fetchCurrentEnvironmentName(), fetchCurrentEnvironmentName()]);
+
+    expect(names).toEqual(["prod", "prod", "prod"]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("fetchCatalogText", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+    vi.stubGlobal("fetch", global.fetch);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("requests the catalogue once however many callers ask", async () => {
+    const { fetchCatalogText } = await loadFreshService();
+    global.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve("[[bundles]]") });
+
+    const texts = await Promise.all([fetchCatalogText(), fetchCatalogText(), fetchCatalogText()]);
+
+    expect(texts).toEqual(["[[bundles]]", "[[bundles]]", "[[bundles]]"]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects when the catalogue cannot be fetched and asks again on the next call", async () => {
+    const { fetchCatalogText } = await loadFreshService();
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: "Server Error" });
+    global.fetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve("x = 1") });
+
+    await expect(fetchCatalogText()).rejects.toThrow("Failed to fetch catalog: 500");
+    expect(await fetchCatalogText()).toBe("x = 1");
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 });
 
