@@ -69,7 +69,11 @@ public final class McpHmrcGrantAccessHelper {
 
     public static void grant(
             Function fn, GrantStore store, String hmrcClientSecretArn, String hmrcSandboxClientSecretArn) {
-        store.mcpSessionsTable().grantReadWriteData(fn);
+        fn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem"))
+                .resources(List.of(store.mcpSessionsTable().getTableArn()))
+                .build());
         store.sealKeySecret().grantRead(fn);
         for (String secretArn : List.of(hmrcClientSecretArn, hmrcSandboxClientSecretArn)) {
             if (StringUtils.isBlank(secretArn)) {
