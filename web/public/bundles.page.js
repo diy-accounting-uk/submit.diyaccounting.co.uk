@@ -311,6 +311,10 @@ const cardEl = (b) => {
     const held = heldCard();
     if (held) return held;
 
+    if (passCode) {
+      return serviceItemEl(bundleButton("btn service-btn", { "data-pass-code": String(passCode) }, `Request ${name}${tokenLabel}`, true));
+    }
+
     // Two prices per bundle (annual and monthly): the annual (default) price is the
     // main Subscribe button, the monthly price is a text link beneath it.
     const prices = Array.isArray(b.prices) ? b.prices : [];

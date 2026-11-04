@@ -33,7 +33,7 @@ const BUNDLE_NAME = "Invited Guest";
 
 // Serves the real static site from disk so the real catalogue and the real bundles.html pass
 // handling (handlePassEntry, renderCatalogueBundles) are exercised, and stubs only the API.
-async function serveRealSite(page, { signedIn }) {
+async function serveRealSite(page, { signedIn, passCode = PASS_CODE, bundleId = BUNDLE_ID }) {
   if (signedIn) {
     await page.addInitScript(() => {
       try {
@@ -50,11 +50,11 @@ async function serveRealSite(page, { signedIn }) {
       return;
     }
     if (url.pathname === "/api/v1/pass") {
-      expect(url.searchParams.get("code")).toBe(PASS_CODE);
+      expect(url.searchParams.get("code")).toBe(passCode);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ valid: true, bundleId: BUNDLE_ID, emailRestricted: true }),
+        body: JSON.stringify({ valid: true, bundleId, emailRestricted: true }),
       });
       return;
     }
@@ -93,6 +93,24 @@ test.describe("bundles.html with an email-restricted pass", () => {
     await expect(requestButton).toBeEnabled();
     await expect(requestButton).toHaveText(new RegExp(`^Request ${BUNDLE_NAME}`));
     await expect(requestButton).toHaveAttribute("data-pass-code", PASS_CODE);
+  });
+
+  test("signed in with a pass for a subscription bundle: offers the Request button in place of Subscribe", async ({ page }) => {
+    const passCode = "resident-pro-pass-code";
+    await serveRealSite(page, { signedIn: true, passCode, bundleId: "resident-pro" });
+
+    await page.goto(`http://localhost:3000/bundles.html?pass=${passCode}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#passStatus")).toHaveText(
+      'Pass valid for the invited email. Click "Request Resident Pro" to add the bundle.',
+    );
+
+    const requestButton = page.locator('#catalogBundles button[data-bundle-id="resident-pro"]');
+    await expect(requestButton).toHaveCount(1);
+    await expect(requestButton).toBeEnabled();
+    await expect(requestButton).toHaveText(/^Request Resident Pro/);
+    await expect(requestButton).toHaveAttribute("data-pass-code", passCode);
+    await expect(requestButton).not.toHaveAttribute("data-subscribe", "true");
   });
 
   test("signed out: asks the visitor to log in with the invited email and keeps the pass for after login", async ({ page }) => {
