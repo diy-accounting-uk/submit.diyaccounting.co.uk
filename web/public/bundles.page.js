@@ -1140,6 +1140,43 @@ function focusNewlyGeneratedPass() {
   showStatus(`Pass ${newCode} generated. Track what this link earns under My generated passes`, "success");
 }
 
+// The caller's own commission totals: held (with the day each part releases), payable and paid.
+// Nothing shows until the caller has any.
+async function fetchCommissionEarnings() {
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/commission/mine");
+    if (!res.ok) return;
+    const earnings = await res.json();
+    const block = document.getElementById("commissionEarnings");
+    const list = document.getElementById("commissionEarningsList");
+    if (!block || !list) return;
+    const { held, payable, paid } = earnings;
+    if (!held || !payable || !paid || held.totalPence + payable.totalPence + paid.totalPence === 0) {
+      block.hidden = true;
+      return;
+    }
+    const pounds = (pence) => formatGbp(pence / 100);
+    const day = (isoDay) =>
+      new Date(`${isoDay}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    const rows = [domEl("li", { "data-earnings": "held" }, `Held: ${pounds(held.totalPence)}`)];
+    if (held.releases.length > 0) {
+      rows.push(
+        domEl(
+          "li",
+          { "data-earnings": "releases" },
+          held.releases.map((release) => `${pounds(release.amountPence)} releases on ${day(release.releaseDate)}`).join("; "),
+        ),
+      );
+    }
+    rows.push(domEl("li", { "data-earnings": "payable" }, `Payable: ${pounds(payable.totalPence)}`));
+    rows.push(domEl("li", { "data-earnings": "paid" }, `Paid: ${pounds(paid.totalPence)}`));
+    list.replaceChildren(...rows);
+    block.hidden = false;
+  } catch (err) {
+    console.warn("Failed to fetch commission earnings:", err);
+  }
+}
+
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
   if (!idToken) return;
@@ -1167,6 +1204,7 @@ async function fetchMyGeneratedPasses(append) {
 
     section.style.display = "block";
 
+    if (!append) fetchCommissionEarnings();
     if (!append) list.replaceChildren();
     document.getElementById("generatedPassesTotals")?.remove();
 

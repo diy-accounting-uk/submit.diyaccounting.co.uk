@@ -295,6 +295,12 @@ describe("data/dynamoDbCommissionRepository", () => {
     expect(items[1].Delete.Key).toEqual({ pk: "payable#connect", sk: "ref-1#line#in_1" });
   });
 
+  test("queryLinesByReferrer reads the line keys of one referrer", async () => {
+    mockSend.mockResolvedValue({ Items: [{ sk: "line#in_1" }] });
+    expect(await repo.queryLinesByReferrer("ref-1")).toEqual([{ sk: "line#in_1" }]);
+    expect(mockSend.mock.calls[0][0].params.ExpressionAttributeValues).toEqual({ ":pk": "commission#ref-1", ":prefix": "line#" });
+  });
+
   test("queryPayouts reads the payout items of one referrer", async () => {
     mockSend.mockResolvedValue({ Items: [{ sk: "payout#2026-11" }] });
     expect(await repo.queryPayouts("ref-1")).toEqual([{ sk: "payout#2026-11" }]);

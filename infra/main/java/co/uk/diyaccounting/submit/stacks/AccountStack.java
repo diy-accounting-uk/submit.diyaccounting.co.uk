@@ -151,6 +151,9 @@ public class AccountStack extends Stack {
     public Function passGeneratePostLambda;
     public ILogGroup passGeneratePostLambdaLogGroup;
 
+    public AbstractApiLambdaProps commissionMineGetLambdaProps;
+    public Function commissionMineGetLambda;
+    public ILogGroup commissionMineGetLambdaLogGroup;
     public AbstractApiLambdaProps passMyPassesGetLambdaProps;
     public Function passMyPassesGetLambda;
     public ILogGroup passMyPassesGetLambdaLogGroup;
@@ -1736,6 +1739,44 @@ public class AccountStack extends Stack {
                 this.passMyPassesGetLambda.getNode().getId());
 
         // ============================================================================
+        // Commission Mine GET Lambda (JWT auth - the referrer's own commission totals)
+        // ============================================================================
+        var commissionMineGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var commissionMineGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionMineGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionMineGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionMineGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionMineGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionMineGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.commissionMineGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.commissionMineGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.commissionMineGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.commissionMineGetLambdaCustomAuthorizer)
+                        .environment(commissionMineGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionMineGetApiLambda);
+        this.commissionMineGetLambdaProps = commissionMineGetApiLambda.apiProps;
+        this.commissionMineGetLambda = commissionMineGetApiLambda.ingestLambda;
+        this.commissionMineGetLambdaLogGroup = commissionMineGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.commissionMineGetLambdaProps);
+        // The caller's own lines are one Query on the commissions table key; the hash of the caller's sub needs the salt.
+        commissionsTable.grant(this.commissionMineGetLambda, "dynamodb:Query");
+        SubHashSaltHelper.grantSaltAccess(this.commissionMineGetLambda, region, account, props.envName());
+        infof(
+                "Created Commission Mine GET Lambda %s",
+                this.commissionMineGetLambda.getNode().getId());
+
+        // ============================================================================
         // Pass Delete POST Lambda (JWT auth - delete the user's own generated passes)
         // ============================================================================
         var passDeletePostLambdaEnv = new PopulatedMap<String, String>()
@@ -2147,6 +2188,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "AffiliateApplicationGetLambdaArn", this.affiliateApplicationGetLambda.getFunctionArn());
         cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
+        cfnOutput(this, "CommissionMineGetLambdaArn", this.commissionMineGetLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "PassDeletePostLambdaArn", this.passDeletePostLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());

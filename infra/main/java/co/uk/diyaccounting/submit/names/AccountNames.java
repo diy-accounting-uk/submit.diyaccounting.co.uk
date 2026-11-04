@@ -251,6 +251,14 @@ public class AccountNames {
     public boolean passGeneratePostLambdaCustomAuthorizer;
 
     // Pass My Passes GET Lambda (JWT auth - list user's generated passes)
+    public String commissionMineGetIngestLambdaHandler;
+    public String commissionMineGetIngestLambdaFunctionName;
+    public String commissionMineGetIngestLambdaArn;
+    public String commissionMineGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod commissionMineGetLambdaHttpMethod;
+    public String commissionMineGetLambdaUrlPath;
+    public boolean commissionMineGetLambdaJwtAuthorizer;
+    public boolean commissionMineGetLambdaCustomAuthorizer;
     public String passMyPassesGetIngestLambdaHandler;
     public String passMyPassesGetIngestLambdaFunctionName;
     public String passMyPassesGetIngestLambdaArn;
@@ -1012,6 +1020,29 @@ public class AccountNames {
                 "listMyPasses",
                 List.of(new ApiParameter(
                         "limit", "query", false, "Maximum number of passes to return (default 20, max 50)"))));
+
+        // Commission Mine GET Lambda (JWT auth - the referrer's own commission totals)
+        this.commissionMineGetLambdaHttpMethod = HttpMethod.GET;
+        this.commissionMineGetLambdaUrlPath = "/api/v1/commission/mine";
+        this.commissionMineGetLambdaJwtAuthorizer = true;
+        this.commissionMineGetLambdaCustomAuthorizer = false;
+        var commissionMineGetLambdaHandlerName = "commissionMineGet.ingestHandler";
+        var commissionMineGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(commissionMineGetLambdaHandlerName);
+        this.commissionMineGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, commissionMineGetLambdaHandlerDashed);
+        this.commissionMineGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, commissionMineGetLambdaHandlerName);
+        this.commissionMineGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, commissionMineGetLambdaHandlerDashed);
+        this.commissionMineGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.commissionMineGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.commissionMineGetLambdaHttpMethod,
+                this.commissionMineGetLambdaUrlPath,
+                "Show my commission totals",
+                "Returns the authenticated referrer's held, payable and paid commission totals in pence, with the release date of each held total",
+                "getMyCommission"));
 
         // Pass Delete POST Lambda (JWT auth - delete the user's own generated passes)
         this.passDeletePostLambdaHttpMethod = HttpMethod.POST;
