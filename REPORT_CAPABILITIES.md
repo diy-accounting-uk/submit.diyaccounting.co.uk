@@ -4094,11 +4094,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-05 Pull GA4 daily BigQuery aggregate tables
 
 - **Use when:** GA4's scheduled-query aggregate tables must land in the lake as daily NDJSON.
-- **Does:** ga4DailyPull.js copies one D-2 day of each of BigQuery's four one-stop-dashboard aggregate tables into the lake as gzipped NDJSON. Those tables are maintained by scheduled queries declared in bigquery.toml. Ga4DailyTables.java provisions the matching Glue tables with dt partition projection.
+- **Does:** ga4DailyPull.js copies one D-2 day of each of BigQuery's five one-stop-dashboard aggregate tables into the lake as gzipped NDJSON. Those tables are maintained by scheduled queries declared in bigquery.toml. Ga4DailyTables.java provisions the matching Glue tables with dt partition projection.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/ga4DailyPull.js:handler`
 - **Files:** app/functions/analytics/ga4DailyPull.js, app/unit-tests/analytics/ga4DailyPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTablesTest.java
-- **Keywords:** ga4 bigquery, one-stop dashboard, aggregate tables, sessions by host source, funnel steps, key events, downloads by product, dt partition
+- **Keywords:** ga4 bigquery, one-stop dashboard, aggregate tables, sessions by host source, funnel steps, key events, downloads by product, pages by kind, dt partition
 - **Related:** DATA-06, DATA-43
 
 #### DATA-06 Pull GA4 reports and BigQuery event export
@@ -4641,7 +4641,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** ga4-bigquery-sync.js makes the live ga4_daily BigQuery dataset and its Data Transfer scheduled queries match bigquery.toml. Each declared query becomes a scheduled_query transfer config writing one day of GA4's BigQuery events_* export. The destination table is write-truncated and partitioned.
 - **Run:** `npm run ga4:bigquery-sync`; `npm run ga4:bigquery-sync -- --apply`
 - **Entry:** `infra/google/ga4/ga4-bigquery-sync.js:main`
-- **Files:** infra/google/ga4/ga4-bigquery-sync.js, app/unit-tests/scripts/ga4BigQuerySync.test.js, infra/google/gcp/bigquery.toml, infra/google/gcp/bigquery/downloads_by_product_daily.sql, infra/google/gcp/bigquery/funnel_steps_daily.sql, infra/google/gcp/bigquery/key_events_daily.sql, infra/google/gcp/bigquery/sessions_by_host_source_daily.sql
+- **Files:** infra/google/ga4/ga4-bigquery-sync.js, app/unit-tests/scripts/ga4BigQuerySync.test.js, infra/google/gcp/bigquery.toml, infra/google/gcp/bigquery/downloads_by_product_daily.sql, infra/google/gcp/bigquery/funnel_steps_daily.sql, infra/google/gcp/bigquery/key_events_daily.sql, infra/google/gcp/bigquery/pages_by_kind_daily.sql, infra/google/gcp/bigquery/sessions_by_host_source_daily.sql
 - **Keywords:** ga4 bigquery sync, scheduled query, data transfer, events_* export, write-truncated table, bigquery.toml
 - **Related:** DATA-38, DATA-05
 
@@ -8018,6 +8018,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - page layout: [SITE-12](#site-12-map-the-site-structure)
 - page requests: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - page screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
+- pages by kind: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - pagination: [CH-03](#ch-03-search-the-companies-house-register), [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - paid: [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)

@@ -43,16 +43,17 @@ class Ga4DailyTablesTest {
     }
 
     @Test
-    void createsFiveTablesWithDateProjectionAndNoOtherPartitionKey() {
+    void createsSixTablesWithDateProjectionAndNoOtherPartitionKey() {
         Template template = synthTemplate();
 
-        template.resourceCountIs("AWS::Glue::Table", 5);
+        template.resourceCountIs("AWS::Glue::Table", 6);
 
         for (String tableName : List.of(
                 "sessions_by_host_source_daily",
                 "funnel_steps_daily",
                 "key_events_daily",
                 "downloads_by_product_daily",
+                "pages_by_kind_daily",
                 "sessions_by_hour_kind")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
@@ -83,7 +84,7 @@ class Ga4DailyTablesTest {
         Template template = synthTemplate();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertEquals(5, tables.size());
+        assertEquals(6, tables.size());
 
         for (var resource : tables.values()) {
             @SuppressWarnings("unchecked")
@@ -163,5 +164,27 @@ class Ga4DailyTablesTest {
                                                 List.of(
                                                         Map.of("Name", "product", "Type", "string"),
                                                         Map.of("Name", "downloads", "Type", "bigint"))))))))));
+    }
+
+    @Test
+    void pagesByKindColumnsCarryThePageVisitorsAndEngagedTime() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "pages_by_kind_daily",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "page", "Type", "string"),
+                                                        Map.of("Name", "visitor_kind", "Type", "string"),
+                                                        Map.of("Name", "users", "Type", "bigint"),
+                                                        Map.of("Name", "engagement_msec", "Type", "bigint"))))))))));
     }
 }

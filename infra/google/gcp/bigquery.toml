@@ -71,3 +71,13 @@ destination_table = "downloads_by_product_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
 schedule = "every day 01:00"
+
+[[queries]]
+name = "pages_by_kind_daily"
+panel = "Pages by visitor kind (behaviour)"
+description = "Distinct visitors and engaged milliseconds by hostname, page and visitor kind"
+sql_file = "infra/google/gcp/bigquery/pages_by_kind_daily.sql"
+destination_table = "pages_by_kind_daily"
+partition_field = "day"
+write_disposition = "WRITE_TRUNCATE"
+schedule = "every day 01:00"

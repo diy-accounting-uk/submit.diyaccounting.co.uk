@@ -152,6 +152,30 @@
             <tbody id="activitiesCompletedBody"></tbody>
           </table>
         </section>
+        <section id="pageVisitorsPanel" class="objective" hidden data-tab="behaviour">
+          <h2>Pages by visitor</h2>
+          <p class="subtitle">
+            Visitors to each page over the last 30 days, and the time each spent on it. Counts only visitors who accepted analytics. A
+            visitor who reads a page on two days counts once on each day. The operator's own visits are counted apart; test traffic is left
+            out.
+          </p>
+          <table class="observations data-table" id="pageVisitorsTable">
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th title="Visitors signed in to an account">Signed in</th>
+                <th title="Time the page was open for each signed-in visitor">Time each</th>
+                <th title="Visitors who were not signed in">Other</th>
+                <th title="Time the page was open for each other visitor">Time each</th>
+                <th title="Operator visits, not counted in the other columns">Operator</th>
+              </tr>
+            </thead>
+            <tbody id="pageVisitorsBody"></tbody>
+          </table>
+          <p class="objective-empty" id="pageVisitorsEmpty" hidden>
+            No page figures yet. They arrive with the next nightly Google Analytics pull.
+          </p>
+        </section>
         <div data-objective-slot="low-running-cost" data-tab="main"></div>
         <div data-objective-slot="uptime" data-tab="ops"></div>
         <div data-objective-slot="compliance" data-tab="main"></div>

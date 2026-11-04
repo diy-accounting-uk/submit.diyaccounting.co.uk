@@ -3,19 +3,19 @@
 
 // @capability DATA-05 Pull GA4 daily BigQuery aggregate tables
 // - **Use when:** GA4's scheduled-query aggregate tables must land in the lake as daily NDJSON.
-// - **Does:** ga4DailyPull.js copies one D-2 day of each of BigQuery's four one-stop-dashboard aggregate tables into the lake as gzipped NDJSON. Those tables are maintained by scheduled queries declared in bigquery.toml. Ga4DailyTables.java provisions the matching Glue tables with dt partition projection.
+// - **Does:** ga4DailyPull.js copies one D-2 day of each of BigQuery's five one-stop-dashboard aggregate tables into the lake as gzipped NDJSON. Those tables are maintained by scheduled queries declared in bigquery.toml. Ga4DailyTables.java provisions the matching Glue tables with dt partition projection.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/ga4DailyPull.js:handler`
 // - **Files:** app/functions/analytics/ga4DailyPull.js, app/unit-tests/analytics/ga4DailyPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4DailyTablesTest.java
-// - **Keywords:** ga4 bigquery, one-stop dashboard, aggregate tables, sessions by host source, funnel steps, key events, downloads by product, dt partition
+// - **Keywords:** ga4 bigquery, one-stop dashboard, aggregate tables, sessions by host source, funnel steps, key events, downloads by product, pages by kind, dt partition
 // - **Related:** DATA-06, DATA-43
 // @end-capability
 
 // app/functions/analytics/ga4DailyPull.js
 //
-// Nightly job that copies the four one-stop-dashboard aggregate tables infra/google/gcp/bigquery.toml
+// Nightly job that copies the five one-stop-dashboard aggregate tables infra/google/gcp/bigquery.toml
 // maintains in BigQuery's ga4_daily dataset (sessions_by_host_source_daily, funnel_steps_daily,
-// key_events_daily, downloads_by_product_daily) into the lake, so the dashboard's export and
+// key_events_daily, downloads_by_product_daily, pages_by_kind_daily) into the lake, so the dashboard's export and
 // Athena views read one place rather than reaching back into BigQuery. Each scheduled query in
 // that dataset writes one day at a time for event_date two days back (the margin
 // ga4EventExportPull.js also gives GA4's export), so this job targets the same D-2 date.
@@ -43,7 +43,13 @@ const logger = createLogger({ source: "app/functions/analytics/ga4DailyPull.js" 
 
 // Matches infra/google/gcp/bigquery.toml's [dataset] and each [[queries]] destination_table.
 const GA4_DAILY_DATASET_ID = "ga4_daily";
-const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
+const TABLES = [
+  "sessions_by_host_source_daily",
+  "funnel_steps_daily",
+  "key_events_daily",
+  "downloads_by_product_daily",
+  "pages_by_kind_daily",
+];
 
 const HOURLY_TABLE_NAME = "sessions_by_hour_kind";
 const HOURLY_LOOKBACK_DAYS = 3;

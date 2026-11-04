@@ -324,7 +324,11 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_ga4_landing_pages_daily",
                     "GA4 sessions each day by landing page, and how many of them signed in",
-                    List.of("ga4_bq_events")));
+                    List.of("ga4_bq_events")),
+            new ViewDefinition(
+                    "v_ga4_pages_by_kind_daily",
+                    "GA4 visitors and engaged time each day by page and visitor kind",
+                    List.of("pages_by_kind_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();
