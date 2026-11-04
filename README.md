@@ -129,7 +129,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## npm scripts
 
 <!-- scripts-table:start -->
-378 scripts in package.json. A group is the text before the first colon; a name below follows it.
+379 scripts in package.json. A group is the text before the first colon; a name below follows it.
 
 | Group | Scripts | Names |
 |-------|---------|-------|
@@ -153,6 +153,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run data:` | 2 | `data` `simulator` |
 | `npm run ga4:` | 2 | `sync` `bigquery-sync` |
 | `npm run mcp:` | 2 | `vat-sandbox-proof` `accounts-test-service-proof` |
+| `npm run searchconsole:` | 2 | `sync` `report` |
 | `npm run server:` | 2 | `server` `simulator` |
 | `npm run verify:` | 2 | `tax-sources` `waf-false-positives` |
 | `npm run auth:` | 1 | `auth` |
@@ -174,7 +175,6 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run playwright:` | 1 | `install` |
 | `npm run pretest:` | 1 | `pretest` |
 | `npm run scripts:` | 1 | `table` |
-| `npm run searchconsole:` | 1 | `sync` |
 | `npm run set-apex-origins:` | 1 | `set-apex-origins` |
 | `npm run simulator:` | 1 | `simulator` |
 | `npm run site:` | 1 | `screenshots` |
