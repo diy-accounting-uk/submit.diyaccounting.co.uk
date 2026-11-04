@@ -276,8 +276,8 @@
             </tr>
             <tr>
               <td>Device ID</td>
-              <td>A unique identifier for your browser session</td>
-              <td>Generated fresh for each submission using <code>crypto.randomUUID()</code>; not stored persistently</td>
+              <td>A unique identifier for your browser on this device</td>
+              <td>Generated once with <code>crypto.randomUUID()</code> and kept in localStorage until you clear it</td>
             </tr>
             <tr>
               <td>Browser User Agent</td>
@@ -319,13 +319,13 @@
 
         <h3>How Device ID Works</h3>
         <p>
-          The device ID is <strong>not stored persistently</strong>. A new UUID is generated for each VAT return submission using your
-          browser's cryptographic random number generator. This means:
+          HMRC asks for a device ID that does not expire. Your browser makes one UUID with its cryptographic random number generator the
+          first time a submission needs it, and keeps it in localStorage as <code>hmrcDeviceId</code>. This means:
         </p>
         <ul>
-          <li>No cookies are used for device tracking</li>
-          <li>No localStorage is used for device ID storage</li>
-          <li>Each submission generates a fresh, unique device identifier</li>
+          <li>No cookies are used for the device ID</li>
+          <li>The same device ID goes with every submission from this browser</li>
+          <li>If you clear your browser storage, the next submission makes a new device ID</li>
         </ul>
 
         <h3>The Installed MCP Server and the Hosted MCP Endpoint</h3>
@@ -522,6 +522,10 @@
           <li>
             <strong><code>feedbackEngagementRegistered</code></strong
             >: Remembers that you have already answered the feedback invitation
+          </li>
+          <li>
+            <strong><code>hmrcDeviceId</code></strong
+            >: A random identifier for this browser, sent to HMRC with each submission as a fraud prevention header
           </li>
           <li>
             <strong><code>visitorKind.operator</code></strong
