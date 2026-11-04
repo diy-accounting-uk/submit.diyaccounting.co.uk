@@ -42,9 +42,7 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## In flight
 
-- [ ] **SEO1d. The Search Console verification CNAME records in Route53 as code (root repository, `RootDnsStack`; `../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** The two domain properties' CNAMEs from `searchconsole:sync`'s plan; today the apex and submit TXT verification records are manual, outside CDK. Root PR #47 (branch `claude/seo-1d-cname`) is green and waits on the operator's merge. The records from `searchconsole:sync` (google-apply 41755232230): `blmvnokkkgkt.diyaccounting.co.uk CNAME gv-oxvz26pb6fpjaf.dv.googlehosted.com` and `lbcjxmzamfi3.diya-gl.co.uk CNAME gv-5364v5fcj5bxln.dv.googlehosted.com`. **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files. Unblocks SEO1e.
-
-- [ ] **Wave delta (batch `claude/delta-campaign`, worktree `.claude/worktrees/delta`, not pushed).** CAMP2 (`scripts/campaign-threads.mjs`, `npm run campaign:threads`) and CAMP3 (`v_campaign_channels_daily`). Next: the CAMP3 proof, `SELECT * FROM (<view sql>) LIMIT 0` on ci, because Athena has not parsed the view; batch-check, push, PR. The proof needs `aws sso login --sso-session diyaccounting`. **Source**: operator, 2026-11-03. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **Wave delta (batch `claude/delta-campaign`, worktree `.claude/worktrees/delta`, not pushed).** CAMP2 (`scripts/campaign-threads.mjs`, `npm run campaign:threads`) and CAMP3 (`v_campaign_channels_daily`). The view parses on ci with its column types. Next: merge main, batch-check, push, PR. **Source**: operator, 2026-11-03. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Machine-only
 
@@ -56,9 +54,13 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Machine-ask
 
-- [ ] **Cedar follow-ups on prod (PR #677).** (1) AL19: read one `prod-90945cd-app-companies-house-*` Lambda's environment for `COMPANIES_HOUSE_XMLGW_URI` and the two presenter ARNs; no proof filing; then close B34c and CS-11b in `PLAN_COMPANIES_HOUSE_APPROVAL.md`. (2) Re-sync the video titles and descriptions (the `video-publish` skill). `web/public/docs/api/openapi.json` does not list `GET /api/v1/commission/mine`. On ci, PASS1b's second-account steps run only with `TEST_AUTH_SECOND_USERNAME` and `TEST_AUTH_SECOND_PASSWORD`. The ask: `aws sso login --sso-session diyaccounting`. **Source**: PR #677. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **Cedar follow-ups on prod (PR #677).** Re-sync the video titles and descriptions (the `video-publish` skill). `web/public/docs/api/openapi.json` does not list `GET /api/v1/commission/mine`. On ci, PASS1b's second-account steps run only with `TEST_AUTH_SECOND_USERNAME` and `TEST_AUTH_SECOND_PASSWORD`. **Source**: PR #677. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 ## Human-driven
+
+- [ ] **OFB2. Confirm the feedback topic's subscription.** Open the "AWS Notification - Subscription Confirmation" mail for `prod-env-feedback-engagement` at antony@diyaccounting.co.uk and confirm it. **Source**: FB2. **Owner**: Operator. **Model**: none.
+
+- [ ] **OFB1. Send the feedback-volunteers email.** Read the draft `../private.diyaccounting.co.uk/support/EMAIL_FEEDBACK_VOLUNTEERS_2026-11-03.md`, edit it, and send it from antony@diyaccounting.co.uk with the volunteers in Bcc (`FEEDBACK_VOLUNTEERS_2026-11-03.md` beside it). The 2026-11-01 volunteer's address is masked in the lake and is in the interest Lambda's log for 13:22:32 UTC. **Source**: operator, 2026-11-03. **Owner**: Operator. **Model**: none.
 
 - [ ] **OMAT1. Set Matthew up as a family affiliate, and decide the directors' trial.** (1) Tell Claude Code the Google account Matthew signs in with; its address goes in the GitHub secret `FAMILY_AFFILIATE_EMAILS` (a `!` command from the session; then deploy-environment for prod). (2) Issue his account a free `resident-pro-pass` (the passes admin on Bundles), so he can generate digital passes (10 tokens each). (3) Approve him as a Family affiliate in the Affiliates panel on Bundles; until then `commissionRelease.js` holds every family line with `affiliate_not_approved`. (4) Decide MKT8: let a referral Week pass grant one Companies House filing, or point Ltd posts at the 99p first month. (5) Until MKT4 shows Matthew his earnings, send him his subscribers and earnings every two weeks (the brief promises this; Claude Code reads them from the commission ledger on request). (6) On matthew@diyaccounting.co.uk, add a Gmail filter that labels newsletters (messages with an unsubscribe link) "Reading" and does not forward them, since the brief asks Matthew to subscribe to about twelve with that address. (7) Once COM25 is on prod, share the brief https://claude.ai/artifact/UF5hGUYVDZJuSkjYuL5gDo with Matthew from its Share menu. **Source**: the review of Matthew's brief. **Owner**: Operator. **Model**: none.
 
@@ -70,13 +72,9 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Blocked
 
-- [ ] **OFB1. Send the feedback-volunteers email.** Read the draft `../private.diyaccounting.co.uk/support/EMAIL_FEEDBACK_VOLUNTEERS_2026-11-03.md`, edit it, and send it from antony@diyaccounting.co.uk with the volunteers in Bcc (`FEEDBACK_VOLUNTEERS_2026-11-03.md` beside it). The draft says Companies House filings work today, so it waits on AL19 reaching prod with wave cedar. The 2026-11-01 volunteer's address is masked in the lake and is in the interest Lambda's log for 13:22:32 UTC. Blocked on the AL19 read in the cedar follow-ups. **Source**: operator, 2026-11-03. **Owner**: Operator. **Model**: none.
-
-- [ ] **OFB2. Confirm the feedback topic's subscription.** Open the "AWS Notification - Subscription Confirmation" mail for `prod-env-feedback-engagement` at antony@diyaccounting.co.uk and confirm it. **Source**: FB2. **Owner**: Operator. **Model**: none.
-
 - [ ] **RL4. Record again the videos that show the bundle card, then publish them (`PLAN_RESIDENT_LTD.md`).** RL2d's list of videos, `.claude/skills/site-video-capture/SKILL.md` then `.claude/skills/video-publish/SKILL.md`. MKT2 and MKT4 are on prod. MKT6's re-sync runs in the same publish. **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **SEO1e. Apply: verify the domains, add the properties, submit the four sitemaps (`../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** `searchconsole:sync --apply` through `google-apply.yml` after SEO1d deploys. Blocked on SEO1d. **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file. Unblocks SEO1f.
+- [ ] **SEO1e. Apply: verify the domains, add the properties, submit the four sitemaps (`../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** `searchconsole:sync --apply` through `google-apply.yml` after SEO1d deploys. Blocked on root PR #47's deploy (merged as 06db365dd). **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file. Unblocks SEO1f.
 
 - [ ] **SEO1f. A read-only Search Console report, a daily sitemap submission and a prod deploy step (`../private.diyaccounting.co.uk/strategy/SEARCH_CONSOLE_ASSESSMENT.md`).** 90-day search analytics, URL inspection of each sitemap URL (it replaces the page indexing report, which has no API), CrUX for Core Web Vitals; a daily workflow and a step in the prod deploy that resubmits the sitemap. Blocked on SEO1e. **Source**: SEO1 assessment. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
