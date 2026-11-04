@@ -6,6 +6,10 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import {
+  INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+  INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+} from "@app/lib/companiesHouseGatewayErrors.js";
 
 const mockSend = vi.fn();
 
@@ -230,6 +234,20 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body.submissionNumber).toBe("00001A");
     expect(body.errors[0].number).toBe(604);
+  });
+
+  test("returns 400 with the gateway errors when the gateway reports the company authentication code as invalid", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [{ raisedBy: "CompanyDataRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode", location: "" }],
+      statuses: [],
+    });
+    const response = await companiesHousePscVerificationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_REASON);
+    expect(body.message).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE);
+    expect(body.errors[0].text).toBe("Invalid CompanyAuthenticationCode");
+    expect(body.submissionNumber).toBe("00001A");
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {
