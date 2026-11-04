@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability BILL-47 Show a referrer the caller's own commission totals
+// @capability BILL-57 Show a referrer the caller's own commission totals
 // - **Use when:** a referrer must see what the referrals earned, held, payable and paid.
 // - **Does:** The commissionMineGet.js ingestHandler sums the caller's own commission lines by state. Held lines group by release day, so each held total has a release date. Payable lines include the negative lines that reverse a paid line. Reversed lines count nowhere. The response holds totals in pence and no line, invoice, customer or plan.
 // - **Run:** `GET /api/v1/commission/mine`
