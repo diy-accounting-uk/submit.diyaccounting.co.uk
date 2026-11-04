@@ -433,7 +433,7 @@ jobs:
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
-            node 'scripts/ensure-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}" 'passRedemptionBehaviour-second'
+            node 'scripts/ensure-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}" '${{ matrix.suite }}-second'
           else
             echo "Skipping the second Cognito test user (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
