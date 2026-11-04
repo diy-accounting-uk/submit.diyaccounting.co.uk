@@ -17,7 +17,10 @@
 // the ASA enrolment; HMRC resolves the delegated relationship from the client's identifier
 // sent on each call, so no client credential is ever stored or sent by this service.
 
+import { v4 as uuidv4 } from "uuid";
 import { createLogger, context } from "./logger.js";
+import { sendToHmrc } from "../services/hmrcApi.js";
+import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 import {
   http400BadRequestResponse,
   http403ForbiddenResponse,
@@ -76,7 +79,19 @@ export function buildAgentAuthorisationHeaders(accessToken, govClientHeaders = {
   return headers;
 }
 
-async function agentAuthorisationRequest(method, url, { accessToken, govClientHeaders, testScenario, body } = {}) {
+async function auditAgentAuthorisationRequest(auditForUserSub, record) {
+  try {
+    await putHmrcApiRequest(auditForUserSub || `unknown-user-${uuidv4()}`, record);
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC agent authorisation request to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
+  }
+}
+
+async function agentAuthorisationRequest(method, url, { accessToken, govClientHeaders, testScenario, body, auditForUserSub } = {}) {
   const headers = buildAgentAuthorisationHeaders(accessToken, govClientHeaders, testScenario);
   const init = { method, headers };
   if (body !== undefined) {
@@ -84,9 +99,28 @@ async function agentAuthorisationRequest(method, url, { accessToken, govClientHe
   }
 
   logger.info({ message: `Request to ${method} ${url}`, url, method });
-  const response = await fetch(url, init);
+  const startTime = Date.now();
+  let response;
+  try {
+    response = await sendToHmrc(url, init);
+  } catch (error) {
+    await auditAgentAuthorisationRequest(auditForUserSub, {
+      url,
+      httpRequest: init,
+      httpResponse: { statusCode: 0, headers: {}, body: { error: error.message, name: error.name } },
+      duration: Date.now() - startTime,
+    });
+    throw error;
+  }
+  const duration = Date.now() - startTime;
   const data = await response.json().catch(() => ({}));
   logger.info({ message: `Response from ${method} ${url}`, url, status: response.status });
+  await auditAgentAuthorisationRequest(auditForUserSub, {
+    url,
+    httpRequest: init,
+    httpResponse: { statusCode: response.status, headers: {}, body: data },
+    duration,
+  });
 
   return { ok: response.ok, status: response.status, data, response };
 }
@@ -105,12 +139,23 @@ async function agentAuthorisationRequest(method, url, { accessToken, govClientHe
  * @param {string} params.accessToken
  * @param {object} [params.govClientHeaders]
  * @param {string} [params.testScenario]
+ * @param {string} [params.auditForUserSub] - the signed-in user's sub, which keys the audit record of the call
  * @returns {Promise<{ok: boolean, status: number, data: object, invitationId: string|null}>}
  */
-export async function createInvitation({ arn, service, clientIdType, clientId, knownFact, accessToken, govClientHeaders, testScenario }) {
+export async function createInvitation({
+  arn,
+  service,
+  clientIdType,
+  clientId,
+  knownFact,
+  accessToken,
+  govClientHeaders,
+  testScenario,
+  auditForUserSub,
+}) {
   const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/invitations`;
   const body = { service: [service], clientType: "business", clientIdType, clientId, knownFact };
-  const result = await agentAuthorisationRequest("POST", url, { accessToken, govClientHeaders, testScenario, body });
+  const result = await agentAuthorisationRequest("POST", url, { accessToken, govClientHeaders, testScenario, body, auditForUserSub });
   const location = getHeaderValue(result.response.headers, "location");
   const invitationId = location ? location.split("/").filter(Boolean).pop() : null;
   return { ...result, invitationId };
@@ -120,27 +165,37 @@ export async function createInvitation({ arn, service, clientIdType, clientId, k
  * Reads an invitation's status (`GET /agents/{arn}/invitations/{invitationId}`): "pending",
  * "accepted", "rejected" or "expired".
  */
-export async function getInvitationStatus({ arn, invitationId, accessToken, govClientHeaders, testScenario }) {
+export async function getInvitationStatus({ arn, invitationId, accessToken, govClientHeaders, testScenario, auditForUserSub }) {
   const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/invitations/${encodeURIComponent(invitationId)}`;
-  return agentAuthorisationRequest("GET", url, { accessToken, govClientHeaders, testScenario });
+  return agentAuthorisationRequest("GET", url, { accessToken, govClientHeaders, testScenario, auditForUserSub });
 }
 
 /**
  * Cancels a pending invitation (`DELETE /agents/{arn}/invitations/{invitationId}`).
  */
-export async function cancelInvitation({ arn, invitationId, accessToken, govClientHeaders, testScenario }) {
+export async function cancelInvitation({ arn, invitationId, accessToken, govClientHeaders, testScenario, auditForUserSub }) {
   const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/invitations/${encodeURIComponent(invitationId)}`;
-  return agentAuthorisationRequest("DELETE", url, { accessToken, govClientHeaders, testScenario });
+  return agentAuthorisationRequest("DELETE", url, { accessToken, govClientHeaders, testScenario, auditForUserSub });
 }
 
 /**
  * Checks for a relationship already in place, such as one carried over when the practice linked
  * its old Government Gateway to the ASA (`POST /agents/{arn}/relationships`, whose JSON body requires the known fact).
  */
-export async function getRelationship({ arn, service, clientIdType, clientId, knownFact, accessToken, govClientHeaders, testScenario }) {
+export async function getRelationship({
+  arn,
+  service,
+  clientIdType,
+  clientId,
+  knownFact,
+  accessToken,
+  govClientHeaders,
+  testScenario,
+  auditForUserSub,
+}) {
   const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/relationships`;
   const body = { service: [service], clientIdType, clientId, knownFact };
-  return agentAuthorisationRequest("POST", url, { accessToken, govClientHeaders, testScenario, body });
+  return agentAuthorisationRequest("POST", url, { accessToken, govClientHeaders, testScenario, body, auditForUserSub });
 }
 
 // The two stored statuses that mean HMRC has granted this practice authority over the client:

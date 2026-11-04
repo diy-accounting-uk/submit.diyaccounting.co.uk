@@ -3,11 +3,11 @@
 
 // @capability HMRC-29 Call the HMRC API
 // - **Use when:** a Lambda or browser page must call an HMRC endpoint and classify the response.
-// - **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
+// - **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, and counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
 // - **Run:** `import { hmrcHttpGet, hmrcHttpPost } from "app/services/hmrcApi.js"`; `import from "web/public/lib/services/hmrc-service.js"`
-// - **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
-// - **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
-// - **Keywords:** hmrc http client, error classification, access token validation, authorizedfetch, hmrc-service
+// - **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:sendToHmrc`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
+// - **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, app/unit-tests/services/hmrcSendPath.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
+// - **Keywords:** hmrc http client, send path, fraud prevention header violation, error classification, access token validation, authorizedfetch, hmrc-service
 // - **Related:** HMRC-25, HMRC-30
 // @end-capability
 
@@ -24,6 +24,7 @@ import {
   http401UnauthorizedResponse,
 } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+import { emitMetric } from "../lib/emfMetrics.js";
 
 /**
  * Get a header value case-insensitively from a headers object.
@@ -53,6 +54,161 @@ export function getHmrcBaseUrl(hmrcAccount) {
     throw new Error(`Missing required environment variable ${isSynthetic ? "HMRC_SANDBOX_BASE_URI" : "HMRC_BASE_URI"}`);
   }
   return base;
+}
+
+const HMRC_PRODUCTION_HOST = "api.service.hmrc.gov.uk";
+const HMRC_SANDBOX_HOST = "test-api.service.hmrc.gov.uk";
+const HMRC_OAUTH_TOKEN_PATH = "/oauth/token";
+const CONNECTION_METHOD_HEADER = "Gov-Client-Connection-Method";
+export const HMRC_SEND_METRICS_NAMESPACE = "Submit/HmrcSend";
+export const HMRC_SEND_METRIC = "HmrcSend";
+export const HMRC_FRAUD_HEADER_VIOLATION_METRIC = "HmrcFraudHeaderViolation";
+
+// Headers buildFraudHeaders sets on the server for every request. Gov-Client-Multi-Factor is
+// absent for a password-only sign-in, Gov-Vendor-License-IDs is omitted on purpose (HMRC
+// confirmed), and Gov-Client-Browser-Do-Not-Track is sent only by browsers that expose it, so
+// none of the three is required.
+const SERVER_BUILT_REQUIRED_HEADERS = [
+  "Gov-Client-Device-ID",
+  "Gov-Client-Public-IP",
+  "Gov-Client-Public-Port",
+  "Gov-Client-User-IDs",
+  "Gov-Vendor-Forwarded",
+  "Gov-Vendor-Product-Name",
+  "Gov-Vendor-Public-IP",
+  "Gov-Vendor-Version",
+];
+const BROWSER_SENT_REQUIRED_HEADERS = [
+  "Gov-Client-Browser-JS-User-Agent",
+  "Gov-Client-Public-IP-Timestamp",
+  "Gov-Client-Screens",
+  "Gov-Client-Timezone",
+  "Gov-Client-Window-Size",
+];
+const REQUIRED_HEADERS_BY_CONNECTION_METHOD = {
+  WEB_APP_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, ...BROWSER_SENT_REQUIRED_HEADERS],
+  DESKTOP_APP_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, "Gov-Client-Timezone"],
+};
+
+export class HmrcFraudPreventionHeadersMissingError extends Error {
+  constructor() {
+    super(
+      "This request was not sent to HMRC because the information HMRC requires about your connection was missing. Reload the page and try again.",
+    );
+    this.name = "HmrcFraudPreventionHeadersMissingError";
+  }
+}
+
+function isPresentHeaderValue(value) {
+  if (value === undefined || value === null) return false;
+  const text = String(value).trim();
+  return text !== "" && text !== "undefined" && text !== "null";
+}
+
+// Names of the headers that carry a usable value, lower-cased, whatever the case or container
+// (plain object or Headers) the caller used.
+function presentHeaderValues(headers) {
+  const present = new Map();
+  if (!headers) return present;
+  const entries =
+    typeof headers.forEach === "function" && typeof headers.get === "function" ? [...headers.entries()] : Object.entries(headers);
+  for (const [name, value] of entries) {
+    if (isPresentHeaderValue(value)) present.set(name.toLowerCase(), String(value).trim());
+  }
+  return present;
+}
+
+export function missingFraudPreventionHeaders(headers) {
+  const present = presentHeaderValues(headers);
+  const connectionMethod = present.get(CONNECTION_METHOD_HEADER.toLowerCase());
+  if (!connectionMethod) return { connectionMethod: undefined, missing: [CONNECTION_METHOD_HEADER] };
+  const required = REQUIRED_HEADERS_BY_CONNECTION_METHOD[connectionMethod] ?? REQUIRED_HEADERS_BY_CONNECTION_METHOD.WEB_APP_VIA_SERVER;
+  return { connectionMethod, missing: required.filter((name) => !present.has(name.toLowerCase())) };
+}
+
+// The path without its query string, with identifiers that name a customer replaced.
+function redactedHmrcPath(pathname) {
+  return pathname
+    .split("/")
+    .map((segment) => {
+      if (/^\d{9}$/.test(segment)) return "{vrn}";
+      if (/^[A-Za-z]{2}\d{6}[A-Za-z]$/.test(segment)) return "{nino}";
+      return segment;
+    })
+    .join("/");
+}
+
+function classifyHmrcTarget(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === HMRC_PRODUCTION_HOST) {
+      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "production", path: redactedHmrcPath(parsed.pathname) };
+    }
+    if (parsed.hostname === HMRC_SANDBOX_HOST) {
+      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "sandbox", path: redactedHmrcPath(parsed.pathname) };
+    }
+  } catch {
+    // An unparsable URL is not an HMRC host; fetch reports it.
+  }
+  return { kind: "other" };
+}
+
+/**
+ * The one place the service sends a request to HMRC. A request to the HMRC production API with
+ * no Gov-Client-Connection-Method is refused before it leaves. A request that lacks another
+ * required fraud-prevention header is sent and counted, so a browser that withholds one header
+ * never stops a filing. HMRC production and sandbox sends are counted; other hosts (the
+ * simulator) and the OAuth token path are sent without a metric.
+ */
+export async function sendToHmrc(url, init = {}) {
+  const target = classifyHmrcTarget(url);
+  if (target.kind === "production" || target.kind === "sandbox") {
+    checkFraudPreventionHeaders(target, init);
+  }
+  return fetch(url, init);
+}
+
+function checkFraudPreventionHeaders(target, init) {
+  const { connectionMethod, missing } = missingFraudPreventionHeaders(init.headers);
+  const dimensions = {
+    Environment: process.env.ENVIRONMENT_NAME || "unknown",
+    HmrcHost: target.kind,
+  };
+  const refused = !connectionMethod && target.kind === "production";
+  emitMetric({ namespace: HMRC_SEND_METRICS_NAMESPACE, metricName: HMRC_SEND_METRIC, dimensions });
+  if (missing.length > 0) {
+    emitMetric({ namespace: HMRC_SEND_METRICS_NAMESPACE, metricName: HMRC_FRAUD_HEADER_VIOLATION_METRIC, dimensions });
+    logger.warn({
+      message: "HMRC request is missing fraud prevention headers",
+      host: target.kind === "production" ? HMRC_PRODUCTION_HOST : HMRC_SANDBOX_HOST,
+      path: target.path,
+      method: init.method || "GET",
+      connectionMethod: connectionMethod ?? null,
+      missingHeaders: missing,
+      refused,
+    });
+  }
+  if (refused) {
+    throw new HmrcFraudPreventionHeadersMissingError();
+  }
+}
+
+async function auditHmrcRequest(auditForUserSub, { url, httpRequest, httpResponse, duration }) {
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  try {
+    await putHmrcApiRequest(userSubOrUuid, { url, httpRequest, httpResponse, duration });
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC API request/response to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
+  }
+}
+
+// A call that ended without an HMRC response (timeout, network error, refusal) still leaves a record.
+function failedHttpResponse(error) {
+  return { statusCode: 0, headers: {}, body: { error: error?.message ?? String(error), name: error?.name ?? "Error" } };
 }
 
 export function buildHmrcHeaders(
@@ -407,7 +563,7 @@ export async function getFraudPreventionHeadersFeedback(
 export async function hmrcHttpGet(
   endpoint,
   hmrcRequestHeaders,
-  govClientHeaders = {},
+  govClientHeaders,
   testScenario = null,
   hmrcAccount,
   queryParams = {},
@@ -453,11 +609,17 @@ export async function hmrcHttpGet(
   const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_READ_TIMEOUT_MS);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
   try {
-    const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
+    hmrcResponse = await sendToHmrc(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
   } catch (error) {
+    await auditHmrcRequest(auditForUserSub, {
+      url: hmrcRequestUrl,
+      httpRequest,
+      httpResponse: failedHttpResponse(error),
+      duration: Date.now() - startTime,
+    });
     throw toHmrcTimeoutError(error, "GET", hmrcRequestUrl, timeoutMs);
   } finally {
     clearTimeout(timeout);
@@ -578,11 +740,17 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   const controller = new AbortController();
   const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_WRITE_TIMEOUT_MS);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
   try {
-    const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
+    hmrcResponse = await sendToHmrc(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
   } catch (error) {
+    await auditHmrcRequest(auditForUserSub, {
+      url: hmrcRequestUrl,
+      httpRequest,
+      httpResponse: failedHttpResponse(error),
+      duration: Date.now() - startTime,
+    });
     throw toHmrcTimeoutError(error, method, hmrcRequestUrl, timeoutMs);
   } finally {
     clearTimeout(timeout);

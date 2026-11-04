@@ -1280,11 +1280,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### HMRC-29 Call the HMRC API
 
 - **Use when:** a Lambda or browser page must call an HMRC endpoint and classify the response.
-- **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
+- **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, and counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
 - **Run:** `import { hmrcHttpGet, hmrcHttpPost } from "app/services/hmrcApi.js"`; `import from "web/public/lib/services/hmrc-service.js"`
-- **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
-- **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
-- **Keywords:** hmrc http client, error classification, access token validation, authorizedfetch, hmrc-service
+- **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:sendToHmrc`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
+- **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, app/unit-tests/services/hmrcSendPath.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
+- **Keywords:** hmrc http client, send path, fraud prevention header violation, error classification, access token validation, authorizedfetch, hmrc-service
 - **Related:** HMRC-25, HMRC-30
 
 #### HMRC-30 Persist async HMRC API request state
@@ -7411,6 +7411,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud headers: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - fraud prevention compliance: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
+- fraud prevention header violation: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
@@ -8520,6 +8521,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - self-employment period: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - self-pacing: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
+- send path: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)

@@ -118,7 +118,7 @@ export async function ingestHandler(event) {
     let status;
     const invitationId = storedAuthorisation?.invitationId || null;
     if (invitationId) {
-      const result = await getInvitationStatus({ arn, invitationId, accessToken, govClientHeaders });
+      const result = await getInvitationStatus({ arn, invitationId, accessToken, govClientHeaders, auditForUserSub: user.sub });
       if (!result.ok) {
         return agentAuthorisationErrorResponse(request, result, responseHeaders);
       }
@@ -140,6 +140,7 @@ export async function ingestHandler(event) {
         knownFact: storedAuthorisation.knownFact,
         accessToken,
         govClientHeaders,
+        auditForUserSub: user.sub,
       });
       if (result.status === 404) {
         status = "unauthorised";

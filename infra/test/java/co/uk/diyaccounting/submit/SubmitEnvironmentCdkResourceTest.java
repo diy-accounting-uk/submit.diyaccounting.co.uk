@@ -183,9 +183,9 @@ class SubmitEnvironmentCdkResourceTest {
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
-        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm and TokenChargeUnpaidAlarm,
-        // that's 8 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 8);
+        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
+        // HmrcFraudHeaderViolationAlarm, that's 9 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 9);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
@@ -196,6 +196,21 @@ class SubmitEnvironmentCdkResourceTest {
                         "EvaluationPeriods", 1,
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "TreatMissingData", "breaching")));
+
+        // Any request to the HMRC production API without a required fraud prevention header in a
+        // day raises the alarm; no traffic is not a breach.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-hmrc-fraud-header-violation",
+                        "Namespace", "Submit/HmrcSend",
+                        "MetricName", "HmrcFraudHeaderViolation",
+                        "Period", 86400,
+                        "Statistic", "Sum",
+                        "Threshold", 0,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanThreshold",
+                        "TreatMissingData", "notBreaching")));
 
         // Token charge unpaid alarm (B128): any occurrence in 5 minutes of the metric that
         // every deployment's OpsStack metric filters increment when

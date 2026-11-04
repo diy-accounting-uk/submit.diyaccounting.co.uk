@@ -104,7 +104,7 @@ export async function ingestHandler(event) {
       });
     }
 
-    const result = await cancelInvitation({ arn, invitationId, accessToken, govClientHeaders });
+    const result = await cancelInvitation({ arn, invitationId, accessToken, govClientHeaders, auditForUserSub: user.sub });
     if (!result.ok) {
       return agentAuthorisationErrorResponse(request, result, responseHeaders);
     }
