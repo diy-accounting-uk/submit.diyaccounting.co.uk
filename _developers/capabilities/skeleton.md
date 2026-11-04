@@ -47,6 +47,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability SITE-06 -->
 <!-- capability SITE-07 -->
+<!-- capability SITE-26 -->
 <!-- capability SITE-08 -->
 <!-- capability SITE-09 -->
 ### Site pages and content (SITE)
