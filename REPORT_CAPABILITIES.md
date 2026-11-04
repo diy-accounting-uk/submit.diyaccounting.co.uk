@@ -4370,8 +4370,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** operatorSnapshotPublish.js reads the analytics views behind the eight one-stop objectives. Its handler writes one JSON snapshot per environment, with trailing 30/90-day windows, value, trend and deep link, to s3://<lake>/snapshots/<env>/latest.json. OperatorSnapshotPublish.java provisions the Lambda and its own EventBridge rule inside AnalyticsStack.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/operatorSnapshotPublish.js:handler`
-- **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
-- **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot
+- **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
+- **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs
 - **Related:** DATA-19, DATA-24
 
 #### DATA-19 Serve the operator dashboard snapshot via the API
@@ -6644,6 +6644,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - annual update: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - apex isolation: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - apex mid-move: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- api call graphs: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - api docs: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - api gateway: [SITE-02](#site-02-verify-jwts-at-the-api-gateway), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-112](#ops-112-provision-the-api-gateway-stack)
 - api gateway custom domain: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
@@ -7772,6 +7773,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - integration calls: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe), [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- integrations tab: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
 - interest: [SITE-03](#site-03-capture-feedback-interest)
