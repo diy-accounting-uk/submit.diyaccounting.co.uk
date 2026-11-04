@@ -6,6 +6,10 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import {
+  INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+  INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+} from "@app/lib/companiesHouseGatewayErrors.js";
 
 const mockSend = vi.fn();
 
@@ -313,6 +317,41 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(response.statusCode).toBe(500);
     const body = parseResponseBody(response);
     expect(body.errors[0].number).toBe(5006);
+  });
+
+  test("returns 400 with the gateway errors when the submission reports the company authentication code as invalid", async () => {
+    mockParseGatewayResponse
+      .mockReturnValueOnce({ errors: [], statuses: [], gatewayTimestamp: "2026-09-24T10:00:00Z", pollInterval: 1 })
+      .mockReturnValueOnce({
+        errors: [{ raisedBy: "CompanyDataRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode", location: "" }],
+      });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_REASON);
+    expect(body.message).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE);
+    expect(body.errors[0].text).toBe("Invalid CompanyAuthenticationCode");
+  });
+
+  test("returns 400 with the gateway errors when the payment periods response reports the company authentication code as invalid", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({
+      errors: [{ raisedBy: "PaymentPeriodsRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode", location: "" }],
+    });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_REASON);
+    expect(body.message).toBe(INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE);
+    expect(body.errors[0].text).toBe("Invalid CompanyAuthenticationCode");
+    expect(mockBuildConfirmationStatementSubmission).not.toHaveBeenCalled();
+  });
+
+  test("returns 500 for another gateway error that shares number 9999", async () => {
+    mockParseGatewayResponse
+      .mockReturnValueOnce({ errors: [], statuses: [], gatewayTimestamp: "2026-09-24T10:00:00Z", pollInterval: 1 })
+      .mockReturnValueOnce({ errors: [{ raisedBy: "Gateway", number: 9999, type: "fatal", text: "No presenter ID supplied" }] });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
   });
 
   test("returns 402 when the payment period is unpaid and no activity charge has been paid", async () => {

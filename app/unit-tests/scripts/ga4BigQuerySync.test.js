@@ -243,6 +243,7 @@ describe("the real config file", () => {
       "funnel_steps_daily",
       "key_events_daily",
       "downloads_by_product_daily",
+      "pages_by_kind_daily",
     ]);
   });
 

@@ -1957,6 +1957,8 @@ export async function buildDailyCharts({
 
 export const COST_DRIVER_DAYS = 30;
 export const COST_DRIVER_COUNT = 10;
+export const PAGE_VISITOR_DAYS = 30;
+export const PAGE_VISITOR_COUNT = 15;
 
 // The log group, alarm or canary an ARN names, without the partition, service, region and
 // account: "arn:aws:logs:eu-west-2:123:log-group:/aws/x" reads "log-group:/aws/x". A value that
@@ -1990,6 +1992,47 @@ export async function buildCostDrivers({ workGroup, database }) {
       resource: shortResourceName(row.resource_id),
       resourceId: row.resource_id,
       costUsd: Number(row.cost_usd),
+    })),
+  };
+}
+
+/**
+ * The pages customers read most over the last PAGE_VISITOR_DAYS days, each with the visitors who
+ * were signed in (the authenticated kind), the other visitors (every kind but authenticated,
+ * operator and synthetic), and the milliseconds each group had the page open. The operator's own
+ * visitors are counted apart so they do not add to a customer figure, and synthetic test traffic
+ * is left out. A visitor who reads a page on two days counts once on each day. Google Analytics
+ * counts only visitors who accepted analytics.
+ *
+ * @returns {Promise<{days: number, rows: Array<{page: string, signedInVisitors: number, signedInEngagedMs: number, otherVisitors: number, otherEngagedMs: number, operatorVisitors: number}>}>}
+ */
+export async function buildPageVisitors({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT page,\n` +
+      `       cast(coalesce(sum(visitors) FILTER (WHERE visitor_kind = 'authenticated'), 0) AS double) AS signed_in_visitors,\n` +
+      `       cast(coalesce(sum(engagement_msec) FILTER (WHERE visitor_kind = 'authenticated'), 0) AS double) AS signed_in_engaged_ms,\n` +
+      `       cast(coalesce(sum(visitors) FILTER (WHERE visitor_kind NOT IN ('authenticated', 'operator', 'synthetic')), 0) AS double) AS other_visitors,\n` +
+      `       cast(coalesce(sum(engagement_msec) FILTER (WHERE visitor_kind NOT IN ('authenticated', 'operator', 'synthetic')), 0) AS double) AS other_engaged_ms,\n` +
+      `       cast(coalesce(sum(visitors) FILTER (WHERE visitor_kind = 'operator'), 0) AS double) AS operator_visitors\n` +
+      `FROM   v_ga4_pages_by_kind_daily\n` +
+      `WHERE  day > date_add('day', -${PAGE_VISITOR_DAYS}, current_date)\n` +
+      `GROUP  BY 1\n` +
+      `HAVING sum(visitors) FILTER (WHERE visitor_kind NOT IN ('operator', 'synthetic')) > 0\n` +
+      `ORDER  BY sum(visitors) FILTER (WHERE visitor_kind NOT IN ('operator', 'synthetic')) DESC, page\n` +
+      `LIMIT  ${PAGE_VISITOR_COUNT}`,
+  });
+  return {
+    days: PAGE_VISITOR_DAYS,
+    rows: rows.map((row) => ({
+      page: row.page,
+      signedInVisitors: Number(row.signed_in_visitors),
+      signedInEngagedMs: Number(row.signed_in_engaged_ms),
+      otherVisitors: Number(row.other_visitors),
+      otherEngagedMs: Number(row.other_engaged_ms),
+      operatorVisitors: Number(row.operator_visitors),
     })),
   };
 }
@@ -2244,6 +2287,14 @@ export async function handler() {
     failedPaidSubscribers = 1;
     logger.warn({ message: "Paid subscribers query failed, publishing none", error: error.message });
   }
+  let pageVisitors = null;
+  let failedPageVisitors = 0;
+  try {
+    pageVisitors = await buildPageVisitors({ workGroup, database });
+  } catch (error) {
+    failedPageVisitors = 1;
+    logger.warn({ message: "Page visitors query failed, publishing none", error: error.message });
+  }
   let operators = null;
   let failedOperators = 0;
   try {
@@ -2282,6 +2333,7 @@ export async function handler() {
     dailyCharts,
     ...(costDrivers ? { costDrivers } : {}),
     ...(paidSubscribers ? { paidSubscribers } : {}),
+    ...(pageVisitors ? { pageVisitors } : {}),
     ...(operators ? { operators } : {}),
     ...(familyAffiliates ? { familyAffiliates } : {}),
     ...(affiliateGroups ? { affiliateGroups } : {}),
@@ -2290,6 +2342,7 @@ export async function handler() {
       failedChartIds.length +
       failedCostDrivers +
       failedPaidSubscribers +
+      failedPageVisitors +
       failedOperators +
       failedFamilyAffiliates +
       failedAffiliateGroups,

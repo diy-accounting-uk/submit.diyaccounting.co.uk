@@ -46,6 +46,16 @@ const AUTH_CODE_TOO_LONG_ERROR = {
   text: "XML failed schema validation: Invalid XML: Datatype error: Type:InvalidDatatypeValueException, Message:Value exceeds maximum length facet of '8'.",
 };
 
+// The generic gateway error for a company authentication code it does not accept, as the
+// production gateway answered a mistyped code.
+const AUTH_CODE_INVALID_ERROR = {
+  raisedBy: "CompanyDataRequest",
+  number: 9999,
+  type: "fatal",
+  text: "Invalid CompanyAuthenticationCode",
+  location: "",
+};
+
 // The test presenter's account was not set up correctly (B34.6c): every GetSubmissionStatus poll
 // answers this instead of a Status block, whatever the submission's real outcome would have been.
 const PRESENTER_ID_MISSING_ERROR = {
@@ -126,6 +136,9 @@ export function requestCompanyData({ senderIdHash, authValueHash, companyNumber,
   if (scenario === "AUTH_CODE_TOO_LONG") {
     return { errors: [AUTH_CODE_TOO_LONG_ERROR] };
   }
+  if (scenario === "AUTH_CODE_INVALID") {
+    return { errors: [AUTH_CODE_INVALID_ERROR] };
+  }
   if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
     return {
       errors: [schemaFailureError("Company Authentication Code and Company Number combination did not match", "CompanyAuthenticationCode")],
@@ -147,6 +160,9 @@ export function requestPaymentPeriods({ senderIdHash, authValueHash, companyNumb
   }
   if (scenario === "AUTH_CODE_TOO_LONG") {
     return { errors: [AUTH_CODE_TOO_LONG_ERROR] };
+  }
+  if (scenario === "AUTH_CODE_INVALID") {
+    return { errors: [AUTH_CODE_INVALID_ERROR] };
   }
   if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
     return {

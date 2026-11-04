@@ -13,9 +13,15 @@ import {
   parseRequestBody,
   buildValidationError,
   http200OkResponse,
+  http400BadRequestResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
+import {
+  hasInvalidCompanyAuthenticationCodeError,
+  INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+  INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+} from "../../lib/companiesHouseGatewayErrors.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -139,6 +145,14 @@ export async function ingestHandler(event) {
 
   if (companyDataParsed.errors?.length) {
     logger.warn({ message: "Companies House rejected the CompanyDataRequest", companyNumber, errors: companyDataParsed.errors });
+    if (hasInvalidCompanyAuthenticationCodeError(companyDataParsed.errors)) {
+      return http400BadRequestResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+        error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, errors: companyDataParsed.errors },
+      });
+    }
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },
@@ -160,6 +174,14 @@ export async function ingestHandler(event) {
 
   if (paymentPeriodsParsed.errors?.length) {
     logger.warn({ message: "Companies House rejected the PaymentPeriodsRequest", companyNumber, errors: paymentPeriodsParsed.errors });
+    if (hasInvalidCompanyAuthenticationCodeError(paymentPeriodsParsed.errors)) {
+      return http400BadRequestResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+        error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, errors: paymentPeriodsParsed.errors },
+      });
+    }
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },

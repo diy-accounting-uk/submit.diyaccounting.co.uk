@@ -1,0 +1,16 @@
+{
+  "inspectionResult": {
+    "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain%3Adiyaccounting.co.uk",
+    "indexStatusResult": {
+      "verdict": "PASS",
+      "coverageState": "Submitted and indexed",
+      "robotsTxtState": "ALLOWED",
+      "indexingState": "INDEXING_ALLOWED",
+      "lastCrawlTime": "2026-10-30T04:12:09Z",
+      "pageFetchState": "SUCCESSFUL",
+      "googleCanonical": "https://submit.diyaccounting.co.uk/guide.html",
+      "userCanonical": "https://submit.diyaccounting.co.uk/guide.html",
+      "sitemap": ["https://submit.diyaccounting.co.uk/sitemap.xml"]
+    }
+  }
+}

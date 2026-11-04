@@ -8,6 +8,9 @@
 # verified, and (with --apply) verifies and adds the ones that are not. A domain property
 # covers every host under the domain, so the four sites need two properties.
 #
+# Each property also lists the sitemaps submitted to it. searchconsole-sync.js submits a sitemap
+# that Search Console does not hold, and prints its last download, errors, warnings and contents.
+#
 # The token is not a secret. Its CNAME record belongs in the root repository's DNS stack.
 
 [[property]]
@@ -15,8 +18,14 @@ domain = "diyaccounting.co.uk"
 verification_method = "DNS_CNAME"
 # The hosts this property covers.
 sites = ["diyaccounting.co.uk", "submit.diyaccounting.co.uk", "spreadsheets.diyaccounting.co.uk"]
+sitemaps = [
+  "https://submit.diyaccounting.co.uk/sitemap.xml",
+  "https://spreadsheets.diyaccounting.co.uk/sitemap.xml",
+  "https://diyaccounting.co.uk/sitemap.xml",
+]
 
 [[property]]
 domain = "diya-gl.co.uk"
 verification_method = "DNS_CNAME"
 sites = ["diya-gl.co.uk"]
+sitemaps = ["https://diya-gl.co.uk/sitemap.xml"]

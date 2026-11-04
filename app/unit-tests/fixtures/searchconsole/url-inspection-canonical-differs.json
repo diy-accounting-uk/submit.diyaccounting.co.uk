@@ -1,0 +1,13 @@
+{
+  "inspectionResult": {
+    "indexStatusResult": {
+      "verdict": "NEUTRAL",
+      "coverageState": "Duplicate, Google chose different canonical than user",
+      "robotsTxtState": "ALLOWED",
+      "indexingState": "INDEXING_ALLOWED",
+      "lastCrawlTime": "2026-10-29T10:00:00Z",
+      "googleCanonical": "https://diyaccounting.co.uk/",
+      "userCanonical": "https://www.diyaccounting.co.uk/"
+    }
+  }
+}

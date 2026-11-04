@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-163 Submit the declared sitemaps to Search Console daily
+# - **Use when:** a sitemap that searchconsole.toml declares must be resubmitted to Search Console, or a sitemap error must raise a failed run.
+# - **Does:** searchconsole-sitemaps.yml runs daily and on dispatch; the prod deploy.yml job resubmit-sitemap runs the same script without --fail-on-errors after the apex promotion and cannot fail a deploy. It authenticates to Google by workload identity federation, then runs searchconsole-sync.js with --sitemaps-only --apply --fail-on-errors. The script submits each declared sitemap that Search Console does not hold, prints the last download, errors, warnings and contents of each, and the run fails when a sitemap shows errors.
+# - **Run:** `gh workflow run searchconsole-sitemaps.yml`
+# - **Entry:** `.github/workflows/searchconsole-sitemaps.yml`
+# - **Files:** .github/workflows/searchconsole-sitemaps.yml, infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole.toml
+# - **Keywords:** sitemap submission, search console sitemaps, daily sitemap, sitemap errors, searchconsole-sitemaps.yml
+# - **Related:** DATA-67, OPS-67
+# @end-capability
+
+name: searchconsole sitemaps
+run-name: "searchconsole sitemaps from ${{ github.ref_name }}"
+
+concurrency:
+  group: searchconsole-sitemaps-${{ github.ref }}
+  cancel-in-progress: false
+
+# Every run step pipes through tee; without an explicit bash shell GitHub runs `bash -e` and the
+# pipe masks a failing script.
+defaults:
+  run:
+    shell: bash
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Daily, off the top-of-hour queue.
+    - cron: '23 5 * * *'
+
+jobs:
+  submit:
+    name: submit
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Read the GitHub provider from infra/google/gcp/identity.toml
+        id: identity
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
+            console.log(`service-account=${c.service_account.email}`);
+          ' | tee -a "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.identity.outputs.provider }}
+          service_account: ${{ steps.identity.outputs.service-account }}
+
+      - name: Submit the declared sitemaps
+        run: node infra/google/searchconsole/searchconsole-sync.js --sitemaps-only --apply --fail-on-errors 2>&1 | tee searchconsole-sitemaps.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          if [ -f searchconsole-sitemaps.log ]; then
+            echo "# Search Console sitemaps" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat searchconsole-sitemaps.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

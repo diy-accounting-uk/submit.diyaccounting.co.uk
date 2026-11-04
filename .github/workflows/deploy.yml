@@ -1260,6 +1260,55 @@ jobs:
       existing-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
       deploy-publish-result: ${{ needs.stacks.outputs.deploy-publish-result }}
 
+  # Prod only, after the apex promotion and its behaviour tests passed: asks Search Console to read
+  # the sitemap the new deployment serves. continue-on-error keeps a Google outage or an auth
+  # fault from failing a deploy; the daily searchconsole-sitemaps.yml run is the one that fails
+  # on sitemap errors.
+  resubmit-sitemap:
+    name: 'resubmit sitemaps to Search Console'
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && needs.set-origins.result == 'success' && needs.web-test.result == 'success' }}
+    needs:
+      - names
+      - set-origins
+      - web-test
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Read the GitHub provider from infra/google/gcp/identity.toml
+        id: identity
+        shell: bash
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
+            console.log(`service-account=${c.service_account.email}`);
+          ' | tee -a "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.identity.outputs.provider }}
+          service_account: ${{ steps.identity.outputs.service-account }}
+
+      - name: Submit the declared sitemaps
+        shell: bash
+        run: node infra/google/searchconsole/searchconsole-sync.js --sitemaps-only --apply 2>&1 | tee searchconsole-sitemaps.log
+
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a
   # rejected deployment until a person notices. Point the apex and its API Gateway custom
