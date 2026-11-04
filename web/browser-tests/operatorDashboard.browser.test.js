@@ -699,9 +699,28 @@ const FIXTURE_CONSOLE_INDEX = {
       kind: "bedrock",
       capturedAt: CAPTURED_AT,
       rows: [
-        { bin: "2026-10-31 09:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 4, inputTokens: 4000, outputTokens: 900 },
-        { bin: "2026-11-01 09:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 6, inputTokens: 6200, outputTokens: 1100 },
-        { bin: "2026-11-02 01:00:00.000", modelId: "eu.anthropic.claude-haiku-4-5", invocations: 2, inputTokens: 2100, outputTokens: 400 },
+        {
+          bin: "2026-10-31 09:00:00.000",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          invocations: 4,
+          inputTokens: 4000,
+          outputTokens: 900,
+        },
+        {
+          bin: "2026-11-01 09:00:00.000",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          invocations: 6,
+          inputTokens: 6200,
+          outputTokens: 1100,
+        },
+        {
+          bin: "2026-11-02 01:00:00.000",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          invocations: 2,
+          inputTokens: 2100,
+          outputTokens: 400,
+        },
+        { bin: "2026-11-02 02:00:00.000", invocations: 9, inputTokens: 9000, outputTokens: 800 },
       ],
     },
     "prod-xray": {
@@ -971,7 +990,9 @@ test.describe("Operator Dashboard", () => {
       const card = page.locator("#console-prod-bedrock .chart-card");
       await expect(card).toHaveCount(1);
       await expect(card.locator(".chart-line")).toHaveCount(1);
-      await expect(card.locator(".chart-legend-item")).toHaveText(["eu.anthropic.claude-haiku-4-5"]);
+      await expect(card.locator(".chart-legend-item")).toHaveText(["claude-haiku-4-5-20251001"]);
+      await expect(card.locator(".chart-readout")).not.toContainText("undefined");
+      await expect(card.locator(".chart-empty")).toBeHidden();
       await expect(card.locator(".chart-table-link")).toHaveCount(0);
       await card.locator(".chart-mode", { hasText: "Input tokens" }).click();
       await expect(card.locator(".chart-readout")).toContainText("2,100");
