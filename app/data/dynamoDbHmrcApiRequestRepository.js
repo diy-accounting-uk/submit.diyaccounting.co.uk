@@ -59,7 +59,9 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     // Mask sensitive data before persisting to DynamoDB
     // This prevents leakage of credentials, tokens, and passwords in audit logs
     const maskedHttpRequest = maskHttpData(httpRequest);
-    const maskedHttpResponse = maskHttpData(httpResponse);
+    // HMRC's response `code` is its result or error code. `code` stays masked in a request,
+    // because an OAuth token request carries the authorization code in that field.
+    const maskedHttpResponse = maskHttpData(httpResponse, { keepFields: ["code"] });
 
     const item = {
       hashedSub,

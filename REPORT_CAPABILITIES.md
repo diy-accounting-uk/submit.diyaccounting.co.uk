@@ -317,6 +317,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK: use when a fresh AWS account needs its CDK bootstrap stacks, OIDC provider and deployment roles created.
   - [Shared runtime libraries](#shared-runtime-libraries-ops)
     - [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs: use when text or an object bound for a log line or shared output may carry PII or secret values.
+    - [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe: use when code sends a request to an outside organisation and the operator must see the call, its duration and its status.
     - [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client: use when a Lambda or repository needs a DynamoDB document client instead of constructing its own AWS SDK client.
     - [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics: use when a Lambda needs to publish a custom CloudWatch metric without a separate PutMetricData API call.
     - [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup: use when a Lambda should fail immediately on a missing environment variable instead of partway through a request.
@@ -1280,12 +1281,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### HMRC-29 Call the HMRC API
 
 - **Use when:** a Lambda or browser page must call an HMRC endpoint and classify the response.
-- **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, and counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
+- **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric, and writes one outbound call record for each attempt. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
 - **Run:** `import { hmrcHttpGet, hmrcHttpPost } from "app/services/hmrcApi.js"`; `import from "web/public/lib/services/hmrc-service.js"`
 - **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:sendToHmrc`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
 - **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, app/unit-tests/services/hmrcSendPath.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
 - **Keywords:** hmrc http client, send path, fraud prevention header violation, error classification, access token validation, authorizedfetch, hmrc-service
-- **Related:** HMRC-25, HMRC-30
+- **Related:** HMRC-25, HMRC-30, OPS-164
 
 #### HMRC-30 Persist async HMRC API request state
 
@@ -2325,7 +2326,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
-- [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
+- [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
 - [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops): [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans) Provision cross-account backup vaults and plans · [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack · [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack · [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories · [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack · [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack · [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack · [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1 · [OPS-119](#ops-119-provision-the-ops-stack) Provision the Ops stack · [OPS-120](#ops-120-provision-the-publish-stack) Provision the Publish stack · [OPS-121](#ops-121-provision-the-security-baseline-stack) Provision the Security Baseline stack · [OPS-122](#ops-122-provision-the-security-detection-stack) Provision the Security Detection stack
 - [CDK shared constructs and naming](#cdk-shared-constructs-and-naming-ops): [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account) Wire CDK application entrypoints per account · [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs · [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently · [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code · [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource) Upsert Route53 alias records via custom resource · [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering · [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging · [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
@@ -3654,6 +3655,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group shared-runtime-libraries-ops -->
 - [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs
+- [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe
 - [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client
 - [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics
 - [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup
@@ -3665,12 +3667,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-81 Mask and redact sensitive data from logs
 
 - **Use when:** text or an object bound for a log line or shared output may carry PII or secret values.
-- **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers.
+- **Does:** dataMasking.js redacts PII and secret values from log output and other text before it is written or shared. maskSensitiveData walks an object field by field, and maskHttpData masks HTTP request and response bodies and headers. maskIntegrationRaw builds the allowlisted skeleton of an outbound call, and integrationPathTemplate reduces a URL path to a template with no identifier.
 - **Run:** no command; see Does and Entry
-- **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`
+- **Entry:** `app/lib/dataMasking.js:maskSensitiveData`; `app/lib/dataMasking.js:maskHttpData`; `app/lib/dataMasking.js:maskIntegrationRaw`; `app/lib/dataMasking.js:integrationPathTemplate`
 - **Files:** app/lib/dataMasking.js, app/unit-tests/lib/dataMasking.test.js
-- **Keywords:** pii redaction, data masking, secrets in logs, sensitive fields, log hygiene
+- **Keywords:** pii redaction, data masking, secrets in logs, sensitive fields, log hygiene, body skeleton, path template
 - **Related:** OPS-86
+
+#### OPS-164 Record an outbound call to HMRC, Companies House or Stripe
+
+- **Use when:** code sends a request to an outside organisation and the operator must see the call, its duration and its status.
+- **Does:** integrationCalls.js writes one masked record for each attempt to the integration calls table, for a response, a timeout, a network error or a refusal. recordedFetch wraps a fetch; recordIntegrationCall takes a finished attempt from a client that does not use fetch. A failed write logs a warning and counts IntegrationCallRecordFailed, and the caller's request is not affected.
+- **Run:** `import { recordedFetch } from "app/lib/integrationCalls.js"`
+- **Entry:** `app/lib/integrationCalls.js:recordedFetch`; `app/lib/integrationCalls.js:recordIntegrationCall`; `app/data/dynamoDbIntegrationCallRepository.js:putIntegrationCall`
+- **Files:** app/lib/integrationCalls.js, app/data/dynamoDbIntegrationCallRepository.js, app/unit-tests/lib/integrationCalls.test.js
+- **Keywords:** outbound call record, integration calls, api request log, duration, status code, send point
+- **Related:** OPS-81, HMRC-29
 
 #### OPS-82 Provide a shared DynamoDB client
 
@@ -6555,6 +6567,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api gateway routes: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - api key: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [BILL-32](#bill-32-provision-stripe-secrets)
 - api lambda: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
+- api request log: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
@@ -6681,6 +6694,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - board row per loss: [SS-56](#ss-56-write-the-session-report)
 - board skill: [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - board-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- body skeleton: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - book: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - book check: [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - book checks: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
@@ -7239,6 +7253,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - durable user: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
+- duration: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - dynalite: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - dynamodb backup: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
@@ -7660,6 +7675,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - inline css: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
+- integration calls: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
 - interest: [SITE-03](#site-03-capture-feedback-interest)
@@ -8025,6 +8041,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - originfor tag: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions), [OPS-116](#ops-116-provision-the-holding-page-stack)
 - outbound call: [CH-10](#ch-10-fetch-http-with-a-timeout)
+- outbound call record: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - output value: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - outside cdk: [OPS-32](#ops-32-detect-cloudformation-drift)
 - over budget: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -8068,6 +8085,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - passphrase: [BILL-10](#bill-10-redeem-a-pass)
 - passphrase salt: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- path template: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
@@ -8522,6 +8540,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - self-pacing: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - send path: [HMRC-29](#hmrc-29-call-the-hmrc-api)
+- send point: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
@@ -8629,6 +8648,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
 - status: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
+- status code: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - status codes: [SITE-07](#site-07-format-http-responses-and-errors)
 - status messages: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - status stack: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)

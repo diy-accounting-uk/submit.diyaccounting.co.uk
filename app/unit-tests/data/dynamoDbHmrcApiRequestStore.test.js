@@ -239,4 +239,23 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     // Assert
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
+
+  test("keeps HMRC's response code and masks code in the request", async () => {
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
+    mockSend.mockReset();
+    mockSend.mockResolvedValue({});
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+
+    await putHmrcApiRequest("user-sub", {
+      url: "https://api.service.hmrc.gov.uk/oauth/token",
+      httpRequest: { method: "POST", headers: {}, body: { code: "oauth-authorization-code" } },
+      httpResponse: { statusCode: 400, headers: {}, body: { code: "INVALID_REQUEST", access_token: "token123" } },
+      duration: 1,
+    });
+
+    const { Item } = mockSend.mock.calls[0][0].input;
+    expect(Item.httpResponse.body.code).toBe("INVALID_REQUEST");
+    expect(Item.httpResponse.body.access_token).toBe("***MASKED***");
+    expect(Item.httpRequest.body.code).toBe("***MASKED***");
+  });
 });

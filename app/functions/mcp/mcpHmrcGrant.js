@@ -186,7 +186,7 @@ async function callback(event, request, responseHeaders) {
 async function exchangeOrFail(request, responseHeaders, { url, body }, grantId) {
   let result;
   try {
-    result = await performTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`);
+    result = await performTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, { org: "hmrc" });
   } catch (error) {
     logger.error({ message: "HMRC token request failed", error: error.message });
     return {

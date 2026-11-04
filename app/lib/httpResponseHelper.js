@@ -17,6 +17,8 @@ import { v4 as uuidv4 } from "uuid";
 import { createLogger, context, sanitiseString, sanitiseData } from "./logger.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 import { fetchWithTimeout } from "./httpFetch.js";
+import { hmrcCallTarget } from "./hmrcHosts.js";
+import { integrationApi, recordedFetch } from "./integrationCalls.js";
 import { warmOperators } from "./operators.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
@@ -469,7 +471,8 @@ export function buildValidationError(request, errorMessages, govClientHeaders = 
   });
 }
 
-export async function performTokenExchange(providerUrl, body, auditForUserSub) {
+// An exchange with an outside organisation names it in org, and that writes an outbound call record.
+export async function performTokenExchange(providerUrl, body, auditForUserSub, { org } = {}) {
   const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
     ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
@@ -497,9 +500,20 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   };
 
   logger.info({ message: "Performing HTTP POST for token exchange", providerUrl });
-  const fetchResult = await fetchWithTimeout(providerUrl, httpRequest, 25000);
-  const response = fetchResult.response;
-  const duration = fetchResult.duration;
+  let duration;
+  const fetchWithinLimit = async (url, init) => {
+    const fetchResult = await fetchWithTimeout(url, init, 25000);
+    duration = fetchResult.duration;
+    return fetchResult.response;
+  };
+  const response = org
+    ? await recordedFetch(providerUrl, httpRequest, {
+        org,
+        target: hmrcCallTarget(providerUrl),
+        api: integrationApi("POST", providerUrl),
+        fetchImplementation: fetchWithinLimit,
+      })
+    : await fetchWithinLimit(providerUrl, httpRequest);
   logger.info({ message: "HTTP POST response received with status and duration", status: response?.status, duration });
 
   let responseTokens;
@@ -631,13 +645,13 @@ export function buildUpstreamRejectionResponse({ request, upstreamHost, response
     : http400BadRequestResponse({ request, headers, message: "Upstream token endpoint rejected the token exchange", error: errorFields });
 }
 
-export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined) {
+export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined, { org } = {}) {
   const upstreamHost = safeHostname(url);
   let accessToken;
   let response;
   let responseBody;
   try {
-    ({ accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub));
+    ({ accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub, { org }));
   } catch (error) {
     logger.error({
       message: "Token exchange request to upstream provider failed",
