@@ -37,6 +37,11 @@ import { retentionObjective } from "../../lib/operatorSnapshot/retentionObjectiv
 import { operatorEffortObjective } from "../../lib/operatorSnapshot/operatorEffortObjective.js";
 import { complianceObjective } from "../../lib/operatorSnapshot/complianceObjective.js";
 import { companyAccountsObjective } from "../../lib/operatorSnapshot/companyAccountsObjective.js";
+import {
+  buildIntegrationSummarySql,
+  buildIntegrationCallsSql,
+  shapeIntegrationsSection,
+} from "../../lib/operatorSnapshot/integrationsSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -2038,6 +2043,27 @@ export async function buildPageVisitors({ workGroup, database }) {
 }
 
 /**
+ * The live calls to HMRC, Companies House and Stripe: one summary row per organisation and
+ * status over the standard windows, and each organisation's recent calls. A view with no rows
+ * gives an empty section, which the page shows as its empty note.
+ *
+ * @returns {Promise<{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>}>}
+ */
+export async function buildIntegrations({ workGroup, database, envName, region }) {
+  const [summaryRows, callRows] = await Promise.all([
+    runAthenaQuery({ workGroup, database, sql: buildIntegrationSummarySql(WINDOWED_COLUMNS) }),
+    runAthenaQuery({ workGroup, database, sql: buildIntegrationCallsSql() }),
+  ]);
+  return shapeIntegrationsSection({
+    summaryRows,
+    callRows,
+    tableName: `${envName}-env-integration-calls`,
+    region,
+    toWindows: toObservationWindows,
+  });
+}
+
+/**
  * The paying subscribers of the latest month with a charge, each row an acquisition
  * channel and bundle with its active subscribers, monthly recurring revenue and annualised
  * recurring revenue, and the three figures added over every row. A subscriber with no recorded
@@ -2295,6 +2321,14 @@ export async function handler() {
     failedPageVisitors = 1;
     logger.warn({ message: "Page visitors query failed, publishing none", error: error.message });
   }
+  let integrations = null;
+  let failedIntegrations = 0;
+  try {
+    integrations = await buildIntegrations({ workGroup, database, envName, region: context.region });
+  } catch (error) {
+    failedIntegrations = 1;
+    logger.warn({ message: "Integrations query failed, publishing none", error: error.message });
+  }
   let operators = null;
   let failedOperators = 0;
   try {
@@ -2334,6 +2368,7 @@ export async function handler() {
     ...(costDrivers ? { costDrivers } : {}),
     ...(paidSubscribers ? { paidSubscribers } : {}),
     ...(pageVisitors ? { pageVisitors } : {}),
+    ...(integrations ? { integrations } : {}),
     ...(operators ? { operators } : {}),
     ...(familyAffiliates ? { familyAffiliates } : {}),
     ...(affiliateGroups ? { affiliateGroups } : {}),
@@ -2343,6 +2378,7 @@ export async function handler() {
       failedCostDrivers +
       failedPaidSubscribers +
       failedPageVisitors +
+      failedIntegrations +
       failedOperators +
       failedFamilyAffiliates +
       failedAffiliateGroups,

@@ -502,6 +502,46 @@ const FIXTURE_PAGE_VISITORS = {
   ],
 };
 
+const integrationCall = (id, api, ms, status, rules = null, rulesFailed = []) => ({
+  id,
+  at: id.split("#")[0],
+  api,
+  method: api.split(" ")[0],
+  ms,
+  status,
+  rules,
+  rulesFailed,
+});
+
+const FIXTURE_INTEGRATIONS = {
+  table: "prod-env-integration-calls",
+  region: "eu-west-2",
+  summary: [
+    { org: "hmrc", status: "200", ...sampleWindowsWithTrend(212, 0.12) },
+    { org: "hmrc", status: "201", ...sampleWindowsWithTrend(41, 0.05) },
+    { org: "hmrc", status: "400", ...sampleWindowsWithTrend(6, -0.2) },
+    { org: "hmrc", status: "timeout", ...sampleWindowsWithTrend(2, null) },
+    { org: "companies-house", status: "200", ...sampleWindowsWithTrend(9, 0.3) },
+    { org: "stripe", status: "200", ...sampleWindowsWithTrend(64, 0.08) },
+    { org: "stripe", status: "402", ...sampleWindowsWithTrend(3, null) },
+  ].map((row) => ({ unit: "count", ...row })),
+  calls: {
+    "hmrc": [
+      integrationCall("2026-11-04T10:15:30.123Z#a1b2c3d4", "POST /organisations/vat/{vrn}/returns", 1412, "201", "pass"),
+      integrationCall("2026-11-04T10:12:02.004Z#b2c3d4e5", "GET /organisations/vat/{vrn}/obligations", 412, "200", "pass"),
+      integrationCall("2026-11-04T09:58:41.870Z#c3d4e5f6", "POST /oauth/token", 306, "200"),
+      integrationCall("2026-11-04T09:40:11.002Z#d4e5f6a7", "POST /organisations/vat/{vrn}/returns", 5000, "timeout", "pass"),
+      integrationCall("2026-11-03T16:20:09.511Z#e5f6a7b8", "GET /organisations/vat/{vrn}/liabilities", 288, "400", "fail", [
+        "Gov-Client-Device-ID",
+        "Gov-Vendor-Version",
+      ]),
+      integrationCall("2025-07-01T09:00:00.000Z#f6a7b8c9", "GET /organisations/vat/{vrn}/payments", 301, "200", "pass"),
+    ],
+    "companies-house": [integrationCall("2026-11-04T08:30:00.250Z#a7b8c9d0", "XMLGW Accounts", 2210, "200")],
+    "stripe": [integrationCall("2026-11-04T10:01:12.090Z#b8c9d0e1", "POST /v1/payment_intents", 640, "402")],
+  },
+};
+
 const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
 
 // Thirty days of a small service: about 130 visits, 41 paid landings, £84 of ad spend over 96 clicks.
@@ -543,6 +583,16 @@ const sampleValue = (observation) =>
 
 // Every observation the publisher defines, each with a value in every column, which is the
 // most the page ever renders; the layout tests size the page's reserved heights against it.
+function sampleWindowsWithTrend(value, trend) {
+  return {
+    today: { value },
+    previousDay: { value: value + 3 },
+    last7: { value: value * 6 },
+    last30: { value: value * 26, trend, ...(trend === null ? { isNew: true } : {}) },
+    last90: { value: value * 70, trend: null },
+  };
+}
+
 const sampleWindows = (value) => ({
   today: { value },
   previousDay: { value },
@@ -655,6 +705,7 @@ function fullShapeSnapshot() {
     costDrivers: FIXTURE_COST_DRIVERS,
     paidSubscribers: FIXTURE_PAID_SUBSCRIBERS,
     pageVisitors: FIXTURE_PAGE_VISITORS,
+    integrations: FIXTURE_INTEGRATIONS,
     ...FIXTURE_AFFILIATE_SECTIONS,
     failedObservationCount: 0,
   };
@@ -887,7 +938,7 @@ test.describe("Operator Dashboard", () => {
     await delay(200);
   }
 
-  const DASHBOARD_TABS = ["main", "adoption", "behaviour", "ops", "affiliates", "aws-prod", "aws-ci"];
+  const DASHBOARD_TABS = ["main", "adoption", "behaviour", "integrations", "ops", "affiliates", "aws-prod", "aws-ci"];
 
   async function openTab(page, tabId) {
     await page.locator(`.dashboard-tab[data-tab-id="${tabId}"]`).click();
@@ -1076,6 +1127,7 @@ test.describe("Operator Dashboard", () => {
       ],
       "adoption": ["table-conversion-to-paid", "table-conversion-to-submission", "table-retention", "monthlyMarketingBudgetPanel"],
       "behaviour": ["activitiesPanel", "pageVisitorsPanel"],
+      "integrations": ["integrationsSummaryPanel", "integrationsHmrcPanel", "integrationsCompaniesHousePanel", "integrationsStripePanel"],
       "ops": ["table-uptime", "table-operator-effort"],
       "affiliates": ["heldPassesPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"],
       "aws-prod": ["awsLinksPanel"],
@@ -1097,10 +1149,19 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
     }
 
-    test("opens on Main with the seven tabs and one pressed", async ({ page }) => {
+    test("opens on Main with the eight tabs and one pressed", async ({ page }) => {
       await loadTabs(page);
 
-      await expect(page.locator(".dashboard-tab")).toHaveText(["Main", "Adoption", "Behaviour", "Ops", "Affiliates", "AWS prod", "AWS ci"]);
+      await expect(page.locator(".dashboard-tab")).toHaveText([
+        "Main",
+        "Adoption",
+        "Behaviour",
+        "Integrations",
+        "Ops",
+        "Affiliates",
+        "AWS prod",
+        "AWS ci",
+      ]);
       await expect(page.locator('.dashboard-tab[aria-pressed="true"]')).toHaveText(["Main"]);
       await expect(page.locator(".subtitle", { hasText: "The eight objectives" })).toHaveCount(0);
       await expectOnlyTabSections(page, "main");
@@ -1131,7 +1192,7 @@ test.describe("Operator Dashboard", () => {
     test("draws the Adoption, Behaviour, Ops and Affiliates sections as tables with no graph", async ({ page }) => {
       await loadTabs(page);
 
-      for (const tabId of ["adoption", "behaviour", "ops", "affiliates"]) {
+      for (const tabId of ["adoption", "behaviour", "integrations", "ops", "affiliates"]) {
         await openTab(page, tabId);
         for (const id of SECTIONS_BY_TAB[tabId]) {
           const section = page.locator("#" + id);
@@ -1181,7 +1242,7 @@ test.describe("Operator Dashboard", () => {
       await expect(page.locator("#table-retention")).toBeVisible();
     });
 
-    test("falls back to Main when the stored tab is not one of the six", async ({ page }) => {
+    test("falls back to Main when the stored tab is not one of the tabs", async ({ page }) => {
       await page.addInitScript(() => window.localStorage.setItem("operatorDashboardTab", "elsewhere"));
       await loadTabs(page);
 
@@ -1213,7 +1274,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      17,
+      21,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -1223,6 +1284,10 @@ test.describe("Operator Dashboard", () => {
       "table-retention",
       "activitiesPanel",
       "pageVisitorsPanel",
+      "integrationsSummaryPanel",
+      "integrationsHmrcPanel",
+      "integrationsCompaniesHousePanel",
+      "integrationsStripePanel",
       "table-low-running-cost",
       "table-uptime",
       "table-compliance",
@@ -1803,6 +1868,62 @@ test.describe("Operator Dashboard", () => {
     await openTab(page, "behaviour");
     await expect(page.locator("#pageVisitorsEmpty")).toBeVisible();
     await expect(page.locator("#pageVisitorsTable")).toBeHidden();
+  });
+
+  test("draws the Integrations tab: a summary by organisation and status, a table of calls for each organisation and a raw record link", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await setupRoutes(page, { snapshotBody: { ...fullShapeSnapshot(), generatedAt: "2026-11-04T11:00:00.000Z" } });
+    await loadDashboard(page, { loggedIn: true });
+    await openTab(page, "integrations");
+
+    const summary = page.locator("#integrationsSummaryPanel tr.integrations-summary-row");
+    await expect(summary).toHaveCount(7);
+    await expect(summary.nth(0).locator("td")).toHaveText(["HMRC", "200", "212", "215", "1,272", "5,512", "↑ 12.0%", "14,840"]);
+    await expect(summary.nth(3).locator("td").nth(1)).toHaveText("timeout");
+    await expect(page.locator("#integrationsAccountNote")).toContainText("Sign in to submit-prod 972912397388");
+
+    const hmrc = page.locator("#integrationsHmrcPanel tr.integrations-call-row");
+    await expect(hmrc).toHaveCount(6);
+    await expect(hmrc.nth(0).locator("td").nth(0)).toHaveText("4 Nov 2026, 10:15");
+    await expect(hmrc.nth(0).locator("td").nth(1)).toHaveText("POST /organisations/vat/{vrn}/returns");
+    await expect(hmrc.nth(0).locator("td").nth(2)).toHaveText("1.41 s");
+    await expect(hmrc.nth(1).locator("td").nth(2)).toHaveText("412 ms");
+    await expect(hmrc.nth(0).locator("td").nth(4)).toHaveText("Rules: pass");
+    await expect(hmrc.nth(2).locator("td").nth(4)).toHaveText("n/a");
+    await expect(hmrc.nth(4).locator("td").nth(4)).toHaveText("Rules: fail (2)");
+    await expect(hmrc.nth(4).locator("td").nth(4)).toHaveAttribute("title", "Failed: Gov-Client-Device-ID, Gov-Vendor-Version");
+
+    const link = hmrc.nth(0).locator("td a");
+    await expect(link).toHaveText("View raw record");
+    expect(await link.getAttribute("href")).toBe(
+      "https://eu-west-2.console.aws.amazon.com/dynamodbv2/home?region=eu-west-2#edit-item?table=prod-env-integration-calls&itemMode=2" +
+        "&pk=call%23hmrc%232026-11-04&sk=2026-11-04T10%3A15%3A30.123Z%23a1b2c3d4" +
+        "&ref=%23item-explorer%3Ftable%3Dprod-env-integration-calls&route=ROUTE_ITEM_EXPLORER",
+    );
+    await expect(hmrc.nth(5).locator("td").nth(5)).toHaveText("expired");
+    await expect(hmrc.nth(5).locator("td a")).toHaveCount(0);
+
+    await expect(page.locator("#integrationsCompaniesHousePanel tr.integrations-call-row")).toHaveCount(1);
+    await expect(page.locator("#integrationsStripePanel tr.integrations-call-row td").nth(3)).toHaveText("402");
+
+    const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(scrollsSideways).toBe(false);
+    await page.screenshot({ path: "target/int2-screens/integrations-1280.png", fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: "target/int2-screens/integrations-390.png", fullPage: true });
+  });
+
+  test("shows the empty notes on the Integrations tab when the snapshot has no integrations section", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT });
+    await loadDashboard(page, { loggedIn: true });
+    await openTab(page, "integrations");
+
+    await expect(page.locator("#integrationsSummaryEmpty")).toBeVisible();
+    await expect(page.locator("#integrationsSummaryTable")).toBeHidden();
+    await expect(page.locator("#integrationsHmrcPanelEmpty")).toBeVisible();
+    await expect(page.locator("#integrationsAccountNote")).toBeHidden();
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {

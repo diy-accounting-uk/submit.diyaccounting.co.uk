@@ -87,6 +87,7 @@ import {
   buildCostDrivers,
   buildPaidSubscribers,
   buildPageVisitors,
+  buildIntegrations,
   shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
@@ -846,6 +847,32 @@ describe("operatorSnapshotPublish", () => {
             operatorVisitors: 6,
           },
         ],
+      });
+    });
+
+    test("buildIntegrations reads the live summary and the recent calls, and gives an empty section when the views have no rows", async () => {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["org", "status"], []) });
+        }
+      });
+
+      const result = await buildIntegrations({ workGroup: "wg", database: "db", envName: "prod", region: "eu-west-2" });
+
+      expect(queries.some((sql) => sql.includes("FROM   v_integration_calls_daily") && sql.includes("target = 'live'"))).toBe(true);
+      expect(queries.some((sql) => sql.includes("FROM   v_integration_calls\n"))).toBe(true);
+      expect(result).toEqual({
+        table: "prod-env-integration-calls",
+        region: "eu-west-2",
+        summary: [],
+        calls: { "hmrc": [], "companies-house": [], "stripe": [] },
       });
     });
 

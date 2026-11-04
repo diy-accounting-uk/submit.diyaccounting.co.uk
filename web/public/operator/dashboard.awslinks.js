@@ -43,6 +43,24 @@
     return consoleBase(region, "cloudwatch") + "#rum:performance/" + encodeURIComponent(appMonitor);
   }
 
+  // One DynamoDB item, by table name and key. The link carries no item data. The console opens
+  // the item in the account the operator is signed in to, so the page names the account.
+  function dynamoItemUrl(region, table, pk, sk) {
+    const encodedTable = encodeURIComponent(table);
+    return (
+      consoleBase(region, "dynamodbv2") +
+      "#edit-item?table=" +
+      encodedTable +
+      "&itemMode=2&pk=" +
+      encodeURIComponent(pk) +
+      "&sk=" +
+      encodeURIComponent(sk) +
+      "&ref=%23item-explorer%3Ftable%3D" +
+      encodedTable +
+      "&route=ROUTE_ITEM_EXPLORER"
+    );
+  }
+
   const ENVIRONMENTS = [
     { id: "prod", account: "submit-prod 972912397388", region: "eu-west-2" },
     { id: "ci", account: "submit-ci 367191799875", region: "eu-west-2" },
@@ -348,6 +366,13 @@
     draws.forEach((draw) => draw());
   }
 
+  function consoleAccount(environmentId) {
+    const environment = ENVIRONMENTS.find((entry) => entry.id === environmentId);
+    return environment ? environment.account : null;
+  }
+
+  window.dynamoItemUrl = dynamoItemUrl;
+  window.awsConsoleAccount = consoleAccount;
   window.awsLinkGroups = groups;
   window.renderAwsLinks = render;
 })();
