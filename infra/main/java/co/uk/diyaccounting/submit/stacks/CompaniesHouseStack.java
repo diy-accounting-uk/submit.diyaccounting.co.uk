@@ -1857,8 +1857,8 @@ public class CompaniesHouseStack extends Stack {
 
     // resolvePresenterCredentials() in companiesHouseXmlGateway.js reads the ARNs from
     // COMPANIES_HOUSE_PRESENTER_ID_ARN and COMPANIES_HOUSE_PRESENTER_CODE_ARN; without these the
-    // IAM grant above is unreachable. Blank until B34.6b's sandbox proof lands, same as the XML
-    // Gateway URI - PopulatedMap rejects a blank value outright, so each is set only when configured.
+    // IAM grant above is unreachable. PopulatedMap rejects a blank value outright, so each is set
+    // only when configured.
     private static void withPresenterSecretArns(PopulatedMap<String, String> env, CompaniesHouseStackProps props) {
         if (StringUtils.isNotBlank(props.companiesHousePresenterIdArn())) {
             env.with("COMPANIES_HOUSE_PRESENTER_ID_ARN", props.companiesHousePresenterIdArn());
