@@ -65,9 +65,9 @@ class TableChangeDeliveryTest {
     void createsOneDeliveryStreamAndGlueTablePerStreamedTable() {
         Template template = synthTableChangeDelivery();
 
-        template.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
-        template.resourceCountIs("AWS::Glue::Table", 5);
-        template.resourceCountIs("AWS::Lambda::EventSourceMapping", 5);
+        template.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
+        template.resourceCountIs("AWS::Glue::Table", 6);
+        template.resourceCountIs("AWS::Lambda::EventSourceMapping", 6);
     }
 
     @Test
@@ -75,7 +75,7 @@ class TableChangeDeliveryTest {
         Template template = synthTableChangeDelivery();
 
         // The consumer Lambda gets its own named log group via the shared Lambda construct; the
-        // five describeTableStreamArn AwsCustomResource calls (one per streamed table) share one
+        // six describeTableStreamArn AwsCustomResource calls (one per streamed table) share one
         // singleton provider Lambda, which needs exactly one more. (Each Firehose delivery stream
         // gets its own log group too, but those aren't Lambda functions.)
         template.resourceCountIs("AWS::Lambda::Function", 2);
@@ -123,7 +123,7 @@ class TableChangeDeliveryTest {
         Template template = synthTableChangeDelivery();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertTrue(tables.size() == 5, "expected exactly five Glue tables: " + tables.keySet());
+        assertTrue(tables.size() == 6, "expected exactly six Glue tables: " + tables.keySet());
         for (var resource : tables.values()) {
             var properties = (Map<String, Object>) resource.get("Properties");
             var tableInput = (Map<String, Object>) properties.get("TableInput");
@@ -179,12 +179,13 @@ class TableChangeDeliveryTest {
             found = true;
             String json = String.valueOf(variables.get("STREAM_TARGETS"));
             JsonNode targets = new ObjectMapper().readTree(json);
-            assertEquals(5, targets.size());
+            assertEquals(6, targets.size());
             assertTrue(targets.has(sharedNames.data.receiptsTableName));
             assertTrue(targets.has(sharedNames.data.bundlesTableName));
             assertTrue(targets.has(sharedNames.data.subscriptionsTableName));
             assertTrue(targets.has(sharedNames.data.passesTableName));
             assertTrue(targets.has(sharedNames.data.commissionsTableName));
+            assertTrue(targets.has(sharedNames.data.integrationCallsTableName));
         }
         assertTrue(found, "Expected one Lambda function with a STREAM_TARGETS environment variable");
     }

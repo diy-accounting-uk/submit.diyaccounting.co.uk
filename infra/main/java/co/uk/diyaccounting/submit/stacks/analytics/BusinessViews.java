@@ -333,7 +333,23 @@ public class BusinessViews extends Construct {
                     "v_campaign_channels_daily",
                     "Sessions, pass uses, subscribers and commission in pence each day, by utm source, medium,"
                             + " campaign and ref",
-                    List.of("activity_events_all", "dynamo_bundles", "dynamo_passes", "dynamo_commissions")));
+                    List.of("activity_events_all", "dynamo_bundles", "dynamo_passes", "dynamo_commissions")),
+            new ViewDefinition(
+                    "v_integration_calls",
+                    "One row per outbound call to HMRC, Companies House or Stripe: UK day, organisation, live or"
+                            + " test target, api template, duration, outcome and HTTP status",
+                    List.of("dynamo_calls")),
+            new ViewDefinition(
+                    "v_integration_calls_daily",
+                    "Outbound calls and their total duration each UK day, by organisation, target, api, outcome and"
+                            + " HTTP status",
+                    List.of("v_integration_calls"),
+                    List.of("v_integration_calls")),
+            new ViewDefinition(
+                    "v_integration_calls_hourly",
+                    "Outbound calls and their total duration each UTC hour, by organisation, target, api, outcome"
+                            + " and HTTP status, for the last 9 days",
+                    List.of("dynamo_calls")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

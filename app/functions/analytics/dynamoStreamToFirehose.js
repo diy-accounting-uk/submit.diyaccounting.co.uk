@@ -3,17 +3,17 @@
 
 // @capability DATA-04 Stream DynamoDB table changes into the lake
 // - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
-// - **Does:** dynamoStreamToFirehose.js serves five DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes and commissions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+// - **Does:** dynamoStreamToFirehose.js serves six DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions and integration calls. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
 // - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
-// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions
+// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector
 // @end-capability
 
 // app/functions/analytics/dynamoStreamToFirehose.js
 //
-// One Lambda, five DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
-// passes, commissions). Each stream record is redacted down to a per-table whitelist and forwarded to that
+// One Lambda, six DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
+// passes, commissions, calls). Each stream record is redacted down to a per-table whitelist and forwarded to that
 // table's own Firehose delivery stream.
 //
 // This is a whitelist, not a blacklist: only the fields named in PROJECTORS below leave the
@@ -41,6 +41,7 @@ const REDEMPTION_PK_PREFIX = "redemption#";
 const DERIVED_PASS_PK_PREFIXES = ["held#", "figures#", "family#", "familyemail#"];
 const COMMISSION_PK_PREFIX = "commission#";
 const COMMISSION_LINE_SK_PREFIX = "line#";
+const CALL_PK_PREFIX = "call#";
 
 /**
  * The receipt item stores HMRC's submission *response*, never the request body that carries
@@ -175,12 +176,52 @@ function projectCommission(image) {
   };
 }
 
+function numberOrNull(value) {
+  const number = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return typeof number === "number" && Number.isFinite(number) ? number : null;
+}
+
+/**
+ * The integration calls table holds one item per outbound attempt to HMRC, Companies House or
+ * Stripe. Only a call item ("call#<org>#<day>") reaches the lake, and a TTL expiry (a REMOVE)
+ * projects to null so the lake keeps the row after the table drops it. The `raw` detail and the
+ * request and response skeletons stay in the table. The item holds no customer key.
+ */
+function projectCall(image, eventName) {
+  if (eventName === "REMOVE") return null;
+  if (typeof image.pk !== "string" || !image.pk.startsWith(CALL_PK_PREFIX)) return null;
+  const fph = image.fph ?? {};
+  return {
+    call_id: image.sk ?? null,
+    record_type: image.recordType ?? null,
+    org: image.org ?? null,
+    target: image.target ?? null,
+    api: image.api ?? null,
+    method: image.method ?? null,
+    started_at: typeof image.startedAt === "string" ? toParquetTimestamp(image.startedAt) : null,
+    duration_ms: numberOrNull(image.durationMs),
+    outcome: image.outcome ?? null,
+    status: numberOrNull(image.status),
+    status_label: image.statusLabel ?? null,
+    app_code: numberOrNull(image.appCode),
+    provider_request_id: image.providerRequestId ?? null,
+    request_id: image.requestId ?? null,
+    traceparent: image.traceparent ?? null,
+    function_name: image.function ?? null,
+    deployment: image.deployment ?? null,
+    fph_rules: fph.rules ?? null,
+    fph_rules_failed: Array.isArray(fph.rulesFailed) && fph.rulesFailed.length > 0 ? fph.rulesFailed.join(",") : null,
+    fph_shape_hash: fph.shapeHash ?? null,
+  };
+}
+
 const PROJECTORS = {
   receipts: projectReceipt,
   bundles: projectBundle,
   subscriptions: projectSubscription,
   passes: projectPass,
   commissions: projectCommission,
+  calls: projectCall,
 };
 
 /**
@@ -217,7 +258,7 @@ export function projectFields(tableKind, newImage, oldImage, eventName) {
     throw new Error(`No redaction whitelist for DynamoDB table kind: ${tableKind}`);
   }
   const image = eventName === "REMOVE" ? oldImage : newImage;
-  return projector(image ?? {});
+  return projector(image ?? {}, eventName);
 }
 
 /**
@@ -302,10 +343,10 @@ async function putRecordBatch(deliveryStreamName, entries) {
 }
 
 /**
- * DynamoDB Streams handler: five event source mappings share this one function.
+ * DynamoDB Streams handler: six event source mappings share this one function.
  *
  * `STREAM_TARGETS` is a JSON map of physical table name to delivery stream name, so the same
- * code serves all five tables without a table-specific Lambda each.
+ * code serves all six tables without a table-specific Lambda each.
  *
  * A record that fails to project (unrecognised table, bad image) or fails to deliver comes back
  * in `batchItemFailures` by its stream sequence number, which tells the event source mapping to

@@ -2280,7 +2280,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-52 Start an affiliate application through Stripe Connect
 
 - **Use when:** a signed-in user applies to become an affiliate, or returns to finish a Stripe onboarding they left.
-- **Does:** The affiliateApplicationPost.js ingestHandler creates a UK Connect account for the caller on first use and stores its id on the affiliate item with the state applied. It answers a new Stripe-hosted onboarding link for the caller only. It refuses an approved or ended affiliate with 409. A synthetic test user gets a Stripe test-mode account.
+- **Does:** The affiliateApplicationPost.js ingestHandler creates a UK Connect account for the caller on first use and stores its id on the affiliate item with the state applied. It answers a new Stripe-hosted onboarding link for the caller only. It refuses an approved or ended affiliate with 409. A body of `{"action":"withdraw"}` ends an approved affiliate that configuration does not set, and refuses any other caller with 409. A synthetic test user gets a Stripe test-mode account.
 - **Run:** `POST /api/v1/affiliate/application`
 - **Entry:** `app/functions/account/affiliateApplicationPost.js:ingestHandler`
 - **Files:** app/functions/account/affiliateApplicationPost.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationPost.test.js, app/test-support/stripeSimulator.js, web/public/bundles.page.js
@@ -3238,7 +3238,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-43 Rotate stored email-address hashes
 
 - **Use when:** the HMAC key that hashes stored email addresses must be rotated.
-- **Does:** email-hash-rotate.js decrypts every stored email hash in DynamoDB with the old HMAC key. It re-encrypts each one with a new key through a batch scan and update. EmailHashSecretHelper is the CDK-side Secrets-Manager-backed encrypt and decrypt helper it calls.
+- **Does:** email-hash-rotate.js adds a new version to the email hash secret's registry and makes it current. It writes no stored hash, because each pass record keeps the version it was hashed with.
 - **Run:** `gh workflow run email-hash-rotate.yml -f apply=<true|false>`
 - **Entry:** `scripts/email-hash-rotate.js:main`; `infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java`
 - **Files:** .github/workflows/email-hash-rotate.yml, scripts/email-hash-rotate.js, infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java
@@ -4123,11 +4123,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-04 Stream DynamoDB table changes into the lake
 
 - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
-- **Does:** dynamoStreamToFirehose.js serves five DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes and commissions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+- **Does:** dynamoStreamToFirehose.js serves six DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions and integration calls. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
 - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
-- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions
+- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector
 
 #### DATA-05 Pull GA4 daily BigQuery aggregate tables
 
@@ -6795,6 +6795,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - calculator: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - callback: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - called workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- calls projector: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
@@ -7701,7 +7702,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - inline css: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
-- integration calls: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
+- integration calls: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe), [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
 - interest: [SITE-03](#site-03-capture-feedback-interest)

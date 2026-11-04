@@ -60,6 +60,7 @@ describe("resolveTableKind", () => {
     expect(resolveTableKind("ci-env-subscriptions")).toBe("subscriptions");
     expect(resolveTableKind("ci-env-passes")).toBe("passes");
     expect(resolveTableKind("ci-env-commissions")).toBe("commissions");
+    expect(resolveTableKind("ci-env-integration-calls")).toBe("calls");
   });
 
   test("throws rather than passing an unrecognised table through", () => {
@@ -424,6 +425,71 @@ describe("buildRow for commissions", () => {
     expect(row.source_table).toBe("commissions");
     expect(row.referrer_hash).toBe("r1");
     expect(row.amount_pence).toBe(348);
+  });
+});
+
+describe("calls projector", () => {
+  const callImage = {
+    pk: "call#hmrc#2026-11-04",
+    sk: "2026-11-04T10:15:30.123Z#a1b2c3d4",
+    recordType: "call",
+    org: "hmrc",
+    target: "live",
+    api: "POST /organisations/vat/{vrn}/returns",
+    method: "POST",
+    startedAt: "2026-11-04T10:15:30.123Z",
+    durationMs: 412,
+    outcome: "response",
+    status: 201,
+    statusLabel: "201",
+    appCode: "502",
+    providerRequestId: "corr-1",
+    requestId: "req-1",
+    traceparent: "00-abc-def-01",
+    function: "ci-app-hmrc-vat-return-post",
+    deployment: "ci-set1",
+    fph: { rules: "fail", rulesFailed: ["Gov-Client-Window-Size:missing", "Gov-Vendor-Version:bad"], shapeHash: "abc123" },
+    raw: { responseBody: { vatDueSales: "number" }, secret: "must not leave" },
+    ttl: 1800000000,
+  };
+
+  test("projects the whitelisted fields and carries no raw detail", () => {
+    const row = projectFields("calls", callImage, null, "INSERT");
+    expect(row).toMatchObject({
+      call_id: callImage.sk,
+      record_type: "call",
+      org: "hmrc",
+      target: "live",
+      api: "POST /organisations/vat/{vrn}/returns",
+      duration_ms: 412,
+      status: 201,
+      status_label: "201",
+      app_code: 502,
+      fph_rules: "fail",
+      fph_rules_failed: "Gov-Client-Window-Size:missing,Gov-Vendor-Version:bad",
+      fph_shape_hash: "abc123",
+    });
+    expect(JSON.stringify(row)).not.toContain("must not leave");
+    expect(Object.keys(row)).not.toContain("raw");
+    expect(Object.keys(row)).not.toContain("pk");
+  });
+
+  test("projects a call with no status and no check as nulls", () => {
+    const row = projectFields(
+      "calls",
+      { pk: "call#stripe#2026-11-04", sk: "s", outcome: "timeout", statusLabel: "timeout" },
+      null,
+      "INSERT",
+    );
+    expect(row).toMatchObject({ status: null, app_code: null, fph_rules: null, fph_rules_failed: null, status_label: "timeout" });
+  });
+
+  test("returns null for a TTL expiry so the lake keeps the row", () => {
+    expect(projectFields("calls", null, callImage, "REMOVE")).toBeNull();
+  });
+
+  test("returns null for an item that is not a call", () => {
+    expect(projectFields("calls", { pk: "fph#2026-11-04", sk: "shape" }, null, "INSERT")).toBeNull();
   });
 });
 
