@@ -226,6 +226,29 @@
       "still": true,
       "steps": [
         {
+          "action": "click",
+          "target": "#useOwnPresenter",
+          "caption": "File under your own Companies House presenter. Companies House charges its fee to your credit account.",
+          "headline": "Use your own presenter",
+          "keyWord": "presenter"
+        },
+        {
+          "action": "type",
+          "target": "#ownPresenterId",
+          "text": "12345678901",
+          "clear": true,
+          "secret": true,
+          "caption": "Type your presenter id."
+        },
+        {
+          "action": "type",
+          "target": "#ownPresenterCode",
+          "text": "SimTest1",
+          "clear": true,
+          "secret": true,
+          "caption": "Type your presenter authentication code."
+        },
+        {
           "action": "type",
           "target": "#companyAuthCode",
           "text": "SIMCS01",
