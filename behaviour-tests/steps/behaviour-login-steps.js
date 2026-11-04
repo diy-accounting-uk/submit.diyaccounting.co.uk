@@ -24,7 +24,7 @@ export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
     //  page.waitForURL(/auth\/login\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
     //  // the click already happened above; we still wait for the URL change
     // ]);
-    await expect(page.getByText("Google account")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: "Google account" })).toBeVisible({ timeout: 15000 });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login.png`, readerView: true });
   });
 }
@@ -119,7 +119,7 @@ async function readHostedUiErrorText(page) {
 export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Google account", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png`, readerView: true });
-    await expect(page.getByText("Google account")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Google account" })).toBeVisible();
 
     const appOrigin = new URL(page.url()).origin;
 
