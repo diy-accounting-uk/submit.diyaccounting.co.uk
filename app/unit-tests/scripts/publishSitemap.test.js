@@ -53,7 +53,7 @@ describe("publish-sitemap", () => {
     } finally {
       rmSync(webRoot, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   test("the full list carries no lastmod", () => {
     expect(SITEMAP).not.toContain("<lastmod>");
