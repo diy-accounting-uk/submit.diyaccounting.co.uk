@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability DATA-68 Report Search Console search analytics and URL inspection
+// @capability DATA-69 Report Search Console search analytics and URL inspection
 // - **Use when:** a task asks how the sites rank, which queries and pages bring clicks, or whether Google has indexed each sitemap URL.
 // - **Does:** searchconsole-report.js is a read-only report over the properties in searchconsole.toml. It reads 90 days of search analytics (top queries and top pages with clicks, impressions, CTR and position) and runs the URL Inspection API on every URL in each declared sitemap, within the 2,000 a day quota of a property. Each inspection gives the verdict, coverage state, last crawl and Google's canonical against the declared one. It uses the webmasters.readonly scope and writes nothing to Google.
 // - **Run:** `npm run searchconsole:report`; `npm run searchconsole:report -- --json --out target/searchconsole-report.json`

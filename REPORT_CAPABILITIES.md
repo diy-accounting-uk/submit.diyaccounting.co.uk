@@ -411,7 +411,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud: use when an analytics Lambda must call a Google Cloud or GA4 API without a stored service-account key.
     - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events: use when a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
     - [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification: use when a Search Console domain property must exist and be verified for the service account, or the DNS_CNAME verification tokens must be read.
-    - [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection: use when a task asks how the sites rank, which queries and pages bring clicks, or whether Google has indexed each sitemap URL.
+    - [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection: use when a task asks how the sites rank, which queries and pages bring clicks, or whether Google has indexed each sitemap URL.
     - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries: use when the ga4_daily BigQuery dataset's scheduled queries must match bigquery.toml.
     - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs: use when a fresh GA4 project needs its required services enabled with no console click.
     - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project: use when the GA4 billing account's budget alert thresholds must be checked, or a stray auto-created project verified empty.
@@ -4034,7 +4034,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data · [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly
 <!-- /generated:area DATA -->
 
@@ -4585,7 +4585,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud
 - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events
 - [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification
-- [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection
+- [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection
 - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries
 - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs
 - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project
@@ -4638,7 +4638,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** search console, site verification, dns cname token, domain property, sc-domain, verified owner
 - **Related:** DATA-38, OPS-67, DATA-47, OPS-163
 
-#### DATA-68 Report Search Console search analytics and URL inspection
+#### DATA-69 Report Search Console search analytics and URL inspection
 
 - **Use when:** a task asks how the sites rank, which queries and pages bring clicks, or whether Google has indexed each sitemap URL.
 - **Does:** searchconsole-report.js is a read-only report over the properties in searchconsole.toml. It reads 90 days of search analytics (top queries and top pages with clicks, impressions, CTR and position) and runs the URL Inspection API on every URL in each declared sitemap, within the 2,000 a day quota of a property. Each inspection gives the verdict, coverage state, last crawl and Google's canonical against the declared one. It uses the webmasters.readonly scope and writes nothing to Google.
@@ -6764,7 +6764,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
-- canonical: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- canonical: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - canonical form: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - cap: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - capability: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
@@ -6852,7 +6852,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clean worktree: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - cleanup test users: [OPS-12](#ops-12-clean-up-expired-test-users)
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- clicks: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- clicks: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
 - client fetch: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - client id: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
@@ -7632,7 +7632,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - import chain: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
-- impressions: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- impressions: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - impressions clicks: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - in flight: [DEV-27](#dev-27-render-the-open-work-board)
 - in-flight items: [SS-46](#ss-46-render-the-spreadsheets-work-board)
@@ -7648,7 +7648,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - index.html: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - index.json: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - indexeddb: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
-- indexing: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- indexing: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
 - infra-apply: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
@@ -8477,10 +8477,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
-- search analytics: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- search analytics: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
 - search console: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
-- search console report: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- search console report: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search console sitemaps: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - searchconsole-sitemaps.yml: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
@@ -8567,7 +8567,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sitemap errors: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - sitemap submission: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
-- sitemap urls: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- sitemap urls: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -8853,7 +8853,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - updateuserbundles: [BILL-03](#bill-03-delete-a-bundle)
 - upload book: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - upsert record: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
-- url inspection: [DATA-68](#data-68-report-search-console-search-analytics-and-url-inspection)
+- url inspection: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - us-east-1: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1), [SS-37](#ss-37-request-acm-certificates)
 - usage by donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - usage history: [SITE-10](#site-10-serve-general-site-pages)
