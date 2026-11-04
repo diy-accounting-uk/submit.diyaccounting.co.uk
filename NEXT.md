@@ -42,15 +42,17 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## In flight
 
-- [ ] **Wave delta (batch `claude/delta-campaign`, worktree `.claude/worktrees/delta`, not pushed).** CAMP2 (`scripts/campaign-threads.mjs`, `npm run campaign:threads`), CAMP3 (`v_campaign_channels_daily`) and the cedar follow-ups below. Next: batch-check, push, PR. **Source**: operator, 2026-11-03. **Owner**: Claude Code. **Model**: Sonnet.
-
-## Machine-only
+- [ ] **Wave delta (batch `claude/delta-campaign`, worktree `.claude/worktrees/delta`, not pushed; agent branch `claude/delta-followups`).** CAMP2 (`scripts/campaign-threads.mjs`, `npm run campaign:threads`), CAMP3 (`v_campaign_channels_daily`) DASH19's two changes and the cedar follow-ups. Next: land `claude/delta-followups`, batch-check, push, PR. **Source**: operator, 2026-11-03. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **DASH19. The console-image customer proof and the Bedrock chart (`PLAN_AWS_CONSOLE_CAPTURE.md` steps 14 and 15).** Both ride on wave delta: a behaviour assertion that a signed-in customer gets 403 JSON from `GET /api/v1/operator/console-image`, and the Bedrock card's fix (its "undefined" series, ARN labels and "No data" line). Remainder after the merge: read the customer assertion's run and the card on prod. **Source**: `PLAN_AWS_CONSOLE_CAPTURE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
-- [ ] **RL4. Record again the videos that show the bundle card, then publish them (`PLAN_RESIDENT_LTD.md`).** The list is `PLAN_RESIDENT_LTD.md` line 259 (the four Companies House scripts) and `videos/bundles.json`; `.claude/skills/site-video-capture/SKILL.md` then `.claude/skills/video-publish/SKILL.md`, then `node scripts/copy-videos-manifest.js`. The same publish re-syncs every video's title and description (MKT6). **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **Cedar follow-ups (PR #677).** `web/public/docs/api/openapi.json` does not list `GET /api/v1/commission/mine` (commit 760899442 is the pattern). `behaviour-tests/passRedemption.behaviour.test.js` line 571 reads `TEST_AUTH_SECOND_USERNAME` and `TEST_AUTH_SECOND_PASSWORD`, which no workflow sets, so PASS1b's second-account steps do not run on ci. **Source**: PR #677. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **RL4. Record again the videos that show the bundle card, then publish them (`PLAN_RESIDENT_LTD.md`; branch `claude/eagle-videos`, worktree `.claude/worktrees/eagle`).** The list is `PLAN_RESIDENT_LTD.md` line 259 (the four Companies House scripts) and `videos/bundles.json`; `.claude/skills/site-video-capture/SKILL.md` then `.claude/skills/video-publish/SKILL.md`, then `node scripts/copy-videos-manifest.js`. The same publish re-syncs every video's title and description (MKT6). **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+## Machine-only
+
+- [ ] **AL20. `prod-env-rum-cls-p75` in ALARM (issue #678).** ALARM since 2026-11-04 06:48 UTC, 0.71 against a threshold of 0.25 in the 06:38 and 06:43 buckets, on low traffic. Theory: one visit, the session's own load of `web/public/operator/dashboard.html`, whose capture images arrive after the layout; the alarm's two equal datapoints fit one event. Check: read the CloudWatch RUM `cumulative_layout_shift` events for 06:35 to 06:50 UTC and name the page. If it is the dashboard, give `.console-capture-image` a fixed aspect ratio (800 by 400) in `web/public/css/operator-dashboard.css`; if it is `web/public/bundles.html`, the cedar blocks caused it, and fix those. Close #678 with the evidence. **Source**: issue #678. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-ask
 
