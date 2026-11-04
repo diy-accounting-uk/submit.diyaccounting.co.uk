@@ -368,6 +368,57 @@ const FIXTURE_DAILY_CHARTS = {
         },
       ],
     },
+    {
+      id: "integration-requests",
+      objectiveId: "integrations",
+      title: "API requests by organisation and status",
+      unit: "count",
+      note: "Live calls to HMRC, Companies House and Stripe.",
+      modes: [
+        {
+          id: "all",
+          label: "All",
+          hourly: { series: [hourlySeries("total", "All requests", 12, { isTotal: true }), hourlySeries("hmrc 2xx", "HMRC 2xx", 8)] },
+          series: [
+            chartSeries("total", "All requests", 40, { isTotal: true }),
+            chartSeries("hmrc 2xx", "HMRC 2xx", 20),
+            chartSeries("hmrc 4xx", "HMRC 4xx", 3),
+            chartSeries("hmrc failed", "HMRC failed", 1),
+            chartSeries("stripe 2xx", "Stripe 2xx", 14),
+            chartSeries("stripe 4xx", "Stripe 4xx", 2),
+            chartSeries("companies-house 2xx", "Companies House 2xx", 4),
+          ],
+        },
+        {
+          id: "hmrc",
+          label: "HMRC",
+          series: [
+            chartSeries("total", "All requests", 24, { isTotal: true }),
+            chartSeries("200", "200", 20),
+            chartSeries("400", "400", 3),
+          ],
+        },
+      ],
+    },
+    {
+      id: "integration-duration",
+      objectiveId: "integrations",
+      title: "Average API request duration",
+      unit: "ms",
+      note: "Live calls only.",
+      modes: [
+        {
+          id: "organisation",
+          label: "By organisation",
+          hourly: { series: [hourlySeries("hmrc", "HMRC", 600), hourlySeries("stripe", "Stripe", 250)] },
+          series: [
+            chartSeries("hmrc", "HMRC", 700),
+            chartSeries("stripe", "Stripe", 280),
+            chartSeries("companies-house", "Companies House", 1400),
+          ],
+        },
+      ],
+    },
     (() => {
       const funnel = chartWithSeries(
         "conversion-to-submission",
@@ -1926,6 +1977,24 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#integrationsAccountNote")).toBeHidden();
   });
 
+  test("the two integration graphs draw on Main", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+    await loadDashboard(page);
+
+    const requests = page.locator('.chart-card[data-chart-id="integration-requests"]');
+    await expect(requests.locator("h3")).toContainText("API requests by organisation and status");
+    await expect(requests.getByRole("button", { name: "HMRC", exact: true })).toBeVisible();
+    const duration = page.locator('.chart-card[data-chart-id="integration-duration"]');
+    await expect(duration.locator("h3")).toContainText("Average API request duration");
+    await expect(duration.locator(".chart-legend-item")).toHaveText(["HMRC", "Stripe", "Companies House"]);
+    await duration.locator("svg.chart-svg").hover({ position: { x: 300, y: 80 } });
+    await expect(duration).toContainText(/\d(\.\d+)? (ms|s)/);
+    await page.locator("#chartsPanel").screenshot({ path: "target/int3-screens/main-charts-1280.png" });
+    await requests.screenshot({ path: "target/int3-screens/integration-requests-1280.png" });
+    await duration.screenshot({ path: "target/int3-screens/integration-duration-1280.png" });
+  });
+
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
     await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_ACTIVITIES });
     await loadDashboard(page);
@@ -1962,17 +2031,19 @@ test.describe("Operator Dashboard", () => {
   });
 
   test.describe("daily charts", () => {
-    test("draws one chart for each of the six objectives, with a line for every series", async ({ page }) => {
+    test("draws one chart for each of the eight objectives and graphs, with a line for every series", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
 
       await expect(page.locator("#chartsPanel")).toBeVisible();
-      await expect(page.locator(".chart-card")).toHaveCount(6);
+      await expect(page.locator(".chart-card")).toHaveCount(8);
       await expect(page.locator(".chart-card h3")).toHaveText([
         "Conversion to paid",
         "Visitors",
         "Conversion to submission",
         "Activity started and completed",
+        "API requests by organisation and status",
+        "Average API request duration",
         "AWS costs",
         "Retention",
       ]);
@@ -1993,6 +2064,8 @@ test.describe("Operator Dashboard", () => {
         "visitors",
         "conversion-to-submission",
         "activity-started-and-completed",
+        "integration-requests",
+        "integration-duration",
         "low-running-cost",
         "retention",
       ]);
@@ -2022,6 +2095,8 @@ test.describe("Operator Dashboard", () => {
         "conversion-to-submission",
         "activity-started-and-completed",
         "hmrc-failures",
+        "integration-requests",
+        "integration-duration",
         "low-running-cost",
         "retention",
         "zzz-extra",
@@ -2283,7 +2358,7 @@ test.describe("Operator Dashboard", () => {
           });
           await loadDashboard(page);
 
-          await expect(page.locator(".chart-card")).toHaveCount(6);
+          await expect(page.locator(".chart-card")).toHaveCount(8);
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
           expect(overflow).toBeLessThanOrEqual(0);
           const cardRight = await page.evaluate(() =>

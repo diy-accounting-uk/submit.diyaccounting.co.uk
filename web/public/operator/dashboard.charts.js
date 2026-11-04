@@ -48,7 +48,10 @@ function isHourly(state) {
 // Lines that start hidden, by chart id and mode id; the legend still shows them.
 const INITIALLY_HIDDEN_SERIES = {
   "visitors": { sessions: ["synthetic", "bot", "system"] },
-  "activity-started-and-completed": { started: ["total", "bundle"], completed: ["total", "bundle"] },
+  "activity-started-and-completed": {
+    started: ["total", "bundle"],
+    completed: ["total", "bundle"],
+  },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
 };
 
@@ -62,12 +65,19 @@ function activeSeries(state) {
   return isHourly(state) ? mode.hourly.series : mode.series;
 }
 
+// A duration at or above 1,000 ms reads in seconds.
+function formatDuration(value) {
+  return value >= 1000 ? readoutNumberFormat.format(value / 1000) + " s" : readoutNumberFormat.format(value) + " ms";
+}
+
 function formatAxisValue(unit, value) {
+  if (unit === "ms") return formatDuration(value);
   if (unit === "ratio") return axisNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + axisNumberFormat.format(value);
 }
 
 function formatReadoutValue(unit, value) {
+  if (unit === "ms") return formatDuration(value);
   if (unit === "ratio") return readoutNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + readoutNumberFormat.format(value);
 }
@@ -369,6 +379,8 @@ const CHART_ORDER = [
   "conversion-to-submission",
   "activity-started-and-completed",
   "hmrc-failures",
+  "integration-requests",
+  "integration-duration",
   "low-running-cost",
   "retention",
 ];
@@ -388,6 +400,7 @@ function sortCharts(charts) {
 function chartTableId(chart) {
   if (chart.id === "visitors") return "visitorsPanel";
   if (chart.id === "activity-started-and-completed") return "activitiesPanel";
+  if (chart.id.startsWith("integration-")) return "integrationsSummaryPanel";
   return "table-" + chart.objectiveId;
 }
 

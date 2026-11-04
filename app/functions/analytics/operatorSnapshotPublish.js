@@ -1025,6 +1025,67 @@ function hourlyLongFormSql({ componentExpression, valueExpression, view, where }
   );
 }
 
+// Long-form rows from the integration call views. The call views have a row for each api and
+// status, so a figure that does not add (an average) is written as a weighted aggregate in
+// `valueExpression`. Daily rows read v_integration_calls_daily; hourly rows read the hourly view.
+function integrationLongFormSql({ hourly, componentExpression, valueExpression, where }) {
+  const view = hourly ? "v_integration_calls_hourly" : "v_integration_calls_daily";
+  const window = hourly ? hourlyWindowFilter("hour") : dailyWindowFilter("day");
+  const conditions = [window, ...(where ? [where] : [])].join(" AND ");
+  const timeExpression = hourly ? "date_format(hour, '%Y-%m-%dT%H:00:00Z')" : "cast(day AS varchar)";
+  return (
+    `SELECT ${timeExpression} AS day, ${componentExpression} AS component, cast(${valueExpression} AS double) AS value\n` +
+    `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
+  );
+}
+
+const INTEGRATION_ORG_LABELS = { "hmrc": "HMRC", "companies-house": "Companies House", "stripe": "Stripe" };
+
+// The status class of a call: its first digit and "xx", or "failed" for a call with no response.
+const INTEGRATION_STATUS_CLASS = "CASE WHEN status IS NULL THEN 'failed' ELSE cast(status / 100 AS varchar) || 'xx' END";
+
+const integrationRequestsMode = ({ id, label, org }) => {
+  const orgFilter = org ? " AND org = '" + org + "'" : "";
+  const query = {
+    componentExpression: org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS,
+    valueExpression: "sum(calls)",
+    where: "target = 'live'" + orgFilter,
+  };
+  const orgName = (component) => INTEGRATION_ORG_LABELS[component.split(" ")[0]] ?? component;
+  return {
+    id,
+    label,
+    total: "All requests",
+    totalDescription: org
+      ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
+      : "Live calls to every organisation added together.",
+    ...(org ? {} : { maxComponents: 8 }),
+    labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
+    descriptionOf: (component) =>
+      org
+        ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} that ended with ${component}.`
+        : `Live calls to ${orgName(component)} that ended with ${component.split(" ").slice(1).join(" ")}.`,
+    sql: integrationLongFormSql({ hourly: false, ...query }),
+    hourlySql: integrationLongFormSql({ hourly: true, ...query }),
+  };
+};
+
+const integrationDurationMode = ({ id, label }) => {
+  const where = "target = 'live'";
+  const valueExpression = "sum(total_ms) / nullif(sum(calls), 0)";
+  return {
+    id,
+    label,
+    unit: "ms",
+    total: null,
+    labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
+    descriptionOf: (component) =>
+      `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
+    sql: integrationLongFormSql({ hourly: false, componentExpression: "org", valueExpression, where }),
+    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org", valueExpression, where }),
+  };
+};
+
 const STRIPE_DONATION_COMPONENT_CASE =
   `CASE WHEN ${STRIPE_DONATION_PRODUCT_FILTER} THEN 'stripe-donations' ` +
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
@@ -1184,6 +1245,25 @@ export function buildDailyChartDefinitions() {
           }),
         },
       ],
+    },
+    {
+      id: "integration-requests",
+      objectiveId: "integrations",
+      title: "API requests by organisation and status",
+      unit: "count",
+      note: "Live calls to HMRC, Companies House and Stripe, so sandbox probes do not hide customer traffic. A call with no response reads failed. Days are UTC.",
+      modes: [
+        integrationRequestsMode({ id: "all", label: "All" }),
+        ...Object.entries(INTEGRATION_ORG_LABELS).map(([org, label]) => integrationRequestsMode({ id: org, label, org })),
+      ],
+    },
+    {
+      id: "integration-duration",
+      objectiveId: "integrations",
+      title: "Average API request duration",
+      unit: "ms",
+      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over each day's calls. Days are UTC.",
+      modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
       id: "conversion-to-submission",

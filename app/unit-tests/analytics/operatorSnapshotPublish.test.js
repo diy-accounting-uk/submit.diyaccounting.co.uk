@@ -525,6 +525,33 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[2].sql).toContain("failure_rate IS NOT NULL");
     });
 
+    test("the API request graph counts live calls by organisation and status class, with a mode for each organisation", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests");
+
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["all", "hmrc", "companies-house", "stripe"]);
+      const all = chart.modes[0];
+      expect(all.sql).toContain("FROM   v_integration_calls_daily");
+      expect(all.sql).toContain("target = 'live'");
+      expect(all.sql).toContain("org || ' ' || CASE WHEN status IS NULL THEN 'failed'");
+      expect(all.hourlySql).toContain("FROM   v_integration_calls_hourly");
+      expect(all.maxComponents).toBe(8);
+      expect(all.labelOf("companies-house 4xx")).toBe("Companies House 4xx");
+      expect(chart.modes[1].sql).toContain("status_label AS component");
+      expect(chart.modes[1].sql).toContain("org = 'hmrc'");
+      expect(chart.modes[1].maxComponents).toBeUndefined();
+    });
+
+    test("the API duration graph averages weighted by calls and carries no total line", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration");
+
+      expect(chart.unit).toBe("ms");
+      expect(chart.modes[0].total).toBeNull();
+      expect(chart.modes[0].sql).toContain("sum(total_ms) / nullif(sum(calls), 0)");
+      expect(chart.modes[0].sql).toContain("org AS component");
+      expect(chart.modes[0].labelOf("stripe")).toBe("Stripe");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
+    });
+
     test("failures and agent cost sit on the objectives that own them, each with a description", () => {
       const observationsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations;
       const byId = (objectiveId, id) => observationsOf(objectiveId).find((observation) => observation.id === id);
@@ -1119,6 +1146,8 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.charts.map((chart) => chart.id)).toEqual([
         "activity-started-and-completed",
         "hmrc-failures",
+        "integration-requests",
+        "integration-duration",
         "conversion-to-submission",
         "conversion-to-paid",
         "low-running-cost",
@@ -1149,6 +1178,11 @@ describe("operatorSnapshotPublish", () => {
       expect(withHourly).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "integration-requests/all",
+        "integration-requests/hmrc",
+        "integration-requests/companies-house",
+        "integration-requests/stripe",
+        "integration-duration/organisation",
         "visitors/sessions",
       ]);
       for (const definition of buildDailyChartDefinitions()) {
@@ -1181,13 +1215,18 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(168);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(3);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(8);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
       expect(hourlyModes).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "integration-requests/all",
+        "integration-requests/hmrc",
+        "integration-requests/companies-house",
+        "integration-requests/stripe",
+        "integration-duration/organisation",
         "visitors/sessions",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
@@ -1232,8 +1271,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(35);
-      expect(queries).toHaveLength(3);
+      expect(firstRunQueryCount).toBe(45);
+      expect(queries).toHaveLength(8);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
@@ -1326,7 +1365,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual(["visitors"]);
       expect(dailyCharts.charts.map((chart) => chart.id)).not.toContain("visitors");
-      expect(dailyCharts.charts).toHaveLength(6);
+      expect(dailyCharts.charts).toHaveLength(8);
     });
 
     test("runAthenaQuery follows result pages, reading the header from the first only", async () => {
@@ -2375,7 +2414,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 32);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 37);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
