@@ -193,6 +193,8 @@ class McpStackTest {
         var oauthSecretStatements =
                 iamStatementsForFunction(template, stack.mcpOauthLambdaProps.ingestFunctionName()).stream()
                         .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
+                        .filter(statement ->
+                                !String.valueOf(statement.get("Resource")).contains("/submit/origin/verify"))
                         .toList();
         assertEquals(1, oauthSecretStatements.size());
         assertFalse(
@@ -281,9 +283,9 @@ class McpStackTest {
                 .map(statement -> String.valueOf(statement.get("Resource")))
                 .toList();
         assertEquals(
-                5,
+                6,
                 secretResources.size(),
-                "expected the blob key, the salt, the operator list and the two HMRC client secrets");
+                "expected the blob key, the salt, the operator list, the origin secret and the two HMRC client secrets");
         assertTrue(secretResources.stream().anyMatch(resource -> resource.contains("/submit/operator-emails")));
         assertTrue(secretResources.contains(HMRC_SECRET_ARN + "-*"));
         assertTrue(secretResources.contains(HMRC_SANDBOX_SECRET_ARN + "-*"));
@@ -315,7 +317,8 @@ class McpStackTest {
                 .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
                 .map(statement -> String.valueOf(statement.get("Resource")))
                 .toList();
-        assertEquals(3, secretResources.size(), "expected the blob key, the salt and the operator list");
+        assertEquals(
+                4, secretResources.size(), "expected the blob key, the salt, the operator list and the origin secret");
         assertTrue(secretResources.stream().anyMatch(resource -> resource.contains("/submit/operator-emails")));
     }
 

@@ -57,8 +57,7 @@ public final class OriginVerifyHelper {
     }
 
     /** Lets the entry read the secret. The ARN pattern ends in a wildcard for the random suffix. */
-    public static void grantSecretRead(
-            AbstractLambdaProps props, Function lambda, Map<String, String> environment) {
+    public static void grantSecretRead(AbstractLambdaProps props, Function lambda, Map<String, String> environment) {
         if (!checksOrigin(props)) return;
         var stack = Stack.of(lambda);
         lambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -66,9 +65,7 @@ public final class OriginVerifyHelper {
                 .actions(List.of("secretsmanager:GetSecretValue"))
                 .resources(List.of(String.format(
                         "arn:aws:secretsmanager:%s:%s:secret:%s*",
-                        stack.getRegion(),
-                        stack.getAccount(),
-                        secretName(requireEnvironmentName(props, environment)))))
+                        stack.getRegion(), stack.getAccount(), secretName(requireEnvironmentName(props, environment)))))
                 .build());
     }
 

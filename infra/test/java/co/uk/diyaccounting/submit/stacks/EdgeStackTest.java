@@ -437,7 +437,8 @@ class EdgeStackTest {
 
     @Test
     void noOriginSendsTheOriginVerifyHeaderBeforeTheSecretExists() {
-        String templateJson = Template.fromStack(synthEdgeStack("prod")).toJSON().toString();
+        String templateJson =
+                Template.fromStack(synthEdgeStack("prod")).toJSON().toString();
 
         assertFalse(templateJson.contains("x-diya-origin-verify"));
         assertFalse(templateJson.contains("origin/verify"));
