@@ -601,6 +601,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- /generated:group sql-views-data -->
 
 <!-- capability DATA-27 -->
+<!-- capability DATA-68 -->
 <!-- capability DATA-28 -->
 <!-- capability DATA-29 -->
 <!-- capability DATA-30 -->
@@ -800,6 +801,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DEV-55 -->
 <!-- capability DEV-56 -->
 <!-- capability DEV-57 -->
+<!-- capability DEV-58 -->
 ## Spreadsheets and diya-gl (SS)
 
 <!-- generated:area SS -->

@@ -309,6 +309,17 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   await consentToDataCollection(page, screenshotPath);
 
+  // The local server registers no operator routes, so only a deployed lane has the route to refuse.
+  if (testAuthProvider === "cognito-native") {
+    const consoleImageResponse = await page.evaluate(async () => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      const response = await fetch("/api/v1/operator/console-image?id=none", { headers: { Authorization: `Bearer ${idToken}` } });
+      return { status: response.status, contentType: response.headers.get("content-type") };
+    });
+    expect(consoleImageResponse.status).toBe(403);
+    expect(consoleImageResponse.contentType).toContain("application/json");
+  }
+
   /* ********* */
   /*  BUNDLES  */
   /* ********* */

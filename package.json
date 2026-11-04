@@ -379,6 +379,7 @@
     "msads:forecast": "node infra/microsoft/ads/msads.js --forecast",
     "msads:report": "node infra/microsoft/ads/msads.js --report",
     "exploratory:diff": "node scripts/exploratory-diff.mjs",
+    "campaign:threads": "node scripts/campaign-threads.mjs",
     "capabilities:generate": "node scripts/capabilities-generate.mjs",
     "capabilities:check": "node scripts/capabilities-generate.mjs --check",
     "scripts:table": "node scripts/scripts-table.mjs",

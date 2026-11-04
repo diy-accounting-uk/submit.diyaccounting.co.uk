@@ -198,7 +198,7 @@
         { "action": "fill", "target": "#currentCapitalAndReserves", "value": "4000" },
         {
           "action": "point",
-          "target": "#currentYearTotals",
+          "target": "#yearTotals",
           "caption": "This checks net assets against capital and reserves.",
           "headline": "Net assets must balance",
           "keyWord": "balance",

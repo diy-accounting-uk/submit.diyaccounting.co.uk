@@ -206,6 +206,34 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
     expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
   });
 
+  test("returns 400 with a message the customer can act on when the gateway says the authentication code is invalid", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({
+      errors: [{ raisedBy: "CompanyDataRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode", location: "" }],
+    });
+    const response = await companiesHouseFilingDataPostHandler(buildEvent());
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toMatch(/authentication code/i);
+    expect(body.reason).toBe("invalid-company-authentication-code");
+    expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
+  });
+
+  test("returns 500 for another gateway error that shares number 9999", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({
+      errors: [{ raisedBy: "Gateway", number: 9999, type: "fatal", text: "No presenter ID supplied" }],
+    });
+    const response = await companiesHouseFilingDataPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
+  });
+
+  test("returns 400 when the PaymentPeriodsRequest reports the authentication code as invalid", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({ errors: [] }).mockReturnValueOnce({
+      errors: [{ raisedBy: "PaymentPeriodsRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode" }],
+    });
+    const response = await companiesHouseFilingDataPostHandler(buildEvent());
+    expect(response.statusCode).toBe(400);
+  });
+
   test("returns 401 when the Cognito bearer token is missing", async () => {
     const response = await companiesHouseFilingDataPostHandler(buildEvent({ authorizer: {} }));
     expect(response.statusCode).toBe(401);

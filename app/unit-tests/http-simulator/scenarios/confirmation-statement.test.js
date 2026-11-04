@@ -126,6 +126,16 @@ describe("http-simulator/scenarios/confirmation-statement", () => {
       });
       expect(result.errors[0]).toMatchObject({ number: 100 });
     });
+
+    test("Gov-Test-Scenario AUTH_CODE_INVALID answers the generic error 9999 with the invalid-code text", () => {
+      const result = requestCompanyData({
+        ...VALID,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        scenario: "AUTH_CODE_INVALID",
+      });
+      expect(result.errors[0]).toMatchObject({ number: 9999, text: "Invalid CompanyAuthenticationCode" });
+    });
   });
 
   describe("requestPaymentPeriods", () => {
@@ -161,6 +171,16 @@ describe("http-simulator/scenarios/confirmation-statement", () => {
         scenario: "AUTH_CODE_TOO_LONG",
       });
       expect(result.errors[0]).toMatchObject({ number: 100 });
+    });
+
+    test("Gov-Test-Scenario AUTH_CODE_INVALID answers the generic error 9999 with the invalid-code text", () => {
+      const result = requestPaymentPeriods({
+        ...VALID,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        scenario: "AUTH_CODE_INVALID",
+      });
+      expect(result.errors[0]).toMatchObject({ number: 9999, text: "Invalid CompanyAuthenticationCode" });
     });
   });
 

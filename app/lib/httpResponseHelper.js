@@ -205,7 +205,7 @@ export function http202AcceptedResponse({ request, headers, message, location })
 }
 
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
-  const merged = { ...(headers || {}) };
+  const merged = { "Content-Type": "application/json", ...(headers || {}) };
   // Always provide an x-request-id for client correlation; generate if not supplied
   if (!merged["x-request-id"]) {
     merged["x-request-id"] = context.get("requestId") || String(Date.now());
