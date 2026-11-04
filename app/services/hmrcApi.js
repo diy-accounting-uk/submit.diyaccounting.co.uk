@@ -25,6 +25,7 @@ import {
   MCP_HMRC_GRANT_HEADER,
 } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+import { checkFraudPreventionHeaderRules } from "../lib/fraudPreventionHeaderRules.js";
 import { emitMetric } from "../lib/emfMetrics.js";
 import { integrationPathTemplate } from "../lib/dataMasking.js";
 import { HMRC_PRODUCTION_HOST, HMRC_SANDBOX_HOST, hmrcCallTarget } from "../lib/hmrcHosts.js";
@@ -65,6 +66,7 @@ const CONNECTION_METHOD_HEADER = "Gov-Client-Connection-Method";
 export const HMRC_SEND_METRICS_NAMESPACE = "Submit/HmrcSend";
 export const HMRC_SEND_METRIC = "HmrcSend";
 export const HMRC_FRAUD_HEADER_VIOLATION_METRIC = "HmrcFraudHeaderViolation";
+export const HMRC_FRAUD_HEADER_RULE_FAILURE_METRIC = "HmrcFraudHeaderRuleFailure";
 
 // Headers buildFraudHeaders sets on the server for every request. Gov-Client-Multi-Factor is
 // absent for a password-only sign-in, Gov-Vendor-License-IDs is omitted on purpose (HMRC
@@ -195,7 +197,20 @@ function checkFraudPreventionHeaders(target, init) {
       refused,
     });
   }
-  return { refused, fph: { rules: missing.length > 0 ? "fail" : "pass", rulesFailed: missing.map((name) => `${name}:missing`) } };
+  const rulesFailed = [...missing.map((name) => `${name}:missing`), ...checkFraudPreventionHeaderRules(init.headers, connectionMethod)];
+  if (rulesFailed.length > missing.length) {
+    const ruleFailures = rulesFailed.slice(missing.length);
+    emitMetric({ namespace: HMRC_SEND_METRICS_NAMESPACE, metricName: HMRC_FRAUD_HEADER_RULE_FAILURE_METRIC, dimensions });
+    logger.warn({
+      message: "HMRC request has fraud prevention headers that break a format rule",
+      host: target.kind === "production" ? HMRC_PRODUCTION_HOST : HMRC_SANDBOX_HOST,
+      path: target.path,
+      method: init.method || "GET",
+      connectionMethod: connectionMethod ?? null,
+      ruleFailures,
+    });
+  }
+  return { refused, fph: { rules: rulesFailed.length > 0 ? "fail" : "pass", rulesFailed } };
 }
 
 async function auditHmrcRequest(auditForUserSub, { url, httpRequest, httpResponse, duration }) {

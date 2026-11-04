@@ -184,8 +184,8 @@ class SubmitEnvironmentCdkResourceTest {
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
-        // HmrcFraudHeaderViolationAlarm, that's 9 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 9);
+        // HmrcFraudHeaderViolationAlarm and HmrcFraudHeaderRuleFailureAlarm, that's 10 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 10);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

@@ -760,6 +760,28 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // HMRC fraud prevention header rule failure alarm. app/services/hmrcApi.js sendToHmrc emits
+        // HmrcFraudHeaderRuleFailure when a header on a request to the HMRC production API breaks
+        // a format rule from HMRC's connection method pages (a bad value, a broken cross-check).
+        // The request still goes. The metric is environment-wide, so the alarm lives here. No
+        // SnsAction: the alarm-state-change rule in OpsStack routes this to the alarm-to-issue
+        // Lambda in prod.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcFraudHeaderRuleFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-fraud-header-rule-failure")
+                .alarmDescription("A request to the HMRC production API had a fraud prevention header that broke a format rule")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/HmrcSend")
+                        .metricName("HmrcFraudHeaderRuleFailure")
+                        .dimensionsMap(Map.of("Environment", props.envName(), "HmrcHost", "production"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
         // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
         // against this same environment-wide behaviour-test metric, each opening its own GitHub

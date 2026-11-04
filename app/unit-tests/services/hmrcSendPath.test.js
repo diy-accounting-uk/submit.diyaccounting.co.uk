@@ -37,10 +37,10 @@ const SANDBOX_URL = "https://test-api.service.hmrc.gov.uk/organisations/vat/1234
 const FULL_WEB_HEADERS = {
   "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
   "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0",
-  "Gov-Client-Device-ID": "device-1",
+  "Gov-Client-Device-ID": "0b5a9a52-4d6b-4a53-9a4b-3d5d9a3f1c11",
   "Gov-Client-Public-IP": "203.0.113.7",
   "Gov-Client-Public-IP-Timestamp": "2026-01-01T00:00:00.000Z",
-  "Gov-Client-Public-Port": "443",
+  "Gov-Client-Public-Port": "51234",
   "Gov-Client-Screens": "width=1&height=1&scaling-factor=1&colour-depth=24",
   "Gov-Client-Timezone": "UTC+00:00",
   "Gov-Client-User-IDs": "cognito=abc",
@@ -310,6 +310,28 @@ describe("outbound call records for HMRC", () => {
     await sendToHmrc(PRODUCTION_URL, { method: "GET", headers });
 
     expect(recordedItem().fph).toEqual({ rules: "fail", rulesFailed: ["Gov-Client-Device-ID:missing"] });
+  });
+
+  it("counts a rule failure, names the rule in the header result and still sends", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const headers = { ...FULL_WEB_HEADERS, "Gov-Client-Device-ID": "not-a-uuid-secret" };
+
+    await sendToHmrc(PRODUCTION_URL, { method: "GET", headers });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderRuleFailure")).toBe(1);
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderViolation")).toBe(0);
+    expect(recordedItem().fph).toEqual({ rules: "fail", rulesFailed: ["Gov-Client-Device-ID:uuid"] });
+    expect(JSON.stringify(metricLines(consoleSpy))).not.toContain("not-a-uuid-secret");
+  });
+
+  it("emits no rule failure metric when every rule passes", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await sendToHmrc(PRODUCTION_URL, { method: "GET", headers: FULL_WEB_HEADERS });
+
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderRuleFailure")).toBe(0);
+    expect(recordedItem().fph).toEqual({ rules: "pass", rulesFailed: [] });
   });
 
   it("records a timeout and rethrows it", async () => {
