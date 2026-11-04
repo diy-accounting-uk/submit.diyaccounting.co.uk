@@ -274,7 +274,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure: use when a customer has exercised their GDPR right to erasure.
     - [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data: use when a customer has made a GDPR subject-access request.
     - [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance: use when checking this service's obligations against UK GDPR or ICO requirements.
-    - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes: use when the email-hash encryption key must be rotated across all stored hashes.
+    - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes: use when the HMAC key that hashes stored email addresses must be rotated.
     - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt: use when the subject-ID salt needs backing up, restoring, or its resource policy reasserting.
     - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking, listing, backing up or restoring.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
@@ -3233,12 +3233,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-43 Rotate stored email-address hashes
 
-- **Use when:** the email-hash encryption key must be rotated across all stored hashes.
-- **Does:** email-hash-rotate.js decrypts every stored email hash in DynamoDB with the old encryption key. It re-encrypts each one with a new key through a batch scan and update. EmailHashSecretHelper is the CDK-side Secrets-Manager-backed encrypt and decrypt helper it calls.
+- **Use when:** the HMAC key that hashes stored email addresses must be rotated.
+- **Does:** email-hash-rotate.js decrypts every stored email hash in DynamoDB with the old HMAC key. It re-encrypts each one with a new key through a batch scan and update. EmailHashSecretHelper is the CDK-side Secrets-Manager-backed encrypt and decrypt helper it calls.
 - **Run:** `gh workflow run email-hash-rotate.yml -f apply=<true|false>`
 - **Entry:** `scripts/email-hash-rotate.js:main`; `infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java`
 - **Files:** .github/workflows/email-hash-rotate.yml, scripts/email-hash-rotate.js, infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java
-- **Keywords:** email hash rotation, encryption key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
+- **Keywords:** email hash rotation, HMAC key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
 - **Related:** OPS-45, OPS-46
 
 #### OPS-44 Hash and rotate the subject-ID salt
@@ -7288,7 +7288,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - empty state: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - enable gcp apis: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - encryption: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
-- encryption key rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - end of life: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - end-to-end: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
 - enforce bundle: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
@@ -7569,6 +7568,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
+- hmac key rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - hmrc: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - hmrc access token: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - hmrc api request: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)

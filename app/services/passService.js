@@ -175,7 +175,7 @@ export async function checkPass(code, userEmail, emailHashSecret) {
   }
 
   const now = new Date().toISOString();
-  return validatePass(pass, now, userEmail, emailHashSecret);
+  return await validatePass(pass, now, userEmail, emailHashSecret);
 }
 
 /**
@@ -204,7 +204,7 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
       if (!emailHashSecret) {
         await initializeEmailHashSecret();
       }
-      const emailHash = hashEmailForComparison(userEmail, emailHashSecret, redeemed.emailHashSecretVersion);
+      const emailHash = await hashEmailForComparison(userEmail, emailHashSecret, redeemed.emailHashSecretVersion);
 
       if (redeemed.restrictedToEmailHash !== emailHash) {
         // Email doesn't match - we already incremented useCount, but this is acceptable
@@ -274,14 +274,14 @@ export async function listHeldPasses() {
  * @param {string} userEmail - The email address to hash
  * @param {string} [emailHashSecret] - Explicit secret, bypassing the version registry
  * @param {string} [emailHashSecretVersion] - The version recorded on the pass at creation
- * @returns {string} The email hash to compare against pass.restrictedToEmailHash
+ * @returns {Promise<string>} The email hash to compare against pass.restrictedToEmailHash
  */
-function hashEmailForComparison(userEmail, emailHashSecret, emailHashSecretVersion) {
+async function hashEmailForComparison(userEmail, emailHashSecret, emailHashSecretVersion) {
   if (emailHashSecret) {
     return hashEmail(userEmail, emailHashSecret);
   }
   if (emailHashSecretVersion && emailHashSecretVersion !== "explicit") {
-    return hashEmailWithVersion(userEmail, emailHashSecretVersion);
+    return await hashEmailWithVersion(userEmail, emailHashSecretVersion);
   }
   // Legacy pass records created before emailHashSecretVersion was stored: fall back to
   // whichever version is current, the only version that existed at the time.
@@ -305,7 +305,7 @@ function usesRemaining(pass) {
 /**
  * Validate a pass record against current time and optional email.
  */
-function validatePass(pass, now, userEmail, emailHashSecret) {
+async function validatePass(pass, now, userEmail, emailHashSecret) {
   if (pass.revokedAt) return { valid: false, reason: "revoked", pass };
   if (isExhausted(pass)) return { valid: false, reason: "exhausted", pass };
   if (isHeldForReview(pass)) return { valid: false, reason: "held_for_review", pass };
@@ -325,7 +325,7 @@ function validatePass(pass, now, userEmail, emailHashSecret) {
       };
     }
 
-    const emailHash = hashEmailForComparison(userEmail, emailHashSecret, pass.emailHashSecretVersion);
+    const emailHash = await hashEmailForComparison(userEmail, emailHashSecret, pass.emailHashSecretVersion);
 
     if (pass.restrictedToEmailHash !== emailHash) {
       return { valid: false, reason: "wrong_email", pass };
