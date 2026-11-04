@@ -4,7 +4,14 @@
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { allCaptureIds, buildMetricWidget, itemsForTarget, regionForTarget, targetsForRun } from "@app/services/consoleCaptureCatalogue.js";
+import {
+  allCaptureIds,
+  BEDROCK_QUERY,
+  buildMetricWidget,
+  itemsForTarget,
+  regionForTarget,
+  targetsForRun,
+} from "@app/services/consoleCaptureCatalogue.js";
 
 function loadDashboardLinkGroups() {
   const source = readFileSync(new URL("../../../web/public/operator/dashboard.awslinks.js", import.meta.url), "utf8");
@@ -63,5 +70,9 @@ describe("consoleCaptureCatalogue", () => {
 
   test("an unknown target is an error", () => {
     expect(() => itemsForTarget("elsewhere")).toThrow(/Unknown console capture target/);
+  });
+
+  test("the Bedrock query keeps only log lines that name a model", () => {
+    expect(BEDROCK_QUERY).toMatch(/^filter ispresent\(modelId\) \| stats /);
   });
 });

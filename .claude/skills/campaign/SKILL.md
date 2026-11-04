@@ -62,10 +62,13 @@ the current step and write the report with what was done.
   (`app/services/commissionLedger.js`, its lines carry the referrer and the referral code). Read by
   key or through the activity lake (workgroup `prod-env-analytics`, database `prod_env_analytics`;
   `dt` is a DATE, so filter with `DATE '<day>'`). State the bytes scanned.
-- The acquisition source: the `ref` and `utm_*` values on the session beacon (marketing plan M1
-  and M2, `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` section 2). Until
-  the per-channel join exists (board row CAMP3), report uses and subscribers per pass, not per
-  channel, and say so.
+- The acquisition source: the view `v_campaign_channels_daily` joins the session beacon's `ref`
+  and `utm_*` values (marketing plan M1 and M2,
+  `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` section 2) to pass uses,
+  subscribers and commission pence, one row per day, utm source, medium, campaign and ref. Query it
+  in the lake (workgroup `prod-env-analytics`) for the last 30 days and report per place, not per
+  pass. Sessions come only from visits that gave consent, and a use or subscriber whose account
+  has no sourced bundle record reports the pass code as `ref`.
 - Judge them against the brief's stop rule. Fewer than 10 Uses in six weeks means change the
   place. Ten or more Uses with no subscriber means fix the landing page before more posting, so
   this session's step 4 picks MKT1 or MKT2.
@@ -77,12 +80,19 @@ the current step and write the report with what was done.
 - Newsletters: the "Reading" label on matthew@diyaccounting.co.uk, through the Gmail connector,
   read only (the brief's "What to subscribe to" list). Note each change our audience will ask about
   this week: a VAT, MTD or Companies House rule, a deadline, a fee.
-- Threads: search the places the brief names for questions from the last 7 days. The question
-  shape is "what cheap software sends my VAT return from a spreadsheet", and its relatives:
-  bridging software, MTD for VAT without accounting software, filing accounts or a confirmation
-  statement without an accountant. Use WebSearch with the site name and WebFetch on public pages.
-  Reddit blocks plain fetching: until the Reddit API app exists (board row CAMP2), search
-  `site:reddit.com/r/smallbusinessuk` through WebSearch and say the coverage is partial.
+- Threads: `npm run campaign:threads -- --days 7 --out target/campaign-threads.json` reads the
+  last seven days of questions from the subreddits (default `smallbusinessuk`; `--subreddits a,b`
+  adds more) and from the UK Business Forums feed, read only. It needs the Reddit app's client id
+  and secret in the Secrets Manager secret `prod/submit/reddit-campaign-app` (JSON
+  `{"clientId","clientSecret"}`, read through `AWS_PROFILE=diya-submit-prod`); without it the script
+  stops with a message naming the secret. Then read the output's `skipped` list: a source named
+  there was not read (the forum's feed answers a browser challenge at times and is not retried).
+  The question shape is "what cheap software sends my VAT return from a spreadsheet", and its
+  relatives: bridging software, MTD for VAT without accounting software, filing accounts or a
+  confirmation statement without an accountant (the script's default queries). While the secret is
+  absent (board row OCAMP2), use WebSearch with `site:reddit.com/r/smallbusinessuk` and
+  WebFetch on public pages, and say the coverage is partial. Read `--fixture
+  scripts/fixtures/campaign-threads` to see the output shape with no credentials.
 - Skip AccountingWEB and the HMRC community forums for posting (their rules remove
   self-promotion). Read them for what owners ask.
 - Skip a thread where the asker needs advice an accountant gives, is not VAT-registered, or asks

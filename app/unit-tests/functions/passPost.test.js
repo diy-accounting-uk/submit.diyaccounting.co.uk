@@ -7,6 +7,7 @@ import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilder
 
 // Mock passService
 const mockRedeemPass = vi.fn();
+const mockCheckPass = vi.fn();
 const mockGetPassRecord = vi.fn();
 const mockClaimReferral = vi.fn();
 const mockGetRedemption = vi.fn();
@@ -14,6 +15,7 @@ const mockReleaseReferral = vi.fn();
 const mockRecordRedemption = vi.fn();
 vi.mock("@app/services/passService.js", () => ({
   redeemPass: (...args) => mockRedeemPass(...args),
+  checkPass: (...args) => mockCheckPass(...args),
   getPassRecord: (...args) => mockGetPassRecord(...args),
   claimReferral: (...args) => mockClaimReferral(...args),
   getRedemption: (...args) => mockGetRedemption(...args),
@@ -67,6 +69,8 @@ describe("passPost", () => {
 
   beforeEach(() => {
     mockRedeemPass.mockReset();
+    mockCheckPass.mockReset();
+    mockCheckPass.mockResolvedValue({ valid: true });
     mockGetPassRecord.mockReset();
     mockGetPassRecord.mockResolvedValue({ code: "test-pass-code", passTypeId: "day-guest-pass" });
     mockClaimReferral.mockReset();
@@ -340,6 +344,17 @@ describe("passPost", () => {
       expect(mockClaimReferral).not.toHaveBeenCalled();
       expect(mockRedeemPass).not.toHaveBeenCalled();
       expect(mockGrantBundle).not.toHaveBeenCalled();
+    });
+
+    test("an expired referral pass takes no claim and answers expired", async () => {
+      mockCheckPass.mockResolvedValue({ valid: false, reason: "expired" });
+      mockRedeemPass.mockResolvedValue({ valid: false, reason: "expired" });
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: referralPass.code }));
+
+      expect(JSON.parse(result.body).reason).toBe("expired");
+      expect(mockClaimReferral).not.toHaveBeenCalled();
+      expect(mockReleaseReferral).not.toHaveBeenCalled();
     });
 
     test("refuses a second referral redemption by the same account", async () => {

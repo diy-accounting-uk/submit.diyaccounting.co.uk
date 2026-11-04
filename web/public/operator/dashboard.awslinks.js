@@ -193,6 +193,15 @@
     return rows.filter((row) => row.modelId === model && row.bin.startsWith(day)).reduce((sum, row) => sum + row[field], 0);
   }
 
+  // The model name a reader recognises: the part after the last slash of an ARN, without the
+  // provider prefix and the version suffix.
+  function shortModelName(model) {
+    return model
+      .slice(model.lastIndexOf("/") + 1)
+      .replace(/^eu\.anthropic\./, "")
+      .replace(/-v1:0$/, "");
+  }
+
   function bedrockMeasure(rows, days, models, id, label, field) {
     return {
       id: id,
@@ -200,13 +209,14 @@
       unit: "count",
       series: models.map((model) => ({
         id: model,
-        label: model,
+        label: shortModelName(model),
         values: days.map((day) => dayTotal(rows, model, day, field)),
       })),
     };
   }
 
-  function bedrockChart(rows) {
+  function bedrockChart(allRows) {
+    const rows = allRows.filter((row) => row.modelId);
     const days = [...new Set(rows.map((row) => row.bin.slice(0, 10)))].sort();
     const models = [...new Set(rows.map((row) => row.modelId))].sort();
     return {

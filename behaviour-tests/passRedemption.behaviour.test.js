@@ -570,6 +570,7 @@ test("Click through: A deleted generated pass is refused as expired on redemptio
   const isMockLane = testAuthProvider === "mock" || testAuthProvider === "simulator";
   const redeemerUsername = isMockLane ? `${testAuthUsername}-redeemer` : process.env.TEST_AUTH_SECOND_USERNAME || null;
   const redeemerPassword = isMockLane ? null : process.env.TEST_AUTH_SECOND_PASSWORD || null;
+  const redeemerTotpSecret = isMockLane ? null : process.env.TEST_AUTH_SECOND_TOTP_SECRET || null;
 
   addOnPageLogging(page);
 
@@ -621,7 +622,14 @@ test("Click through: A deleted generated pass is refused as expired on redemptio
     addOnPageLogging(redeemerPage);
     await goToHomePageExpectNotLoggedIn(redeemerPage, testUrl, screenshotPath);
     await clickLogIn(redeemerPage, screenshotPath);
-    await loginWithCognitoOrMockAuth(redeemerPage, testAuthProvider, redeemerUsername, screenshotPath, redeemerPassword);
+    await loginWithCognitoOrMockAuth(
+      redeemerPage,
+      testAuthProvider,
+      redeemerUsername,
+      screenshotPath,
+      redeemerPassword,
+      redeemerTotpSecret,
+    );
     await verifyLoggedInStatus(redeemerPage, screenshotPath);
     await consentToDataCollection(redeemerPage, screenshotPath);
     await goToBundlesPage(redeemerPage, screenshotPath);

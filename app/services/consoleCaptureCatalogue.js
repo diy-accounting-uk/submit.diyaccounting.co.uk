@@ -251,7 +251,7 @@ export function buildMetricWidget(item, region) {
 
 // The one query the Bedrock capture runs. It stores counts only, never a prompt or a response.
 export const BEDROCK_QUERY =
-  "stats count(*) as invocations, sum(input.inputTokenCount) as inputTokens, sum(output.outputTokenCount) as outputTokens by bin(1h), modelId";
+  "filter ispresent(modelId) | stats count(*) as invocations, sum(input.inputTokenCount) as inputTokens, sum(output.outputTokenCount) as outputTokens by bin(1h), modelId";
 
 /** The ids of every item any run can capture, for the check against the dashboard page. */
 export function allCaptureIds() {

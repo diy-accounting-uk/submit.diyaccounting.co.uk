@@ -229,7 +229,7 @@ describe("consoleCapturePublish", () => {
     await runConsoleCapture(dependencies);
     const startQuery = logsHandler.mock.calls.map((call) => call[0]).find((command) => command.name === "StartQuery");
     expect(startQuery.input.logGroupName).toBe("/ci/bedrock/invocations");
-    expect(startQuery.input.queryString).toMatch(/^stats count\(\*\) as invocations/);
+    expect(startQuery.input.queryString).toMatch(/^filter ispresent\(modelId\) \| stats count\(\*\) as invocations/);
     expect(indexFrom(puts).items["ci-bedrock"].rows).toEqual([
       { bin: "2026-11-02 01:00:00.000", modelId: "model-a", invocations: 3, inputTokens: 30, outputTokens: 9 },
     ]);
