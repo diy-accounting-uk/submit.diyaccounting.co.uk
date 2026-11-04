@@ -104,11 +104,7 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
-- [ ] **OSEC3. Set the origin secret on ci and prod.** After the batch merges, run `openssl rand -hex 32 | gh secret set ORIGIN_VERIFY_SECRET --env ci --repo diy-accounting-uk/submit.diyaccounting.co.uk`, then the same with `--env prod`. A session then runs `deploy-environment.yml` and a deploy. **Source**: SEC3. **Owner**: Operator. **Model**: none.
-
 - [ ] **OEML1. Read `PLAN_EMAIL_STRATEGY.md`, approve the move, and decide D1.** The plan keeps vendor logins at antony@, moves about 474 messages a year to support@ by six forward filters, and opens each machine notice in private behind `maintainer-review`. D1: payment notices stay at antony@ (the plan's choice until told otherwise), or move to records with a weekly donor digest, which cuts antony@ to 269 messages a year. Rows EML3 to EML12 in the plan start on this yes. The sender table is `../private.diyaccounting.co.uk/operator/EMAIL_SENDERS_2026-11-04.md`. **Source**: EML1, 2026-11-04. **Owner**: Operator. **Model**: none.
-
-- [ ] **OEML2. Request SES production access for submit-prod.** A session gives the exact request text when EML2's design has the sender and the bounce handling in place. AWS reviews the request. **Source**: EML2. **Owner**: Operator. **Model**: none.
 
 - [ ] **OTG1. Approve the smaller Telegram set.** Prod sends about 930 messages a day and about 12 carry a signal. The advice is `../private.diyaccounting.co.uk/operator/TELEGRAM_VOLUME_ADVICE_2026-11-04.md`. The proposed set: alarms, cost alerts and failed stacks to ops; real-customer subscribe, redeem and failures to live; the test chat dropped. Say yes, or name what to add (`support-ticket` is about 4 in 30 days, real-customer `vat-return-submitted` about 12). **Source**: TG1, 2026-11-04. **Owner**: Operator. **Model**: none.
 
@@ -125,6 +121,10 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 - [ ] **OCAMP2. Register a Reddit API app for `/campaign`'s thread search.** At https://www.reddit.com/prefs/apps, create a "script" app on a Reddit account the operator holds, read only; give Claude Code the client id and secret for a `!` command that stores them in the Secrets Manager secret `prod/submit/reddit-campaign-app` as JSON with `clientId` and `clientSecret`. UK Business Forums' RSS answers a browser challenge, so `campaign:threads` skips it until a source the site allows is chosen. Third-party sources say Reddit closed self-service API apps in November 2025, needs manual approval first, and limits commercial use without a licence; Reddit's own page was not read, so confirm before applying. **Source**: CAMP2. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **OSEC3. Set the origin secret on ci and prod.** After the batch merges, run `openssl rand -hex 32 | gh secret set ORIGIN_VERIFY_SECRET --env ci --repo diy-accounting-uk/submit.diyaccounting.co.uk`, then the same with `--env prod`. A session then runs `deploy-environment.yml` and a deploy. Blocked on the batch merging. **Source**: SEC3. **Owner**: Operator. **Model**: none.
+
+- [ ] **OEML2. Request SES production access for submit-prod.** A session gives the exact request text when EML2's design has the sender and the bounce handling in place. AWS reviews the request. Blocked on EML2's design. **Source**: EML2. **Owner**: Operator. **Model**: none.
 
 - [ ] **OMAT2. Matthew redeems his `resident-pro-pass` by 2026-11-11.** He holds the passphrase and plans to redeem on 2026-11-05; the operator's own pass redeemed on prod on 2026-11-04. He signs in, opens Bundles and enters it under "Have a pass?". The grant has no expiry and gives 100 tokens with no monthly refresh, which is 10 digital passes. If the pass lapses, generate another locally with `scripts/generate-pass.js`, because `generate-pass.yml`'s log is public. Blocked on Matthew's redemption. **Source**: operator, 2026-11-04. **Owner**: Operator. **Model**: none.
 
