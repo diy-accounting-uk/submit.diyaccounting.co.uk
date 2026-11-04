@@ -513,6 +513,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report: use when a behaviour suite runs with the synthetic HMRC account, or writes and publishes its test report after the run.
     - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard: use when the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
     - [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt: use when the operator asks for a tech-debt audit, a repository hygiene report, or how much debt the repositories carry.
+    - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session: use when the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5030,7 +5031,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5358,6 +5359,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report
 - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard
 - [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt
+- [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5656,6 +5658,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/tech-debt-audit/SKILL.md
 - **Keywords:** tech debt, technical debt audit, repository hygiene, hotspots, sqale, fowler quadrant, dora, dependabot alerts, pinned actions, iso 25010
 - **Related:** DEV-29, DEV-43, DEV-55
+
+#### DEV-57 Run a time-boxed marketing campaign session
+
+- **Use when:** the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
+- **Does:** campaign reads the goal's figures and stop rule, scans newsletters and community threads, shortlists five questions, drafts answers into a review queue for a person to post, makes one improvement to the site as a PR, and reports in three lines. It posts nothing to third-party sites and spends nothing.
+- **Run:** `/campaign <goal>`
+- **Entry:** `.claude/skills/campaign/SKILL.md`
+- **Files:** .claude/skills/campaign/SKILL.md
+- **Keywords:** campaign, marketing session, referral pass, forum answers, review queue, family affiliate, newsletters, stop rule
+- **Related:** DEV-45, DEV-30
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -6661,6 +6673,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - callback: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - called workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- campaign: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
@@ -7247,6 +7260,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - failing workflows: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
+- family affiliate: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - faq search: [SITE-10](#site-10-serve-general-site-pages)
 - favicon: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - feature branch hosts: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
@@ -7296,6 +7310,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
+- forum answers: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - forwarder: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - fowler quadrant: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - fraud header check: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
@@ -7718,6 +7733,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
 - marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- marketing session: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - maven package: [OPS-150](#ops-150-build-a-deployment)
@@ -7806,6 +7822,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - navigation structure: [SITE-12](#site-12-map-the-site-structure)
 - never torn down: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - new account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- newsletters: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - next.md: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents), [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - next.md readiness: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - next.md shape: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -8172,7 +8189,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reference example: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events)
-- referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly), [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - referrals.toml: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
 - referrer: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
@@ -8260,6 +8277,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reversal netting: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review document: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
+- review queue: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
@@ -8499,6 +8517,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - step definitions: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - step functions: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - stop agents: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
+- stop rule: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - storage state: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - storage tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - strategy: [SITE-20](#site-20-document-business-governance-and-positioning)
