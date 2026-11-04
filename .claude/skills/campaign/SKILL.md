@@ -62,10 +62,13 @@ the current step and write the report with what was done.
   (`app/services/commissionLedger.js`, its lines carry the referrer and the referral code). Read by
   key or through the activity lake (workgroup `prod-env-analytics`, database `prod_env_analytics`;
   `dt` is a DATE, so filter with `DATE '<day>'`). State the bytes scanned.
-- The acquisition source: the `ref` and `utm_*` values on the session beacon (marketing plan M1
-  and M2, `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` section 2). Until
-  the per-channel join exists (board row CAMP3), report uses and subscribers per pass, not per
-  channel, and say so.
+- The acquisition source: the view `v_campaign_channels_daily` joins the session beacon's `ref`
+  and `utm_*` values (marketing plan M1 and M2,
+  `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` section 2) to pass uses,
+  subscribers and commission pence, one row per day, utm source, medium, campaign and ref. Query it
+  in the lake (workgroup `prod-env-analytics`) for the last 30 days and report per place, not per
+  pass. Sessions come only from visits that gave consent, and a use or subscriber whose account
+  has no sourced bundle record reports the pass code as `ref`.
 - Judge them against the brief's stop rule. Fewer than 10 Uses in six weeks means change the
   place. Ten or more Uses with no subscriber means fix the landing page before more posting, so
   this session's step 4 picks MKT1 or MKT2.

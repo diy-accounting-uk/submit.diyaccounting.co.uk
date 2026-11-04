@@ -391,6 +391,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard: use when the operator-only dashboard page must show the eight one-stop objectives or the account's activity list.
   - [SQL views](#sql-views-data)
     - [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic: use when a question is about daily active users, HMRC auth/bundle activity, GA4 sessions, visitor kind or funnel steps.
+    - [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place: use when a campaign report must say which place (utm source, medium, campaign or referral code) produced sessions, pass uses, subscribers and commission.
     - [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription: use when a question is about Stripe revenue, subscription renewals/cancellations, purchase reconciliation or pass redemptions.
     - [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance: use when a question is about VAT/ITSA/Companies House completions, HMRC failures, signup funnels, repeat filers or accessibility.
     - [DATA-30](#data-30-sql-views-cost) SQL views: cost: use when a question is about AWS spend by service or tag, cost per submission, or the steady-state target.
@@ -4017,7 +4018,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues · [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
-- [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
+- [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
 - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
@@ -4410,6 +4411,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group sql-views-data -->
 - [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic
+- [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place
 - [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription
 - [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance
 - [DATA-30](#data-30-sql-views-cost) SQL views: cost
@@ -4425,6 +4427,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** infra/main/resources/analytics/views/activity_events_all.sql, infra/main/resources/analytics/views/v_active_users_daily.sql, infra/main/resources/analytics/views/v_business_activity_daily.sql, infra/main/resources/analytics/views/v_traffic_by_country_daily.sql, infra/main/resources/analytics/views/v_traffic_sources_daily.sql, infra/main/resources/analytics/views/v_visitors_by_kind_daily.sql, infra/main/resources/analytics/views/v_ga4_funnel_daily.sql
 - **Keywords:** active users daily, business activity, traffic by country, traffic sources, visitors by kind, ga4 funnel, activity_events_all
 - **Related:** DATA-10, DATA-01, DATA-23
+
+#### DATA-68 SQL view: campaign results by place
+
+- **Use when:** a campaign report must say which place (utm source, medium, campaign or referral code) produced sessions, pass uses, subscribers and commission.
+- **Does:** v_campaign_channels_daily joins the session beacon's ref and utm_* values (new-session events), pass redemptions and live commission lines on one key per day: utm source, medium, campaign and ref. Redemptions and commission lines reach the key through the redeemer's first bundle record, which carries the acquisition captured at landing. BusinessViews.java registers the view.
+- **Run:** no command; `SELECT * FROM v_campaign_channels_daily WHERE day >= current_date - INTERVAL '30' DAY`
+- **Entry:** `infra/main/resources/analytics/views/v_campaign_channels_daily.sql:`
+- **Files:** infra/main/resources/analytics/views/v_campaign_channels_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java
+- **Keywords:** campaign, channel, utm_source, utm_campaign, ref, pass uses, subscribers, commission, attribution, new-session
+- **Related:** DATA-10, DATA-27, DEV-57
 
 #### DATA-28 SQL views: revenue and subscription
 
@@ -6546,6 +6558,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - athena view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - athena workgroup: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
+- attribution: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - audit trail: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - auth logic: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - auth platform brand: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -6721,7 +6734,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - callback: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - called workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
-- campaign: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
+- campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
 - campaign threads: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
@@ -6771,7 +6784,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - change of email: [CH-06](#ch-06-file-a-change-of-registered-email-address)
 - changed files: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - changelineamount: [SS-04](#ss-04-apply-book-edits-and-derivations)
-- channel: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
+- channel: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - channel as code: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - channel handle: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - channel state: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
@@ -6870,7 +6883,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
@@ -7879,6 +7892,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - navigation structure: [SITE-12](#site-12-map-the-site-structure)
 - never torn down: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - new account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- new-session: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - newsletters: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - next.md: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents), [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - next.md readiness: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
@@ -8019,6 +8033,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
+- pass uses: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - passphrase: [BILL-10](#bill-10-redeem-a-pass)
 - passphrase salt: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
@@ -8246,6 +8261,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - redirect uri: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - redirect-function.js: [SS-24](#ss-24-compile-the-redirect-engine)
 - redirects.toml: [SS-24](#ss-24-compile-the-redirect-engine)
+- ref: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - reference check: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - reference example: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -8630,6 +8646,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submitstackprops: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - submitvat worker: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - submitvatcallback: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
+- subscribers: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - subscription: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - subscription bundle: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - subscription cancellations: [DATA-28](#data-28-sql-views-revenue-and-subscription)
@@ -8809,8 +8826,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user provisioning role: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
-- utm_campaign: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
-- utm_source: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- utm_campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- utm_source: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - ux review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
