@@ -19,6 +19,7 @@ package co.uk.diyaccounting.submit.constructs;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -164,6 +165,7 @@ public class Lambda {
         }
         this.ingestLambda = dockerFunctionBuilder.build();
         OperatorEmailsHelper.grantWhenPublishingActivity(this.ingestLambda, environment);
+        IntegrationCallAccess.grantWhenRecording(this.ingestLambda, environment);
         infof("Created Lambda %s with function %s", this.ingestLambda.getNode().getId(), this.ingestLambda.toString());
 
         this.ingestLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-ingest-version")

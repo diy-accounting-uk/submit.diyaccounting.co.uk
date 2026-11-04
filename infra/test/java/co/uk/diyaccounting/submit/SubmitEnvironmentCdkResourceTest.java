@@ -136,8 +136,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions, commissions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 136);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 65);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 138);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 66);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -184,8 +184,20 @@ class SubmitEnvironmentCdkResourceTest {
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
-        // HmrcFraudHeaderViolationAlarm and HmrcFraudHeaderRuleFailureAlarm, that's 10 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 10);
+        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm and
+        // IntegrationCallRecordFailedAlarm, that's 11 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 11);
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-integration-call-record-failed",
+                        "Namespace", "Submit/IntegrationCalls",
+                        "MetricName", "IntegrationCallRecordFailed",
+                        "Period", 3600,
+                        "EvaluationPeriods", 1,
+                        "Threshold", 5,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

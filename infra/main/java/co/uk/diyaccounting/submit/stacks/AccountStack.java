@@ -31,6 +31,7 @@ import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
 import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.McpHmrcGrantAccessHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -790,6 +791,8 @@ public class AccountStack extends Stack {
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                practiceClientsLambdaEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
 
         var practiceClientsListGetApiLambda = new ApiLambda(
                 this,
@@ -1506,6 +1509,8 @@ public class AccountStack extends Stack {
         var affiliatePostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                affiliatePostLambdaEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         withStripeSecretArns(affiliatePostLambdaEnv, props);
         var affiliatePostApiLambda = new ApiLambda(
                 this,
@@ -1546,6 +1551,8 @@ public class AccountStack extends Stack {
         var affiliateGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                affiliateGetLambdaEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         withStripeSecretArns(affiliateGetLambdaEnv, props);
         var affiliateGetApiLambda = new ApiLambda(
                 this,
@@ -1586,6 +1593,10 @@ public class AccountStack extends Stack {
         var affiliateApplicationPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                affiliateApplicationPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         withStripeSecretArns(affiliateApplicationPostLambdaEnv, props);
         affiliateApplicationPostLambdaEnv.with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName);
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
@@ -1636,6 +1647,10 @@ public class AccountStack extends Stack {
         var affiliateApplicationGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                affiliateApplicationGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         withStripeSecretArns(affiliateApplicationGetLambdaEnv, props);
         var affiliateApplicationGetApiLambda = new ApiLambda(
                 this,
@@ -1995,6 +2010,10 @@ public class AccountStack extends Stack {
                 .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                commissionCreditPayoutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         withStripeSecretArns(commissionCreditPayoutLambdaEnv, props);
         var commissionCreditPayoutLambdaConstruct = new Lambda(
                 this,
@@ -2046,6 +2065,10 @@ public class AccountStack extends Stack {
                 .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                commissionCashPayoutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         withStripeSecretArns(commissionCashPayoutLambdaEnv, props);
         var commissionCashPayoutLambdaConstruct = new Lambda(
                 this,

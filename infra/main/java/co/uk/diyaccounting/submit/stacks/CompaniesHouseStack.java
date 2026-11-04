@@ -25,6 +25,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -299,6 +300,10 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseSearchGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseSearchGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
         }
@@ -345,6 +350,10 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseCompanyGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseCompanyGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
         }
@@ -394,6 +403,10 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseTokenPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(props.companiesHouseIdentityBaseUri())) {
             companiesHouseTokenPostLambdaEnv.with(
                     "COMPANIES_HOUSE_IDENTITY_BASE_URI", props.companiesHouseIdentityBaseUri());
@@ -586,6 +599,10 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseRegisteredOfficeAddressGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(officeReadApiKeyArn)) {
             companiesHouseRegisteredOfficeAddressGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", officeReadApiKeyArn);
         }
@@ -1117,6 +1134,10 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseOfficersGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHouseOfficersGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
         }
@@ -1160,6 +1181,11 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+
+        IntegrationCallAccess.addEnv(
+                companiesHousePscGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
             companiesHousePscGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
         }
@@ -1766,6 +1792,8 @@ public class CompaniesHouseStack extends Stack {
         var env = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with(IntegrationCallAccess.ENV_NAME, props.sharedNames().data.integrationCallsTableName)
+                .with(IntegrationCallAccess.DEPLOYMENT_ENV_NAME, props.deploymentName())
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())) {
             env.with("COMPANIES_HOUSE_FILING_BASE_URI", props.companiesHouseFilingBaseUri());
@@ -1815,6 +1843,8 @@ public class CompaniesHouseStack extends Stack {
         var env = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with(IntegrationCallAccess.ENV_NAME, props.sharedNames().data.integrationCallsTableName)
+                .with(IntegrationCallAccess.DEPLOYMENT_ENV_NAME, props.deploymentName())
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.companiesHouseXmlGatewayUri())) {
             env.with("COMPANIES_HOUSE_XMLGW_URI", props.companiesHouseXmlGatewayUri());
@@ -1829,6 +1859,8 @@ public class CompaniesHouseStack extends Stack {
         return new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with(IntegrationCallAccess.ENV_NAME, props.sharedNames().data.integrationCallsTableName)
+                .with(IntegrationCallAccess.DEPLOYMENT_ENV_NAME, props.deploymentName())
                 .with("ENVIRONMENT_NAME", props.envName());
     }
 

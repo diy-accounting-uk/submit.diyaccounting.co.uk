@@ -23,6 +23,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.Route53AliasUpsert;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -175,6 +176,9 @@ public class BillingWebhookStack extends Stack {
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("DIYA_GL_BUCKET_NAME", props.sharedNames().data.diyaGlBucketName)
                 .with("ENVIRONMENT_NAME", props.envName());
+
+        IntegrationCallAccess.addEnv(
+                lambdaEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             lambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }

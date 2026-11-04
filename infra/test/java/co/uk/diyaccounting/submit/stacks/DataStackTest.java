@@ -238,6 +238,7 @@ class DataStackTest {
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
             dataStack.mcpSessionsTable.getTableName(),
+            dataStack.integrationCallsTable.getTableName(),
         };
 
         template.resourceCountIs("Custom::EnsurePitr", tableNames.length);
@@ -268,6 +269,40 @@ class DataStackTest {
                                         "\"AttributeName\":\"ttl\"",
                                         "\"Enabled\":true"))));
         assertEquals(1, resource.size());
+    }
+
+    @Test
+    void integrationCallsTableIsKeyedByPkAndSkAndExpiresOnTtl() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String tableName = dataStack.integrationCallsTable.getTableName();
+
+        assertTrue(tableName.endsWith("-env-integration-calls"), tableName);
+        var created = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "createTable",
+                                        tableName,
+                                        "\"AttributeName\":\"pk\"",
+                                        "\"AttributeName\":\"sk\"",
+                                        "PAY_PER_REQUEST"))));
+        assertEquals(1, created.size());
+        var ttl = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        tableName,
+                                        "\"AttributeName\":\"ttl\"",
+                                        "\"Enabled\":true"))));
+        assertEquals(1, ttl.size());
     }
 
     @Test

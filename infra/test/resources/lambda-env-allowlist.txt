@@ -18,6 +18,9 @@
 # No entry here represents a variable that is genuinely unset where the code needs it; see the
 # SR-8 report for the file:line evidence behind each bucket-(b) call.
 
+# --- set by the Lambda runtime ---
+AWS_LAMBDA_FUNCTION_NAME   the Lambda runtime sets it on every function
+
 # --- logging / environment feature flags (bucket a) ---
 LOG_TO_CONSOLE     app/lib/logger.js:54, `!== "false"` -- defaults to console logging on
 LOG_TO_FILE        app/lib/logger.js:55, `=== "true"` -- defaults to file logging off

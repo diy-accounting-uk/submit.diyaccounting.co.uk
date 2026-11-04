@@ -5,11 +5,14 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awscdk.App;
@@ -75,5 +78,15 @@ class HmrcItsaStackTest {
                 BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(TEMPLATE, workerFunctionName),
                 "worker Lambda " + workerFunctionName
                         + " charges a token on success and must be granted dynamodb:UpdateItem on the bundles table");
+    }
+
+    // CloudFormation refuses a stack past 500 resources and this stack sits within a few of it.
+    // The integration calls grant joins each Lambda's existing role policy, so it adds no resource.
+    @Test
+    void stackResourceCountStaysAtItsMeasuredSizeBelowTheCloudFormationLimit() {
+        @SuppressWarnings("unchecked")
+        int resourceCount = ((Map<String, Object>) TEMPLATE.toJSON().get("Resources")).size();
+        assertEquals(486, resourceCount, "HmrcItsaStack resource count changed");
+        assertTrue(resourceCount < 500, "HmrcItsaStack has " + resourceCount + " resources; the limit is 500");
     }
 }
