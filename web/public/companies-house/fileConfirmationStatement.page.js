@@ -449,6 +449,10 @@ async function handleAuthSubmit(event) {
     showView("reviewView");
   } catch (error) {
     console.error("Failed to read the confirmation statement filing data:", error);
+    if (error.status === 400 && error.body?.reason === "invalid-company-authentication-code") {
+      window.formErrors.showFormErrors([{ input: codeInput, message: error.message }]);
+      return;
+    }
     showStatus(error.message || "Failed to read the confirmation statement filing data.", "error");
   } finally {
     hideLoading();
