@@ -62,6 +62,8 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Machine-only
 
+- [ ] **FPH1. Some prod VAT requests reach HMRC with no fraud prevention headers.** HMRC's Developer Hub page (Fraud prevention, Your headers, Production, VAT) shows 9 of 60 requests in October 2026 (15%) and 2 of 2 in November to date (last request 3 November) with no connection method. Those requests miss `Gov-Client-Connection-Method`, `Gov-Client-Device-ID`, `Gov-Client-Timezone`, `Gov-Client-User-IDs`, `Gov-Vendor-Product-Name` and `Gov-Vendor-Version` (action Fix) and `Gov-Vendor-License-IDs` (action Review). The other 51 October requests are "Web app via server" with no issue on any header, so `app/lib/buildFraudHeaders.js` is correct when it runs. Theory: a code path calls HMRC without it, because `govClientHeaders` defaults to `{}` in `hmrcHttpGet` (`app/services/hmrcApi.js` line 410), and HMRC checks only these seven when the connection method is absent. Find the path first: read the prod HMRC request records for 3 November and October (`prod-env-hmrc-api-requests` by Query or the Athena lake, never Scan), and take the VAT requests whose stored headers hold no `Gov-Client-Connection-Method`. Check a VAT call with an empty header object, a worker or retry that drops the headers, and a call from outside the web app (a script, MCP or a prod probe). Fix the path, then make `hmrcHttpGet` and `hmrcHttpPost` refuse a VAT call without the headers, with a unit test, so that no default can send an empty set. Done when the Developer Hub page shows no Fix for a month of prod requests. **Source**: HMRC Developer Hub, read by the operator on 2026-11-04. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 ## Machine-ask
 
 ## Human-driven
