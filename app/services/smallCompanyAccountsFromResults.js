@@ -275,8 +275,9 @@ export function smallCompanyFormat2ProfitAndLossFromResults(results) {
  * @param {Object} scenario - diyaGlToScenario output
  * @param {Object} [options]
  * @param {Object} [options.priorYearProfitAndLoss]
+ * @param {boolean} [options.requireDirectorsNote] - true (the default) throws when the book owes the company a director's loan and names no director; false leaves the note out
  */
-export function smallCompanyAccountsFromResults(book, results, scenario, { priorYearProfitAndLoss } = {}) {
+export function smallCompanyAccountsFromResults(book, results, scenario, { priorYearProfitAndLoss, requireDirectorsNote = true } = {}) {
   const info = book.documentInfo ?? {};
   const entity = book.entityInformation ?? {};
   const periodStart = isoDate(info.periodCoveredStart);
@@ -318,7 +319,7 @@ export function smallCompanyAccountsFromResults(book, results, scenario, { prior
     averageNumberOfEmployees: (book.employees ?? []).length,
     directors: (book.directors ?? []).map((director) => director.name).filter(Boolean),
     directorName: book.directors?.[0]?.name ?? null,
-    ...directorsAdvancesFrom(currentYear, priorYear, book.directors?.[0]?.name),
+    ...directorsAdvancesFrom(currentYear, priorYear, book.directors?.[0]?.name, { requireNote: requireDirectorsNote }),
     profitAndLoss: { currentYear: profitAndLoss, ...(priorYearProfitAndLoss ? { priorYear: priorYearProfitAndLoss } : {}) },
     profitAndLossFormat2: { currentYear: smallCompanyFormat2ProfitAndLossFromResults(results) },
     balanceSheet: { currentYear, priorYear },

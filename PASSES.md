@@ -176,7 +176,8 @@ The ledger reads these items to find the referrer of a paying account.
 - Release time counts from the payment.
 - Connect payouts are for GB accounts only.
 - The operator pays `family` by bank transfer from the ledger figure.
-- An annual subscription pays the same share of the months that fall inside the window. A customer or affiliate tier pays 33% of three twelfths of the net. `family` pays one twelfth.
+- An annual subscription on `family`, `casual` and `creator` pays `annualRateBps` (25%) of the net once, on an invoice of 12 or more months that starts inside the tier window. A renewal outside the window pays nothing. The caps apply. `customer` has no `annualRateBps` and pays 33% of three twelfths of the net.
+- The first paid invoice copies `annualRateBps` onto the anchor beside `rateBps` and `months`, so a later change to `referrals.toml` does not reach existing referrals. An anchor written before the field existed has none and pays by the months share.
 - `[ledger]` holds the switches. `accrue` lets `invoice.paid` write lines. `payCredit` lets the monthly job move credit onto customer balances, and it is on. `payCash` lets the cash payout job pay Connect transfers, and that job reads it.
 - A family affiliate list marks a referrer as `family`. The list is the Secrets Manager secret `{env}/submit/family-affiliate-emails`, set from the GitHub secret `FAMILY_AFFILIATE_EMAILS`. It works as `{env}/submit/operator-emails` does for operators.
 

@@ -182,13 +182,18 @@ function rounded(lines) {
  * The section 413 note rows for a director's loan account that is overdrawn at either balance
  * sheet date, as { directorsAdvances }, or nothing. The book holds the two balances and no
  * gross movements, so a year's net rise is the advance and a net fall is the repayment. The
- * interest rate and the main conditions are the company's to state.
+ * interest rate and the main conditions are the company's to state. A book with an overdrawn
+ * loan and no director throws when the note is required (a filed document must carry it) and
+ * gives no note otherwise (figures only).
  */
-export function directorsAdvancesFrom(currentYear, priorYear, directorName) {
+export function directorsAdvancesFrom(currentYear, priorYear, directorName, { requireNote }) {
   const balanceAtEnd = Math.round(currentYear.amountsOwedByDirectors ?? 0);
   const balanceAtStart = Math.round(priorYear.amountsOwedByDirectors ?? 0);
   if (balanceAtEnd === 0 && balanceAtStart === 0) return {};
-  if (!directorName) throw new Error("The book names no director to carry the advances to directors note");
+  if (!directorName) {
+    if (requireNote) throw new Error("The book names no director to carry the advances to directors note");
+    return {};
+  }
   return {
     directorsAdvances: [
       {
@@ -208,8 +213,10 @@ export function directorsAdvancesFrom(currentYear, priorYear, directorName) {
  * @param {Object} book
  * @param {Object} results - calculatedResultsFor output
  * @param {Object} scenario - diyaGlToScenario output
+ * @param {Object} [options]
+ * @param {boolean} [options.requireDirectorsNote] - true (the default) throws when the book owes the company a director's loan and names no director; false leaves the note out
  */
-export function microEntityAccountsFromResults(book, results, scenario) {
+export function microEntityAccountsFromResults(book, results, scenario, { requireDirectorsNote = true } = {}) {
   const info = book.documentInfo ?? {};
   const entity = book.entityInformation ?? {};
   const periodStart = isoDate(info.periodCoveredStart);
@@ -244,7 +251,7 @@ export function microEntityAccountsFromResults(book, results, scenario) {
     priorBalanceSheetDate: dayBefore(periodStart),
     averageNumberOfEmployees: (book.employees ?? []).length,
     directorName: book.directors?.[0]?.name ?? null,
-    ...directorsAdvancesFrom(current, prior, book.directors?.[0]?.name),
+    ...directorsAdvancesFrom(current, prior, book.directors?.[0]?.name, { requireNote: requireDirectorsNote }),
     dormant: false,
     profitAndLoss,
     balanceSheet: { currentYear, priorYear },

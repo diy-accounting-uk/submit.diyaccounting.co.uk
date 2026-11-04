@@ -129,14 +129,15 @@ describe("migration runner", () => {
         { hashedSub: "system#migrations", bundleId: "006-drop-sandbox-qualifier" },
         { hashedSub: "system#migrations", bundleId: "007-resident-to-resident-pro" },
         { hashedSub: "system#migrations", bundleId: "008-delete-resident-pro-without-expiry" },
+        { hashedSub: "system#migrations", bundleId: "009-delete-resident-pro-empty-expiry" },
       ],
     });
 
     const result = await runMigrations();
 
     expect(result.applied).toBe(0);
-    expect(result.skipped).toBe(8);
-    expect(result.total).toBe(8);
+    expect(result.skipped).toBe(9);
+    expect(result.total).toBe(9);
 
     // Only the QueryCommand for checking applied migrations
     expect(mockDynamoSend).toHaveBeenCalledTimes(1);
@@ -161,10 +162,10 @@ describe("migration runner", () => {
     const result = await runMigrations("pre-deploy");
 
     // 001, 004, 005 are pre-deploy but already applied → counted as skipped
-    // 002, 003, 006, 007, 008 are post-deploy → skipped by phase filter (not counted in skipped)
+    // 002, 003, 006, 007, 008, 009 are post-deploy → skipped by phase filter (not counted in skipped)
     expect(result.applied).toBe(0);
     expect(result.skipped).toBe(3);
-    expect(result.total).toBe(8);
+    expect(result.total).toBe(9);
   });
 
   test("runs unapplied pre-deploy migration and records it", async () => {
@@ -191,7 +192,7 @@ describe("migration runner", () => {
 
     expect(result.applied).toBe(1);
     expect(result.skipped).toBe(2);
-    expect(result.total).toBe(8);
+    expect(result.total).toBe(9);
 
     // Second DynamoDB call is PutCommand recording the applied migration
     expect(mockDynamoSend).toHaveBeenCalledTimes(2);
@@ -223,7 +224,7 @@ describe("migration runner", () => {
 
     expect(result.applied).toBe(1);
     expect(result.skipped).toBe(2);
-    expect(result.total).toBe(8);
+    expect(result.total).toBe(9);
 
     // Only the initial QueryCommand for already-applied migrations — no PutCommand recording 001
     expect(mockDynamoSend).toHaveBeenCalledTimes(1);
@@ -243,6 +244,7 @@ describe("migration runner", () => {
         { hashedSub: "system#migrations", bundleId: "006-drop-sandbox-qualifier" },
         { hashedSub: "system#migrations", bundleId: "007-resident-to-resident-pro" },
         { hashedSub: "system#migrations", bundleId: "008-delete-resident-pro-without-expiry" },
+        { hashedSub: "system#migrations", bundleId: "009-delete-resident-pro-empty-expiry" },
       ],
     });
 

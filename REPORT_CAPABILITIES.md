@@ -406,6 +406,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads: use when paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
     - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud: use when an analytics Lambda must call a Google Cloud or GA4 API without a stored service-account key.
     - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events: use when a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
+    - [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification: use when a Search Console domain property must exist and be verified for the service account, or the DNS_CNAME verification tokens must be read.
     - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries: use when the ga4_daily BigQuery dataset's scheduled queries must match bigquery.toml.
     - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs: use when a fresh GA4 project needs its required services enabled with no console click.
     - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project: use when the GA4 billing account's budget alert thresholds must be checked, or a stray auto-created project verified empty.
@@ -2269,7 +2270,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-53 Read the caller's affiliate application
 
 - **Use when:** a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
-- **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
+- **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item and answers the referral terms of the tier the caller earns, from referrals.toml. While the state is applied, or approved with transfers not yet active, it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
 - **Run:** `GET /api/v1/affiliate/application`
 - **Entry:** `app/functions/account/affiliateApplicationGet.js:ingestHandler`
 - **Files:** app/functions/account/affiliateApplicationGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationGet.test.js, web/public/bundles.page.js
@@ -2691,7 +2692,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** runner.js applies numbered migration scripts under scripts/migrations/. Each script exports an up() function and a phase, pre-deploy or post-deploy. Applied migrations are tracked in the bundles table; migrations 005 and 006 renamed qualifiers.sandbox to qualifiers.synthetic across a deploy boundary.
 - **Run:** `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=<all|pre-deploy|post-deploy> -f dry-run=<true|false>`
 - **Entry:** `scripts/migrations/runner.js:runMigrations`
-- **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, scripts/migrations/007-resident-to-resident-pro.js, scripts/migrations/008-delete-resident-pro-without-expiry.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
+- **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, scripts/migrations/007-resident-to-resident-pro.js, scripts/migrations/008-delete-resident-pro-without-expiry.js, scripts/migrations/009-delete-resident-pro-empty-expiry.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
 - **Keywords:** data migration, migration runner, pre-deploy, post-deploy, bundles table, dry run, schema change
 - **Related:** OPS-09
 
@@ -3574,7 +3575,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-67 Apply Google Cloud / GA4 infrastructure
 
 - **Use when:** Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
-- **Does:** google-apply.yml runs the infra/google/** scripts in dependency order. The order is API enablement, workload identity, IAM roles, billing, GA4, the GA4-in-BigQuery dataset, then the OAuth client check. It plans on a pull request and applies on a push to main or a manual dispatch with apply true.
+- **Does:** google-apply.yml runs the infra/google/** scripts in dependency order. The order is API enablement, workload identity, IAM roles, billing, GA4, the GA4-in-BigQuery dataset, Search Console verification, then the OAuth client check. It plans on a manual dispatch with apply false and applies on a push to main or a manual dispatch with apply true.
 - **Run:** `gh workflow run google-apply.yml -f apply=<true|false>`
 - **Entry:** `.github/workflows/google-apply.yml`
 - **Files:** .github/workflows/google-apply.yml
@@ -3994,7 +3995,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data · [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly
 <!-- /generated:area DATA -->
 
@@ -4533,6 +4534,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads
 - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud
 - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events
+- [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification
 - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries
 - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs
 - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project
@@ -4574,6 +4576,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** infra/google/ga4/ga4-sync.js, app/unit-tests/scripts/ga4Sync.test.js, infra/google/ga4/analytics.toml
 - **Keywords:** ga4 property sync, data streams, key events, enhanced measurement, bigquery link, measurement id, github environment variable
 - **Related:** DATA-39, DATA-05, DATA-06
+
+#### DATA-67 Sync Search Console domain properties and their verification
+
+- **Use when:** a Search Console domain property must exist and be verified for the service account, or the DNS_CNAME verification tokens must be read.
+- **Does:** searchconsole-sync.js reads searchconsole.toml, lists the service account's verified domains and Search Console sites, and asks the Site Verification API for each unverified domain's DNS_CNAME token. A plan prints the CNAME name and target to add to DNS. With --apply it verifies each domain whose CNAME is live and adds its property. A domain whose CNAME is not yet live is reported as unverified and the run still exits zero.
+- **Run:** `npm run searchconsole:sync`; `npm run searchconsole:sync -- --apply`
+- **Entry:** `infra/google/searchconsole/searchconsole-sync.js:main`
+- **Files:** infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole.toml, app/unit-tests/scripts/searchconsoleSync.test.js
+- **Keywords:** search console, site verification, dns cname token, domain property, sc-domain, verified owner
+- **Related:** DATA-38, OPS-67, DATA-47
 
 #### DATA-39 Sync GA4-in-BigQuery scheduled queries
 
@@ -7099,6 +7111,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- dns cname token: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - dns validation: [SS-37](#ss-37-request-acm-certificates)
 - do-next: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - do-next agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
@@ -7111,6 +7124,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dom helpers: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - domain convention: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - domain cutover: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
+- domain property: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - domain url: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - domain-scoped agent: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - domain-wide delegation: [DATA-61](#data-61-intake-support-email-as-private-issues)
@@ -8338,6 +8352,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - savework book: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - sbom: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sc 1.2.1: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
+- sc-domain: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - scan and batch-write: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - scan detection: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - scan detection alarm: [OPS-122](#ops-122-provision-the-security-detection-stack)
@@ -8369,6 +8384,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
+- search console: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - second store: [SS-28](#ss-28-store-books-in-google-drive)
 - secret scan: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
@@ -8448,6 +8464,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
+- site verification: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
 - sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
@@ -8776,6 +8793,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
 - verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
+- verified owner: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify pipeline: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify roundtrip: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)

@@ -83,6 +83,14 @@ describe("companyBookPull", () => {
     expect(mockGetVersion).toHaveBeenCalledWith(OWNER_PREFIX, BOOK_ID, 5);
   });
 
+  test("derives the figures without requiring the advances to directors note", async () => {
+    stubBook();
+
+    await handler({ date: "2026-09-25" });
+
+    expect(mockDeriveCompanyBookFigures).toHaveBeenCalledWith({ book: BOOK, lines: LINES }, { requireDirectorsNote: false });
+  });
+
   test("throws when the book has no metadata", async () => {
     mockReadMetadata.mockResolvedValue(null);
 

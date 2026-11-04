@@ -159,6 +159,27 @@ function invoiceFor(monthIndex) {
   };
 }
 
+const YEAR_END = Date.UTC(2027, 0, 1);
+const NEXT_YEAR_END = Date.UTC(2028, 0, 1);
+
+function yearlyInvoiceFor(yearIndex) {
+  const invoice = invoiceFor(0);
+  const start = yearIndex === 0 ? MONTH_STARTS[0] : YEAR_END;
+  const end = yearIndex === 0 ? YEAR_END : NEXT_YEAR_END;
+  invoice.id = `in_${tableCounter}_year${yearIndex + 1}`;
+  invoice.charge.id = `ch_${tableCounter}_year${yearIndex + 1}`;
+  invoice.charge.created = seconds(start + 3600 * 1000);
+  invoice.charge.balance_transaction.net = 3900;
+  invoice.lines.data[0].period = { start: seconds(start), end: seconds(end) };
+  return invoice;
+}
+
+async function payYearlyInvoice(yearIndex) {
+  const invoice = yearlyInvoiceFor(yearIndex);
+  stripeState.invoices[invoice.id] = invoice;
+  await sendWebhook("invoice.paid", invoice);
+}
+
 async function sendWebhook(type, object) {
   const payload = JSON.stringify({ id: `evt_${type}_${object.id}`, object: "event", type, livemode: true, data: { object } });
   const signature = Stripe.webhooks.generateTestHeaderString({ payload, secret: WEBHOOK_SECRET });
@@ -326,5 +347,21 @@ describe("commission journeys on dynalite and the Stripe simulator", () => {
     expect((await Promise.all([0, 1, 2].map(lineOf))).map((line) => line.state)).toEqual(["payable", "payable", "payable"]);
     expect(await repo.queryPayablePointers(repo.PAYABLE_CONNECT_PARTITION)).toHaveLength(3);
     expect(stripeState.transfers).toEqual([]);
+  });
+
+  test("J5 affiliate approved casual with a yearly subscriber: the first year pays 25 percent of the net once and the renewal pays nothing", async () => {
+    await seedAccounts();
+    await passes.putAffiliate({ referrerHash: ids.referrer, tier: "casual", state: "approved", now: "2025-11-01T00:00:00.000Z" });
+    await payYearlyInvoice(0);
+    await payYearlyInvoice(1);
+
+    const first = await repo.getLine(ids.referrer, `in_${tableCounter}_year1`);
+    expect(shape(first)).toEqual({ state: "held", tier: "casual", form: "cash", amountPence: 975, holdReasons: [] });
+    expect(first).toMatchObject({ lineMonths: 12, eligibleMonths: 12 });
+    expect(await repo.getLine(ids.referrer, `in_${tableCounter}_year2`)).toBeNull();
+
+    const due = new Date(first.releaseAt);
+    expect(await release.releaseCommissions(due)).toEqual({ evaluated: 1, released: 1, held: 0, stale: 0 });
+    expect(await totalsItem("totals#taxyear#2026-27")).toMatchObject({ cashPence: 975 });
   });
 });

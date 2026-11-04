@@ -79,6 +79,7 @@ export function affiliateFigures() {
   return {
     ratePercent: cash.rateBps / 100,
     months: cash.months,
+    annualRatePercent: cash.annualRateBps / 100,
     creditHoldDays: customer.holdDays,
     cashHoldDays: cash.holdDays,
     capMonthPounds: cash.capMonthPence / 100,

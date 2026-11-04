@@ -7,7 +7,7 @@
 // - **Does:** runner.js applies numbered migration scripts under scripts/migrations/. Each script exports an up() function and a phase, pre-deploy or post-deploy. Applied migrations are tracked in the bundles table; migrations 005 and 006 renamed qualifiers.sandbox to qualifiers.synthetic across a deploy boundary.
 // - **Run:** `gh workflow run run-migrations.yml -f environment-name=<ci|prod> -f phase=<all|pre-deploy|post-deploy> -f dry-run=<true|false>`
 // - **Entry:** `scripts/migrations/runner.js:runMigrations`
-// - **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, scripts/migrations/007-resident-to-resident-pro.js, scripts/migrations/008-delete-resident-pro-without-expiry.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
+// - **Files:** scripts/migrations/runner.js, scripts/migrations/005-copy-sandbox-qualifier-to-synthetic.js, scripts/migrations/006-drop-sandbox-qualifier.js, scripts/migrations/007-resident-to-resident-pro.js, scripts/migrations/008-delete-resident-pro-without-expiry.js, scripts/migrations/009-delete-resident-pro-empty-expiry.js, app/unit-tests/migrations/005-copy-sandbox-qualifier-to-synthetic.test.js, app/unit-tests/migrations/006-drop-sandbox-qualifier.test.js, app/unit-tests/migrations/runner.test.js, .github/workflows/run-migrations.yml
 // - **Keywords:** data migration, migration runner, pre-deploy, post-deploy, bundles table, dry run, schema change
 // - **Related:** OPS-09
 // @end-capability
