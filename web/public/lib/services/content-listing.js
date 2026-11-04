@@ -6,7 +6,7 @@
 // the catalogue lists that activity in the current environment, or preview features are on. An
 // item that names none always shows.
 
-import { fetchCurrentEnvironmentName, isActivityShown } from "./catalog-service.js";
+import { fetchCatalogText, fetchCurrentEnvironmentName, isActivityShown } from "./catalog-service.js";
 import { fetchViewer } from "./viewer-settings.js";
 
 /**
@@ -16,13 +16,8 @@ import { fetchViewer } from "./viewer-settings.js";
  */
 export async function fetchActivityListing() {
   try {
-    const [response, environmentName, viewer] = await Promise.all([
-      fetch("/submit.catalogue.toml"),
-      fetchCurrentEnvironmentName(),
-      fetchViewer(),
-    ]);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const catalog = window.TOML.parse(await response.text());
+    const [catalogText, environmentName, viewer] = await Promise.all([fetchCatalogText(), fetchCurrentEnvironmentName(), fetchViewer()]);
+    const catalog = window.TOML.parse(catalogText);
     return (activityId) => {
       if (!activityId) return true;
       const activity = (catalog.activities ?? []).find((candidate) => candidate.id === activityId);

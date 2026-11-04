@@ -27,9 +27,8 @@
 
     fetchPromises.catalog = (async () => {
       try {
-        const response = await fetch("/submit.catalogue.toml");
-        if (response.ok) {
-          const text = await response.text();
+        {
+          const text = await (await import("/lib/services/catalog-service.js")).fetchCatalogText();
           try {
             if (window.TOML) {
               catalogCache = (await import("/lib/services/catalog-service.js")).parseCatalogueText(text);

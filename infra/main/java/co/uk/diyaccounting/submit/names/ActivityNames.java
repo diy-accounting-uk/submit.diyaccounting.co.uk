@@ -11,6 +11,12 @@ public class ActivityNames {
 
     public String activityBusName;
 
+    // Env-level SNS topic for feedback volunteers' notifications: one topic and one email
+    // subscription per environment, so deployments of the app stack never create a new
+    // subscription that waits for confirmation.
+    public String feedbackEngagementTopicName;
+    public String feedbackEngagementTopicArn;
+
     // Env-level Telegram forwarder Lambda (EventBridge target, not API): one per environment,
     // shared by every deployment's OpsStack rules instead of each deployment building its own.
     public String activityTelegramForwarderLambdaHandler;
@@ -47,5 +53,8 @@ public class ActivityNames {
         this.signInActivityPublishProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.signInActivityPublishLambdaArn, root.provisionedConcurrencyAliasName);
         this.activityBusName = "%s-activity-bus".formatted(root.envResourceNamePrefix);
+        this.feedbackEngagementTopicName = "%s-feedback-engagement".formatted(root.envResourceNamePrefix);
+        this.feedbackEngagementTopicArn =
+                "arn:aws:sns:%s:%s:%s".formatted(props.regionName, props.awsAccount, this.feedbackEngagementTopicName);
     }
 }

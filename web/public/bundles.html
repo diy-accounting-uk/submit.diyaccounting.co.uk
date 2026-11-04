@@ -9,10 +9,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="View and manage your DIY Accounting Submit bundles. Access VAT submission features and token-based services."
+      content="Open this link for 3 VAT returns free for 7 days. Then £0.99 a month or £9.99 a year. Cancel any time."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/bundles.html" />
-    <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://submit.diyaccounting.co.uk/bundles.html" />
+    <meta property="og:title" content="VAT returns to HMRC for 99p a month" />
+    <meta
+      property="og:description"
+      content="Open this link for 3 VAT returns free for 7 days. Then £0.99 a month or £9.99 a year. Cancel any time."
+    />
+    <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-pass.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -43,6 +50,20 @@
       <div id="loadingSpinner" class="spinner" hidden></div>
 
       <div class="form-container">
+        <section id="passOffer" class="signed-out-panel" aria-labelledby="passOfferTitle" hidden>
+          <h2 id="passOfferTitle">Submit your VAT return to HMRC from your own records</h2>
+          <p>DIY Accounting Submit files VAT returns to HMRC under Making Tax Digital, straight from your spreadsheet figures.</p>
+          <p>
+            This link gives you <strong id="passOfferTokens">3</strong> VAT submissions free for <strong id="passOfferDays">7</strong> days.
+            After that, <span id="passOfferPrice">£0.99 a month or £9.99 a year</span>. Cancel any time.
+          </p>
+          <p>
+            To start you need a Google account (any Google account works, including one made with your own email address:
+            <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">make one</a>) and your HMRC Government Gateway
+            sign-in.
+          </p>
+        </section>
+
         <div
           class="bundles-block"
           data-requires-sign-in
@@ -81,6 +102,10 @@
         <div id="myGeneratedPasses" class="bundles-section" hidden>
           <h2>My generated passes</h2>
           <p class="hint">Passes you have generated for others to use.</p>
+          <div id="commissionEarnings" class="pass-totals" hidden>
+            <h3>Your earnings</h3>
+            <ul id="commissionEarningsList"></ul>
+          </div>
           <div id="generatedPassesToolbar" class="pass-toolbar" hidden>
             <label class="pass-select-all">
               <input type="checkbox" id="selectAllPasses" />

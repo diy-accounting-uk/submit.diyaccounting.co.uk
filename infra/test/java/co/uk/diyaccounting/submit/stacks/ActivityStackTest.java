@@ -60,6 +60,19 @@ class ActivityStackTest {
     }
 
     @Test
+    void stackCreatesOneFeedbackEngagementTopicWithOneEmailSubscription() {
+        Template template = Template.fromStack(synthActivityStack());
+
+        template.resourceCountIs("AWS::SNS::Topic", 1);
+        template.hasResourceProperties(
+                "AWS::SNS::Topic", Match.objectLike(Map.of("TopicName", "ci-env-feedback-engagement")));
+        template.resourceCountIs("AWS::SNS::Subscription", 1);
+        template.hasResourceProperties(
+                "AWS::SNS::Subscription",
+                Match.objectLike(Map.of("Protocol", "email", "Endpoint", "antony@diyaccounting.co.uk")));
+    }
+
+    @Test
     void signInActivityPublishReadsExactlyTheThreeAppClientIdParameters() {
         Template template = Template.fromStack(synthActivityStack());
 

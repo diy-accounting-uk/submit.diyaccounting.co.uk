@@ -18,12 +18,9 @@
 
     catalogPromise = (async () => {
       try {
-        const response = await fetch("/submit.catalogue.toml");
-        if (response.ok) {
-          const text = await response.text();
-          if (window.TOML) {
-            catalogCache = window.TOML.parse(text);
-          }
+        const text = await (await import("/lib/services/catalog-service.js")).fetchCatalogText();
+        if (window.TOML) {
+          catalogCache = window.TOML.parse(text);
         }
       } catch (err) {
         console.warn("hmrc-scope-check: Failed to fetch catalog:", err);

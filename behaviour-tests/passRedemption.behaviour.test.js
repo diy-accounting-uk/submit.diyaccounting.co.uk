@@ -27,11 +27,13 @@ import {
 import {
   goToBundlesPage,
   clearBundles,
+  ensureBundleViaPassApi,
   verifyBundleApiResponse,
   ensureBundlePresent,
   ensureBundleViaCheckout,
   verifySubscriptionManagement,
 } from "./steps/behaviour-bundle-steps.js";
+import { generatePass, goToGenerateDigitalPassPage } from "./steps/behaviour-pass-generation-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import { getCatalogBundleById, isBundleListedInEnvironment, loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
@@ -558,4 +560,97 @@ test("Click through: Resident-pro subscribes directly, no pass required (on-subs
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
   } catch (_e) {}
+});
+
+test("Click through: A deleted generated pass is refused as expired on redemption", async ({ page, browser }, testInfo) => {
+  const testUrl = baseUrl;
+
+  // The redeeming account is a second identity: a mock sign-in under another username, or the
+  // second Cognito test user's credentials when the lane signs in through Cognito.
+  const isMockLane = testAuthProvider === "mock" || testAuthProvider === "simulator";
+  const redeemerUsername = isMockLane ? `${testAuthUsername}-redeemer` : process.env.TEST_AUTH_SECOND_USERNAME || null;
+  const redeemerPassword = isMockLane ? null : process.env.TEST_AUTH_SECOND_PASSWORD || null;
+
+  addOnPageLogging(page);
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  // --- Step 1: An account that holds tokens generates a pass through Generate Digital Pass ---
+  await goToBundlesPage(page, screenshotPath);
+  await ensureBundleViaPassApi(page, "resident-vat", screenshotPath, { testPass: true });
+  await goToGenerateDigitalPassPage(page, testUrl, screenshotPath);
+  const passCode = await generatePass(page, screenshotPath);
+  expect(passCode).toBeTruthy();
+
+  const generatedEntry = page.locator(`#generatedPassesList [data-pass-code="${passCode}"]`);
+  await expect(generatedEntry).toBeVisible({ timeout: 10000 });
+
+  // --- Step 2: Delete it with its trash button and confirm ---
+  await page.locator(`button[data-delete-code="${passCode}"]`).click();
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-delete-01-confirm.png`, readerView: true });
+  await page.locator(".pass-delete-confirm-yes").click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Deleted 1 pass", { timeout: 15000 });
+  await expect(generatedEntry).toHaveCount(0, { timeout: 15000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-delete-02-deleted.png`, readerView: true });
+
+  // --- Step 3: The pass check reports it expired, whoever asks ---
+  const checkResult = await page.evaluate(async (code) => {
+    const response = await fetch(`/api/v1/pass?code=${encodeURIComponent(code)}`);
+    return await response.json();
+  }, passCode);
+  console.log(`[pass-delete-test]: Pass check after delete: ${JSON.stringify(checkResult)}`);
+  expect(checkResult.valid).toBe(false);
+  expect(checkResult.reason).toBe("expired");
+
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
+  // --- Step 4: A second account's redemption is refused as expired ---
+  if (!redeemerUsername) {
+    console.log("[pass-delete-test]: No second account for this sign-in provider; the pass check above covers the refusal reason");
+    await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+    return;
+  }
+
+  const redeemerContext = await browser.newContext();
+  try {
+    const redeemerPage = await redeemerContext.newPage();
+    addOnPageLogging(redeemerPage);
+    await goToHomePageExpectNotLoggedIn(redeemerPage, testUrl, screenshotPath);
+    await clickLogIn(redeemerPage, screenshotPath);
+    await loginWithCognitoOrMockAuth(redeemerPage, testAuthProvider, redeemerUsername, screenshotPath, redeemerPassword);
+    await verifyLoggedInStatus(redeemerPage, screenshotPath);
+    await consentToDataCollection(redeemerPage, screenshotPath);
+    await goToBundlesPage(redeemerPage, screenshotPath);
+
+    // The form checks the code first and shows the refusal itself.
+    await redeemerPage.locator("#passInput").fill(passCode);
+    await redeemerPage.locator("#redeemPassBtn").click();
+    await expect(redeemerPage.locator("#passStatus")).toContainText(/expired/i, { timeout: 15000 });
+
+    // The redeem call itself answers the same reason; this is the call that records the refusal event.
+    const redeemBody = await redeemerPage.evaluate(async (code) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      const response = await fetch("/api/v1/pass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+        body: JSON.stringify({ code }),
+      });
+      return await response.json();
+    }, passCode);
+    console.log(`[pass-delete-test]: Second account redemption: ${JSON.stringify(redeemBody)}`);
+    expect(redeemBody?.data?.redeemed ?? redeemBody?.redeemed).toBe(false);
+    expect(redeemBody?.data?.reason ?? redeemBody?.reason).toBe("expired");
+
+    await takeScreenshot(redeemerPage, { path: `${screenshotPath}/${timestamp()}-pass-delete-03-redeem-expired.png`, readerView: true });
+
+    await logOutAndExpectToBeLoggedOut(redeemerPage, screenshotPath);
+  } finally {
+    await redeemerContext.close();
+  }
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

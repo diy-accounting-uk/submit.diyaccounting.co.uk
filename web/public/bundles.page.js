@@ -569,14 +569,7 @@ function renderCatalogueBundles() {
 
 // Read current environment from submit.environment-name.txt
 async function readEnvironment() {
-  try {
-    const envRes = await fetch("submit.environment-name.txt", { cache: "no-store" });
-    if (envRes.ok) {
-      const text = (await envRes.text()).trim();
-      return text || null;
-    }
-  } catch {}
-  return null;
+  return (await import("/lib/services/catalog-service.js")).fetchCurrentEnvironmentName("submit.environment-name.txt");
 }
 
 // The block holds room for the cards while they load; once both lists have arrived it hands the room back.
@@ -905,6 +898,25 @@ async function validatePassCode(code) {
   }
 }
 
+// Shows a signed-out visitor what the pass gives and what Submit costs afterwards. The
+// sign-in block that holds the bundle cards is hidden until they log in.
+function showPassOffer(passBundle) {
+  const offer = document.getElementById("passOffer");
+  if (!offer) return;
+  const days = /^P(\d+)D$/.exec(passBundle?.timeout || "");
+  if (!days || !passBundle.tokensGranted) return;
+  document.getElementById("passOfferTokens").textContent = String(passBundle.tokensGranted);
+  document.getElementById("passOfferDays").textContent = days[1];
+  const prices = __catalogueData?.bundles?.find((cb) => cb.id === "resident-vat")?.prices || [];
+  const monthly = prices.find((p) => p.interval === "month");
+  const annual = prices.find((p) => p.interval === "year");
+  if (monthly && annual) {
+    document.getElementById("passOfferPrice").textContent =
+      `${formatGbp(monthly.amount / 100)} a month or ${formatGbp(annual.amount / 100)} a year`;
+  }
+  offer.hidden = false;
+}
+
 // --- handle pass entry: validate first, then enable bundle or auto-redeem
 async function handlePassEntry(code) {
   const btn = document.getElementById("redeemPassBtn");
@@ -958,6 +970,7 @@ async function handlePassEntry(code) {
         sessionStorage.setItem("pendingPass", code);
         sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
       } catch {}
+      showPassOffer(catBundle);
       if (result.emailRestricted) {
         showPassStatus(`Pass valid! Log in with the invited email to add the "${bundleName}" bundle.`, "info");
       } else {
@@ -1127,6 +1140,43 @@ function focusNewlyGeneratedPass() {
   showStatus(`Pass ${newCode} generated. Track what this link earns under My generated passes`, "success");
 }
 
+// The caller's own commission totals: held (with the day each part releases), payable and paid.
+// Nothing shows until the caller has any.
+async function fetchCommissionEarnings() {
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/commission/mine");
+    if (!res.ok) return;
+    const earnings = await res.json();
+    const block = document.getElementById("commissionEarnings");
+    const list = document.getElementById("commissionEarningsList");
+    if (!block || !list) return;
+    const { held, payable, paid } = earnings;
+    if (!held || !payable || !paid || held.totalPence + payable.totalPence + paid.totalPence === 0) {
+      block.hidden = true;
+      return;
+    }
+    const pounds = (pence) => formatGbp(pence / 100);
+    const day = (isoDay) =>
+      new Date(`${isoDay}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    const rows = [domEl("li", { "data-earnings": "held" }, `Held: ${pounds(held.totalPence)}`)];
+    if (held.releases.length > 0) {
+      rows.push(
+        domEl(
+          "li",
+          { "data-earnings": "releases" },
+          held.releases.map((release) => `${pounds(release.amountPence)} releases on ${day(release.releaseDate)}`).join("; "),
+        ),
+      );
+    }
+    rows.push(domEl("li", { "data-earnings": "payable" }, `Payable: ${pounds(payable.totalPence)}`));
+    rows.push(domEl("li", { "data-earnings": "paid" }, `Paid: ${pounds(paid.totalPence)}`));
+    list.replaceChildren(...rows);
+    block.hidden = false;
+  } catch (err) {
+    console.warn("Failed to fetch commission earnings:", err);
+  }
+}
+
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
   if (!idToken) return;
@@ -1154,6 +1204,7 @@ async function fetchMyGeneratedPasses(append) {
 
     section.style.display = "block";
 
+    if (!append) fetchCommissionEarnings();
     if (!append) list.replaceChildren();
     document.getElementById("generatedPassesTotals")?.remove();
 

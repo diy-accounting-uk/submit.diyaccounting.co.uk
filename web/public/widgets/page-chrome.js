@@ -288,13 +288,12 @@
       await loadTomlParser(rootPrefix);
       const service = await import("/lib/services/catalog-service.js");
       const viewerSettings = await import("/lib/services/viewer-settings.js");
-      const [catalogResponse, environmentName, viewer] = await Promise.all([
-        fetch(new URL(rootPrefix + "submit.catalogue.toml", window.location.href).href),
+      const [catalogText, environmentName, viewer] = await Promise.all([
+        service.fetchCatalogText(new URL(rootPrefix + "submit.catalogue.toml", window.location.href).href),
         service.fetchCurrentEnvironmentName(new URL(rootPrefix + "submit.environment-name.txt", window.location.href).href),
         viewerSettings.fetchViewer(),
       ]);
-      if (!catalogResponse.ok) return;
-      const catalog = window.TOML.parse(await catalogResponse.text());
+      const catalog = window.TOML.parse(catalogText);
       gated.forEach(function (anchor) {
         const activity = (catalog.activities || []).find(function (entry) {
           return entry.id === anchor.dataset.activity;

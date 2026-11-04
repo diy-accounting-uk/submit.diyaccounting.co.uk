@@ -224,6 +224,15 @@ export async function queryConversions(referrerHash, code) {
   }));
 }
 
+/** Every commission line of one referrer, reversal lines included. */
+export async function queryLinesByReferrer(referrerHash) {
+  return queryAll((startKey) => ({
+    KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+    ExpressionAttributeValues: { ":pk": commissionPk(referrerHash), ":prefix": "line#" },
+    ExclusiveStartKey: startKey,
+  }));
+}
+
 /** The accounts seen paying with one card fingerprint. */
 export async function queryCardPayers(fingerprint) {
   return queryAll((startKey) => ({

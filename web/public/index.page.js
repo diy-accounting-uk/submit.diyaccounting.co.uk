@@ -250,22 +250,21 @@ async function renderDynamicActivities() {
 
   try {
     // Fetch catalog
-    const response = await fetch("/submit.catalogue.toml");
-    if (!response.ok) {
+    const catalogService = await import("/lib/services/catalog-service.js");
+    let text;
+    try {
+      text = await catalogService.fetchCatalogText();
+    } catch {
       dynamicContainer.replaceChildren(
         messageParagraph("activity-message activity-message--error", "Unable to load activities. Please try again later."),
       );
       return;
     }
-
-    const text = await response.text();
-    const catalog = window.TOML
-      ? (await import("/lib/services/catalog-service.js")).parseCatalogueText(text)
-      : await response.json().catch(() => ({}));
+    const catalog = window.TOML ? catalogService.parseCatalogueText(text) : JSON.parse(text);
     const userBundles = parseUserBundles();
     const activeBundles = getActiveBundles(catalog, userBundles);
     const expiredBundles = getExpiredBundles(userBundles);
-    const currentEnvironmentName = await window.fetchCurrentEnvironmentName();
+    const currentEnvironmentName = await catalogService.fetchCurrentEnvironmentName();
     const viewerSettings = await import("/lib/services/viewer-settings.js");
     const viewer = await viewerSettings.fetchViewer();
     renderFeatureStatus(catalog, currentEnvironmentName, viewer);

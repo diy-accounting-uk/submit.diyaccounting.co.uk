@@ -35,6 +35,7 @@ import os from "os";
 import { fileURLToPath } from "url";
 import { publishExperiments } from "./publish-experiments.mjs";
 import { publishSitemap } from "./publish-sitemap.mjs";
+import { publishCssBundle } from "./publish-css-bundle.mjs";
 
 const AWS_REGION = "eu-west-2";
 const AWS_REGION_UE1 = "us-east-1";
@@ -383,6 +384,7 @@ function syncWebAssets(config) {
 
     publishExperiments(tmpWebDir);
     publishSitemap(tmpWebDir, config.environmentName);
+    publishCssBundle(tmpWebDir);
 
     // Generate metadata files
     console.log("Generating metadata files...");
