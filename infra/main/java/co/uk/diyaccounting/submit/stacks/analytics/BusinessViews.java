@@ -290,8 +290,16 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_paid_subscribers_by_channel",
                     "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
-                    List.of("aliased_stripe_charges", "aliased_stripe_subscriptions", "aliased_dynamo_subscriptions", "aliased_dynamo_bundles"),
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_subscriptions", "aliased_stripe_charges", "aliased_stripe_subscriptions")),
+                    List.of(
+                            "aliased_stripe_charges",
+                            "aliased_stripe_subscriptions",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_dynamo_bundles"),
+                    List.of(
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_stripe_charges",
+                            "aliased_stripe_subscriptions")),
             new ViewDefinition(
                     "v_pass_performance",
                     "Per referral pass: uses, new accounts, accounts that filed, subscribers, paid charges, last used",
@@ -302,7 +310,12 @@ public class BusinessViews extends Construct {
                             "aliased_stripe_subscriptions",
                             "aliased_stripe_charges",
                             "activity_events_all"),
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_passes", "aliased_dynamo_subscriptions", "aliased_stripe_charges", "aliased_stripe_subscriptions")),
+                    List.of(
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_passes",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_stripe_charges",
+                            "aliased_stripe_subscriptions")),
             new ViewDefinition(
                     "v_affiliate_commissions_monthly",
                     "Commission held, payable, paid and reversed in pence, by month and tier, live mode only",

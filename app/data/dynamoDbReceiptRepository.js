@@ -220,7 +220,6 @@ export async function listUserReceipts(userSub, clientId) {
 
     logger.info({
       message: "Retrieved receipts from DynamoDB",
-      hashedSub,
       count: receipts.length,
     });
 

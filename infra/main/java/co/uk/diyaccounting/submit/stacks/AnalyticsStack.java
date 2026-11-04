@@ -438,10 +438,7 @@ public class AnalyticsStack extends Stack {
         stripeTables.subscriptionsTable.addResourceDependency(this.glueDatabase);
 
         var hashAliasTable = HashAliasTable.create(
-                this,
-                prefix,
-                sharedNames.analytics.glueDatabaseName,
-                sharedNames.analytics.analyticsLakeBucketName);
+                this, prefix, sharedNames.analytics.glueDatabaseName, sharedNames.analytics.analyticsLakeBucketName);
         hashAliasTable.addResourceDependency(this.glueDatabase);
 
         var paypalTables = new PayPalDonationTables(

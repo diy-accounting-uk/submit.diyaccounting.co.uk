@@ -7,7 +7,7 @@
 // - **Does:** salt-rotate.js adds a new salt version and makes it current in two waits that cover the Lambda salt cache. It moves every hash-keyed item in every table of scripts/salt-rotation-tables.json and every diya-gl object to the new hash, updates the canary, and writes the lake's hash aliases. Every step is resumable and idempotent, and it prints counts only.
 // - **Run:** `gh workflow run salt-rotate.yml -f environment-name=<ci|prod> -f mode=<plan|rotate|sweep>`
 // - **Entry:** `scripts/salt-rotate.js:runRotation`
-// - **Files:** .github/workflows/salt-rotate.yml, scripts/salt-rotate.js, scripts/salt-rotation-tables.json, app/unit-tests/scripts/saltRotate.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/SaltRotationTablesTest.java, infra/main/resources/analytics/views/aliased_dynamo_receipts.sql
+// - **Files:** .github/workflows/salt-rotate.yml, scripts/salt-rotate.js, scripts/salt-rotation-tables.json, app/unit-tests/scripts/saltRotate.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/SaltRotationTablesTest.java, infra/main/resources/analytics/views/aliased_dynamo_bundles.sql, infra/main/resources/analytics/views/aliased_dynamo_commissions.sql, infra/main/resources/analytics/views/aliased_dynamo_passes.sql, infra/main/resources/analytics/views/aliased_dynamo_receipts.sql, infra/main/resources/analytics/views/aliased_dynamo_subscriptions.sql, infra/main/resources/analytics/views/aliased_stripe_charges.sql, infra/main/resources/analytics/views/aliased_stripe_subscriptions.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/HashAliasTable.java, app/unit-tests/data/saltRotationWindow.test.js
 // - **Keywords:** salt rotation, re-key, hashed sub, hash aliases, salt sweep, repeatable rotation, cutover
 // - **Related:** OPS-44, OPS-16, DATA-04
 // @end-capability
@@ -219,7 +219,14 @@ export async function moveItem(context, { tableName, partitionKey, oldKey, newKe
     await doc.send(
       new TransactWriteCommand({
         TransactItems: [
-          { Put: { TableName: tableName, Item: newItem, ConditionExpression: `attribute_not_exists(#pk)`, ExpressionAttributeNames: { "#pk": partitionKey } } },
+          {
+            Put: {
+              TableName: tableName,
+              Item: newItem,
+              ConditionExpression: `attribute_not_exists(#pk)`,
+              ExpressionAttributeNames: { "#pk": partitionKey },
+            },
+          },
           deleteOld,
         ],
       }),
@@ -713,7 +720,9 @@ async function createContext(envName) {
       const users = [];
       let token;
       do {
-        const page = await cognito.send(new ListUsersCommand({ UserPoolId: userPoolId, AttributesToGet: ["sub", "email"], PaginationToken: token }));
+        const page = await cognito.send(
+          new ListUsersCommand({ UserPoolId: userPoolId, AttributesToGet: ["sub", "email"], PaginationToken: token }),
+        );
         for (const { Attributes } of page.Users ?? []) {
           const value = (name) => Attributes?.find((attribute) => attribute.Name === name)?.Value;
           if (value("sub")) users.push({ sub: value("sub"), email: value("email") });

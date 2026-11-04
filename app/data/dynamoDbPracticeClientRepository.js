@@ -49,8 +49,10 @@ async function getRowAcrossVersions(practiceSub, clientId) {
  * Answers the current hash when no row exists, and the update's condition then refuses it.
  */
 async function ownerHashOfClient(practiceSub, clientId) {
+  const candidates = subHashCandidates(practiceSub);
+  if (candidates.length === 1) return candidates[0].hashedSub;
   const row = await getRowAcrossVersions(practiceSub, clientId);
-  return row?.hashedSub ?? hashSub(practiceSub);
+  return row?.hashedSub ?? candidates[0].hashedSub;
 }
 
 function encodeTimePart(timeMs) {

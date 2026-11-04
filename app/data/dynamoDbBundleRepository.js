@@ -21,8 +21,7 @@ async function locateBundleOwner(userId, bundleId) {
   const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
   for (const candidate of candidates) {
     const { Item } = await executeDynamoDbCommand(
-      (module) =>
-        new module.GetCommand({ TableName: tableName, Key: { hashedSub: candidate.hashedSub, bundleId }, ConsistentRead: true }),
+      (module) => new module.GetCommand({ TableName: tableName, Key: { hashedSub: candidate.hashedSub, bundleId }, ConsistentRead: true }),
     );
     if (Item) return candidate;
   }

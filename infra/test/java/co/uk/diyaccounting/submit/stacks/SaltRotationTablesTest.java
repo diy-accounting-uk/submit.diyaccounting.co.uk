@@ -52,10 +52,9 @@ class SaltRotationTablesTest {
                         .build());
 
         Map<String, String> tables = new TreeMap<>();
-        for (Map<String, Object> resource :
-                Template.fromStack(dataStack).findResources("Custom::AWS").values().stream()
-                        .map(SaltRotationTablesTest::asMap)
-                        .toList()) {
+        for (Map<String, Object> resource : Template.fromStack(dataStack).findResources("Custom::AWS").values().stream()
+                .map(SaltRotationTablesTest::asMap)
+                .toList()) {
             Object create = asMap(resource.get("Properties")).get("Create");
             if (!(create instanceof String createJson) || !createJson.contains("\"action\":\"createTable\"")) {
                 continue;
@@ -89,9 +88,11 @@ class SaltRotationTablesTest {
     void everyTableInTheStackHasAPlaceInTheManifest() throws IOException {
         JsonNode manifest = manifest();
         var listed = new TreeSet<String>();
-        manifest.get("partitionTables").forEach(entry -> listed.add(entry.get("table").asText()));
+        manifest.get("partitionTables")
+                .forEach(entry -> listed.add(entry.get("table").asText()));
         manifest.get("rowTables").forEach(entry -> listed.add(entry.get("table").asText()));
-        manifest.get("expiringTables").forEach(entry -> listed.add(entry.get("table").asText()));
+        manifest.get("expiringTables")
+                .forEach(entry -> listed.add(entry.get("table").asText()));
         manifest.get("noHashTables").forEach(entry -> listed.add(entry.asText()));
 
         assertEquals(new TreeSet<>(tablesInSynth().keySet()), listed);

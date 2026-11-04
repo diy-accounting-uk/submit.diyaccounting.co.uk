@@ -434,7 +434,9 @@ describe("salt-rotate runs", () => {
   });
 
   test("a sweep refuses while a rotation is in flight", async () => {
-    state.secret = JSON.stringify(stageRegistry({ current: "v1", versions: { v1: OLD_SALT } }, "v2", "new-salt", "2026-11-04T10:00:00.000Z"));
+    state.secret = JSON.stringify(
+      stageRegistry({ current: "v1", versions: { v1: OLD_SALT } }, "v2", "new-salt", "2026-11-04T10:00:00.000Z"),
+    );
     await expect(runRotation(createContext(state), { mode: "sweep" })).rejects.toThrow("A rotation is in flight");
   });
 
