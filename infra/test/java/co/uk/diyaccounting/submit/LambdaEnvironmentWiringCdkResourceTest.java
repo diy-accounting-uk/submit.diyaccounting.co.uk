@@ -97,6 +97,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
         app.synth();
 
         assertEveryImageLambdaIsWired(collectStacks(submitApplication));
+        assertEverySendingLambdaRecordsItsCalls(collectStacks(submitApplication));
     }
 
     @Test
@@ -137,6 +138,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
         app.synth();
 
         assertEveryImageLambdaIsWired(collectStacks(env));
+        assertEverySendingLambdaRecordsItsCalls(collectStacks(env));
     }
 
     // COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS is set only in .env.prod (CS-11a): the ci
@@ -276,6 +278,122 @@ class LambdaEnvironmentWiringCdkResourceTest {
                         + "three app-client-id parameters:\n" + String.join("\n", missingSsmGrants));
     }
 
+    private static final String INTEGRATION_CALLS_ENV_NAME = "INTEGRATION_CALLS_DYNAMODB_TABLE_NAME";
+    private static final String INTEGRATION_CALL_REPOSITORY = "app/data/dynamoDbIntegrationCallRepository.js";
+    private static final String HTTP_RESPONSE_HELPER = "app/lib/httpResponseHelper.js";
+    private static final Pattern IMPORT_ANY =
+            Pattern.compile("(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\bimport\\s+)[\"'](\\.[^\"']*)[\"']");
+    private static final Pattern TOKEN_EXCHANGE_WITH_ORG =
+            Pattern.compile("\\b(?:performTokenExchange|buildTokenExchangeResponse)\\([^;]*\\borg\\b");
+
+    /**
+     * Every Lambda whose handler can reach a send through a recorded path must carry the integration
+     * calls table name and a {@code dynamodb:PutItem} grant on that table. A missed Lambda still
+     * serves its customer and counts a record failure on every call, so only this check shows it.
+     *
+     * <p>The trace follows static and dynamic relative imports into every {@code app/} file,
+     * including sibling handlers. {@code app/lib/httpResponseHelper.js} is read but not followed,
+     * because nearly every handler imports it for response helpers and only its token exchange
+     * sends; a file that calls the token exchange with an {@code org} counts as a send point of its own.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEverySendingLambdaRecordsItsCalls(List<Stack> stacks) {
+        var missing = new ArrayList<String>();
+        int sendingLambdas = 0;
+        for (Stack stack : stacks) {
+            Template template = Template.fromStack(stack);
+            for (Map.Entry<String, Map<String, Object>> entry :
+                    template.findResources("AWS::Lambda::Function").entrySet()) {
+                Map<String, Object> properties =
+                        (Map<String, Object>) entry.getValue().get("Properties");
+                if (properties == null) continue;
+                Map<String, Object> imageConfig = (Map<String, Object>) properties.get("ImageConfig");
+                if (imageConfig == null) continue;
+                List<Object> command = (List<Object>) imageConfig.get("Command");
+                if (command == null || command.isEmpty()) continue;
+                Path handlerFile = handlerJsFile(String.valueOf(command.get(0)));
+                if (!Files.isRegularFile(handlerFile) || !reachesRecordedSend(handlerFile)) continue;
+                sendingLambdas++;
+
+                String where = properties.get("FunctionName") + " (" + entry.getKey() + " in " + stack.getStackName()
+                        + ", handler " + handlerFile + ")";
+                Map<String, Object> environment = (Map<String, Object>) properties.get("Environment");
+                Map<String, Object> variables =
+                        environment == null ? Map.of() : (Map<String, Object>) environment.get("Variables");
+                for (String required : List.of(INTEGRATION_CALLS_ENV_NAME, "DEPLOYMENT_NAME")) {
+                    if (variables == null || !variables.containsKey(required)) {
+                        missing.add(where + ": no " + required);
+                    }
+                }
+                if (!roleGrantsPutItemOnIntegrationCalls(template, properties)) {
+                    missing.add(where + ": role has no dynamodb:PutItem on the integration calls table");
+                }
+            }
+        }
+        assertTrue(sendingLambdas > 0, "expected the trace to find Lambdas that send through a recorded path");
+        assertTrue(
+                missing.isEmpty(),
+                "Lambdas that send through a recorded path without write access to the integration calls table:\n"
+                        + String.join("\n", missing));
+    }
+
+    private static boolean reachesRecordedSend(Path handlerFile) {
+        var visited = new LinkedHashSet<Path>();
+        collectSendTrace(handlerFile, visited);
+        for (Path file : visited) {
+            String normalized = file.toString().replace('\\', '/');
+            if (normalized.endsWith(INTEGRATION_CALL_REPOSITORY)) return true;
+            if (normalized.endsWith(HTTP_RESPONSE_HELPER)) continue;
+            if (TOKEN_EXCHANGE_WITH_ORG.matcher(stripComments(readSource(file))).find()) return true;
+        }
+        return false;
+    }
+
+    private static void collectSendTrace(Path file, Set<Path> visited) {
+        Path normalized = file.normalize();
+        if (visited.contains(normalized) || !Files.isRegularFile(normalized)) return;
+        visited.add(normalized);
+        if (normalized.toString().replace('\\', '/').endsWith(HTTP_RESPONSE_HELPER)) return;
+
+        Matcher matcher = IMPORT_ANY.matcher(stripComments(readSource(normalized)));
+        while (matcher.find()) {
+            Path resolved = normalized.getParent().resolve(matcher.group(1)).normalize();
+            if (!resolved.toString().endsWith(".js")) {
+                resolved = Path.of(resolved + ".js");
+            }
+            collectSendTrace(resolved, visited);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean roleGrantsPutItemOnIntegrationCalls(
+            Template template, Map<String, Object> functionProperties) {
+        String roleLogicalId = roleLogicalIdOf(functionProperties);
+        if (roleLogicalId == null) return false;
+        for (Map<String, Object> policyResource :
+                template.findResources("AWS::IAM::Policy").values()) {
+            Map<String, Object> props = (Map<String, Object>) policyResource.get("Properties");
+            if (props == null || !policyAttachesToRole(props, roleLogicalId)) continue;
+            Object document = props.get("PolicyDocument");
+            if (!(document instanceof Map)) continue;
+            Object statements = ((Map<String, Object>) document).get("Statement");
+            if (!(statements instanceof List<?>)) continue;
+            for (Object statementObj : (List<Object>) statements) {
+                if (!(statementObj instanceof Map)) continue;
+                Map<String, Object> statement = (Map<String, Object>) statementObj;
+                if (!statementAllows(statement, "dynamodb:PutItem")) continue;
+                if (String.valueOf(statement.get("Resource")).contains("-env-integration-calls")) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean statementAllows(Map<String, Object> statement, String action) {
+        Object actions = statement.get("Action");
+        if (actions instanceof String) return action.equals(actions);
+        return actions instanceof List<?> list && list.contains(action);
+    }
+
     /** {@code app/functions/auth/signInActivityPublish.handler} -> {@code app/functions/auth/signInActivityPublish.js}. */
     private static Path handlerJsFile(String handlerCommand) {
         int lastDot = handlerCommand.lastIndexOf('.');
@@ -311,8 +429,20 @@ class LambdaEnvironmentWiringCdkResourceTest {
                 resolved = Path.of(resolved + ".js");
             }
             if (!isUnderTransitiveImportRoot(resolved)) continue;
+            if (isHttpResponseHelperTokenExchangeRecording(normalized, resolved)) continue;
             collectTransitiveRelativeImports(resolved, visited);
         }
+    }
+
+    /**
+     * app/lib/httpResponseHelper.js imports the call recorder for its token exchange alone, and
+     * nearly every handler imports that file for response helpers. Following the edge would demand
+     * the recorder's environment on Lambdas that never send; {@link
+     * #assertEverySendingLambdaRecordsItsCalls} checks the Lambdas that do.
+     */
+    private static boolean isHttpResponseHelperTokenExchangeRecording(Path importer, Path imported) {
+        return importer.toString().replace('\\', '/').endsWith(HTTP_RESPONSE_HELPER)
+                && imported.toString().replace('\\', '/').endsWith("app/lib/integrationCalls.js");
     }
 
     private static boolean isUnderTransitiveImportRoot(Path path) {

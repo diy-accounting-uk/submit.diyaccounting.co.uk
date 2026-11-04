@@ -75,6 +75,7 @@ public class DataNames {
     public String securityStateTableName;
     public String alarmIssueLockTableName;
     public String mcpSessionsTableName;
+    public String integrationCallsTableName;
     public String diyaGlBucketName;
 
     public DataNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
@@ -196,6 +197,7 @@ public class DataNames {
         this.securityStateTableName = "%s-security-state".formatted(root.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(root.envResourceNamePrefix);
         this.mcpSessionsTableName = "%s-mcp-sessions".formatted(root.envResourceNamePrefix);
+        this.integrationCallsTableName = "%s-integration-calls".formatted(root.envResourceNamePrefix);
         this.diyaGlBucketName = "%s-diya-gl-%s".formatted(root.envResourceNamePrefix, props.awsAccount);
     }
 }

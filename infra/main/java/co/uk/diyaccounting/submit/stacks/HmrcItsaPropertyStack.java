@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -148,6 +149,10 @@ public class HmrcItsaPropertyStack extends Stack {
                         hmrcItsaBsasForeignPropertyGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaBsasForeignPropertyGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasForeignPropertyGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -252,6 +257,10 @@ public class HmrcItsaPropertyStack extends Stack {
                         hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaBsasForeignPropertyAdjustPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasForeignPropertyAdjustPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }

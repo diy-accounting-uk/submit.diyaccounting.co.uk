@@ -35,12 +35,12 @@
     }
   }
 
-  // The agent's HMRC access token. It lives in this variable only: the browser keeps the id of the
-  // server-side grant, and the grant route answers the token to its owner.
-  let __hmrcAccessToken = null;
+  // The id of the agent's granted HMRC grant. The browser holds this id only: the HMRC token stays
+  // server side, and each call names the grant in the x-mcp-hmrc-grant header.
+  let __hmrcGrantId = null;
 
-  function getHmrcAccessToken() {
-    return __hmrcAccessToken;
+  function getHmrcGrantId() {
+    return __hmrcGrantId;
   }
 
   function readStored(key) {
@@ -120,11 +120,11 @@
     if (button) button.hidden = connected;
   }
 
-  // Reads the grant the page started, which refreshes the token near expiry. A 404 means the
-  // grant expired or is gone: the page then shows as not connected and the stored id is cleared.
+  // Reads the grant the page started, which refreshes the token near expiry on the server. A 404
+  // means the grant expired or is gone: the page then shows as not connected and the stored id is cleared.
   async function loadConnection() {
     const grantId = readStored("practiceHmrcGrantId");
-    __hmrcAccessToken = null;
+    __hmrcGrantId = null;
     if (!grantId || !getIdToken()) {
       renderConnection(false);
       return false;
@@ -135,13 +135,13 @@
         writeStored("practiceHmrcGrantId", null);
       } else if (response.ok) {
         const body = await readJsonSafely(response);
-        if (body.status === "granted" && body.accessToken) __hmrcAccessToken = body.accessToken;
+        if (body.status === "granted") __hmrcGrantId = grantId;
       }
     } catch {
       // The connection stays shown as not connected; the practice can connect again.
     }
-    renderConnection(Boolean(__hmrcAccessToken));
-    return Boolean(__hmrcAccessToken);
+    renderConnection(Boolean(__hmrcGrantId));
+    return Boolean(__hmrcGrantId);
   }
 
   async function connectToHmrc() {
@@ -291,7 +291,7 @@
     const auth = client.authorisations?.[def.service];
     const status = auth?.status;
     const statusLabel = status ? STATUS_LABELS[status] || status : "Not invited";
-    const hasAccessToken = !!getHmrcAccessToken();
+    const hasAccessToken = !!getHmrcGrantId();
     // HMRC's status check needs the invitation, or the known fact given with it: a client never
     // invited has nothing to check, so it offers Invite only.
     const invited = Boolean(auth?.invitationId || auth?.knownFact);
@@ -541,7 +541,7 @@
     }
 
     if (!(await ensureConnection("Connect to HMRC before sending an invitation."))) return;
-    const accessToken = getHmrcAccessToken();
+    const grantId = getHmrcGrantId();
 
     const cell = document.querySelector(`.auth-cell[data-client-id="${clientId}"][data-service="${service}"]`);
     const knownFact = cell?.querySelector(".invite-known-fact")?.value.trim();
@@ -555,8 +555,8 @@
     try {
       const response = await cognitoFetch(`/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service, knownFact, accessToken, arn }),
+        headers: { "Content-Type": "application/json", "x-mcp-hmrc-grant": grantId },
+        body: JSON.stringify({ service, knownFact, arn }),
       });
       const body = await readJsonSafely(response);
 
@@ -575,12 +575,12 @@
 
   async function checkStatus(clientId, service) {
     if (!(await ensureConnection("Connect to HMRC before checking authorisation status."))) return;
-    const accessToken = getHmrcAccessToken();
+    const grantId = getHmrcGrantId();
 
     try {
       const response = await hmrcFetcher()(
         `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?service=${encodeURIComponent(service)}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } },
+        { headers: { "x-mcp-hmrc-grant": grantId } },
       );
       const body = await readJsonSafely(response);
 
@@ -599,12 +599,12 @@
 
   async function cancelInvitation(clientId, service) {
     if (!(await ensureConnection("Connect to HMRC before cancelling an invitation."))) return;
-    const accessToken = getHmrcAccessToken();
+    const grantId = getHmrcGrantId();
 
     try {
       const response = await hmrcFetcher()(
         `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations?service=${encodeURIComponent(service)}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
+        { method: "DELETE", headers: { "x-mcp-hmrc-grant": grantId } },
       );
       const body = await readJsonSafely(response);
 

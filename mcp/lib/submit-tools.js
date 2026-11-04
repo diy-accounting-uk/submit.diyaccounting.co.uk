@@ -3,9 +3,9 @@
 
 // @capability MCP-07 File VAT returns and accounts via API
 // - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcAccessTokenFor reads it from the session's HMRC grant (MCP-21) for each call, and fails with a message naming request_hmrc_authorisation when the session holds none.
+// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
 // - **Run:** no command; see Does and Entry
-// - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcAccessTokenFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
+// - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcGrantFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 // - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
 // - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
 // - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
@@ -22,10 +22,8 @@
 // claim names the MCP client -- ApiStack.java's main and custom authorisers
 // both accept it, the same way they accept the Submit web client's). Two routes here
 // (list_vat_obligations, submit_vat_return) sit behind the API's custom Lambda authoriser, whose
-// identity source is the X-Authorization header (ApiStack.java), which frees the plain
-// Authorization header for the HMRC access token those two routes read directly
-// (hmrcVatObligationGet.js reads it from the header; hmrcVatReturnPost.js takes it as the body's
-// accessToken field). Those two routes also carry X-Id-Token (the session credentials' idToken(), when it answers one), so the
+// identity source is the X-Authorization header (ApiStack.java). The HMRC handlers open the
+// session's HMRC grant from the x-mcp-hmrc-grant header, so no HMRC token travels with a call. Those two routes also carry X-Id-Token (the session credentials' idToken(), when it answers one), so the
 // custom authoriser can build Gov-Client-Multi-Factor from a verified claim rather than finding
 // none (see app/functions/auth/customAuthorizer.js's extractMfaContext). Every other route here
 // sits behind the standard Cognito JWT authoriser, so the session bearer goes in the plain
@@ -151,16 +149,19 @@ export async function requestHmrcAuthorisation(session, params = {}) {
   return { url: granted.url, expiresAt: granted.expiresAt, scope: granted.scope, hmrcAccount: granted.hmrcAccount };
 }
 
+export const HMRC_GRANT_HEADER = "x-mcp-hmrc-grant";
+
 /**
- * The session's HMRC access token for one tool call, and the HMRC account it belongs to.
- * Throws a message naming request_hmrc_authorisation when the session holds no grant, when the
- * user has not finished the HMRC page, and when the call names the other HMRC account.
+ * The session's HMRC grant for one tool call: the headers that name it to Submit's API, and the
+ * HMRC account it belongs to. Submit opens the grant's tokens itself; the token never reaches this
+ * process. Throws a message naming request_hmrc_authorisation when the session holds no grant, when
+ * the user has not finished the HMRC page, and when the call names the other HMRC account.
  * @param {Object} session
  * @param {string} toolName - named in the error messages
  * @param {string} [hmrcAccount] - the account the call asks for; the grant's own when omitted
- * @returns {Promise<{accessToken: string, hmrcAccount: string}>}
+ * @returns {Promise<{grantHeaders: Object, hmrcAccount: string}>}
  */
-export async function hmrcAccessTokenFor(session, toolName, hmrcAccount) {
+export async function hmrcGrantFor(session, toolName, hmrcAccount) {
   const grantId = session?.hmrcGrant?.grantId;
   if (!grantId) throw new Error(`${toolName}: ${NO_GRANT_MESSAGE}`);
   const grant = await callSubmitApi(session, `/api/v1/mcp/hmrc-grants/${encodeURIComponent(grantId)}`);
@@ -176,7 +177,7 @@ export async function hmrcAccessTokenFor(session, toolName, hmrcAccount) {
         `Call request_hmrc_authorisation with hmrcAccount ${hmrcAccount} first.`,
     );
   }
-  return { accessToken: grant.accessToken, hmrcAccount: grant.hmrcAccount };
+  return { grantHeaders: { [HMRC_GRANT_HEADER]: grantId, hmrcAccount: grant.hmrcAccount }, hmrcAccount: grant.hmrcAccount };
 }
 
 /**
@@ -193,7 +194,7 @@ export async function listVatObligations(session, params = {}) {
   if (!vrn && !clientId) {
     throw new Error("list_vat_obligations requires vrn, or clientId to resolve it from the client row");
   }
-  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "list_vat_obligations", params.hmrcAccount);
+  const { grantHeaders } = await hmrcGrantFor(session, "list_vat_obligations", params.hmrcAccount);
 
   const query = new URLSearchParams();
   if (vrn) query.set("vrn", vrn);
@@ -203,9 +204,7 @@ export async function listVatObligations(session, params = {}) {
   if (status) query.set("status", status);
   if (govTestScenario) query.set("Gov-Test-Scenario", govTestScenario);
 
-  const headers = { Authorization: `Bearer ${accessToken}`, hmrcAccount };
-
-  return callSubmitApi(session, `/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers });
+  return callSubmitApi(session, `/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers: grantHeaders });
 }
 
 // The VAT enquiry reads other than obligations: HMRC's liabilities, payments and penalties for one
@@ -214,7 +213,7 @@ export async function listVatObligations(session, params = {}) {
 async function vatEnquiry(session, toolName, route, params, extraQuery = {}) {
   const { vrn, from, to, govTestScenario } = params;
   if (!vrn) throw new Error(`${toolName} requires vrn`);
-  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, toolName, params.hmrcAccount);
+  const { grantHeaders } = await hmrcGrantFor(session, toolName, params.hmrcAccount);
   const query = new URLSearchParams({ vrn });
   for (const [key, value] of Object.entries({ from, to, ...extraQuery })) {
     if (value) query.set(key, value);
@@ -222,7 +221,7 @@ async function vatEnquiry(session, toolName, route, params, extraQuery = {}) {
   if (govTestScenario) query.set("Gov-Test-Scenario", govTestScenario);
   return callSubmitApi(session, `${route}?${query.toString()}`, {
     customAuthorizer: true,
-    headers: { Authorization: `Bearer ${accessToken}`, hmrcAccount },
+    headers: grantHeaders,
   });
 }
 
@@ -303,9 +302,9 @@ export async function submitVatReturn(session, params = {}) {
     boxes[field] = requireField("submit_vat_return", params, field);
   }
   const { govTestScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations } = params;
-  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_vat_return", params.hmrcAccount);
+  const { grantHeaders } = await hmrcGrantFor(session, "submit_vat_return", params.hmrcAccount);
 
-  const headers = { hmrcAccount };
+  const headers = { ...grantHeaders };
   if (govTestScenario) headers["Gov-Test-Scenario"] = govTestScenario;
 
   return callSubmitApi(session, "/api/v1/hmrc/vat/return", {
@@ -317,7 +316,6 @@ export async function submitVatReturn(session, params = {}) {
       ...(clientId ? { clientId } : {}),
       periodStart,
       periodEnd,
-      accessToken,
       ...boxes,
       ...(runFraudPreventionHeaderValidation !== undefined ? { runFraudPreventionHeaderValidation } : {}),
       ...(allowSyntheticObligations !== undefined ? { allowSyntheticObligations } : {}),

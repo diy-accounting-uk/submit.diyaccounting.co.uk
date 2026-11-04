@@ -31,6 +31,11 @@ first_submissions AS (
   SELECT hashed_sub, min(from_iso8601_timestamp(created_at)) AS first_submission_at
   FROM   dynamo_receipts
   WHERE  change_type = 'INSERT' AND actor = 'customer' AND hashed_sub IS NOT NULL
+         AND hashed_sub NOT IN (
+           SELECT hashed_sub FROM activity_events_all
+           WHERE  hashed_sub IS NOT NULL
+           GROUP  BY hashed_sub
+           HAVING bool_or(actor IN ('test-user', 'probe', 'synthetic', 'operator')))
   GROUP  BY hashed_sub)
 SELECT date(s.signup_at) AS signup_day,
        count(*) AS new_accounts,

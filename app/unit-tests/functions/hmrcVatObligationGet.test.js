@@ -91,9 +91,18 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockGetHmrcGrant = vi.fn();
+vi.mock("@app/data/dynamoDbHmrcGrantRepository.js", () => ({
+  getHmrcGrant: (...args) => mockGetHmrcGrant(...args),
+  refreshHmrcGrant: vi.fn(),
+  deleteHmrcGrant: vi.fn(),
+}));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 import { hashSub } from "@app/services/subHasher.js";
+import { sealFor, HMRC_GRANT_PURPOSE } from "@app/lib/codesSeal.js";
+import { resetBlobKeyCache } from "@app/lib/mcpBlobKey.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -160,6 +169,50 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(200);
+  });
+
+  describe("with an MCP HMRC grant", () => {
+    const GRANT_ID = "11111111-2222-4333-8444-555555555555";
+
+    async function storeGrant(ownerSub) {
+      process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
+      resetBlobKeyCache();
+      mockGetHmrcGrant.mockResolvedValue({
+        grantId: GRANT_ID,
+        state: "granted",
+        hashedSub: hashSub(ownerSub),
+        hmrcAccount: "live",
+        scope: "read:vat write:vat",
+        accessExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+        sealed: await sealFor(HMRC_GRANT_PURPOSE, { accessToken: "grant-hmrc-token", refreshToken: "grant-refresh" }, GRANT_ID),
+      });
+    }
+
+    function grantEvent() {
+      return buildHmrcEvent({ queryStringParameters: { vrn: "111222333" }, headers: { "x-mcp-hmrc-grant": GRANT_ID } });
+    }
+
+    test("opens the grant server side and calls HMRC with its token", async () => {
+      await storeGrant("test-sub");
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const response = await hmrcVatObligationGetHandler(grantEvent());
+
+      expect(response.statusCode).toBe(200);
+      const hmrcCall = mockFetch.mock.calls.find(([url]) => String(url).includes("/obligations"));
+      expect(hmrcCall[1].headers.Authorization).toBe("Bearer grant-hmrc-token");
+      expect(JSON.stringify(parseResponseBody(response))).not.toContain("grant-hmrc-token");
+    });
+
+    test("refuses a grant that belongs to another user", async () => {
+      await storeGrant("another-sub");
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const response = await hmrcVatObligationGetHandler(grantEvent());
+
+      expect(response.statusCode).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
   });
 
   test("publishes the vat-obligations-queried event with the hashed sub, never the raw sub", async () => {

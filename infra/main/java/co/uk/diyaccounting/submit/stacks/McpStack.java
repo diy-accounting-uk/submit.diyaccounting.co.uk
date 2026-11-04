@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.LinkedHashSet;
@@ -256,6 +257,8 @@ public class McpStack extends Stack {
                 .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn());
+        IntegrationCallAccess.addEnv(
+                mcpCodesEntryEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         var mcpCodesEntryApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -318,6 +321,8 @@ public class McpStack extends Stack {
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
+        IntegrationCallAccess.addEnv(
+                mcpHmrcGrantEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             mcpHmrcGrantEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }

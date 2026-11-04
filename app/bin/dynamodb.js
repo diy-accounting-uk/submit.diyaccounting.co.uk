@@ -537,12 +537,53 @@ export async function ensureSubscriptionsTableExists(tableName, endpoint) {
   }
 }
 
+export async function ensureIntegrationCallsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring integration calls table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "pk", KeyType: "HASH" },
+            { AttributeName: "sk", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "pk", AttributeType: "S" },
+            { AttributeName: "sk", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
+    }
+  }
+}
+
 // Every table the local server needs, keyed by the environment variable that names it. The
 // behaviour-test helper and the simulator start script both create these through
 // ensureConfiguredTablesExist, so the two cannot drift apart.
 const CONFIGURED_TABLES = [
   ["BUNDLE_DYNAMODB_TABLE_NAME", ensureBundleTableExists],
   ["HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", ensureHmrcApiRequestsTableExists],
+  ["INTEGRATION_CALLS_DYNAMODB_TABLE_NAME", ensureIntegrationCallsTableExists],
   ["RECEIPTS_DYNAMODB_TABLE_NAME", ensureReceiptsTableExists],
   ["PASSES_DYNAMODB_TABLE_NAME", ensurePassesTableExists],
   ["COMMISSIONS_DYNAMODB_TABLE_NAME", ensureCommissionsTableExists],

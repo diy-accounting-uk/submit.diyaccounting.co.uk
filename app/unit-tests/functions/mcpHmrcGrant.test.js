@@ -21,6 +21,7 @@ vi.mock("@app/data/dynamoDbHmrcApiRequestRepository.js", () => ({ putHmrcApiRequ
 vi.mock("@app/services/subHasher.js", async (importOriginal) => ({ ...(await importOriginal()), initializeSalt: async () => {} }));
 
 const { ingestHandler } = await import("@app/functions/mcp/mcpHmrcGrant.js");
+const { openGrantFor } = await import("@app/lib/mcpHmrcGrantAccess.js");
 
 const ROUTE = "/api/v1/mcp/hmrc-grants";
 const HMRC_SANDBOX = "https://test-api.service.hmrc.example";
@@ -200,24 +201,24 @@ describe("mcpHmrcGrant", () => {
       expect(body).toEqual({ status: "pending", hmrcAccount: "synthetic" });
     });
 
-    test("answers the access token to its owner", async () => {
+    test("answers the status, expiry, scope and account to its owner and holds no token", async () => {
       const grantId = await grantedGrant();
       const { response, body } = await readGrant(grantId);
       expect(response.statusCode).toBe(200);
-      expect(body).toMatchObject({
-        status: "granted",
-        accessToken: "hmrc-access-1",
-        hmrcAccount: "synthetic",
-        scope: "read:vat write:vat",
-      });
-      expect(body.refreshToken).toBeUndefined();
+      expect(Object.keys(body).sort()).toEqual(["expiresAt", "hmrcAccount", "scope", "status"]);
+      expect(body).toMatchObject({ status: "granted", hmrcAccount: "synthetic", scope: "read:vat write:vat" });
+      expect(response.body).not.toContain("hmrc-access-1");
+      expect(response.body).not.toContain("hmrc-refresh-1");
     });
 
-    test("answers 404 to anyone but the owner, and for an id that is not a grant id", async () => {
+    test("answers 403 to another user, and 404 for an unknown grant and for an id that is not a grant id", async () => {
       const grantId = await grantedGrant();
       const stranger = await readGrant(grantId, "user-sub-2");
-      expect(stranger.response.statusCode).toBe(404);
-      expect(stranger.body.message).toContain("request_hmrc_authorisation");
+      expect(stranger.response.statusCode).toBe(403);
+      expect(stranger.response.body).not.toContain("hmrc-access-1");
+      const unknown = await readGrant("99999999-2222-4333-8444-555555555555");
+      expect(unknown.response.statusCode).toBe(404);
+      expect(unknown.body.message).toContain("request_hmrc_authorisation");
       expect((await readGrant("hmrc-grant:../x")).response.statusCode).toBe(404);
     });
 
@@ -228,14 +229,14 @@ describe("mcpHmrcGrant", () => {
         tokenResponse(200, { access_token: "hmrc-access-2", refresh_token: "hmrc-refresh-2", expires_in: 14400 }),
       );
 
-      const { body } = await readGrant(grantId);
+      const { response } = await readGrant(grantId);
 
-      expect(body.accessToken).toBe("hmrc-access-2");
+      expect(response.statusCode).toBe(200);
+      expect(await openGrantFor(grantId, "user-sub-1")).toMatchObject({ status: "granted", accessToken: "hmrc-access-2" });
       const sent = new URLSearchParams(tokenEndpoint.mock.calls[1][1].body);
       expect(sent.get("grant_type")).toBe("refresh_token");
       expect(sent.get("refresh_token")).toBe("hmrc-refresh-1");
-      const { body: again } = await readGrant(grantId);
-      expect(again.accessToken).toBe("hmrc-access-2");
+      expect(await openGrantFor(grantId, "user-sub-1")).toMatchObject({ accessToken: "hmrc-access-2" });
       expect(tokenEndpoint).toHaveBeenCalledTimes(2);
     });
 

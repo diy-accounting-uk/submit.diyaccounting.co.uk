@@ -13,6 +13,7 @@
 
 // app/functions/hmrcVatReturnPost.js
 
+import { grantAccessTokenFromEvent } from "../../lib/mcpHmrcGrantAccess.js";
 import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -508,13 +509,15 @@ export async function ingestHandler(event) {
     vatNumber,
     periodStart,
     periodEnd,
-    hmrcAccessToken,
+    hmrcAccessToken: hmrcAccessTokenFromBody,
     vatReturnData,
     requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
   } = extractAndValidateParameters(event, errorMessages);
+  // An MCP request names its HMRC grant in a header; a browser request carries the token in the body.
+  const hmrcAccessToken = (await grantAccessTokenFromEvent(event)) ?? hmrcAccessTokenFromBody;
 
   // A client-scoped request resolves its VRN from the client row, never from the request body.
   const resolvedVatNumber = clientId ? client.identifiers?.vrn : vatNumber;

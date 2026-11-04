@@ -33,7 +33,7 @@ const CLIENT_B = {
 };
 
 const GRANT_ID = "0a1b2c3d-0a1b-4a1b-8a1b-0a1b2c3d4e5f";
-const CONNECTED_GRANT = { status: "granted", accessToken: "agent-token", hmrcAccount: "synthetic" };
+const CONNECTED_GRANT = { status: "granted", hmrcAccount: "synthetic" };
 
 test.describe("Practice page", () => {
   let grantRequests;
@@ -359,7 +359,7 @@ test.describe("Practice page", () => {
     expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"))).toBeNull();
   });
 
-  test("sends the agent token from the grant with an invitation", async ({ page }) => {
+  test("sends the grant id, and no token, with an invitation", async ({ page }) => {
     await setupRoutes(page, { clients: [CLIENT_A], grant: CONNECTED_GRANT });
     await page.route("**/authorisation/invitations", async (route) => {
       await route.fulfill({
@@ -377,7 +377,8 @@ test.describe("Practice page", () => {
       page.locator(".invite-send-btn").first().click(),
     ]);
 
-    expect(JSON.parse(request.postData()).accessToken).toBe("agent-token");
+    expect(request.headers()["x-mcp-hmrc-grant"]).toBe(GRANT_ID);
+    expect(JSON.parse(request.postData()).accessToken).toBeUndefined();
   });
 
   test("shows not connected and clears the stored grant id when the grant has expired", async ({ page }) => {

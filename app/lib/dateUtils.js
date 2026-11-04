@@ -71,6 +71,8 @@ export const TTL_PRESETS = {
   // Security state: a sign-in session item outlives any session it tracks, so a session
   // resumed after a long gap still has its prior lastIssuedAt to compare against.
   THIRTY_DAYS: { days: 30 },
+  // Outbound API call record: as long as the longest range on the operator dashboard.
+  NINETY_DAYS: { days: 90 },
 };
 
 /**

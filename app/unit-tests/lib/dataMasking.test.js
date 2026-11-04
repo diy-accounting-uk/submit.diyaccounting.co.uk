@@ -4,7 +4,15 @@
 // app/unit-tests/lib/dataMasking.test.js
 
 import { describe, test, expect } from "vitest";
-import { isSensitiveField, maskSensitiveData, maskHttpData } from "@app/lib/dataMasking.js";
+import {
+  isSensitiveField,
+  maskSensitiveData,
+  maskHttpData,
+  maskIntegrationRaw,
+  integrationPathTemplate,
+  stripePathTemplate,
+  govTalkSummary,
+} from "@app/lib/dataMasking.js";
 
 describe("lib/dataMasking", () => {
   describe("isSensitiveField", () => {
@@ -318,6 +326,236 @@ describe("lib/dataMasking", () => {
     test("handles null/undefined input", () => {
       expect(maskHttpData(null)).toBe(null);
       expect(maskHttpData(undefined)).toBe(undefined);
+    });
+  });
+
+  describe("maskHttpData keepFields", () => {
+    test("keeps a named field in clear and masks the rest", () => {
+      const result = maskHttpData(
+        { body: { code: "INVALID_REQUEST", access_token: "token123", errors: [{ code: "FORMAT_VRN" }] } },
+        { keepFields: ["code"] },
+      );
+
+      expect(result.body.code).toBe("INVALID_REQUEST");
+      expect(result.body.errors[0].code).toBe("FORMAT_VRN");
+      expect(result.body.access_token).toBe("***MASKED***");
+    });
+
+    test("masks code when no field is kept", () => {
+      expect(maskHttpData({ body: { code: "abc" } }).body.code).toBe("***MASKED***");
+    });
+  });
+
+  describe("integrationPathTemplate", () => {
+    test.each([
+      ["/organisations/vat/123456789/returns", "/organisations/vat/{vrn}/returns"],
+      ["/individuals/business/AA123456A/2024-25/obligations", "/individuals/business/{nino}/2024-25/obligations"],
+      [
+        "/individuals/business/self-employment/AA123456A/XAIS12345678901/period/2024-04-06_2024-07-05",
+        "/individuals/business/self-employment/{nino}/{id}/period/{id}",
+      ],
+      ["/individuals/calculations/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c", "/individuals/calculations/{id}"],
+      ["/v1/customers/cus_Abc123", "/v1/customers/{id}"],
+      ["/company/01234567/filing-history", "/company/{id}/filing-history"],
+      ["/oauth/token", "/oauth/token"],
+    ])("reduces %s", (path, template) => {
+      expect(integrationPathTemplate(path)).toBe(template);
+    });
+  });
+
+  describe("stripePathTemplate", () => {
+    test.each([
+      ["/v1/customers/cus_Abc123", "/v1/customers/{id}"],
+      ["/v1/payment_intents/pi_3Nabc123XYZ", "/v1/payment_intents/{id}"],
+      ["/v1/payment_intents", "/v1/payment_intents"],
+      ["/v1/billing_portal/sessions", "/v1/billing_portal/sessions"],
+      ["/v1/checkout/sessions/cs_test_a1B2c3", "/v1/checkout/sessions/{id}"],
+      ["/v1/subscriptions/sub_1Nabc/cancel", "/v1/subscriptions/{id}/cancel"],
+      ["/v1/subscription_items/si_Qabc", "/v1/subscription_items/{id}"],
+      ["/v1/setup_intents/seti_1abc/confirm", "/v1/setup_intents/{id}/confirm"],
+      ["/v1/accounts/acct_1Nabc/login_links", "/v1/accounts/{id}/login_links"],
+      ["/v1/charges", "/v1/charges"],
+    ])("reduces %s", (path, template) => {
+      expect(stripePathTemplate(path)).toBe(template);
+    });
+
+    test("leaves an HMRC path to integrationPathTemplate", () => {
+      expect(integrationPathTemplate("/v1/payment_intents")).toBe("/v1/{id}");
+    });
+  });
+
+  describe("govTalkSummary", () => {
+    test("reads the class, the transaction id and the first error number", () => {
+      const xml =
+        "<GovTalkMessage><Header><MessageDetails><Class>HMRC-CT-CT600</Class><TransactionID>ABC123</TransactionID></MessageDetails></Header>" +
+        "<GovTalkDetails><GovTalkErrors><Error><RaisedBy>Department</RaisedBy><Number>3001</Number><Type>fatal</Type></Error></GovTalkErrors></GovTalkDetails></GovTalkMessage>";
+
+      expect(govTalkSummary(xml)).toEqual({ messageClass: "HMRC-CT-CT600", transactionId: "ABC123", errorNumber: "3001" });
+    });
+
+    test("reads no error number from a message with no error", () => {
+      expect(govTalkSummary("<Number>12</Number>").errorNumber).toBeUndefined();
+    });
+  });
+
+  describe("maskIntegrationRaw", () => {
+    const VRN = "193054661";
+    const NINO = "AA123456A";
+    const UTR = "1234567890";
+    const EMAIL = "person@example.com";
+    const IP = "203.0.113.7";
+    const STRIPE_CUSTOMER = "cus_Abc123XYZ";
+    const SECRET_VALUES = [VRN, NINO, UTR, EMAIL, IP, STRIPE_CUSTOMER];
+
+    function expectNoSecretValue(raw) {
+      const stored = JSON.stringify(raw);
+      for (const value of SECRET_VALUES) expect(stored).not.toContain(value);
+    }
+
+    const call = { method: "POST", host: "api.example", api: "POST /organisations/vat/{vrn}/returns" };
+
+    test("keeps header names, and values only for the allowlisted headers", () => {
+      const raw = maskIntegrationRaw({
+        ...call,
+        status: 201,
+        requestHeaders: {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "Bearer token123",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Client-Public-IP": IP,
+          "Gov-Client-User-IDs": `cognito=${EMAIL}`,
+          "x-request-id": undefined,
+        },
+        responseHeaders: new Headers({ "x-correlationid": "abc", "Content-Type": "application/json" }),
+      });
+
+      expect(raw.requestHeaderNames).toEqual([
+        "Accept",
+        "Authorization",
+        "Gov-Client-Connection-Method",
+        "Gov-Client-Public-IP",
+        "Gov-Client-User-IDs",
+      ]);
+      expect(raw.requestHeaderValues).toEqual({
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+      });
+      expect(raw.responseHeaderNames).toEqual(expect.arrayContaining(["x-correlationid", "content-type"]));
+      expectNoSecretValue(raw);
+      expect(JSON.stringify(raw)).not.toContain("token123");
+    });
+
+    test("reduces a JSON body to field names and value types", () => {
+      const raw = maskIntegrationRaw({
+        ...call,
+        status: 200,
+        requestBody: JSON.stringify({
+          vatDueSales: 12.5,
+          finalised: true,
+          vrn: VRN,
+          nino: NINO,
+          utr: UTR,
+          email: EMAIL,
+          nested: { ip: IP },
+        }),
+        responseBody: JSON.stringify({
+          obligations: [{ periodKey: "18A1", customer: STRIPE_CUSTOMER }, { periodKey: "18A2" }],
+          none: null,
+        }),
+      });
+
+      expect(raw.requestBody).toEqual({
+        vatDueSales: "number",
+        finalised: "boolean",
+        vrn: "string",
+        nino: "string",
+        utr: "string",
+        email: "string",
+        nested: { ip: "string" },
+      });
+      expect(raw.responseBody).toEqual({ obligations: [{ periodKey: "string", customer: "string" }], none: "null" });
+      expectNoSecretValue(raw);
+    });
+
+    test("removes an identifier used as a field name", () => {
+      const raw = maskIntegrationRaw({ ...call, responseBody: { [VRN]: 1, [EMAIL]: 2 } });
+
+      expect(raw.responseBody).toEqual({ "{id}": "number" });
+    });
+
+    test("keeps parameter names only from a form body", () => {
+      const raw = maskIntegrationRaw({
+        ...call,
+        requestHeaders: { "Content-Type": "application/x-www-form-urlencoded" },
+        requestBody: `grant_type=authorization_code&code=abc123&client_secret=s3cret&customer=${STRIPE_CUSTOMER}`,
+      });
+
+      expect(raw.requestBody).toEqual({ grant_type: "string", code: "string", client_secret: "string", customer: "string" });
+      expect(JSON.stringify(raw)).not.toContain("s3cret");
+    });
+
+    test("keeps the message class, transaction id and error number of a GovTalk envelope, and nothing else", () => {
+      const envelope =
+        `<?xml version="1.0"?><GovTalkMessage><Header><MessageDetails><Class>HMRC-CT-CT600</Class><TransactionID>TX123</TransactionID></MessageDetails>` +
+        `<SenderDetails><IDAuthentication><SenderID>gateway-user</SenderID><Authentication><Value>gateway-password</Value></Authentication></IDAuthentication></SenderDetails></Header>` +
+        `<GovTalkDetails><Keys><Key Type="UTR">${UTR}</Key></Keys></GovTalkDetails><Body><Accounts>turnover 1000</Accounts><Email>${EMAIL}</Email></Body></GovTalkMessage>`;
+      const reply = `<GovTalkMessage><Header><MessageDetails><Class>HMRC-CT-CT600</Class></MessageDetails></Header><GovTalkDetails><GovTalkErrors><Error><Number>1046</Number><Text>Bad ${UTR}</Text></Error></GovTalkErrors></GovTalkDetails></GovTalkMessage>`;
+
+      const raw = maskIntegrationRaw({ ...call, status: 200, requestBody: envelope, responseBody: reply });
+
+      expect(raw.requestBody).toEqual({ format: "xml", messageClass: "HMRC-CT-CT600", transactionId: "TX123", errorNumber: undefined });
+      expect(raw.responseBody.errorNumber).toBe("1046");
+      expectNoSecretValue(raw);
+      for (const value of ["gateway-user", "gateway-password", "turnover", "<"]) expect(JSON.stringify(raw)).not.toContain(value);
+    });
+
+    test("keeps the error codes and messages of a failed call, with identifiers removed", () => {
+      const raw = maskIntegrationRaw({
+        ...call,
+        status: 400,
+        responseBody: JSON.stringify({
+          code: "INVALID_REQUEST",
+          message: `VRN ${VRN} for ${EMAIL} from ${IP} and ${NINO} refused`,
+          errors: [{ code: "VRN_INVALID", message: `Bad UTR ${UTR}`, path: "/vrn" }],
+        }),
+      });
+
+      expect(raw.code).toBe("INVALID_REQUEST");
+      expect(raw.message).toBe("VRN {id} for {id} from {id} and {id} refused");
+      expect(raw.errors).toEqual([{ code: "VRN_INVALID", message: "Bad UTR {id}" }]);
+      expectNoSecretValue(raw);
+    });
+
+    test("reads a Stripe error from under the error field", () => {
+      const raw = maskIntegrationRaw({
+        ...call,
+        status: 404,
+        responseBody: { error: { code: "resource_missing", message: `No such customer: '${STRIPE_CUSTOMER}'` } },
+      });
+
+      expect(raw.code).toBe("resource_missing");
+      expect(raw.message).toBe("No such customer: '{id}'");
+    });
+
+    test("keeps no error text below status 400", () => {
+      const raw = maskIntegrationRaw({ ...call, status: 200, responseBody: { code: "VALID_HEADERS", message: "ok" } });
+
+      expect(raw.code).toBeUndefined();
+      expect(raw.message).toBeUndefined();
+      expect(raw.responseBody).toEqual({ code: "string", message: "string" });
+    });
+
+    test("limits the record to 32 KB and marks it truncated", () => {
+      const wide = Object.fromEntries(
+        Array.from({ length: 5000 }, (_, index) => [`field${"x".repeat(10)}${String.fromCharCode(97 + (index % 26))}${index}`, 1]),
+      );
+
+      const raw = maskIntegrationRaw({ ...call, status: 200, responseBody: wide });
+
+      expect(raw.truncated).toBe(true);
+      expect(raw.responseBody).toBeUndefined();
+      expect(raw.api).toBe(call.api);
+      expect(Buffer.byteLength(JSON.stringify(raw))).toBeLessThanOrEqual(32 * 1024);
     });
   });
 });

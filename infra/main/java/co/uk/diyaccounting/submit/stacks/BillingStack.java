@@ -25,6 +25,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -253,6 +254,10 @@ public class BillingStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                billingCheckoutPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -422,6 +427,10 @@ public class BillingStack extends Stack {
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                billingActivityCheckoutPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingActivityCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -516,6 +525,10 @@ public class BillingStack extends Stack {
         // ============================================================================
         var billingCheckoutSessionGetLambdaEnv =
                 new PopulatedMap<String, String>().with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                billingCheckoutSessionGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutSessionGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -591,6 +604,8 @@ public class BillingStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                billingPortalGetLambdaEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingPortalGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }

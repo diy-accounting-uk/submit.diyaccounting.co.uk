@@ -3,12 +3,12 @@
 
 // @capability HMRC-29 Call the HMRC API
 // - **Use when:** a Lambda or browser page must call an HMRC endpoint and classify the response.
-// - **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, and counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
+// - **Does:** app/services/hmrcApi.js builds HMRC request headers and issues hmrcHttpGet, hmrcHttpPost, hmrcHttpPut and hmrcHttpDelete, all through sendToHmrc, the one send path to HMRC. sendToHmrc refuses a production request that has no Gov-Client-Connection-Method, counts every send and every request with a missing fraud-prevention header as a Submit/HmrcSend metric, and writes one outbound call record for each attempt. It classifies HMRC error responses into the application's own 401, 403, 404 and 500 responses. hmrc-service.js is its browser counterpart, wrapping every HMRC endpoint behind one authorizedFetch-based client.
 // - **Run:** `import { hmrcHttpGet, hmrcHttpPost } from "app/services/hmrcApi.js"`; `import from "web/public/lib/services/hmrc-service.js"`
 // - **Entry:** `app/services/hmrcApi.js:hmrcHttpGet`; `app/services/hmrcApi.js:sendToHmrc`; `app/services/hmrcApi.js:validateHmrcAccessToken`; `web/public/lib/services/hmrc-service.js`
 // - **Files:** app/services/hmrcApi.js, app/unit-tests/services/hmrcApi.test.js, app/unit-tests/services/hmrcSendPath.test.js, web/public/lib/services/hmrc-service.js, web/unit-tests/hmrc-service.test.js
 // - **Keywords:** hmrc http client, send path, fraud prevention header violation, error classification, access token validation, authorizedfetch, hmrc-service
-// - **Related:** HMRC-25, HMRC-30
+// - **Related:** HMRC-25, HMRC-30, OPS-164
 // @end-capability
 
 // app/services/hmrcApi.js
@@ -22,9 +22,14 @@ import {
   http403ForbiddenResponse,
   http404NotFoundResponse,
   http401UnauthorizedResponse,
+  MCP_HMRC_GRANT_HEADER,
 } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+import { checkFraudPreventionHeaderRules } from "../lib/fraudPreventionHeaderRules.js";
 import { emitMetric } from "../lib/emfMetrics.js";
+import { integrationPathTemplate } from "../lib/dataMasking.js";
+import { HMRC_PRODUCTION_HOST, HMRC_SANDBOX_HOST, hmrcCallTarget } from "../lib/hmrcHosts.js";
+import { integrationApi, recordedFetch, recordIntegrationCall } from "../lib/integrationCalls.js";
 
 /**
  * Get a header value case-insensitively from a headers object.
@@ -56,13 +61,12 @@ export function getHmrcBaseUrl(hmrcAccount) {
   return base;
 }
 
-const HMRC_PRODUCTION_HOST = "api.service.hmrc.gov.uk";
-const HMRC_SANDBOX_HOST = "test-api.service.hmrc.gov.uk";
 const HMRC_OAUTH_TOKEN_PATH = "/oauth/token";
 const CONNECTION_METHOD_HEADER = "Gov-Client-Connection-Method";
 export const HMRC_SEND_METRICS_NAMESPACE = "Submit/HmrcSend";
 export const HMRC_SEND_METRIC = "HmrcSend";
 export const HMRC_FRAUD_HEADER_VIOLATION_METRIC = "HmrcFraudHeaderViolation";
+export const HMRC_FRAUD_HEADER_RULE_FAILURE_METRIC = "HmrcFraudHeaderRuleFailure";
 
 // Headers buildFraudHeaders sets on the server for every request. Gov-Client-Multi-Factor is
 // absent for a password-only sign-in, Gov-Vendor-License-IDs is omitted on purpose (HMRC
@@ -126,26 +130,14 @@ export function missingFraudPreventionHeaders(headers) {
   return { connectionMethod, missing: required.filter((name) => !present.has(name.toLowerCase())) };
 }
 
-// The path without its query string, with identifiers that name a customer replaced.
-function redactedHmrcPath(pathname) {
-  return pathname
-    .split("/")
-    .map((segment) => {
-      if (/^\d{9}$/.test(segment)) return "{vrn}";
-      if (/^[A-Za-z]{2}\d{6}[A-Za-z]$/.test(segment)) return "{nino}";
-      return segment;
-    })
-    .join("/");
-}
-
 function classifyHmrcTarget(url) {
   try {
     const parsed = new URL(url);
     if (parsed.hostname === HMRC_PRODUCTION_HOST) {
-      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "production", path: redactedHmrcPath(parsed.pathname) };
+      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "production", path: integrationPathTemplate(parsed.pathname) };
     }
     if (parsed.hostname === HMRC_SANDBOX_HOST) {
-      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "sandbox", path: redactedHmrcPath(parsed.pathname) };
+      return { kind: parsed.pathname === HMRC_OAUTH_TOKEN_PATH ? "exempt" : "sandbox", path: integrationPathTemplate(parsed.pathname) };
     }
   } catch {
     // An unparsable URL is not an HMRC host; fetch reports it.
@@ -158,14 +150,31 @@ function classifyHmrcTarget(url) {
  * no Gov-Client-Connection-Method is refused before it leaves. A request that lacks another
  * required fraud-prevention header is sent and counted, so a browser that withholds one header
  * never stops a filing. HMRC production and sandbox sends are counted; other hosts (the
- * simulator) and the OAuth token path are sent without a metric.
+ * simulator) and the OAuth token path are sent without a metric. Every attempt, a refusal
+ * included, writes one outbound call record.
  */
 export async function sendToHmrc(url, init = {}) {
   const target = classifyHmrcTarget(url);
+  const method = init.method || "GET";
+  const call = { org: "hmrc", target: hmrcCallTarget(url), api: integrationApi(method, url) };
   if (target.kind === "production" || target.kind === "sandbox") {
-    checkFraudPreventionHeaders(target, init);
+    const { refused, fph } = checkFraudPreventionHeaders(target, init);
+    call.fph = fph;
+    if (refused) {
+      await recordIntegrationCall({
+        ...call,
+        url,
+        method,
+        startedAt: new Date(),
+        durationMs: 0,
+        outcome: "refused",
+        requestHeaders: init.headers,
+        requestBody: init.body,
+      });
+      throw new HmrcFraudPreventionHeadersMissingError();
+    }
   }
-  return fetch(url, init);
+  return recordedFetch(url, init, call);
 }
 
 function checkFraudPreventionHeaders(target, init) {
@@ -188,9 +197,20 @@ function checkFraudPreventionHeaders(target, init) {
       refused,
     });
   }
-  if (refused) {
-    throw new HmrcFraudPreventionHeadersMissingError();
+  const rulesFailed = [...missing.map((name) => `${name}:missing`), ...checkFraudPreventionHeaderRules(init.headers, connectionMethod)];
+  if (rulesFailed.length > missing.length) {
+    const ruleFailures = rulesFailed.slice(missing.length);
+    emitMetric({ namespace: HMRC_SEND_METRICS_NAMESPACE, metricName: HMRC_FRAUD_HEADER_RULE_FAILURE_METRIC, dimensions });
+    logger.warn({
+      message: "HMRC request has fraud prevention headers that break a format rule",
+      host: target.kind === "production" ? HMRC_PRODUCTION_HOST : HMRC_SANDBOX_HOST,
+      path: target.path,
+      method: init.method || "GET",
+      connectionMethod: connectionMethod ?? null,
+      ruleFailures,
+    });
   }
+  return { refused, fph: { rules: rulesFailed.length > 0 ? "fail" : "pass", rulesFailed } };
 }
 
 async function auditHmrcRequest(auditForUserSub, { url, httpRequest, httpResponse, duration }) {
@@ -245,7 +265,13 @@ export class UnauthorizedTokenError extends Error {
   }
 }
 
-export function extractHmrcAccessTokenFromLambdaEvent(event) {
+// The HMRC access token a request carries: the one held by the MCP grant its x-mcp-hmrc-grant
+// header names, otherwise the Authorization bearer token.
+export async function extractHmrcAccessTokenFromLambdaEvent(event) {
+  if (getHeader(event.headers, MCP_HMRC_GRANT_HEADER)) {
+    const { grantAccessTokenFromEvent } = await import("../lib/mcpHmrcGrantAccess.js");
+    return grantAccessTokenFromEvent(event);
+  }
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
@@ -333,7 +359,11 @@ export async function validateFraudPreventionHeaders(
 
   try {
     const startTime = Date.now();
-    const response = await fetch(validationUrl, { method: "GET", headers, signal: controller.signal });
+    const response = await recordedFetch(
+      validationUrl,
+      { method: "GET", headers, signal: controller.signal },
+      { org: "hmrc", target: "test", api: integrationApi("GET", validationUrl) },
+    );
     duration = Date.now() - startTime;
 
     const responseBody = await response.json().catch(() => ({}));
@@ -479,7 +509,11 @@ export async function getFraudPreventionHeadersFeedback(
 
   try {
     const startTime = Date.now();
-    const response = await fetch(feedbackUrl, { method: "GET", headers, signal: controller.signal });
+    const response = await recordedFetch(
+      feedbackUrl,
+      { method: "GET", headers, signal: controller.signal },
+      { org: "hmrc", target: "test", api: integrationApi("GET", feedbackUrl) },
+    );
     duration = Date.now() - startTime;
 
     const responseBody = await response.json().catch(() => ({}));

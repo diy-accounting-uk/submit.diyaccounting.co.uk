@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.stacks.analytics.NightlyIngestionWorkflow;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -267,7 +268,9 @@ public class IngestionStack extends Stack {
 
         var stripeReconcileEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
+                .with(IntegrationCallAccess.ENV_NAME, sharedNames.data.integrationCallsTableName)
+                .with(IntegrationCallAccess.DEPLOYMENT_ENV_NAME, props.deploymentName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             stripeReconcileEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -307,6 +310,7 @@ public class IngestionStack extends Stack {
                 .logGroup(stripeReconcileLogGroup.logGroup())
                 .build();
         stripeReconcileLambda.getNode().addDependency(stripeReconcileLogGroup.ensureResource());
+        IntegrationCallAccess.grantWhenRecording(stripeReconcileLambda, stripeReconcileEnv);
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
         stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()

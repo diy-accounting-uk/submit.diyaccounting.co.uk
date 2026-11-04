@@ -3,8 +3,9 @@
 
 // app/unit-tests/services/hmrcSendPathBypass.test.js
 //
-// Every request to HMRC leaves through sendToHmrc in app/services/hmrcApi.js. This test fails
-// when another source file both names an HMRC host or base URI and calls a fetch function.
+// Every request to HMRC leaves through sendToHmrc in app/services/hmrcApi.js or another named
+// recordedFetch call. This test fails when another source file both names an HMRC host or base
+// URI and calls a fetch function, or when the number of recorded sends changes.
 
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -17,21 +18,24 @@ const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors|fetchJs
 const HMRC_REFERENCE =
   /HMRC_BASE_URI|HMRC_SANDBOX_BASE_URI|HMRC_AGENT_AUTHORISATION_BASE_URI|hmrc\.gov\.uk|getHmrcBaseUrl|getAgentAuthorisationBaseUrl/;
 
-// The only files allowed a fetch call beside an HMRC reference, each with the exact number of
-// calls and the reason. A change to a file's count fails the test until the entry is reviewed.
+// The only file allowed a fetch call beside an HMRC reference, with the exact number of calls and
+// the reason. A change to the count fails the test until the entry is reviewed.
 const ALLOWED_FETCH_CALLS = [
-  {
-    file: "app/services/hmrcApi.js",
-    fetchCalls: 3,
-    reason:
-      "sendToHmrc is the send path (1 call); validateFraudPreventionHeaders and getFraudPreventionHeadersFeedback (2 calls) read HMRC's sandbox-only test endpoints, which exist to receive the headers under test",
-  },
   {
     file: "app/services/hmrcTransactionEngine.js",
     fetchCalls: 1,
-    reason:
-      "the Corporation Tax transaction engine and its test hosts are not the HMRC API host; the request is signed XML, not an API call",
+    reason: "the send that recordedFetch wraps, which applies the Transaction Engine timeout and keeps its timeout error",
   },
+];
+
+const RECORDED_SEND = /\brecordedFetch\s*\(/g;
+
+// Each file that sends to HMRC through recordedFetch, with the exact number of sends.
+// httpResponseHelper.js names no HMRC host, so the fetch check above does not see it.
+const RECORDED_HMRC_SENDS = [
+  { file: "app/services/hmrcApi.js", sends: 3 },
+  { file: "app/services/hmrcTransactionEngine.js", sends: 1 },
+  { file: "app/lib/httpResponseHelper.js", sends: 1 },
 ];
 
 function sourceFiles(directory) {
@@ -78,6 +82,13 @@ describe("HMRC send path", () => {
     for (const allowed of ALLOWED_FETCH_CALLS) {
       const actual = found.find((entry) => entry.file === allowed.file);
       expect(actual?.fetchCalls, `${allowed.file}: ${allowed.reason}`).toBe(allowed.fetchCalls);
+    }
+  });
+
+  it("keeps each HMRC send on recordedFetch", () => {
+    for (const { file, sends } of RECORDED_HMRC_SENDS) {
+      const code = withoutComments(readFileSync(join(REPO_ROOT, file), "utf8"));
+      expect((code.match(RECORDED_SEND) || []).length, file).toBe(sends);
     }
   });
 

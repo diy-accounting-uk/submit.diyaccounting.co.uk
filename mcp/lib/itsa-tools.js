@@ -32,7 +32,7 @@ import {
 import { QUARTERLY_PERIOD_TYPES } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
 import { z } from "zod";
 
-import { callSubmitApi, hmrcAccessTokenFor, HMRC_ACCOUNTS, requireField } from "./submit-tools.js";
+import { callSubmitApi, hmrcGrantFor, HMRC_ACCOUNTS, requireField } from "./submit-tools.js";
 
 export { QUARTERLY_PERIOD_TYPES };
 
@@ -99,10 +99,6 @@ export async function deriveUkPropertyAnnual(session, params = {}) {
 
 const moneySection = z.record(z.string(), z.number());
 
-function itsaHeaders(hmrcAccount, govTestScenario) {
-  return { hmrcAccount, ...(govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {}) };
-}
-
 /**
  * submit_itsa_quarterly_update: files one period of the Self Employment Business API over the
  * deployed route, with the session's HMRC grant for the itsa service. Sends only the sections
@@ -118,12 +114,12 @@ export async function submitItsaQuarterlyUpdate(session, params = {}) {
   const taxYear = requireField("submit_itsa_quarterly_update", params, "taxYear");
   const { periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses } = params;
   const { govTestScenario, runFraudPreventionHeaderValidation } = params;
-  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_itsa_quarterly_update", params.hmrcAccount);
+  const { grantHeaders } = await hmrcGrantFor(session, "submit_itsa_quarterly_update", params.hmrcAccount);
 
   return callSubmitApi(session, "/api/v1/hmrc/itsa/self-employment/period", {
     method: "POST",
     customAuthorizer: true,
-    headers: { Authorization: `Bearer ${accessToken}`, ...itsaHeaders(hmrcAccount, govTestScenario) },
+    headers: { ...grantHeaders, ...(govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {}) },
     body: {
       nino,
       businessId,
@@ -151,12 +147,12 @@ export async function submitItsaAnnualSubmission(session, params = {}) {
   const businessId = requireField("submit_itsa_annual_submission", params, "businessId");
   const taxYear = requireField("submit_itsa_annual_submission", params, "taxYear");
   const { adjustments, allowances, nonFinancials, govTestScenario, runFraudPreventionHeaderValidation } = params;
-  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_itsa_annual_submission", params.hmrcAccount);
+  const { grantHeaders } = await hmrcGrantFor(session, "submit_itsa_annual_submission", params.hmrcAccount);
 
   return callSubmitApi(session, "/api/v1/hmrc/itsa/self-employment/annual", {
     method: "PUT",
     customAuthorizer: true,
-    headers: { Authorization: `Bearer ${accessToken}`, ...itsaHeaders(hmrcAccount, govTestScenario) },
+    headers: { ...grantHeaders, ...(govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {}) },
     body: {
       nino,
       businessId,

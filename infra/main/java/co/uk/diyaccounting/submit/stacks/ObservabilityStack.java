@@ -760,6 +760,52 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // HMRC fraud prevention header rule failure alarm. app/services/hmrcApi.js sendToHmrc emits
+        // HmrcFraudHeaderRuleFailure when a header on a request to the HMRC production API breaks
+        // a format rule from HMRC's connection method pages (a bad value, a broken cross-check).
+        // The request still goes. The metric is environment-wide, so the alarm lives here. No
+        // SnsAction: the alarm-state-change rule in OpsStack routes this to the alarm-to-issue
+        // Lambda in prod.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcFraudHeaderRuleFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-fraud-header-rule-failure")
+                .alarmDescription(
+                        "A request to the HMRC production API had a fraud prevention header that broke a format rule")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/HmrcSend")
+                        .metricName("HmrcFraudHeaderRuleFailure")
+                        .dimensionsMap(Map.of("Environment", props.envName(), "HmrcHost", "production"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // Outbound call record failure alarm. app/lib/integrationCalls.js counts
+        // IntegrationCallRecordFailed when it cannot write a call record, and the customer's call
+        // still works. One hour of data and a threshold of 5 let a short DynamoDB blip pass
+        // without a page. A Lambda that lacks the table name or the grant fails on every call, so
+        // it reaches 5 within the hour. The metric is environment-wide, so the alarm lives here.
+        // No SnsAction: the alarm-state-change rule in OpsStack routes this to the alarm-to-issue
+        // Lambda in prod.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-IntegrationCallRecordFailedAlarm")
+                .alarmName(props.resourceNamePrefix() + "-integration-call-record-failed")
+                .alarmDescription("Outbound call records were not written >= 5 times in 1 hour")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/IntegrationCalls")
+                        .metricName("IntegrationCallRecordFailed")
+                        .dimensionsMap(Map.of("Environment", props.envName()))
+                        .statistic("Sum")
+                        .period(Duration.hours(1))
+                        .build())
+                .threshold(5)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
         // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
         // against this same environment-wide behaviour-test metric, each opening its own GitHub

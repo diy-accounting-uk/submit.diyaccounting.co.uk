@@ -26,7 +26,7 @@
 // e.g. https://submit.diyaccounting.co.uk/). The session bearer is the MCP's own sign-in
 // (its credentials' accessToken()).
 
-import { callSubmitApi, requireField, hmrcAccessTokenFor } from "./submit-tools.js";
+import { callSubmitApi, requireField, hmrcGrantFor } from "./submit-tools.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -103,20 +103,20 @@ export async function inviteClient(session, params = {}) {
   const service = requireField("invite_client", params, "service");
   const knownFact = requireField("invite_client", params, "knownFact");
   const { arn } = params;
-  const { accessToken } = await hmrcAccessTokenFor(session, "invite_client");
+  const { grantHeaders } = await hmrcGrantFor(session, "invite_client");
   return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
     method: "POST",
-    body: { service, knownFact, accessToken, ...(arn ? { arn } : {}) },
+    headers: grantHeaders,
+    body: { service, knownFact, ...(arn ? { arn } : {}) },
   });
 }
 
 /**
  * client_authorisation_status: one client's current authorisation status for one HMRC service,
  * over GET /api/v1/practice/clients/{clientId}/authorisation?service=. This route sits behind the
- * custom authoriser (like list_vat_obligations and submit_vat_return), since its handler reads the
- * HMRC access token from the plain Authorization header (extractHmrcAccessTokenFromLambdaEvent):
- * the practice's own session bearer goes on X-Authorization instead, freeing Authorization for the
- * HMRC token.
+ * custom authoriser (like list_vat_obligations and submit_vat_return), and its handler opens the session's HMRC grant
+ * from the x-mcp-hmrc-grant header (extractHmrcAccessTokenFromLambdaEvent); the practice's own session
+ * bearer goes on X-Authorization.
  * @param {Object} session
  * @param {{clientId: string, service: string}} params
  * @returns {Promise<{client: Object, status: string, invitationId: string|null}>}
@@ -124,10 +124,10 @@ export async function inviteClient(session, params = {}) {
 export async function clientAuthorisationStatus(session, params = {}) {
   const clientId = requireField("client_authorisation_status", params, "clientId");
   const service = requireField("client_authorisation_status", params, "service");
-  const { accessToken } = await hmrcAccessTokenFor(session, "client_authorisation_status");
+  const { grantHeaders } = await hmrcGrantFor(session, "client_authorisation_status");
   const query = new URLSearchParams({ service });
   return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?${query.toString()}`, {
     customAuthorizer: true,
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: grantHeaders,
   });
 }

@@ -10,7 +10,8 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { createLogger } from "../lib/logger.js";
-import { fetchTextWithTimeout, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { fetchWithTimeout, normalizeHeaders, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../lib/xmlDom.js";
 import { parseXmlTree, canonicaliseElement, childElement, localName } from "../lib/xmlCanonical.js";
 
@@ -360,13 +361,24 @@ export function getTransactionEngineSubmissionUrl({ gatewayTest }) {
  */
 export async function postToTransactionEngine(url, xml, extraHeaders = {}) {
   logger.info({ message: `POST ${url}`, url });
-  const result = await fetchTextWithTimeout(
+  let duration;
+  const response = await recordedFetch(
     url,
     { method: "POST", headers: { "Content-Type": "application/xml", ...extraHeaders }, body: xml },
-    DEFAULT_TIMEOUTS.LONG,
+    {
+      org: "hmrc",
+      target: process.env.HMRC_TRANSACTION_ENGINE_URL || xml.includes("<GatewayTest>1</GatewayTest>") ? "test" : "live",
+      api: integrationApiForGovTalk("TE", xml),
+      fetchImplementation: async (requestUrl, init) => {
+        const sent = await fetchWithTimeout(requestUrl, init, DEFAULT_TIMEOUTS.LONG);
+        duration = sent.duration;
+        return sent.response;
+      },
+    },
   );
-  logger.info({ message: `Response from POST ${url}`, url, status: result.status });
-  return result;
+  const data = await response.text();
+  logger.info({ message: `Response from POST ${url}`, url, status: response.status });
+  return { ok: response.ok, status: response.status, data, headers: normalizeHeaders(response.headers), duration, response };
 }
 
 /**

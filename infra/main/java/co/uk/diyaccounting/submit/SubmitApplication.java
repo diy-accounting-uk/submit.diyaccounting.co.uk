@@ -563,6 +563,13 @@ public class SubmitApplication {
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .hmrcAgentAuthorisationBaseUri(
                                 hmrcAgentAuthorisationBaseUri != null ? hmrcAgentAuthorisationBaseUri : "")
+                        .hmrcBaseUri(hmrcBaseUri != null ? hmrcBaseUri : "")
+                        .hmrcClientId(hmrcClientId != null ? hmrcClientId : "")
+                        .hmrcClientSecretArn(hmrcClientSecretArn != null ? hmrcClientSecretArn : "")
+                        .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri != null ? appProps.hmrcSandboxBaseUri : "")
+                        .hmrcSandboxClientId(appProps.hmrcSandboxClientId != null ? appProps.hmrcSandboxClientId : "")
+                        .hmrcSandboxClientSecretArn(
+                                hmrcSandboxClientSecretArn != null ? hmrcSandboxClientSecretArn : "")
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());

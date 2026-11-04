@@ -8,7 +8,7 @@
 // read-only lookup.
 
 import { createLogger, context } from "../lib/logger.js";
-import { fetchJsonWithTimeout } from "../lib/httpFetch.js";
+import { sendJsonToCompaniesHouse } from "./companiesHouseSend.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
@@ -97,7 +97,7 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
     headers: { ...headers, Authorization: "[redacted]" },
   });
 
-  const result = await fetchJsonWithTimeout(
+  const result = await sendJsonToCompaniesHouse(
     requestUrl,
     { method, headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) },
     timeoutMs,

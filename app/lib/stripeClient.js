@@ -6,6 +6,7 @@
 import Stripe from "stripe";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "./logger.js";
+import { StripeRecordingHttpClient, stripeCallTarget } from "./stripeRecordingHttpClient.js";
 
 const logger = createLogger({ source: "app/lib/stripeClient.js" });
 
@@ -45,8 +46,8 @@ async function resolveSecretKey({ test = false } = {}) {
   return result.SecretString;
 }
 
-function buildStripeOptions() {
-  const options = {};
+function buildStripeOptions(secretKey) {
+  const options = { httpClient: new StripeRecordingHttpClient({ target: stripeCallTarget(secretKey) }) };
   if (process.env.STRIPE_API_BASE_URL) {
     options.apiVersion = "2024-12-18.acacia";
     options.host = new URL(process.env.STRIPE_API_BASE_URL).hostname;
@@ -66,7 +67,7 @@ function buildStripeOptions() {
  */
 export async function getStripeClient({ test = false } = {}) {
   const secretKey = await resolveSecretKey({ test });
-  const options = buildStripeOptions();
+  const options = buildStripeOptions(secretKey);
 
   if (test) {
     if (cachedTestClient && cachedTestKey === secretKey) {

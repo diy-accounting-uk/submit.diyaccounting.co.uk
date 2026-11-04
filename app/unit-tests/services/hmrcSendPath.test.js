@@ -5,11 +5,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { HttpTimeoutError } from "@app/lib/httpFetch.js";
 import { putHmrcApiRequest } from "@app/data/dynamoDbHmrcApiRequestRepository.js";
+import { putIntegrationCall } from "@app/data/dynamoDbIntegrationCallRepository.js";
+import { performTokenExchange } from "@app/lib/httpResponseHelper.js";
+import { postToTransactionEngine } from "@app/services/hmrcTransactionEngine.js";
 import {
   sendToHmrc,
   hmrcHttpGet,
   hmrcHttpPost,
+  validateFraudPreventionHeaders,
+  getFraudPreventionHeadersFeedback,
   HmrcTimeoutError,
   HmrcFraudPreventionHeadersMissingError,
   missingFraudPreventionHeaders,
@@ -21,16 +27,20 @@ vi.mock("@app/data/dynamoDbHmrcApiRequestRepository.js", () => ({
   putHmrcApiRequest: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@app/data/dynamoDbIntegrationCallRepository.js", () => ({
+  putIntegrationCall: vi.fn().mockResolvedValue(undefined),
+}));
+
 const PRODUCTION_URL = "https://api.service.hmrc.gov.uk/organisations/vat/123456789/obligations";
 const SANDBOX_URL = "https://test-api.service.hmrc.gov.uk/organisations/vat/123456789/obligations";
 
 const FULL_WEB_HEADERS = {
   "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
   "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0",
-  "Gov-Client-Device-ID": "device-1",
+  "Gov-Client-Device-ID": "0b5a9a52-4d6b-4a53-9a4b-3d5d9a3f1c11",
   "Gov-Client-Public-IP": "203.0.113.7",
   "Gov-Client-Public-IP-Timestamp": "2026-01-01T00:00:00.000Z",
-  "Gov-Client-Public-Port": "443",
+  "Gov-Client-Public-Port": "51234",
   "Gov-Client-Screens": "width=1&height=1&scaling-factor=1&colour-depth=24",
   "Gov-Client-Timezone": "UTC+00:00",
   "Gov-Client-User-IDs": "cognito=abc",
@@ -237,5 +247,222 @@ describe("services/hmrcApi audit and refusal through the HTTP functions", () => 
     expect(mockFetch).not.toHaveBeenCalled();
     expect(putHmrcApiRequest).toHaveBeenCalledTimes(1);
     expect(putHmrcApiRequest.mock.calls[0][1].httpResponse.body.name).toBe("HmrcFraudPreventionHeadersMissingError");
+  });
+});
+
+describe("outbound call records for HMRC", () => {
+  const TIMEOUT = Object.assign(new Error("aborted"), { name: "AbortError" });
+
+  function recordedItem() {
+    expect(putIntegrationCall).toHaveBeenCalledTimes(1);
+    return putIntegrationCall.mock.calls[0][0];
+  }
+
+  let mockFetch;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.HMRC_TRANSACTION_ENGINE_URL;
+    mockFetch = vi.fn().mockImplementation(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", mockFetch);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("records a production response as live, with no VRN and a passing header result", async () => {
+    await sendToHmrc(`${PRODUCTION_URL}?from=2026-01-01`, { method: "GET", headers: FULL_WEB_HEADERS });
+
+    const item = recordedItem();
+    expect(item).toMatchObject({
+      pk: expect.stringMatching(/^call#hmrc#/),
+      org: "hmrc",
+      target: "live",
+      api: "GET /organisations/vat/{vrn}/obligations",
+      outcome: "response",
+      status: 200,
+      fph: { rules: "pass", rulesFailed: [] },
+    });
+    expect(JSON.stringify(item)).not.toContain("123456789");
+    expect(JSON.stringify(item)).not.toContain("203.0.113.7");
+  });
+
+  it("records a sandbox response as test", async () => {
+    await sendToHmrc(SANDBOX_URL, { method: "GET", headers: FULL_WEB_HEADERS });
+
+    expect(recordedItem().target).toBe("test");
+  });
+
+  it("records a simulator call as test, with no header result", async () => {
+    await sendToHmrc("http://localhost:9000/organisations/vat/123456789/obligations", { method: "GET", headers: {} });
+
+    expect(recordedItem().target).toBe("test");
+    expect(recordedItem().fph).toBeUndefined();
+  });
+
+  it("names each missing header in the header result, and still sends", async () => {
+    const headers = { ...FULL_WEB_HEADERS };
+    delete headers["Gov-Client-Device-ID"];
+
+    await sendToHmrc(PRODUCTION_URL, { method: "GET", headers });
+
+    expect(recordedItem().fph).toEqual({ rules: "fail", rulesFailed: ["Gov-Client-Device-ID:missing"] });
+  });
+
+  it("counts a rule failure, names the rule in the header result and still sends", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const headers = { ...FULL_WEB_HEADERS, "Gov-Client-Device-ID": "not-a-uuid-secret" };
+
+    await sendToHmrc(PRODUCTION_URL, { method: "GET", headers });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderRuleFailure")).toBe(1);
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderViolation")).toBe(0);
+    expect(recordedItem().fph).toEqual({ rules: "fail", rulesFailed: ["Gov-Client-Device-ID:uuid"] });
+    expect(JSON.stringify(metricLines(consoleSpy))).not.toContain("not-a-uuid-secret");
+  });
+
+  it("emits no rule failure metric when every rule passes", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await sendToHmrc(PRODUCTION_URL, { method: "GET", headers: FULL_WEB_HEADERS });
+
+    expect(metricCount(consoleSpy, "HmrcFraudHeaderRuleFailure")).toBe(0);
+    expect(recordedItem().fph).toEqual({ rules: "pass", rulesFailed: [] });
+  });
+
+  it("records a timeout and rethrows it", async () => {
+    mockFetch.mockRejectedValue(TIMEOUT);
+
+    await expect(sendToHmrc(PRODUCTION_URL, { method: "GET", headers: FULL_WEB_HEADERS })).rejects.toBe(TIMEOUT);
+
+    expect(recordedItem()).toMatchObject({ outcome: "timeout", statusLabel: "timeout" });
+  });
+
+  it("records a network error and rethrows it", async () => {
+    const error = new TypeError("fetch failed");
+    mockFetch.mockRejectedValue(error);
+
+    await expect(sendToHmrc(PRODUCTION_URL, { method: "GET", headers: FULL_WEB_HEADERS })).rejects.toBe(error);
+
+    expect(recordedItem()).toMatchObject({ outcome: "network-error", statusLabel: "network-error" });
+  });
+
+  it("records a refusal and sends nothing", async () => {
+    await expect(sendToHmrc(PRODUCTION_URL, { method: "POST", headers: {} })).rejects.toBeInstanceOf(
+      HmrcFraudPreventionHeadersMissingError,
+    );
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    const item = recordedItem();
+    expect(item).toMatchObject({ outcome: "refused", statusLabel: "refused", target: "live", method: "POST", durationMs: 0 });
+    expect(item.fph).toEqual({ rules: "fail", rulesFailed: ["Gov-Client-Connection-Method:missing"] });
+  });
+
+  it("returns HMRC's response when the record write fails", async () => {
+    putIntegrationCall.mockRejectedValueOnce(new Error("table missing"));
+
+    const response = await sendToHmrc(PRODUCTION_URL, { method: "GET", headers: FULL_WEB_HEADERS });
+
+    expect(response.status).toBe(200);
+  });
+
+  it("still throws the refusal when the record write fails", async () => {
+    putIntegrationCall.mockRejectedValueOnce(new Error("table missing"));
+
+    await expect(sendToHmrc(PRODUCTION_URL, { method: "GET", headers: {} })).rejects.toBeInstanceOf(HmrcFraudPreventionHeadersMissingError);
+  });
+
+  it("records the header validator with no header result", async () => {
+    await validateFraudPreventionHeaders("token", FULL_WEB_HEADERS, "user-sub");
+
+    const item = recordedItem();
+    expect(item).toMatchObject({ target: "test", api: "GET /test/fraud-prevention-headers/validate", status: 200 });
+    expect(item.fph).toBeUndefined();
+  });
+
+  it("records the header feedback call with no header result", async () => {
+    await getFraudPreventionHeadersFeedback("vat-mtd", "token", "user-sub");
+
+    const item = recordedItem();
+    expect(item).toMatchObject({ target: "test", api: "GET /test/fraud-prevention-headers/vat-mtd/validation-feedback", status: 200 });
+    expect(item.fph).toBeUndefined();
+  });
+
+  it("records an HMRC token exchange, with no token or secret in the record", async () => {
+    mockFetch.mockResolvedValue(new Response(JSON.stringify({ access_token: "token-value", expires_in: 14400 }), { status: 200 }));
+
+    const { accessToken } = await performTokenExchange(
+      "https://api.service.hmrc.gov.uk/oauth/token",
+      { grant_type: "authorization_code", code: "code-value", client_secret: "secret-value" },
+      "user-sub",
+      { org: "hmrc" },
+    );
+
+    expect(accessToken).toBe("token-value");
+    const item = recordedItem();
+    expect(item).toMatchObject({ org: "hmrc", target: "live", api: "POST /oauth/token", status: 200 });
+    expect(item.raw.responseBody).toEqual({ access_token: "string", expires_in: "number" });
+    for (const value of ["token-value", "code-value", "secret-value"]) expect(JSON.stringify(item)).not.toContain(value);
+  });
+
+  it("records a sandbox token exchange as test", async () => {
+    await performTokenExchange("https://test-api.service.hmrc.gov.uk/oauth/token", { code: "x" }, "user-sub", { org: "hmrc" });
+
+    expect(recordedItem().target).toBe("test");
+  });
+
+  it("writes no record for a token exchange that names no organisation", async () => {
+    await performTokenExchange("https://auth.example/oauth2/token", { code: "x" }, "user-sub");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(putIntegrationCall).not.toHaveBeenCalled();
+  });
+
+  describe("transaction engine", () => {
+    const LIVE_URL = "https://transaction-engine.tax.service.gov.uk/submission";
+    const request = (gatewayTest) =>
+      `<GovTalkMessage><Header><MessageDetails><Class>HMRC-CT-CT600</Class><TransactionID>TX1</TransactionID>${gatewayTest}</MessageDetails>` +
+      `<SenderDetails><IDAuthentication><SenderID>gateway-user</SenderID></IDAuthentication></SenderDetails></Header></GovTalkMessage>`;
+    const ERROR_REPLY =
+      "<GovTalkMessage><GovTalkDetails><GovTalkErrors><Error><Number>1046</Number></Error></GovTalkErrors></GovTalkDetails></GovTalkMessage>";
+
+    it("records a live message by class, with the error number from an HTTP 200, and returns the body", async () => {
+      mockFetch.mockResolvedValue(new Response(ERROR_REPLY, { status: 200 }));
+
+      const result = await postToTransactionEngine(LIVE_URL, request(""));
+
+      expect(result).toMatchObject({ ok: true, status: 200, data: ERROR_REPLY });
+      expect(result.duration).toBeGreaterThanOrEqual(0);
+      const item = recordedItem();
+      expect(item).toMatchObject({ target: "live", api: "TE HMRC-CT-CT600", status: 200, appCode: "1046" });
+      expect(item.raw.requestBody).toMatchObject({ messageClass: "HMRC-CT-CT600", transactionId: "TX1" });
+      expect(JSON.stringify(item)).not.toContain("gateway-user");
+    });
+
+    it("records a GatewayTest message as test", async () => {
+      await postToTransactionEngine(LIVE_URL, request("<GatewayTest>1</GatewayTest>"));
+
+      expect(recordedItem().target).toBe("test");
+    });
+
+    it("records a simulator call as test", async () => {
+      process.env.HMRC_TRANSACTION_ENGINE_URL = "http://localhost:9000/submission";
+
+      await postToTransactionEngine("http://localhost:9000/submission", request(""));
+
+      expect(recordedItem().target).toBe("test");
+    });
+
+    it("records a timeout and rethrows the timeout error", async () => {
+      mockFetch.mockRejectedValue(TIMEOUT);
+
+      await expect(postToTransactionEngine(LIVE_URL, request(""))).rejects.toBeInstanceOf(HttpTimeoutError);
+
+      expect(recordedItem().outcome).toBe("timeout");
+    });
   });
 });

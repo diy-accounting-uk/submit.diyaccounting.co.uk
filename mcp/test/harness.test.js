@@ -29,7 +29,7 @@ describe("harness tool calls", () => {
   it("calls list_vat_obligations through the MCP client and parses the answer", async () => {
     const fetchStub = vi.fn(async (url) =>
       String(url).includes("/api/v1/mcp/hmrc-grants/")
-        ? new Response(JSON.stringify({ status: "granted", accessToken: "token", hmrcAccount: "live" }), { status: 200 })
+        ? new Response(JSON.stringify({ status: "granted", hmrcAccount: "live" }), { status: 200 })
         : new Response(JSON.stringify({ obligations: [{ status: "O" }] }), { status: 200 }),
     );
     vi.stubGlobal("fetch", fetchStub);

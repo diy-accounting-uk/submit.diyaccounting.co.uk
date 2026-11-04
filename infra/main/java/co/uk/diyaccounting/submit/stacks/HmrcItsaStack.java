@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -393,6 +394,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyPeriodPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyPeriodPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyPeriodPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -484,6 +489,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyPeriodsGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyPeriodsGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyPeriodsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -574,6 +583,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyPeriodGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyPeriodGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyPeriodGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -666,6 +679,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyPeriodPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyPeriodPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyPeriodPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -759,6 +776,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyPeriodPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyPeriodPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -858,6 +879,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyPeriodGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyPeriodGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -953,6 +978,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyPeriodPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyPeriodPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1048,6 +1077,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyAnnualGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyAnnualGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyAnnualGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1140,6 +1173,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyAnnualPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaUkPropertyAnnualPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaUkPropertyAnnualPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1232,6 +1269,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyAnnualGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyAnnualGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1327,6 +1368,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyAnnualPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyAnnualPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1422,6 +1467,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyDetailsGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyDetailsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1521,6 +1570,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyDetailsPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyDetailsPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1621,6 +1674,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaForeignPropertyDetailsPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaForeignPropertyDetailsPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1720,6 +1777,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaBsasUkPropertyGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaBsasUkPropertyGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasUkPropertyGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1809,6 +1870,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaBsasUkPropertyAdjustPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasUkPropertyAdjustPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1902,6 +1967,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaLossesAndClaimsGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaLossesAndClaimsGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaLossesAndClaimsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -1993,6 +2062,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaLossesAndClaimsPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaLossesAndClaimsPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaLossesAndClaimsPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2084,6 +2157,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaLossesAndClaimsDeleteLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaLossesAndClaimsDeleteLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2176,6 +2253,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaTaxLiabilityAdjustmentsGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaTaxLiabilityAdjustmentsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2277,6 +2358,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaTaxLiabilityAdjustmentsPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaTaxLiabilityAdjustmentsPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2378,6 +2463,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaTaxLiabilityAdjustmentsDeleteLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaTaxLiabilityAdjustmentsDeleteLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2488,6 +2577,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcVatAssistReportPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                vatAssistReportPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             vatAssistReportPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2578,6 +2671,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcVatAssistAcknowledgePostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                vatAssistAcknowledgePostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             vatAssistAcknowledgePostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2670,6 +2767,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaAssistReportPostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaAssistReportPostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaAssistReportPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
@@ -2760,6 +2861,10 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaAssistAcknowledgePostAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                itsaAssistAcknowledgePostLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaAssistAcknowledgePostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }

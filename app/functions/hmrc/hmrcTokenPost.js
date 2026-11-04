@@ -120,7 +120,7 @@ export async function ingestHandler(event) {
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
-  const exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
+  const exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub, { org: "hmrc" });
 
   // Publish after HMRC's reply, not before, so the event records what actually happened.
   if (exchangeResponse.statusCode === 200) {
