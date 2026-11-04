@@ -50,8 +50,6 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 - [ ] **RL4. Record again the videos that show the bundle card, then publish them (`PLAN_RESIDENT_LTD.md`).** The list is `PLAN_RESIDENT_LTD.md` line 259 (the four Companies House scripts) and `videos/bundles.json`; `.claude/skills/site-video-capture/SKILL.md` then `.claude/skills/video-publish/SKILL.md`, then `node scripts/copy-videos-manifest.js`. The same publish re-syncs every video's title and description (MKT6). **Source**: `PLAN_RESIDENT_LTD.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **CAMP1. The `/campaign` review queue (`.claude/skills/campaign/SKILL.md`).** CAMP1: the review queue artifact (a private page with the `db` capability: one card per draft with Open, Copy, the rules note and a Posted tick; a session log), published on the first `/campaign` run and its URL written into the skill. **Source**: operator, 2026-11-03. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **Cedar follow-ups (PR #677).** `web/public/docs/api/openapi.json` does not list `GET /api/v1/commission/mine` (commit 760899442 is the pattern). `behaviour-tests/passRedemption.behaviour.test.js` line 571 reads `TEST_AUTH_SECOND_USERNAME` and `TEST_AUTH_SECOND_PASSWORD`, which no workflow sets, so PASS1b's second-account steps do not run on ci. **Source**: PR #677. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 ## Machine-ask
