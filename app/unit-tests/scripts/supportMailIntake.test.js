@@ -277,6 +277,23 @@ describe("support-mail-intake", () => {
       expect(readThread(lanedThreads.a3, registry)).toMatchObject({ lane: "unverified", text: "secret body" });
     });
 
+    test("the issue body names the registry check of the matched entry, and only a notice carries it", () => {
+      const withCheck = {
+        lane: "notice",
+        check: "trusted-event",
+        threadId: "t1",
+        sender: "a@costalerts.amazonaws.com",
+        messageId: "m",
+        receivedAt: "2026-10-27T00:00:00.000Z",
+        text: "body",
+      };
+      const body = buildIssueBody(withCheck);
+      expect(body).toMatch(/^Registry-Check: trusted-event$/m);
+      expect(body.indexOf("Registry-Check:")).toBeLessThan(body.indexOf("Notice email text"));
+      expect(buildIssueBody({ ...withCheck, check: null })).not.toContain("Registry-Check");
+      expect(readThread(lanedThreads.a2, registry).check).toBeNull();
+    });
+
     const labelCalls = (calls, method) =>
       calls.filter((call) => call.url.includes("/labels") && !call.url.includes("/issues") && (call.init.method ?? "GET") === method);
 

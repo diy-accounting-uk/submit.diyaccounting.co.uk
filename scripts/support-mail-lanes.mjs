@@ -17,6 +17,8 @@ import toml from "@iarna/toml";
 
 export const LANES = ["customer", "record", "notice", "unverified", "withheld"];
 const REGISTRY_LANES = ["record", "notice"];
+// The read-only checks a notice handler may run (scripts/notice-handle.mjs holds the code for each).
+export const CHECK_IDS = ["trusted-event"];
 const GOOGLE_AUTHSERV_ID = "mx.google.com";
 
 // A subject that looks like login mail. Its text never reaches an issue.
@@ -51,10 +53,13 @@ export function parseRegistry(text) {
     }
     if (!REGISTRY_LANES.includes(raw.lane)) throw new Error(`${label} has the lane ${raw.lane}`);
     if (raw.subject !== undefined && typeof raw.subject !== "string") throw new Error(`${label} has a subject that is not text`);
+    if (raw.check !== undefined && !CHECK_IDS.includes(raw.check)) throw new Error(`${label} has the check ${raw.check}`);
+    if (raw.check !== undefined && raw.lane !== "notice") throw new Error(`${label} has a check but is not in the notice lane`);
     return {
       domain: raw.domain.toLowerCase(),
       dkim: raw.dkim.toLowerCase(),
       lane: raw.lane,
+      check: raw.check ?? null,
       subject: raw.subject === undefined ? null : new RegExp(raw.subject, "i"),
     };
   });

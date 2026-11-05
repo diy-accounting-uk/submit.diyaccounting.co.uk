@@ -19,7 +19,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
-import { requestCustomerEmail } from "@app/lib/customerEmailRequest.js";
+import { kindHasAccount, requestCustomerEmail } from "@app/lib/customerEmailRequest.js";
 import { context } from "@app/lib/logger.js";
 
 describe("lib/customerEmailRequest", () => {
@@ -73,6 +73,16 @@ describe("lib/customerEmailRequest", () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
+  test("requests a notice-digest with no account reference", async () => {
+    mockSend.mockResolvedValue({ FailedEntryCount: 0 });
+    const result = await requestCustomerEmail({ kind: "notice-digest", to: "ops@example.com", data: { count: 2 } });
+    expect(result).toEqual({ requested: true });
+    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.userId).toBeUndefined();
+    expect(detail.requestId).toBeTruthy();
+    expect(detail.payload).toMatchObject({ kind: "notice-digest", to: "ops@example.com" });
+  });
+
   test("swallows a PutEvents error", async () => {
     mockSend.mockRejectedValue(new Error("boom"));
     expect(await requestCustomerEmail({ kind: "pass-redeemed", userSub: "s" })).toEqual({ requested: false });
@@ -81,5 +91,12 @@ describe("lib/customerEmailRequest", () => {
   test("treats a failed entry as a failed request", async () => {
     mockSend.mockResolvedValue({ FailedEntryCount: 1 });
     expect(await requestCustomerEmail({ kind: "pass-redeemed", userSub: "s" })).toEqual({ requested: false });
+  });
+
+  test("only notice-digest has no customer account", () => {
+    expect(kindHasAccount("notice-digest")).toBe(false);
+    for (const kind of ["subscription-started", "submission-receipt", "pass-generated", "pass-redeemed"]) {
+      expect(kindHasAccount(kind)).toBe(true);
+    }
   });
 });

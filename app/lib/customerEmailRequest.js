@@ -23,6 +23,14 @@ const logger = createLogger({ source: "app/lib/customerEmailRequest.js" });
 
 const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
 
+// A kind that goes to the operator carries no customer account. Every other kind names one.
+const ACCOUNTLESS_KINDS = new Set(["notice-digest"]);
+
+/** True when a request of this kind names a customer account. */
+export function kindHasAccount(kind) {
+  return !ACCOUNTLESS_KINDS.has(kind);
+}
+
 /**
  * Ask for one customer email. The request goes to the activity bus; a worker resolves the address,
  * renders the message and sends it. The call never throws, so a failed request never fails the
@@ -31,7 +39,7 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * A request holds references and short fields only. A receipt travels as its receiptId.
  *
  * @param {Object} params
- * @param {"subscription-started"|"submission-receipt"|"pass-generated"|"pass-redeemed"} params.kind
+ * @param {"subscription-started"|"submission-receipt"|"pass-generated"|"pass-redeemed"|"notice-digest"} params.kind
  * @param {string} [params.userSub] - Raw sub of the account; the worker finds the address from it
  * @param {string} [params.to] - Address, only for a caller that has no raw sub (the billing webhook)
  * @param {string} [params.hashedSub] - Hashed sub, for a caller that has no raw sub
@@ -46,7 +54,7 @@ export async function requestCustomerEmail({ kind, userSub, to, hashedSub, synth
     return { requested: false };
   }
   const userId = userSub || hashedSub;
-  if (!userId) {
+  if (!userId && kindHasAccount(kind)) {
     logger.warn({ message: "Customer email request has no account reference", kind });
     return { requested: false };
   }

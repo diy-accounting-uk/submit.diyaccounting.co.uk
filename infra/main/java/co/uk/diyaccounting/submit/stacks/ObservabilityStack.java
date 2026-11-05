@@ -53,7 +53,10 @@ import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.RuleTargetInput;
+import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
+import software.amazon.awscdk.services.events.targets.LambdaFunctionProps;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
@@ -71,6 +74,7 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.securityhub.CfnHub;
 import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 
@@ -153,6 +157,24 @@ public class ObservabilityStack extends Stack {
         @Value.Default
         default boolean trustedEventRulesEnabled() {
             return false;
+        }
+
+        // Whether the function reads the Companies House API and the management account, on a
+        // daily schedule and when the root budget topic publishes. Set for prod only.
+        @Value.Default
+        default boolean trustedEventReadsEnabled() {
+            return false;
+        }
+
+        // The management account's budget alert topic (us-east-1) the function subscribes to.
+        @Value.Default
+        default String rootBudgetAlertsTopicArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String companiesHouseBaseUri() {
+            return "";
         }
 
         static ImmutableObservabilityStackProps.Builder builder() {
@@ -1245,6 +1267,16 @@ public class ObservabilityStack extends Stack {
         // env-level.
         IntegrationCallAccess.addEnv(
                 trustedEventEnvironment, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
+        String trustedEventCompaniesHouseKeyArn =
+                "arn:aws:secretsmanager:%s:%s:secret:prod/submit/companies-house/api_key"
+                        .formatted(this.getRegion(), this.getAccount());
+        String trustedEventRootReadRoleArn = "arn:aws:iam::887764105431:role/root-trusted-event-read";
+        if (props.trustedEventReadsEnabled()) {
+            trustedEventEnvironment
+                    .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                    .with("COMPANIES_HOUSE_API_KEY_ARN", trustedEventCompaniesHouseKeyArn)
+                    .with("TRUSTED_EVENT_ROOT_READ_ROLE_ARN", trustedEventRootReadRoleArn);
+        }
         // PopulatedMap rejects a blank value, and the App ids are blank until the operator sets
         // the GitHub variables, so they are added only once both are set.
         if (!props.githubAppId().isBlank() && !props.githubAppInstallationId().isBlank()) {
@@ -1317,6 +1349,19 @@ public class ObservabilityStack extends Stack {
                         "arn:aws:acm:us-east-1:%s:certificate/*".formatted(this.getAccount())))
                 .build());
 
+        if (props.trustedEventReadsEnabled()) {
+            trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                    .sid("ReadCompaniesHouseKey")
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of("%s-*".formatted(trustedEventCompaniesHouseKeyArn)))
+                    .build());
+            trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                    .sid("AssumeRootRead")
+                    .actions(List.of("sts:AssumeRole"))
+                    .resources(List.of(trustedEventRootReadRoleArn))
+                    .build());
+        }
+
         // A failure reaches Telegram, and in prod an [ALARM] issue, through OpsStack's rule on
         // this composite's name.
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "obs", List.of(trustedEventLambdaConstruct));
@@ -1339,6 +1384,28 @@ public class ObservabilityStack extends Stack {
                             .build())
                     .targets(List.of(new LambdaFunction(trustedEventLambda)))
                     .build();
+        }
+
+        if (props.trustedEventReadsEnabled()) {
+            Rule.Builder.create(this, props.resourceNamePrefix() + "-TrustedDeadlineReadRule")
+                    .ruleName(props.sharedNames().observability.trustedDeadlineReadRuleName)
+                    .description("Daily read of the domain and Companies House deadlines")
+                    .schedule(Schedule.expression("cron(0 7 * * ? *)"))
+                    .targets(List.of(new LambdaFunction(
+                            trustedEventLambda,
+                            LambdaFunctionProps.builder()
+                                    .event(RuleTargetInput.fromObject(Map.of("read", "deadlines")))
+                                    .build())))
+                    .build();
+
+            // The topic is in the management account in us-east-1. Its policy lets this
+            // account subscribe this function, and the subscription is created here, in the
+            // topic's region.
+            Topic.fromTopicArn(
+                            this,
+                            props.resourceNamePrefix() + "-RootBudgetAlertsTopic",
+                            props.rootBudgetAlertsTopicArn())
+                    .addSubscription(new LambdaSubscription(trustedEventLambda));
         }
 
         cfnOutput(this, "TrustedEventFunctionArn", trustedEventLambda.getFunctionArn());

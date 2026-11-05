@@ -96,7 +96,6 @@
   const operationsQueries = [
     ["lambda-errors", "Lambda errors by function", '{AWS/Lambda,FunctionName} MetricName="Errors" -app-'],
     ["lambda-throttles", "Lambda throttles by function", '{AWS/Lambda,FunctionName} MetricName="Throttles" -app-'],
-    ["lambda-duration", "Lambda duration by function", '{AWS/Lambda,FunctionName} MetricName="Duration" -app-'],
     ["bundle-allocations", "Active bundle allocations", '{Submit/BundleCapacity,bundleId} MetricName="BundleActiveAllocations"'],
   ];
 
@@ -126,6 +125,15 @@
       operationsQueries.forEach(([slug, label, query]) => {
         operations.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
       });
+      operations.links.push(
+        link(
+          env,
+          "lambda-duration",
+          "Lambda duration by function",
+          metricsSearchUrl(env.region, '{AWS/Lambda,FunctionName} MetricName="Duration" -app-'),
+          ["lambda-duration-slowest", "lambda-duration-rest"],
+        ),
+      );
       operations.links.push(
         link(env, "rum", "Web vitals and JavaScript errors", rumUrl(env.region, env.id + "-env-rum"), ["rum-vitals", "rum-errors"]),
       );

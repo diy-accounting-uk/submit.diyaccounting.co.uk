@@ -54,6 +54,8 @@ const ALLOWED_FILES = {
   ".env.proxy": "the local server reads the public register with the API key",
   "package.json": "mcp:accounts-test-service-proof points the stdio MCP's Submit at the XML Gateway test service with GatewayTest set",
   "cdk-application/cdk.json": "production values the CDK passes to the Lambda environment",
+  "cdk-environment/cdk.json":
+    "the public register's base URI for the env-level trusted event function, which reads the company profile through sendJsonToCompaniesHouse",
   "infra/hmrc/hmrc.toml": "the registered HMRC production application, read by the developer hub sync",
   "infra/companies-house/companies-house.toml": "the registered Companies House application, read by the developer hub sync",
 };

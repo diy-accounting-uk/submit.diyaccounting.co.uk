@@ -96,6 +96,7 @@ public class SubmitEnvironment {
         public String telegramOpsChatId;
         public String githubAppId;
         public String githubAppInstallationId;
+        public String companiesHouseBaseUri;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -216,6 +217,8 @@ public class SubmitEnvironment {
         // diya-ops GitHub App configuration for SecurityLakeStack's GitHub alert counts pull and
         // IngestionStack's operator effort pull; same App and installation OpsStack and
         // AccountStack read (see SubmitApplication.java).
+        var companiesHouseBaseUri = envOr(
+                "COMPANIES_HOUSE_BASE_URI", appProps.companiesHouseBaseUri, "(from companiesHouseBaseUri in cdk.json)");
         var githubAppId = envOr("GITHUB_APP_ID", appProps.githubAppId, "(from githubAppId in cdk.json)");
         var githubAppInstallationId = envOr(
                 "GITHUB_APP_INSTALLATION_ID",
@@ -275,6 +278,10 @@ public class SubmitEnvironment {
                         .githubAppId(githubAppId != null ? githubAppId : "")
                         .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .trustedEventRulesEnabled("prod".equals(envName))
+                        .trustedEventReadsEnabled("prod".equals(envName))
+                        .rootBudgetAlertsTopicArn(
+                                "prod".equals(envName) ? "arn:aws:sns:us-east-1:887764105431:root-budget-alerts" : "")
+                        .companiesHouseBaseUri(companiesHouseBaseUri != null ? companiesHouseBaseUri : "")
                         .build());
 
         // Create SecurityDetectionStack with scan- and data-theft-detection alarms built on the

@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The daily digest of mail notices that wait for the operator. It counts the open private issues
+# labelled `mail-notice` and `maintainer-review` and finds the nearest checked deadline
+# (scripts/notice-digest.mjs). When the count is above zero it puts one `notice-digest`
+# CustomerEmailRequest on the prod activity bus, and the customer email worker sends the digest to
+# the operator's notification address. The digest holds the count, the nearest deadline and the link
+# to the issue list. No title, body or reader summary reaches this workflow's logs or the email.
+# The capability entry is in scripts/notice-digest.mjs.
+
+name: support-notice-digest
+run-name: "support notice digest${{ inputs.dry-run && ' (dry run)' || '' }}"
+
+on:
+  schedule:
+    - cron: '10 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: print the count and the nearest deadline and send nothing
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: support-notice-digest
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: 'eu-west-2'
+  ENVIRONMENT_NAME: 'prod'
+
+jobs:
+  digest:
+    name: 'digest'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that reads issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: read
+
+      - name: Count the notices that wait
+        id: digest
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: node scripts/notice-digest.mjs
+
+      - name: Stop when no notice waits
+        if: steps.digest.outputs.count == '0'
+        run: echo "::notice::No mail notice waits, so no digest goes out"
+
+      - name: Stop after a dry run
+        if: steps.digest.outputs.count != '0' && inputs.dry-run
+        run: echo "::notice::Dry run, so no digest goes out"
+
+      - name: Assume the AWS actions and deploy roles
+        if: steps.digest.outputs.count != '0' && !inputs.dry-run
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Put the notice digest request on the activity bus
+        if: steps.digest.outputs.count != '0' && !inputs.dry-run
+        env:
+          NOTICE_COUNT: ${{ steps.digest.outputs.count }}
+          NEAREST_DEADLINE: ${{ steps.digest.outputs.nearest-deadline }}
+          OPERATOR_ADDRESS: ${{ vars.SUBMIT_OPERATOR_NOTIFY_EMAIL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$OPERATOR_ADDRESS" ]; then
+            echo "::error::SUBMIT_OPERATOR_NOTIFY_EMAIL is not set"
+            exit 1
+          fi
+          REQUEST_ID="notice-digest-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          DETAIL="$(jq -cn --arg id "$REQUEST_ID" --arg to "$OPERATOR_ADDRESS" --argjson count "$NOTICE_COUNT" --arg deadline "$NEAREST_DEADLINE" \
+            '{requestId: $id, payload: {kind: "notice-digest", to: $to, synthetic: false, data: {count: $count, nearestDeadline: (if $deadline == "" then null else $deadline end)}}}')"
+          ENTRIES="$(jq -cn --arg bus "${ENVIRONMENT_NAME}-env-activity-bus" --arg detail "$DETAIL" \
+            '[{EventBusName: $bus, Source: "diy.submit", DetailType: "CustomerEmailRequest", Detail: $detail}]')"
+          FAILED="$(aws events put-events --entries "$ENTRIES" --query FailedEntryCount --output text)"
+          echo "notice digest requested: count ${NOTICE_COUNT}, nearest deadline ${NEAREST_DEADLINE:-none}, failed entries ${FAILED}"
+          test "$FAILED" = "0"

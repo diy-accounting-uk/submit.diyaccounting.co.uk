@@ -13,6 +13,7 @@ import { hashSub } from "../../services/subHasher.js";
 import { getReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { buildCustomerEmail, buildOperatorCopy, buildPassAttachments } from "../../lib/customerEmailTemplates.js";
+import { kindHasAccount } from "../../lib/customerEmailRequest.js";
 import { classifyAwsError, isRecipientAllowed, sendCustomerEmail } from "../../services/customerEmailSender.js";
 
 const logger = createLogger({ source: "app/functions/email/customerEmailSend.js" });
@@ -171,6 +172,7 @@ export async function handler(event) {
     logger,
     errorPolicy: "classify",
     userContextKey: "userId",
+    accountOptional: (body) => !kindHasAccount(body.payload?.kind),
     processRecord: async (payload) => {
       const state = {};
       try {

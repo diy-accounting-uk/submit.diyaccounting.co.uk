@@ -37,7 +37,7 @@ import { delegatedTokenGetter } from "./google-delegated-token.mjs";
 import { githubGetAll } from "./github-issue-comment.mjs";
 import { PRIVATE_REPO } from "./support-reader-select.mjs";
 import { ensureLabel } from "./support-label-sweep.mjs";
-import { LANES, chooseLane, loadRegistry } from "./support-mail-lanes.mjs";
+import { LANES, chooseLane, findEntry, loadRegistry } from "./support-mail-lanes.mjs";
 
 export const MAILBOX = "support@diyaccounting.co.uk";
 export const READ_SERVICE_ACCOUNT = "support-gmail-read@diyaccounting-ga4.iam.gserviceaccount.com";
@@ -153,8 +153,10 @@ export function readThread(thread, registry) {
   if (!sender) return null;
   const subject = headerOf(first, "Subject").replace(/\s+/g, " ").trim();
   const lane = chooseLane({ registry, automated: sender.automated, domain: sender.domain, subject, headers: first.payload?.headers });
+  const check = lane === "notice" ? (findEntry(registry, sender.domain, subject)?.check ?? null) : null;
   return {
     lane,
+    check,
     threadId: thread.id,
     sender: sender.address,
     subject,
@@ -187,6 +189,7 @@ export function buildIssueBody(thread) {
     `Sender: ${thread.sender}`,
     `Message-ID: ${thread.messageId}`,
     `Received: ${thread.receivedAt}`,
+    ...(thread.check ? [`Registry-Check: ${thread.check}`] : []),
     "",
   ];
   if (thread.lane === "withheld")

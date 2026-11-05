@@ -25,7 +25,14 @@ class ObservabilityStackTest {
         return synthObservabilityStack(false);
     }
 
+    private static final String ROOT_TOPIC_ARN = "arn:aws:sns:us-east-1:887764105431:root-budget-alerts";
+
     private static ObservabilityStack synthObservabilityStack(boolean trustedEventRulesEnabled) {
+        return synthObservabilityStack(trustedEventRulesEnabled, false);
+    }
+
+    private static ObservabilityStack synthObservabilityStack(
+            boolean trustedEventRulesEnabled, boolean trustedEventReadsEnabled) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -48,6 +55,10 @@ class ObservabilityStackTest {
                         .accessLogGroupRetentionPeriodDays(1)
                         .baseImageTag("latest")
                         .trustedEventRulesEnabled(trustedEventRulesEnabled)
+                        .trustedEventReadsEnabled(trustedEventReadsEnabled)
+                        .rootBudgetAlertsTopicArn(trustedEventReadsEnabled ? ROOT_TOPIC_ARN : "")
+                        .companiesHouseBaseUri(
+                                trustedEventReadsEnabled ? "https://api.company-information.service.gov.uk" : "")
                         .build());
     }
 
@@ -279,8 +290,80 @@ class ObservabilityStackTest {
     }
 
     @Test
-    void stackStaysUnderTheCloudFormationResourceLimit() {
+    void prodReadsAddTheScheduleTheRootSubscriptionAndTwoStatements() {
+        Template defaultProps = Template.fromStack(synthObservabilityStack(true));
+        int defaultRules = defaultProps.findResources("AWS::Events::Rule").size();
+        defaultProps.resourceCountIs("AWS::SNS::Subscription", 0);
+
+        Template prod = Template.fromStack(synthObservabilityStack(true, true));
+        assertEquals(defaultRules + 1, prod.findResources("AWS::Events::Rule").size());
+        prod.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs-env-trusted-deadline-read",
+                        "ScheduleExpression",
+                        "cron(0 7 * * ? *)",
+                        "Targets",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"read\":\"deadlines\"}")))))));
+        prod.resourceCountIs("AWS::SNS::Subscription", 1);
+        prod.hasResourceProperties(
+                "AWS::SNS::Subscription",
+                Match.objectLike(Map.of("Protocol", "lambda", "Region", "us-east-1", "TopicArn", ROOT_TOPIC_ARN)));
+        prod.hasResourceProperties(
+                "AWS::Lambda::Permission",
+                Match.objectLike(Map.of(
+                        "Principal",
+                        "sns.amazonaws.com",
+                        "Action",
+                        "lambda:InvokeFunction",
+                        "SourceArn",
+                        ROOT_TOPIC_ARN)));
+
+        var statements = trustedEventRoleStatements(prod);
+        var assume = statements.stream()
+                .filter(statement -> actionsOf(statement).equals(List.of("sts:AssumeRole")))
+                .toList();
+        assertEquals(1, assume.size());
+        assertEquals(
+                "arn:aws:iam::887764105431:role/root-trusted-event-read",
+                assume.get(0).get("Resource"));
+        var key = statements.stream()
+                .filter(statement -> "ReadCompaniesHouseKey".equals(statement.get("Sid")))
+                .toList();
+        assertEquals(1, key.size());
+        assertTrue(key.get(0).get("Resource").toString().contains("secret:prod/submit/companies-house/api_key-*"));
+
+        prod.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        "docs-env-trusted-event-to-github-issue",
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "COMPANIES_HOUSE_BASE_URI",
+                                        "https://api.company-information.service.gov.uk",
+                                        "TRUSTED_EVENT_ROOT_READ_ROLE_ARN",
+                                        "arn:aws:iam::887764105431:role/root-trusted-event-read")))))));
+    }
+
+    @Test
+    void defaultPropsHaveNoDeadlineReadRuleAndNoSubscription() {
         Template template = Template.fromStack(synthObservabilityStack(true));
+        template.resourceCountIs("AWS::SNS::Subscription", 0);
+        assertEquals(
+                0,
+                template.findResources(
+                                "AWS::Events::Rule",
+                                Map.of("Properties", Map.of("Name", "docs-env-trusted-deadline-read")))
+                        .size());
+    }
+
+    @Test
+    void stackStaysUnderTheCloudFormationResourceLimit() {
+        Template template = Template.fromStack(synthObservabilityStack(true, true));
 
         int resourceCount = ((Map<?, ?>) template.toJSON().get("Resources")).size();
         assertTrue(resourceCount < 450, "ObservabilityStack has " + resourceCount + " resources; the limit is 500");
