@@ -38,6 +38,10 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.events.EventBus;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.IEventBus;
+import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
@@ -87,6 +91,12 @@ public class ObservabilityUE1Stack extends Stack {
         int logGroupRetentionPeriodDays();
 
         String baseImageTag();
+
+        // Whether the Health and ACM forward rule exists. Only prod opens issues for those events.
+        @Value.Default
+        default boolean trustedEventRulesEnabled() {
+            return false;
+        }
 
         static ImmutableObservabilityUE1StackProps.Builder builder() {
             return ImmutableObservabilityUE1StackProps.builder();
@@ -334,6 +344,38 @@ public class ObservabilityUE1Stack extends Stack {
         infof(
                 "Subscribed Bedrock budget alert forward Lambda %s to %s",
                 budgetAlertForwardLambda.ingestLambda.getNode().getId(), bedrockBudgetAlertsTopic.getTopicName());
+
+        // ============================================================================
+        // Trusted events: global AWS Health and ACM notices
+        // ============================================================================
+        // Health publishes global events (IAM, billing, account) in us-east-1 only, and
+        // CloudFront certificates sit in this Region, so this rule forwards both across the
+        // account's default bus in eu-west-2, where ObservabilityStack's rule feeds the trusted
+        // event function. The targets.EventBus construct creates the role EventBridge needs to
+        // put events onto the cross-region bus.
+        if (props.trustedEventRulesEnabled()) {
+            IEventBus trustedEventDefaultBus = EventBus.fromEventBusArn(
+                    this,
+                    props.resourceNamePrefix() + "-TrustedEventDefaultBus",
+                    "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/default");
+
+            Rule.Builder.create(this, props.resourceNamePrefix() + "-TrustedEventsForwardRule")
+                    .ruleName(props.sharedNames().observability.trustedEventForwardRuleName)
+                    .description("Forward AWS Health and ACM notices to the eu-west-2 default event bus")
+                    .eventPattern(EventPattern.builder()
+                            .source(List.of("aws.health", "aws.acm"))
+                            .detailType(List.of(
+                                    "AWS Health Event",
+                                    "AWS Health Abuse Event",
+                                    "ACM Certificate Approaching Expiration",
+                                    "ACM Certificate Expired",
+                                    "ACM Certificate Renewal Action Required",
+                                    "ACM Certificate Revoked"))
+                            .build())
+                    .targets(List.of(
+                            new software.amazon.awscdk.services.events.targets.EventBus(trustedEventDefaultBus)))
+                    .build();
+        }
 
         // ============================================================================
         // Cross-account CloudWatch: the spreadsheets site's RUM metrics

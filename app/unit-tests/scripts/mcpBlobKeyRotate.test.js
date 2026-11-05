@@ -34,8 +34,17 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-const { planNextVersion, buildRotatedRegistry, parseArgs, main, proveRefresh, assertProofAllowed, isRefreshEvidence, parseLogLine } =
-  await import("../../../scripts/mcp-blob-key-rotate.js");
+const {
+  planNextVersion,
+  buildRotatedRegistry,
+  parseArgs,
+  main,
+  proveRefresh,
+  assertProofAllowed,
+  isRefreshEvidence,
+  parseLogLine,
+  grantIdFromCreated,
+} = await import("../../../scripts/mcp-blob-key-rotate.js");
 
 const RAW = "r".repeat(64);
 const NOW = Date.UTC(2026, 0, 1, 12, 0, 0);
@@ -100,6 +109,29 @@ describe("mcp-blob-key-rotate", () => {
       expect(isRefreshEvidence({ ...line, sealedVersion: "v3" }, expected)).toBe(false);
       expect(isRefreshEvidence(null, expected)).toBe(false);
       expect(parseLogLine("not json")).toBeNull();
+    });
+
+    describe("grantIdFromCreated", () => {
+      it("reads the grant id from the top level of a 201 body", () => {
+        const body = {
+          grantId: "g1",
+          url: "https://hmrc.example",
+          expiresAt: "2026-01-01T00:00:00.000Z",
+          scope: "read:vat",
+          hmrcAccount: "synthetic",
+        };
+        expect(grantIdFromCreated({ status: 201, body })).toBe("g1");
+      });
+
+      it("names the status when it is not 201", () => {
+        expect(() => grantIdFromCreated({ status: 403, body: { message: "no" } })).toThrow(/answered 403, expected 201/);
+      });
+
+      it("names the top-level keys, never a value, when a 201 body has no grant id", () => {
+        const failure = () => grantIdFromCreated({ status: 201, body: { data: { grantId: "secret-value" }, message: "m" } });
+        expect(failure).toThrow(/201 with no grantId.*data, message/);
+        expect(failure).not.toThrow(/secret-value/);
+      });
     });
 
     describe("sequence", () => {

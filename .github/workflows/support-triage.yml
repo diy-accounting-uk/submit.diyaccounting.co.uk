@@ -512,8 +512,8 @@ jobs:
           printf '<!-- support-fix-pr:v1 run=%s -->\nDraft pull request for this ticket: %s\n' "$GITHUB_RUN_ID" "$PR_URL" > /tmp/support-fix-comment.md
           node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --body-file /tmp/support-fix-comment.md
 
-  # The draft goes into the support mailbox unsent; this workflow has no send step and the key's
-  # only scope is gmail.compose. The thread comes from the dispatch inputs and never from a
+  # The draft goes into the support mailbox unsent; this workflow has no send step and the delegated
+  # account's only scope is gmail.compose. The thread comes from the dispatch inputs and never from a
   # ticket. A ticket from the public form carries no address, so it has no thread and the draft
   # waits for a dispatch that names one.
   draft:
@@ -528,37 +528,39 @@ jobs:
     env:
       ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
     steps:
-      - name: Stop when no Gmail draft can be made
-        id: draft-key
-        env:
-          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
-        run: |
-          if [ -z "${SUPPORT_GMAIL_DRAFT_KEY}" ]; then
-            echo "SUPPORT_GMAIL_DRAFT_KEY is not set on the prod environment, so no Gmail draft is made"
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: steps.draft-key.outputs.configured == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Set up the toolchain
-        if: steps.draft-key.outputs.configured == 'true'
         uses: ./.github/actions/setup-toolchain
         with:
           npm-install: none
           npm-cache: 'false'
 
       - name: Install dependencies for the Gmail draft
-        if: steps.draft-key.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
+      - name: Read the GitHub federation provider from infra/google/gcp/identity.toml
+        id: google-identity
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+          ' >> "$GITHUB_OUTPUT"
+
+      # No service_account input: direct federation. The federated principal is this workflow file
+      # on main, which holds roles/iam.serviceAccountTokenCreator on support-gmail-draft.
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+
       - name: Decrypt the reply
-        if: steps.draft-key.outputs.configured == 'true'
         env:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
           REPLY_ENCRYPTED: ${{ needs.handle.outputs.reply }}
@@ -569,11 +571,9 @@ jobs:
           printf '%s' "$REPLY_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-reply.md
 
       - name: Put the drafted reply in the support mailbox
-        if: steps.draft-key.outputs.configured == 'true'
         id: gmail-draft
         continue-on-error: true
         env:
-          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
           GMAIL_THREAD_ID: ${{ inputs.gmail-thread-id }}
           REPLY_TO: ${{ inputs.reply-to }}
           REPLY_SUBJECT: ${{ inputs.reply-subject }}

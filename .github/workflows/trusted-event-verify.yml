@@ -1,0 +1,122 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-187 Check a trusted-event issue against its source and label the result
+# - **Use when:** an issue in the private repository carries the `trusted-event` label and the operator or a handler needs to know whether the ops App opened it and the source still shows the fact.
+# - **Does:** trusted-event-verify.yml runs verify-trusted-event-origin.mjs for one issue number in ci or prod, posts the result as a comment on the private issue, labels the issue `source-verified` or `source-unverified`, and exits with the script's code. The log shows only `verified=true` or `verified=false`.
+# - **Run:** `gh workflow run trusted-event-verify.yml -f environment=prod -f issue-number=<n>`
+# - **Entry:** `.github/workflows/trusted-event-verify.yml`
+# - **Files:** .github/workflows/trusted-event-verify.yml, scripts/verify-trusted-event-origin.mjs
+# - **Keywords:** trusted event, verify issue, source-verified, source-unverified, private issue, fail closed
+# - **Related:** OPS-185, OPS-186, OPS-188
+# @end-capability
+
+name: trusted event verify
+run-name: "trusted event verify of issue ${{ inputs.issue-number }} on ${{ inputs.environment }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment whose trusted event function runs the check'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+        default: prod
+      issue-number:
+        description: 'Issue number in diy-accounting-uk/private.diyaccounting.co.uk'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: 'eu-west-2'
+  PRIVATE_REPO: 'diy-accounting-uk/private.diyaccounting.co.uk'
+
+concurrency:
+  group: trusted-event-verify-${{ inputs.environment }}-${{ inputs.issue-number }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: 'verify'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-cache: 'false'
+
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check the issue against its source
+        id: verify
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+        run: |
+          set +e
+          node scripts/verify-trusted-event-origin.mjs --environment "$ENVIRONMENT" --issue "$ISSUE_NUMBER" --out "$RUNNER_TEMP/verify.json"
+          echo "exit-code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Comment the result on the private issue and label it
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          if [ -s "$RUNNER_TEMP/verify.json" ]; then
+            VERIFIED="$(jq -r '.verified' "$RUNNER_TEMP/verify.json")"
+            jq -r --arg env "$ENVIRONMENT" --arg run "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+              '"Source check on " + $env + ": verified=" + (.verified | tostring) + ", strength=" + (.strength // "none") + "\n\n" + (.reason // "") + "\n\n" + $run' \
+              "$RUNNER_TEMP/verify.json" > "$RUNNER_TEMP/comment.md"
+          else
+            VERIFIED=false
+            printf 'Source check on %s: verified=false\n\nthe check wrote no result file\n\n%s\n' \
+              "$ENVIRONMENT" "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" > "$RUNNER_TEMP/comment.md"
+          fi
+          if [ "$VERIFIED" = "true" ]; then
+            ADD=source-verified; DROP=source-unverified
+          else
+            ADD=source-unverified; DROP=source-verified
+          fi
+          gh label create source-verified --color 0e8a16 --description "The trusted-event source check passed" --repo "$PRIVATE_REPO" 2>/dev/null || true
+          gh label create source-unverified --color b60205 --description "The trusted-event source check failed" --repo "$PRIVATE_REPO" 2>/dev/null || true
+          gh issue comment "$ISSUE_NUMBER" --repo "$PRIVATE_REPO" --body-file "$RUNNER_TEMP/comment.md"
+          gh issue edit "$ISSUE_NUMBER" --repo "$PRIVATE_REPO" --add-label "$ADD"
+          gh issue edit "$ISSUE_NUMBER" --repo "$PRIVATE_REPO" --remove-label "$DROP" 2>/dev/null || true
+          echo "labelled ${ADD}"
+
+      - name: Exit with the check's code
+        env:
+          VERIFY_EXIT: ${{ steps.verify.outputs.exit-code }}
+        run: |
+          echo "check exit code: ${VERIFY_EXIT}"
+          exit "${VERIFY_EXIT}"

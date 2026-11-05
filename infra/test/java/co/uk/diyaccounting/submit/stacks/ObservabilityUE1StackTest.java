@@ -19,6 +19,10 @@ import software.amazon.awscdk.assertions.Template;
 class ObservabilityUE1StackTest {
 
     private static ObservabilityUE1Stack synthObservabilityUE1Stack() {
+        return synthObservabilityUE1Stack(false);
+    }
+
+    private static ObservabilityUE1Stack synthObservabilityUE1Stack(boolean trustedEventRulesEnabled) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -38,6 +42,7 @@ class ObservabilityUE1StackTest {
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(1)
                         .baseImageTag("latest")
+                        .trustedEventRulesEnabled(trustedEventRulesEnabled)
                         .build());
     }
 
@@ -165,5 +170,33 @@ class ObservabilityUE1StackTest {
                                                         "MetricName", "WebVitalsCumulativeLayoutShift")),
                                         "Stat",
                                         "p75")))))))));
+    }
+
+    @Test
+    void healthAndAcmForwardRuleExistsOnlyWhereItIsEnabled() {
+        Template defaultProps = Template.fromStack(synthObservabilityUE1Stack());
+        defaultProps.resourceCountIs("AWS::Events::Rule", 0);
+
+        Template enabled = Template.fromStack(synthObservabilityUE1Stack(true));
+        enabled.resourceCountIs("AWS::Events::Rule", 1);
+        enabled.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs-env-trusted-events-forward",
+                        "EventPattern",
+                        Map.of(
+                                "source",
+                                List.of("aws.health", "aws.acm"),
+                                "detail-type",
+                                List.of(
+                                        "AWS Health Event",
+                                        "AWS Health Abuse Event",
+                                        "ACM Certificate Approaching Expiration",
+                                        "ACM Certificate Expired",
+                                        "ACM Certificate Renewal Action Required",
+                                        "ACM Certificate Revoked")),
+                        "Targets",
+                        List.of(Match.objectLike(Map.of("Arn", Match.stringLikeRegexp(".*:event-bus/default")))))));
     }
 }

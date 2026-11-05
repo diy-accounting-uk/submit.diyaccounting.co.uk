@@ -6,12 +6,12 @@
 // spotless:off
 // @capability OPS-117 Provision the Observability stack
 // - **Use when:** an account's CloudTrail, GuardDuty, Security Hub, security SNS topic or shared dashboards need synthesizing.
-// - **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to.
+// - **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to. It also builds the trusted event function (`trustedEventToGithubIssue.js`) with its role and health alarm, and in prod the rule that sends AWS Health and ACM notices to it.
 // - **Run:** `npm run cdk:synth-environment`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ObservabilityStackTest.java, infra/test/java/co/uk/diyaccounting/submit/MetricFilterLogGroupCdkResourceTest.java
-// - **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards
-// - **Related:** OPS-118, OPS-121, OPS-122
+// - **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards, trusted event rule
+// - **Related:** OPS-118, OPS-121, OPS-122, OPS-185
 // @end-capability
 // spotless:on
 
@@ -23,10 +23,15 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourcePr
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -47,6 +52,7 @@ import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
@@ -70,6 +76,7 @@ import software.constructs.Construct;
 public class ObservabilityStack extends Stack {
 
     private static final String SUPPORT_ACCEPTANCE_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
+    private static final String TRUSTED_EVENT_REPOSITORY = "diy-accounting-uk/private.diyaccounting.co.uk";
 
     // public Bucket trailBucket;
     public Trail trail;
@@ -122,6 +129,29 @@ public class ObservabilityStack extends Stack {
         @Value.Default
         default boolean securityServicesEnabled() {
             return true;
+        }
+
+        // The env image tag the trusted event function runs from.
+        String baseImageTag();
+
+        // The diya-ops GitHub App the trusted event function opens issues as. Both stay blank
+        // until the operator sets the GitHub variables; the function then fails on its first
+        // call and its health alarm reports it.
+        @Value.Default
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
+            return "";
+        }
+
+        // Whether the Health and ACM rules exist. Only prod opens issues for those events; the
+        // function, its role and the ledger exist in every environment.
+        @Value.Default
+        default boolean trustedEventRulesEnabled() {
+            return false;
         }
 
         static ImmutableObservabilityStackProps.Builder builder() {
@@ -1188,5 +1218,121 @@ public class ObservabilityStack extends Stack {
                 .build());
 
         cfnOutput(this, "QuarantineReaderRoleArn", quarantineReaderRole.getRoleArn());
+
+        // ============================================================================
+        // Trusted events: AWS Health and ACM notices as private issues
+        // ============================================================================
+        // An env-level function (one per account, not one per app deployment) that writes to the
+        // private repository as the ops App. The rule that feeds it exists only where
+        // trustedEventRulesEnabled is set (prod); ci proves the function by direct invoke.
+        String trustedEventFunctionName = props.sharedNames().observability.trustedEventFunctionName;
+        String trustedEventPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
+        var trustedEventEnvironment = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("TRUSTED_EVENT_GITHUB_REPO", TRUSTED_EVENT_REPOSITORY)
+                .with("TRUSTED_EVENT_LEDGER_DYNAMODB_TABLE_NAME", props.sharedNames().data.trustedEventLedgerTableName);
+        // The Companies House send path records each call; the Lambda construct grants PutItem on
+        // the table named here. The deployment is the environment, because this function is
+        // env-level.
+        IntegrationCallAccess.addEnv(
+                trustedEventEnvironment, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
+        // PopulatedMap rejects a blank value, and the App ids are blank until the operator sets
+        // the GitHub variables, so they are added only once both are set.
+        if (!props.githubAppId().isBlank() && !props.githubAppInstallationId().isBlank()) {
+            trustedEventEnvironment
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", trustedEventPrivateKeySecretId);
+        }
+
+        // The role has a fixed name because the management account's read role trusts it by ARN.
+        Role trustedEventRole = Role.Builder.create(this, props.resourceNamePrefix() + "-TrustedEventRole")
+                .roleName(props.sharedNames().observability.trustedEventRoleName)
+                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+                .description("Execution role of the trusted event function")
+                .build();
+
+        var trustedEventLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(trustedEventFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(trustedEventFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler("app/functions/ops/trustedEventToGithubIssue.handler")
+                        .ingestLambdaArn("arn:aws:lambda:%s:%s:function:%s"
+                                .formatted(this.getRegion(), this.getAccount(), trustedEventFunctionName))
+                        .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:%s:%s:function:%s:%s"
+                                .formatted(
+                                        this.getRegion(),
+                                        this.getAccount(),
+                                        trustedEventFunctionName,
+                                        props.sharedNames().provisionedConcurrencyAliasName))
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.seconds(60))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(trustedEventEnvironment)
+                        .role(trustedEventRole)
+                        // One invocation at a time makes the ledger's read-then-write order safe
+                        // without a lock: two events for one fact cannot both open an issue.
+                        .ingestReservedConcurrentExecutions(Optional.of(1))
+                        .build());
+        var trustedEventLambda = trustedEventLambdaConstruct.ingestLambda;
+
+        trustedEventLambdaConstruct.logGroup.grantWrite(trustedEventRole);
+
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadOpsAppKey")
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                        .formatted(this.getRegion(), this.getAccount(), trustedEventPrivateKeySecretId)))
+                .build());
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("Ledger")
+                .actions(List.of("dynamodb:GetItem", "dynamodb:PutItem"))
+                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
+                        .formatted(
+                                this.getRegion(),
+                                this.getAccount(),
+                                props.sharedNames().data.trustedEventLedgerTableName)))
+                .build());
+        // The function reads the certificate behind every ACM event, and the source check reads
+        // it again. CloudFront certificates live in us-east-1, regional ones here.
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DescribeCertificates")
+                .actions(List.of("acm:DescribeCertificate"))
+                .resources(List.of(
+                        "arn:aws:acm:eu-west-2:%s:certificate/*".formatted(this.getAccount()),
+                        "arn:aws:acm:us-east-1:%s:certificate/*".formatted(this.getAccount())))
+                .build());
+
+        // A failure reaches Telegram, and in prod an [ALARM] issue, through OpsStack's rule on
+        // this composite's name.
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "obs", List.of(trustedEventLambdaConstruct));
+
+        if (props.trustedEventRulesEnabled()) {
+            // The us-east-1 rule in ObservabilityUE1Stack forwards global events onto this bus.
+            // This rule's only target is the function, so no event loops.
+            Rule.Builder.create(this, props.resourceNamePrefix() + "-TrustedEventsRule")
+                    .ruleName(props.sharedNames().observability.trustedEventRuleName)
+                    .description("AWS Health and ACM notices to the trusted event function")
+                    .eventPattern(EventPattern.builder()
+                            .source(List.of("aws.health", "aws.acm"))
+                            .detailType(List.of(
+                                    "AWS Health Event",
+                                    "AWS Health Abuse Event",
+                                    "ACM Certificate Approaching Expiration",
+                                    "ACM Certificate Expired",
+                                    "ACM Certificate Renewal Action Required",
+                                    "ACM Certificate Revoked"))
+                            .build())
+                    .targets(List.of(new LambdaFunction(trustedEventLambda)))
+                    .build();
+        }
+
+        cfnOutput(this, "TrustedEventFunctionArn", trustedEventLambda.getFunctionArn());
+        cfnOutput(this, "TrustedEventRoleArn", trustedEventRole.getRoleArn());
     }
 }

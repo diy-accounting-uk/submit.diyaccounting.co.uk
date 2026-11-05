@@ -98,6 +98,7 @@ jobs:
           ENVIRONMENT_NAME: ci
           PROOF_AUTH_PASSWORD: ${{ steps.proof-user.outputs.test-auth-password }}
         run: |
+          set -euo pipefail
           SUBMIT_BASE_URL=$(grep -E '^DIY_SUBMIT_BASE_URL=' .env.ci | tail -n1 | cut -d'=' -f2)
           export SUBMIT_BASE_URL
           node scripts/mcp-blob-key-rotate.js --prove-refresh 2>&1 | tee mcp-blob-key-rotate.log
@@ -107,6 +108,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ matrix.environment }}
         run: |
+          set -euo pipefail
           if [ "$APPLY" = "true" ]; then
             node scripts/mcp-blob-key-rotate.js --apply 2>&1 | tee mcp-blob-key-rotate.log
           else

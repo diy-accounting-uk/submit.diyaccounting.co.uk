@@ -155,6 +155,23 @@ export async function proveRefresh(steps) {
   }
 }
 
+/**
+ * The grant id in the answer to the create-grant request. The handler answers 201 with the grant
+ * fields at the top level of the body.
+ *
+ * @param {{status: number, body: object}} created
+ * @returns {string}
+ */
+export function grantIdFromCreated(created) {
+  if (created.status !== 201) throw new Error(`Creating the grant answered ${created.status}, expected 201`);
+  const grantId = created.body?.grantId;
+  if (typeof grantId !== "string" || grantId.length === 0) {
+    const keys = Object.keys(created.body ?? {}).join(", ") || "none";
+    throw new Error(`Creating the grant answered 201 with no grantId; the body has these top-level keys: ${keys}`);
+  }
+  return grantId;
+}
+
 async function liveProofSteps({ envName, secretName, secretsClient, commands, registryRef }) {
   const baseUrl = (process.env.SUBMIT_BASE_URL ?? "").replace(/\/$/, "");
   const password = process.env.PROOF_AUTH_PASSWORD;
@@ -194,8 +211,7 @@ async function liveProofSteps({ envName, secretName, secretsClient, commands, re
   return {
     createGrant: async () => {
       const created = await api("POST", GRANTS_PATH, { services: ["vat"], hmrcAccount: "synthetic" });
-      if (created.status !== 201 || !created.body?.data?.grantId) throw new Error(`Creating the grant answered ${created.status}`);
-      return created.body.data.grantId;
+      return grantIdFromCreated(created);
     },
     seal: (grantId) => {
       process.env.MCP_OAUTH_BLOB_KEY = JSON.stringify(registryRef.current);
