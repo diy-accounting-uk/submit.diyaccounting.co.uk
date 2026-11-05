@@ -92,6 +92,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/dashboard-review/SKILL.md` — read the whole prod operator dashboard from its snapshot and the page in Chrome, judge every panel, write one report under `../private.diyaccounting.co.uk/operator/dashboard-reviews/`, and summarise it in the chat; invoke as `/dashboard-review`
 - `.claude/skills/tech-debt-audit/SKILL.md` — measure the workspace repositories' technical debt with six published methods (Fowler quadrant, SQALE, Tornhill hotspots, ISO/IEC 25010, DORA, dependency and supply-chain), every figure from a command, into one ranked report under `../private.diyaccounting.co.uk/engineering/` with a trend against the last audit and proposed TD rows; invoke as `/tech-debt-audit`
 - `.claude/skills/paid-without-activation/SKILL.md` — from a `prod-env-charges-without-activation` alarm, find the Stripe charge with no activation and its account from Stripe's records and the lake, read the webhook log for the failure, print the event re-delivery command that grants the bundle, and draft the email to the customer; invoke when that alarm fires
+- `.claude/skills/exposure-check/SKILL.md` — check everything we expose publicly for keys in the rotation set, by key format and by an in-memory comparison with each live value, across repository history, variables, GitHub records, Actions logs and artifacts, the sites, npm, container images and the MCP; findings go only to `../private.diyaccounting.co.uk/security/`; invoke as `/exposure-check`
 
 ## Permission Handling
 

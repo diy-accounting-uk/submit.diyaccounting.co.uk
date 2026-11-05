@@ -58,7 +58,7 @@ async function handleAuthCallback(code, state) {
     }
 
     const tokens = await tokenResponse.json();
-    console.log("Received tokens from mock " + JSON.stringify(tokens));
+    console.log("Received tokens from mock, fields: " + Object.keys(tokens).join(","));
 
     // Store tokens in localStorage
     if (tokens.access_token) {
@@ -76,7 +76,7 @@ async function handleAuthCallback(code, state) {
     const jsonPayload = base64UrlDecode(base64Payload);
     const idTokenPayload = JSON.parse(jsonPayload);
 
-    console.log("Received id_token from mock " + JSON.stringify(idTokenPayload));
+    console.log("Received id_token from mock, claims: " + Object.keys(idTokenPayload).join(","));
 
     localStorage.setItem(
       "userInfo",

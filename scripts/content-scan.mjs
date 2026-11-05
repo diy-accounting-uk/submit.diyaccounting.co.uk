@@ -105,7 +105,7 @@ function isQualifyingPublicIPv4(match, text) {
 }
 
 /** Checked in every file. Each label is self-descriptive; no per-pattern comment needed. */
-const SECRET_PATTERNS = [
+export const SECRET_PATTERNS = [
   { label: "aws-access-key-id", re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g },
   { label: "jwt", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g },
   { label: "private-key-block", re: /-----BEGIN[A-Z ]*PRIVATE KEY-----/g },
@@ -114,6 +114,15 @@ const SECRET_PATTERNS = [
     re: /\bBearer\s+([A-Za-z0-9._~+/-]{20,})/g,
     isValid: (m) => isMixedAlphanumeric(m[1]),
   },
+  { label: "stripe-secret-key", re: /\b[rs]k_(?:live|test)_[0-9A-Za-z]{16,}\b/g },
+  { label: "stripe-webhook-secret", re: /\bwhsec_[0-9A-Za-z+/]{16,}/g },
+  { label: "github-fine-grained-pat", re: /\bgithub_pat_[0-9A-Za-z_]{40,}\b/g },
+  { label: "github-token", re: /\bgh[pousr]_[0-9A-Za-z]{30,}\b/g },
+  { label: "google-service-account-key", re: /"type"\s*:\s*"service_account"[^}]{0,300}"private_key_id"/g },
+  { label: "google-api-key", re: /\bAIza[0-9A-Za-z_-]{35}(?![0-9A-Za-z_-])/g },
+  { label: "google-oauth-client-secret", re: /\bGOCSPX-[0-9A-Za-z_-]{28}(?![0-9A-Za-z_-])/g },
+  { label: "google-refresh-token", re: /(?<![\w/:.+])1\/\/[0-9A-Za-z_-]{30,}/g },
+  { label: "telegram-bot-token", re: /\b\d{9,12}:AA[0-9A-Za-z_-]{30,}(?![0-9A-Za-z_-])/g },
 ];
 
 /** Checked outside PERSONAL_DATA_EXEMPT_PREFIXES and any `/fixtures/` path. */
@@ -157,7 +166,7 @@ function isExemptFromPersonalDataScan(file) {
   return PERSONAL_DATA_EXEMPT_PREFIXES.some((prefix) => file.startsWith(prefix));
 }
 
-function findHits(text, patterns) {
+export function findHits(text, patterns) {
   const hits = [];
   for (const { label, re, isValid } of patterns) {
     const flags = re.flags.includes("g") ? re.flags : `${re.flags}g`;
@@ -188,7 +197,7 @@ export function parseAllowList(text) {
     });
 }
 
-function isAllowed(matchedText, allowList) {
+export function isAllowed(matchedText, allowList) {
   return allowList.some((entry) => (entry instanceof RegExp ? entry.test(matchedText) : matchedText === entry));
 }
 

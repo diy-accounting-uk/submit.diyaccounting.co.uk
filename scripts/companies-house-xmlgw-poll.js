@@ -186,6 +186,9 @@ function writeResponseFiles(outDir, label, { status, statusText, headers, body }
 }
 
 async function main() {
+  if (process.env.COMPANIES_HOUSE_GATEWAY_TEST !== "true") {
+    throw new Error('COMPANIES_HOUSE_GATEWAY_TEST must be "true": without it the request goes to the live gateway');
+  }
   const { submissionNumber, outDir } = parseArgs(process.argv.slice(2));
   if (!outDir) {
     console.error("Usage: node scripts/companies-house-xmlgw-poll.js [<submissionNumber>] --out-dir <dir>");
@@ -207,7 +210,7 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
 
   const { presenterId, presenterCode } = await resolvePresenterCredentials();
-  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  const gatewayTest = true;
   const requestBody = buildStatusRequest({ presenterId, presenterCode, submissionNumber, companyNumber, gatewayTest });
   const url = getXmlGatewayUri();
   const requestHeaders = { "Content-Type": "text/xml" };

@@ -183,6 +183,7 @@ export async function ingestHandler(event) {
       event: "pass-redeemed",
       summary: "Pass redeemed: " + (result?.bundleId || "unknown"),
       userSub: userId,
+      userEmail,
       detail: { bundleId: result?.bundleId, passTypeId: result.pass?.passTypeId, code },
     });
 

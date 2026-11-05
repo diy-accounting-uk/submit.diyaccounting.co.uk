@@ -53,27 +53,7 @@ class AnalyticsStackTest {
 
     @Test
     void shouldConvertActivityEventsToParquetWithATypedTableAndUnionView() throws IOException {
-        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
-        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
-        if (ctx.containsKey("apexActiveLabel")) {
-            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
-        }
-        if (ctx.containsKey("apexDeploymentOrigins")) {
-            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
-        }
-        ctx.put(
-                "certificateArn",
-                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
-        ctx.put(
-                "holdingCertificateArn",
-                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
-
-        App app = new App(AppProps.builder().context(ctx).build());
-        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
-        var env = new SubmitEnvironment(app, appProps);
-        app.synth();
-
-        Template analytics = Template.fromStack(env.analyticsStack);
+        Template analytics = synthAnalyticsTemplate();
 
         // The delivery stream converts to Parquet under curated/activity-events/, with no
         // destination-side compression on top of Parquet's own.
@@ -140,16 +120,34 @@ class AnalyticsStackTest {
         // counterpart, v_activity_started_hourly.
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 71);
 
-        // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
-        var customResources = analytics.findResources("Custom::AWS");
-        var viewCreatorFound = customResources.values().stream().anyMatch(resource -> {
+        // The union view is created by the shared Athena view Provider, which polls the query to
+        // a terminal state, so a failed CREATE OR REPLACE VIEW fails the stack update.
+        var viewCreators = analytics.findResources("Custom::AthenaView");
+        var unionViewCreated = viewCreators.values().stream().anyMatch(resource -> {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) resource.get("Properties");
-            var create = String.valueOf(properties.get("Create"));
-            return create.contains("startQueryExecution") && create.contains("CREATE OR REPLACE VIEW");
+            return "activity_events_all".equals(properties.get("ViewName"))
+                    && String.valueOf(properties.get("Sql")).contains("CREATE OR REPLACE VIEW activity_events_all AS");
         });
-        org.junit.jupiter.api.Assertions.assertTrue(
-                viewCreatorFound, "expected a Custom::AWS resource running the union view's CREATE OR REPLACE VIEW");
+        assertTrue(unionViewCreated, "expected a Custom::AthenaView resource creating activity_events_all");
+
+        // The union view reads activity_events and hash_aliases, so its resource names both tables.
+        var unionViewResource = viewCreators.entrySet().stream()
+                .filter(e -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) e.getValue().get("Properties");
+                    return "activity_events_all".equals(properties.get("ViewName"));
+                })
+                .findFirst()
+                .orElseThrow()
+                .getValue();
+        var dependsOn = String.valueOf(unionViewResource.get("DependsOn"));
+        assertTrue(
+                dependsOn.contains("HashAliases") || dependsOn.contains("hash"),
+                "union view must depend on the hash_aliases table: " + dependsOn);
+        assertTrue(
+                dependsOn.contains("ActivityEvents"),
+                "union view must depend on the curated activity_events table: " + dependsOn);
 
         // AnalyticsStack packs many AwsCustomResource instances (the union view, every BusinessViews
         // query, every TableChangeDelivery stream lookup) that all reuse one singleton provider
@@ -196,6 +194,44 @@ class AnalyticsStackTest {
         assertTrue(
                 rules.stream().noneMatch(rule -> "age-sbom-archive".equals(rule.getId())),
                 "non-prod should not carry the prod-only SBOM archive retention rule");
+    }
+
+    @Test
+    void unionViewCreatorMayReadTheHashAliasTableItJoins() throws IOException {
+        Template analytics = synthAnalyticsTemplate();
+
+        var policies = analytics.findResources("AWS::IAM::Policy");
+        boolean grantsGetTableOnEveryTable = policies.values().stream().anyMatch(policy -> {
+            var json = String.valueOf(policy.get("Properties"));
+            return json.contains("AthenaViewCreator") && json.contains("glue:GetTable") && json.contains("table/");
+        });
+        assertTrue(
+                grantsGetTableOnEveryTable,
+                "the role that creates activity_events_all needs glue:GetTable on the tables it joins");
+    }
+
+    private static Template synthAnalyticsTemplate() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        if (ctx.containsKey("apexActiveLabel")) {
+            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
+        }
+        if (ctx.containsKey("apexDeploymentOrigins")) {
+            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
+        }
+        ctx.put(
+                "certificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "holdingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
+        var env = new SubmitEnvironment(app, appProps);
+        app.synth();
+
+        return Template.fromStack(env.analyticsStack);
     }
 
     private static LifecycleRule findRuleById(List<LifecycleRule> rules, String id) {

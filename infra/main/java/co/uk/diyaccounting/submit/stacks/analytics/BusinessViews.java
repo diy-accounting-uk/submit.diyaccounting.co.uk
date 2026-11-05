@@ -46,15 +46,13 @@ import software.constructs.Construct;
  * runs {@code CREATE OR REPLACE VIEW} at deploy time so a redeploy is idempotent. A {@link
  * CfnNamedQuery} per view keeps the same SQL one click away in the console.
  *
- * <p>Unlike {@code AnalyticsStack}'s own view ({@code activity_events_all}, created with a plain
- * {@code AwsCustomResource} around {@code Athena.startQueryExecution}), the resource here waits
- * for the query to actually finish. {@code startQueryExecution} returns as soon as the query is
- * submitted, not once it completes, so an {@code AwsCustomResource} around it alone marks
- * CloudFormation successful the instant the query starts — a {@code CREATE OR REPLACE VIEW} that
- * fails afterwards leaves the stack green and the view silently missing from the catalog. See
- * {@code app/functions/analytics/createView.mjs} for the onEvent/isComplete handler pair that
- * polls {@code GetQueryExecution} to a terminal state and fails loudly, carrying Athena's {@code
- * StateChangeReason}, on anything but {@code SUCCEEDED}.
+ * <p>The resource waits for the query to finish. {@code startQueryExecution} returns as soon as the
+ * query is submitted, so a plain {@code AwsCustomResource} around it marks CloudFormation successful
+ * the instant the query starts, and a {@code CREATE OR REPLACE VIEW} that fails afterwards leaves the
+ * stack green and the view missing from the catalog. See {@code app/functions/analytics/createView.mjs}
+ * for the onEvent/isComplete handler pair that polls {@code GetQueryExecution} to a terminal state and
+ * fails with Athena's {@code StateChangeReason} on anything but {@code SUCCEEDED}. Delete never drops
+ * a view.
  *
  * <p>The caller owns ordering: every view resource here must depend on the Glue database, the
  * Athena workgroup and the catalog tables it reads from — see the class Javadoc on {@link
@@ -63,21 +61,19 @@ import software.constructs.Construct;
 public class BusinessViews extends Construct {
 
     /**
-     * Views by the business question they answer and the catalog tables they read. {@code
-     * dependsOnViews} names sibling views (by {@link ViewDefinition#name()}) this view's SQL
-     * reads from directly: the caller must create those first and add an explicit CloudFormation
-     * dependency, since two {@code AwsCustomResource}s with no {@code Fn::GetAtt} between them
-     * carry no implicit ordering.
+     * Views by the business question they answer and the catalog tables they read. A read table
+     * that is itself a view in this list is created first: the loop below adds the CloudFormation
+     * dependency, since two custom resources with no {@code Fn::GetAtt} between them carry no
+     * implicit ordering. VIEWS lists every view after the views it reads.
      */
-    private record ViewDefinition(
-            String name, String description, List<String> readTables, List<String> dependsOnViews) {
-
-        ViewDefinition(String name, String description, List<String> readTables) {
-            this(name, description, readTables, List.of());
-        }
-    }
+    private record ViewDefinition(String name, String description, List<String> readTables) {}
 
     private static final List<ViewDefinition> VIEWS = List.of(
+            new ViewDefinition(
+                    "activity_events_all",
+                    "The activity events union view every v_* activity view reads: actor classification and"
+                            + " hash aliases applied over the curated table",
+                    List.of("activity_events", "hash_aliases")),
             new ViewDefinition(
                     "aliased_dynamo_receipts",
                     "dynamo_receipts with each hash read through hash_aliases, stable across a salt rotation",
@@ -119,8 +115,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_pass_redemptions_daily",
                     "Passes issued and redeemed each day, by pass type",
-                    List.of("activity_events_all", "aliased_dynamo_passes"),
-                    List.of("aliased_dynamo_passes")),
+                    List.of("activity_events_all", "aliased_dynamo_passes")),
             new ViewDefinition(
                     "v_revenue_daily",
                     "Stripe and PayPal revenue each day, by product, gross and net of payment fees",
@@ -136,8 +131,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_signup_to_first_submission",
                     "Time from a new account's first bundle grant to its first submission",
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "activity_events_all"),
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts")),
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "activity_events_all")),
             new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
@@ -147,8 +141,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_purchase_reconciliation_daily",
                     "GA4, Stripe and activity-event purchase counts each day, side by side",
-                    List.of("stripe_charges", "stripe_subscriptions", "activity_events_all", "v_ga4_funnel_daily"),
-                    List.of("v_ga4_funnel_daily")),
+                    List.of("stripe_charges", "stripe_subscriptions", "activity_events_all", "v_ga4_funnel_daily")),
             new ViewDefinition(
                     "v_submissions_by_activity_daily",
                     "Completions each day by activity (VAT, ITSA, Companies House), not VAT only",
@@ -191,7 +184,6 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_ads_cost_per_paid_landing_daily",
                     "The day's Ads cost of each platform divided by the day's paid landings that carry its click id",
-                    List.of("v_ads_cost_daily", "v_paid_landings_daily"),
                     List.of("v_ads_cost_daily", "v_paid_landings_daily")),
             new ViewDefinition(
                     "v_visitors_by_kind_hourly",
@@ -214,12 +206,10 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_returning_submitters_quarterly",
                     "Of the customers who submitted in a quarter, how many also submitted the previous one",
-                    List.of("aliased_dynamo_receipts"),
                     List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_returning_submitters_rolling_daily",
                     "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
-                    List.of("aliased_dynamo_receipts"),
                     List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_vat_submissions_by_actor_daily",
@@ -236,8 +226,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
                     "Subscriptions cancelled each day, by bundle",
-                    List.of("aliased_dynamo_subscriptions", "activity_events_all"),
-                    List.of("aliased_dynamo_subscriptions")),
+                    List.of("aliased_dynamo_subscriptions", "activity_events_all")),
             new ViewDefinition(
                     "v_operator_interventions_daily",
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",
@@ -261,27 +250,22 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_agent_cost_daily",
                     "Bedrock cost each day per agent run that posted a result and per agent pull request a person merged",
-                    List.of("v_cost_daily", "v_agent_runs_daily"),
                     List.of("v_cost_daily", "v_agent_runs_daily")),
             new ViewDefinition(
                     "v_submission_failure_rate_daily",
                     "VAT returns sent to HMRC each day, how many failed and the share that failed",
-                    List.of("v_submissions_daily"),
                     List.of("v_submissions_daily")),
             new ViewDefinition(
                     "v_cost_per_submission_daily",
                     "The day's cost divided by the day's completed submissions",
-                    List.of("v_cost_daily", "v_submissions_by_activity_daily"),
                     List.of("v_cost_daily", "v_submissions_by_activity_daily")),
             new ViewDefinition(
                     "v_cost_vs_target_monthly",
                     "Each month's billed cost against the steady-state target",
-                    List.of("v_cost_daily"),
                     List.of("v_cost_daily")),
             new ViewDefinition(
                     "v_cost_vs_target_daily",
                     "Month-to-date billed cost each day against the steady-state target pace",
-                    List.of("v_cost_daily"),
                     List.of("v_cost_daily")),
             new ViewDefinition(
                     "v_sign_ins_daily",
@@ -294,12 +278,7 @@ public class BusinessViews extends Construct {
                             "aliased_stripe_charges",
                             "aliased_stripe_subscriptions",
                             "aliased_dynamo_subscriptions",
-                            "aliased_dynamo_bundles"),
-                    List.of(
-                            "aliased_dynamo_bundles",
-                            "aliased_dynamo_subscriptions",
-                            "aliased_stripe_charges",
-                            "aliased_stripe_subscriptions")),
+                            "aliased_dynamo_bundles")),
             new ViewDefinition(
                     "v_pass_performance",
                     "Per referral pass: uses, new accounts, accounts that filed, subscribers, paid charges, last used",
@@ -309,40 +288,29 @@ public class BusinessViews extends Construct {
                             "aliased_dynamo_subscriptions",
                             "aliased_stripe_subscriptions",
                             "aliased_stripe_charges",
-                            "activity_events_all"),
-                    List.of(
-                            "aliased_dynamo_bundles",
-                            "aliased_dynamo_passes",
-                            "aliased_dynamo_subscriptions",
-                            "aliased_stripe_charges",
-                            "aliased_stripe_subscriptions")),
+                            "activity_events_all")),
             new ViewDefinition(
                     "v_affiliate_commissions_monthly",
                     "Commission held, payable, paid and reversed in pence, by month and tier, live mode only",
-                    List.of("aliased_dynamo_commissions"),
                     List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_affiliate_cash_paid_monthly",
                     "Cash commission paid out in pence, by calendar month of payment, live mode only",
-                    List.of("aliased_dynamo_commissions"),
                     List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_affiliate_referrers",
                     "Per referrer: tier, referrals, paying accounts, and commission held, payable, paid and payable"
                             + " this month in pence, live mode only",
-                    List.of("aliased_dynamo_commissions"),
                     List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_commission_earned_daily",
                     "Commission earned in pence by day of charge and cost group (referral credit, affiliate cash,"
                             + " family cash), reversals netted, live mode only",
-                    List.of("aliased_dynamo_commissions"),
                     List.of("aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_pass_issuer_daily",
                     "Per pass issuer and day: passes generated, link visits, passes redeemed and passes converted",
-                    List.of("activity_events_all", "aliased_dynamo_passes", "aliased_dynamo_commissions"),
-                    List.of("aliased_dynamo_commissions", "aliased_dynamo_passes")),
+                    List.of("activity_events_all", "aliased_dynamo_passes", "aliased_dynamo_commissions")),
             new ViewDefinition(
                     "v_usd_gbp_daily",
                     "Pounds per dollar on each day from the European Central Bank reference rate, carried over"
@@ -351,7 +319,6 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_contribution_daily",
                     "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), each day",
-                    List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily"),
                     List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily")),
             new ViewDefinition(
                     "v_company_runway",
@@ -360,7 +327,6 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_ads_performance_daily",
                     "Impressions, clicks, cost, conversions, click-through rate and cost per click each day, by Ads platform",
-                    List.of("v_ads_cost_daily"),
                     List.of("v_ads_cost_daily")),
             new ViewDefinition(
                     "v_spreadsheets_downloads_daily",
@@ -396,7 +362,6 @@ public class BusinessViews extends Construct {
                     "v_integration_calls_daily",
                     "Outbound calls and their total duration each UK day, by organisation, target, api, outcome and"
                             + " HTTP status",
-                    List.of("v_integration_calls"),
                     List.of("v_integration_calls")),
             new ViewDefinition(
                     "v_integration_calls_hourly",
@@ -550,17 +515,10 @@ public class BusinessViews extends Construct {
 
         // Two CustomResources with no Fn::GetAtt between them carry no implicit CloudFormation
         // ordering, so a view that reads a sibling view (e.g. v_purchase_reconciliation_daily
-        // reading v_ga4_funnel_daily) needs an explicit dependency edge, added below once both
-        // resources exist. VIEWS is declared with every dependency earlier in the list than its
-        // dependent, so a single forward pass suffices.
+        // reading v_ga4_funnel_daily) gets an explicit dependency edge once both resources exist.
+        // VIEWS declares every upstream view before its dependents, so a single forward pass suffices.
         var viewNames = VIEWS.stream().map(ViewDefinition::name).toList();
         for (ViewDefinition view : VIEWS) {
-            for (String readTable : view.readTables()) {
-                if (viewNames.contains(readTable) && !view.dependsOnViews().contains(readTable)) {
-                    throw new IllegalStateException(view.name() + " reads the sibling view " + readTable
-                            + " but does not list it in dependsOnViews, so CloudFormation may update it first");
-                }
-            }
             var sql = loadResourceText("analytics/views/" + view.name() + ".sql");
             var queryName = view.name().replace('_', '-');
 
@@ -597,11 +555,14 @@ public class BusinessViews extends Construct {
             this.viewResources.add(viewResource);
             this.viewResourcesByName.put(view.name(), viewResource);
 
-            for (String dependsOnView : view.dependsOnViews()) {
-                var upstream = this.viewResourcesByName.get(dependsOnView);
+            for (String readTable : view.readTables()) {
+                if (!viewNames.contains(readTable)) {
+                    continue;
+                }
+                var upstream = this.viewResourcesByName.get(readTable);
                 if (upstream == null) {
-                    throw new IllegalStateException("%s depends on %s, which must be declared earlier in VIEWS"
-                            .formatted(view.name(), dependsOnView));
+                    throw new IllegalStateException(
+                            "%s reads %s, which must be declared earlier in VIEWS".formatted(view.name(), readTable));
                 }
                 viewResource.getNode().addDependency(upstream);
             }

@@ -90,7 +90,6 @@ public class SubmitEnvironment {
         public String crossAccountBackupVaultArn;
         public String scanDetection404PerMinute;
         public String telegramBotTokenArn;
-        public String telegramTestChatId;
         public String telegramLiveChatId;
         public String telegramOpsChatId;
         public String githubAppId;
@@ -242,8 +241,6 @@ public class SubmitEnvironment {
                 appProps.baseImageTag == null || appProps.baseImageTag.isBlank() ? "latest" : appProps.baseImageTag);
         var telegramBotTokenArn =
                 envOr("TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
-        var telegramTestChatId =
-                envOr("TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
         var telegramLiveChatId =
                 envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
         var telegramOpsChatId =
@@ -389,7 +386,6 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
-                        .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")
                         .telegramLiveChatId(telegramLiveChatId != null ? telegramLiveChatId : "")
                         .telegramOpsChatId(telegramOpsChatId != null ? telegramOpsChatId : "")
                         .build());

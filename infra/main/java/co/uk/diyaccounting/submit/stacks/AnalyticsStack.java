@@ -19,7 +19,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourceProviderLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
@@ -48,12 +47,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.WorkflowRunTables;
-import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,9 +60,6 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
-import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsSdkCall;
-import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
 import software.amazon.awscdk.services.athena.CfnWorkGroup;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
@@ -109,7 +100,6 @@ public class AnalyticsStack extends Stack {
     private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
     private static final String ACTIVITY_EVENTS_CURATED_TABLE_NAME = "activity_events";
     private static final String SBOM_ARCHIVE_PREFIX = "archive/security/sbom/";
-    private static final String ACTIVITY_EVENTS_UNION_VIEW_NAME = "activity_events_all";
 
     public final Bucket lakeBucket;
     public final Bucket resultsBucket;
@@ -655,83 +645,6 @@ public class AnalyticsStack extends Stack {
         eventsPerDayQuery.addResourceDependency(this.workGroup);
         eventsPerDayQuery.addResourceDependency(this.glueDatabase);
 
-        // ============================================================================
-        // Union view: activity_events_all wraps the curated table so WP-6 queries never
-        // need to change if another base table joins it later
-        // ============================================================================
-        // Presto views are Glue tables of type VIRTUAL_VIEW with a fiddly base64 payload to
-        // hand-build. A one-shot AwsCustomResource running the CREATE OR REPLACE VIEW statement
-        // keeps the SQL readable in the repo and is idempotent on every redeploy.
-        var unionViewSql = loadResourceText("analytics/views/activity_events_all.sql");
-
-        var unionViewDefinitionQuery = CfnNamedQuery.Builder.create(this, prefix + "-ActivityEventsAllViewQuery")
-                .name("activity-events-all-view-definition")
-                .description("Definition of the " + ACTIVITY_EVENTS_UNION_VIEW_NAME
-                        + " view, kept here for reference; the custom resource below is what actually runs it")
-                .database(sharedNames.analytics.glueDatabaseName)
-                .workGroup(sharedNames.analytics.athenaWorkGroupName)
-                .queryString(unionViewSql)
-                .build();
-        unionViewDefinitionQuery.addResourceDependency(this.workGroup);
-        unionViewDefinitionQuery.addResourceDependency(curatedActivityEventsTable);
-
-        var createUnionViewCall = AwsSdkCall.builder()
-                .service("Athena")
-                .action("startQueryExecution")
-                .parameters(Map.of(
-                        "QueryString",
-                        unionViewSql,
-                        "QueryExecutionContext",
-                        Map.of("Database", sharedNames.analytics.glueDatabaseName),
-                        "WorkGroup",
-                        sharedNames.analytics.athenaWorkGroupName))
-                .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
-                .build();
-
-        var unionViewGrant = KindCdk.grantToAwsCustomResourceProvider(
-                this,
-                List.of(
-                        PolicyStatement.Builder.create()
-                                .effect(Effect.ALLOW)
-                                .actions(List.of("athena:StartQueryExecution"))
-                                .resources(List.of(athenaWorkGroupArn(sharedNames.analytics.athenaWorkGroupName)))
-                                .build(),
-                        PolicyStatement.Builder.create()
-                                .effect(Effect.ALLOW)
-                                .actions(List.of(
-                                        "glue:GetDatabase",
-                                        "glue:GetTable",
-                                        "glue:GetTables",
-                                        "glue:CreateTable",
-                                        "glue:UpdateTable"))
-                                .resources(List.of(
-                                        glueCatalogArn(),
-                                        glueDatabaseArn(sharedNames.analytics.glueDatabaseName),
-                                        glueTableArn(
-                                                sharedNames.analytics.glueDatabaseName,
-                                                ACTIVITY_EVENTS_CURATED_TABLE_NAME),
-                                        glueTableArn(
-                                                sharedNames.analytics.glueDatabaseName,
-                                                ACTIVITY_EVENTS_UNION_VIEW_NAME)))
-                                .build(),
-                        PolicyStatement.Builder.create()
-                                .effect(Effect.ALLOW)
-                                .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
-                                .resources(List.of(
-                                        this.resultsBucket.getBucketArn(), this.resultsBucket.getBucketArn() + "/*"))
-                                .build()));
-
-        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
-                .onCreate(createUnionViewCall)
-                .onUpdate(createUnionViewCall)
-                .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
-                .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
-                .build();
-        createUnionViewResource.getNode().addDependency(unionViewGrant);
-        createUnionViewResource.getNode().addDependency(this.workGroup);
-        createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
-        createUnionViewResource.getNode().addDependency(hashAliasTable);
-
         var businessViews = new BusinessViews(
                 this,
                 BusinessViews.BusinessViewsProps.builder()
@@ -746,7 +659,7 @@ public class AnalyticsStack extends Stack {
         });
         businessViews.viewResources.forEach(r -> {
             r.getNode().addDependency(this.workGroup);
-            r.getNode().addDependency(createUnionViewResource);
+            r.getNode().addDependency(curatedActivityEventsTable);
             tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
             r.getNode().addDependency(stripeTables.chargesTable);
             r.getNode().addDependency(stripeTables.subscriptionsTable);
@@ -1114,20 +1027,5 @@ public class AnalyticsStack extends Stack {
 
     private String glueCatalogArn() {
         return "arn:aws:glue:%s:%s:catalog".formatted(this.getRegion(), this.getAccount());
-    }
-
-    private String athenaWorkGroupArn(String workGroupName) {
-        return "arn:aws:athena:%s:%s:workgroup/%s".formatted(this.getRegion(), this.getAccount(), workGroupName);
-    }
-
-    private static String loadResourceText(String resourcePath) {
-        try (InputStream in = AnalyticsStack.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                throw new IllegalStateException("Missing analytics resource: " + resourcePath);
-            }
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load analytics resource: " + resourcePath, e);
-        }
     }
 }

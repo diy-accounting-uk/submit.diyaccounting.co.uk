@@ -29,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 69;
+    private static final int VIEW_COUNT = 70;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -100,6 +100,7 @@ class BusinessViewsTest {
         Template template = synthBusinessViews();
 
         Set<String> expectedViewNames = Set.of(
+                "activity_events_all",
                 "v_active_users_daily",
                 "v_submissions_daily",
                 "v_login_to_submission_funnel",

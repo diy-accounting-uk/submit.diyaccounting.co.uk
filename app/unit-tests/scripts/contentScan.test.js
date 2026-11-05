@@ -54,6 +54,34 @@ function runCli(diffText, extraArgs = []) {
   return result;
 }
 
+describe("key formats of the rotation set", () => {
+  const random40 = "q7Zt1Lm9Xc3Vb8Nw2Rk5q7Zt1Lm9Xc3Vb8Nw2Rk5";
+  const cases = [
+    ["stripe-secret-key", "sk_" + "live_" + random40],
+    ["stripe-secret-key", "rk_" + "test_" + random40],
+    ["stripe-webhook-secret", "whsec" + "_" + random40],
+    ["github-fine-grained-pat", "github" + "_pat_" + random40],
+    ["github-token", "gh" + "p_" + random40],
+    ["google-service-account-key", '{"type": "service' + '_account", "project_id": "p", "private_key_id": "k"}'],
+    ["google-api-key", "AI" + "za" + random40.slice(0, 35)],
+    ["google-oauth-client-secret", "GOC" + "SPX-" + random40.slice(0, 28)],
+    ["google-refresh-token", "token=1/" + "/" + random40],
+    ["telegram-bot-token", "123456789:" + "AA" + random40.slice(0, 33)],
+  ];
+
+  test.each(cases)("finds a %s", (label, text) => {
+    expect(scanDiff(diffAdding("docs/notes.md", text), []).map((hit) => hit.label)).toContain(label);
+  });
+
+  test("finds no refresh token in a URL path or a short key prefix", () => {
+    expect(scanDiff(diffAdding("docs/notes.md", "see https://example.com/v1//abc and sk_" + "test_ and 1/" + "/x"), [])).toEqual([]);
+  });
+
+  test("finds no refresh token inside a run of base64", () => {
+    expect(scanDiff(diffAdding("docs/notes.md", "data:font/woff2;base64,AAAA+1/" + "/" + random40), [])).toEqual([]);
+  });
+});
+
 describe("addedLines", () => {
   test("returns only lines the diff adds, with their new-file line numbers", () => {
     const diff = [

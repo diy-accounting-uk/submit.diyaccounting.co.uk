@@ -63,6 +63,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 
@@ -114,6 +115,7 @@ function shouldEmitFailureMetric(status) {
  * @param {string} [params.clientId] - carried onto the event detail when this is a client-scoped submission
  */
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true, clientId }) {
+  await warmOperators();
   const actor = resolveActorClass();
   if (emitMetric) {
     emitSubmissionMetric("VatSubmissionFailure", actor);
@@ -1000,6 +1002,7 @@ export async function submitVat(
     hmrcResponseBody = httpResult.hmrcResponseBody;
   }
 
+  await warmOperators();
   const actor = resolveActorClass();
   if (hmrcResponse.ok) {
     emitSubmissionMetric("VatSubmissionSuccess", actor);

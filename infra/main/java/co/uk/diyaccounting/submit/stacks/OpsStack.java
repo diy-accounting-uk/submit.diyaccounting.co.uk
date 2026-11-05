@@ -440,7 +440,7 @@ public class OpsStack extends Stack {
         // (no eventBus specified → default bus). AWS service events are free.
 
         // CloudFormation Stack Status Change → Telegram forwarder
-        // Filter to terminal statuses only to avoid noisy intermediate states
+        // Only failed and rolled-back statuses reach the forwarder; the lake does not read this rule.
         Rule.Builder.create(this, "CfnStackStatusRule")
                 .ruleName(props.resourceNamePrefix() + "-cfn-stack-status")
                 .eventPattern(EventPattern.builder()
@@ -451,13 +451,9 @@ public class OpsStack extends Stack {
                                 java.util.Map.of(
                                         "status",
                                         List.of(
-                                                "CREATE_COMPLETE",
-                                                "UPDATE_COMPLETE",
-                                                "DELETE_COMPLETE",
                                                 "CREATE_FAILED",
                                                 "UPDATE_FAILED",
                                                 "DELETE_FAILED",
-                                                "ROLLBACK_COMPLETE",
                                                 "UPDATE_ROLLBACK_COMPLETE"))))
                         .build())
                 .targets(List.of(

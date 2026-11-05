@@ -21,6 +21,7 @@ import {
   escapeTelegramMarkdown,
   formatMessage,
   resolveTargetChatIds,
+  resolveRoute,
   resolveChatConfig,
   synthesizeFromCloudFormation,
   synthesizeFromCloudWatchAlarm,
@@ -29,8 +30,30 @@ import {
   handler,
 } from "@app/functions/ops/activityTelegramForwarder.js";
 
+const mockEventBridgeSend = vi.fn();
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
+import { publishActivityFailureEvent } from "@app/lib/activityAlert.js";
+
+async function publishedDetail(publish) {
+  process.env.ACTIVITY_BUS_NAME = "test-bus";
+  mockEventBridgeSend.mockReset().mockResolvedValue({});
+  await publish();
+  return JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail);
+}
+
 const CHAT_CONFIG = {
-  test: "@diy_ci_test",
   live: "@diy_ci_live",
   ops: "@diy_ci_ops",
 };
@@ -85,138 +108,141 @@ describe("activityTelegramForwarder", () => {
     });
 
     test("reads individual env vars", () => {
-      process.env.TELEGRAM_TEST_CHAT_ID = "@diy_test";
       process.env.TELEGRAM_LIVE_CHAT_ID = "@diy_live";
       process.env.TELEGRAM_OPS_CHAT_ID = "@diy_ops";
-      expect(resolveChatConfig()).toEqual({ test: "@diy_test", live: "@diy_live", ops: "@diy_ops" });
+      expect(resolveChatConfig()).toEqual({ live: "@diy_live", ops: "@diy_ops" });
     });
 
     test("returns empty strings when env vars are not set", () => {
-      delete process.env.TELEGRAM_TEST_CHAT_ID;
       delete process.env.TELEGRAM_LIVE_CHAT_ID;
       delete process.env.TELEGRAM_OPS_CHAT_ID;
-      expect(resolveChatConfig()).toEqual({ test: "", live: "", ops: "" });
+      expect(resolveChatConfig()).toEqual({ live: "", ops: "" });
     });
   });
 
   describe("resolveTargetChatIds", () => {
-    // A refresh inside a live session goes to the lake only, never Telegram.
-    test("routes a continued token-refresh to no chat, even for a customer", () => {
-      const detail = { event: "token-refresh", sessionKind: "continued", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    const LIVE = ["@diy_ci_live"];
+    const OPS = ["@diy_ci_ops"];
+    const customer = (event, extra = {}) => ({ event, actor: "customer", flow: "user-journey", ...extra });
+
+    describe("live chat, customer events in the set", () => {
+      test.each(["subscription-activated", "pass-redeemed", "support-ticket", "vat-return-submitted"])(
+        "sends %s from a customer",
+        (event) => {
+          expect(resolveTargetChatIds(customer(event), CHAT_CONFIG)).toEqual(LIVE);
+        },
+      );
+
+      test.each(["subscription-activated", "pass-redeemed", "support-ticket", "vat-return-submitted"])(
+        "refuses %s from a test-user, probe, operator, system, synthetic or visitor",
+        (event) => {
+          for (const actor of ["test-user", "probe", "operator", "system", "synthetic", "visitor"]) {
+            expect(resolveTargetChatIds({ event, actor, flow: "user-journey" }, CHAT_CONFIG)).toEqual([]);
+          }
+        },
+      );
+
+      test("refuses a customer event outside the set", () => {
+        for (const event of [
+          "login",
+          "activity-started",
+          "vat-obligations-queried",
+          "consent-answered",
+          "bundle-granted",
+          "pass-generated",
+          "subscription-renewed",
+          "logout",
+          "session-resumed",
+          "hmrc-token-exchange-failed",
+        ]) {
+          expect(resolveTargetChatIds(customer(event), CHAT_CONFIG)).toEqual([]);
+        }
+      });
+
+      test("refuses an event with no actor", () => {
+        expect(resolveTargetChatIds({}, CHAT_CONFIG)).toEqual([]);
+      });
+
+      test("refuses a customer event whose requestId carries the test_ prefix", () => {
+        expect(resolveTargetChatIds(customer("pass-redeemed", { requestId: "test_abc-123" }), CHAT_CONFIG)).toEqual([]);
+      });
+
+      test("does not depend on the env field", () => {
+        const ci = customer("pass-redeemed", { env: "ci" });
+        const prod = customer("pass-redeemed", { env: "prod" });
+        expect(resolveTargetChatIds(ci, CHAT_CONFIG)).toEqual(resolveTargetChatIds(prod, CHAT_CONFIG));
+      });
+
+      test("returns empty when the live chat is not configured", () => {
+        expect(resolveTargetChatIds(customer("pass-redeemed"), { live: "", ops: "@diy_ci_ops" })).toEqual([]);
+      });
     });
 
-    test("routes a resumed session's token-refresh normally, since sessionKind is not continued", () => {
-      const detail = { event: "session-resumed", sessionKind: "resumed", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    describe("failure mark", () => {
+      test("sends any customer event with outcome failure to live", () => {
+        expect(resolveTargetChatIds(customer("vat-return-failed", { outcome: "failure", failure: "hmrc-rejected" }), CHAT_CONFIG)).toEqual(
+          LIVE,
+        );
+        expect(resolveTargetChatIds(customer("payment-failed", { outcome: "failure" }), CHAT_CONFIG)).toEqual(LIVE);
+      });
+
+      test("refuses a failure from a test-user, probe, operator or visitor", () => {
+        for (const actor of ["test-user", "probe", "operator", "visitor", "system"]) {
+          expect(
+            resolveTargetChatIds({ event: "vat-return-failed", actor, flow: "user-journey", outcome: "failure" }, CHAT_CONFIG),
+          ).toEqual([]);
+        }
+      });
+
+      test("refuses a customer event whose outcome is not failure", () => {
+        expect(resolveTargetChatIds(customer("vat-return-failed", { outcome: "success" }), CHAT_CONFIG)).toEqual([]);
+      });
+
+      test("refuses a failure whose requestId carries the test_ prefix", () => {
+        expect(resolveTargetChatIds(customer("vat-return-failed", { outcome: "failure", requestId: "test_x" }), CHAT_CONFIG)).toEqual([]);
+      });
     });
 
-    // A page load reaches the lake only: it fires on every visit and carries no signal of its own.
-    test("routes a new-session event to no chat, even for a customer", () => {
-      const detail = { event: "new-session", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    describe("ops chat", () => {
+      test("sends alarm state changes and cost alerts", () => {
+        expect(resolveTargetChatIds({ event: "alarm-state-change", actor: "system", flow: "operational" }, CHAT_CONFIG)).toEqual(OPS);
+        expect(resolveTargetChatIds({ event: "cost-alert", actor: "system", flow: "operational" }, CHAT_CONFIG)).toEqual(OPS);
+      });
+
+      test.each(["CREATE_FAILED", "UPDATE_FAILED", "DELETE_FAILED", "UPDATE_ROLLBACK_COMPLETE"])(
+        "sends a stack change with status %s",
+        (stackStatus) => {
+          expect(
+            resolveTargetChatIds({ event: "stack-status-change", stackStatus, actor: "ci-pipeline", flow: "infrastructure" }, CHAT_CONFIG),
+          ).toEqual(OPS);
+        },
+      );
+
+      test.each(["CREATE_COMPLETE", "UPDATE_COMPLETE", "DELETE_COMPLETE", "ROLLBACK_COMPLETE", "UPDATE_IN_PROGRESS", "UNKNOWN"])(
+        "refuses a stack change with status %s",
+        (stackStatus) => {
+          expect(
+            resolveTargetChatIds({ event: "stack-status-change", stackStatus, actor: "ci-pipeline", flow: "infrastructure" }, CHAT_CONFIG),
+          ).toEqual([]);
+        },
+      );
+
+      test("refuses other operational and infrastructure events", () => {
+        for (const event of ["capacity-reconciled", "scan-detected", "scan-404-detected", "deployment"]) {
+          expect(resolveTargetChatIds({ event, actor: "system", flow: "operational" }, CHAT_CONFIG)).toEqual([]);
+          expect(resolveTargetChatIds({ event, actor: "ci-pipeline", flow: "infrastructure" }, CHAT_CONFIG)).toEqual([]);
+        }
+      });
+
+      test("returns empty when the ops chat is not configured", () => {
+        expect(resolveTargetChatIds({ event: "alarm-state-change" }, { live: "@diy_ci_live", ops: "" })).toEqual([]);
+      });
     });
 
-    test("routes a new-session event to no chat, even with a test_ requestId", () => {
-      const detail = { event: "new-session", actor: "customer", flow: "user-journey", requestId: "test_abc-123" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
-    });
-
-    // The HMRC OAuth token exchange is an internal step inside a submission, not a signal.
-    test("routes an hmrc-token-exchanged event to no chat, even for a customer", () => {
-      const detail = { event: "hmrc-token-exchanged", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
-    });
-
-    test("routes an hmrc-token-exchanged event to no chat, even with a test_ requestId", () => {
-      const detail = { event: "hmrc-token-exchanged", actor: "test-user", flow: "user-journey", requestId: "test_abc-123" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
-    });
-
-    test("does not stop the token exchange's own failure event", () => {
-      const detail = { event: "hmrc-token-exchange-failed", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
-    });
-
-    // User journey routing
-    test("routes test-user events to test channel", () => {
-      const detail = { actor: "test-user", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    test("routes probe events to test channel", () => {
-      const detail = { actor: "probe", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    test("routes synthetic events to test channel, not live", () => {
-      const detail = { actor: "synthetic", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    test("routes customer events to live channel", () => {
-      const detail = { actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
-    });
-
-    test("routes visitor events to live channel", () => {
-      const detail = { actor: "visitor", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
-    });
-
-    // Infrastructure and operational → ops channel only
-    test("routes infrastructure events to ops channel", () => {
-      const detail = { actor: "ci-pipeline", flow: "infrastructure" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_ops"]);
-    });
-
-    test("routes operational events to ops channel", () => {
-      const detail = { actor: "system", flow: "operational" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_ops"]);
-    });
-
-    // ci-pipeline user-journey events → test channel
-    test("routes ci-pipeline user-journey events to test channel", () => {
-      const detail = { actor: "ci-pipeline", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    // Edge cases
-    test("returns empty when target channel is not configured", () => {
-      const detail = { actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, { test: "", live: "", ops: "" })).toEqual([]);
-    });
-
-    test("returns empty for empty detail", () => {
-      expect(resolveTargetChatIds({}, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    // Routing is environment-independent (env doesn't affect which channel)
-    test("routing does not depend on env field", () => {
-      const ciDetail = { env: "ci", actor: "customer", flow: "user-journey" };
-      const prodDetail = { env: "prod", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(ciDetail, CHAT_CONFIG)).toEqual(resolveTargetChatIds(prodDetail, CHAT_CONFIG));
-    });
-
-    // requestId prefix routing
-    test("test_ requestId routes to test channel even with actor: customer", () => {
-      const detail = { actor: "customer", flow: "user-journey", requestId: "test_abc-123" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    test("test_ requestId routes to test channel even with flow: operational", () => {
-      const detail = { actor: "system", flow: "operational", requestId: "test_abc-123" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
-    });
-
-    test("normal requestId does not override routing", () => {
-      const detail = { actor: "customer", flow: "user-journey", requestId: "normal-abc-123" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
-    });
-
-    test("missing requestId does not affect routing", () => {
-      const detail = { actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    test("resolveRoute names the chat for an allowed event and null otherwise", () => {
+      expect(resolveRoute({ event: "cost-alert" })).toBe("ops");
+      expect(resolveRoute(customer("support-ticket"))).toBe("live");
+      expect(resolveRoute(customer("login"))).toBeNull();
     });
   });
 
@@ -225,7 +251,6 @@ describe("activityTelegramForwarder", () => {
 
     beforeEach(() => {
       process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
-      process.env.TELEGRAM_TEST_CHAT_ID = "@diy_ci_test";
       process.env.TELEGRAM_LIVE_CHAT_ID = "@diy_ci_live";
       process.env.TELEGRAM_OPS_CHAT_ID = "@diy_ci_ops";
       process.env.ENVIRONMENT_NAME = "test";
@@ -243,7 +268,7 @@ describe("activityTelegramForwarder", () => {
     test("sends message to live channel for customer event", async () => {
       await handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -261,15 +286,15 @@ describe("activityTelegramForwarder", () => {
       expect(body.parse_mode).toBe("Markdown");
     });
 
-    test("sends to ops channel for infrastructure events", async () => {
+    test("sends to ops channel for a cost alert", async () => {
       await handler({
         detail: {
-          event: "deployment",
+          event: "cost-alert",
           site: "submit",
           env: "ci",
-          actor: "ci-pipeline",
-          flow: "infrastructure",
-          summary: "Deployed: ci-app-ApiStack",
+          actor: "system",
+          flow: "operational",
+          summary: "Budget: ci over 85%",
         },
       });
 
@@ -283,7 +308,7 @@ describe("activityTelegramForwarder", () => {
 
       await handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -300,40 +325,60 @@ describe("activityTelegramForwarder", () => {
 
       await handler({
         detail: {
-          event: "deployment",
+          event: "cost-alert",
           site: "submit",
           env: "ci",
-          actor: "ci-pipeline",
-          flow: "infrastructure",
-          summary: "Deployed",
+          actor: "system",
+          flow: "operational",
+          summary: "Budget",
         },
       });
 
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test("logs with [[TELEGRAM_TEST_CHAT]] prefix when test channel is empty", async () => {
-      process.env.TELEGRAM_TEST_CHAT_ID = "";
-
+    test("sends nothing for a test-user event", async () => {
       await handler({
-        detail: {
-          event: "login",
-          site: "submit",
-          env: "ci",
-          actor: "test-user",
-          flow: "user-journey",
-          summary: "Login",
-        },
+        detail: { event: "pass-redeemed", site: "submit", env: "ci", actor: "test-user", flow: "user-journey", summary: "Pass redeemed" },
       });
 
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test("routes unknown events to test channel", async () => {
+    test("sends nothing for an event outside the set", async () => {
+      await handler({ detail: { event: "login", actor: "customer", flow: "user-journey", summary: "Login" } });
       await handler({});
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("sends a customer failure published by publishActivityFailureEvent, read in its real shape", async () => {
+      const detail = await publishedDetail(() =>
+        publishActivityFailureEvent({
+          event: "vat-return-failed",
+          summary: "VAT return rejected by HMRC",
+          failure: "hmrc-rejected",
+          actor: "customer",
+          detail: { hmrcStatus: 400 },
+        }),
+      );
+      expect(detail.outcome).toBe("failure");
+
+      await handler({ "source": "diy.submit", "detail-type": "ActivityEvent", detail });
+
       expect(global.fetch).toHaveBeenCalledTimes(1);
-      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
-      expect(body.chat_id).toBe("@diy_ci_test");
+      expect(JSON.parse(global.fetch.mock.calls[0][1].body).chat_id).toBe("@diy_ci_live");
+    });
+
+    test("sends nothing for a failure published by a test-user or operator", async () => {
+      for (const actor of ["test-user", "operator"]) {
+        const detail = await publishedDetail(() =>
+          publishActivityFailureEvent({ event: "vat-return-failed", summary: "Rejected", failure: "hmrc-rejected", actor }),
+        );
+        await handler({ "source": "diy.submit", "detail-type": "ActivityEvent", detail });
+      }
+
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
     test("logs warning on Telegram API error but does not throw", async () => {
@@ -345,7 +390,7 @@ describe("activityTelegramForwarder", () => {
 
       await handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -371,7 +416,7 @@ describe("activityTelegramForwarder", () => {
 
       const handlerPromise = handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -408,7 +453,7 @@ describe("activityTelegramForwarder", () => {
 
       const handlerPromise = handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -435,7 +480,7 @@ describe("activityTelegramForwarder", () => {
 
       await handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -461,7 +506,7 @@ describe("activityTelegramForwarder", () => {
 
       const handlerPromise = handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -484,7 +529,7 @@ describe("activityTelegramForwarder", () => {
         "detail-type": "CloudFormation Stack Status Change",
         "detail": {
           "stack-id": "arn:aws:cloudformation:eu-west-2:367191799875:stack/ci-app-ApiStack/uuid-123",
-          "status-details": { status: "UPDATE_COMPLETE" },
+          "status-details": { status: "UPDATE_ROLLBACK_COMPLETE" },
         },
       });
 
@@ -492,7 +537,20 @@ describe("activityTelegramForwarder", () => {
       const body = JSON.parse(global.fetch.mock.calls[0][1].body);
       expect(body.chat_id).toBe("@diy_ci_ops");
       expect(body.text).toContain("ci-app-ApiStack");
-      expect(body.text).toContain("UPDATE\\_COMPLETE");
+      expect(body.text).toContain("UPDATE\\_ROLLBACK\\_COMPLETE");
+    });
+
+    test("sends nothing for a successful CloudFormation stack change", async () => {
+      await handler({
+        "source": "aws.cloudformation",
+        "detail-type": "CloudFormation Stack Status Change",
+        "detail": {
+          "stack-id": "arn:aws:cloudformation:eu-west-2:367191799875:stack/ci-app-ApiStack/uuid-123",
+          "status-details": { status: "UPDATE_COMPLETE" },
+        },
+      });
+
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
     test("handles CloudWatch Alarm State Change events", async () => {
@@ -550,7 +608,7 @@ describe("activityTelegramForwarder", () => {
 
       await handler({
         detail: {
-          event: "login",
+          event: "pass-redeemed",
           site: "submit",
           env: "prod",
           actor: "customer",
@@ -577,6 +635,7 @@ describe("activityTelegramForwarder", () => {
       expect(detail.env).toBe("ci");
       expect(detail.actor).toBe("ci-pipeline");
       expect(detail.flow).toBe("infrastructure");
+      expect(detail.stackStatus).toBe("UPDATE_COMPLETE");
       expect(detail.site).toBe("submit");
     });
 
