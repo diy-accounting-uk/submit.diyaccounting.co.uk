@@ -136,8 +136,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 140);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 66);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 142);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 67);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -185,8 +185,25 @@ class SubmitEnvironmentCdkResourceTest {
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
         // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm and
-        // IntegrationCallRecordFailedAlarm and CustomerEmailFailureAlarm, that's 12 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 12);
+        // IntegrationCallRecordFailedAlarm and CustomerEmailFailureAlarm, that's 12 alarms, and
+        // the trusted event function's two checks make 14 (its composite is the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 14);
+        observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
+        observability.resourceCountIs("AWS::Lambda::Function", 3);
+        observability.resourceCountIs("AWS::IAM::Role", 9);
+        // Only prod opens issues for Health and ACM events, so this environment has the function
+        // and no rule for it: the six rules are the security rules.
+        observability.resourceCountIs("AWS::Events::Rule", 6);
+        assertEquals(
+                0,
+                observability
+                        .findResources(
+                                "AWS::Events::Rule", Map.of("Properties", Map.of("Name", "test-env-trusted-events")))
+                        .size());
+        observability.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName", "test-env-trusted-event-to-github-issue", "ReservedConcurrentExecutions", 1)));
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

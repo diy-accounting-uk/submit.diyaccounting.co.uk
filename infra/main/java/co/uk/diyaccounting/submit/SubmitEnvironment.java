@@ -271,6 +271,10 @@ public class SubmitEnvironment {
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .apexDomain(sharedNames.envDomainName)
                         .securityServicesEnabled(securityServicesEnabled)
+                        .baseImageTag(baseImageTag)
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
+                        .trustedEventRulesEnabled("prod".equals(envName))
                         .build());
 
         // Create SecurityDetectionStack with scan- and data-theft-detection alarms built on the
@@ -331,6 +335,7 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .baseImageTag(baseImageTag)
+                        .trustedEventRulesEnabled("prod".equals(envName))
                         .build());
 
         // Create DataStack with shared persistence for all deployments

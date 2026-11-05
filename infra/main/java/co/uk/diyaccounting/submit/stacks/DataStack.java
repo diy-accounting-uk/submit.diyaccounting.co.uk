@@ -108,6 +108,7 @@ public class DataStack extends Stack {
     public ITable commissionsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
+    public ITable trustedEventLedgerTable;
     public ITable mcpSessionsTable;
     public ITable integrationCallsTable;
     public Key saltEncryptionKey;
@@ -1209,6 +1210,25 @@ public class DataStack extends Stack {
                 "ttl");
         infof("Ensured alarm-issue lock DynamoDB table with name %s", props.sharedNames().data.alarmIssueLockTableName);
 
+        // Trusted event ledger: two items per fact, "<key>" (the open issue number and last
+        // version) and "<key>#<version>" (the fact hash), written by trustedEventToGithubIssue.js
+        // and read back by its source check. Items expire 400 days after the write. PK-only; the
+        // items hold AWS and Companies House facts and no customer data.
+        this.trustedEventLedgerTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-TrustedEventLedgerTable",
+                props.sharedNames().data.trustedEventLedgerTableName,
+                "dedupeKey",
+                null);
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-TrustedEventLedgerTTL",
+                props.sharedNames().data.trustedEventLedgerTableName,
+                "ttl");
+        infof(
+                "Ensured trusted event ledger DynamoDB table with name %s",
+                props.sharedNames().data.trustedEventLedgerTableName);
+
         // Hosted MCP sessions: one item per Mcp-Session-Id holding the owner's hashedSub and the
         // open cloud book pointer. PK-only; items expire 24 hours after their last write.
         this.mcpSessionsTable = ensureTable(
@@ -1703,6 +1723,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
         cfnOutput(this, "AlarmIssueLockTableName", this.alarmIssueLockTable.getTableName());
         cfnOutput(this, "AlarmIssueLockTableArn", this.alarmIssueLockTable.getTableArn());
+        cfnOutput(this, "TrustedEventLedgerTableName", this.trustedEventLedgerTable.getTableName());
+        cfnOutput(this, "TrustedEventLedgerTableArn", this.trustedEventLedgerTable.getTableArn());
         cfnOutput(this, "McpSessionsTableName", this.mcpSessionsTable.getTableName());
         cfnOutput(this, "McpSessionsTableArn", this.mcpSessionsTable.getTableArn());
         cfnOutput(this, "IntegrationCallsTableName", this.integrationCallsTable.getTableName());

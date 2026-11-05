@@ -204,7 +204,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3: use when a fast iteration deploy of app or web code is needed, without a full CDK deploy.
     - [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand: use when only one CDK stack needs deploying, without running the full pipeline.
     - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets: use when environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
-    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
     - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager: use when reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
     - [OPS-181](#ops-181-prove-the-customer-email-path-on-ci) Prove the customer email path on ci: use when the EmailStack or the customer email worker has deployed to ci and the path from the activity bus to a delivered message needs a check.
     - [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender: use when the SES identity, the DNS records for mail, the customer email queue or its workers need a change.
@@ -2519,7 +2519,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-156 Build an environment image and deploy one environment stack
 
-- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
 - **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
 - **Run:** no command; deploy-environment.yml calls it (see OPS-09)
 - **Entry:** `.github/workflows/deploy-env-image-stack.yml`
@@ -4084,12 +4084,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-117 Provision the Observability stack
 
 - **Use when:** an account's CloudTrail, GuardDuty, Security Hub, security SNS topic or shared dashboards need synthesizing.
-- **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to.
+- **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to. It also builds the trusted event function (`trustedEventToGithubIssue.js`) with its role and health alarm, and in prod the rule that sends AWS Health and ACM notices to it.
 - **Run:** `npm run cdk:synth-environment`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ObservabilityStackTest.java, infra/test/java/co/uk/diyaccounting/submit/MetricFilterLogGroupCdkResourceTest.java
-- **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards
-- **Related:** OPS-118, OPS-121, OPS-122
+- **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards, trusted event rule
+- **Related:** OPS-118, OPS-121, OPS-122, OPS-185
 
 #### OPS-118 Provision the Observability stack in us-east-1
 
@@ -9168,6 +9168,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - triage workflow: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - triage-generated pr: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - trusted event: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
+- trusted event rule: [OPS-117](#ops-117-provision-the-observability-stack)
 - ttl: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - ttl backfill: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - ttl policy: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)

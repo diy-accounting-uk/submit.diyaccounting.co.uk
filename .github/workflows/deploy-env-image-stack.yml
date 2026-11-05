@@ -2,7 +2,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # @capability OPS-156 Build an environment image and deploy one environment stack
-# - **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+# - **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
 # - **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
 # - **Run:** no command; deploy-environment.yml calls it (see OPS-09)
 # - **Entry:** `.github/workflows/deploy-env-image-stack.yml`

@@ -98,6 +98,11 @@ on:
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
       - 'app/functions/ops/activityTelegramForwarder.js'
+      # Trusted event Lambda source
+      - 'app/functions/ops/trustedEventToGithubIssue.js'
+      - 'app/lib/trustedEvents/**'
+      - 'app/lib/githubIssueApi.js'
+      - 'app/data/dynamoDbTrustedEventLedgerRepository.js'
       # Customer email Lambda source
       - 'app/functions/email/**'
       - 'app/lib/customerEmail*.js'
@@ -237,19 +242,16 @@ jobs:
     needs:
       - names
       - create-secrets
-    uses: ./.github/workflows/deploy-cdk-stack.yml
+      - deploy-ecr
     permissions:
-      contents: read
-      packages: read
       id-token: write
-      pages: write
-      pull-requests: read
+      contents: read
+    uses: ./.github/workflows/deploy-env-image-stack.yml
+    secrets: inherit
     with:
-      stackName: ${{ needs.names.outputs.environment-name }}-env-ObservabilityStack
-      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.environment-name }}
-      cdk-application: 'environment'
+      image-name: observability
+      stack-name: ${{ needs.names.outputs.environment-name }}-env-ObservabilityStack
 
   deploy-security-detection:
     name: 'deploy security detection'
