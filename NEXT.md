@@ -78,6 +78,10 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Human-driven
 
+- [ ] **OKEY14. Delete the old HMRC sandbox client secret.** Prod and ci now use the new secret. Delete the old one in the HMRC Developer Hub, under the sandbox application's client secrets. **Source**: KEY14. **Owner**: operator.
+
+- [ ] **OEML14. Say how to handle the Atlassian, Dropbox, JetBrains and TikTok mail.** The operator does not want this mail. No unsubscribe has been done, and the JetBrains mail has no Gmail unsubscribe link. Choose to unsubscribe at each sender, or say yes to a Gmail filter. **Source**: `../private.diyaccounting.co.uk/operator/EMAIL_DESTINATIONS_2026-11-05.md`. **Owner**: operator.
+
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
 - [ ] **OFB1. Send the feedback-volunteers email.** Read the draft `../private.diyaccounting.co.uk/support/EMAIL_FEEDBACK_VOLUNTEERS_2026-11-03.md`, edit it, and send it from antony@diyaccounting.co.uk with the volunteers in Bcc (`FEEDBACK_VOLUNTEERS_2026-11-03.md` beside it). The 2026-11-01 volunteer's address is masked in the lake and is in the interest Lambda's log for 13:22:32 UTC. **Source**: operator, 2026-11-03. **Owner**: Operator. **Model**: none.
