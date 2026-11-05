@@ -466,8 +466,10 @@ export async function main() {
 
     await waitForNextTotpPeriod();
 
-    console.log("");
+    writeGithubOutputCredentials(testEmail, testPassword, totpSecret);
     console.log("=== Test User Ready (with TOTP MFA) ===");
+    if (process.env.GITHUB_OUTPUT) return;
+
     console.log("");
     console.log("Use these environment variables for behavior tests:");
     console.log("");
@@ -476,10 +478,7 @@ export async function main() {
     console.log(`export TEST_AUTH_TOTP_SECRET='${totpSecret}'`);
     console.log("");
 
-    // Output for GitHub Actions
-    writeGithubOutputCredentials(testEmail, testPassword, totpSecret);
-
-    // Also output as simple key=value format for easy sourcing
+    // enable-cognito-native-test.js reads these lines from stdout
     console.log(`TEST_AUTH_USERNAME=${testEmail}`);
     console.log(`TEST_AUTH_PASSWORD=${testPassword}`);
     console.log(`TOTP_SECRET=${totpSecret}`);
