@@ -156,7 +156,6 @@ Vendors with no event or API stay in the notice lane. HMRC bulletins are an exam
 
 ## Order of the work
 
-- The support@ mailbox has an auto-reply that is on today, and it already answers GitHub mail. Vendor mail that reaches support@ would start a flood of auto-replies. Row EML3 stops this first.
 - The company book reads supplier invoices from `mail-antony` only, in `mcp/lib/finance/mail-invoices.js`. Invoices that move at the vendor leave that mailbox. Row EML8 adds `mail-support` before S1, S5, S6 or S7 change.
 - Without the lanes, the intake skips some vendor mail and opens customer issues for the rest. Row EML4 goes live before the first sender changes.
 
@@ -166,7 +165,7 @@ Vendors with no event or API stay in the notice lane. HMRC bulletins are an exam
 | 2 | EML5 | The reader handles notices |
 | 3 | EML6 | The handler and the digest run |
 | 4 | EML8 | The book reads both mailboxes |
-| 5 | EML3 | The auto-reply stops for machine senders, and the unsubscribes are done |
+| 5 | EML3 | The unsubscribes are done |
 | 6 | EML10 | The root budgets address changes (S3), and DMARC starts at `p=none` |
 | 7 | EML11 | The sender changes S1 to S15, finance first, each stage for one week |
 
@@ -176,7 +175,7 @@ To undo a change, set the vendor's destination back to antony@.
 
 ## Proposed board rows
 
-- [ ] **EML3. Stop the support@ auto-reply for machine senders, and unsubscribe from marketing.** The Gmail auto-reply on support@ answers GitHub and Google addresses. Turn it off, or limit it to people, before any sender changes its destination. Unsubscribe from the senders that the private table marks. Use Claude in Chrome with the operator's yes for each action. **Source**: EML1. **Owner**: operator with Claude Code. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **EML3. Unsubscribe from marketing.** Unsubscribe from the senders that the private table marks. Use Claude in Chrome with the operator's yes for each action. **Source**: EML1. **Owner**: operator with Claude Code. **Model**: Sonnet. **Size**: 0 files.
 - [ ] **EML4. Add mail lanes to the intake.** Add the sender registry. Change `scripts/support-mail-intake.mjs` so that `buildSearchQuery` and `isCustomerSender` no longer drop automated senders, and each thread gets a lane from the registry and the `Authentication-Results` header. Print one count for each lane. Add a dry-run proof over the live mailbox. Read the header of a real vendor message before the DKIM check goes live. Create the `mail-notice` label through `scripts/support-label-sweep.mjs`. **Depends on**: nothing. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 - [ ] **EML5. Read notices in quarantine.** Add the `mail` schema to `app/lib/quarantineReaderSchema.js`, a `prompts/mail-reader.md`, and notice selection in `scripts/support-reader-select.mjs`. Add synthetic fixtures with injected instructions to `support-replay.yml`. **Depends on**: EML4. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 - [ ] **EML6. Handle acknowledged notices, and send the digest.** After `maintainer-review-gate.mjs` says `approved`, do one action from the fixed list: close, draft a board row, or run a registered read-only check. Send the daily digest to antony@ through the EML2 sender. **Depends on**: EML5, and EML2 for the digest. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
