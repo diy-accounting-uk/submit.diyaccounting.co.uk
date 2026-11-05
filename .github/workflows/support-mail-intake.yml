@@ -75,6 +75,7 @@ jobs:
             const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
             const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
             console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+            console.log("project=" + c.project.id);
           ' >> "$GITHUB_OUTPUT"
 
       # No service_account input: direct federation. The federated principal is this workflow file
@@ -83,6 +84,9 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          # The project id stops the Google auth library from a Resource Manager read that the
+          # federated principal has no permission for.
+          project_id: ${{ steps.google-identity.outputs.project }}
 
       - name: Open an issue for each new customer thread
         env:
@@ -146,6 +150,7 @@ jobs:
             const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
             const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
             console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+            console.log("project=" + c.project.id);
           ' >> "$GITHUB_OUTPUT"
 
       # No service_account input: direct federation. The federated principal is this workflow file
@@ -154,6 +159,9 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          # The project id stops the Google auth library from a Resource Manager read that the
+          # federated principal has no permission for.
+          project_id: ${{ steps.google-identity.outputs.project }}
 
       - name: Class each old draft and measure the acceptance rate
         id: acceptance
