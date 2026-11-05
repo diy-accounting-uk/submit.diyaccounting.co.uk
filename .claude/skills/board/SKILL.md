@@ -305,6 +305,13 @@ the end) gets a note in `Action`: rename before its next push.
   docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; a render
   reads the plans and never edits them.
 
+## Then `/unblock`
+
+Every render runs `/unblock` after the write-back is pushed, and before `/compact-ready`. It tests
+the blocked, machine-ask and human-driven rows against evidence, moves the stale ones, asks the
+operator's open decisions and prints the commands that move a row. Its corrections land in a second
+`NEXT.md` commit. The render's rule against changing GitHub state holds through it.
+
 ## Then `/compact-ready`
 
 Every render ends with `/compact-ready`, after the write-back is pushed. A board render is a
