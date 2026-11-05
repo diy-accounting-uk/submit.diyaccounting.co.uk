@@ -38,10 +38,10 @@ describe("consoleCaptureCatalogue", () => {
     expect(() => targetsForRun("test")).toThrow(/prod and ci only/);
   });
 
-  test("a submit target has 7 analytics, 4 operations metric searches, the RUM pair, alarms, Bedrock and X-Ray", () => {
+  test("a submit target has 7 analytics, 5 operations metric searches, the RUM pair, alarms, Bedrock and X-Ray", () => {
     const items = itemsForTarget("prod");
     expect(items.filter((item) => item.group === "analytics")).toHaveLength(7);
-    expect(items.filter((item) => item.kind === "metric-search")).toHaveLength(11);
+    expect(items.filter((item) => item.kind === "metric-search")).toHaveLength(12);
     expect(items.filter((item) => item.kind === "rum")).toHaveLength(2);
     expect(items.map((item) => item.kind)).toEqual(expect.arrayContaining(["alarms", "bedrock", "service-graph"]));
     expect(items.every((item) => item.id.startsWith("prod-"))).toBe(true);
@@ -60,6 +60,22 @@ describe("consoleCaptureCatalogue", () => {
     const expression = widget.metrics[0][0].expression;
     expect(expression).toBe("SORT(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Errors\" prod-env', 'Sum', 3600), SUM, DESC, 10)");
     expect(widget.region).toBe("eu-west-2");
+  });
+
+  test("the Lambda duration graphs split by rank: the slowest 6, then the next 10", () => {
+    const items = itemsForTarget("prod");
+    const search = "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Duration\" prod-env', 'Average', 3600)";
+    const slowest = buildMetricWidget(
+      items.find((entry) => entry.slug === "lambda-duration-slowest"),
+      "eu-west-2",
+    );
+    const rest = buildMetricWidget(
+      items.find((entry) => entry.slug === "lambda-duration-rest"),
+      "eu-west-2",
+    );
+    expect(slowest.metrics[0][0].expression).toBe("SORT(" + search + ", MAX, DESC, 6)");
+    expect(rest.metrics[0][0].expression).toBe("SLICE(SORT(" + search + ", MAX, DESC), 6, 16)");
+    expect(items.some((entry) => entry.slug === "lambda-duration")).toBe(false);
   });
 
   test("a RUM widget names its application dimension", () => {

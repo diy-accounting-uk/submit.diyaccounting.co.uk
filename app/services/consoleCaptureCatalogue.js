@@ -24,15 +24,20 @@ const WIDGET_WIDTH = 800;
 const WIDGET_HEIGHT = 400;
 const SEARCH_SERIES_LIMIT = 10;
 const ANALYTICS_SERIES_LIMIT = 20;
+// The functions that peak far above the rest (tens of seconds against under ten) share one graph.
+const SLOWEST_FUNCTIONS = 6;
 
 // SEARCH answers an empty graph above 100 series, so each search is wrapped in a SORT that keeps
-// the largest few.
-function searchExpression({ query, stat, period, sortBy, limit }) {
-  return "SORT(SEARCH('" + query + "', '" + stat + "', " + period + "), " + sortBy + ", DESC, " + limit + ")";
+// the largest few. A search with `skip` set keeps the series ranked after the first `skip`: metric
+// math cannot compare a whole series with a number, so a band of series is a band of ranks.
+function searchExpression({ query, stat, period, sortBy, limit, skip }) {
+  const search = "SEARCH('" + query + "', '" + stat + "', " + period + ")";
+  if (skip > 0) return "SLICE(SORT(" + search + ", " + sortBy + ", DESC), " + skip + ", " + (skip + limit) + ")";
+  return "SORT(" + search + ", " + sortBy + ", DESC, " + limit + ")";
 }
 
-function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM", limit = SEARCH_SERIES_LIMIT }) {
-  return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit };
+function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM", limit = SEARCH_SERIES_LIMIT, skip = 0 }) {
+  return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit, skip };
 }
 
 function analyticsItems(envName) {
@@ -117,13 +122,24 @@ function operationsItems(envName) {
       start: "-P3D",
     }),
     metricSearch({
-      slug: "lambda-duration",
-      title: "Lambda duration by function",
+      slug: "lambda-duration-slowest",
+      title: "Lambda duration by function, the " + SLOWEST_FUNCTIONS + " slowest by peak",
       query: '{AWS/Lambda,FunctionName} MetricName="Duration" ' + functionTerm,
       stat: "Average",
       period: 3600,
       start: "-P3D",
       sortBy: "MAX",
+      limit: SLOWEST_FUNCTIONS,
+    }),
+    metricSearch({
+      slug: "lambda-duration-rest",
+      title: "Lambda duration by function, the next " + SEARCH_SERIES_LIMIT + " by peak",
+      query: '{AWS/Lambda,FunctionName} MetricName="Duration" ' + functionTerm,
+      stat: "Average",
+      period: 3600,
+      start: "-P3D",
+      sortBy: "MAX",
+      skip: SLOWEST_FUNCTIONS,
     }),
     metricSearch({
       slug: "bundle-allocations",
