@@ -19,8 +19,8 @@ import {
   REVOKE_ENDPOINT,
 } from "../../../scripts/google-reconsent.js";
 
-const OLD_TOKEN = "1//old-refresh-token-value-aaaaaaaa";
-const NEW_TOKEN = "1//new-refresh-token-value-bbbbbbbb";
+const OLD_TOKEN = "1//old-refresh-token-aaaa";
+const NEW_TOKEN = "1//new-refresh-token-bbbb";
 const CODE = "4/authorization-code-value-cccccccc";
 const CLIENT_SECRET = "GOCSPX-client-secret-value-dddd";
 const CLIENT_RAW = JSON.stringify({ installed: { client_id: "cid.apps.googleusercontent.com", client_secret: CLIENT_SECRET } });

@@ -39,6 +39,9 @@ antony.cartwright@westfieldhealth.com
 # not a customer's identity.
 ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com
 
+# The company's own Gmail read service account, named in a command of the key-rotation skill.
+support-gmail-read@diyaccounting-ga4.iam.gserviceaccount.com
+
 # Stripe's own published API-documentation contact address (reference/stripe-api-*).
 dev-platform@stripe.com
 
