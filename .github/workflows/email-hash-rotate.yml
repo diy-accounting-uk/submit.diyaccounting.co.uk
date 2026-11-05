@@ -69,6 +69,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ matrix.environment }}
         run: |
+          set -o pipefail
           if [ "${{ inputs.apply }}" = "true" ]; then
             node scripts/email-hash-rotate.js --apply 2>&1 | tee email-hash-rotate.log
           else

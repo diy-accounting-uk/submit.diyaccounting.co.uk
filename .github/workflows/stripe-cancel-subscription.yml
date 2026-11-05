@@ -97,6 +97,7 @@ jobs:
           STRIPE_SECRET_KEY: ${{ steps.resolve.outputs.stripe-key }}
           SUBSCRIPTIONS_DYNAMODB_TABLE_NAME: ${{ steps.resolve.outputs.subscriptions-table }}
         run: |
+          set -o pipefail
           MODE_FLAG=""
           if [ "${{ inputs.mode }}" = "immediate" ]; then
             MODE_FLAG="--immediate"

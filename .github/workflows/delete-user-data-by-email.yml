@@ -122,6 +122,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
+          set -o pipefail
           node scripts/delete-user-data.js \
             "${{ inputs.environment-name }}" \
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
@@ -132,6 +133,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
+          set -o pipefail
           node scripts/delete-user-data.js \
             "${{ inputs.environment-name }}" \
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \

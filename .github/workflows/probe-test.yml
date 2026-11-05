@@ -502,6 +502,7 @@ jobs:
         id: google-identity
         if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
         run: |
+          set -o pipefail
           node -e '
             const TOML = require("@iarna/toml");
             const fs = require("node:fs");
