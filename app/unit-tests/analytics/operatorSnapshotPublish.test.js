@@ -349,12 +349,22 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END", aggregation: "latest-total" }],
       });
       expect(sql).toContain(
-        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -30, current_date))) AS o0_last_30",
+        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = o0_last_30_newest_day) AS o0_last_30",
       );
+      expect(sql).toContain("max(CASE WHEN dt > date_add('day', -30, current_date) THEN dt END) OVER () AS o0_last_30_newest_day");
       expect(sql).toContain(
-        "FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date))) AS o0_prev_90",
+        "max(CASE WHEN dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date) THEN dt END) OVER () AS o0_prev_90_newest_day",
       );
-      expect(sql).toMatch(/FILTER \(WHERE dt = \(SELECT max\(dt\) FROM security_hub_findings WHERE dt <= [^)]*\)\)\) AS o0_today/);
+      expect(sql).toMatch(/max\(CASE WHEN dt <= [^)]*\) THEN dt END\) OVER \(\) AS o0_today_newest_day/);
+    });
+
+    test("latest-total reads the view once however many windows it answers", () => {
+      const sql = buildWindowedBatchSql({
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "1", aggregation: "latest-total" }],
+      });
+      expect(sql.match(/security_hub_findings/g)).toHaveLength(1);
     });
 
     test("latest-total applies an observation's where to both the newest-day lookup and the rows", () => {
@@ -363,8 +373,9 @@ describe("operatorSnapshotPublish", () => {
         dayColumn: "day",
         observations: [{ valueExpr: "open_findings", aggregation: "latest-total", where: "area = 'accessibility'" }],
       });
+      expect(sql).toContain("sum(open_findings) FILTER (WHERE day = o0_last_7_newest_day AND (area = 'accessibility')) AS o0_last_7");
       expect(sql).toContain(
-        "sum(open_findings) FILTER (WHERE day = (SELECT max(day) FROM v_compliance_status WHERE day > date_add('day', -7, current_date) AND (area = 'accessibility')) AND (area = 'accessibility')) AS o0_last_7",
+        "max(CASE WHEN day > date_add('day', -7, current_date) AND (area = 'accessibility') THEN day END) OVER () AS o0_last_7_newest_day",
       );
     });
 
@@ -1712,7 +1723,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   company_accounts",
       ];
       for (const fragment of expectedFragments) {
-        expect(sqlStatements.some((sql) => sql.includes(fragment))).toBe(true);
+        expect(sqlStatements.some((sql) => sql.replace(/FROM\s+/g, "FROM   ").includes(fragment))).toBe(true);
       }
       expect(sqlStatements.some((sql) => sql.includes("severity_label = 'CRITICAL'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
