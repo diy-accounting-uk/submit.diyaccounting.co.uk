@@ -26,6 +26,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
+    - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -602,7 +603,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -643,6 +644,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
+- [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -684,6 +686,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/accountSettingsPut.js, app/lib/accountSettings.js, app/data/dynamoDbBundleRepository.js, app/functions/account/bundleGet.js, web/public/settings.html, web/public/settings.page.js, web/public/lib/services/viewer-settings.js, app/unit-tests/functions/accountSettings.test.js, app/unit-tests/lib/accountSettings.test.js, web/browser-tests/settings.browser.test.js
 - **Keywords:** account settings, settings page, pass generation, preview features, operator features, settings cog, viewer settings
 - **Related:** SITE-05
+
+#### SITE-27 Email the customer after a key event
+
+- **Use when:** a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
+- **Does:** requestCustomerEmail puts one CustomerEmailRequest on the activity bus and never throws. The customerEmailSend worker renders the message and sends it through SES. The customerEmailEvent function records bounces and complaints.
+- **Run:** `import { requestCustomerEmail } from "app/lib/customerEmailRequest.js"`
+- **Entry:** `app/lib/customerEmailRequest.js:requestCustomerEmail`; `app/functions/email/customerEmailSend.js:handler`; `app/functions/email/customerEmailEvent.js:handler`
+- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js
+- **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
+- **Related:** DATA-01
 
 ### Server and API plumbing (SITE)
 
@@ -6811,6 +6823,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - books api: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- bounce: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - box 5: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - brackets: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -7048,6 +7061,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - competitor analysis: [SITE-20](#site-20-document-business-governance-and-positioning)
+- complaint: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - compliance accessibility: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - compliance check: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - compliance dashboard: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
@@ -7168,6 +7182,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
+- customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - customer paid no bundle: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
@@ -8203,6 +8218,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-56](#bill-56-delete-generated-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -8416,6 +8432,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - receipt: [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
+- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -8685,6 +8702,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
+- ses: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
 - session funnel: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - session report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-37](#dev-37-write-the-session-report)
@@ -8853,6 +8871,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subscription bundle: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - subscription cancellations: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - subscription deleted: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
+- subscription email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - subscription filter: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - subscription payment: [BILL-24](#bill-24-create-a-stripe-checkout-session)
 - subscription renewals: [DATA-28](#data-28-sql-views-revenue-and-subscription)
@@ -8970,6 +8989,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction engine: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - transaction lifecycle: [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- transactional email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - transfer: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
