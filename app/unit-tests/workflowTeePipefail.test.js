@@ -38,6 +38,25 @@ function unsafePipes(workflow, job, step) {
   return unsafe;
 }
 
+// A container job runs a step with no shell under sh, and sh refuses "set -o pipefail".
+function setsPipefailUnderSh(workflow, job, step) {
+  if (!job.container || !step.run || runsUnderBash(workflow, job, step)) return false;
+  return step.run.split("\n").some((line) => pipefailLine.test(line));
+}
+
+function findPipefailUnderSh() {
+  const found = [];
+  for (const file of readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/.test(name))) {
+    const workflow = load(readFileSync(`${workflowDirectory}/${file}`, "utf8"));
+    for (const job of Object.values(workflow.jobs ?? {})) {
+      for (const step of job.steps ?? []) {
+        if (setsPipefailUnderSh(workflow, job, step)) found.push(`${file}::${step.name ?? step.id ?? "(unnamed)"}`);
+      }
+    }
+  }
+  return found;
+}
+
 function findUnsafeSteps() {
   const found = [];
   for (const file of readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/.test(name))) {
@@ -55,6 +74,17 @@ function findUnsafeSteps() {
 describe("workflow steps that pipe into tee", () => {
   it("fail the step when the piped command fails", () => {
     expect(findUnsafeSteps()).toEqual([]);
+  });
+
+  it("set pipefail in a container job only through a bash shell", () => {
+    expect(findPipefailUnderSh()).toEqual([]);
+  });
+
+  it("recognises pipefail under sh in a container job", () => {
+    const step = { run: "set -o pipefail\nnode a.js | tee out.txt" };
+    expect(setsPipefailUnderSh({}, { container: { image: "x" } }, step)).toBe(true);
+    expect(setsPipefailUnderSh({}, { container: { image: "x" } }, { ...step, shell: "bash" })).toBe(false);
+    expect(setsPipefailUnderSh({}, {}, step)).toBe(false);
   });
 
   it("recognises an unsafe block", () => {
