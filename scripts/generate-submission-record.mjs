@@ -5,10 +5,11 @@
 // - app/lib/submissionRecordStyle.js: the record section of web/public/submission-record.css
 //   with the .submission-record scope removed, one rule per line, for the iXBRL builders to
 //   place inline in each filed document;
-// - web/public/lib/submission-record.js: app/lib/submissionRecord.js for the browser.
+// - web/public/lib/submission-record.js: app/lib/submissionRecord.js for the browser;
+// - web/public/lib/pass-media.js: app/lib/passMedia.js for the browser.
 //
 // Usage: node scripts/generate-submission-record.mjs [--check]
-// --check writes nothing and exits 1 when either file is not current.
+// --check writes nothing and exits 1 when a file is not current.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -24,6 +25,8 @@ export const STYLESHEET = "web/public/submission-record.css";
 export const HELPER = "app/lib/submissionRecord.js";
 export const STYLE_MODULE = "app/lib/submissionRecordStyle.js";
 export const BROWSER_HELPER = "web/public/lib/submission-record.js";
+export const PASS_MEDIA = "app/lib/passMedia.js";
+export const BROWSER_PASS_MEDIA = "web/public/lib/pass-media.js";
 
 function unscopedSelector(selector) {
   if (selector === SCOPE) return "body";
@@ -74,19 +77,20 @@ function withoutCapabilityHeaders(source) {
  */
 export function generatedFiles(root = ROOT) {
   const recordStyle = recordStyleFromStylesheet(readFileSync(join(root, STYLESHEET), "utf8"));
-  const helperSource = readFileSync(join(root, HELPER), "utf8");
-  if (!helperSource.startsWith(LICENCE)) throw new Error(`${HELPER} does not start with the licence header`);
   const generatedNote = (source) =>
     `// Generated from ${source} by scripts/generate-submission-record.mjs. Edit the source and run\n// npm run generate:submission-record.\n`;
+  const browserCopy = (source, path) => {
+    const sourceText = readFileSync(join(root, source), "utf8");
+    if (!sourceText.startsWith(LICENCE)) throw new Error(`${source} does not start with the licence header`);
+    return { path, contents: `${LICENCE}\n${generatedNote(source)}${withoutCapabilityHeaders(sourceText.slice(LICENCE.length))}` };
+  };
   return [
     {
       path: STYLE_MODULE,
       contents: `${LICENCE}\n${generatedNote(STYLESHEET)}\n// The record layer of the submission record house style, for a document that can link to no\n// stylesheet.\nexport const RECORD_STYLE = \`${recordStyle}\`;\n`,
     },
-    {
-      path: BROWSER_HELPER,
-      contents: `${LICENCE}\n${generatedNote(HELPER)}${withoutCapabilityHeaders(helperSource.slice(LICENCE.length))}`,
-    },
+    browserCopy(HELPER, BROWSER_HELPER),
+    browserCopy(PASS_MEDIA, BROWSER_PASS_MEDIA),
   ];
 }
 

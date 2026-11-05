@@ -4,7 +4,7 @@
 // app/unit-tests/lib/customerEmailTemplates.test.js
 
 import { describe, test, expect } from "vitest";
-import { renderEmail, buildCustomerEmail, buildOperatorCopy } from "@app/lib/customerEmailTemplates.js";
+import { renderEmail, buildCustomerEmail, buildOperatorCopy, buildPassAttachments } from "@app/lib/customerEmailTemplates.js";
 
 const catalog = { bundles: [{ id: "day-guest", name: "Day pass" }] };
 const baseUrl = "https://submit.example.test/";
@@ -106,8 +106,47 @@ describe("lib/customerEmailTemplates", () => {
 
   test("pass-generated asks for a QR code and builds the pass link", () => {
     const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "ab-cd", bundleId: "day-guest", maxUses: 1 }, baseUrl, catalog });
-    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/bundles.html?pass=ab-cd" });
+    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/bundles.html?pass=ab-cd", physical: false });
     expect(m.html).toContain("cid:pass-qr");
+  });
+
+  test("a physical pass asks for the media to print", () => {
+    const m = buildCustomerEmail({
+      kind: "pass-generated",
+      data: { code: "ab-cd", passTypeId: "physical-pass", bundleId: "day-guest" },
+      baseUrl,
+      catalog,
+    });
+    expect(m.passQr.physical).toBe(true);
+  });
+
+  test("a digital pass has the inline QR code as its only attachment", async () => {
+    const attachments = await buildPassAttachments({
+      code: "ab-cd",
+      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      physical: false,
+    });
+    expect(attachments.map((a) => a.FileName)).toEqual(["pass-ab-cd-qr.png"]);
+    expect(attachments[0]).toMatchObject({ ContentDisposition: "INLINE", ContentId: "pass-qr", ContentType: "image/png" });
+  });
+
+  test("a physical pass adds the front and back faces with the file names the generate page downloads", async () => {
+    const attachments = await buildPassAttachments({
+      code: "ab-cd",
+      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      physical: true,
+    });
+    expect(attachments.map((a) => [a.FileName, a.ContentType, a.ContentDisposition])).toEqual([
+      ["pass-ab-cd-qr.png", "image/png", "INLINE"],
+      ["pass-ab-cd-front.svg", "image/svg+xml", "ATTACHMENT"],
+      ["pass-ab-cd-back.svg", "image/svg+xml", "ATTACHMENT"],
+      ["pass-ab-cd-back.png", "image/png", "ATTACHMENT"],
+    ]);
+    const front = attachments[1].RawContent.toString("utf8");
+    expect(front).toContain(">ab<");
+    expect(front).toContain(">cd<");
+    expect(attachments[2].RawContent.toString("utf8")).toContain("ab-cd</text>");
+    expect(attachments[3].RawContent.subarray(1, 4).toString("latin1")).toBe("PNG");
   });
 
   test("pass-redeemed names the bundle", () => {
