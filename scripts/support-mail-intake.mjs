@@ -4,7 +4,7 @@
 
 // @capability DATA-61 Intake support email as private issues
 // - **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
-// - **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own senders and threads already filed, and gives every other thread a lane (customer, record, notice, unverified or withheld) from the sender registry support-mail-registry.toml and the `Authentication-Results` header Google wrote (support-mail-lanes.mjs). It opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data; the other lanes are counted and open nothing. It prints counts only, one per lane, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
+// - **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own senders and threads already filed, and gives every other thread a lane (customer, record, notice, unverified or withheld) from the sender registry support-mail-registry.toml and the `Authentication-Results` header Google wrote (support-mail-lanes.mjs). It opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data; the other lanes are counted and open nothing. It prints counts only, one per lane, and authenticates by workload identity federation and the IAM Credentials `signJwt` call, with no key. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
 // - **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
 // - **Entry:** `scripts/support-mail-intake.mjs:`
 // - **Files:** scripts/support-mail-intake.mjs, scripts/support-mail-lanes.mjs, scripts/support-mail-registry.toml, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/scripts/supportMailLanes.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
@@ -19,7 +19,8 @@
 // quarantine reader and the operator's review treat it like a ticket from the public form.
 //
 // The mailbox is read with a service account that holds only gmail.readonly, through domain-wide
-// delegation. The key arrives in SUPPORT_GMAIL_READ_KEY. The script has no send, draft, label or
+// delegation. The job federates to Google with no key and the script signs the delegation assertion
+// through the IAM Credentials API (google-delegated-token.mjs). The script has no send, draft, label or
 // delete call.
 //
 // The other lanes (record, notice, unverified, withheld) are counted and open no issue.
@@ -28,15 +29,16 @@
 // one count per lane, and no subject, address, message text or thread id.
 //
 // usage: support-mail-intake.mjs [--dry-run]
-// env:   SUPPORT_GMAIL_READ_KEY, GH_TOKEN (issues: write on the private repository)
+// env:   GOOGLE_APPLICATION_CREDENTIALS (from google-github-actions/auth), GH_TOKEN (issues: write on the private repository)
 
 import { pathToFileURL } from "node:url";
-import { JWT } from "google-auth-library";
+import { delegatedTokenGetter } from "./google-delegated-token.mjs";
 import { githubGetAll } from "./github-issue-comment.mjs";
 import { PRIVATE_REPO } from "./support-reader-select.mjs";
 import { LANES, chooseLane, loadRegistry } from "./support-mail-lanes.mjs";
 
 export const MAILBOX = "support@diyaccounting.co.uk";
+export const READ_SERVICE_ACCOUNT = "support-gmail-read@diyaccounting-ga4.iam.gserviceaccount.com";
 export const GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
@@ -278,18 +280,14 @@ export async function runIntake({
   return counts;
 }
 
-export function tokenGetterFromKey(keyJson) {
-  const key = JSON.parse(keyJson);
-  const client = new JWT({ email: key.client_email, key: key.private_key, scopes: [GMAIL_READONLY_SCOPE], subject: MAILBOX });
-  return async () => (await client.getAccessToken()).token;
+export function readerTokenGetter() {
+  return delegatedTokenGetter({ serviceAccountEmail: READ_SERVICE_ACCOUNT, subject: MAILBOX, scopes: [GMAIL_READONLY_SCOPE] });
 }
 
 async function main() {
-  const keyJson = process.env.SUPPORT_GMAIL_READ_KEY;
-  if (!keyJson) throw new Error("SUPPORT_GMAIL_READ_KEY is not set");
   if (!process.env.GH_TOKEN) throw new Error("GH_TOKEN is not set");
   const dryRun = process.argv.includes("--dry-run");
-  const counts = await runIntake({ getToken: tokenGetterFromKey(keyJson), githubToken: process.env.GH_TOKEN, dryRun });
+  const counts = await runIntake({ getToken: readerTokenGetter(), githubToken: process.env.GH_TOKEN, dryRun });
   console.log(
     `threads seen ${counts.seen}, issues opened ${counts.filed}, already filed ${counts.skippedFiled}, our own senders ${counts.skippedNotCustomer}; ` +
       `lanes: ${LANES.map((lane) => `${lane} ${counts.lanes[lane]}`).join(", ")}${dryRun ? " (dry run, nothing changed)" : ""}`,
