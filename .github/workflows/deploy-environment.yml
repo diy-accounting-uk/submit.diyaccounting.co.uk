@@ -272,6 +272,9 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
+      # This stack depends on ObservabilityStack, which the job above deploys from its own image.
+      # A deploy of both from here names an image tag that no build pushed.
+      exclusively: 'true'
 
   deploy-observability-us-east-1:
     name: 'deploy observability us-east-1'
