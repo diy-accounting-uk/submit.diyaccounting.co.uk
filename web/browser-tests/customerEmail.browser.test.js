@@ -15,11 +15,18 @@ const OUTPUT_DIRECTORY = path.join(process.cwd(), "target", "customer-emails");
 const WIDTHS = [600, 360];
 
 const EXPECTED_TEXT = {
-  "physical-pass": ["Your pass: Day guest", "tiger-happy-mountain-silver", "Open the pass link", "attached as files to print"],
-  "digital-pass": ["Your pass: Day guest", "river-quiet-amber-cloud", "Unlimited", "Open the pass link"],
-  "vat-receipt": ["Your receipt: VAT return", "Form bundle number", "123456789012", "DD means Direct Debit.", "See your receipts"],
-  "itsa-receipt": ["Your receipt: Self-employment update", "Correlation id", "2026-27", "See your receipts"],
-  "subscription": ["Your Test subscription is active", "Renews on", "5 December 2026", "Manage billing"],
+  "physical-pass": ["Your pass: Day pass", "tiger-happy-mountain-silver", "Open the pass link", "attached as files to print"],
+  "digital-pass": ["Your pass: Day pass", "river-quiet-amber-cloud", "No end date", "Unlimited", "Open the pass link"],
+  "vat-receipt": [
+    "Your receipt: VAT return",
+    "Form bundle number",
+    "123456789012",
+    "5 November 2026, 09:30 UTC",
+    "DD means Direct Debit.",
+    "See your receipts",
+  ],
+  "itsa-receipt": ["Your receipt: Self-employment update", "Correlation id", "6 April 2026 to 5 July 2026", "2026-27", "See your receipts"],
+  "subscription": ["Your Resident VAT subscription is active", "Renews on", "5 December 2026", "Manage billing"],
 };
 
 let written;
@@ -33,7 +40,8 @@ test.describe("Customer emails as a reader sees them", () => {
     for (const width of WIDTHS) {
       test(`the ${name} email reads cleanly at ${width} px`, async ({ page }) => {
         const { htmlFile, hasQr } = written.find((entry) => entry.name === name);
-        await page.setViewportSize({ width, height: 900 });
+        // A short viewport makes the full-page screenshot end where the email ends.
+        await page.setViewportSize({ width, height: 200 });
         await page.goto(pathToFileURL(path.join(OUTPUT_DIRECTORY, htmlFile)).href, { waitUntil: "load" });
 
         const text = await page.evaluate(() => document.body.innerText);

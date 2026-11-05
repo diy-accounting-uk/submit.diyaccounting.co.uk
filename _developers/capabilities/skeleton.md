@@ -42,6 +42,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-24 -->
 <!-- capability SITE-27 -->
 <!-- capability SITE-28 -->
+<!-- capability SITE-29 -->
 ### Server and API plumbing (SITE)
 
 <!-- generated:group server-and-api-plumbing-site -->

@@ -28,6 +28,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
     - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
+    - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -611,7 +612,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -654,6 +655,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
 - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
+- [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -702,9 +704,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** requestCustomerEmail puts one CustomerEmailRequest on the activity bus and never throws. The customerEmailSend worker renders the message and sends it through SES. The customerEmailEvent function records bounces and complaints.
 - **Run:** `import { requestCustomerEmail } from "app/lib/customerEmailRequest.js"`
 - **Entry:** `app/lib/customerEmailRequest.js:requestCustomerEmail`; `app/functions/email/customerEmailSend.js:handler`; `app/functions/email/customerEmailEvent.js:handler`
-- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
+- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/lib/passMedia.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/lib/passMedia.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
 - **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
-- **Related:** DATA-01, OPS-182, OPS-181
+- **Related:** DATA-01, OPS-182, OPS-181, SITE-29
 
 #### SITE-28 Store a filed receipt and email a copy
 
@@ -714,6 +716,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `app/services/filedReceipt.js:recordFiledReceipt`
 - **Files:** app/services/filedReceipt.js, app/unit-tests/services/filedReceipt.test.js, app/unit-tests/putReceiptImporters.test.js
 - **Keywords:** receipt, filed receipt, receipt email, putReceipt, submission receipt
+- **Related:** SITE-27
+
+#### SITE-29 Render the customer emails to files for a visual check
+
+- **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
+- **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+- **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
+- **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
+- **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
+- **Keywords:** customer email, render, fixtures, screenshot, visual check, pass email, receipt email
 - **Related:** SITE-27
 
 ### Server and API plumbing (SITE)
@@ -7281,7 +7293,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
-- customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - customer email proof: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - customer email queue: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
@@ -7633,7 +7645,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - first paint: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
 - fixed asset register: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - fixture: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
-- fixtures: [CH-12](#ch-12-generate-synthetic-test-companies), [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets), [DEV-01](#dev-01-run-the-http-simulator-server)
+- fixtures: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-12](#ch-12-generate-synthetic-test-companies), [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets), [DEV-01](#dev-01-run-the-http-simulator-server)
 - flatten envelope: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
@@ -8341,7 +8353,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-56](#bill-56-delete-generated-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -8557,7 +8569,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy), [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
-- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
+- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -8615,7 +8627,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
-- render: [CH-07](#ch-07-render-micro-entity-accounts-for-review)
+- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-accounts-for-review)
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
@@ -8770,7 +8782,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema check: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
-- screenshot: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- screenshot: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot comparison: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
@@ -9253,6 +9265,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - visitor-state.json: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - visitor_kind property: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - visitors by kind: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- visual check: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - visual review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - vitest config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - volatile cells: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)

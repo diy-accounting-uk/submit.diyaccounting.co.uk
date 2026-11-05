@@ -3,7 +3,7 @@
 
 // @capability SITE-29 Render the customer emails to files for a visual check
 // - **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
-// - **Does:** builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+// - **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
 // - **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
 // - **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
 // - **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
@@ -13,21 +13,17 @@
 
 // Usage: node scripts/render-customer-emails.mjs [output-directory]
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildCustomerEmail, buildPassAttachments, PASS_QR_CONTENT_ID } from "../app/lib/customerEmailTemplates.js";
+import { parseCatalog } from "../app/services/productCatalog.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const DEFAULT_OUTPUT = join(ROOT, "target", "customer-emails");
 
 const BASE_URL = "https://submit.diyaccounting.co.uk/";
-const CATALOG = {
-  bundles: [
-    { id: "day-guest", name: "Day guest" },
-    { id: "test", name: "Test" },
-  ],
-};
+const CATALOG = parseCatalog(readFileSync(join(ROOT, "web/public/submit.catalogue.toml"), "utf-8"));
 
 /** The cases: a name, the kind, the request data, and the stored receipt where the kind reads one. */
 export const CASES = [
@@ -65,7 +61,7 @@ export const CASES = [
     receipt: {
       kind: "itsa-period-self-employment",
       correlationId: "c1f2d3e4-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
-      periodId: "2026-27",
+      periodId: "2026-04-06_2026-07-05",
       taxYear: "2026-27",
       statusCode: "accepted",
     },
@@ -73,7 +69,7 @@ export const CASES = [
   {
     name: "subscription",
     kind: "subscription-started",
-    data: { bundleId: "test", currentPeriodEnd: "2026-12-05T00:00:00.000Z" },
+    data: { bundleId: "resident-vat", currentPeriodEnd: "2026-12-05T00:00:00.000Z" },
   },
 ];
 

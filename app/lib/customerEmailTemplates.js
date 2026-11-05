@@ -150,6 +150,21 @@ function formatDate(value) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return formatDate(value);
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return `${formatDate(value)}, ${time} UTC`;
+}
+
+function formatPeriod(value) {
+  const match = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(String(value));
+  return match ? `${formatDate(match[1])} to ${formatDate(match[2])}` : String(value);
+}
+
+const RECEIPT_FIELD_FORMATTERS = { processingDate: formatDateTime, periodId: formatPeriod };
+
 function siteUrl(baseUrl, path = "") {
   const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${base}${path}`;
@@ -159,7 +174,8 @@ function receiptRows(receipt) {
   const rows = [];
   for (const [field, label] of RECEIPT_FIELDS) {
     const value = receipt?.[field];
-    if (value !== undefined && value !== null && value !== "") rows.push({ label, value: String(value) });
+    if (value !== undefined && value !== null && value !== "")
+      rows.push({ label, value: (RECEIPT_FIELD_FORMATTERS[field] ?? String)(value) });
   }
   return rows;
 }
@@ -236,7 +252,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           rows: [
             { label: "Pass code", value: data.code },
             { label: "Bundle", value: name },
-            { label: "Valid until", value: formatDate(data.validUntil) },
+            { label: "Valid until", value: data.validUntil ? formatDate(data.validUntil) : "No end date" },
             { label: "Uses", value: data.maxUses ? String(data.maxUses) : "Unlimited" },
           ],
           actions: [{ href: passUrl, text: "Open the pass link" }],

@@ -83,6 +83,43 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.passQr).toBeNull();
   });
 
+  test("submission-receipt shows a processing time and a period in words", () => {
+    const vat = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "vat-return" },
+      baseUrl,
+      catalog,
+      receipt: { formBundleNumber: "FB1", processingDate: "2026-11-05T09:30:00.000Z" },
+    });
+    expect(vat.text).toContain("5 November 2026, 09:30 UTC");
+    expect(vat.text).not.toContain("2026-11-05T09:30");
+
+    const dateOnly = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "vat-return" },
+      baseUrl,
+      catalog,
+      receipt: { formBundleNumber: "FB1", processingDate: "2026-11-01" },
+    });
+    expect(dateOnly.text).toContain("1 November 2026");
+    expect(dateOnly.text).not.toContain("UTC");
+
+    const itsa = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "itsa-period-self-employment" },
+      baseUrl,
+      catalog,
+      receipt: { kind: "itsa-period-self-employment", correlationId: "c1", periodId: "2026-04-06_2026-07-05", taxYear: "2026-27" },
+    });
+    expect(itsa.text).toContain("6 April 2026 to 5 July 2026");
+  });
+
+  test("a pass with no end date says so", () => {
+    const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "a-b-c-d", bundleId: "day-guest" }, baseUrl, catalog });
+    expect(m.text).toContain("No end date");
+    expect(m.text).not.toContain("Not set");
+  });
+
   test("submission-receipt copies the allowlisted fields only", () => {
     const receipt = {
       formBundleNumber: "FB1",
