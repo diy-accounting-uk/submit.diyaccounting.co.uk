@@ -27,6 +27,7 @@ const EXPECTED_TEXT = {
   ],
   "itsa-receipt": ["Your receipt: Self-employment update", "Correlation id", "6 April 2026 to 5 July 2026", "2026-27", "See your receipts"],
   "subscription": ["Your Resident VAT subscription is active", "Renews on", "5 December 2026", "Manage billing"],
+  "notice-digest": ["3 notices wait for you", "Notices waiting", "Nearest deadline", "12 November 2026", "Open the issue list"],
 };
 
 let written;

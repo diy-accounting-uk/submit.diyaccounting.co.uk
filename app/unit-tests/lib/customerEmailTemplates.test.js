@@ -4,7 +4,13 @@
 // app/unit-tests/lib/customerEmailTemplates.test.js
 
 import { describe, test, expect } from "vitest";
-import { renderEmail, buildCustomerEmail, buildOperatorCopy, buildPassAttachments } from "@app/lib/customerEmailTemplates.js";
+import {
+  renderEmail,
+  buildCustomerEmail,
+  buildOperatorCopy,
+  buildPassAttachments,
+  NOTICE_LIST_URL,
+} from "@app/lib/customerEmailTemplates.js";
 
 const catalog = { bundles: [{ id: "day-guest", name: "Day pass" }] };
 const baseUrl = "https://submit.example.test/";
@@ -62,6 +68,7 @@ describe("lib/customerEmailTemplates", () => {
       },
       { kind: "pass-generated", data: { code: hostile, bundleId: hostile, validUntil: hostile, maxUses: hostile } },
       { kind: "pass-redeemed", data: { bundleId: hostile, expiry: hostile } },
+      { kind: "notice-digest", data: { count: 2, nearestDeadline: hostile } },
     ];
     for (const input of cases) {
       const message = buildCustomerEmail({ ...input, baseUrl, catalog });
@@ -189,6 +196,30 @@ describe("lib/customerEmailTemplates", () => {
   test("pass-redeemed names the bundle", () => {
     const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest" }, baseUrl, catalog });
     expect(m.subject).toBe("Your Day pass is ready");
+  });
+
+  test("notice-digest holds the count, the nearest deadline and the issue list link, in both parts", () => {
+    const message = buildCustomerEmail({ kind: "notice-digest", data: { count: 3, nearestDeadline: "2026-11-12" }, baseUrl, catalog });
+    expect(message.subject).toBe("3 notices wait for you");
+    for (const part of [message.text, message.html]) {
+      expect(part).toContain("Notices waiting");
+      expect(part).toContain("12 November 2026");
+    }
+    expect(message.text).toContain(`Open the issue list: ${NOTICE_LIST_URL}`);
+    expect(message.html).toContain("label%3Amail-notice+label%3Amaintainer-review");
+    expect(message.passQr).toBeNull();
+  });
+
+  test("notice-digest says none when no deadline is set and uses the singular for one notice", () => {
+    const message = buildCustomerEmail({ kind: "notice-digest", data: { count: 1 }, baseUrl, catalog });
+    expect(message.subject).toBe("1 notice waits for you");
+    expect(message.text).toContain("Nearest deadline: none");
+  });
+
+  test("notice-digest refuses a count below one or a count that is not a number", () => {
+    for (const count of [0, -1, 1.5, "x", undefined]) {
+      expect(() => buildCustomerEmail({ kind: "notice-digest", data: { count }, baseUrl, catalog })).toThrow("InvalidNoticeDigest");
+    }
   });
 
   test("an unknown kind throws", () => {

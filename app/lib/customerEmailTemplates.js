@@ -20,6 +20,9 @@ const PHYSICAL_PASS_TYPE_ID = "physical-pass";
 const VAT_RECEIPT_EXPLANATION =
   "HMRC gives this receipt when it accepts a VAT return. The form bundle number is HMRC's reference for your return. Keep it: HMRC asks for it if you ask about the return.";
 
+export const NOTICE_LIST_URL =
+  "https://github.com/diy-accounting-uk/private.diyaccounting.co.uk/issues?q=is%3Aissue+is%3Aopen+label%3Amail-notice+label%3Amaintainer-review";
+
 const PAYMENT_INDICATORS = {
   DD: "DD means Direct Debit.",
   BANK: "BANK means a payment through your bank.",
@@ -263,6 +266,25 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           reason,
         }),
         passQr: { code: data.code, url: passUrl, physical },
+      };
+    }
+    case "notice-digest": {
+      const count = Number(data.count);
+      if (!Number.isInteger(count) || count < 1) throw new Error("InvalidNoticeDigest");
+      const noun = count === 1 ? "notice waits" : "notices wait";
+      return {
+        ...renderEmail({
+          subject: `${count} ${noun} for you`,
+          preheader: `${count} ${noun} in the private repository.`,
+          heading: `${count} ${noun} for you`,
+          rows: [
+            { label: "Notices waiting", value: String(count) },
+            { label: "Nearest deadline", value: data.nearestDeadline ? formatDate(data.nearestDeadline) : "none" },
+          ],
+          actions: [{ href: NOTICE_LIST_URL, text: "Open the issue list" }],
+          reason: "You get this digest as an operator of DIY Accounting Submit. It goes out once a day while a notice waits.",
+        }),
+        passQr: null,
       };
     }
     case "pass-redeemed":
