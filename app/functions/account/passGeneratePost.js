@@ -31,6 +31,7 @@ import { isFamilyAffiliateEmail } from "../../lib/familyAffiliates.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
+import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 import {
   loadPassTypesFromRoot,
   getPassTypeById,
@@ -140,6 +141,18 @@ export async function ingestHandler(event) {
       summary: `User pass generated: ${passTypeId}`,
       userSub,
       detail: { passTypeId, bundleId: pass.bundleId, issuedBy: hashedSub },
+    });
+    await requestCustomerEmail({
+      kind: "pass-generated",
+      userSub,
+      synthetic: false,
+      data: {
+        code: pass.code,
+        passTypeId: pass.passTypeId,
+        bundleId: pass.bundleId,
+        validUntil: pass.validUntil || null,
+        maxUses: pass.maxUses ?? null,
+      },
     });
 
     // The balance across every bundle, the figure the header shows, not the one bucket that paid.

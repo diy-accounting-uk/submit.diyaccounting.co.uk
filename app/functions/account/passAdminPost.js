@@ -30,6 +30,7 @@ import { isSyntheticTestUserEmail } from "../../lib/syntheticTestUser.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { createPass } from "../../services/passService.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
+import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
@@ -147,6 +148,18 @@ export async function ingestHandler(event) {
       event: "pass-generated",
       summary: "Pass generated: " + bundleId,
       detail: { bundleId, passTypeId },
+    });
+    await requestCustomerEmail({
+      kind: "pass-generated",
+      userSub: decodedToken.sub,
+      synthetic: Boolean(pass.testPass),
+      data: {
+        code: pass.code,
+        passTypeId: pass.passTypeId,
+        bundleId: pass.bundleId,
+        validUntil: pass.validUntil || null,
+        maxUses: pass.maxUses ?? null,
+      },
     });
 
     return http200OkResponse({
