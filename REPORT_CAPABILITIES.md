@@ -6006,11 +6006,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-55 Review the operator dashboard
 
 - **Use when:** the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
-- **Does:** The dashboard-review skill reads the prod snapshot from the analytics lake and the rendered page in the operator's own Chrome session. It judges each panel for movement, gaps and faults, writes one report to the private repository, and summarises it in the chat with a proposed NEXT.md row per fault.
+- **Does:** The dashboard-review skill reads the prod snapshot from the analytics lake and every tab of the page in the operator's own Chrome session, including each captured AWS console image. It maps each snapshot section to its tab and panel, and judges each panel for movement, gaps and faults. It writes one report to the private repository, with a section per tab and two lists: improvements to the dashboard, and changes the observations call for as proposed NEXT.md rows. It summarises both lists per tab in the chat.
 - **Run:** `/dashboard-review`
 - **Entry:** `.claude/skills/dashboard-review/SKILL.md`
 - **Files:** .claude/skills/dashboard-review/SKILL.md, app/functions/analytics/operatorSnapshotPublish.js, web/public/operator/dashboard.html, web/public/operator/dashboard.page.js
-- **Keywords:** dashboard review, operator dashboard, snapshot review, business review, objectives report, not measured, kpi review
+- **Keywords:** dashboard review, operator dashboard, snapshot review, business review, objectives report, not measured, kpi review, dashboard tabs, console image review, dashboard improvements
 - **Related:** DEV-27, DEV-50
 
 #### DEV-56 Audit the workspace's technical debt
@@ -7277,6 +7277,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - console capture: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - console image api: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
+- console image review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday), [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
@@ -7388,8 +7389,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - daily sitemap: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - dark mode: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - dashboard: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
+- dashboard improvements: [DEV-55](#dev-55-review-the-operator-dashboard)
 - dashboard review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
+- dashboard tabs: [DEV-55](#dev-55-review-the-operator-dashboard)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
 - data export: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - data manager api: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
