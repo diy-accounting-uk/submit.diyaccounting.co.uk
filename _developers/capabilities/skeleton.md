@@ -435,6 +435,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-42 -->
 <!-- capability OPS-43 -->
 <!-- capability OPS-168 -->
+<!-- capability OPS-183 -->
+<!-- capability OPS-184 -->
 <!-- capability OPS-44 -->
 <!-- capability OPS-165 -->
 <!-- capability OPS-45 -->
@@ -757,6 +759,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability DEV-14 -->
 <!-- capability DEV-15 -->
+<!-- capability DEV-60 -->
 <!-- capability DEV-16 -->
 ### Test fixtures, reports & DynamoDB export (DEV)
 

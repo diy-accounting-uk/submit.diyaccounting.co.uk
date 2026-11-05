@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# @capability DEV-16 Fetch the local TLS certificate
+# @capability DEV-60 Fetch the local TLS certificate
 # - **Use when:** a developer sets up local HTTPS for local.submit.diyaccounting.co.uk, or the stored certificate has been renewed.
 # - **Does:** local-tls-fetch.sh reads the Secrets Manager secret `ci/submit/local-tls/certificate` with the `diya-submit-ci` profile. It writes fullchain.pem and privkey.pem (mode 600) to the directory that app/bin/server.js reads. The local-tls-renew.yml workflow is the only writer of the secret.
 # - **Run:** `scripts/local-tls-fetch.sh`

@@ -6,7 +6,7 @@ description: Run a full key rotation with the operator present. Rolls every key 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-<!-- @capability OPS-183 Run a full key rotation with the operator
+<!-- @capability OPS-184 Run a full key rotation with the operator
 - **Use when:** every key in the rotation set must roll, or a rotation-check issue lists due keys, and the operator is present for the console steps.
 - **Does:** key-rotation runs the keys of secrets-rotation.toml, plus email-hash-secret, the Companies House presenter id and the local TLS certificate, in the order of the security runbook section 3.3. Per key it gives the operator one console action at a time, runs rotate-secret.yml, salt-rotate.yml, email-hash-rotate.yml, mcp-blob-key-rotate.yml or local-tls-renew.yml after the operator's go, proves the new value, retires the old one, and reads back the rotated-at tag or the GitHub secret date. It ends with rotation-check.yml, a PR for secrets-rotation.toml and a record in the private repository.
 - **Run:** `/key-rotation`
