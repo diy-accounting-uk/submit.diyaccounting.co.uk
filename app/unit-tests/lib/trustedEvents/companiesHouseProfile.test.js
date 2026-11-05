@@ -4,10 +4,11 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@app/lib/cachedSecret.js", () => ({ readSecret: vi.fn(), refreshAfterAuthFailure: vi.fn() }));
-vi.mock("@app/lib/httpFetch.js", () => ({ DEFAULT_TIMEOUTS: { SHORT: 1 }, fetchJsonWithTimeout: vi.fn() }));
+vi.mock("@app/lib/httpFetch.js", () => ({ DEFAULT_TIMEOUTS: { SHORT: 1 } }));
+vi.mock("@app/services/companiesHouseSend.js", () => ({ sendJsonToCompaniesHouse: vi.fn() }));
 
 import { readSecret, refreshAfterAuthFailure } from "@app/lib/cachedSecret.js";
-import { fetchJsonWithTimeout } from "@app/lib/httpFetch.js";
+import { sendJsonToCompaniesHouse } from "@app/services/companiesHouseSend.js";
 import { fetchCompanyProfile } from "@app/lib/trustedEvents/companiesHouseProfile.js";
 
 describe("fetchCompanyProfile", () => {
@@ -23,30 +24,31 @@ describe("fetchCompanyProfile", () => {
   });
 
   test("sends a basic-auth GET and returns the profile", async () => {
-    fetchJsonWithTimeout.mockResolvedValue({ ok: true, status: 200, data: { company_name: "X" } });
+    sendJsonToCompaniesHouse.mockResolvedValue({ ok: true, status: 200, data: { company_name: "X" } });
     await expect(fetchCompanyProfile("06846849")).resolves.toEqual({ company_name: "X" });
-    const [url, init] = fetchJsonWithTimeout.mock.calls[0];
+    const [url, init, , options] = sendJsonToCompaniesHouse.mock.calls[0];
+    expect(options).toEqual({ api: "GET /company/{id}" });
     expect(url).toBe("https://ch.example/company/06846849");
     expect(init.headers.Authorization).toBe(`Basic ${Buffer.from("key-1:").toString("base64")}`);
   });
 
   test("retries once with a rolled key after a 401", async () => {
-    fetchJsonWithTimeout
+    sendJsonToCompaniesHouse
       .mockResolvedValueOnce({ ok: false, status: 401, data: {} })
       .mockResolvedValueOnce({ ok: true, status: 200, data: { company_name: "X" } });
     refreshAfterAuthFailure.mockResolvedValue("key-2");
     await expect(fetchCompanyProfile("06846849")).resolves.toEqual({ company_name: "X" });
-    expect(fetchJsonWithTimeout).toHaveBeenCalledTimes(2);
+    expect(sendJsonToCompaniesHouse).toHaveBeenCalledTimes(2);
   });
 
   test("throws when the key did not change after a 401", async () => {
-    fetchJsonWithTimeout.mockResolvedValue({ ok: false, status: 401, data: {} });
+    sendJsonToCompaniesHouse.mockResolvedValue({ ok: false, status: 401, data: {} });
     refreshAfterAuthFailure.mockResolvedValue(null);
     await expect(fetchCompanyProfile("06846849")).rejects.toThrow("Companies House answered 401");
   });
 
   test("throws on a non-200 answer", async () => {
-    fetchJsonWithTimeout.mockResolvedValue({ ok: false, status: 500, data: {} });
+    sendJsonToCompaniesHouse.mockResolvedValue({ ok: false, status: 500, data: {} });
     await expect(fetchCompanyProfile("06846849")).rejects.toThrow("Companies House answered 500");
   });
 

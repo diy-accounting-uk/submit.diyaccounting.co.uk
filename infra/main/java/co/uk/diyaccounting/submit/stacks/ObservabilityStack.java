@@ -25,6 +25,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
@@ -1230,6 +1231,11 @@ public class ObservabilityStack extends Stack {
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TRUSTED_EVENT_GITHUB_REPO", TRUSTED_EVENT_REPOSITORY)
                 .with("TRUSTED_EVENT_LEDGER_DYNAMODB_TABLE_NAME", props.sharedNames().data.trustedEventLedgerTableName);
+        // The Companies House send path records each call; the Lambda construct grants PutItem on
+        // the table named here. The deployment is the environment, because this function is
+        // env-level.
+        IntegrationCallAccess.addEnv(
+                trustedEventEnvironment, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
         // PopulatedMap rejects a blank value, and the App ids are blank until the operator sets
         // the GitHub variables, so they are added only once both are set.
         if (!props.githubAppId().isBlank() && !props.githubAppInstallationId().isBlank()) {

@@ -3,12 +3,14 @@
 
 // app/lib/trustedEvents/companiesHouseProfile.js
 //
-// The one Companies House call the trusted event function makes: GET /company/<number>. It uses
-// the HTTP helper and the secret cache directly. The shared Companies House client also pulls in
-// the bundle, call-record and practice repositories, and the function holds no table for them.
+// The one Companies House call the trusted event function makes: GET /company/<number>. It sends
+// through the Companies House send module, which records the call, and reads the key with the
+// secret cache. The shared Companies House client also pulls in the bundle and practice
+// repositories, and the function holds no table for them.
 
 import { readSecret, refreshAfterAuthFailure } from "../cachedSecret.js";
-import { DEFAULT_TIMEOUTS, fetchJsonWithTimeout } from "../httpFetch.js";
+import { DEFAULT_TIMEOUTS } from "../httpFetch.js";
+import { sendJsonToCompaniesHouse } from "../../services/companiesHouseSend.js";
 
 function requiredEnv(name) {
   const value = process.env[name];
@@ -26,10 +28,11 @@ export async function fetchCompanyProfile(companyNumber) {
   const url = `${requiredEnv("COMPANIES_HOUSE_BASE_URI")}/company/${companyNumber}`;
   const secretArn = requiredEnv("COMPANIES_HOUSE_API_KEY_ARN");
   const send = (apiKey) =>
-    fetchJsonWithTimeout(
+    sendJsonToCompaniesHouse(
       url,
       { method: "GET", headers: { Authorization: authorization(apiKey), Accept: "application/json" } },
       DEFAULT_TIMEOUTS.SHORT,
+      { api: "GET /company/{id}" },
     );
 
   const apiKey = await readSecret(secretArn);

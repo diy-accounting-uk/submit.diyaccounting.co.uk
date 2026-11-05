@@ -191,7 +191,12 @@ class ObservabilityStackTest {
         }
         assertTrue(byAction.containsKey("secretsmanager:GetSecretValue"));
         assertTrue(byAction.containsKey("dynamodb:GetItem"));
-        assertEquals(byAction.get("dynamodb:GetItem"), byAction.get("dynamodb:PutItem"));
+        assertEquals(List.of("dynamodb:GetItem", "dynamodb:PutItem"), actionsOf(byAction.get("dynamodb:GetItem")));
+        var putOnly = statements.stream()
+                .filter(statement -> actionsOf(statement).equals(List.of("dynamodb:PutItem")))
+                .toList();
+        assertEquals(1, putOnly.size(), "one PutItem statement, for the call records");
+        assertTrue(putOnly.get(0).get("Resource").toString().contains("docs-env-integration-calls"));
         assertTrue(byAction.containsKey("acm:DescribeCertificate"));
         assertTrue(byAction.containsKey("logs:PutLogEvents"));
         assertFalse(byAction.containsKey("sts:AssumeRole"), "the root read role belongs to the prod reads");
