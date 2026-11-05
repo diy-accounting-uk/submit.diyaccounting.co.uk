@@ -43,3 +43,21 @@ describe("ga4_daily aggregate queries use analytics.toml's declared event names"
     expect(sql).not.toContain("'file_download'");
   });
 });
+
+describe("pages_by_kind_daily.sql gives every event the visitor kind its visitor carries that day", () => {
+  const sql = readSqlFile("infra/google/gcp/bigquery/pages_by_kind_daily.sql");
+
+  test("reads the kind from user_properties on every event, before the page filter", () => {
+    expect(sql).toContain("key = 'visitor_kind'");
+    expect(sql.indexOf("AS event_kind")).toBeLessThan(sql.indexOf("WHERE  page_location IS NOT NULL"));
+  });
+
+  test("spreads the kind across the visitor's events for the day", () => {
+    expect(sql).toContain("first_value(event_kind IGNORE NULLS)");
+    expect(sql).toContain("PARTITION BY user_pseudo_id, day");
+  });
+
+  test("an event whose visitor has no kind that day stays (unclassified)", () => {
+    expect(sql).toContain("'(unclassified)'");
+  });
+});
