@@ -30,10 +30,12 @@ const ROOT = resolve(__dirname, "..", "..");
 const WORKFLOWS_DIR = resolve(ROOT, ".github", "workflows");
 
 // The environment a rotation names: the names job's output, or, in a workflow whose names job can be
-// skipped, that output with the params job's normalised input as the fallback.
+// skipped, that output with the params job's normalised input as the fallback, or the literal `ci`
+// in a job whose rotation runs on ci only.
 const ENVIRONMENT_EXPRESSIONS = [
   "${{ needs.names.outputs.environment-name }}",
   "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}",
+  "ci",
 ];
 
 // One shell argument: a `${{ ... }}` expression or a bare word, optionally quoted.

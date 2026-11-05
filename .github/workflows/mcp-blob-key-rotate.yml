@@ -62,6 +62,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    # The refresh proof rotates the ci lane user mcpBlobKeyProof, so two runs of this job queue.
+    concurrency:
+      group: behaviour-test-user-ci-mcpBlobKeyProof
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

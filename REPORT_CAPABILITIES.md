@@ -27,6 +27,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
+    - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -610,7 +611,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -652,6 +653,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
+- [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -703,6 +705,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
 - **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
 - **Related:** DATA-01, OPS-182, OPS-181
+
+#### SITE-28 Store a filed receipt and email a copy
+
+- **Use when:** a handler records the receipt of a filing that HMRC or Companies House accepted.
+- **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
+- **Run:** `import { recordFiledReceipt } from "app/services/filedReceipt.js"`
+- **Entry:** `app/services/filedReceipt.js:recordFiledReceipt`
+- **Files:** app/services/filedReceipt.js, app/unit-tests/services/filedReceipt.test.js, app/unit-tests/putReceiptImporters.test.js
+- **Keywords:** receipt, filed receipt, receipt email, putReceipt, submission receipt
+- **Related:** SITE-27
 
 ### Server and API plumbing (SITE)
 
@@ -7596,6 +7608,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ffmpeg: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [DEV-40](#dev-40-record-a-product-demo-video)
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -8507,6 +8520,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - put-secret-with-rotation-tag: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
+- putreceipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - pwa: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - qr code: [SITE-19](#site-19-generate-qr-codes), [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - qualifier: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
@@ -8541,8 +8555,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - realistic data: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
-- receipt: [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
-- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy), [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
+- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -8974,6 +8988,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subhasher: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - subject id salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - submission failure: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- submission receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - submission record: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
