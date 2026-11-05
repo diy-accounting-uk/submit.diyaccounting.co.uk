@@ -501,6 +501,7 @@ jobs:
       - name: Read the GitHub provider from infra/google/gcp/identity.toml
         id: google-identity
         if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
+        shell: bash
         run: |
           node -e '
             const TOML = require("@iarna/toml");

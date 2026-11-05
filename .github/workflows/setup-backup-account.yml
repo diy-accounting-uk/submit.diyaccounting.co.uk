@@ -145,6 +145,7 @@ jobs:
       - name: Report vault and role details
         if: inputs.dry-run == false
         run: |
+          set -o pipefail
           {
             echo "### Backup account ${{ inputs.backup-account-id }}"
             echo ""

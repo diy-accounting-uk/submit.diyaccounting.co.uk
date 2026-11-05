@@ -99,6 +99,7 @@ jobs:
       # Read back the value to confirm it was set correctly
       - name: Read back last known good deployment from SSM Parameter Store
         run: |
+          set -o pipefail
           PARAMETER_NAME="/submit/${{ inputs.environment-name }}/last-known-good-deployment"
           aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
           echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"

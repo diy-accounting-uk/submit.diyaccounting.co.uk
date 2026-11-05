@@ -68,6 +68,7 @@ jobs:
       - name: Cleanup test users (scheduled - always confirm)
         if: ${{ github.event_name == 'schedule' }}
         run: |
+          set -o pipefail
           node scripts/cleanup-test-users.js \
             "${{ steps.names.outputs.environment-name }}" \
             --confirm --json | tee cleanup-summary.json
@@ -75,6 +76,7 @@ jobs:
       - name: Cleanup test users (manual dispatch)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
+          set -o pipefail
           CONFIRM_FLAG=""
           if [ "${{ inputs.confirm }}" = "true" ]; then
             CONFIRM_FLAG="--confirm"

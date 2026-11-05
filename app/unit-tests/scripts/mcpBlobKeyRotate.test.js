@@ -167,20 +167,55 @@ describe("mcp-blob-key-rotate", () => {
 
       it("reads, rolls, waits past the forced-read floor, places the new version, reads again and removes the grant", async () => {
         const result = await proveRefresh(steps);
-        expect(order).toEqual(["place v1", "read", "roll", "sleep", "place v2", "read", "remove grant-1"]);
-        expect(result).toMatchObject({ grantId: "grant-1", cachedCurrent: "v1", sealedVersion: "v2" });
+        const reads = Array(15).fill("read");
+        expect(order).toEqual(["place v1", ...reads, "roll", "sleep", "place v2", ...reads, "remove grant-1"]);
+        expect(result).toMatchObject({
+          grantId: "grant-1",
+          cachedCurrent: "v1",
+          sealedVersion: "v2",
+          answeredBefore: 15,
+          answeredAfter: 15,
+        });
       });
 
-      it("removes the grant and fails when the log has no refresh line", async () => {
+      it("removes the grant and fails with the read counts when the log has no refresh line", async () => {
         steps.findEvidence = async () => null;
-        await expect(proveRefresh(steps)).rejects.toThrow(/No ".*" line/);
+        await expect(proveRefresh(steps)).rejects.toThrow(/No ".*" line.*15 reads answered 200 before the roll and 15 after it/);
         expect(order.at(-1)).toBe("remove grant-1");
       });
 
-      it("fails when the second read is not 200", async () => {
+      it("passes when one line stands among many reads", async () => {
+        let searches = 0;
+        steps.findEvidence = async () => (++searches === 1 ? { logGroupName: "group-b" } : null);
+        const result = await proveRefresh(steps);
+        expect(result.evidence).toEqual({ logGroupName: "group-b" });
+      });
+
+      it("reads each round in parallel batches of the container limit", async () => {
+        let running = 0;
+        let peak = 0;
+        steps.read = async () => {
+          running += 1;
+          peak = Math.max(peak, running);
+          await Promise.resolve();
+          running -= 1;
+          return { status: 200 };
+        };
+        await proveRefresh(steps);
+        expect(peak).toBe(5);
+      });
+
+      it("fails with its status when a read before the roll is not 200", async () => {
         let reads = 0;
-        steps.read = async () => ({ status: ++reads === 1 ? 200 : 404 });
-        await expect(proveRefresh(steps)).rejects.toThrow(/second grant read answered 404/);
+        steps.read = async () => ({ status: ++reads === 7 ? 429 : 200 });
+        await expect(proveRefresh(steps)).rejects.toThrow(/before the roll answered 429/);
+        expect(order.at(-1)).toBe("remove grant-1");
+      });
+
+      it("fails with its status when a read after the roll is not 200", async () => {
+        let reads = 0;
+        steps.read = async () => ({ status: ++reads === 20 ? 404 : 200 });
+        await expect(proveRefresh(steps)).rejects.toThrow(/after the roll answered 404/);
         expect(order.at(-1)).toBe("remove grant-1");
       });
 

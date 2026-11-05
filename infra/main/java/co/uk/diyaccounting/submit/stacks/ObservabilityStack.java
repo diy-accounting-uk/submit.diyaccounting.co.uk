@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
+import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -427,6 +428,15 @@ public class ObservabilityStack extends Stack {
                 .allowUnauthenticatedIdentities(true)
                 .build();
 
+        String rumAppName = props.resourceNamePrefix() + "-rum";
+        // Built from the name: the monitor needs the role's ARN, so a reference to the monitor here would be a cycle.
+        String rumAppMonitorArn = Stack.of(this)
+                .formatArn(ArnComponents.builder()
+                        .service("rum")
+                        .resource("appmonitor")
+                        .resourceName(rumAppName)
+                        .build());
+
         // Role for unauthenticated identities allowing PutRumEvents
         Role rumGuestRole = Role.Builder.create(this, props.resourceNamePrefix() + "-RumGuestRole")
                 .assumedBy(new FederatedPrincipal(
@@ -439,7 +449,7 @@ public class ObservabilityStack extends Stack {
                 .build();
         rumGuestRole.addToPolicy(PolicyStatement.Builder.create()
                 .actions(List.of("rum:PutRumEvents"))
-                .resources(List.of("*"))
+                .resources(List.of(rumAppMonitorArn))
                 .build());
 
         // Attach role to Identity Pool
@@ -449,7 +459,6 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         // Create RUM App Monitor
-        String rumAppName = props.resourceNamePrefix() + "-rum";
         CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
                 .name(rumAppName)
                 .domainList(List.of(
