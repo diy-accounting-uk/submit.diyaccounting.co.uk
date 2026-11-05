@@ -4,26 +4,28 @@
 
 // @capability DATA-61 Intake support email as private issues
 // - **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
-// - **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
+// - **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own senders and threads already filed, and gives every other thread a lane (customer, record, notice, unverified or withheld) from the sender registry support-mail-registry.toml and the `Authentication-Results` header Google wrote (support-mail-lanes.mjs). It opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data; the other lanes are counted and open nothing. It prints counts only, one per lane, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
 // - **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
 // - **Entry:** `scripts/support-mail-intake.mjs:`
-// - **Files:** scripts/support-mail-intake.mjs, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
-// - **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
+// - **Files:** scripts/support-mail-intake.mjs, scripts/support-mail-lanes.mjs, scripts/support-mail-registry.toml, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/scripts/supportMailLanes.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
+// - **Keywords:** support mail intake, mail lanes, sender registry, dkim, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
 // - **Related:** OPS-56, DATA-42
 // @end-capability
 
 // scripts/support-mail-intake.mjs
 //
-// Opens one private issue per new customer thread in the support@diyaccounting.co.uk inbox. The
-// issue lands in the private repository labelled `support` and `maintainer-review`, so the
+// Sorts each new thread in the support@diyaccounting.co.uk inbox into a lane (support-mail-lanes.mjs)
+// and opens one private issue per new customer thread. The issue lands in the private repository labelled `support` and `maintainer-review`, so the
 // quarantine reader and the operator's review treat it like a ticket from the public form.
 //
 // The mailbox is read with a service account that holds only gmail.readonly, through domain-wide
 // delegation. The key arrives in SUPPORT_GMAIL_READ_KEY. The script has no send, draft, label or
 // delete call.
 //
+// The other lanes (record, notice, unverified, withheld) are counted and open no issue.
+//
 // This repository is public, so its logs are public. The script prints counts and nothing else:
-// no subject, address, message text or thread id.
+// one count per lane, and no subject, address, message text or thread id.
 //
 // usage: support-mail-intake.mjs [--dry-run]
 // env:   SUPPORT_GMAIL_READ_KEY, GH_TOKEN (issues: write on the private repository)
@@ -32,15 +34,16 @@ import { pathToFileURL } from "node:url";
 import { JWT } from "google-auth-library";
 import { githubGetAll } from "./github-issue-comment.mjs";
 import { PRIVATE_REPO } from "./support-reader-select.mjs";
+import { LANES, chooseLane, loadRegistry } from "./support-mail-lanes.mjs";
 
 export const MAILBOX = "support@diyaccounting.co.uk";
 export const GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-// Our own addresses. Mail from them is never customer mail.
+// Our own addresses. Mail from them is never read.
 export const OWN_DOMAINS = ["diyaccounting.co.uk", "polycode.co.uk"];
 
-// Automated senders. A match on the local part, or on the full address for the entries with "@".
+// Automated senders outside the registry go to the notice lane. A match on the local part, or on the full address for the entries with "@".
 export const AUTOMATED_SENDERS = [
   "no-reply",
   "noreply",
@@ -67,9 +70,9 @@ export const MAX_TITLE_CHARACTERS = 120;
 const THREAD_ID_LINE = /^Gmail-Thread-Id: (\S+)$/m;
 const RECEIVED_LINE = /^Received: (\S+)$/m;
 
-/** The Gmail search that selects customer mail: inbox threads with a message after the cut-off. */
+/** The Gmail search: inbox threads with a message after the cut-off, minus our own senders. */
 export function buildSearchQuery({ afterEpochSeconds }) {
-  const excluded = [...OWN_DOMAINS, ...AUTOMATED_SENDERS].map((sender) => `-from:${sender}`);
+  const excluded = OWN_DOMAINS.map((sender) => `-from:${sender}`);
   return ["in:inbox", `after:${Math.floor(afterEpochSeconds)}`, ...excluded].join(" ");
 }
 
@@ -80,12 +83,16 @@ export function addressOf(fromHeader) {
   return (angle ? angle[1] : value).trim().toLowerCase();
 }
 
-export function isCustomerSender(fromHeader) {
+/** The sender's address, domain and whether it is automated, or null for a malformed address or one of our own. */
+export function classifySender(fromHeader) {
   const address = addressOf(fromHeader);
-  if (!/^[^@\s]+@[^@\s]+$/.test(address)) return false;
+  if (!/^[^@\s]+@[^@\s]+$/.test(address)) return null;
   const [local, domain] = address.split("@");
-  if (OWN_DOMAINS.some((own) => domain === own || domain.endsWith(`.${own}`))) return false;
-  return !AUTOMATED_SENDERS.some((entry) => (entry.includes("@") ? address === entry : local === entry || local.startsWith(`${entry}+`)));
+  if (OWN_DOMAINS.some((own) => domain === own || domain.endsWith(`.${own}`))) return null;
+  const automated = AUTOMATED_SENDERS.some((entry) =>
+    entry.includes("@") ? address === entry : local === entry || local.startsWith(`${entry}+`),
+  );
+  return { address, domain, automated };
 }
 
 const headerOf = (message, name) =>
@@ -123,19 +130,26 @@ export function messageText(message) {
     .trim();
 }
 
-/** The first message of a thread and the facts the issue records, or null when it is not customer mail. */
-export function readThread(thread) {
+/**
+ * The lane of the first message of a thread and the facts the issue records, or null when the
+ * sender is one of ours. Only a customer thread carries the message text.
+ */
+export function readThread(thread, registry) {
   const first = (thread.messages ?? [])[0];
   if (!first) return null;
   const from = headerOf(first, "From");
-  if (!isCustomerSender(from)) return null;
+  const sender = classifySender(from);
+  if (!sender) return null;
+  const subject = headerOf(first, "Subject").replace(/\s+/g, " ").trim();
+  const lane = chooseLane({ registry, automated: sender.automated, domain: sender.domain, subject, headers: first.payload?.headers });
   return {
+    lane,
     threadId: thread.id,
-    sender: addressOf(from),
-    subject: headerOf(first, "Subject").replace(/\s+/g, " ").trim(),
+    sender: sender.address,
+    subject,
     messageId: headerOf(first, "Message-ID") || headerOf(first, "Message-Id"),
     receivedAt: new Date(Number(first.internalDate)).toISOString(),
-    text: messageText(first),
+    text: lane === "customer" ? messageText(first) : "",
   };
 }
 
@@ -223,12 +237,26 @@ async function createIssue({ repo, thread, githubToken, fetchImpl }) {
  * One intake pass. `getToken` and `fetchImpl` are injected so a test replays recorded answers.
  * Returns counts only.
  */
-export async function runIntake({ getToken, githubToken, fetchImpl = fetch, nowMs = Date.now(), dryRun = false, repo = PRIVATE_REPO }) {
+export async function runIntake({
+  getToken,
+  githubToken,
+  fetchImpl = fetch,
+  nowMs = Date.now(),
+  dryRun = false,
+  repo = PRIVATE_REPO,
+  registry = loadRegistry(),
+}) {
   const issues = await githubGetAll(`/repos/${repo}/issues?state=all&labels=support`, { token: githubToken, fetchImpl });
   const filed = filedThreadIds(issues);
   const query = buildSearchQuery({ afterEpochSeconds: afterEpochSecondsFor({ issues, nowMs }) });
   const list = await gmailGet(`/threads?maxResults=${MAX_THREADS_PER_RUN}&q=${encodeURIComponent(query)}`, { getToken, fetchImpl });
-  const counts = { seen: 0, filed: 0, skippedFiled: 0, skippedNotCustomer: 0 };
+  const counts = {
+    seen: 0,
+    filed: 0,
+    skippedFiled: 0,
+    skippedNotCustomer: 0,
+    lanes: Object.fromEntries(LANES.map((lane) => [lane, 0])),
+  };
   for (const { id } of list.threads ?? []) {
     counts.seen += 1;
     if (filed.has(id)) {
@@ -236,11 +264,13 @@ export async function runIntake({ getToken, githubToken, fetchImpl = fetch, nowM
       continue;
     }
     if (counts.filed >= MAX_ISSUES_PER_RUN) break;
-    const thread = readThread(await gmailGet(`/threads/${encodeURIComponent(id)}?format=full`, { getToken, fetchImpl }));
+    const thread = readThread(await gmailGet(`/threads/${encodeURIComponent(id)}?format=full`, { getToken, fetchImpl }), registry);
     if (!thread) {
       counts.skippedNotCustomer += 1;
       continue;
     }
+    counts.lanes[thread.lane] += 1;
+    if (thread.lane !== "customer") continue;
     if (!dryRun) await createIssue({ repo, thread, githubToken, fetchImpl });
     filed.add(id);
     counts.filed += 1;
@@ -258,13 +288,11 @@ async function main() {
   const keyJson = process.env.SUPPORT_GMAIL_READ_KEY;
   if (!keyJson) throw new Error("SUPPORT_GMAIL_READ_KEY is not set");
   if (!process.env.GH_TOKEN) throw new Error("GH_TOKEN is not set");
-  const counts = await runIntake({
-    getToken: tokenGetterFromKey(keyJson),
-    githubToken: process.env.GH_TOKEN,
-    dryRun: process.argv.includes("--dry-run"),
-  });
+  const dryRun = process.argv.includes("--dry-run");
+  const counts = await runIntake({ getToken: tokenGetterFromKey(keyJson), githubToken: process.env.GH_TOKEN, dryRun });
   console.log(
-    `threads seen ${counts.seen}, issues opened ${counts.filed}, already filed ${counts.skippedFiled}, not customer mail ${counts.skippedNotCustomer}`,
+    `threads seen ${counts.seen}, issues opened ${counts.filed}, already filed ${counts.skippedFiled}, our own senders ${counts.skippedNotCustomer}; ` +
+      `lanes: ${LANES.map((lane) => `${lane} ${counts.lanes[lane]}`).join(", ")}${dryRun ? " (dry run, nothing changed)" : ""}`,
   );
 }
 
