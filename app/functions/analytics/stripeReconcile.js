@@ -276,14 +276,35 @@ export async function handler(event = {}) {
     throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
   }
 
+  // Neither list depends on the day, so one read serves every day of the run.
+  const { rawSubscriptions, paymentLinkIdToBundleId } = await readDayIndependentLists(stripe);
+
   const results = [];
   for (const targetDate of days) {
-    results.push(await reconcileDay(stripe, bucket, targetDate));
+    results.push(await reconcileDay(stripe, bucket, targetDate, rawSubscriptions, paymentLinkIdToBundleId));
   }
   return { days: results };
 }
 
-async function reconcileDay(stripe, bucket, targetDate) {
+async function readDayIndependentLists(stripe) {
+  // Subscriptions is a full snapshot, not a delta: `dt` reads as "state as at", which is what a
+  // subscription question actually wants, and the row count is small enough to afford it.
+  const rawSubscriptions = await listAllPages((params) => stripe.subscriptions.list(params), {
+    status: "all",
+  });
+
+  // A donation charge from before its Payment Link's payment_intent_data.metadata was
+  // configured carries no bundle metadata snapshot. Resolving it needs the account's live
+  // Payment Links, matched by url against infra/stripe/stripe.toml.
+  const paymentLinkUrlToBundleId = loadPaymentLinkBundleIdsFromRoot();
+  const livePaymentLinks = await listAllPages((params) => stripe.paymentLinks.list(params), {});
+  const paymentLinkIdToBundleId = new Map(
+    livePaymentLinks.map((link) => [link.id, paymentLinkUrlToBundleId.get(link.url)]).filter(([, bundleId]) => bundleId != null),
+  );
+  return { rawSubscriptions, paymentLinkIdToBundleId };
+}
+
+async function reconcileDay(stripe, bucket, targetDate, rawSubscriptions, paymentLinkIdToBundleId) {
   const { gte, lt } = computeDateWindow(targetDate);
 
   const balanceTransactions = (
@@ -293,25 +314,11 @@ async function reconcileDay(stripe, bucket, targetDate) {
     })
   ).map(sanitizeBalanceTransaction);
 
-  // Subscriptions is a full snapshot, not a delta: `dt` reads as "state as at", which is what a
-  // subscription question actually wants, and the daily row count is small enough to afford it.
   // Fetched before charges so a subscription charge's bundle_id can resolve against it below.
-  const rawSubscriptions = await listAllPages((params) => stripe.subscriptions.list(params), {
-    status: "all",
-  });
   const subscriptions = rawSubscriptions.map(sanitizeSubscription);
   const subscriptionBundleIds = new Map(rawSubscriptions.map((s) => [s.id, s.metadata?.bundleId ?? null]));
 
-  // A donation charge from before its Payment Link's payment_intent_data.metadata was
-  // configured carries no bundle metadata snapshot. Resolving it needs the account's live
-  // Payment Links, matched by url against infra/stripe/stripe.toml, plus the day's Checkout
-  // Sessions, which is where a Charge's payment_link actually lives (the Charge and
-  // PaymentIntent objects do not carry it).
-  const paymentLinkUrlToBundleId = loadPaymentLinkBundleIdsFromRoot();
-  const livePaymentLinks = await listAllPages((params) => stripe.paymentLinks.list(params), {});
-  const paymentLinkIdToBundleId = new Map(
-    livePaymentLinks.map((link) => [link.id, paymentLinkUrlToBundleId.get(link.url)]).filter(([, bundleId]) => bundleId != null),
-  );
+  // A Charge does not carry its payment_link; the day's Checkout Sessions do.
   const rawCheckoutSessions = await listAllPages((params) => stripe.checkout.sessions.list(params), {
     created: { gte, lt },
   });
