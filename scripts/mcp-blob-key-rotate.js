@@ -46,8 +46,14 @@ const PROOF_LANE = "mcpBlobKeyProof";
 const GRANTS_PATH = "/api/v1/mcp/hmrc-grants";
 const GRANT_FUNCTION_NAME_PATTERN = "mcp-hmrc-grant-ingest-handler";
 const FAR_FUTURE_SECONDS = 4_000_000_000;
-const EVIDENCE_POLLS = 12;
 const EVIDENCE_POLL_MS = 10_000;
+const EVIDENCE_TOTAL_WAIT_MS = 180_000;
+const EVIDENCE_POLLS = EVIDENCE_TOTAL_WAIT_MS / EVIDENCE_POLL_MS;
+// Equals MCP_HMRC_GRANT_RESERVED_CONCURRENCY in McpStack.java; the function has no provisioned
+// concurrency, so this many containers is the most that can run, and a larger batch is throttled.
+const GRANT_ROUTE_MAX_CONTAINERS = 5;
+const READS_PER_CONTAINER_TO_REACH_EVERY_ONE = 3;
+const READS_PER_ROUND = GRANT_ROUTE_MAX_CONTAINERS * READS_PER_CONTAINER_TO_REACH_EVERY_ONE;
 
 export function parseArgs(argv) {
   const opts = { apply: false, proveRefresh: false };
@@ -99,10 +105,11 @@ async function writeRotatedRegistry(client, commands, secretName, rotated) {
 }
 
 /**
- * The refresh proof, as a sequence over injected steps. The first grant read makes the Lambda
- * load the key registry. The roll then adds a version. A value sealed under that version is read
- * after the forced-read floor and inside the cache life, so the Lambda's cached registry does not
- * hold the version: the first open fails, the keys are read again and the second open passes.
+ * The refresh proof, as a sequence over injected steps. A round of parallel grant reads makes
+ * every warm container of the route load the key registry. The roll then adds a version. A value
+ * sealed under that version is read in a second round, after the forced-read floor and inside the
+ * cache life. A container that holds the old registry fails its first open, reads the keys again
+ * and logs the line; a container that never read the keys loads them fresh and logs nothing.
  *
  * @param {object} steps
  * @param {() => Promise<string>} steps.createGrant - creates a grant through the API, answers its id
@@ -121,8 +128,7 @@ export async function proveRefresh(steps) {
   try {
     const sealedBefore = await steps.seal(grantId);
     await steps.place(grantId, sealedBefore);
-    const first = await steps.read(grantId);
-    if (first.status !== 200) throw new Error(`The first grant read answered ${first.status}, expected 200`);
+    const answeredBefore = await readRound(steps, grantId, "before the roll");
     const loadedAt = steps.now();
     const cachedCurrent = sealedBefore.split(".")[0];
 
@@ -139,20 +145,32 @@ export async function proveRefresh(steps) {
     if (sealedVersion === cachedCurrent) throw new Error(`The roll left the current version at ${cachedCurrent}`);
     await steps.place(grantId, sealedAfter);
     const sinceMs = steps.now() - 5000;
-    const second = await steps.read(grantId);
-    if (second.status !== 200) throw new Error(`The second grant read answered ${second.status}, expected 200`);
+    const answeredAfter = await readRound(steps, grantId, "after the roll");
 
     const evidence = await steps.findEvidence(sinceMs, { sealedVersion, cachedCurrent });
     if (!evidence) {
       throw new Error(
         `No "${KEY_REFRESH_LOG_MESSAGE}" line for ${HMRC_GRANT_PURPOSE} (${cachedCurrent} to ${sealedVersion}) in the Lambda log. ` +
-          "The second read may have reached another container; run the proof again.",
+          `${answeredBefore} reads answered 200 before the roll and ${answeredAfter} after it. ` +
+          "No warm container held the old keys when the reads came; run the proof again.",
       );
     }
-    return { grantId, cachedCurrent, sealedVersion, evidence };
+    return { grantId, cachedCurrent, sealedVersion, evidence, answeredBefore, answeredAfter };
   } finally {
     await steps.remove(grantId);
   }
+}
+
+async function readRound(steps, grantId, when) {
+  let answered200 = 0;
+  for (let done = 0; done < READS_PER_ROUND; done += GRANT_ROUTE_MAX_CONTAINERS) {
+    const batch = await Promise.all(Array.from({ length: GRANT_ROUTE_MAX_CONTAINERS }, () => steps.read(grantId)));
+    for (const { status } of batch) {
+      if (status !== 200) throw new Error(`A grant read ${when} answered ${status}, expected 200 (${answered200} answered 200 first)`);
+      answered200 += 1;
+    }
+  }
+  return answered200;
 }
 
 /**
