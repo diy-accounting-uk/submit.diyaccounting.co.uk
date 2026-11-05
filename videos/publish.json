@@ -3090,7 +3090,7 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video shows a confirmation statement (CS01) from start to finish: sign in, take out Resident Ltd, look up a company, read its directors and persons with significant control from Companies House's register, review and verify, then file it. The filing also carries the Companies House fee. It's a real recording of the product, not a mockup. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident Ltd\n00:17 Which company?\n00:39 The register\n00:56 Review the statement\n01:22 Confirm the directors\n01:49 Preview\n02:04 The filing",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": "qeuSxDBdyWI",
+      "videoId": "OExNkU6FYOE",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -3459,7 +3459,7 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident Ltd, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. It was recorded against a local simulator. It ends on your copy of the filed accounts with Companies House's receipt. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident Ltd\n00:16 Which company?\n00:43 The accounts\n01:49 Preview\n02:07 File it\n02:22 The outcome",
       "tags": ["DIY Accounting", "Companies House", "micro-entity accounts"],
       "categoryId": "27",
-      "videoId": "oNk97jmePmw",
+      "videoId": "THVJJwOe3AM",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -7884,7 +7884,7 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video files a small company's accounts: the profit and loss, the balance sheet with last year beside it, the notes and the directors' statements. It previews the accounts, files them, and ends on your copy of the filing with Companies House's receipt. It was recorded against a local simulator of Companies House's test service. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:10 Resident Ltd\n00:20 Which company?\n00:46 The accounts\n02:56 Preview\n03:13 File it\n03:28 The outcome",
       "tags": ["DIY Accounting", "Companies House", "small company accounts", "accounts filing"],
       "categoryId": "27",
-      "videoId": "LYo5_sWmHmI",
+      "videoId": "7vG_46Lf5kA",
       "walkthrough": [
         {
           "scene": "company-lookup",
