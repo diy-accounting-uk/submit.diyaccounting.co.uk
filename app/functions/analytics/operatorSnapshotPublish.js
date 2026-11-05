@@ -13,7 +13,7 @@
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
+// Six-hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
 // reads the analytics views behind the one-stop objectives dashboard and writes one JSON
 // snapshot per environment: for each observation of the eight objectives, Today (since midnight
 // UK time), Previous day, Last 7 days, Last 30 days with its trend against the 30 days before,
@@ -469,7 +469,9 @@ function caseFilter(where) {
  * as a full window.
  *
  * Each query lists every partition prefix its view's tables project and reads their objects, so
- * every run makes one query per view rather than one per observation.
+ * every run makes one query per view rather than one per observation. A "latest-total" window
+ * finds its newest day with a window function over the one scan of the view, so the query reads
+ * the view once however many windows it has.
  *
  * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
  * @returns {string}
@@ -477,6 +479,7 @@ function caseFilter(where) {
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const latestReading = LATEST_READING_VIEWS.has(view);
   const periodic = isPeriodicDayColumn(dayColumn);
+  const newestDayColumns = [];
   const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
@@ -491,7 +494,9 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
           // The open items counted on the newest day that has a row in the window: a count of
           // open items is a reading, so summing it over the days would count each item once a day.
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
-          return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = (SELECT max(${dayColumn}) FROM ${view} WHERE ${window}${filter})${filter}) AS ${prefix}${alias}`;
+          const newestDayName = `${prefix}${alias}_newest_day`;
+          newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+          return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${newestDayName}${filter}) AS ${prefix}${alias}`;
         }
         if (aggregation === "latest" || newestDay) {
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
@@ -516,7 +521,8 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     }
     return windowColumns;
   });
-  return `SELECT ${columns.join(",\n       ")}\nFROM   ${view}`;
+  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM ${view})` : view;
+  return `SELECT ${columns.join(",\n       ")}\nFROM   ${source}`;
 }
 
 /**

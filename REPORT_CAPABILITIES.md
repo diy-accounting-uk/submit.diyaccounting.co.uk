@@ -202,8 +202,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3: use when a fast iteration deploy of app or web code is needed, without a full CDK deploy.
     - [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand: use when only one CDK stack needs deploying, without running the full pipeline.
     - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets: use when environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
-    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
     - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager: use when reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
+    - [OPS-181](#ops-181-prove-the-customer-email-path-on-ci) Prove the customer email path on ci: use when the EmailStack or the customer email worker has deployed to ci and the path from the activity bus to a delivered message needs a check.
+    - [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender: use when the SES identity, the DNS records for mail, the customer email queue or its workers need a change.
     - [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages: use when CloudFront returns an HTTP error and the visitor needs the right static error page instead of a raw status.
     - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy: use when a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
     - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page: use when a visitor lands on the bare diyaccounting.co.uk root domain and needs redirecting to the submit subdomain.
@@ -270,6 +272,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state: use when a third-party console's live configuration must be checked against the declared infra/** state.
     - [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates: use when checking or changing which ecosystems Dependabot updates, or its schedule.
     - [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry: use when checking whether a served domain's certificate is close to expiry.
+    - [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC: use when the Let's Encrypt certificate for local.submit.diyaccounting.co.uk is within 30 days of expiry, or you want to prove that renewal works without an SSO session.
     - [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check: use when a compliance commitment's status needs re-checking, or a new commitment needs adding to compliance.toml.
     - [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials: use when a dependency inventory of the shipped application is needed.
   - [Data protection and privacy](#data-protection-and-privacy-ops)
@@ -357,7 +360,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs: use when a new Lambda-backed stack needs the common function, alias and health-alarm wiring instead of rebuilding it.
     - [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently: use when a stack needs an IAM-safe resource name derived from a deployment identifier, or consistent cost-allocation tags.
     - [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code: use when Java CDK config code needs order-preserving maps or null-tolerant merges instead of double-brace hacks.
-    - [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource) Upsert Route53 alias records via custom resource: use when a Route53 alias record pointing at a CloudFront distribution needs an idempotent UPSERT that CDK's L2 constructs don't provide.
+    - [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource) Upsert Route53 alias and plain records via custom resource: use when a Route53 alias record, or a CNAME, MX or TXT record set, needs an idempotent UPSERT that CDK's L2 constructs don't provide.
     - [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering: use when an S3 bucket needs intelligent tiering or object expiration rules generated for its CloudFormation template.
     - [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging: use when the Java CDK application's own log appenders, patterns or retention need changing, for main or test runs.
     - [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle: use when a Lambda or Synthetics runtime version, dependency, or certificate is approaching end-of-life and needs tracking.
@@ -694,9 +697,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** requestCustomerEmail puts one CustomerEmailRequest on the activity bus and never throws. The customerEmailSend worker renders the message and sends it through SES. The customerEmailEvent function records bounces and complaints.
 - **Run:** `import { requestCustomerEmail } from "app/lib/customerEmailRequest.js"`
 - **Entry:** `app/lib/customerEmailRequest.js:requestCustomerEmail`; `app/functions/email/customerEmailSend.js:handler`; `app/functions/email/customerEmailEvent.js:handler`
-- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js
+- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
 - **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
-- **Related:** DATA-01
+- **Related:** DATA-01, OPS-182, OPS-181
 
 ### Server and API plumbing (SITE)
 
@@ -2350,10 +2353,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-181](#ops-181-prove-the-customer-email-path-on-ci) Prove the customer email path on ci · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
-- [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
+- [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
@@ -2361,7 +2364,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe · [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh) Read a Secrets Manager secret with a five minute cache and a forced refresh · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
 - [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops): [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans) Provision cross-account backup vaults and plans · [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack · [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack · [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories · [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack · [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack · [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack · [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1 · [OPS-119](#ops-119-provision-the-ops-stack) Provision the Ops stack · [OPS-120](#ops-120-provision-the-publish-stack) Provision the Publish stack · [OPS-121](#ops-121-provision-the-security-baseline-stack) Provision the Security Baseline stack · [OPS-122](#ops-122-provision-the-security-detection-stack) Provision the Security Detection stack
-- [CDK shared constructs and naming](#cdk-shared-constructs-and-naming-ops): [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account) Wire CDK application entrypoints per account · [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs · [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently · [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code · [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource) Upsert Route53 alias records via custom resource · [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering · [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging · [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
+- [CDK shared constructs and naming](#cdk-shared-constructs-and-naming-ops): [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account) Wire CDK application entrypoints per account · [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs · [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently · [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code · [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource) Upsert Route53 alias and plain records via custom resource · [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering · [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging · [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
 <!-- /generated:area OPS -->
 
 ### Deploy pipeline (OPS)
@@ -2378,6 +2381,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets
 - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack
 - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager
+- [OPS-181](#ops-181-prove-the-customer-email-path-on-ci) Prove the customer email path on ci
+- [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender
 - [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages
 - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy
 - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page
@@ -2486,7 +2491,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-156 Build an environment image and deploy one environment stack
 
-- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
+- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook) builds and deploys.
 - **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
 - **Run:** no command; deploy-environment.yml calls it (see OPS-09)
 - **Entry:** `.github/workflows/deploy-env-image-stack.yml`
@@ -2503,6 +2508,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/deploy-env-secrets.yml, .github/workflows/deploy-environment.yml, scripts/put-secret-with-rotation-tag.sh
 - **Keywords:** create secrets, secrets manager, workflow_call, put-secret-with-rotation-tag, salt secret, email hash secret
 - **Related:** OPS-09, OPS-166
+
+#### OPS-181 Prove the customer email path on ci
+
+- **Use when:** the EmailStack or the customer email worker has deployed to ci and the path from the activity bus to a delivered message needs a check.
+- **Does:** customer-email-proof.yml puts fixture CustomerEmailRequest events on the ci activity bus: one for each of three kinds to the operator address, one to each SES simulator bounce and complaint address. It waits, reads the worker's log group, and queries the ci activity events for the customer-email outcomes.
+- **Run:** `gh workflow run customer-email-proof.yml -f operator-address=<address>`
+- **Entry:** `.github/workflows/customer-email-proof.yml`
+- **Files:** .github/workflows/customer-email-proof.yml
+- **Keywords:** customer email proof, ses, dkim, spf, bounce, complaint, simulator, ci
+- **Related:** SITE-27
+
+#### OPS-182 Provision the customer email sender
+
+- **Use when:** the SES identity, the DNS records for mail, the customer email queue or its workers need a change.
+- **Does:** EmailStack.java is an environment stack. It creates the SES domain identity with DKIM and a custom MAIL FROM domain, and the Route53 records through the root role. It also creates the request queue, the send worker and the bounce and complaint handler.
+- **Run:** no command; deploy-environment.yml runs its deploy-email job
+- **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java:EmailStack`
+- **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, infra/main/java/co/uk/diyaccounting/submit/names/EmailNames.java, infra/test/java/co/uk/diyaccounting/submit/stacks/EmailStackTest.java
+- **Keywords:** ses, email identity, dkim, mail from, configuration set, customer email queue, route53 mail records
+- **Related:** SITE-27, OPS-127
 
 #### OPS-131 Serve CloudFront custom error pages
 
@@ -3094,6 +3119,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state
 - [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates
 - [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry
+- [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC
 - [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check
 - [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 <!-- /generated:group security-and-compliance-ops -->
@@ -3190,12 +3216,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-37 Check HTTPS certificate expiry
 
 - **Use when:** checking whether a served domain's certificate is close to expiry.
-- **Does:** certificate-check.yml checks ACM and Let's Encrypt certificates for the domains this repository serves, on a schedule. It alerts before a certificate expires.
+- **Does:** certificate-check.yml checks ACM certificates and the stored local TLS certificate (Let's Encrypt) for the domains this repository serves, on a schedule. It alerts before a certificate expires.
 - **Run:** no command; see Does and Entry
 - **Entry:** `.github/workflows/certificate-check.yml`
 - **Files:** .github/workflows/certificate-check.yml
 - **Keywords:** certificate expiry, acm, lets encrypt, https certificate, scheduled alert, tls cert check
-- **Related:** OPS-45
+- **Related:** OPS-45, OPS-171
+
+#### OPS-171 Renew the local TLS certificate by GitHub OIDC
+
+- **Use when:** the Let's Encrypt certificate for local.submit.diyaccounting.co.uk is within 30 days of expiry, or you want to prove that renewal works without an SSO session.
+- **Does:** local-tls-renew.yml reads the expiry of `ci/submit/local-tls/certificate`. When under 30 days remain, it issues a new certificate with certbot and the route53 DNS-01 plugin through the root account role `root-certbot-dns01`, then writes the certificate to that secret. A dry-run dispatch (the default) runs certbot against the Let's Encrypt staging service and writes nothing.
+- **Run:** `gh workflow run local-tls-renew.yml` (dry run); `gh workflow run local-tls-renew.yml -f dry-run=false` (live)
+- **Entry:** `.github/workflows/local-tls-renew.yml`
+- **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-publish.sh
+- **Keywords:** local tls, certbot, lets encrypt, dns-01, route53, local.submit, certificate renewal, oidc
+- **Related:** OPS-37, OPS-45
 
 #### OPS-38 Run the weekly compliance-test check
 
@@ -4050,7 +4086,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs
 - [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently
 - [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code
-- [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource) Upsert Route53 alias records via custom resource
+- [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource) Upsert Route53 alias and plain records via custom resource
 - [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering
 - [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging
 - [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
@@ -4096,15 +4132,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** kind helpers, config composition, cdk config, null-tolerant map, populatedmap
 - **Related:** OPS-127
 
-#### OPS-127 Upsert Route53 alias records via custom resource
+#### OPS-127 Upsert Route53 alias and plain records via custom resource
 
-- **Use when:** a Route53 alias record pointing at a CloudFront distribution needs an idempotent UPSERT that CDK's L2 constructs don't provide.
-- **Does:** Route53AliasUpsert provides an idempotent UPSERT of a Route53 alias record pointing at a CloudFront distribution. It is implemented as an AwsCustomResource, since CDK's L2 constructs expose no such operation.
+- **Use when:** a Route53 alias record, or a CNAME, MX or TXT record set, needs an idempotent UPSERT that CDK's L2 constructs don't provide.
+- **Does:** Route53AliasUpsert provides an idempotent UPSERT of Route53 alias records, and of plain record sets in one change batch. It is implemented as an AwsCustomResource, since CDK's L2 constructs expose no such operation.
 - **Run:** no command; see Does and Entry
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java
 - **Keywords:** route53 alias, upsert record, awscustomresource, cloudfront alias
-- **Related:** OPS-126
+- **Related:** OPS-126, OPS-182
 
 #### OPS-128 Generate S3 lifecycle rules for storage tiering
 
@@ -6749,7 +6785,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - aws sso login: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
-- awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
+- awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake), [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
@@ -6835,7 +6871,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - books api: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
-- bounce: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- bounce: [SITE-27](#site-27-email-the-customer-after-a-key-event), [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - box 5: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - brackets: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -6939,10 +6975,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdk-ci: [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - cdn allowlist: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - cdp screencast: [DEV-40](#dev-40-record-a-product-demo-video)
+- certbot: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - certbot deploy hook: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - certificate expiry: [OPS-37](#ops-37-check-https-certificate-expiry), [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - certificate publish: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
-- certificate renewal: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- certificate renewal: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - cfnnamedquery: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - change of address: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - change of email: [CH-06](#ch-06-file-a-change-of-registered-email-address)
@@ -6966,6 +7003,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - checkout.session.completed: [BILL-28](#bill-28-process-stripe-webhook-events)
 - checkpass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkpoint: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- ci: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - ci apex: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - ci branch deploys: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - ci deployments: [DEV-27](#dev-27-render-the-open-work-board)
@@ -7009,7 +7047,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
 - cloudfront access log: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - cloudfront access logs: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
-- cloudfront alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
+- cloudfront alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
 - cloudfront bypass: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - cloudfront distribution: [OPS-116](#ops-116-provision-the-holding-page-stack)
@@ -7073,7 +7111,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - competitor analysis: [SITE-20](#site-20-document-business-governance-and-positioning)
-- complaint: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- complaint: [SITE-27](#site-27-email-the-customer-after-a-key-event), [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - compliance accessibility: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - compliance check: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - compliance dashboard: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
@@ -7090,6 +7128,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - concurrency group: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
+- configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -7195,6 +7234,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- customer email proof: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
+- customer email queue: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - customer paid no bundle: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
@@ -7336,8 +7377,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- dkim: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci), [OPS-182](#ops-182-provision-the-customer-email-sender)
 - dns cname token: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - dns validation: [SS-37](#ss-37-request-acm-certificates)
+- dns-01: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - do-next: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - do-next agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - do-next skill: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
@@ -7411,6 +7454,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - email hash: [BILL-10](#bill-10-redeem-a-pass)
 - email hash rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - email hash secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
+- email identity: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - email restricted: [BILL-08](#bill-08-check-a-passs-validity)
 - email-hash-rotate.js: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - emailhashsecrethelper: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
@@ -7921,7 +7965,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ledger book: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-18](#bill-18-delete-a-diya-gl-book), [BILL-19](#bill-19-list-a-users-diya-gl-books), [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - legacy vatdue: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - legal declaration: [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration)
-- lets encrypt: [OPS-37](#ops-37-check-https-certificate-expiry)
+- lets encrypt: [OPS-37](#ops-37-check-https-certificate-expiry), [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - liabilities: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - libreoffice: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online), [SS-58](#ss-58-excel-xml-manipulation-reference)
 - libreoffice roundtrip: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
@@ -7956,7 +8000,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - local server: [DEV-01](#dev-01-run-the-http-simulator-server)
 - local server routing: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - local session: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
-- local tls: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
+- local tls: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
+- local.submit: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - localstorage wrapper: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - lock: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - log appenders: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
@@ -7979,6 +8024,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ltd derivations: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - mac addresses: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - machine-ask: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
+- mail from: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
@@ -8150,7 +8196,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - og image: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
-- oidc: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
+- oidc: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role), [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
@@ -8584,8 +8630,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rotation schedule: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - rotation set: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - rotation tag: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
-- route53: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
-- route53 alias: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
+- route53: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
+- route53 alias: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
+- route53 mail records: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - route53 records: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - rss: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - ruleset evaluation: [DATA-11](#data-11-run-glue-data-quality-checks)
@@ -8719,7 +8766,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
-- ses: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- ses: [SITE-27](#site-27-email-the-customer-after-a-key-event), [OPS-181](#ops-181-prove-the-customer-email-path-on-ci), [OPS-182](#ops-182-provision-the-customer-email-sender)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
 - session funnel: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - session report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-37](#dev-37-write-the-session-report)
@@ -8751,7 +8798,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
-- simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - simulator suites: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - single secret: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
@@ -8787,6 +8834,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
 - spec.html: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- spf: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - spotless: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - spreadsheet video: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - spreadsheets contract: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
@@ -9056,7 +9104,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - update workflow: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - updateuserbundles: [BILL-03](#bill-03-delete-a-bundle)
 - upload book: [BILL-17](#bill-17-upload-a-diya-gl-book)
-- upsert record: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
+- upsert record: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
 - url inspection: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - us-east-1: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1), [SS-37](#ss-37-request-acm-certificates)
 - usage by donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)

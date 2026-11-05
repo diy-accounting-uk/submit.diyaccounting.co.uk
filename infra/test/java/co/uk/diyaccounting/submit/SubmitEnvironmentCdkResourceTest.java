@@ -185,8 +185,8 @@ class SubmitEnvironmentCdkResourceTest {
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
         // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm and
-        // IntegrationCallRecordFailedAlarm, that's 11 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 11);
+        // IntegrationCallRecordFailedAlarm and CustomerEmailFailureAlarm, that's 12 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 12);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
@@ -273,6 +273,15 @@ class SubmitEnvironmentCdkResourceTest {
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
         SubmitApplicationCdkSupport.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
+
+        // 8d) Email stack: the SES sender, the request queue, the worker and the event handler.
+        Template email = Template.fromStack(env.emailStack);
+        email.resourceCountIs("AWS::SES::EmailIdentity", 1);
+        email.resourceCountIs("AWS::SQS::Queue", 2);
+        email.resourceCountIs("AWS::Events::Rule", 1);
+        // Two Lambda constructs carry two checks each, plus the dead letter queue check.
+        email.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(email, null, 0, envRoutedPrefixes);
 
         // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
         // mid-teardown's ALARM events are dropped instead of forwarded.

@@ -105,3 +105,8 @@ service@paypal.co.uk
 service@paypal.com
 noreply@google.com
 notifications@github.com
+
+# The public SES mailbox simulator addresses, used by the customer email proof.
+bounce@simulator.amazonses.com
+complaint@simulator.amazonses.com
+success@simulator.amazonses.com

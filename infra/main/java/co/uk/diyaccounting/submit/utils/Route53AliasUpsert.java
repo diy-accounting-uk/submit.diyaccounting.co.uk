@@ -4,14 +4,14 @@
  */
 
 // spotless:off
-// @capability OPS-127 Upsert Route53 alias records via custom resource
-// - **Use when:** a Route53 alias record pointing at a CloudFront distribution needs an idempotent UPSERT that CDK's L2 constructs don't provide.
-// - **Does:** Route53AliasUpsert provides an idempotent UPSERT of a Route53 alias record pointing at a CloudFront distribution. It is implemented as an AwsCustomResource, since CDK's L2 constructs expose no such operation.
+// @capability OPS-127 Upsert Route53 alias and plain records via custom resource
+// - **Use when:** a Route53 alias record, or a CNAME, MX or TXT record set, needs an idempotent UPSERT that CDK's L2 constructs don't provide.
+// - **Does:** Route53AliasUpsert provides an idempotent UPSERT of Route53 alias records, and of plain record sets in one change batch. It is implemented as an AwsCustomResource, since CDK's L2 constructs expose no such operation.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Route53AliasUpsert.java
 // - **Keywords:** route53 alias, upsert record, awscustomresource, cloudfront alias
-// - **Related:** OPS-126
+// - **Related:** OPS-126, OPS-182
 // @end-capability
 // spotless:on
 
@@ -235,6 +235,71 @@ public final class Route53AliasUpsert {
                 .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
         aliasAAAA.getNode().addDependency(grant);
+    }
+
+    /** One record set to write: its fully qualified name, type, TTL and values. */
+    public record DnsRecordSet(String name, String type, long ttlSeconds, List<String> values) {}
+
+    /**
+     * UPSERTs plain record sets (CNAME, MX, TXT) in one change batch.
+     *
+     * @param scope construct scope
+     * @param idPrefix unique id prefix for the custom resource
+     * @param zone hosted zone where records should be written
+     * @param records the record sets to write
+     */
+    public static void upsertRecords(Construct scope, String idPrefix, IHostedZone zone, List<DnsRecordSet> records) {
+        String route53AssumedRoleArn = System.getenv("ROOT_ROUTE53_ROLE_ARN");
+        boolean crossAccount = route53AssumedRoleArn != null && !route53AssumedRoleArn.isBlank();
+
+        var changes = new java.util.ArrayList<Map<String, Object>>();
+        for (DnsRecordSet record : records) {
+            var resourceRecords = new java.util.ArrayList<Map<String, Object>>();
+            for (String value : record.values()) {
+                resourceRecords.add(Map.of("Value", value));
+            }
+            Map<String, Object> rrset = new java.util.HashMap<>();
+            rrset.put("Name", record.name());
+            rrset.put("Type", record.type());
+            rrset.put("TTL", record.ttlSeconds());
+            rrset.put("ResourceRecords", resourceRecords);
+            changes.add(Map.of("Action", "UPSERT", "ResourceRecordSet", rrset));
+        }
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("HostedZoneId", zone.getHostedZoneId());
+        params.put("ChangeBatch", Map.of("Changes", changes));
+
+        var statements =
+                new java.util.ArrayList<>(List.of(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                        .actions(List.of("route53:ChangeResourceRecordSets"))
+                        .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
+                        .build()));
+        if (crossAccount) {
+            statements.add(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                    .actions(List.of("sts:AssumeRole"))
+                    .resources(List.of(route53AssumedRoleArn))
+                    .build());
+        }
+        var stack = Stack.of(scope);
+        var grant = KindCdk.grantToAwsCustomResourceProvider(stack, statements);
+
+        var callBuilder = AwsSdkCall.builder()
+                .service("Route53")
+                .action("changeResourceRecordSets")
+                .parameters(params)
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-records-" + zone.getZoneName()));
+        if (crossAccount) {
+            callBuilder.assumedRoleArn(route53AssumedRoleArn);
+        }
+        AwsSdkCall call = callBuilder.build();
+
+        AwsCustomResource upsert = AwsCustomResource.Builder.create(scope, idPrefix + "-Records-Upsert")
+                .onCreate(call)
+                .onUpdate(call)
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
+                .build();
+        upsert.getNode().addDependency(grant);
     }
 
     private static String buildFqdn(IHostedZone zone, String relativeRecordName) {

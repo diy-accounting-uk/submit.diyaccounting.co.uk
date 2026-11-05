@@ -3,12 +3,12 @@
 
 # @capability OPS-37 Check HTTPS certificate expiry
 # - **Use when:** checking whether a served domain's certificate is close to expiry.
-# - **Does:** certificate-check.yml checks ACM and Let's Encrypt certificates for the domains this repository serves, on a schedule. It alerts before a certificate expires.
+# - **Does:** certificate-check.yml checks ACM certificates and the stored local TLS certificate (Let's Encrypt) for the domains this repository serves, on a schedule. It alerts before a certificate expires.
 # - **Run:** no command; see Does and Entry
 # - **Entry:** `.github/workflows/certificate-check.yml`
 # - **Files:** .github/workflows/certificate-check.yml
 # - **Keywords:** certificate expiry, acm, lets encrypt, https certificate, scheduled alert, tls cert check
-# - **Related:** OPS-45
+# - **Related:** OPS-45, OPS-171
 # @end-capability
 
 name: certificate-check
@@ -94,3 +94,36 @@ jobs:
             exit 1
           fi
           echo "All in-use certificates validate and expire more than 30 days out"
+
+  check-local-tls:
+    name: check local TLS certificate
+    runs-on: ubuntu-24.04
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check the stored local TLS certificate expires more than 30 days out
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          aws secretsmanager get-secret-value --secret-id ci/submit/local-tls/certificate \
+            --region "$AWS_REGION" --query SecretString --output text \
+            | jq -r .fullchain > "$RUNNER_TEMP/local-tls-fullchain.pem"
+          NOT_AFTER=$(openssl x509 -in "$RUNNER_TEMP/local-tls-fullchain.pem" -noout -enddate | cut -d= -f2)
+          if openssl x509 -in "$RUNNER_TEMP/local-tls-fullchain.pem" -noout -checkend 2592000 > /dev/null; then
+            echo "OK: ci/submit/local-tls/certificate expires $NOT_AFTER"
+          else
+            echo "FAIL: ci/submit/local-tls/certificate expires within 30 days ($NOT_AFTER); local-tls-renew.yml renews it"
+            rm -f "$RUNNER_TEMP/local-tls-fullchain.pem"
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/local-tls-fullchain.pem"

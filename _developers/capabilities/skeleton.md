@@ -342,6 +342,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-09 -->
 <!-- capability OPS-156 -->
 <!-- capability OPS-157 -->
+<!-- capability OPS-181 -->
+<!-- capability OPS-182 -->
 <!-- capability OPS-131 -->
 <!-- capability OPS-132 -->
 <!-- capability OPS-133 -->
@@ -420,6 +422,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-35 -->
 <!-- capability OPS-36 -->
 <!-- capability OPS-37 -->
+<!-- capability OPS-171 -->
 <!-- capability OPS-38 -->
 <!-- capability OPS-39 -->
 ### Data protection and privacy (OPS)
