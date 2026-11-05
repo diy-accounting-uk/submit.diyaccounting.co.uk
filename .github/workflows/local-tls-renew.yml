@@ -1,0 +1,153 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-171 Renew the local TLS certificate by GitHub OIDC
+# - **Use when:** the Let's Encrypt certificate for local.submit.diyaccounting.co.uk is within 30 days of expiry, or you want to prove that renewal works without an SSO session.
+# - **Does:** local-tls-renew.yml reads the expiry of `ci/submit/local-tls/certificate`. When under 30 days remain, it issues a new certificate with certbot and the route53 DNS-01 plugin through the root account role `root-certbot-dns01`, then writes the certificate to that secret. A dry-run dispatch (the default) runs certbot against the Let's Encrypt staging service and writes nothing.
+# - **Run:** `gh workflow run local-tls-renew.yml` (dry run); `gh workflow run local-tls-renew.yml -f dry-run=false` (live)
+# - **Entry:** `.github/workflows/local-tls-renew.yml`
+# - **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-publish.sh
+# - **Keywords:** local tls, certbot, lets encrypt, dns-01, route53, local.submit, certificate renewal, oidc
+# - **Related:** OPS-37, OPS-45
+# @end-capability
+
+name: local-tls-renew
+run-name: "local TLS renewal (${{ github.event_name == 'workflow_dispatch' && inputs.dry-run && 'dry run' || 'live' }})"
+
+# Certbot account key: none is stored. Each run registers a new Let's Encrypt account in a
+# directory under RUNNER_TEMP, uses it for one issuance and deletes the directory in the last
+# step. No key sits in GitHub, in Secrets Manager, in an artifact or in a log, so none can leak
+# or need rotation. Let's Encrypt allows new accounts on each run at this frequency, and a
+# certificate does not depend on the account that requested it. The certificate and its private
+# key go only to the Secrets Manager secret ci/submit/local-tls/certificate in the ci account.
+#
+# Trust: the job runs in the ci environment from main. It assumes the root account role
+# root-certbot-dns01 by GitHub OIDC. That role trusts only this workflow file on main.
+# The workflow file name is part of that trust. Rename the file only with the trust in the
+# root repository (RootDnsStack).
+#
+# The schedule renews when under 30 days remain. The ci account role writes the secret.
+
+on:
+  schedule:
+    - cron: '41 5 * * 0' # Weekly on Sunday
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Run certbot against the staging service and write nothing'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: local-tls-renew
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: 'eu-west-2'
+  LOCAL_TLS_DOMAIN: 'local.submit.diyaccounting.co.uk'
+  LOCAL_TLS_SECRET_ID: 'ci/submit/local-tls/certificate'
+  CERTBOT_ROLE_ARN: 'arn:aws:iam::887764105431:role/root-certbot-dns01'
+  RENEW_WITHIN_DAYS: '30'
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+
+jobs:
+  renew:
+    runs-on: ubuntu-24.04
+    environment: ci
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the ci account roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read the stored certificate's expiry
+        id: expiry
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          aws secretsmanager get-secret-value --secret-id "$LOCAL_TLS_SECRET_ID" \
+            --region "$AWS_REGION" --query SecretString --output text \
+            | jq -r .fullchain > "$RUNNER_TEMP/stored-fullchain.pem"
+          NOT_AFTER=$(openssl x509 -in "$RUNNER_TEMP/stored-fullchain.pem" -noout -enddate | cut -d= -f2)
+          rm -f "$RUNNER_TEMP/stored-fullchain.pem"
+          DAYS_LEFT=$(( ( $(date -u -d "$NOT_AFTER" +%s) - $(date -u +%s) ) / 86400 ))
+          echo "Stored certificate expires $NOT_AFTER ($DAYS_LEFT days left)"
+          if [ "$DRY_RUN" = "true" ] || [ "$DAYS_LEFT" -lt "$RENEW_WITHIN_DAYS" ]; then
+            echo "renew=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "renew=false" >> "$GITHUB_OUTPUT"
+            echo "No renewal needed"
+          fi
+
+      - name: Assume the certbot role in the root account
+        if: steps.expiry.outputs.renew == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ env.CERTBOT_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          retry-max-attempts: 3
+
+      - name: Install certbot
+        if: steps.expiry.outputs.renew == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/certbot-venv"
+          "$RUNNER_TEMP/certbot-venv/bin/pip" install --quiet certbot==4.2.0 certbot-dns-route53==4.2.0
+
+      - name: Issue the certificate
+        if: steps.expiry.outputs.renew == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          DRY_FLAG=""
+          if [ "$DRY_RUN" = "true" ]; then DRY_FLAG="--dry-run"; fi
+          "$RUNNER_TEMP/certbot-venv/bin/certbot" certonly $DRY_FLAG --dns-route53 \
+            -d "$LOCAL_TLS_DOMAIN" \
+            --config-dir "$RUNNER_TEMP/certbot/config" \
+            --work-dir "$RUNNER_TEMP/certbot/work" \
+            --logs-dir "$RUNNER_TEMP/certbot/logs" \
+            --non-interactive --agree-tos --register-unsafely-without-email
+
+      - name: Assume the ci account roles again
+        if: steps.expiry.outputs.renew == 'true' && env.DRY_RUN != 'true'
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write the certificate to Secrets Manager
+        if: steps.expiry.outputs.renew == 'true' && env.DRY_RUN != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          LINEAGE="$RUNNER_TEMP/certbot/config/live/$LOCAL_TLS_DOMAIN"
+          jq -n --rawfile c "$LINEAGE/fullchain.pem" --rawfile k "$LINEAGE/privkey.pem" \
+            '{fullchain:$c, privkey:$k}' > "$RUNNER_TEMP/local-tls-secret.json"
+          aws secretsmanager put-secret-value --secret-id "$LOCAL_TLS_SECRET_ID" \
+            --region "$AWS_REGION" --secret-string "file://$RUNNER_TEMP/local-tls-secret.json" \
+            --query VersionId --output text > /dev/null
+          echo "Certificate written to $LOCAL_TLS_SECRET_ID"
+
+      - name: Delete the certbot account and certificate files
+        if: ${{ always() }}
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/certbot" "$RUNNER_TEMP/local-tls-secret.json" "$RUNNER_TEMP/stored-fullchain.pem"
