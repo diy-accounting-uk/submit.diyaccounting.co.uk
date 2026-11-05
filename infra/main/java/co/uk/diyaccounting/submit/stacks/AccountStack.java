@@ -1401,7 +1401,8 @@ public class AccountStack extends Stack {
                 "dynamodb:PutItem",
                 "dynamodb:DeleteItem");
         // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
-        bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
+        bundlesTable.grant(
+                this.passPostLambda, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passPostLambda, region, account, props.envName());

@@ -94,8 +94,8 @@ class SubmitApplicationTableReadGrantsCdkTest extends SubmitApplicationCdkTestEn
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> statementsOf(Template template, Map<String, Object> functionProperties) {
-        String roleLogicalId =
-                String.valueOf(((List<Object>) asMap(functionProperties.get("Role")).get("Fn::GetAtt")).get(0));
+        String roleLogicalId = String.valueOf(
+                ((List<Object>) asMap(functionProperties.get("Role")).get("Fn::GetAtt")).get(0));
         List<Map<String, Object>> statements = new ArrayList<>();
         for (var policy : template.findResources("AWS::IAM::Policy").values()) {
             Map<String, Object> properties = asMap(policy.get("Properties"));
