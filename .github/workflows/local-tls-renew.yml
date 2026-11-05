@@ -6,7 +6,7 @@
 # - **Does:** local-tls-renew.yml reads the expiry of `ci/submit/local-tls/certificate`. When under 30 days remain, it issues a new certificate with certbot and the route53 DNS-01 plugin through the root account role `root-certbot-dns01`, then writes the certificate to that secret. A dry-run dispatch (the default) runs certbot against the Let's Encrypt staging service and writes nothing.
 # - **Run:** `gh workflow run local-tls-renew.yml` (dry run); `gh workflow run local-tls-renew.yml -f dry-run=false` (live)
 # - **Entry:** `.github/workflows/local-tls-renew.yml`
-# - **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-publish.sh
+# - **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-fetch.sh
 # - **Keywords:** local tls, certbot, lets encrypt, dns-01, route53, local.submit, certificate renewal, oidc
 # - **Related:** OPS-37, OPS-45
 # @end-capability
@@ -27,6 +27,7 @@ run-name: "local TLS renewal (${{ github.event_name == 'workflow_dispatch' && in
 # root repository (RootDnsStack).
 #
 # The schedule renews when under 30 days remain. The ci account role writes the secret.
+# This workflow is the only writer. A developer reads it with scripts/local-tls-fetch.sh.
 
 on:
   schedule:
