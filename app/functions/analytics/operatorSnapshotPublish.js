@@ -13,7 +13,7 @@
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
+// Six-hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
 // reads the analytics views behind the one-stop objectives dashboard and writes one JSON
 // snapshot per environment: for each observation of the eight objectives, Today (since midnight
 // UK time), Previous day, Last 7 days, Last 30 days with its trend against the 30 days before,
