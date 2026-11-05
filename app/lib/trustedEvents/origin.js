@@ -13,7 +13,7 @@ import { Route53DomainsClient, ListDomainsCommand } from "@aws-sdk/client-route-
 import { BudgetsClient, DescribeBudgetCommand } from "@aws-sdk/client-budgets";
 import { CostExplorerClient, GetAnomaliesCommand } from "@aws-sdk/client-cost-explorer";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
-import { companiesHouseHttpGet } from "../../services/companiesHouseApi.js";
+import { fetchCompanyProfile } from "./companiesHouseProfile.js";
 import { hashOfParsed, lineValue, parseBody } from "./issueFormat.js";
 import { COMPANY_NUMBER } from "./deadlineFacts.js";
 
@@ -161,10 +161,8 @@ export const defaultSourceReaders = {
     return domains;
   },
 
-  async getCompanyProfile() {
-    const response = await companiesHouseHttpGet(`/company/${COMPANY_NUMBER}`);
-    if (!response.ok) throw new Error(`Companies House answered ${response.status}`);
-    return response.data;
+  getCompanyProfile() {
+    return fetchCompanyProfile(COMPANY_NUMBER);
   },
 
   async describeBudget(name) {

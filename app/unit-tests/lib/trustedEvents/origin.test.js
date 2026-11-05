@@ -3,7 +3,7 @@
 
 import { describe, test, expect, vi } from "vitest";
 
-vi.mock("@app/services/companiesHouseApi.js", () => ({ companiesHouseHttpGet: vi.fn() }));
+vi.mock("@app/lib/trustedEvents/companiesHouseProfile.js", () => ({ fetchCompanyProfile: vi.fn() }));
 
 import { evaluateTrustedEventIssue, readSourceRecord, OPS_APP_LOGIN } from "@app/lib/trustedEvents/origin.js";
 import { buildBody, parseBody, hashOfParsed } from "@app/lib/trustedEvents/issueFormat.js";
