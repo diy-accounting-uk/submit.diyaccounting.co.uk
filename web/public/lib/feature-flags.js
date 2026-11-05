@@ -34,18 +34,29 @@
   }
 
   /**
+   * Read a feature entry (id, enabled, message and any other keys), or null when it is not configured.
+   * @param {string} featureId
+   * @returns {Promise<object|null>}
+   */
+  /**
    * Check whether a feature flag is enabled.
    * @param {string} featureId - the feature id (e.g. "feedback-engagement")
    * @returns {Promise<boolean>}
    */
-  async function isFeatureEnabled(featureId) {
+  async function getFeature(featureId) {
     const config = await fetchFeatures();
     const features = config.features || [];
-    const feature = features.find(function (f) {
-      return f.id === featureId;
-    });
+    return (
+      features.find(function (f) {
+        return f.id === featureId;
+      }) || null
+    );
+  }
+
+  async function isFeatureEnabled(featureId) {
+    const feature = await getFeature(featureId);
     return !!(feature && feature.enabled);
   }
 
-  window.featureFlags = { isFeatureEnabled: isFeatureEnabled };
+  window.featureFlags = { isFeatureEnabled: isFeatureEnabled, getFeature: getFeature };
 })();

@@ -106,7 +106,7 @@ export async function inviteClient(session, params = {}) {
   const { grantHeaders } = await hmrcGrantFor(session, "invite_client");
   return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
     method: "POST",
-    headers: grantHeaders,
+    headers: { ...grantHeaders, ...(await session.clientHeaders()) },
     body: { service, knownFact, ...(arn ? { arn } : {}) },
   });
 }

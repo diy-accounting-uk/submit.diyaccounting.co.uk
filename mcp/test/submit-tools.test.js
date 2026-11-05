@@ -295,6 +295,20 @@ describe("submit-tools", () => {
       expect(init.headers["X-Id-Token"]).toBeUndefined();
     });
 
+    it("sends the session's client headers on a route behind the custom authoriser", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
+      vi.stubGlobal("fetch", withGrant(mockFetch));
+      const hostedSession = createSession({
+        credentials: session.credentials,
+        clientHeaders: async () => ({ "x-mcp-hosted-client": "signed-address" }),
+      });
+      hostedSession.hmrcGrant = session.hmrcGrant;
+
+      await listVatObligations(hostedSession, { vrn: VRN });
+
+      expect(mockFetch.mock.calls[0][1].headers["x-mcp-hosted-client"]).toBe("signed-address");
+    });
+
     it("stops polling inside the session's pollBudgetMs, naming the poll URL", async () => {
       vi.useFakeTimers();
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());

@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { createLogger } from "../lib/logger.js";
 import { DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
 import { sendXmlToCompaniesHouse } from "./companiesHouseSend.js";
+import { readSecret } from "../lib/cachedSecret.js";
 import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../lib/xmlDom.js";
 
@@ -27,60 +28,38 @@ const DEFAULT_XML_GATEWAY_URI = "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/
 // the item's id, because renaming it would restart numbering and collide with numbers already used.
 const SUBMISSION_NUMBER_COUNTER_KEY = { hashedSub: "companies-house-xmlgw", requestId: "accounts-submission-number-counter" };
 
-let secretsClient = null;
-let cachedPresenterId;
-let cachedPresenterCode;
+// The gateway's GovTalk error number for an authorisation failure.
+const GATEWAY_AUTHORISATION_FAILURE = 502;
 
-async function getSecretsClient() {
-  if (!secretsClient) {
-    const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
-    secretsClient = new SecretsManagerClient();
-  }
-  return secretsClient;
-}
+// The presenter credentials the last resolvePresenterCredentials call returned, so a retry can
+// tell an envelope built from our own secrets from one built from a user's own presenter.
+let lastResolvedPresenter = null;
 
-async function resolveSecret({ envVar, envArnVar, cached, setCached }) {
+async function resolveSecret({ envVar, envArnVar, forceRefresh = false }) {
   if (process.env[envVar]) {
     return process.env[envVar];
   }
-  if (!cached) {
-    const secretArn = process.env[envArnVar];
-    if (!secretArn) {
-      throw new Error(`Missing required environment variable ${envVar} or ${envArnVar}`);
-    }
-    logger.info({ message: `Retrieving ${envVar} from Secrets Manager` });
-    const client = await getSecretsClient();
-    const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-    const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    setCached(data.SecretString);
-    logger.info({ message: `${envVar} retrieved from Secrets Manager and cached` });
-    return data.SecretString;
+  const secretArn = process.env[envArnVar];
+  if (!secretArn) {
+    throw new Error(`Missing required environment variable ${envVar} or ${envArnVar}`);
   }
-  return cached;
+  return readSecret(secretArn, { forceRefresh });
 }
 
+const PRESENTER_SECRETS = {
+  presenterId: { envVar: "COMPANIES_HOUSE_PRESENTER_ID", envArnVar: "COMPANIES_HOUSE_PRESENTER_ID_ARN" },
+  presenterCode: { envVar: "COMPANIES_HOUSE_PRESENTER_CODE", envArnVar: "COMPANIES_HOUSE_PRESENTER_CODE_ARN" },
+};
+
 /**
- * Resolve the Companies House presenter id and authentication code, caching each across warm
- * starts the same way companiesHouseFilingApi.js's resolveClientSecret does.
+ * Resolve the Companies House presenter id and authentication code, each cached for five minutes
+ * the same way companiesHouseFilingApi.js's resolveClientSecret does.
  * @returns {Promise<{presenterId: string, presenterCode: string}>}
  */
 export async function resolvePresenterCredentials() {
-  const presenterId = await resolveSecret({
-    envVar: "COMPANIES_HOUSE_PRESENTER_ID",
-    envArnVar: "COMPANIES_HOUSE_PRESENTER_ID_ARN",
-    cached: cachedPresenterId,
-    setCached: (value) => {
-      cachedPresenterId = value;
-    },
-  });
-  const presenterCode = await resolveSecret({
-    envVar: "COMPANIES_HOUSE_PRESENTER_CODE",
-    envArnVar: "COMPANIES_HOUSE_PRESENTER_CODE_ARN",
-    cached: cachedPresenterCode,
-    setCached: (value) => {
-      cachedPresenterCode = value;
-    },
-  });
+  const presenterId = await resolveSecret(PRESENTER_SECRETS.presenterId);
+  const presenterCode = await resolveSecret(PRESENTER_SECRETS.presenterCode);
+  lastResolvedPresenter = { presenterId, presenterCode };
   return { presenterId, presenterCode };
 }
 
@@ -762,15 +741,51 @@ export function getXmlGatewayUri() {
 export async function postToGateway(xml, extraHeaders = {}) {
   const url = getXmlGatewayUri();
 
-  logger.info({ message: `POST ${url}`, url });
+  const send = async (body) => {
+    logger.info({ message: `POST ${url}`, url });
+    const response = await sendXmlToCompaniesHouse(
+      url,
+      { method: "POST", headers: { "Content-Type": "text/xml", ...extraHeaders }, body },
+      DEFAULT_TIMEOUTS.LONG,
+    );
+    logger.info({ message: `Response from POST ${url}`, url, status: response.status });
+    return response;
+  };
 
-  const result = await sendXmlToCompaniesHouse(
-    url,
-    { method: "POST", headers: { "Content-Type": "text/xml", ...extraHeaders }, body: xml },
-    DEFAULT_TIMEOUTS.LONG,
-  );
+  const result = await send(xml);
+  if (!hasAuthorisationFailure(result.data)) return result;
+  // The presenter secrets may have been rolled. One forced read of both, and one more post, only
+  // when an envelope built from our own secrets now needs different credentials.
+  const rekeyed = await rekeyEnvelopeAfterAuthorisationFailure(xml);
+  return rekeyed ? send(rekeyed) : result;
+}
 
-  logger.info({ message: `Response from POST ${url}`, url, status: result.status });
+function hasAuthorisationFailure(responseXml) {
+  try {
+    return parseGatewayResponse(responseXml).errors.some((error) => error.number === GATEWAY_AUTHORISATION_FAILURE);
+  } catch {
+    return false;
+  }
+}
 
-  return result;
+const SENDER_ID_ELEMENT = /(<SenderID>)([\s\S]*?)(<\/SenderID>)/;
+const AUTHENTICATION_VALUE_ELEMENT = /(<Authentication>[\s\S]*?<Value>)([\s\S]*?)(<\/Value>)/;
+
+async function rekeyEnvelopeAfterAuthorisationFailure(xml) {
+  if (!lastResolvedPresenter || process.env.COMPANIES_HOUSE_PRESENTER_ID || process.env.COMPANIES_HOUSE_PRESENTER_CODE) return null;
+  const sentId = SENDER_ID_ELEMENT.exec(xml)?.[2];
+  const sentCode = AUTHENTICATION_VALUE_ELEMENT.exec(xml)?.[2];
+  if (
+    sentId !== hashPresenterCredential(lastResolvedPresenter.presenterId) ||
+    sentCode !== hashPresenterCredential(lastResolvedPresenter.presenterCode)
+  ) {
+    return null;
+  }
+  const presenterId = await resolveSecret({ ...PRESENTER_SECRETS.presenterId, forceRefresh: true });
+  const presenterCode = await resolveSecret({ ...PRESENTER_SECRETS.presenterCode, forceRefresh: true });
+  if (presenterId === lastResolvedPresenter.presenterId && presenterCode === lastResolvedPresenter.presenterCode) return null;
+  lastResolvedPresenter = { presenterId, presenterCode };
+  return xml
+    .replace(SENDER_ID_ELEMENT, (_, open, __, close) => `${open}${hashPresenterCredential(presenterId)}${close}`)
+    .replace(AUTHENTICATION_VALUE_ELEMENT, (_, open, __, close) => `${open}${hashPresenterCredential(presenterCode)}${close}`);
 }

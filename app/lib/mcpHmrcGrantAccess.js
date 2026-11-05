@@ -8,11 +8,11 @@
 // No response leaves Submit with a token in it.
 
 import { createLogger } from "./logger.js";
-import { extractUserFromAuthorizerContext, performTokenExchange, getHeader, MCP_HMRC_GRANT_HEADER } from "./httpResponseHelper.js";
+import { extractUserFromAuthorizerContext, getHeader, MCP_HMRC_GRANT_HEADER } from "./httpResponseHelper.js";
 import { initializeSalt, hashSub } from "../services/subHasher.js";
 import { getHmrcGrant, refreshHmrcGrant, deleteHmrcGrant } from "../data/dynamoDbHmrcGrantRepository.js";
 import { sealFor, openFor, HMRC_GRANT_PURPOSE } from "./codesSeal.js";
-import { prepareTokenRefreshRequest } from "../functions/hmrc/hmrcTokenPost.js";
+import { prepareTokenRefreshRequest, performHmrcTokenExchange } from "../functions/hmrc/hmrcTokenPost.js";
 
 const logger = createLogger({ source: "app/lib/mcpHmrcGrantAccess.js" });
 
@@ -29,7 +29,7 @@ async function refreshTokens(grantId, grant, tokens) {
   const { url, body } = await prepareTokenRefreshRequest(tokens.refreshToken, grant.hmrcAccount);
   let result;
   try {
-    result = await performTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, { org: "hmrc" });
+    result = await performHmrcTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, grant.hmrcAccount);
   } catch (error) {
     logger.error({ message: "HMRC token refresh failed", grantId, error: error.message });
     return null;

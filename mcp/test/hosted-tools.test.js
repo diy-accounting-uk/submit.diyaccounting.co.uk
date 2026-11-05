@@ -65,9 +65,12 @@ describe("the hosted tool set", () => {
     }
   });
 
-  it("offers only the VAT, books and authorisation tools in prod, all of them registered", () => {
+  it("offers only the books, derivation and receipt tools in prod, none of which reach HMRC", () => {
     const prodNames = hostedToolNames("prod");
-    expect(prodNames).toEqual(expect.arrayContaining(["submit_vat_return", "list_vat_obligations", "list_books", "open_book"]));
+    for (const hmrcTool of ["submit_vat_return", "list_vat_obligations", "get_vat_return", "request_hmrc_authorisation"]) {
+      expect(prodNames).not.toContain(hmrcTool);
+    }
+    expect(prodNames).toEqual(expect.arrayContaining(["list_books", "open_book"]));
     expect(
       prodNames.filter((name) => /sandbox|itsa|uk_property|client|company|confirmation|accounts|poll_submission|move_book/.test(name)),
     ).toEqual([]);

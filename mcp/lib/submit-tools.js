@@ -89,22 +89,25 @@ async function pollUntilSettled(session, url, requestInit, firstResponse) {
  * set, or the standard Authorization header otherwise; extra headers (an HMRC access token,
  * Gov-Test-Scenario, hmrcAccount) merge in on top and are never overwritten by the session
  * header. A customAuthorizer call also carries X-Id-Token when the session's credentials answer an
- * id token, which customAuthorizer.js reads to build Gov-Client-Multi-Factor server-side. A 202 response is
+ * id token, which customAuthorizer.js reads to build Gov-Client-Multi-Factor server-side, and the
+ * session's clientHeaders, which buildFraudHeaders.js reads for HMRC's fraud prevention data. A 202 response is
  * polled to a terminal status before this returns (see pollUntilSettled); a poll that never
  * settles, or outlasts the session's pollBudgetMs, throws with the poll URL in the message rather than returning a partial result.
  * Exported so practice-tools.js's client tools (list_clients, add_client, invite_client,
  * client_authorisation_status) call the same routes over the same HTTP layer rather than a
  * second one of their own.
- * @param {{credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>}, pollBudgetMs: number|null}} session
+ * @param {{credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>}, pollBudgetMs: number|null, clientHeaders: () => Promise<Object>}} session
  * @param {string} path - the route, e.g. "/api/v1/hmrc/vat/obligation?vrn=..."
  * @param {{method?: string, body?: Object, headers?: Object, customAuthorizer?: boolean}} [options]
  */
 export async function callSubmitApi(session, path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
   const sessionHeaderName = customAuthorizer ? "X-Authorization" : "Authorization";
   const idToken = customAuthorizer ? await session.credentials.idToken() : null;
+  const clientHeaders = customAuthorizer ? await session.clientHeaders() : {};
   const finalHeaders = {
     [sessionHeaderName]: `Bearer ${await session.credentials.accessToken()}`,
     ...(idToken ? { "X-Id-Token": idToken } : {}),
+    ...clientHeaders,
     "x-initial-request": "true",
     ...headers,
   };

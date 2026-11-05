@@ -38,6 +38,8 @@ const repo = {
     return true;
   }),
 };
+vi.mock("@app/data/dynamoDbIntegrationCallRepository.js", () => ({ putIntegrationCall: vi.fn(async () => ({})) }));
+
 vi.mock("@app/data/dynamoDbCommissionRepository.js", () => ({
   commissionPk: (referrerHash) => `commission#${referrerHash}`,
   PAYABLE_CONNECT_PARTITION: "payable#connect",

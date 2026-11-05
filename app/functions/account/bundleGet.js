@@ -238,7 +238,12 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
     // The operator bundle is never stored in DynamoDB (no customer holds it) -- an
     // operator-listed email is granted it here, non-expiring, same as any other bundle.
     if ((await isOperatorEmail(userEmail)) && !userBundleIds.has("operator")) {
-      result.push({ bundleId: "operator", allocated: true, bundleCapacityAvailable: isCapacityAvailable("operator") });
+      result.push({
+        bundleId: "operator",
+        allocated: true,
+        configDriven: true,
+        bundleCapacityAvailable: isCapacityAvailable("operator"),
+      });
       userBundleIds.add("operator");
     }
 

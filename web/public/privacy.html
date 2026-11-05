@@ -30,7 +30,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Privacy policy</h1>
-      <p class="legal-meta">Last updated: 3 November 2026</p>
+      <p class="legal-meta">Last updated: 4 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -276,8 +276,8 @@
             </tr>
             <tr>
               <td>Device ID</td>
-              <td>A unique identifier for your browser session</td>
-              <td>Generated fresh for each submission using <code>crypto.randomUUID()</code>; not stored persistently</td>
+              <td>A unique identifier for your browser on this device</td>
+              <td>Generated once with <code>crypto.randomUUID()</code> and kept in localStorage until you clear it</td>
             </tr>
             <tr>
               <td>Browser User Agent</td>
@@ -319,14 +319,26 @@
 
         <h3>How Device ID Works</h3>
         <p>
-          The device ID is <strong>not stored persistently</strong>. A new UUID is generated for each VAT return submission using your
-          browser's cryptographic random number generator. This means:
+          HMRC asks for a device ID that does not expire. Your browser makes one UUID with its cryptographic random number generator the
+          first time a submission needs it, and keeps it in localStorage as <code>hmrcDeviceId</code>. This means:
         </p>
         <ul>
-          <li>No cookies are used for device tracking</li>
-          <li>No localStorage is used for device ID storage</li>
-          <li>Each submission generates a fresh, unique device identifier</li>
+          <li>No cookies are used for the device ID</li>
+          <li>The same device ID goes with every submission from this browser</li>
+          <li>If you clear your browser storage, the next submission makes a new device ID</li>
         </ul>
+
+        <h3>The Installed MCP Server and the Hosted MCP Endpoint</h3>
+        <p>
+          When you run our MCP server on your own computer and call HMRC through it, the server also reads and sends this data from that
+          computer: a device ID kept in your <code>~/.config/diya-submit</code> folder, your local IP addresses, your MAC addresses, your
+          operating system user name, your operating system and device model, and your screen sizes. This is the data HMRC requires for an
+          application installed on a desktop.
+        </p>
+        <p>
+          When your AI client calls our hosted MCP endpoint, we send HMRC the public IP address and port of the caller, and the time we read
+          them. An AI client can connect from its supplier's servers, so this address can be the supplier's address.
+        </p>
 
         <h3>HMRC Consent</h3>
         <p>
@@ -476,6 +488,10 @@
               <td>CloudTrail audit logs</td>
               <td>90 days (configurable)</td>
             </tr>
+            <tr>
+              <td>Outbound API call records (masked)</td>
+              <td>90 days, for monitoring and troubleshooting</td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -506,6 +522,10 @@
           <li>
             <strong><code>feedbackEngagementRegistered</code></strong
             >: Remembers that you have already answered the feedback invitation
+          </li>
+          <li>
+            <strong><code>hmrcDeviceId</code></strong
+            >: A random identifier for this browser, sent to HMRC with each submission as a fraud prevention header
           </li>
           <li>
             <strong><code>visitorKind.operator</code></strong

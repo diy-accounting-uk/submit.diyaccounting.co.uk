@@ -73,7 +73,6 @@ export const HMRC_FRAUD_HEADER_RULE_FAILURE_METRIC = "HmrcFraudHeaderRuleFailure
 // confirmed), and Gov-Client-Browser-Do-Not-Track is sent only by browsers that expose it, so
 // none of the three is required.
 const SERVER_BUILT_REQUIRED_HEADERS = [
-  "Gov-Client-Device-ID",
   "Gov-Client-Public-IP",
   "Gov-Client-Public-Port",
   "Gov-Client-User-IDs",
@@ -84,14 +83,31 @@ const SERVER_BUILT_REQUIRED_HEADERS = [
 ];
 const BROWSER_SENT_REQUIRED_HEADERS = [
   "Gov-Client-Browser-JS-User-Agent",
+  "Gov-Client-Device-ID",
   "Gov-Client-Public-IP-Timestamp",
   "Gov-Client-Screens",
   "Gov-Client-Timezone",
   "Gov-Client-Window-Size",
 ];
+// The stdio MCP server reads these from its own machine. It has no window, so
+// Gov-Client-Window-Size waits on HMRC's answer about a process with no user interface.
+const STDIO_SENT_REQUIRED_HEADERS = [
+  "Gov-Client-Device-ID",
+  "Gov-Client-Local-IPs",
+  "Gov-Client-Local-IPs-Timestamp",
+  "Gov-Client-MAC-Addresses",
+  "Gov-Client-Public-IP-Timestamp",
+  "Gov-Client-Screens",
+  "Gov-Client-Timezone",
+  "Gov-Client-User-Agent",
+];
+// The hosted MCP endpoint receives no device data from an AI client. The device headers on HMRC's
+// other-via-server page wait on HMRC's answer about a server that we host and a client calls.
+const HOSTED_SENT_REQUIRED_HEADERS = ["Gov-Client-Public-IP-Timestamp"];
 const REQUIRED_HEADERS_BY_CONNECTION_METHOD = {
   WEB_APP_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, ...BROWSER_SENT_REQUIRED_HEADERS],
-  DESKTOP_APP_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, "Gov-Client-Timezone"],
+  DESKTOP_APP_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, ...STDIO_SENT_REQUIRED_HEADERS],
+  OTHER_VIA_SERVER: [...SERVER_BUILT_REQUIRED_HEADERS, ...HOSTED_SENT_REQUIRED_HEADERS],
 };
 
 export class HmrcFraudPreventionHeadersMissingError extends Error {

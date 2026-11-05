@@ -8,7 +8,7 @@
 // practice that owns it.
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub } from "../services/subHasher.js";
+import { hashSub, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import crypto from "crypto";
 
@@ -23,6 +23,37 @@ const PROFILE_CLIENT_ID = "practice#profile";
 // Crockford base32: no I, L, O, U, so a client id is never misread as a different one when
 // transcribed by hand.
 const ULID_ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+/**
+ * Reads one row across every salt version of the practice's hash, the current version first.
+ *
+ * @returns {Promise<object|null>}
+ */
+async function getRowAcrossVersions(practiceSub, clientId) {
+  const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+  for (const { hashedSub } of subHashCandidates(practiceSub)) {
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({
+          TableName: tableName,
+          Key: { hashedSub, clientId },
+        }),
+    );
+    if (result.Item) return result.Item;
+  }
+  return null;
+}
+
+/**
+ * The hash a client row sits under, so an update during a salt rotation lands on the row.
+ * Answers the current hash when no row exists, and the update's condition then refuses it.
+ */
+async function ownerHashOfClient(practiceSub, clientId) {
+  const candidates = subHashCandidates(practiceSub);
+  if (candidates.length === 1) return candidates[0].hashedSub;
+  const row = await getRowAcrossVersions(practiceSub, clientId);
+  return row?.hashedSub ?? candidates[0].hashedSub;
+}
 
 function encodeTimePart(timeMs) {
   let remaining = timeMs;
@@ -112,19 +143,10 @@ export async function createClient(practiceSub, { displayName, vrn, nino, utr, c
  * @returns {Promise<object|null>}
  */
 export async function getClient(practiceSub, clientId) {
-  const hashedSub = hashSub(practiceSub);
   const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
-  logger.info({ message: `getClient [table: ${tableName}]`, hashedSub, clientId });
+  logger.info({ message: `getClient [table: ${tableName}]`, clientId });
 
-  const result = await executeDynamoDbCommand(
-    (module) =>
-      new module.GetCommand({
-        TableName: tableName,
-        Key: { hashedSub, clientId },
-      }),
-  );
-
-  return result.Item || null;
+  return getRowAcrossVersions(practiceSub, clientId);
 }
 
 /**
@@ -137,23 +159,30 @@ export async function getClient(practiceSub, clientId) {
  * @returns {Promise<object[]>}
  */
 export async function listClients(practiceSub, { includeArchived = false } = {}) {
-  const hashedSub = hashSub(practiceSub);
   const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
-  logger.info({ message: `listClients [table: ${tableName}]`, hashedSub });
+  logger.info({ message: `listClients [table: ${tableName}]` });
 
-  const response = await executeDynamoDbCommand(
-    (module) =>
-      new module.QueryCommand({
-        TableName: tableName,
-        KeyConditionExpression: "hashedSub = :hashedSub",
-        ExpressionAttributeValues: {
-          ":hashedSub": hashedSub,
-        },
-      }),
-  );
+  // During a salt rotation a practice's rows can sit under two hashes at once, so every version
+  // is read and merged. The current version wins for a client held under both.
+  const clientsById = new Map();
+  for (const { hashedSub } of subHashCandidates(practiceSub)) {
+    const response = await executeDynamoDbCommand(
+      (module) =>
+        new module.QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: "hashedSub = :hashedSub",
+          ExpressionAttributeValues: {
+            ":hashedSub": hashedSub,
+          },
+        }),
+    );
+    for (const item of response.Items || []) {
+      if (item.clientId !== PROFILE_CLIENT_ID && !clientsById.has(item.clientId)) clientsById.set(item.clientId, item);
+    }
+  }
 
-  const items = (response.Items || []).filter((item) => item.clientId !== PROFILE_CLIENT_ID);
-  logger.info({ message: "Queried DynamoDB for practice clients", hashedSub, itemCount: items.length });
+  const items = [...clientsById.values()];
+  logger.info({ message: "Queried DynamoDB for practice clients", itemCount: items.length });
 
   return includeArchived ? items : items.filter((item) => !item.archivedAt);
 }
@@ -200,7 +229,7 @@ export async function listClientsByHashedSub(hashedSub, { includeArchived = fals
  * @throws {Error} with `name === "ConditionalCheckFailedException"` when the client is not found
  */
 export async function archiveClient(practiceSub, clientId) {
-  const hashedSub = hashSub(practiceSub);
+  const hashedSub = await ownerHashOfClient(practiceSub, clientId);
   const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
   logger.info({ message: `archiveClient [table: ${tableName}]`, hashedSub, clientId });
 
@@ -229,19 +258,11 @@ export async function archiveClient(practiceSub, clientId) {
  * @returns {Promise<string|null>}
  */
 export async function getPracticeArn(practiceSub) {
-  const hashedSub = hashSub(practiceSub);
   const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
-  logger.info({ message: `getPracticeArn [table: ${tableName}]`, hashedSub });
+  logger.info({ message: `getPracticeArn [table: ${tableName}]` });
 
-  const result = await executeDynamoDbCommand(
-    (module) =>
-      new module.GetCommand({
-        TableName: tableName,
-        Key: { hashedSub, clientId: PROFILE_CLIENT_ID },
-      }),
-  );
-
-  return result.Item?.arn || null;
+  const row = await getRowAcrossVersions(practiceSub, PROFILE_CLIENT_ID);
+  return row?.arn || null;
 }
 
 /**
@@ -285,7 +306,7 @@ export async function setPracticeArn(practiceSub, arn) {
  * @throws {Error} with `name === "ConditionalCheckFailedException"` when the client is not found
  */
 export async function setClientAuthorisation(practiceSub, clientId, service, authorisation) {
-  const hashedSub = hashSub(practiceSub);
+  const hashedSub = await ownerHashOfClient(practiceSub, clientId);
   const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
   logger.info({ message: `setClientAuthorisation [table: ${tableName}]`, hashedSub, clientId, service });
 

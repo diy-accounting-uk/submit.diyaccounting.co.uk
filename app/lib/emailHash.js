@@ -160,19 +160,39 @@ export function hashEmailWithEnvSecret(email) {
 }
 
 /**
+ * Re-read the secret, bypassing the cache TTL, so a version added by a rotation after this
+ * container cached the registry becomes visible.
+ *
+ * @returns {Promise<void>}
+ */
+async function refreshEmailHashSecret() {
+  __emailHashRegistry = null;
+  __initPromise = null;
+  __registryFetchedAt = 0;
+  await initializeEmailHashSecret();
+}
+
+/**
  * Hash an email using a specific secret version from the registry.
  * Used to re-check a pass's stored restrictedToEmailHash against the exact version recorded
  * on that pass (buildPassRecord stores emailHashSecretVersion), so a rotation never needs to
  * try every version in turn.
  *
+ * When the version is not in the cached registry, the secret is re-read once and the lookup
+ * retried. A pass hashed under a version added by a rotation is then checked without waiting
+ * for the cache TTL to expire.
+ *
  * @param {string} email - The email address to hash
  * @param {string} version - The secret version to use (e.g., "v1", "v2")
- * @returns {string} Base64url-encoded HMAC-SHA256 hash
- * @throws {Error} If email is invalid, the secret is not initialized, or the version is unknown
+ * @returns {Promise<string>} Base64url-encoded HMAC-SHA256 hash
+ * @throws {Error} If email is invalid, the secret is not initialized, or the version is unknown after the re-read
  */
-export function hashEmailWithVersion(email, version) {
+export async function hashEmailWithVersion(email, version) {
   if (!__emailHashRegistry) {
     throw new Error("Email hash secret not initialized. Call initializeEmailHashSecret() first.");
+  }
+  if (!__emailHashRegistry.versions[version]) {
+    await refreshEmailHashSecret();
   }
   const secret = __emailHashRegistry.versions[version];
   if (!secret) {

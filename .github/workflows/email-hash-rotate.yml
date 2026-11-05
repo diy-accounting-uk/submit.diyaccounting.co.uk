@@ -4,7 +4,9 @@
 # Adds a new version to one environment's email-hash-secret registry and makes it current,
 # one job per environment, keeping every earlier version so a pass hashed under it still checks
 # (scripts/email-hash-rotate.js; app/lib/emailHash.js reads the version each pass recorded).
-# Dispatch-only: plan by default, apply to write. Runbook section 4 covers the salt this mirrors.
+# Scheduled quarterly (1 January, April, July and October, 06:00 UTC) and dispatchable: plan by
+# default, apply to write. A scheduled run has no inputs, so it always plans.
+# Runbook section 4 covers the salt this mirrors.
 
 name: email hash rotate
 run-name: "email hash rotate (${{ inputs.apply && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
@@ -14,6 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 on:
+  schedule:
+    - cron: "0 6 1 1,4,7,10 *"
   workflow_dispatch:
     inputs:
       apply:

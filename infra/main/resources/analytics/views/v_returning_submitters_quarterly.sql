@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW v_returning_submitters_quarterly AS
 WITH submitters_by_quarter AS (
   SELECT hashed_sub,
          date(date_trunc('quarter', from_iso8601_timestamp(created_at))) AS quarter
-  FROM   dynamo_receipts
+  FROM   aliased_dynamo_receipts
   WHERE  change_type = 'INSERT' AND actor = 'customer' AND hashed_sub IS NOT NULL
          AND hashed_sub NOT IN (
            SELECT hashed_sub FROM activity_events_all

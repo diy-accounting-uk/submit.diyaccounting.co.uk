@@ -37,7 +37,7 @@ history AS (
          cancel_at_period_end,
          lag(status) OVER (PARTITION BY subscription_id ORDER BY change_ts) AS previous_status,
          lag(cancel_at_period_end) OVER (PARTITION BY subscription_id ORDER BY change_ts) AS previous_cancel_at_period_end
-  FROM   dynamo_subscriptions
+  FROM   aliased_dynamo_subscriptions
   WHERE  change_type = 'MODIFY'),
 cancellations AS (
   SELECT date(h.change_ts) AS day,
@@ -51,7 +51,7 @@ cancellations AS (
   GROUP  BY 1, 2),
 days AS (
   SELECT cast(d AS date) AS day
-  FROM   (SELECT min(date(change_ts)) AS first_day FROM dynamo_subscriptions)
+  FROM   (SELECT min(date(change_ts)) AS first_day FROM aliased_dynamo_subscriptions)
   CROSS JOIN UNNEST(sequence(first_day, current_date, INTERVAL '1' DAY)) AS t(d)),
 quiet_days AS (
   SELECT day, 'none' AS bundle_id, cast(0 AS bigint) AS cancellations

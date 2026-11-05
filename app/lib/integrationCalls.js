@@ -28,7 +28,7 @@ export const INTEGRATION_CALL_RECORD_FAILED_METRIC = "IntegrationCallRecordFaile
 
 // A Lambda freezes after it answers, so the record is awaited, and this limit bounds what that
 // wait adds to the customer's call.
-const RECORD_STEP_LIMIT_MS = 1000;
+const RECORD_STEP_LIMIT_MS = 3000;
 const TIMEOUT_ERROR_NAMES = ["AbortError", "TimeoutError", "HttpTimeoutError"];
 
 function withinRecordStepLimit(work) {
@@ -107,7 +107,7 @@ function buildItem({ org, target, api, url, method, startedAt, durationMs, outco
 
 /**
  * Write the record of one finished attempt. This function does not throw, and it waits for the
- * write for at most one second.
+ * write for at most three seconds.
  *
  * @param {Object} call
  * @param {string} call.org - hmrc, companies-house or stripe

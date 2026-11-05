@@ -6,6 +6,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { checkFraudPreventionHeaderRules } from "@app/lib/fraudPreventionHeaderRules.js";
 import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "@app/lib/buildFraudHeaders.js";
+import { HOSTED_CLIENT_ADDRESS_HEADER, signHostedClientAddress } from "@app/lib/hostedClientAddress.js";
+import { missingFraudPreventionHeaders } from "@app/services/hmrcApi.js";
+import { _clearSalt, _setTestSalt } from "@app/services/subHasher.js";
 
 const BROWSER_HEADERS = {
   "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36",
@@ -14,6 +17,32 @@ const BROWSER_HEADERS = {
   "Gov-Client-Timezone": "UTC+00:00",
   "Gov-Client-Window-Size": "width=1280&height=720",
 };
+
+const MCP_CLIENT_ID = "mcp-client-id";
+const USER_SUB = "user-abc";
+
+// What mcp/lib/client-headers.js sends from a desktop.
+const STDIO_HEADERS = {
+  "Gov-Client-Device-ID": "0b5a9a52-4d6b-4a53-9a4b-3d5d9a3f1c11",
+  "Gov-Client-Local-IPs": "192.168.1.5,fe80%3A%3A1",
+  "Gov-Client-Local-IPs-Timestamp": "2026-11-04T10:15:30.123Z",
+  "Gov-Client-MAC-Addresses": "aa%3Abb%3Acc%3Add%3Aee%3Aff",
+  "Gov-Client-Screens": "width=1792&height=1120&scaling-factor=2&colour-depth=30",
+  "Gov-Client-Timezone": "UTC+00:00",
+  "Gov-Client-User-Agent": "os-family=macOS&os-version=15.1&device-manufacturer=Apple&device-model=MacBookPro16%2C1",
+  "Gov-Client-User-IDs": "os=alice",
+  "Gov-Vendor-Version": "diya-submit-mcp=0.1.1",
+};
+
+async function mcpHeaders(clientHeaders, viewer = "198.51.100.23") {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve("203.0.113.9\n") }));
+  await detectVendorPublicIp();
+  const event = {
+    headers: { "x-forwarded-for": viewer, "cloudfront-viewer-address": `${viewer}:51234`, ...clientHeaders },
+    requestContext: { authorizer: { lambda: { sub: USER_SUB, client_id: MCP_CLIENT_ID } } },
+  };
+  return buildFraudHeaders(event).govClientHeaders;
+}
 
 async function realHeaders(connectionClientId) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve("203.0.113.9\n") }));
@@ -57,8 +86,62 @@ describe("checkFraudPreventionHeaderRules", () => {
     expect(checkFraudPreventionHeaderRules(good, "WEB_APP_VIA_SERVER")).toEqual([]);
   });
 
-  it("passes the same headers under the desktop rule set", () => {
-    expect(checkFraudPreventionHeaderRules(good, "DESKTOP_APP_VIA_SERVER")).toEqual([]);
+  it("passes the browser's headers under every required list and rule set of its own method", () => {
+    expect(good["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
+    expect(missingFraudPreventionHeaders(good).missing).toEqual([]);
+  });
+
+  it("does not ask a web request for two version pairs", () => {
+    expect(good["Gov-Vendor-Version"].split("&")).toHaveLength(1);
+    expect(checkFraudPreventionHeaderRules(good, "WEB_APP_VIA_SERVER")).toEqual([]);
+  });
+
+  describe("MCP connection methods", () => {
+    beforeEach(() => {
+      process.env.COGNITO_MCP_CLIENT_ID = MCP_CLIENT_ID;
+      _setTestSalt("fraud-rules-test-salt");
+    });
+
+    afterEach(() => {
+      delete process.env.COGNITO_MCP_CLIENT_ID;
+      _clearSalt();
+    });
+
+    it("passes the headers buildFraudHeaders builds for the stdio server", async () => {
+      const headers = await mcpHeaders(STDIO_HEADERS);
+      expect(headers["Gov-Client-Connection-Method"]).toBe("DESKTOP_APP_VIA_SERVER");
+      expect(missingFraudPreventionHeaders(headers).missing).toEqual([]);
+      expect(checkFraudPreventionHeaderRules(headers, "DESKTOP_APP_VIA_SERVER")).toEqual([]);
+    });
+
+    it("passes the headers buildFraudHeaders builds for the hosted endpoint", async () => {
+      const address = signHostedClientAddress({
+        sub: USER_SUB,
+        ip: "198.51.100.77",
+        port: "50100",
+        collectedAt: "2026-11-04T10:15:30.123Z",
+      });
+      const headers = await mcpHeaders(
+        { [HOSTED_CLIENT_ADDRESS_HEADER]: address, "Gov-Vendor-Version": "diya-submit-mcp=0.1.1" },
+        "18.130.0.1",
+      );
+      expect(headers["Gov-Client-Connection-Method"]).toBe("OTHER_VIA_SERVER");
+      expect(missingFraudPreventionHeaders(headers).missing).toEqual([]);
+      expect(checkFraudPreventionHeaderRules(headers, "OTHER_VIA_SERVER")).toEqual([]);
+    });
+
+    it("fails the two-pair rule when the client application sends no version pair", async () => {
+      const { "Gov-Vendor-Version": _clientVersion, ...withoutVersion } = STDIO_HEADERS;
+      const headers = await mcpHeaders(withoutVersion);
+      expect(checkFraudPreventionHeaderRules(headers, "DESKTOP_APP_VIA_SERVER")).toEqual(["Gov-Vendor-Version:two-pairs"]);
+      expect(checkFraudPreventionHeaderRules(headers, "OTHER_VIA_SERVER")).toEqual(["Gov-Vendor-Version:two-pairs"]);
+    });
+
+    it("counts each device header a desktop request leaves out", async () => {
+      const { "Gov-Client-MAC-Addresses": _mac, "Gov-Client-Local-IPs": _ips, ...partial } = STDIO_HEADERS;
+      const { missing } = missingFraudPreventionHeaders(await mcpHeaders(partial));
+      expect(missing).toEqual(["Gov-Client-Local-IPs", "Gov-Client-MAC-Addresses"]);
+    });
   });
 
   it("passes a Headers object and mixed-case names", () => {
@@ -126,6 +209,7 @@ describe("checkFraudPreventionHeaderRules", () => {
   it("checks the desktop-only headers under the desktop rule set", () => {
     const desktop = {
       ...good,
+      "Gov-Vendor-Version": "diy-accounting-submit=1.0.0&diya-submit-mcp=0.1.1",
       "Gov-Client-Local-IPs": "192.168.1.5,fe80%3A%3A1",
       "Gov-Client-Local-IPs-Timestamp": "2026-11-04T10:15:30.123Z",
       "Gov-Client-MAC-Addresses": "aa%3Abb%3Acc%3Add%3Aee%3Aff",

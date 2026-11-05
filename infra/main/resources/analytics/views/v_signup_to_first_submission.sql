@@ -24,12 +24,12 @@ signups AS (
   SELECT hashed_sub,
          min(from_iso8601_timestamp(granted_at)) AS signup_at,
          min_by(actor, from_iso8601_timestamp(granted_at)) AS item_actor
-  FROM   dynamo_bundles
+  FROM   aliased_dynamo_bundles
   WHERE  change_type = 'INSERT' AND hashed_sub IS NOT NULL
   GROUP  BY hashed_sub),
 first_submissions AS (
   SELECT hashed_sub, min(from_iso8601_timestamp(created_at)) AS first_submission_at
-  FROM   dynamo_receipts
+  FROM   aliased_dynamo_receipts
   WHERE  change_type = 'INSERT' AND actor = 'customer' AND hashed_sub IS NOT NULL
          AND hashed_sub NOT IN (
            SELECT hashed_sub FROM activity_events_all

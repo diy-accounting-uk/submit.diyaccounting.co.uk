@@ -26,12 +26,12 @@ redemptions AS (
          redeemed_by AS hashed_sub,
          arbitrary(pass_type_id) AS pass_type_id,
          max(redeemed_at) AS redeemed_at
-  FROM   dynamo_passes
+  FROM   aliased_dynamo_passes
   WHERE  redemption_code IS NOT NULL AND redeemed_by IS NOT NULL
   GROUP  BY redemption_code, redeemed_by),
 first_grant AS (
   SELECT hashed_sub, min_by(acq_ref, change_ts) AS first_ref
-  FROM   dynamo_bundles
+  FROM   aliased_dynamo_bundles
   WHERE  change_type = 'INSERT' AND hashed_sub IS NOT NULL
   GROUP  BY hashed_sub),
 filers AS (
@@ -40,17 +40,17 @@ filers AS (
   WHERE  actor = 'customer' AND hashed_sub IS NOT NULL AND regexp_like(event, '-(submitted|filed)$')),
 subscription_owner AS (
   SELECT subscription_id, arbitrary(hashed_sub) AS hashed_sub
-  FROM   dynamo_subscriptions
+  FROM   aliased_dynamo_subscriptions
   WHERE  hashed_sub IS NOT NULL
   GROUP  BY subscription_id),
 account_customer AS (
   SELECT o.hashed_sub, s.customer, s.bundle_id
-  FROM   stripe_subscriptions s
+  FROM   aliased_stripe_subscriptions s
   JOIN   subscription_owner o ON o.subscription_id = s.id
   GROUP  BY o.hashed_sub, s.customer, s.bundle_id),
 account_charges AS (
   SELECT ac.hashed_sub, count(DISTINCT c.id) AS paid_charges
-  FROM   stripe_charges c
+  FROM   aliased_stripe_charges c
   JOIN   account_customer ac ON ac.customer = c.customer AND ac.bundle_id = c.bundle_id
   WHERE  c.livemode = true AND c.paid = true AND c.refunded = false
   GROUP  BY ac.hashed_sub)

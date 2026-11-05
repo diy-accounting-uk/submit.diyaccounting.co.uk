@@ -161,6 +161,24 @@ table.observations thead tr.last-updated th.last-updated-cell,
   text-align: left;
 }
 
+#integrationsSummaryTable th:nth-child(n + 3),
+#integrationsSummaryTable td:nth-child(n + 3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.integrations-table th:nth-child(3),
+.integrations-table td:nth-child(3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.integrations-table td:nth-child(1),
+.integrations-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
 #monthlyMarketingBudgetTable th:nth-child(2),
 #monthlyMarketingBudgetTable td:nth-child(2),
 #companyProfitAndLossTable th:nth-child(2),
@@ -556,4 +574,8 @@ table.observations thead tr.last-updated th.last-updated-cell,
 
 .tab-off {
   display: none !important;
+}
+
+#integrationsAccountNote {
+  margin-top: var(--space-3);
 }

@@ -20,6 +20,13 @@ import { JwtVerifier } from "aws-jwt-verify";
 import { createLogger } from "../../lib/logger.js";
 import { getHeader } from "../../lib/httpResponseHelper.js";
 import { buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import {
+  HOSTED_CLIENT_ADDRESS_HEADER,
+  firstPublicIp,
+  forwardedIpsOf,
+  signHostedClientAddress,
+  viewerPortOf,
+} from "../../lib/hostedClientAddress.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import {
   createMcpSession,
@@ -31,6 +38,7 @@ import {
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
 import { hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
+import { MCP_VENDOR_VERSION } from "../../../mcp/lib/client-headers.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpHttp.js" });
 
@@ -109,6 +117,18 @@ function buildRequest(event, host, httpMethod, bodyText) {
   }
   const hasBody = httpMethod !== "GET" && httpMethod !== "HEAD";
   return new Request(`https://${host}/mcp`, { method: httpMethod, headers, body: hasBody ? bodyText : undefined });
+}
+
+// What the caller at /mcp gives for HMRC's fraud prevention headers. An AI client sends no device
+// data, so its public address is all there is to pass on.
+function hostedClientHeaders(event, sub) {
+  const address = signHostedClientAddress({
+    sub,
+    ip: firstPublicIp(forwardedIpsOf(getHeader(event.headers, "x-forwarded-for"))),
+    port: viewerPortOf(getHeader(event.headers, "cloudfront-viewer-address")),
+    collectedAt: new Date().toISOString(),
+  });
+  return { [HOSTED_CLIENT_ADDRESS_HEADER]: address, "Gov-Vendor-Version": MCP_VENDOR_VERSION };
 }
 
 function pointerKey(hashedSub, pointer) {
@@ -198,6 +218,7 @@ export async function ingestHandler(event) {
   const session = createSession({
     credentials: { accessToken: async () => token, idToken: async () => null },
     pollBudgetMs: HOSTED_POLL_BUDGET_MS,
+    clientHeaders: async () => hostedClientHeaders(event, sub),
   });
 
   if (stored) session.hmrcGrant = stored.hmrcGrant ?? null;

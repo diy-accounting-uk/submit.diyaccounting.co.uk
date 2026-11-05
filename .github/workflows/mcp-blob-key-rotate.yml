@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Adds a new version to one environment's MCP blob key registry and makes it current, one job per
+# environment, keeping every earlier version so blobs and sealed values made under it still open
+# (scripts/mcp-blob-key-rotate.js; app/lib/mcpBlobKey.js reads the stored value as a registry).
+# A dispatch plans by default and applies with apply=true. The quarterly schedule applies.
+# Runbook section 3.4.16 covers the key this rolls.
+
+name: mcp blob key rotate
+run-name: "mcp blob key rotate (${{ (github.event_name == 'schedule' || inputs.apply) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: mcp-blob-key-rotate
+  cancel-in-progress: false
+
+on:
+  schedule:
+    - cron: '17 3 1 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the new version to Secrets Manager (true) or plan only (false)"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: 'eu-west-2'
+  APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+
+jobs:
+  rotate:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        environment: [ci, prod]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Roll the MCP blob key
+        env:
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
+        run: |
+          if [ "$APPLY" = "true" ]; then
+            node scripts/mcp-blob-key-rotate.js --apply 2>&1 | tee mcp-blob-key-rotate.log
+          else
+            node scripts/mcp-blob-key-rotate.js 2>&1 | tee mcp-blob-key-rotate.log
+          fi
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          {
+            echo "# MCP blob key rotate, ${{ matrix.environment }} ($([ "$APPLY" = "true" ] && echo apply || echo plan))"
+            echo '```'
+            cat mcp-blob-key-rotate.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

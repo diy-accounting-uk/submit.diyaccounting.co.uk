@@ -19,7 +19,7 @@ import { validateEnv } from "../../lib/env.js";
 import { fetchWithTimeout } from "../../lib/httpFetch.js";
 import { buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { signBlob, verifyBlob } from "../../lib/mcpOauthBlob.js";
-import { loadBlobKey } from "../../lib/mcpBlobKey.js";
+import { loadBlobKeys, blobKeyRegistriesEqual } from "../../lib/mcpBlobKey.js";
 import {
   DCR_CLIENT_ID,
   acceptClient,
@@ -312,7 +312,7 @@ async function handleAuthorizeGet({ event, host }) {
   if (p.code_challenge_method !== "S256") return refuse("invalid_request", "code_challenge_method must be S256");
   if (!resourceMatches(p.resource, host)) return refuse("invalid_target", "resource must name this server's /mcp URL");
 
-  const key = await loadBlobKey();
+  const keys = await loadBlobKeys();
   const cookieNonce = randomBytes(24).toString("base64url");
   const consentBlob = signBlob(
     {
@@ -324,18 +324,28 @@ async function handleAuthorizeGet({ event, host }) {
       resource: `https://${host}/mcp`,
       nonce: cookieNonce,
     },
-    key,
+    keys,
     { typ: "consent", ttlSeconds: CONSENT_TTL_SECONDS },
   );
   logOutcome({ endpoint: "authorize", clientId, redirectHost: redirectHost(redirectUri), outcome: "consent_shown", kind: accepted.kind });
   return consentPage({ redirectUri, consentBlob, cookieNonce });
 }
 
+// A blob that fails its MAC may have been signed under a key version this container has not read
+// yet. One forced read of the keys settles it, and the check runs again only when the keys changed.
+async function verifyWithKeyRefresh(blob, expectedTyp) {
+  const keys = await loadBlobKeys();
+  const verified = verifyBlob(blob, keys, expectedTyp);
+  if (verified.ok || verified.reason !== "bad_mac") return { verified, keys };
+  const refreshedKeys = await loadBlobKeys({ forceRefresh: true });
+  if (blobKeyRegistriesEqual(refreshedKeys, keys)) return { verified, keys };
+  return { verified: verifyBlob(blob, refreshedKeys, expectedTyp), keys: refreshedKeys };
+}
+
 async function handleAuthorizePost({ event, host }) {
   const parsed = formParams(event);
   if (!parsed.ok) return errorPage(parsed.description);
-  const key = await loadBlobKey();
-  const verified = verifyBlob(parsed.params.consent, key, "consent");
+  const { verified, keys } = await verifyWithKeyRefresh(parsed.params.consent, "consent");
   if (!verified.ok) {
     logOutcome({ endpoint: "authorize_consent", outcome: `consent_${verified.reason}` });
     return errorPage("This sign-in request has expired or is not valid.");
@@ -345,7 +355,7 @@ async function handleAuthorizePost({ event, host }) {
     logOutcome({ endpoint: "authorize_consent", clientId: fields.clientId, outcome: "consent_cookie_mismatch" });
     return errorPage("This sign-in request was not started in this browser.");
   }
-  const upstreamBlob = signBlob(fields, key, { typ: "upstream", ttlSeconds: UPSTREAM_TTL_SECONDS });
+  const upstreamBlob = signBlob(fields, keys, { typ: "upstream", ttlSeconds: UPSTREAM_TTL_SECONDS });
   const url = new URL(process.env.MCP_UPSTREAM_AUTHORIZE_URL);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", process.env.MCP_UPSTREAM_CLIENT_ID);
@@ -369,8 +379,7 @@ async function handleCallback({ event, host }) {
   const parsed = queryParams(event);
   if (!parsed.ok) return errorPage(parsed.description);
   const p = parsed.params;
-  const key = await loadBlobKey();
-  const verified = verifyBlob(p.state, key, "upstream");
+  const { verified, keys } = await verifyWithKeyRefresh(p.state, "upstream");
   if (!verified.ok) {
     logOutcome({ endpoint: "callback", outcome: `upstream_${verified.reason}` });
     return errorPage("This sign-in request has expired or is not valid.");
@@ -386,7 +395,7 @@ async function handleCallback({ event, host }) {
     logOutcome({ endpoint: "callback", clientId, redirectHost: redirectHost(redirectUri), outcome: "upstream_no_code" });
     return redirectToClient(redirectUri, { error: "server_error", state, iss });
   }
-  const codeBlob = signBlob({ code: p.code, clientId, redirectUri, scope }, key, { typ: "code", ttlSeconds: CODE_TTL_SECONDS });
+  const codeBlob = signBlob({ code: p.code, clientId, redirectUri, scope }, keys, { typ: "code", ttlSeconds: CODE_TTL_SECONDS });
   logOutcome({ endpoint: "callback", clientId, redirectHost: redirectHost(redirectUri), outcome: "code_relayed" });
   return redirectToClient(redirectUri, { code: codeBlob, state, iss });
 }
@@ -452,8 +461,7 @@ async function handleToken({ event, request, host }) {
     if (!p.code || !p.client_id || !p.redirect_uri)
       return oauthError(request, "invalid_request", "code, client_id and redirect_uri are required");
     if (!p.code_verifier || !PKCE_VALUE.test(p.code_verifier)) return oauthError(request, "invalid_request", "code_verifier is required");
-    const key = await loadBlobKey();
-    const verified = verifyBlob(p.code, key, "code");
+    const { verified } = await verifyWithKeyRefresh(p.code, "code");
     if (!verified.ok) {
       logOutcome({ endpoint: "token", clientId: p.client_id, outcome: `code_${verified.reason}` });
       return oauthError(request, "invalid_grant", "The code is invalid or expired");

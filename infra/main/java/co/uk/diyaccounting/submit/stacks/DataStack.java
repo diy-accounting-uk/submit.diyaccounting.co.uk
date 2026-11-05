@@ -1238,6 +1238,8 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-IntegrationCallsTTL",
                 props.sharedNames().data.integrationCallsTableName,
                 "ttl");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-IntegrationCalls", props.sharedNames().data.integrationCallsTableName);
         infof(
                 "Ensured integration calls DynamoDB table with name %s",
                 props.sharedNames().data.integrationCallsTableName);

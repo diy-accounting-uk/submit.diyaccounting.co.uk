@@ -485,26 +485,53 @@ async function describeSecretTags(client, secretId) {
   }
 }
 
+export const ROTATION_DUE_SOON_DAYS = 30;
+
+// Days to the nearer of the age limit and the issuer's end date, and the status that follows.
+// "unscheduled" has neither limit, "unrecorded" has an age limit and no known roll date.
+export function rotationSchedule(entry, rotatedAt, now = new Date()) {
+  const maxAgeDays = typeof entry.max_age_days === "number" ? entry.max_age_days : null;
+  const expiresAt = entry.expires_at ? String(entry.expires_at) : null;
+  const ageDays = rotatedAt ? -computeDaysRemaining(rotatedAt, now) : null;
+  const limits = [];
+  if (maxAgeDays !== null && ageDays !== null) limits.push(maxAgeDays - ageDays);
+  if (expiresAt) {
+    const untilExpiry = computeDaysRemaining(expiresAt, now);
+    if (untilExpiry !== null) limits.push(untilExpiry);
+  }
+  const daysToDue = limits.length > 0 ? Math.min(...limits) : null;
+  let status;
+  if (maxAgeDays === null && !expiresAt) status = "unscheduled";
+  else if (daysToDue === null) status = "unrecorded";
+  else if (daysToDue < 0) status = "overdue";
+  else if (daysToDue <= ROTATION_DUE_SOON_DAYS) status = "due-soon";
+  else status = "ok";
+  return { age_days: ageDays, max_age_days: maxAgeDays, expires_at: expiresAt, days_to_due: daysToDue, status };
+}
+
 export async function buildRotationRows(client, tomlPath, envName, dateStr, now = new Date()) {
   const entries = readRotationToml(tomlPath);
   const rows = [];
   for (const entry of entries) {
-    if ((entry.store ?? "aws") !== "aws") continue;
     if (entry.environments && !entry.environments.includes(envName)) continue;
-    const secretId = `${envName}/submit/${entry.name}`;
-    const tags = await describeSecretTags(client, secretId);
-    if (tags === null) {
-      rows.push({ dt: dateStr, secret_name: entry.name, console: entry.console, found: false });
-      continue;
+    const store = entry.store ?? "aws";
+    let rotatedAt = entry.last_rotated || null;
+    if (store === "aws") {
+      const tags = await describeSecretTags(client, `${envName}/submit/${entry.name}`);
+      if (tags === null) {
+        rows.push({ dt: dateStr, secret_name: entry.name, console: entry.console, store, found: false, status: "missing" });
+        continue;
+      }
+      rotatedAt = tags.find((tag) => tag.Key === "rotated-at")?.Value ?? rotatedAt;
     }
-    const rotatedAtTag = tags.find((tag) => tag.Key === "rotated-at")?.Value ?? null;
     rows.push({
       dt: dateStr,
       secret_name: entry.name,
       console: entry.console,
+      store,
       found: true,
-      rotated_at: rotatedAtTag,
-      age_days: rotatedAtTag ? -computeDaysRemaining(rotatedAtTag, now) : null,
+      rotated_at: rotatedAt,
+      ...rotationSchedule(entry, rotatedAt, now),
     });
   }
   if (rows.length === 0) {

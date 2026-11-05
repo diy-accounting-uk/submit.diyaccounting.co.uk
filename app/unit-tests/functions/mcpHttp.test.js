@@ -38,6 +38,7 @@ vi.mock("../../../mcp/lib/book-tools.js", async (importOriginal) => {
 
 const { ingestHandler } = await import("@app/functions/mcp/mcpHttp.js");
 const { _setTestSalt, hashSub } = await import("@app/services/subHasher.js");
+const { HOSTED_CLIENT_ADDRESS_HEADER, readHostedClientAddress } = await import("@app/lib/hostedClientAddress.js");
 
 const HOST = "submit.test.example";
 const USER_SUB = "user-sub-1";
@@ -51,6 +52,8 @@ function mcpEvent({ method = "POST", headers = {}, body } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   };
 }
+
+const VIEWER_HEADERS = { "x-forwarded-for": "198.51.100.7, 10.0.0.1", "cloudfront-viewer-address": "198.51.100.7:50100" };
 
 const INITIALIZE = {
   jsonrpc: "2.0",
@@ -123,13 +126,27 @@ describe("mcpHttp ingestHandler", () => {
     expect(await options.session.credentials.idToken()).toBeNull();
   });
 
+  it("gives the tools the caller's signed address and the MCP's version pair", async () => {
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "session-abc" });
+    await ingestHandler(mcpEvent({ body: INITIALIZE, headers: VIEWER_HEADERS }));
+
+    const headers = await mockHandleMcpRequest.mock.calls[0][1].session.clientHeaders();
+
+    expect(headers["Gov-Vendor-Version"]).toMatch(/^diya-submit-mcp=/);
+    expect(readHostedClientAddress(headers[HOSTED_CLIENT_ADDRESS_HEADER], USER_SUB)).toMatchObject({
+      ip: "198.51.100.7",
+      port: "50100",
+    });
+  });
+
   it("hands the transport the prod tool list in prod and the full list elsewhere", async () => {
     const saved = process.env.ENVIRONMENT_NAME;
     mockCreateMcpSession.mockResolvedValue({ sessionId: "session-abc" });
     try {
       process.env.ENVIRONMENT_NAME = "prod";
       await ingestHandler(mcpEvent({ body: INITIALIZE }));
-      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).toContain("submit_vat_return");
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).toContain("open_book");
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).not.toContain("submit_vat_return");
       expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).not.toContain("submit_itsa_quarterly_update");
 
       process.env.ENVIRONMENT_NAME = "ci";

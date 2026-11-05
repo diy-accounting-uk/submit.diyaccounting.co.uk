@@ -52,6 +52,20 @@ export function buildXRayTraceSearchLink({ region, startIso, endIso, filterExpre
   return `https://${region}.console.aws.amazon.com/xray/home?region=${region}#/traces?timeRange=${encodeURIComponent(startIso)}~${encodeURIComponent(endIso)}&filter=${encodeURIComponent(filterExpression)}`;
 }
 
+/**
+ * A DynamoDB console link to one item, by table name and key. The link carries no item data;
+ * it opens only in a console session that is signed in to the table's account, and the edit
+ * page it opens allows a change by an operator who has write access.
+ */
+export function buildDynamoItemLink(region, table, pk, sk) {
+  const encodedTable = encodeURIComponent(table);
+  return (
+    `https://${region}.console.aws.amazon.com/dynamodbv2/home?region=${region}` +
+    `#edit-item?table=${encodedTable}&itemMode=2&pk=${encodeURIComponent(pk)}&sk=${encodeURIComponent(sk)}` +
+    `&ref=%23item-explorer%3Ftable%3D${encodedTable}&route=ROUTE_ITEM_EXPLORER`
+  );
+}
+
 export function buildCloudWatchAlarmsOverviewLink(region) {
   return `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:`;
 }

@@ -21,7 +21,7 @@ WITH latest_lines AS (
          max_by(reversal_of, change_ts) AS reversal_of,
          max_by(charged_at, change_ts) AS charged_at,
          max_by(livemode, change_ts) AS livemode
-  FROM   dynamo_commissions
+  FROM   aliased_dynamo_commissions
   WHERE  change_type <> 'REMOVE'
   GROUP  BY referrer_hash, line_id)
 SELECT date_trunc('month', date(from_iso8601_timestamp(charged_at))) AS month,

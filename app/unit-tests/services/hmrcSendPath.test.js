@@ -155,14 +155,33 @@ describe("services/hmrcApi sendToHmrc", () => {
     expect(missing).toEqual([]);
   });
 
-  it("asks a desktop app connection for fewer browser headers than a web app connection", () => {
+  it("asks a desktop app connection for the device headers and not the browser's own", () => {
     const { missing } = missingFraudPreventionHeaders({
       ...FULL_WEB_HEADERS,
       "Gov-Client-Connection-Method": "DESKTOP_APP_VIA_SERVER",
       "Gov-Client-Browser-JS-User-Agent": "",
-      "Gov-Client-Screens": "",
+      "Gov-Client-Window-Size": "",
     });
-    expect(missing).toEqual([]);
+    expect(missing).toEqual([
+      "Gov-Client-Local-IPs",
+      "Gov-Client-Local-IPs-Timestamp",
+      "Gov-Client-MAC-Addresses",
+      "Gov-Client-User-Agent",
+    ]);
+  });
+
+  it("asks a hosted MCP connection for the headers an AI client's call can give", () => {
+    const { missing } = missingFraudPreventionHeaders({
+      ...FULL_WEB_HEADERS,
+      "Gov-Client-Connection-Method": "OTHER_VIA_SERVER",
+      "Gov-Client-Browser-JS-User-Agent": "",
+      "Gov-Client-Device-ID": "",
+      "Gov-Client-Public-IP-Timestamp": "",
+      "Gov-Client-Screens": "",
+      "Gov-Client-Timezone": "",
+      "Gov-Client-Window-Size": "",
+    });
+    expect(missing).toEqual(["Gov-Client-Public-IP-Timestamp"]);
   });
 
   it("sends the OAuth token path without the check or a metric", async () => {

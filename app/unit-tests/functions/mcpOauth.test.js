@@ -36,12 +36,13 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
 }));
 
 const { ingestHandler, resourceMatches, cutScope } = await import("@app/functions/mcp/mcpOauth.js");
-const { resetBlobKeyCache } = await import("@app/lib/mcpBlobKey.js");
+const { resetSecretCache } = await import("@app/lib/cachedSecret.js");
 const { signBlob, verifyBlob } = await import("@app/lib/mcpOauthBlob.js");
 const { clearClientMetadataCache } = await import("@app/lib/mcpOauthClients.js");
 
 const HOST = "submit.diyaccounting.co.uk";
 const BLOB_KEY = "b".repeat(64);
+const BLOB_KEYS = { current: "v1", versions: { v1: BLOB_KEY } };
 const UPSTREAM = "https://prod-auth.diyaccounting.co.uk/oauth2";
 const CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
@@ -124,7 +125,7 @@ beforeEach(() => {
   process.env.MCP_UPSTREAM_CLIENT_ID = "cognito-mcp-client";
   process.env.MCP_OAUTH_BLOB_KEY = BLOB_KEY;
   delete process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN;
-  resetBlobKeyCache();
+  resetSecretCache();
   clearClientMetadataCache();
   mockSecretsSend.mockReset();
   loggedLines.length = 0;
@@ -275,7 +276,7 @@ describe("mcpOauth authorize GET", () => {
     expect(result.body).not.toContain("a program on this computer");
 
     const blob = /name="consent" value="([^"]+)"/.exec(result.body)[1];
-    const verified = verifyBlob(blob, BLOB_KEY, "consent");
+    const verified = verifyBlob(blob, BLOB_KEYS, "consent");
     expect(verified.ok).toBe(true);
     expect(verified.fields).toMatchObject({
       clientId: "diya-submit-dcr",
@@ -399,7 +400,7 @@ describe("mcpOauth authorize POST", () => {
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("scope")).toBe("openid email profile");
     expect(url.searchParams.has("resource")).toBe(false);
-    const upstream = verifyBlob(url.searchParams.get("state"), BLOB_KEY, "upstream");
+    const upstream = verifyBlob(url.searchParams.get("state"), BLOB_KEYS, "upstream");
     expect(upstream.ok).toBe(true);
     expect(upstream.fields).toMatchObject({ clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT, state: "client-state-123" });
     expect(upstream.fields.nonce).toBeUndefined();
@@ -429,7 +430,7 @@ describe("mcpOauth authorize POST", () => {
     const { consent, nonce } = await consentFor();
     const cookies = [`__Host-mcp_consent=${nonce}`];
     expect((await ingestHandler(formEvent("/mcp/oauth/authorize", { consent: `${consent}x` }, { cookies }))).statusCode).toBe(400);
-    const upstreamTyp = signBlob({ nonce }, BLOB_KEY, { typ: "upstream", ttlSeconds: 60 });
+    const upstreamTyp = signBlob({ nonce }, BLOB_KEYS, { typ: "upstream", ttlSeconds: 60 });
     expect((await ingestHandler(formEvent("/mcp/oauth/authorize", { consent: upstreamTyp }, { cookies }))).statusCode).toBe(400);
   });
 
@@ -452,7 +453,7 @@ function upstreamState(fields = {}) {
       resource: RESOURCE,
       ...fields,
     },
-    BLOB_KEY,
+    BLOB_KEYS,
     {
       typ: "upstream",
       ttlSeconds: 600,
@@ -468,7 +469,7 @@ describe("mcpOauth callback", () => {
     expect(`${url.origin}${url.pathname}`).toBe(CLAUDE_REDIRECT);
     expect(url.searchParams.get("state")).toBe("client-state-123");
     expect(url.searchParams.get("iss")).toBe(`https://${HOST}`);
-    const code = verifyBlob(url.searchParams.get("code"), BLOB_KEY, "code");
+    const code = verifyBlob(url.searchParams.get("code"), BLOB_KEYS, "code");
     expect(code.fields).toEqual({
       code: "cognito-code-1",
       clientId: "diya-submit-dcr",
@@ -499,7 +500,10 @@ describe("mcpOauth callback", () => {
         await ingestHandler(
           event({
             path: "/mcp/oauth/callback",
-            query: { code: "c", state: signBlob({}, "z".repeat(64), { typ: "upstream", ttlSeconds: 60 }) },
+            query: {
+              code: "c",
+              state: signBlob({}, { current: "v1", versions: { v1: "z".repeat(64) } }, { typ: "upstream", ttlSeconds: 60 }),
+            },
           }),
         )
       ).statusCode,
@@ -507,7 +511,7 @@ describe("mcpOauth callback", () => {
     expect(
       (
         await ingestHandler(
-          event({ path: "/mcp/oauth/callback", query: { code: "c", state: signBlob({}, BLOB_KEY, { typ: "consent", ttlSeconds: 60 }) } }),
+          event({ path: "/mcp/oauth/callback", query: { code: "c", state: signBlob({}, BLOB_KEYS, { typ: "consent", ttlSeconds: 60 }) } }),
         )
       ).statusCode,
     ).toBe(400);
@@ -517,7 +521,7 @@ describe("mcpOauth callback", () => {
 function codeBlob(fields = {}) {
   return signBlob(
     { code: "cognito-code-1", clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT, scope: "openid email", ...fields },
-    BLOB_KEY,
+    BLOB_KEYS,
     { typ: "code", ttlSeconds: 300 },
   );
 }
@@ -590,7 +594,7 @@ describe("mcpOauth token", () => {
   it("rejects a forged, expired or wrong-typ code", async () => {
     for (const code of [
       "forged.code",
-      signBlob({ code: "c", clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT }, BLOB_KEY, {
+      signBlob({ code: "c", clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT }, BLOB_KEYS, {
         typ: "code",
         ttlSeconds: 1,
         now: Date.now() - 5000,
@@ -715,6 +719,72 @@ describe("mcpOauth blob key", () => {
     expect((await ingestHandler(event({ path: "/mcp/oauth/authorize", query: authorizeQuery() }))).statusCode).toBe(200);
     expect(mockSecretsSend).toHaveBeenCalledTimes(1);
     expect(mockSecretsSend.mock.calls[0][0].input).toEqual({ SecretId: process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN });
+  });
+
+  describe("a key version added while the container is warm", () => {
+    const ROLLED_KEYS = { current: "v2", versions: { v1: BLOB_KEY, v2: "n".repeat(64) } };
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(1_700_000_000_000);
+      delete process.env.MCP_OAUTH_BLOB_KEY;
+      process.env.MCP_OAUTH_BLOB_KEY_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:1:secret:ci/submit/mcp/oauth-blob-key";
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function storeReads(...values) {
+      mockSecretsSend.mockImplementation(async () => {
+        vi.setSystemTime(Date.now() + 11_000);
+        return { SecretString: values.length > 1 ? values.shift() : values[0] };
+      });
+    }
+
+    function callbackWith(state) {
+      return ingestHandler(event({ path: "/mcp/oauth/callback", query: { error: "access_denied", state } }));
+    }
+
+    it("accepts a blob signed under the new version after one forced read", async () => {
+      storeReads(BLOB_KEY, JSON.stringify(ROLLED_KEYS));
+      const state = signBlob({ clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT }, ROLLED_KEYS, {
+        typ: "upstream",
+        ttlSeconds: 60,
+      });
+
+      const result = await callbackWith(state);
+
+      expect(result.statusCode).toBe(302);
+      expect(mockSecretsSend).toHaveBeenCalledTimes(2);
+    });
+
+    it("reads again only once for a blob that no held version signed", async () => {
+      storeReads(JSON.stringify(ROLLED_KEYS));
+      const state = signBlob(
+        { clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT },
+        { current: "v1", versions: { v1: "z".repeat(64) } },
+        {
+          typ: "upstream",
+          ttlSeconds: 60,
+        },
+      );
+
+      const result = await callbackWith(state);
+
+      expect(result.statusCode).toBe(400);
+      expect(mockSecretsSend).toHaveBeenCalledTimes(2);
+    });
+
+    it("accepts a blob signed before the roll, after the roll", async () => {
+      storeReads(JSON.stringify(ROLLED_KEYS));
+      const state = signBlob({ clientId: "diya-submit-dcr", redirectUri: CLAUDE_REDIRECT }, BLOB_KEYS, { typ: "upstream", ttlSeconds: 60 });
+
+      const result = await callbackWith(state);
+
+      expect(result.statusCode).toBe(302);
+      expect(mockSecretsSend).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("answers 500 when no key is configured", async () => {

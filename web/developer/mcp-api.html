@@ -397,7 +397,7 @@
         </details>
       </details>
       <details class="tool" id="tool-get_vat_return">
-        <summary><code>get_vat_return</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>get_vat_return</code></summary>
         <p>One past VAT return as HMRC holds it, by its period key (the periodKey list_vat_obligations answers for a fulfilled obligation), over the deployed API. Use it to see what HMRC holds; to read Submit's stored copy of a return it filed, use get_vat_receipt. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -526,7 +526,7 @@
         </details>
       </details>
       <details class="tool" id="tool-list_vat_liabilities">
-        <summary><code>list_vat_liabilities</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>list_vat_liabilities</code></summary>
         <p>What HMRC says the business owes for VAT, by period, for one VRN over the deployed API. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -576,7 +576,7 @@
         </details>
       </details>
       <details class="tool" id="tool-list_vat_obligations">
-        <summary><code>list_vat_obligations</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>list_vat_obligations</code></summary>
         <p>The open and fulfilled VAT obligations HMRC holds for one VRN, or for one practice client's VRN when clientId is given instead of vrn, over the deployed API. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -637,7 +637,7 @@
         </details>
       </details>
       <details class="tool" id="tool-list_vat_payments">
-        <summary><code>list_vat_payments</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>list_vat_payments</code></summary>
         <p>The VAT payments HMRC has received from the business, by date, for one VRN over the deployed API. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -687,7 +687,7 @@
         </details>
       </details>
       <details class="tool" id="tool-list_vat_penalties">
-        <summary><code>list_vat_penalties</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>list_vat_penalties</code></summary>
         <p>The VAT penalties and late-submission points HMRC holds for one VRN over the deployed API. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -1886,7 +1886,7 @@
         </details>
       </details>
       <details class="tool" id="tool-request_hmrc_authorisation">
-        <summary><code>request_hmrc_authorisation</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>request_hmrc_authorisation</code></summary>
         <p>Answers HMRC's sign-in link for this session, so the VAT tools can call HMRC without a token in the chat. Answers {url, expiresAt, scope, hmrcAccount}: show the user the url, wait for them to say HMRC access is granted, then call list_vat_obligations or submit_vat_return. The link works once, for ten minutes. DIY Accounting Submit keeps HMRC's tokens itself and renews the access token for the rest of the session. A second call replaces the session's authorisation. hmrcAccount synthetic is HMRC's sandbox. Over the deployed API.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -3214,7 +3214,7 @@
         </details>
       </details>
       <details class="tool" id="tool-submit_vat_return">
-        <summary><code>submit_vat_return</code> <span class="tag">hosted, production</span></summary>
+        <summary><code>submit_vat_return</code></summary>
         <p>Files the nine VAT boxes the user has confirmed (derive_vat_return's hmrc fields) over the deployed API, for vatNumber or, when clientId is given instead, for that practice client's own VRN. Boxes 3 and 5 are HMRC's own totals and are not sent; the route derives them. Uses the session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>

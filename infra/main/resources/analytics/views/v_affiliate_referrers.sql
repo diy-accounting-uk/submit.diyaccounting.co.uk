@@ -24,7 +24,7 @@ WITH latest_lines AS (
          max_by(charged_at, change_ts) AS charged_at,
          max_by(livemode, change_ts) AS livemode,
          max(change_ts) AS changed_at
-  FROM   dynamo_commissions
+  FROM   aliased_dynamo_commissions
   WHERE  change_type <> 'REMOVE'
   GROUP  BY referrer_hash, line_id)
 SELECT referrer_hash,

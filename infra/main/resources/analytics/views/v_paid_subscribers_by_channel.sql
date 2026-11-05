@@ -18,19 +18,19 @@ WITH acquisition AS (
          min_by(acq_gclid, change_ts)      AS gclid,
          min_by(acq_msclkid, change_ts)    AS msclkid,
          min_by(acq_ref, change_ts)        AS ref
-  FROM   dynamo_bundles
+  FROM   aliased_dynamo_bundles
   WHERE  acq_utm_source IS NOT NULL OR acq_gclid IS NOT NULL OR acq_msclkid IS NOT NULL OR acq_ref IS NOT NULL
   GROUP  BY hashed_sub),
 subscription_owner AS (
   SELECT subscription_id, arbitrary(hashed_sub) AS hashed_sub
-  FROM   dynamo_subscriptions
+  FROM   aliased_dynamo_subscriptions
   WHERE  hashed_sub IS NOT NULL
   GROUP  BY subscription_id),
 customer_account AS (
   SELECT s.customer,
          s.bundle_id,
          arbitrary(o.hashed_sub) AS hashed_sub
-  FROM   stripe_subscriptions s
+  FROM   aliased_stripe_subscriptions s
   JOIN   subscription_owner o ON o.subscription_id = s.id
   GROUP  BY s.customer, s.bundle_id),
 paid_charges AS (
@@ -38,7 +38,7 @@ paid_charges AS (
          customer,
          bundle_id,
          sum(amount - amount_refunded) AS net_minor
-  FROM   stripe_charges
+  FROM   aliased_stripe_charges
   WHERE  livemode = true
     AND  paid = true
     AND  refunded = false

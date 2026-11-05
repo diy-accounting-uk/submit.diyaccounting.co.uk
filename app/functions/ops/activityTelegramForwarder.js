@@ -20,18 +20,15 @@
 // The target chat ID is passed via the rule's input transformer or the
 // TELEGRAM_CHAT_ID environment variable set per-rule invocation.
 
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
 import { alarmDeploymentSlug, resolveAlarmEnv } from "../../lib/alarmName.js";
 import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
+import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
 
 const logger = createLogger({ source: "app/functions/ops/activityTelegramForwarder.js" });
 
-const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
-
-let cachedBotToken = null;
 
 // Bounds one sendTelegramMessage call (including a possible 429 retry) well inside the
 // Lambda's 10s timeout: an unbounded fetch under load was itself the failure mode (see
@@ -40,19 +37,11 @@ const TELEGRAM_FETCH_TIMEOUT_MS = 4000;
 const TELEGRAM_RETRY_AFTER_CAP_MS = 3000;
 
 async function resolveBotToken() {
-  if (cachedBotToken) return cachedBotToken;
-
-  if (process.env.TELEGRAM_BOT_TOKEN) {
-    cachedBotToken = process.env.TELEGRAM_BOT_TOKEN;
-    return cachedBotToken;
-  }
+  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
 
   const arn = process.env.TELEGRAM_BOT_TOKEN_ARN;
   if (!arn) throw new Error("Neither TELEGRAM_BOT_TOKEN nor TELEGRAM_BOT_TOKEN_ARN is set");
-
-  const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-  cachedBotToken = result.SecretString;
-  return cachedBotToken;
+  return readSecret(arn);
 }
 
 /**
@@ -341,6 +330,20 @@ export async function handler(event) {
   const botToken = await resolveBotToken();
 
   const results = await Promise.allSettled(targets.map((chatId) => sendTelegramMessage(botToken, chatId, message)));
+
+  // A 401 from Telegram means the token was rolled. One forced read of the secret, and one more
+  // send to the chats that were refused, only when the secret now holds another token.
+  const refused = targets.filter((_, index) => results[index].status === "fulfilled" && results[index].value.status === 401);
+  const arn = process.env.TELEGRAM_BOT_TOKEN_ARN;
+  if (refused.length > 0 && !process.env.TELEGRAM_BOT_TOKEN && arn) {
+    const refreshedToken = await refreshAfterAuthFailure(arn, botToken);
+    if (refreshedToken) {
+      const retried = await Promise.allSettled(refused.map((chatId) => sendTelegramMessage(refreshedToken, chatId, message)));
+      refused.forEach((chatId, retryIndex) => {
+        results[targets.indexOf(chatId)] = retried[retryIndex];
+      });
+    }
+  }
 
   for (const result of results) {
     if (result.status === "rejected") {

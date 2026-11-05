@@ -32,6 +32,7 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSubWithVersion: vi.fn().mockResolvedValue("hashed-sub"),
   getSaltVersion: vi.fn().mockReturnValue("v1"),
   getPreviousVersions: vi.fn().mockReturnValue([]),
+  subHashCandidates: vi.fn().mockReturnValue([{ version: "v1", hashedSub: "hashed-sub" }]),
 }));
 
 const { putBundle, putBundleByHashedSub } = await import("@app/data/dynamoDbBundleRepository.js");

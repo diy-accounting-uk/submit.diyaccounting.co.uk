@@ -23,6 +23,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -153,6 +154,13 @@ public class EdgeStack extends Stack {
         String certificateArn();
 
         String apiGatewayUrl();
+
+        // The AWSCURRENT version of the origin verify secret in us-east-1, from the deploy
+        // workflow. Blank until the secret exists, and then no origin header is sent.
+        @Value.Default
+        default String originVerifySecretVersionId() {
+            return "";
+        }
 
         // The scan-detect Lambda's Docker image tag. Required rather than defaulted: every other
         // Docker-image Lambda in this repo takes this from the deployment's own baseImageTag, and
@@ -619,14 +627,16 @@ public class EdgeStack extends Stack {
         // diyaGlCors.js's per-request echo) already decide the header correctly. The path patterns
         // stay as separate CloudFront behaviours so a future security-header change scoped to one
         // of them doesn't have to touch the others.
+        Map<String, String> apiOriginHeaders =
+                OriginVerifyHelper.originCustomHeaders(props.envName(), props.originVerifySecretVersionId());
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
         BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy, apiOriginHeaders);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
         BehaviorOptions diyaGlApiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy, apiOriginHeaders);
         additionalBehaviors.put("/api/v1/diya-gl/*", diyaGlApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/diya-gl/* pointing to %s", props.apiGatewayUrl());
 
@@ -634,7 +644,7 @@ public class EdgeStack extends Stack {
         // cloud.js, including copies held by installed service workers, calls this path and
         // never switches to the new one.
         BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy, apiOriginHeaders);
         additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
 
@@ -646,7 +656,10 @@ public class EdgeStack extends Stack {
             additionalBehaviors.put(
                     mcpPathPattern,
                     createBehaviorOptionsForApiGateway(
-                            props.apiGatewayUrl(), mcpResponseHeadersPolicy, fraudPreventionHeadersPolicy));
+                            props.apiGatewayUrl(),
+                            mcpResponseHeadersPolicy,
+                            fraudPreventionHeadersPolicy,
+                            apiOriginHeaders));
             infof("Added API Gateway behavior for %s pointing to %s", mcpPathPattern, props.apiGatewayUrl());
         }
 
@@ -769,12 +782,14 @@ public class EdgeStack extends Stack {
     public BehaviorOptions createBehaviorOptionsForApiGateway(
             String apiGatewayUrl,
             ResponseHeadersPolicy responseHeadersPolicy,
-            OriginRequestPolicy originRequestPolicy) {
+            OriginRequestPolicy originRequestPolicy,
+            Map<String, String> originCustomHeaders) {
         // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
         // "abc123.execute-api.us-east-1.amazonaws.com")
         var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
         var origin = HttpOrigin.Builder.create(apiGatewayHost)
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .customHeaders(originCustomHeaders)
                 .build();
         return BehaviorOptions.builder()
                 .origin(origin)
