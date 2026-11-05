@@ -44,7 +44,7 @@ import { FORCE_REFRESH_MIN_MS, SECRET_TTL_MS } from "../app/lib/cachedSecret.js"
 const SECRET_NAME_SUFFIX = "submit/mcp/oauth-blob-key";
 const PROOF_LANE = "mcpBlobKeyProof";
 const GRANTS_PATH = "/api/v1/mcp/hmrc-grants";
-const GRANT_FUNCTION_NAME_PATTERN = "mcp-hmrc-grant-ingest-handler";
+const GRANT_FUNCTION_NAME_PATTERN = "-app-mcp-hmrc-grant";
 const FAR_FUTURE_SECONDS = 4_000_000_000;
 const EVIDENCE_POLL_MS = 10_000;
 const EVIDENCE_TOTAL_WAIT_MS = 180_000;
@@ -267,6 +267,7 @@ async function liveProofSteps({ envName, secretName, secretsClient, commands, re
         groups.push(...(page.logGroups ?? []).map((group) => group.logGroupName));
         nextToken = page.nextToken;
       } while (nextToken);
+      if (groups.length === 0) throw new Error(`No log group matches "${GRANT_FUNCTION_NAME_PATTERN}", so the proof has no log to search`);
       for (let poll = 0; poll < EVIDENCE_POLLS; poll += 1) {
         for (const logGroupName of groups) {
           const found = await logs.send(
