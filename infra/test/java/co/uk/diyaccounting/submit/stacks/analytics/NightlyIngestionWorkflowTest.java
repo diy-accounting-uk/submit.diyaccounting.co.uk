@@ -77,7 +77,9 @@ class NightlyIngestionWorkflowTest {
                 .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda)
                 .passFiguresPublishLambda(passFiguresPublishLambda)
                 .consoleCapturePublishLambda(
-                        testLambda(stack, "ConsoleCapturePublishLambda", "docs-env-console-capture-publish"));
+                        testLambda(stack, "ConsoleCapturePublishLambda", "docs-env-console-capture-publish"))
+                .activityEventsCompactLambda(
+                        testLambda(stack, "ActivityEventsCompactLambda", "docs-env-activity-events-compact"));
         if (withOptionalJobs) {
             props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
                     .paypalDonationsPullLambda(
@@ -168,7 +170,7 @@ class NightlyIngestionWorkflowTest {
 
         assertTrue(stateText(definitionText, "data quality run").contains("\"Next\":\"metrics publish\""));
         assertTrue(stateText(definitionText, "metrics publish").contains("\"Next\":\"raw export publish\""));
-        assertTrue(stateText(definitionText, "raw export publish").contains("\"Next\":\"operator snapshot publish\""));
+        assertTrue(stateText(definitionText, "raw export publish").contains("\"Next\":\"activity events compaction\""));
         assertTrue(
                 stateText(definitionText, "operator snapshot publish").contains("\"Next\":\"pass figures publish\""));
 
@@ -194,11 +196,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Twelve tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Thirteen tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                12,
+                13,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),
@@ -263,6 +265,26 @@ class NightlyIngestionWorkflowTest {
                 stateText(definitionText, "pass figures publish").contains("\"Next\":\"console capture publish\""),
                 "ci should run the capture straight after the pass figures");
         assertFalse(definitionText.contains("\"console capture due\""), "ci has no capture choice");
+    }
+
+    @Test
+    void outsideProdCompactionRunsAfterTheRawExportAndAlwaysReachesTheSnapshot() {
+        var definitionText = joinedDefinitionString(synthWorkflow("ci"));
+
+        assertTrue(stateText(definitionText, "raw export publish").contains("\"Next\":\"activity events compaction\""));
+        var compaction = stateText(definitionText, "activity events compaction");
+        assertTrue(compaction.contains("\"Next\":\"operator snapshot publish\""), compaction);
+        assertTrue(compaction.contains("\"ResultPath\":null"), "the snapshot keeps its input: " + compaction);
+        var failure = stateText(definitionText, "activity events compaction failed, recorded");
+        assertTrue(failure.contains("\"Next\":\"operator snapshot publish\""), failure);
+    }
+
+    @Test
+    void prodGoesFromTheRawExportStraightToTheSnapshot() {
+        var definitionText = joinedDefinitionString(synthWorkflow("prod"));
+
+        assertFalse(definitionText.contains("activity events compaction"));
+        assertTrue(stateText(definitionText, "raw export publish").contains("\"Next\":\"operator snapshot publish\""));
     }
 
     @Test
@@ -350,6 +372,8 @@ class NightlyIngestionWorkflowTest {
 
     private static final List<String> STATE_NAMES = List.of(
             "Run ingestion jobs",
+            "activity events compaction",
+            "activity events compaction failed, recorded",
             "Stripe reconciliation",
             "GA4 report pull",
             "GA4 event export pull",

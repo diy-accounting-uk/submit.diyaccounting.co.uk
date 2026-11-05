@@ -70,10 +70,15 @@ public class BusinessViews extends Construct {
 
     private static final List<ViewDefinition> VIEWS = List.of(
             new ViewDefinition(
+                    "activity_events_lake",
+                    "The one read path to activity events: raw Firehose objects, and the compacted copy of each"
+                            + " day that activityEventsCompact.js names here at run time",
+                    List.of("activity_events")),
+            new ViewDefinition(
                     "activity_events_all",
                     "The activity events union view every v_* activity view reads: actor classification and"
                             + " hash aliases applied over the curated table",
-                    List.of("activity_events", "hash_aliases")),
+                    List.of("activity_events_lake", "hash_aliases")),
             new ViewDefinition(
                     "aliased_dynamo_receipts",
                     "dynamo_receipts with each hash read through hash_aliases, stable across a salt rotation",
@@ -576,7 +581,7 @@ public class BusinessViews extends Construct {
      * the stored views it reads, which in turn needs read access to the tables <em>those</em> views
      * read, transitively. {@code readTables} records direct dependencies only, so an enumerated
      * grant denies a legitimate read one hop further down — {@code v_login_to_submission_funnel}
-     * reads {@code activity_events_all}, which reads {@code activity_events}, which the enumeration
+     * reads {@code activity_events_all}, which reads {@code activity_events_lake}, which the enumeration
      * never named. The grant is already scoped to this database and already carries CreateTable and
      * UpdateTable on it, so reading every table in the same database adds no privilege worth the
      * fragility of keeping a transitive list by hand.

@@ -23,6 +23,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.ActivityEventsCompaction;
 import co.uk.diyaccounting.submit.stacks.analytics.AdsCostTables;
 import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
@@ -99,6 +100,10 @@ public class AnalyticsStack extends Stack {
 
     private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
     private static final String ACTIVITY_EVENTS_CURATED_TABLE_NAME = "activity_events";
+    private static final String ACTIVITY_EVENTS_COMPACTED_TABLE_NAME = "activity_events_compacted";
+    // Outside curated/ on purpose: age-curated moves objects of 128 KB and over to Infrequent Access,
+    // where each hourly read of a compacted day pays a retrieval fee. The raw objects are all smaller.
+    private static final String ACTIVITY_EVENTS_COMPACTED_PREFIX = "compacted/activity-events/data/";
     private static final String SBOM_ARCHIVE_PREFIX = "archive/security/sbom/";
 
     public final Bucket lakeBucket;
@@ -572,6 +577,55 @@ public class AnalyticsStack extends Stack {
                         .build())
                 .build();
         curatedActivityEventsTable.addResourceDependency(this.glueDatabase);
+
+        // A reader names a generation, because a failed attempt leaves its objects in a generation
+        // that no reader names. The activity_events_lake view is the only reader.
+        var compactedLocation =
+                "s3://%s/%s".formatted(sharedNames.analytics.analyticsLakeBucketName, ACTIVITY_EVENTS_COMPACTED_PREFIX);
+        var compactedTableParameters = new LinkedHashMap<String, String>();
+        compactedTableParameters.put("classification", "parquet");
+        compactedTableParameters.put("has_encrypted_data", "false");
+        compactedTableParameters.put("projection.enabled", "true");
+        compactedTableParameters.put("projection.dt.type", "date");
+        compactedTableParameters.put("projection.dt.format", "yyyy-MM-dd");
+        compactedTableParameters.put("projection.dt.range", "2026-08-01,NOW");
+        compactedTableParameters.put("projection.dt.interval", "1");
+        compactedTableParameters.put("projection.dt.interval.unit", "DAYS");
+        compactedTableParameters.put("projection.generation.type", "integer");
+        compactedTableParameters.put("projection.generation.range", "1,20");
+        compactedTableParameters.put(
+                "storage.location.template", compactedLocation + "dt=${dt}/generation=${generation}/");
+
+        var compactedActivityEventsTable = CfnTable.Builder.create(this, prefix + "-ActivityEventsCompactedTable")
+                .catalogId(this.getAccount())
+                .databaseName(sharedNames.analytics.glueDatabaseName)
+                .tableInput(CfnTable.TableInputProperty.builder()
+                        .name(ACTIVITY_EVENTS_COMPACTED_TABLE_NAME)
+                        .description("One verified Parquet copy of each closed day of activity_events, by generation")
+                        .tableType("EXTERNAL_TABLE")
+                        .parameters(compactedTableParameters)
+                        .partitionKeys(List.of(
+                                CfnTable.ColumnProperty.builder()
+                                        .name("dt")
+                                        .type("date")
+                                        .build(),
+                                CfnTable.ColumnProperty.builder()
+                                        .name("generation")
+                                        .type("int")
+                                        .build()))
+                        .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
+                                .location(compactedLocation)
+                                .inputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
+                                .outputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat")
+                                .serdeInfo(CfnTable.SerdeInfoProperty.builder()
+                                        .serializationLibrary(
+                                                "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")
+                                        .build())
+                                .columns(buildCuratedActivityEventColumns())
+                                .build())
+                        .build())
+                .build();
+        compactedActivityEventsTable.addResourceDependency(this.glueDatabase);
         // The delivery stream's schema configuration names this table by string, which hides the
         // dependency from CDK's graph. Format conversion needs the table to exist first.
         this.activityEventsStream.getNode().addDependency(curatedActivityEventsTable);
@@ -787,6 +841,21 @@ public class AnalyticsStack extends Stack {
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .build());
 
+        var activityEventsCompaction = new ActivityEventsCompaction(
+                this,
+                ActivityEventsCompaction.ActivityEventsCompactionProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
+                        .build());
+        activityEventsCompaction.compactLambda.getNode().addDependency(compactedActivityEventsTable);
+
         new ConsoleCapturePublish(
                 this,
                 ConsoleCapturePublish.ConsoleCapturePublishProps.builder()
@@ -916,6 +985,13 @@ public class AnalyticsStack extends Stack {
                 .id("expire-exports")
                 .prefix("exports/")
                 .expiration(Duration.days(isProd ? 90 : 14))
+                .build());
+
+        // The same age as the curated rules below, so a compacted day lives as long as its raw day.
+        rules.add(LifecycleRule.builder()
+                .id("expire-compacted-activity-events")
+                .prefix(ACTIVITY_EVENTS_COMPACTED_PREFIX)
+                .expiration(Duration.days(isProd ? 800 : 30))
                 .build());
 
         if (isProd) {

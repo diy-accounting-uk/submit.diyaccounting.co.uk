@@ -378,6 +378,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
     - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes: use when a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
+    - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events: use when Athena reads too many small activity_events objects, or a day's compacted copy must be checked or written again.
     - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup: use when a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
     - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena: use when CloudFront access logs must be queryable by Athena for the traffic views.
     - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard: use when accessibility or fraud-header check output must be queryable for the compliance panel.
@@ -4137,7 +4138,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
-- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
+- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues · [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
@@ -4278,6 +4279,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views
 - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks
 - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes
+- [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events
 - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup
 - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena
 - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard
@@ -4315,6 +4317,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/analytics-dt-relayout.sh, .github/workflows/analytics-dt-relayout.yml
 - **Keywords:** dt relayout, year month day, dt prefix, partition projection, batch-delete-partition, curated prefix, lake relayout
 - **Related:** DATA-11, DATA-12, DATA-15
+
+#### DATA-70 Compact closed days of activity events
+
+- **Use when:** Athena reads too many small activity_events objects, or a day's compacted copy must be checked or written again.
+- **Does:** activityEventsCompact.js rewrites each closed day of activity_events into one generation of a compacted Parquet copy with an Athena UNLOAD. It compares the row count and an order-free checksum of the copy with the raw day. It then records the day in a state object and replaces the activity_events_lake view, which is the one read path, in one Athena statement. It deletes nothing. A raw day that changes gets a new generation on a later run.
+- **Run:** `gh workflow run run-nightly.yml -f environment-name=ci -f date=YYYY-MM-DD`
+- **Entry:** `app/functions/analytics/activityEventsCompact.js:handler`
+- **Files:** app/functions/analytics/activityEventsCompact.js, app/unit-tests/analytics/activityEventsCompact.test.js, infra/main/resources/analytics/views/activity_events_lake.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompaction.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompactionTest.java
+- **Keywords:** compaction, small files, activity_events_lake, activity_events_compacted, unload, s3 get requests, guardduty s3 events, generation
+- **Related:** DATA-10, DATA-12, DATA-22, DATA-27
 
 #### DATA-12 Provision the analytics lake and Athena workgroup
 
@@ -4451,7 +4463,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-22 Orchestrate the nightly ingestion workflow
 
 - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
+- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish, then outside prod the activity events compaction, whose failure is recorded and does not fail the night; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
 - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -6606,6 +6618,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity list: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - activity_events: [DATA-11](#data-11-run-glue-data-quality-checks)
 - activity_events_all: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- activity_events_compacted: [DATA-70](#data-70-compact-closed-days-of-activity-events)
+- activity_events_lake: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - activitystack: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - actor class: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - ad group performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
@@ -7046,6 +7060,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commit signatures: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -7594,6 +7609,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - generate-se: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generate-taxi: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generated documentation: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
+- generation: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - geo state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - get /api/v1/companies-house/company: [CH-04](#ch-04-fetch-a-company-profile)
 - get /api/v1/companies-house/search: [CH-03](#ch-03-search-the-companies-house-register)
@@ -7662,6 +7678,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gtag.js: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - guard main push: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - guardduty: [OPS-75](#ops-75-run-nightly-security-lake-analysis), [OPS-117](#ops-117-provision-the-observability-stack)
+- guardduty s3 events: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - guardrail: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - guide screenshots: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
@@ -8586,6 +8603,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - s3 buckets: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - s3 cloudfront: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - s3 deployment: [OPS-120](#ops-120-provision-the-publish-stack)
+- s3 get requests: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - s3 lake: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - s3 lifecycle: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle), [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - s3 listing: [BILL-19](#bill-19-list-a-users-diya-gl-books)
@@ -8752,6 +8770,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - small company accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- small files: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - smallbusinessuk: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [DEV-55](#dev-55-review-the-operator-dashboard)
@@ -9027,6 +9046,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - unlisted pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - unlisted to public: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
+- unload: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - unpushed commits: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - unrecognised identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - unset iam session: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)

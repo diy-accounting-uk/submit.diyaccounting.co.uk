@@ -29,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 70;
+    private static final int VIEW_COUNT = 71;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();

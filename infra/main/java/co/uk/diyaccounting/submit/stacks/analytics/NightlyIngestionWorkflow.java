@@ -6,7 +6,7 @@
 // spotless:off
 // @capability DATA-22 Orchestrate the nightly ingestion workflow
 // - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
+// - **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish, then outside prod the activity events compaction, whose failure is recorded and does not fail the night; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
 // - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -43,6 +43,7 @@ import software.amazon.awscdk.services.stepfunctions.Choice;
 import software.amazon.awscdk.services.stepfunctions.Condition;
 import software.amazon.awscdk.services.stepfunctions.DefinitionBody;
 import software.amazon.awscdk.services.stepfunctions.Errors;
+import software.amazon.awscdk.services.stepfunctions.IChainable;
 import software.amazon.awscdk.services.stepfunctions.JsonPath;
 import software.amazon.awscdk.services.stepfunctions.LogLevel;
 import software.amazon.awscdk.services.stepfunctions.LogOptions;
@@ -64,8 +65,8 @@ import software.constructs.Construct;
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
  * once, since they share no data; then, on the 02:15 UTC run or an execution input that names a
- * {@code date}, the data quality run, the metrics publish and the raw export publish; then the
- * operator snapshot publish; then the pass figures publish; then, in ci always and in prod on the 02:15
+ * {@code date}, the data quality run, the metrics publish, the raw export publish and, outside prod,
+ * the activity events compaction; then the operator snapshot publish; then the pass figures publish; then, in ci always and in prod on the 02:15
  * UTC run only, the console capture publish; then {@code Succeed}. The capture is an optional task: a
  * failure is recorded under {@code $.failures.consoleCapture} and does not fail the night. In prod it runs
  * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
@@ -189,6 +190,13 @@ public class NightlyIngestionWorkflow {
          */
         IFunction consoleCapturePublishLambda();
 
+        /**
+         * Imported by name from {@code AnalyticsStack}: {@code ActivityEventsCompaction.compactLambda}.
+         * Runs on the nightly steps, before the snapshot, outside prod. Prod joins when the step's
+         * condition in the definition goes.
+         */
+        IFunction activityEventsCompactLambda();
+
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
         }
@@ -289,6 +297,20 @@ public class NightlyIngestionWorkflow {
         } else {
             operatorSnapshotTask.next(passFiguresTask).next(consoleCaptureTask);
         }
+        var nightlySteps = Chain.start(dataQualityTask).next(metricsPublishTask).next(rawExportTask);
+        if (isProd) {
+            nightlySteps = nightlySteps.next(operatorSnapshotTask);
+        } else {
+            nightlySteps = nightlySteps
+                    .next(buildPassThroughOptionalTask(
+                            scope,
+                            prefix + "-Nightly-ActivityEventsCompact",
+                            "activity events compaction",
+                            "activityEventsCompact",
+                            props.activityEventsCompactLambda(),
+                            operatorSnapshotTask))
+                    .next(operatorSnapshotTask);
+        }
         var nightlyStepsDue = Choice.Builder.create(scope, prefix + "-Nightly-NightlyStepsDue")
                 .stateName("nightly steps due")
                 .build()
@@ -296,10 +318,7 @@ public class NightlyIngestionWorkflow {
                         Condition.or(
                                 Condition.stringMatches("$$.Execution.StartTime", NIGHTLY_START_TIME_PATTERN),
                                 Condition.isPresent("$.date")),
-                        Chain.start(dataQualityTask)
-                                .next(metricsPublishTask)
-                                .next(rawExportTask)
-                                .next(operatorSnapshotTask))
+                        nightlySteps)
                 .otherwise(operatorSnapshotTask);
         var definition = Chain.start(ingestionParallel).next(nightlyStepsDue);
 
@@ -410,14 +429,50 @@ public class NightlyIngestionWorkflow {
         return task;
     }
 
-    private static LambdaInvoke buildTask(Construct scope, String id, String description, IFunction lambdaFunction) {
-        var task = LambdaInvoke.Builder.create(scope, id)
+    /**
+     * An optional task in the middle of the chain. The next state sees this task's input, and a
+     * caught failure goes on to {@code afterFailure}, because a {@code Pass} with no next state ends
+     * the execution.
+     */
+    private static LambdaInvoke buildPassThroughOptionalTask(
+            Construct scope,
+            String id,
+            String description,
+            String failureKey,
+            IFunction lambdaFunction,
+            IChainable afterFailure) {
+        var task = withRetry(LambdaInvoke.Builder.create(scope, id)
                 .stateName(description)
                 .lambdaFunction(lambdaFunction)
                 .payloadResponseOnly(true)
                 .retryOnServiceExceptions(true)
                 .inputPath("$")
+                .resultPath(JsonPath.DISCARD)
+                .build());
+        var recordFailure = Pass.Builder.create(scope, id + "-Failed")
+                .stateName(description + " failed, recorded")
                 .build();
+        recordFailure.next(afterFailure);
+        task.addCatch(
+                recordFailure,
+                CatchProps.builder()
+                        .errors(List.of(Errors.ALL))
+                        .resultPath("$.failures." + failureKey)
+                        .build());
+        return task;
+    }
+
+    private static LambdaInvoke buildTask(Construct scope, String id, String description, IFunction lambdaFunction) {
+        return withRetry(LambdaInvoke.Builder.create(scope, id)
+                .stateName(description)
+                .lambdaFunction(lambdaFunction)
+                .payloadResponseOnly(true)
+                .retryOnServiceExceptions(true)
+                .inputPath("$")
+                .build());
+    }
+
+    private static LambdaInvoke withRetry(LambdaInvoke task) {
         task.addRetry(RetryProps.builder()
                 .errors(List.of(Errors.TASKS_FAILED))
                 .interval(Duration.seconds(60))
