@@ -3,7 +3,7 @@
 
 # @capability OPS-14 Destroy a named prod deployment on demand
 # - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-# - **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
+# - **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first. It refuses the live set, the last-known-good set, and a set whose API the apex API domain still maps to.
 # - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 # - **Entry:** `.github/workflows/destroy-prod.yml`
 # - **Files:** .github/workflows/destroy-prod.yml
@@ -681,6 +681,30 @@ jobs:
           if [ -n "$LIVE_DISTRIBUTION" ] && [ "$LIVE_DISTRIBUTION" != "None" ]; then
             echo "Refusing to destroy [$DEPLOYMENT]: distribution [$LIVE_DISTRIBUTION] still serves [$PROD_APEX_ALIAS]"
             exit 1
+          fi
+          # API Gateway routes the apex's /api calls by the apex custom domain's mapping. When that
+          # mapping still names this deployment's API, the destroy would leave the apex with no API.
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${DEPLOYMENT}-app-ApiStack" --region eu-west-2 \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue | [0]" \
+            --output text 2>/dev/null || echo "")
+          if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+            for APEX_API_DOMAIN in "$PROD_APEX_ALIAS" "prod-$PROD_APEX_ALIAS"; do
+              if ! MAPPED=$(aws apigatewayv2 get-api-mappings --region eu-west-2 \
+                --domain-name "$APEX_API_DOMAIN" \
+                --query "Items[?ApiId=='${API_ID}'].ApiMappingId | [0]" --output text 2>&1); then
+                if printf '%s' "$MAPPED" | grep -q "NotFoundException"; then
+                  continue
+                fi
+                echo "Refusing to destroy [$DEPLOYMENT]: could not read the API mappings of [$APEX_API_DOMAIN]: $MAPPED"
+                exit 1
+              fi
+              if [ -n "$MAPPED" ] && [ "$MAPPED" != "None" ]; then
+                echo "Refusing to destroy [$DEPLOYMENT]: the API domain [$APEX_API_DOMAIN] still maps to its API [$API_ID]."
+                echo "Run set-origins.yml for prod first, so the apex API domain moves to the live deployment."
+                exit 1
+              fi
+            done
           fi
           echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
 

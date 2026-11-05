@@ -2447,11 +2447,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-04 Update Route53/CloudFront origins for a domain
 
 - **Use when:** an apex or environment domain must move to a different origin, or fall back to the holding page.
-- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment.
+- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment. For a deployment origin it also moves the apex API Gateway custom domain to that deployment's API.
 - **Run:** `gh workflow run set-origins.yml -f domain-source=<branch|holding|last-known-good> -f environment-name=<ci|prod>`
 - **Entry:** `.github/workflows/set-origins.yml`; `.github/actions/set-origins/action.yml`
 - **Files:** .github/actions/set-origins/action.yml, .github/workflows/set-origins.yml
-- **Keywords:** set origins, route53, cloudfront alias, holding page, last-known-good, domain cutover
+- **Keywords:** set origins, route53, cloudfront alias, api gateway custom domain, api mapping, holding page, last-known-good, domain cutover
 - **Related:** OPS-05
 
 #### OPS-05 Promote a CI deployment to the CI apex
@@ -2739,7 +2739,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-14 Destroy a named prod deployment on demand
 
 - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
+- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first. It refuses the live set, the last-known-good set, and a set whose API the apex API domain still maps to.
 - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 - **Entry:** `.github/workflows/destroy-prod.yml`
 - **Files:** .github/workflows/destroy-prod.yml
@@ -6768,11 +6768,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api call graphs: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - api docs: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - api gateway: [SITE-02](#site-02-verify-jwts-at-the-api-gateway), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- api gateway custom domain: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
+- api gateway custom domain: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - api gateway event shape: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - api gateway routes: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - api key: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [BILL-32](#bill-32-provision-stripe-secrets)
 - api lambda: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
+- api mapping: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - api request log: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
