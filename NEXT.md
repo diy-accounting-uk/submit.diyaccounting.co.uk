@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-9024079** (PR #707's merge 9024079bb).
+**Prod runs deployment prod-3740364** (PR #711's merge 374036486).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -56,8 +56,6 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 ## Machine-only
 
-- [ ] **KEY18. Put the new HMRC sandbox secret on prod.** The operator set `HMRC_SANDBOX_CLIENT_SECRET` on the GitHub `prod` environment on 2026-11-05; ci and prod share the sandbox app. After main's deploy of PR #713 ends, dispatch `rotate-secret.yml` with `secret=hmrc/sandbox_client_secret` and `environment-name=prod`, check that one `rotated-at` tag changes, and check a prod sandbox call. Then tell the operator the old secret can go from the HMRC app. **Source**: KEY3. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
 - [ ] **EML8. Read invoices from both mailboxes.** The brief is the row in `PLAN_EMAIL_STRATEGY.md`. `invoiceLinesForPeriod` in `mcp/lib/finance/mail-invoices.js` searches `mail-antony` only (line 101). **Source**: `PLAN_EMAIL_STRATEGY.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **EML4. Add mail lanes to the intake.** The brief is the row in `PLAN_EMAIL_STRATEGY.md`. Change `buildSearchQuery` (line 71) and `isCustomerSender` (line 83) in `scripts/support-mail-intake.mjs`. Read the header of a real vendor message before the DKIM check goes live. **Source**: `PLAN_EMAIL_STRATEGY.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
@@ -73,6 +71,8 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 - [ ] **INT3. Two graphs on the dashboard's Main tab.** One graph of API requests per organisation per HTTP status code, and one of the average API request duration per organisation. Lands with INT2 in one agent, because both change the same snapshot and page. **Source**: operator, 2026-11-04. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files. **Now**: `integration-requests` and `integration-duration` are in the snapshot. Look at both graphs on the Main tab.
 
 ## Machine-ask
+
+- [ ] **KEY18. Main's deploy of PR #713 fails prod probes: the HMRC sandbox secret on prod is wrong.** Run 42025323645 fails with `401 invalid client id or secret`. `prod/submit/hmrc/sandbox_client_secret` holds a 5 character value, set by the GitHub `prod` environment secret through `deploy-environment.yml` at 12:14 UTC on 2026-11-05. ci's 36 character value gets a token with the prod client id, because ci and prod share the sandbox app. Ask: the operator copies ci's value to the GitHub `prod` secret. Then dispatch `rotate-secret.yml` with `secret=hmrc/sandbox_client_secret` and `environment-name=prod`, check a token, and redeploy main. Keep the old secret on the HMRC app until prod has passed. **Source**: KEY3. **Owner**: Claude Code, with the operator's command. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **EML3. Unsubscribe from marketing.** Ask: the operator says yes to each action. Unsubscribe from the senders that `../private.diyaccounting.co.uk/operator/EMAIL_DESTINATIONS_2026-11-05.md` and the sender table mark, with Claude in Chrome. **Source**: `PLAN_EMAIL_STRATEGY.md`. **Owner**: Claude Code, with the operator's yes. **Model**: Sonnet. **Size**: 0 files.
 
