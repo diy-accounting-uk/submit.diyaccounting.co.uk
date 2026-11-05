@@ -2054,7 +2054,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-25 Retrieve a Stripe checkout session's status
 
 - **Use when:** a page after checkout must know whether a session id succeeded.
-- **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. It tries the live Stripe client, then the test-mode client. A session id is only valid in the mode that created it.
+- **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. The id prefix picks the client: `cs_test_` reads with the test-mode client only and `cs_live_` with the live client only, so a probe's test session costs no live 404. An id with neither prefix tries the live client, then the test-mode client.
 - **Run:** `GET /api/v1/billing/checkout/:id`
 - **Entry:** `app/functions/billing/billingCheckoutSessionGet.js:ingestHandler`
 - **Files:** app/functions/billing/billingCheckoutSessionGet.js, app/unit-tests/functions/billingCheckoutSessionGet.test.js
