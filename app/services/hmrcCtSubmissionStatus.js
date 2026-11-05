@@ -28,7 +28,7 @@ import {
   RECEIPT_SIGNATURE_DIGEST_NOT_REPRODUCED,
 } from "./hmrcReceiptSignature.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
-import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
+import { recordFiledReceipt } from "./filedReceipt.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
@@ -309,7 +309,15 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.
   const receipt = { ...accepted, ...(pending.filed ? { filed: pending.filed } : {}), ...formRequestFields(pending.formRequest) };
-  await putReceipt(userSub, receiptId, receipt, resolveActorClass(), pending.clientId);
+  await recordFiledReceipt({
+    userSub,
+    receiptId,
+    receipt,
+    actor: resolveActorClass(),
+    clientId: pending.clientId,
+    receiptKind: "ct-return",
+    synthetic: pending.gatewayTest,
+  });
   const data = { ...accepted, receiptId };
   await putAsyncRequest(userSub, correlationId, "completed", data, asyncRequestsTableName);
   await settleDelete({

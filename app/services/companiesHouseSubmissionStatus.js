@@ -17,7 +17,7 @@ import {
   redactPresenterCredentials,
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
-import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
+import { recordFiledReceipt } from "./filedReceipt.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
@@ -103,7 +103,7 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     const receipt = filedDocument
       ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(persistedRequest.data?.formRequest) }
       : { ...status, ...jointFiling };
-    await putReceipt(userSub, receiptId, receipt, resolveActorClass());
+    await recordFiledReceipt({ userSub, receiptId, receipt, actor: resolveActorClass(), receiptKind: kind, synthetic: gatewayTest });
     const data = { ...status, ...jointFiling, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
     await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
