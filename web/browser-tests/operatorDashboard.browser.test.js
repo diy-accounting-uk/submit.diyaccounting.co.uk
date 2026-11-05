@@ -1392,7 +1392,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(17);
+    expect(sections).toHaveLength(21);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);

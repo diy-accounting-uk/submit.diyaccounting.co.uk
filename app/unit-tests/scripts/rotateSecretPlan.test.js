@@ -14,7 +14,8 @@ import { planRotation, ROTATABLE_SECRETS } from "../../../scripts/rotate-secret-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // Written by deploy-env-secrets.yml from personal-data lists, not rotated as keys.
-const NOT_KEYS = new Set(["operator-emails", "family-affiliate-emails"]);
+// origin/verify holds a current and a previous value and rolls through deploy-environment.yml.
+const NOT_KEYS = new Set(["operator-emails", "family-affiliate-emails", "origin/verify"]);
 
 describe("planRotation", () => {
   test("names the AWS secret, the GitHub secret and the vendor assert", () => {
