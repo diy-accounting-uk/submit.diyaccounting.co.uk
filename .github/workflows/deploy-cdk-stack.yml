@@ -129,6 +129,11 @@ on:
         type: string
         required: false
         default: ''
+      exclusively:
+        description: 'Deploy only the named stack, without the stacks it depends on'
+        type: string
+        required: false
+        default: 'false'
 
 permissions:
   id-token: write
@@ -433,6 +438,7 @@ jobs:
           setsid npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
             npx cdk deploy \
               ${{ needs.params.outputs.stackName }} \
+              ${{ inputs.exclusively == 'true' && '--exclusively' || '' }} \
               --require-approval never \
               --ci true \
               --no-notices \
