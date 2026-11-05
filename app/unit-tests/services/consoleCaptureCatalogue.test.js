@@ -78,6 +78,12 @@ describe("consoleCaptureCatalogue", () => {
     expect(items.some((entry) => entry.slug === "lambda-duration")).toBe(false);
   });
 
+  test("every Submit/Analytics search plots a gauge with Maximum or Average, never Sum", () => {
+    const searches = itemsForTarget("prod").filter((item) => item.kind === "metric-search" && item.query.includes("Submit/Analytics"));
+    expect(searches.length).toBeGreaterThan(0);
+    for (const item of searches) expect(["Maximum", "Average"]).toContain(item.stat);
+  });
+
   test("a RUM widget names its application dimension", () => {
     const item = itemsForTarget("ci").find((entry) => entry.slug === "rum-errors");
     const widget = buildMetricWidget(item, "eu-west-2");

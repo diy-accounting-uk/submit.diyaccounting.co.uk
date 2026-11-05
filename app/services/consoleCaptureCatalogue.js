@@ -40,6 +40,9 @@ function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM",
   return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit, skip };
 }
 
+// Every Submit/Analytics metric is a gauge: analyticsMetricsPublish.js writes the prior day's value
+// on each run, and a run repeats within a day. Sum would plot a day's value once per run, so these
+// searches use Maximum.
 function analyticsItems(envName) {
   return [
     metricSearch({
@@ -54,7 +57,7 @@ function analyticsItems(envName) {
       slug: "hmrc-authentications",
       title: "HMRC authentications",
       query: "Submit/Analytics HmrcAuthentications",
-      stat: "Sum",
+      stat: "Maximum",
       period: 86400,
       start: "-P30D",
     }),
@@ -62,7 +65,7 @@ function analyticsItems(envName) {
       slug: "bundle-operations",
       title: "Bundle operations by activity",
       query: '{Submit/Analytics,Activity} MetricName="BundleOperations"',
-      stat: "Sum",
+      stat: "Maximum",
       period: 86400,
       start: "-P30D",
     }),
@@ -70,7 +73,7 @@ function analyticsItems(envName) {
       slug: "bundle-grants",
       title: "Bundle grants",
       query: "Submit/Analytics BundleGrants",
-      stat: "Sum",
+      stat: "Maximum",
       period: 86400,
       start: "-P30D",
     }),
@@ -78,7 +81,7 @@ function analyticsItems(envName) {
       slug: "purchases",
       title: "Purchases: GA4, Stripe and activity events",
       query: "Submit/Analytics Ga4Purchases OR StripePaidCharges OR ActivityActivations",
-      stat: "Sum",
+      stat: "Maximum",
       period: 86400,
       start: "-P30D",
     }),
@@ -94,7 +97,7 @@ function analyticsItems(envName) {
       slug: "analytics-all",
       title: "The 20 largest Submit/Analytics metrics",
       query: "Submit/Analytics",
-      stat: "Sum",
+      stat: "Maximum",
       period: 86400,
       start: "-P30D",
       limit: ANALYTICS_SERIES_LIMIT,
