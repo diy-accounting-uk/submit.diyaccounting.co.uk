@@ -212,6 +212,31 @@ describe("passPost", () => {
     expect(detail.hashedSub).toBe("hashed_test-user-sub");
   });
 
+  describe("the pass-redeemed event carries the class of the redeeming account", () => {
+    async function redeemedActor(email) {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { testPass: false } });
+      await ingestHandler(buildEventWithToken(makeIdToken("test-user-sub", { email }), { code: "test-pass-code" }));
+      return JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).actor;
+    }
+
+    test("is customer for a customer's email", async () => {
+      expect(await redeemedActor("user@example.com")).toBe("customer");
+    });
+
+    test("is test-user for a test account's email", async () => {
+      expect(await redeemedActor("synthetic-local@test.diyaccounting.co.uk")).toBe("test-user");
+    });
+
+    test("is probe for a probe account's email", async () => {
+      expect(await redeemedActor("probe-abc@example.com")).toBe("probe");
+    });
+
+    test("never publishes the email", async () => {
+      await redeemedActor("user@example.com");
+      expect(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).not.toContain("user@example.com");
+    });
+  });
+
   describe("refused redemptions are tracked", () => {
     const referralPass = { code: "tiger-happy-mountain-silver", passTypeId: "digital-pass", issuedBy: "hashed_issuer-sub" };
 

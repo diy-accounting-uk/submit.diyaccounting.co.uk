@@ -246,7 +246,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time: use when a deployed web root must serve one stylesheet in place of the @import list in submit.css.
     - [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily: use when a sitemap that searchconsole.toml declares must be resubmitted to Search Console, or a sitemap error must raise a failed run.
     - [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments: use when a deployed environment's behaviour must be confirmed after a deploy, outside the full deploy.yml pipeline.
-    - [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram: use when an EventBridge activity event needs routing to the right Telegram group as formatted text.
+    - [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram: use when an EventBridge activity event needs routing to the ops or live Telegram group as formatted text, or the approved set changes.
     - [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms: use when a CloudWatch alarm fires and needs a tracked GitHub issue instead of a one-off notification.
     - [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts: use when an AWS Bedrock cost or token-limit alert must reach the operations channel.
     - [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks: use when a single client IP is probing many paths and the 404 rate against one distribution needs watching.
@@ -2950,8 +2950,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-70 Forward operational activity events to Telegram
 
-- **Use when:** an EventBridge activity event needs routing to the right Telegram group as formatted text.
-- **Does:** activityTelegramForwarder.js is the EventBridge target Lambda for operational activity events. It resolves chat routing per event type and formats the message. handler(event) posts it to the Telegram Bot API. It runs on the activity EventBridge trigger, not on demand.
+- **Use when:** an EventBridge activity event needs routing to the ops or live Telegram group as formatted text, or the approved set changes.
+- **Does:** activityTelegramForwarder.js is the EventBridge target Lambda for operational activity events. It sends only the approved set: alarm state changes, cost alerts and failed or rolled-back stack changes to the ops chat; subscription, pass redemption, support ticket, VAT submission and any failure from real customers to the live chat. Everything else reaches the lake only. handler(event) posts it to the Telegram Bot API. It runs on the activity EventBridge trigger, not on demand.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/ops/activityTelegramForwarder.js:handler`
 - **Files:** app/functions/ops/activityTelegramForwarder.js, app/unit-tests/functions/activityTelegramForwarder.test.js

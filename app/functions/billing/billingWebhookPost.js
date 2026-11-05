@@ -37,6 +37,7 @@ import { bundleIdsIncluding } from "../../../web/public/lib/services/catalogue-a
 import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
 import { setOwnerBooksRetention } from "../../data/s3DiyaGlRepository.js";
 import { listClientsByHashedSub } from "../../data/dynamoDbPracticeClientRepository.js";
@@ -258,6 +259,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
   // record itself. Derive actor from the customer's email, the same rule as everywhere else,
   // and store it on both records so the later lifecycle events on this subscription (and the
   // DynamoDB stream projection to analytics) can read it back without knowing Stripe mode.
+  await warmOperators();
   const actor = classifyActor(customerEmail);
 
   logger.info({ message: "Processing checkout.session.completed", hashedSub, bundleId, subscriptionId });

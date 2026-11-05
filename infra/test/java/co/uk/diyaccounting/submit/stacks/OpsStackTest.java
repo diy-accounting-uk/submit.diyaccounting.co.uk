@@ -111,6 +111,23 @@ class OpsStackTest {
     }
 
     @Test
+    void stackStatusRuleMatchesOnlyFailedAndRolledBackStatuses() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        var rules = template.findResources(
+                "AWS::Events::Rule",
+                Map.of("Properties", Map.of("EventPattern", Map.of("source", List.of("aws.cloudformation")))));
+        assertEquals(1, rules.size(), "exactly one CloudFormation stack status rule");
+        var pattern = (Map<?, ?>) ((Map<?, ?>) rules.values().iterator().next().get("Properties")).get("EventPattern");
+        var detail = (Map<?, ?>) pattern.get("detail");
+        var statusDetails = (Map<?, ?>) detail.get("status-details");
+        assertEquals(
+                List.of("CREATE_FAILED", "UPDATE_FAILED", "DELETE_FAILED", "UPDATE_ROLLBACK_COMPLETE"),
+                statusDetails.get("status"));
+    }
+
+    @Test
     void canaryAlarmsTreatMissingDataAsNotBreaching() {
         OpsStack opsStack = synthOpsStack("prod", null, "https://submit.diyaccounting.co.uk/");
         Template template = Template.fromStack(opsStack);

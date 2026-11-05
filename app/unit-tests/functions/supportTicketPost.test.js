@@ -24,6 +24,20 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
+const mockEventBridgeSend = vi.fn();
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 const mockGetInstallationAccessToken = vi.fn();
 vi.mock("@app/lib/githubAppToken.js", () => ({
   getInstallationAccessToken: (...args) => mockGetInstallationAccessToken(...args),
@@ -208,6 +222,24 @@ describe("supportTicketPost", () => {
       expect(sentBody.body).toContain("```\nCan't log in\n```");
       expect(sentBody.body).toContain("```\nIt just spins\n```");
       expect(sentBody.body).toContain("not given");
+    });
+
+    test("publishes support-ticket as a customer event, with no account detail", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      mockEventBridgeSend.mockResolvedValue({});
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ number: 8, html_url: "https://github.com/x/y/issues/8" }),
+      });
+
+      await ingestHandler(
+        requestEvent({ subject: "Can't log in", description: "It just spins", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+      );
+
+      const detail = JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.event).toBe("support-ticket");
+      expect(detail.actor).toBe("customer");
+      expect(detail).not.toHaveProperty("outcome");
     });
 
     test("labels the ticket for operator review, asks for issues write only, and returns no issue link", async () => {
