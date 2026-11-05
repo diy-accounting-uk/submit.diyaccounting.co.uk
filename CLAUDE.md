@@ -72,6 +72,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/video-publish/SKILL.md` — publish the recordings to the YouTube channel: fetch them from their capture runs, check them, upload unlisted with the stored credentials, flip public; carries the once-per-project console walk-through
 - `.claude/skills/session-report/SKILL.md` — write the session's report (`../private.diyaccounting.co.uk/sessions/REPORT_SESSION_SUBMIT_<id>_<date>.md`, committed in the private repository) from measured figures: what landed, what made it efficient, where it lost time or money, one board row per loss; invoke as `/session-report`
 - `.claude/skills/refine/SKILL.md` — the four passes over `NEXT.md` before a wave: references against `origin/main`, briefs complete enough for their sub-agent with the lowest model that fits, shared facts written into every row they help, and the human step split out of mixed rows; invoke as `/refine`
+- `.claude/skills/unblock/SKILL.md` — test every blocked, machine-ask and human-driven row on `NEXT.md` against evidence, move the stale ones, ask the operator's open decisions, record the answers, and print the commands that unblock or part-deliver a row; runs at the end of every `/board` and `/iterate` cycle; invoke as `/unblock`
 - `.claude/skills/iterate/SKILL.md` — the delivery cycle run unattended: board, a wave of isolated sub-agent batches on one branch and one PR, watch, auto-merge, watch, board, again, until no machine-only row can start; a Plan–Do–Check–Act cycle in the orchestrator–workers shape; invoke as `/iterate`
 - `.claude/skills/clean/SKILL.md` — gather stale deployments, merged branches, worktrees of merged branches, logs and test artefacts, and build output; ask once; remove every agreed category in one go; then fetch, switch to main and pull when nothing is in progress; invoke as `/clean`
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
@@ -588,7 +589,7 @@ This script:
 # Use the credentials printed by the enable script. HMRC_ACCOUNT=synthetic is what the pipeline's
 # probe jobs set: the HMRC suites tick the fraud-prevention validation box and assert its call only
 # under it, so a run without it skips that check.
-HMRC_ACCOUNT=synthetic TEST_AUTH_USERNAME='synthetic-local@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
+HMRC_ACCOUNT=synthetic TEST_AUTH_USERNAME='synthetic-local@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' TEST_AUTH_TOTP_SECRET='<from the credentials file>' npm run test:submitVatBehaviour-ci
 
 # Or for prod
 TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-prod

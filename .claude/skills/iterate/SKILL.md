@@ -142,7 +142,7 @@ first deploy's terminal state.
 
 ### 5. Close the cycle
 
-When `main` is stable (the watch's tally with no red), `/board` again with its write-back. Print
+When `main` is stable (the watch's tally with no red), `/board` again with its write-back. That render runs `/unblock`, so each cycle ends with the board's blockers tested and the operator's questions and commands in front of them; on an unattended tick the decisions print as a list. Print
 the removal block for the wave's worktrees and branches in full with the `!` prefix; the operator
 runs it or leaves it. Close any alarm issue the wave's deploy settled, with the evidence in the
 closing comment.
