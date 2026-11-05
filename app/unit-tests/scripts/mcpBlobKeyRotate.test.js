@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { signBlob, verifyBlob } from "@app/lib/mcpOauthBlob.js";
-import { sealFor, openFor, HMRC_GRANT_PURPOSE } from "@app/lib/codesSeal.js";
+import { sealFor, openFor, HMRC_GRANT_PURPOSE, KEY_REFRESH_LOG_MESSAGE } from "@app/lib/codesSeal.js";
 import { resetSecretCache } from "@app/lib/cachedSecret.js";
 import { parseBlobKeyRegistry } from "@app/lib/mcpBlobKey.js";
 
@@ -34,7 +34,8 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-const { planNextVersion, buildRotatedRegistry, parseArgs, main } = await import("../../../scripts/mcp-blob-key-rotate.js");
+const { planNextVersion, buildRotatedRegistry, parseArgs, main, proveRefresh, assertProofAllowed, isRefreshEvidence, parseLogLine } =
+  await import("../../../scripts/mcp-blob-key-rotate.js");
 
 const RAW = "r".repeat(64);
 const NOW = Date.UTC(2026, 0, 1, 12, 0, 0);
@@ -64,6 +65,105 @@ describe("mcp-blob-key-rotate", () => {
 
   it("rejects an unknown argument", () => {
     expect(() => parseArgs(["--force"])).toThrow(/Unknown argument/);
+  });
+
+  describe("--prove-refresh", () => {
+    it("implies apply", () => {
+      expect(parseArgs(["--prove-refresh"])).toEqual({ apply: true, proveRefresh: true });
+    });
+
+    it("refuses every environment but ci", () => {
+      expect(() => assertProofAllowed("prod")).toThrow(/ci only/);
+      expect(() => assertProofAllowed("ci")).not.toThrow();
+    });
+
+    it("main refuses prod before it reads the secret", async () => {
+      send.mockReset();
+      process.env.ENVIRONMENT_NAME = "prod";
+      await expect(main(["--prove-refresh"])).rejects.toThrow(/ci only/);
+      expect(send).not.toHaveBeenCalled();
+      delete process.env.ENVIRONMENT_NAME;
+    });
+
+    it("matches a refresh line only for the versions under test", () => {
+      const line = {
+        message: KEY_REFRESH_LOG_MESSAGE,
+        purpose: HMRC_GRANT_PURPOSE,
+        sealedVersion: "v2",
+        cachedCurrent: "v1",
+        refreshedCurrent: "v2",
+        keysChanged: true,
+      };
+      const expected = { sealedVersion: "v2", cachedCurrent: "v1" };
+      expect(isRefreshEvidence(line, expected)).toBe(true);
+      expect(isRefreshEvidence({ ...line, keysChanged: false }, expected)).toBe(false);
+      expect(isRefreshEvidence({ ...line, sealedVersion: "v3" }, expected)).toBe(false);
+      expect(isRefreshEvidence(null, expected)).toBe(false);
+      expect(parseLogLine("not json")).toBeNull();
+    });
+
+    describe("sequence", () => {
+      let clock;
+      let order;
+      let steps;
+
+      beforeEach(() => {
+        clock = 1_000_000;
+        order = [];
+        let current = "v1";
+        steps = {
+          createGrant: async () => "grant-1",
+          seal: async () => `${current}.iv.tag.text`,
+          place: async (_grantId, sealed) => order.push(`place ${sealed.split(".")[0]}`),
+          read: async () => {
+            order.push("read");
+            return { status: 200 };
+          },
+          roll: async () => {
+            order.push("roll");
+            current = "v2";
+          },
+          findEvidence: async () => ({ logGroupName: "group" }),
+          remove: async (grantId) => order.push(`remove ${grantId}`),
+          sleep: async (ms) => {
+            order.push("sleep");
+            clock += ms;
+          },
+          now: () => clock,
+        };
+      });
+
+      it("reads, rolls, waits past the forced-read floor, places the new version, reads again and removes the grant", async () => {
+        const result = await proveRefresh(steps);
+        expect(order).toEqual(["place v1", "read", "roll", "sleep", "place v2", "read", "remove grant-1"]);
+        expect(result).toMatchObject({ grantId: "grant-1", cachedCurrent: "v1", sealedVersion: "v2" });
+      });
+
+      it("removes the grant and fails when the log has no refresh line", async () => {
+        steps.findEvidence = async () => null;
+        await expect(proveRefresh(steps)).rejects.toThrow(/No ".*" line/);
+        expect(order.at(-1)).toBe("remove grant-1");
+      });
+
+      it("fails when the second read is not 200", async () => {
+        let reads = 0;
+        steps.read = async () => ({ status: ++reads === 1 ? 200 : 404 });
+        await expect(proveRefresh(steps)).rejects.toThrow(/second grant read answered 404/);
+        expect(order.at(-1)).toBe("remove grant-1");
+      });
+
+      it("fails when the roll leaves the same current version", async () => {
+        steps.roll = async () => order.push("roll");
+        await expect(proveRefresh(steps)).rejects.toThrow(/left the current version/);
+      });
+
+      it("fails when the cache would expire before the second read", async () => {
+        steps.roll = async () => {
+          clock += 5 * 60 * 1000;
+        };
+        await expect(proveRefresh(steps)).rejects.toThrow(/cache would have expired/);
+      });
+    });
   });
 
   describe("main", () => {
