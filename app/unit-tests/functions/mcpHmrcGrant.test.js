@@ -94,6 +94,8 @@ describe("mcpHmrcGrant", () => {
     test("answers HMRC's authorisation link with an mcp state and stores only the state's hash", async () => {
       const { response, body } = await requestGrant({ hmrcAccount: "synthetic", services: ["vat"] });
       expect(response.statusCode).toBe(201);
+      expect(Object.keys(body).sort()).toEqual(expect.arrayContaining(["expiresAt", "grantId", "hmrcAccount", "scope", "url"]));
+      expect(body.data).toBeUndefined();
       const url = new URL(body.url);
       expect(`${url.origin}${url.pathname}`).toBe(`${HMRC_SANDBOX}/oauth/authorize`);
       expect(url.searchParams.get("client_id")).toBe("sandbox-client");
