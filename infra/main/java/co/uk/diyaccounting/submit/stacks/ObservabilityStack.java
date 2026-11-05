@@ -783,6 +783,28 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // HMRC validator rejection alarm. app/functions/hmrc/hmrcFphCheckWorker.js counts
+        // HmrcFphCheckFailed when HMRC's test validator answers INVALID_HEADERS for the synthetic
+        // request built from a header shape that the service sends. The check runs under the
+        // sandbox application, and a failing shape means a real request has the same structure.
+        // The metric is environment-wide, so the alarm lives here. No SnsAction: the alarm-state-change
+        // rule in OpsStack routes this to the alarm-to-issue Lambda in prod.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcFphCheckFailedAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-fph-check-failed")
+                .alarmDescription("HMRC's validator rejected the headers of a request shape that the service sends")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/HmrcSend")
+                        .metricName("HmrcFphCheckFailed")
+                        .dimensionsMap(Map.of("Environment", props.envName()))
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // Outbound call record failure alarm. app/lib/integrationCalls.js counts
         // IntegrationCallRecordFailed when it cannot write a call record, and the customer's call
         // still works. One hour of data and a threshold of 5 let a short DynamoDB blip pass

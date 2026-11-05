@@ -46,7 +46,7 @@ const skippedNetworkHeaders = [];
  * @param {Object} headers - Request headers
  * @returns {Object} - Validation result
  */
-function validateFraudHeaders(headers) {
+export function validateFraudHeaders(headers) {
   const errors = [];
   const warnings = [];
   const normalizedHeaders = {};
@@ -81,11 +81,11 @@ function validateFraudHeaders(headers) {
   // Determine overall code
   let code;
   if (errors.length === 0 && warnings.length === 0) {
-    code = "VALID";
+    code = "VALID_HEADERS";
   } else if (errors.length === 0) {
-    code = "VALID_WITH_WARNINGS";
+    code = "POTENTIALLY_INVALID_HEADERS";
   } else {
-    code = "INVALID";
+    code = "INVALID_HEADERS";
   }
 
   return {

@@ -82,7 +82,8 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 47);
+        assertFunctionsNameHeaderCheckQueue(hmrcStackTemplate, "hmrc-fph-check-queue");
         // Every HMRC caller keeps a log-errors alarm of its own; the receipt read is the only
         // function under /api/v1/hmrc here that does not call HMRC.
         assertGroupedStackHealthAlarm(
@@ -113,6 +114,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "hmrc-vat-return-get",
                         "hmrc-vat-return-post"),
                 outsideCallerQueueChecks(
+                        "hmrc-fph-check",
                         "hmrc-itsa-bsas-se-adjust-post",
                         "hmrc-itsa-bsas-se-get",
                         "hmrc-itsa-bsas-trigger-post",
@@ -140,6 +142,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
         hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 52);
+        assertFunctionsNameHeaderCheckQueue(hmrcItsaStackTemplate, "hmrc-fph-check-queue");
         // The four assist functions call no external API and share the /api/v1/hmrc alarm.
         assertGroupedStackHealthAlarm(
                 hmrcItsaStackTemplate,
@@ -198,6 +201,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         infof("Created stack:", submitApplication.hmrcItsaPropertyStack.getStackName());
         Template hmrcItsaPropertyStackTemplate = Template.fromStack(submitApplication.hmrcItsaPropertyStack);
         hmrcItsaPropertyStackTemplate.resourceCountIs("AWS::Lambda::Function", 4);
+        assertFunctionsNameHeaderCheckQueue(hmrcItsaPropertyStackTemplate, "hmrc-fph-check-queue");
         assertGroupedStackHealthAlarm(
                 hmrcItsaPropertyStackTemplate,
                 List.of("hmrc-itsa-bsas-foreign-property-adjust", "hmrc-itsa-bsas-foreign-property-get"),

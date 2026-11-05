@@ -5258,7 +5258,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-05 Simulate HMRC Agent Authorisation and fraud-prevention headers
 
 - **Use when:** a test needs an agent-client invitation flow or must check Gov-Client/Gov-Vendor headers.
-- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID, VALID_WITH_WARNINGS or INVALID.
+- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID_HEADERS, POTENTIALLY_INVALID_HEADERS or INVALID_HEADERS, the codes HMRC returns.
 - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/agent-authorisation.js"`; `import { apiEndpoint } from "app/http-simulator/routes/fraud-headers.js"`
 - **Entry:** `app/http-simulator/routes/agent-authorisation.js:apiEndpoint`; `app/http-simulator/routes/fraud-headers.js:apiEndpoint`
 - **Files:** app/http-simulator/routes/agent-authorisation.js, app/http-simulator/routes/fraud-headers.js
