@@ -53,7 +53,6 @@ After the 00005L, M, P and Q accounts retest (2026-10-28), the XML team offered 
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values (`GatewayTest` 0, package reference 4326); `prod` added to the activity's `environments` and `resident-ltd`'s listing | ~5 | Sonnet | — |
 | CS-11b | Customer prod launch of the confirmation statement | ~7 | Sonnet | — |
 | CS-P1 | Filing under a customer's own presenter | ~5 | Sonnet | — |
-| DF2b | The joint accounts and CT600 filing on prod | ~2 | Sonnet | B34g |
 | UH4 | Unhide the Companies House filing forms on prod | ~3 | Sonnet | B34c, CS-11b, each activity in a bundle sold on prod, the operator's approval |
 
 ### Open rows
@@ -65,8 +64,6 @@ After the 00005L, M, P and Q accounts retest (2026-10-28), the XML team offered 
 - [x] **UH4. Unhide the Companies House filing forms on prod.** HIDE1 hid them with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: the prod gateway values (B34c) for confirmation statements, PSC verification statements and accounts; each activity in a bundle sold on prod; the operator's approval to enable it for live users. The CT600 form's unhide is `PLAN_HMRC_CT_APPROVAL.md` UH7. Unblocks ITSA_APPROVAL UH2.
 
 - [x] **CS-P1. Filing under a customer's own presenter.** A customer gives their own Companies House presenter id and authentication code instead of Submit's. Submit presents under their presenter, Companies House charges the £50 confirmation statement fee to the customer's own credit account, and Submit skips its £61.35 fee. This is outside ACSP (`../private.diyaccounting.co.uk/engineering/submit/backlog/PLAN_COMPANIES_HOUSE_ACSP.md`), because Submit neither pays nor engages Companies House. Build: the page option on `web/public/companies-house/fileConfirmationStatement.html` (credentials entered per filing, never stored, with the credit-account requirement explained); `PaymentPeriodsRequest` still decides whether a fee is due; the Stripe checkout skipped at the fee gate that CS-11a's company list skips (`feeWaivedCompanyNumbers` in `app/functions/companies-house/companiesHouseConfirmationStatementPost.js`); the simulator route and its tests. Micro-entity accounts carry no fee, so there the option changes only whose presenter shows on the filing. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **DF2b. The joint accounts and CT600 filing on prod.** `prod` on the joint filing's activity, both receipts under one entry. Blocked on `PLAN_HMRC_CT_APPROVAL.md` B34g. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Scope
 
@@ -100,12 +97,7 @@ Test package reference: 0012. Live package reference: 4326 (issued 2026-11-02), 
 
 ## Dependency graph
 
-```mermaid
-flowchart LR
-    B34g["PLAN_HMRC_CT_APPROVAL.md B34g"] --> DF2b
-```
-
-- DF2b: blocked by `PLAN_HMRC_CT_APPROVAL.md` B34g
+The joint accounts and CT600 filing on prod (DF2b) is in `PLAN_HMRC_CT_APPROVAL.md`. No row here waits on another.
 
 ## Open questions
 
