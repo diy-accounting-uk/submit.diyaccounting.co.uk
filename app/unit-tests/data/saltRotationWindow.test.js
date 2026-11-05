@@ -62,9 +62,11 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (name) => name,
 }));
 
-const { getUserBundles, consumeToken, getAccountSettings, deleteBundle, resetTokens, recordTokenEvent } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getUserBundles, consumeToken, getAccountSettings, deleteBundle, resetTokens, recordTokenEvent } =
+  await import("@app/data/dynamoDbBundleRepository.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
-const { getClient, listClients, archiveClient, getPracticeArn, setClientAuthorisation } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { getClient, listClients, archiveClient, getPracticeArn, setClientAuthorisation } =
+  await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { hasPaidCharge, markChargeUsed } = await import("@app/services/activityCharges.js");
 const { _clearSalt, hashSubWithVersion, initializeSalt, isHashOfSub, subHashCandidates } = await import("@app/services/subHasher.js");
 
