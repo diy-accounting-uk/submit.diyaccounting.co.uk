@@ -423,7 +423,8 @@ export default defineConfig({
     // To get jpeg: page.screenshot({ type: 'jpeg' }) in test code
 
     // Enable detailed logging
-    trace: "on", // Enable tracing for detailed debugging
+    // A trace holds every filled value, and CI uploads it
+    trace: process.env.TEST_AUTH_PASSWORD ? "off" : "on",
 
     // Anti-detection flags for headless Chrome in CI Docker environments.
     // Stripe's checkout SPA may detect automated browsers and silently block payment

@@ -375,3 +375,13 @@ describe("logInAndAnswerChallenge", () => {
     await expect(logInAndAnswerChallenge(cognito, secrets, baseArgs)).rejects.toThrow(/NEW_PASSWORD_REQUIRED/);
   });
 });
+
+describe("the script's output in Actions", () => {
+  test("returns after the step outputs, before any credential line", () => {
+    const source = fs.readFileSync(new URL("../../../scripts/ensure-cognito-test-user.js", import.meta.url), "utf-8");
+    const stop = source.indexOf("if (process.env.GITHUB_OUTPUT) return;");
+    expect(stop).toBeGreaterThan(source.indexOf("writeGithubOutputCredentials(testEmail, testPassword, totpSecret);"));
+    expect(stop).toBeLessThan(source.indexOf("console.log(`export TEST_AUTH_PASSWORD"));
+    expect(stop).toBeLessThan(source.indexOf("console.log(`TEST_AUTH_PASSWORD="));
+  });
+});
