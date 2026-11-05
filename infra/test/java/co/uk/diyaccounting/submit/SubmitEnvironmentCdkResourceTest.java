@@ -200,6 +200,14 @@ class SubmitEnvironmentCdkResourceTest {
                         .findResources(
                                 "AWS::Events::Rule", Map.of("Properties", Map.of("Name", "test-env-trusted-events")))
                         .size());
+        assertEquals(
+                0,
+                observability
+                        .findResources(
+                                "AWS::Events::Rule",
+                                Map.of("Properties", Map.of("Name", "test-env-trusted-deadline-read")))
+                        .size());
+        observability.resourceCountIs("AWS::SNS::Subscription", 0);
         observability.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
