@@ -369,6 +369,10 @@
             <strong>VAT submission data</strong>: Collected when you submit a VAT return; receipts are stored in DynamoDB for 7 years.
           </li>
           <li>
+            <strong>Email delivery data</strong>: When we send you an email, Amazon SES records the delivery result. If your address bounces
+            or you mark our email as spam, SES keeps the address on a suppression list so that we stop sending to it.
+          </li>
+          <li>
             <strong>Corporation Tax filing data</strong>: Collected when you file a Company Tax Return. The Gateway user ID and password are
             used once and not kept. The receipt, with the CT600, accounts and computations, is stored in DynamoDB for 7 years.
           </li>
@@ -397,6 +401,11 @@
           </li>
           <li><strong>Authentication</strong>: To verify your identity and manage your session.</li>
           <li><strong>Entitlements</strong>: To track your subscription bundles and service access.</li>
+          <li>
+            <strong>Service emails</strong>: To send you the details of a subscription, a copy of a filing receipt, and the link and QR code
+            of a pass you generate or redeem. These emails are part of the service, and they contain no marketing. We send them from
+            support@diyaccounting.co.uk, and your reply reaches our support team.
+          </li>
           <li><strong>Fraud prevention compliance</strong>: To fulfill our legal obligations under Making Tax Digital regulations.</li>
           <li><strong>Performance monitoring</strong>: To improve site speed, reliability, and user experience.</li>
           <li><strong>Error detection</strong>: To identify and fix bugs and issues.</li>
@@ -451,6 +460,16 @@
               <td>Cognito user profile</td>
               <td>While account active</td>
               <td>Authentication</td>
+            </tr>
+            <tr>
+              <td>Email send queue</td>
+              <td>Up to 4 days, and up to 14 days after a failed send</td>
+              <td>Delivery of a service email</td>
+            </tr>
+            <tr>
+              <td>Email suppression list (Amazon SES)</td>
+              <td>Until we remove the address</td>
+              <td>Stop mail to an address that bounced or complained</td>
             </tr>
             <tr>
               <td>Browser tokens (localStorage)</td>
@@ -657,6 +676,7 @@
           <li><strong>Amazon CloudWatch</strong>: Logging, monitoring, and RUM</li>
           <li><strong>AWS WAF</strong>: Web application firewall and rate limiting</li>
           <li><strong>AWS Secrets Manager</strong>: Secure storage of API credentials</li>
+          <li><strong>Amazon SES</strong>: Sending service emails to your address</li>
         </ul>
         <p>
           AWS is GDPR-compliant. See
@@ -798,6 +818,10 @@
               </tr>
               <tr>
                 <td>Subscription management</td>
+                <td>Contract performance</td>
+              </tr>
+              <tr>
+                <td>Service emails (subscription, receipt copy, pass)</td>
                 <td>Contract performance</td>
               </tr>
               <tr>
