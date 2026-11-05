@@ -53,27 +53,7 @@ class AnalyticsStackTest {
 
     @Test
     void shouldConvertActivityEventsToParquetWithATypedTableAndUnionView() throws IOException {
-        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
-        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
-        if (ctx.containsKey("apexActiveLabel")) {
-            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
-        }
-        if (ctx.containsKey("apexDeploymentOrigins")) {
-            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
-        }
-        ctx.put(
-                "certificateArn",
-                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
-        ctx.put(
-                "holdingCertificateArn",
-                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
-
-        App app = new App(AppProps.builder().context(ctx).build());
-        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
-        var env = new SubmitEnvironment(app, appProps);
-        app.synth();
-
-        Template analytics = Template.fromStack(env.analyticsStack);
+        Template analytics = synthAnalyticsTemplate();
 
         // The delivery stream converts to Parquet under curated/activity-events/, with no
         // destination-side compression on top of Parquet's own.
@@ -196,6 +176,44 @@ class AnalyticsStackTest {
         assertTrue(
                 rules.stream().noneMatch(rule -> "age-sbom-archive".equals(rule.getId())),
                 "non-prod should not carry the prod-only SBOM archive retention rule");
+    }
+
+    @Test
+    void unionViewCreatorMayReadTheHashAliasTableItJoins() throws IOException {
+        Template analytics = synthAnalyticsTemplate();
+
+        var policies = analytics.findResources("AWS::IAM::Policy");
+        boolean grantsGetTableOnHashAliases = policies.values().stream().anyMatch(policy -> {
+            var json = String.valueOf(policy.get("Properties"));
+            return json.contains("glue:GetTable") && json.contains("table/") && json.contains("hash_aliases");
+        });
+        assertTrue(
+                grantsGetTableOnHashAliases,
+                "the custom resource role that creates activity_events_all needs glue:GetTable on hash_aliases");
+    }
+
+    private static Template synthAnalyticsTemplate() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        if (ctx.containsKey("apexActiveLabel")) {
+            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
+        }
+        if (ctx.containsKey("apexDeploymentOrigins")) {
+            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
+        }
+        ctx.put(
+                "certificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "holdingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
+        var env = new SubmitEnvironment(app, appProps);
+        app.synth();
+
+        return Template.fromStack(env.analyticsStack);
     }
 
     private static LifecycleRule findRuleById(List<LifecycleRule> rules, String id) {

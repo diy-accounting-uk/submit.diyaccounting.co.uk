@@ -685,7 +685,7 @@ public class AnalyticsStack extends Stack {
                         Map.of("Database", sharedNames.analytics.glueDatabaseName),
                         "WorkGroup",
                         sharedNames.analytics.athenaWorkGroupName))
-                .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
+                .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view-aliased"))
                 .build();
 
         var unionViewGrant = KindCdk.grantToAwsCustomResourceProvider(
@@ -710,6 +710,7 @@ public class AnalyticsStack extends Stack {
                                         glueTableArn(
                                                 sharedNames.analytics.glueDatabaseName,
                                                 ACTIVITY_EVENTS_CURATED_TABLE_NAME),
+                                        glueTableArn(sharedNames.analytics.glueDatabaseName, HashAliasTable.TABLE_NAME),
                                         glueTableArn(
                                                 sharedNames.analytics.glueDatabaseName,
                                                 ACTIVITY_EVENTS_UNION_VIEW_NAME)))
