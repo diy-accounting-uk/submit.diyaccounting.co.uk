@@ -262,11 +262,15 @@ function rumReady() {
   document.dispatchEvent(new CustomEvent("rum-ready"));
 }
 
+// Operator pages send no RUM telemetry, so the web vitals alarms measure customer pages only.
+const OPERATOR_PATH_PREFIX = /^\/operator\//;
+
 async function maybeInitRum() {
   if (!hasConsentChoice()) showConsentBannerIfNeeded();
   if (!window.__RUM_CONFIG__) return;
   if (!hasRumConsent()) return;
   if (window.__RUM_INIT_DONE__) return;
+  if (OPERATOR_PATH_PREFIX.test(window.location.pathname)) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
 

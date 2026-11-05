@@ -29,6 +29,7 @@ import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import co.uk.diyaccounting.submit.utils.RumWebVitalsAlarm;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -499,22 +500,6 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         // RUM metrics and alarms
-        Metric lcpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsLargestContentfulPaint")
-                .dimensionsMap(Map.of("application_name", rumAppName))
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric clsP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsCumulativeLayoutShift")
-                .dimensionsMap(Map.of("application_name", rumAppName))
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
         Metric jsErrors = Metric.Builder.create()
                 .namespace("AWS/RUM")
                 .metricName("JsErrorCount")
@@ -523,25 +508,23 @@ public class ObservabilityStack extends Stack {
                 .period(Duration.minutes(5))
                 .build();
 
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumLcpP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-rum-lcp-p75")
-                .metric(lcpP75)
-                .threshold(4000) // 4s
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("RUM p75 LCP > 4s")
-                .build();
+        RumWebVitalsAlarm.create(
+                this,
+                props.resourceNamePrefix() + "-RumLcpP75Alarm",
+                props.resourceNamePrefix() + "-rum-lcp-p75",
+                "WebVitalsLargestContentfulPaint",
+                rumAppName,
+                4000, // 4s
+                "RUM p75 LCP > 4s");
 
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumClsP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-rum-cls-p75")
-                .metric(clsP75)
-                .threshold(0.25) // CLS "needs improvement" boundary
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("RUM p75 CLS > 0.25")
-                .build();
+        RumWebVitalsAlarm.create(
+                this,
+                props.resourceNamePrefix() + "-RumClsP75Alarm",
+                props.resourceNamePrefix() + "-rum-cls-p75",
+                "WebVitalsCumulativeLayoutShift",
+                rumAppName,
+                0.25, // CLS "needs improvement" boundary
+                "RUM p75 CLS > 0.25");
 
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumJsErrorAlarm")
                 .alarmName(props.resourceNamePrefix() + "-rum-js-errors")
