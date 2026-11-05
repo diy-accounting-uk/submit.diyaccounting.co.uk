@@ -556,7 +556,7 @@ public class AccountStack extends Stack {
                     .build());
 
             // Grant DynamoDB permissions
-            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
             bundlePostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
             bundleCapacityTable.grant(fn, "dynamodb:UpdateItem");
 
@@ -664,7 +664,7 @@ public class AccountStack extends Stack {
                     .build());
 
             // Grant DynamoDB permissions
-            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
             bundleDeleteAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
             // Grant access to user sub hash salt secret in Secrets Manager
@@ -925,7 +925,7 @@ public class AccountStack extends Stack {
         this.practiceClientDeleteLambda = practiceClientDeleteApiLambda.ingestLambda;
         this.practiceClientDeleteLambdaLogGroup = practiceClientDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientDeleteLambdaProps);
-        practiceClientsTable.grant(this.practiceClientDeleteLambda, "dynamodb:UpdateItem");
+        practiceClientsTable.grant(this.practiceClientDeleteLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         bundlesTable.grant(this.practiceClientDeleteLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientDeleteLambda, region, account, props.envName());
         infof(
@@ -1401,7 +1401,7 @@ public class AccountStack extends Stack {
                 "dynamodb:PutItem",
                 "dynamodb:DeleteItem");
         // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
-        bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+        bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passPostLambda, region, account, props.envName());
@@ -1759,7 +1759,7 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.passGeneratePostLambdaProps);
         passesTable.grant(this.passGeneratePostLambda, "dynamodb:PutItem");
         // Generating a pass spends one of the issuer's tokens: read the bundle, then record the spend.
-        bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:UpdateItem");
+        bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passGeneratePostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passGeneratePostLambda, region, account, props.envName());
         // passGeneratePost marks a family affiliate, so it reads the family affiliate list

@@ -25,6 +25,14 @@ const commandModule = {
       };
     }
   },
+  DeleteCommand: class {
+    constructor(input) {
+      this.run = () => {
+        stored.delete(input.TableName + keyOf(input.Key));
+        return {};
+      };
+    }
+  },
   UpdateCommand: class {
     constructor(input) {
       this.run = () => {
@@ -54,9 +62,9 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (name) => name,
 }));
 
-const { getUserBundles, consumeToken, getAccountSettings } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getUserBundles, consumeToken, getAccountSettings, deleteBundle, resetTokens, recordTokenEvent } = await import("@app/data/dynamoDbBundleRepository.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
-const { getClient, listClients, archiveClient, getPracticeArn } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { getClient, listClients, archiveClient, getPracticeArn, setClientAuthorisation } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { hasPaidCharge, markChargeUsed } = await import("@app/services/activityCharges.js");
 const { _clearSalt, hashSubWithVersion, initializeSalt, isHashOfSub, subHashCandidates } = await import("@app/services/subHasher.js");
 
@@ -160,6 +168,41 @@ describe("reads and writes during a salt rotation", () => {
     await archiveClient(SUB, "old-client");
 
     expect(stored.get(CLIENTS + keyOf({ hashedSub: oldHash, clientId: "old-client" })).touched).toBe(true);
+  });
+
+  test("a bundle not moved yet is deleted from its own hash", async () => {
+    put(BUNDLES, { hashedSub: oldHash, bundleId: "day-guest" });
+
+    await deleteBundle(SUB, "day-guest");
+
+    expect(stored.has(BUNDLES + keyOf({ hashedSub: oldHash, bundleId: "day-guest" }))).toBe(false);
+  });
+
+  test("a token reset on a bundle not moved yet lands on that item and adds no item at the new hash", async () => {
+    put(BUNDLES, { hashedSub: oldHash, bundleId: "day-guest" }, { tokensConsumed: 2 });
+
+    await resetTokens(SUB, "day-guest", 5, "2026-12-01T00:00:00.000Z");
+
+    expect(stored.get(BUNDLES + keyOf({ hashedSub: oldHash, bundleId: "day-guest" })).touched).toBe(true);
+    expect(stored.has(BUNDLES + keyOf({ hashedSub: newHash, bundleId: "day-guest" }))).toBe(false);
+  });
+
+  test("a token event on a bundle not moved yet lands on that item and adds no item at the new hash", async () => {
+    put(BUNDLES, { hashedSub: oldHash, bundleId: "day-guest" });
+
+    await recordTokenEvent(SUB, "day-guest", { type: "consumed" });
+
+    expect(stored.get(BUNDLES + keyOf({ hashedSub: oldHash, bundleId: "day-guest" })).touched).toBe(true);
+    expect(stored.has(BUNDLES + keyOf({ hashedSub: newHash, bundleId: "day-guest" }))).toBe(false);
+  });
+
+  test("an authorisation set on a client not moved yet lands on its row", async () => {
+    put(CLIENTS, { hashedSub: oldHash, clientId: "old-client" });
+
+    await setClientAuthorisation(SUB, "old-client", "vat", { status: "pending" });
+
+    expect(stored.get(CLIENTS + keyOf({ hashedSub: oldHash, clientId: "old-client" })).touched).toBe(true);
+    expect(stored.has(CLIENTS + keyOf({ hashedSub: newHash, clientId: "old-client" }))).toBe(false);
   });
 
   test("a charge paid under the earlier hash counts as paid and can be spent once", async () => {

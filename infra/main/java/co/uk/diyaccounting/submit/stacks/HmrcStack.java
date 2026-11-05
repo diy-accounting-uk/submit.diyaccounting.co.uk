@@ -560,7 +560,7 @@ public class HmrcStack extends Stack {
         // Read+Write needed: bundle enforcement reads bundles, token enforcement updates tokensConsumed
         List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcVatReturnPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1289,7 +1289,7 @@ public class HmrcStack extends Stack {
                         this.hmrcItsaSelfEmploymentPeriodPostLambda,
                         hmrcItsaSelfEmploymentPeriodPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.grant(
@@ -1580,7 +1580,7 @@ public class HmrcStack extends Stack {
         // Table
         List.of(this.hmrcItsaSelfEmploymentPeriodPutLambda, hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.grant(
@@ -1776,7 +1776,7 @@ public class HmrcStack extends Stack {
         // Table.
         List.of(this.hmrcItsaSelfEmploymentAnnualPutLambda, hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.grant(
@@ -2537,7 +2537,7 @@ public class HmrcStack extends Stack {
         // retrieve Lambdas above.
         List.of(this.hmrcItsaFinalDeclarationPostLambda, hmrcItsaFinalDeclarationPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaFinalDeclarationPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
