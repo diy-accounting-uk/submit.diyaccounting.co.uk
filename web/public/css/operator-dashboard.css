@@ -191,42 +191,35 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
-/* The containers below are empty until the snapshot arrives. Each reserves the height
-   measured on a full snapshot so the fill does not push what sits below; a failed load
-   or a rendered snapshot releases the reservation. */
-#objectivesContainer {
-  min-height: 4400px;
+/* The page fills in after the snapshot arrives. The main area is at least one screen tall, so
+   the footer starts below the fold and the fill moves nothing the reader sees. The tab bar and
+   the two source lines keep their place before the data, so the panels do not move down when
+   they appear. */
+body.page-dashboard main {
+  min-height: 100vh;
 }
 
-#objectivesContainer.objectives-failed,
-#objectivesContainer.objectives-settled {
-  min-height: 0;
+.dashboard-tabs-pending {
+  visibility: hidden;
 }
 
+#snapshotMeta,
+#snapshotSource {
+  min-height: 1lh;
+}
+
+/* A panel's own height is reserved where its rows arrive after the panel is drawn. */
 #visitorsPanel {
   min-height: 440px;
 }
 
 @media (max-width: 900px) {
-  #objectivesContainer {
-    min-height: 6600px;
-  }
-
   #visitorsPanel {
     min-height: 640px;
   }
 }
 
 @media (max-width: 600px) {
-  #objectivesContainer {
-    min-height: 6950px;
-  }
-
-  #objectivesContainer.objectives-failed,
-  #objectivesContainer.objectives-settled {
-    min-height: 0;
-  }
-
   #visitorsPanel {
     min-height: 670px;
   }
