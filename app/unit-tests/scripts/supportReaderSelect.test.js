@@ -53,6 +53,13 @@ describe("support reader select", () => {
     expect(await select(issues)).toBeNull();
   });
 
+  it("skips a trusted-event issue that carries maintainer-review", async () => {
+    const trusted = issue(1, { labels: [{ name: "trusted-event" }, { name: "maintainer-review" }, { name: "origin:machine" }] });
+    expect(await select([trusted])).toBeNull();
+    expect(await select([trusted, issue(2)])).toBe(2);
+    expect(await select([trusted], {}, 1)).toBeNull();
+  });
+
   it("applies the same checks to a dispatched issue number", async () => {
     expect(await select([issue(1), issue(2)], {}, 2)).toBe(2);
     expect(await select([issue(1), issue(2, { user: { login: "stranger" } })], {}, 2)).toBeNull();
@@ -87,6 +94,11 @@ describe("support reader select", () => {
 
     it("refuses a login that is not on the allow list", () => {
       expect(selectIssueToReread({ issue: unreviewed(7, { user: { login: "stranger" } }), only: 7 })).toBeNull();
+    });
+
+    it("refuses a trusted-event issue", () => {
+      const trusted = issue(7, { labels: [{ name: "trusted-event" }, { name: "maintainer-review" }] });
+      expect(selectIssueToReread({ issue: trusted, only: 7 })).toBeNull();
     });
 
     it("refuses an issue whose number differs from the input", () => {

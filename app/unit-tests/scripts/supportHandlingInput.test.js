@@ -115,6 +115,12 @@ describe("support handling input", () => {
       expect(await select([issue(3)], { 3: "not-approved" })).toBeNull();
     });
 
+    it("skips a trusted-event issue even when the gate has approved it", async () => {
+      const trusted = issue(3, { labels: [{ name: "trusted-event" }, { name: "maintainer-review" }, { name: "origin:machine" }] });
+      expect(await select([trusted], { 3: "approved" })).toBeNull();
+      expect(await select([trusted], { 3: "approved" }, 3)).toBeNull();
+    });
+
     it("skips an issue whose author is off the allow list", async () => {
       expect(await select([issue(3, { user: { login: "stranger" } })], { 3: "approved" })).toBeNull();
     });

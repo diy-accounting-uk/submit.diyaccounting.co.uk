@@ -1,0 +1,210 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-188 Prove the trusted event path on ci and prod
+# - **Use when:** the trusted event function has deployed and the path from a fact to a private issue, and from that issue to a source check, needs a proof.
+# - **Does:** trusted-event-proof.yml invokes the trusted event function directly, because EventBridge refuses an `aws.` source from a caller. Mode `event` sends an ACM fixture for a certificate that does not exist, then a Health fixture twice, runs the source check on the new issue, edits the issue's version line and runs the check again, then labels the issue `proof` and closes it. Mode `read` (prod only) invokes the deadline read and prints the fact keys and counts. The job prints no issue body and no file content.
+# - **Run:** `gh workflow run trusted-event-proof.yml --ref main -f environment=prod -f mode=event`
+# - **Entry:** `.github/workflows/trusted-event-proof.yml`
+# - **Files:** .github/workflows/trusted-event-proof.yml, scripts/verify-trusted-event-origin.mjs
+# - **Keywords:** trusted event proof, aws health fixture, acm fixture, deadline read, lambda invoke, private issue, ci, prod
+# - **Related:** OPS-185, OPS-186, OPS-187, OPS-181
+# @end-capability
+
+name: trusted event proof
+run-name: "trusted event proof (${{ inputs.mode }}) on ${{ inputs.environment }} from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment whose trusted event function is invoked'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+        default: ci
+      mode:
+        description: 'event: fixtures through the write path and the source check. read: the daily deadline read, prod only (the root read role exists in prod)'
+        required: true
+        type: choice
+        options:
+          - event
+          - read
+        default: event
+
+env:
+  AWS_REGION: 'eu-west-2'
+  PRIVATE_REPO: 'diy-accounting-uk/private.diyaccounting.co.uk'
+
+concurrency:
+  group: trusted-event-proof-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    name: 'proof'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      FUNCTION_NAME: ${{ inputs.environment }}-env-trusted-event-to-github-issue
+    steps:
+      - name: Refuse the read mode on ci
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$MODE" = "read" ] && [ "$ENVIRONMENT" != "prod" ]; then
+            echo "::error::mode read runs only on prod: the root read role is not deployed for ${ENVIRONMENT}. Dispatch with environment=prod, or use mode=event."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-cache: 'false'
+
+      - name: Assume the AWS actions and deploy roles
+        id: aws
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Generate a token that writes issues in the private repository
+        if: inputs.mode == 'event'
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Invoke the function with an ACM fixture for a certificate that does not exist
+        if: inputs.mode == 'event'
+        env:
+          ACCOUNT_ID: ${{ steps.aws.outputs.aws-account-id }}
+        run: |
+          set -euo pipefail
+          PAYLOAD="$(jq -cn --arg account "$ACCOUNT_ID" --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg run "$GITHUB_RUN_ID" '{
+            version: "0", id: ("proof-acm-" + $run), source: "aws.acm", account: $account, time: $now, region: "us-east-1",
+            "detail-type": "ACM Certificate Approaching Expiration",
+            resources: ["arn:aws:acm:us-east-1:" + $account + ":certificate/00000000-0000-0000-0000-000000000000"],
+            detail: { DaysToExpiry: 1, CommonName: "proof.invalid" }
+          }')"
+          ERROR="$(aws lambda invoke --function-name "$FUNCTION_NAME" --cli-binary-format raw-in-base64-out \
+            --payload "$PAYLOAD" --query FunctionError --output text "$RUNNER_TEMP/acm.json")"
+          test "$ERROR" = "None"
+          ACTION="$(jq -r '.action' "$RUNNER_TEMP/acm.json")"
+          REASON="$(jq -r '.reason' "$RUNNER_TEMP/acm.json")"
+          echo "acm fixture: action=${ACTION} reason=${REASON}"
+          test "$ACTION" = "skipped"
+          test "$REASON" = "certificate not found"
+
+      - name: Invoke the function with a Health fixture, and again with the same fixture
+        if: inputs.mode == 'event'
+        env:
+          ACCOUNT_ID: ${{ steps.aws.outputs.aws-account-id }}
+        run: |
+          set -euo pipefail
+          NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PAYLOAD="$(jq -cn --arg account "$ACCOUNT_ID" --arg now "$NOW" --arg run "$GITHUB_RUN_ID" '{
+            version: "0", id: ("proof-health-" + $run), source: "aws.health", account: $account, time: $now, region: "eu-west-2",
+            "detail-type": "AWS Health Event",
+            resources: [],
+            detail: {
+              eventArn: ("arn:aws:health:eu-west-2::event/PROOF/AWS_PROOF_EVENT/proof-" + $run),
+              service: "PROOF", eventTypeCode: "AWS_PROOF_EVENT", eventTypeCategory: "scheduledChange",
+              eventScopeCode: "ACCOUNT_SPECIFIC", eventRegion: "eu-west-2", statusCode: "open",
+              startTime: $now, lastUpdatedTime: $now, affectedAccount: $account,
+              backupEvent: "false", page: "1",
+              eventDescription: [{ language: "en_US", latestDescription: "Fixture from the trusted event proof workflow." }],
+              affectedEntities: []
+            }
+          }')"
+          invoke() {
+            local ERROR
+            ERROR="$(aws lambda invoke --function-name "$FUNCTION_NAME" --cli-binary-format raw-in-base64-out \
+              --payload "$PAYLOAD" --query FunctionError --output text "$1")"
+            test "$ERROR" = "None"
+          }
+          invoke "$RUNNER_TEMP/health-1.json"
+          ACTION="$(jq -r '.action' "$RUNNER_TEMP/health-1.json")"
+          ISSUE="$(jq -r '.issueNumber' "$RUNNER_TEMP/health-1.json")"
+          echo "health fixture, first call: action=${ACTION} issue=${ISSUE}"
+          test "$ACTION" = "opened"
+          echo "PROOF_ISSUE=${ISSUE}" >> "$GITHUB_ENV"
+          invoke "$RUNNER_TEMP/health-2.json"
+          ACTION="$(jq -r '.action' "$RUNNER_TEMP/health-2.json")"
+          echo "health fixture, second call: action=${ACTION}"
+          test "$ACTION" = "unchanged"
+
+      - name: Run the source check on the new issue
+        if: inputs.mode == 'event'
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          node scripts/verify-trusted-event-origin.mjs --environment "$ENVIRONMENT" --issue "$PROOF_ISSUE" --out "$RUNNER_TEMP/verify-1.json"
+          STRENGTH="$(jq -r '.strength' "$RUNNER_TEMP/verify-1.json")"
+          echo "source check strength: ${STRENGTH}"
+          test "$STRENGTH" = "ledger"
+
+      - name: Change the version line of the issue and run the source check again
+        if: inputs.mode == 'event'
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          gh issue view "$PROOF_ISSUE" --repo "$PRIVATE_REPO" --json body --jq .body > "$RUNNER_TEMP/body.md"
+          sed 's/^\*\*Version:\*\* .*/**Version:** tampered/' "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/body-edited.md"
+          if cmp -s "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/body-edited.md"; then
+            echo "::error::the version line was not found in the issue body"
+            exit 1
+          fi
+          gh issue edit "$PROOF_ISSUE" --repo "$PRIVATE_REPO" --body-file "$RUNNER_TEMP/body-edited.md"
+          set +e
+          node scripts/verify-trusted-event-origin.mjs --environment "$ENVIRONMENT" --issue "$PROOF_ISSUE" --out "$RUNNER_TEMP/verify-2.json"
+          CODE=$?
+          set -e
+          echo "source check after the edit: exit ${CODE}"
+          test "$CODE" = "1"
+
+      - name: Label the proof issue and close it
+        if: always() && inputs.mode == 'event' && env.PROOF_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh label create proof --color ededed --description "Opened by a proof workflow" --repo "$PRIVATE_REPO" 2>/dev/null || true
+          gh issue edit "$PROOF_ISSUE" --repo "$PRIVATE_REPO" --add-label proof
+          gh issue close "$PROOF_ISSUE" --repo "$PRIVATE_REPO"
+          echo "closed proof issue ${PROOF_ISSUE}"
+
+      - name: Invoke the deadline read
+        if: inputs.mode == 'read'
+        run: |
+          set -euo pipefail
+          ERROR="$(aws lambda invoke --function-name "$FUNCTION_NAME" --cli-binary-format raw-in-base64-out \
+            --payload '{"read":"deadlines"}' --query FunctionError --output text "$RUNNER_TEMP/read.json")"
+          test "$ERROR" = "None"
+          jq -e '.facts | type == "array"' "$RUNNER_TEMP/read.json" > /dev/null
+          echo "facts: $(jq '.facts | length' "$RUNNER_TEMP/read.json")"
+          echo "companies house facts: $(jq '[.facts[] | select(.key | startswith("ch:06846849:"))] | length' "$RUNNER_TEMP/read.json")"
+          echo "domain facts: $(jq '[.facts[] | select(.key | startswith("domain:"))] | length' "$RUNNER_TEMP/read.json")"
+          echo "opened: $(jq '.opened' "$RUNNER_TEMP/read.json"), commented: $(jq '.commented' "$RUNNER_TEMP/read.json"), unchanged: $(jq '.unchanged' "$RUNNER_TEMP/read.json")"
+          jq -r '.facts[].key' "$RUNNER_TEMP/read.json"
