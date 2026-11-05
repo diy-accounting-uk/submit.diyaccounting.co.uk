@@ -3259,7 +3259,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the HMAC key that hashes stored email addresses must be rotated.
 - **Does:** email-hash-rotate.js adds a new version to the email hash secret's registry and makes it current. It writes no stored hash, because each pass record keeps the version it was hashed with.
-- **Run:** `gh workflow run email-hash-rotate.yml -f apply=<true|false>`
+- **Run:** `gh workflow run email-hash-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`
 - **Entry:** `scripts/email-hash-rotate.js:main`; `infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java`
 - **Files:** .github/workflows/email-hash-rotate.yml, scripts/email-hash-rotate.js, infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java
 - **Keywords:** email hash rotation, HMAC key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
@@ -3269,7 +3269,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
 - **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key.
-- **Run:** `gh workflow run mcp-blob-key-rotate.yml -f apply=<true|false>`
+- **Run:** `gh workflow run mcp-blob-key-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`
 - **Entry:** `scripts/mcp-blob-key-rotate.js:main`; `app/lib/mcpBlobKey.js:parseBlobKeyRegistry`
 - **Files:** .github/workflows/mcp-blob-key-rotate.yml, scripts/mcp-blob-key-rotate.js, app/lib/mcpBlobKey.js, app/lib/mcpOauthBlob.js, app/lib/codesSeal.js, app/unit-tests/scripts/mcpBlobKeyRotate.test.js, app/unit-tests/lib/mcpBlobKey.test.js
 - **Keywords:** mcp blob key, key roll, key registry, key version, sealed grant, oauth blob, rotation schedule

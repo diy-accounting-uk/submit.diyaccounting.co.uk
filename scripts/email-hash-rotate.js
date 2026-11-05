@@ -5,7 +5,7 @@
 // @capability OPS-43 Rotate stored email-address hashes
 // - **Use when:** the HMAC key that hashes stored email addresses must be rotated.
 // - **Does:** email-hash-rotate.js adds a new version to the email hash secret's registry and makes it current. It writes no stored hash, because each pass record keeps the version it was hashed with.
-// - **Run:** `gh workflow run email-hash-rotate.yml -f apply=<true|false>`
+// - **Run:** `gh workflow run email-hash-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`
 // - **Entry:** `scripts/email-hash-rotate.js:main`; `infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java`
 // - **Files:** .github/workflows/email-hash-rotate.yml, scripts/email-hash-rotate.js, infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java
 // - **Keywords:** email hash rotation, HMAC key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
@@ -28,6 +28,7 @@
 //   ENVIRONMENT_NAME=ci node scripts/email-hash-rotate.js [--apply]
 
 import crypto from "node:crypto";
+import { parseEmailHashSecretRegistry } from "../app/lib/emailHash.js";
 
 const SECRET_NAME_SUFFIX = "submit/email-hash-secret";
 
@@ -47,11 +48,11 @@ export function parseArgs(argv) {
  * Parse the current registry and work out the next version label.
  * Version labels are "v<n>"; the next one is one past the highest existing n.
  *
- * @param {string} raw - The secret's current JSON string
+ * @param {string} raw - The secret's current value: registry JSON, or a raw secret string that becomes v1
  * @returns {{ registry: object, nextVersion: string }}
  */
 export function planNextVersion(raw) {
-  const registry = JSON.parse(raw);
+  const registry = parseEmailHashSecretRegistry(raw);
   if (!registry.current || !registry.versions || !registry.versions[registry.current]) {
     throw new Error(`Email hash secret registry is malformed: current="${registry.current}"`);
   }
