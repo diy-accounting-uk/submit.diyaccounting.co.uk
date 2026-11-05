@@ -387,6 +387,16 @@ describe("stripeReconcile", () => {
       }
     });
 
+    test("reads the day-independent lists once per run and the dated lists once per day", async () => {
+      await handler();
+
+      expect(mockSubscriptionsList).toHaveBeenCalledTimes(1);
+      expect(mockPaymentLinksList).toHaveBeenCalledTimes(1);
+      expect(mockBalanceTransactionsList).toHaveBeenCalledTimes(2);
+      expect(mockCheckoutSessionsList).toHaveBeenCalledTimes(2);
+      expect(mockChargesList).toHaveBeenCalledTimes(2);
+    });
+
     test("writes each entity under the stripe_-prefixed Glue table directory the reconciliation tables read from", async () => {
       const result = await handler({ date: "2026-08-20" });
 

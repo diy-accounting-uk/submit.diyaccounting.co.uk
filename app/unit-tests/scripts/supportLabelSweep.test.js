@@ -88,6 +88,13 @@ describe("label writes", () => {
     expect(fetchImpl.mock.calls[1][0]).toBe("https://api.github.com/repos/o/r/issues/4/labels");
   });
 
+  it("creates the mail-notice label the same way", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(ok);
+    await addLabel({ repo: "o/r", issue: 4, label: "mail-notice", token: "t", fetchImpl });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({ name: "mail-notice", color: expect.any(String) });
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ labels: ["mail-notice"] });
+  });
+
   it("accepts a label that already exists", async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 422 }).mockResolvedValueOnce(ok);
     await expect(addLabel({ repo: "o/r", issue: 4, label: "rejected", token: "t", fetchImpl })).resolves.toBeUndefined();

@@ -4,7 +4,7 @@
 
 # @capability DEV-44 Check a batch against every CI gate locally
 # - **Use when:** a batch branch is about to take its first push, or a local pass has gone red in CI.
-# - **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the bundle, maven verify, npm test, the mcp tests, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
+# - **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the content scan, the bundle, maven verify, npm test, the mcp tests, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
 # - **Run:** `scripts/batch-check.sh <ref> [--docker]`
 # - **Entry:** `scripts/batch-check.sh:run_gate`
 # - **Files:** scripts/batch-check.sh
@@ -16,7 +16,7 @@
 #
 #   scripts/batch-check.sh <ref> [--docker]
 #
-# Gates, serially, all run even after a failure: bundle, maven verify, npm test, mcp test, browser tests,
+# Gates, serially, all run even after a failure: content scan, bundle, maven verify, npm test, mcp test, browser tests,
 # prettier, spotless, the two eslint ratchets, eslint on added files, and the docker build.
 # The docker build runs when the ref changes Dockerfile, .dockerignore or a path the Dockerfile
 # COPYs from the build context, or when --docker is given.
@@ -148,6 +148,12 @@ gate_eslint_added_files() {
   echo "$added" | xargs npx eslint
 }
 
+# The lines the ref adds since it left main, as the content scan workflow reads a first push.
+gate_content_scan() {
+  git diff "$(git merge-base origin/main "$sha")" "$sha" >"$logdir/content-scan.diff" || return 1
+  node scripts/content-scan.mjs "$logdir/content-scan.diff"
+}
+
 gate_docker_build() {
   docker buildx build \
     --platform linux/arm64 \
@@ -197,6 +203,7 @@ elif [ -d "$main_checkout/mcp/node_modules" ]; then
   ln -sfn "$main_checkout/mcp/node_modules" "$work/mcp/node_modules"
 fi
 
+run_gate content-scan gate_content_scan
 run_gate bundle npm run bundle
 run_gate maven-verify ./mvnw clean verify
 run_gate npm-test npm test

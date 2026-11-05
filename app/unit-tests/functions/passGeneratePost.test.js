@@ -51,6 +51,11 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({
+  requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
+}));
+
 import { ingestHandler } from "@app/functions/account/passGeneratePost.js";
 import { _clearFamilyAffiliatesCache } from "@app/lib/familyAffiliates.js";
 
@@ -289,6 +294,67 @@ describe("passGeneratePost", () => {
       _clearFamilyAffiliatesCache();
       await generate("someone@example.com");
       expect(mockPutFamilyAffiliate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the customer email request", () => {
+    const createdPass = {
+      code: "tiger-happy-mountain-silver",
+      passTypeId: "physical-pass",
+      bundleId: "day-guest",
+      validFrom: "2026-02-17T00:00:00.000Z",
+      validUntil: "2026-02-24T00:00:00.000Z",
+      maxUses: 20,
+    };
+
+    beforeEach(() => {
+      mockRequestCustomerEmail.mockReset();
+      mockRequestCustomerEmail.mockResolvedValue({ requested: true });
+      mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
+      mockCreatePass.mockResolvedValue(createdPass);
+    });
+
+    test("a generated pass requests a pass-generated email with the pass details", async () => {
+      await ingestHandler(buildEventWithToken(validToken, { passTypeId: "physical-pass" }));
+
+      expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+      expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
+        kind: "pass-generated",
+        userSub: "test-user-sub",
+        synthetic: false,
+        data: {
+          code: "tiger-happy-mountain-silver",
+          passTypeId: "physical-pass",
+          bundleId: "day-guest",
+          validUntil: "2026-02-24T00:00:00.000Z",
+          maxUses: 20,
+        },
+      });
+    });
+
+    test("a refused request for tokens requests no email", async () => {
+      mockConsumeTokenForActivity.mockResolvedValue({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
+
+      await ingestHandler(buildEventWithToken(validToken, { passTypeId: "digital-pass" }));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a failed pass creation requests no email", async () => {
+      mockCreatePass.mockRejectedValue(new Error("DynamoDB error"));
+
+      await ingestHandler(buildEventWithToken(validToken, { passTypeId: "digital-pass" }));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("the response is unchanged when the request fails", async () => {
+      mockRequestCustomerEmail.mockResolvedValue({ requested: false });
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { passTypeId: "physical-pass" }));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).code).toBe("tiger-happy-mountain-silver");
     });
   });
 });

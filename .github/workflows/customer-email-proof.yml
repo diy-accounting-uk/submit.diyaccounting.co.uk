@@ -118,7 +118,7 @@ jobs:
         run: |
           set -euo pipefail
           sleep 90
-          QUERY="SELECT event, count(*) AS c FROM ci_env_analytics.activity_events_all WHERE year=$(date -u +%Y) AND month=$(date -u +%-m) AND day=$(date -u +%-d) AND event LIKE 'customer-email-%' AND event_ts > current_timestamp - interval '1' hour GROUP BY 1 ORDER BY 1"
+          QUERY="SELECT event, count(*) AS c FROM ci_env_analytics.activity_events_all WHERE dt = current_date AND event LIKE 'customer-email-%' AND event_ts > current_timestamp - interval '1' hour GROUP BY 1 ORDER BY 1"
           QUERY_ID="$(aws athena start-query-execution --work-group ci-env-analytics --query-string "$QUERY" --query QueryExecutionId --output text)"
           STATE=RUNNING
           for _ in $(seq 1 60); do

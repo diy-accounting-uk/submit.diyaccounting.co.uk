@@ -76,6 +76,7 @@
     "video:accounting-diya-gl-profit": "bash -c 'set -o pipefail; node scripts/site-video-capture.js --script videos/accounting-diya-gl-profit.json \"$@\" 2>&1 | tee videoCapture-accounting-diya-gl-profit.log' _",
     "video:accounting-spreadsheet-profit": "bash -c 'set -o pipefail; node scripts/site-video-capture.js --script videos/accounting-spreadsheet-profit.json \"$@\" 2>&1 | tee videoCapture-accounting-spreadsheet-profit.log' _",
     "video:publish": "node scripts/youtube-upload.js",
+    "google:reconsent": "node scripts/google-reconsent.js",
     "video:embed-check": "node scripts/video-embed-check.js",
     "video:walkthrough": "node scripts/video-walkthrough.js",
     "video:stale": "node scripts/video-stale.js",

@@ -6,9 +6,9 @@
 // - **Does:** requestCustomerEmail puts one CustomerEmailRequest on the activity bus and never throws. The customerEmailSend worker renders the message and sends it through SES. The customerEmailEvent function records bounces and complaints.
 // - **Run:** `import { requestCustomerEmail } from "app/lib/customerEmailRequest.js"`
 // - **Entry:** `app/lib/customerEmailRequest.js:requestCustomerEmail`; `app/functions/email/customerEmailSend.js:handler`; `app/functions/email/customerEmailEvent.js:handler`
-// - **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
+// - **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/lib/passMedia.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/lib/passMedia.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
 // - **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
-// - **Related:** DATA-01, OPS-182, OPS-181
+// - **Related:** DATA-01, OPS-182, OPS-181, SITE-29
 // @end-capability
 
 // app/lib/customerEmailRequest.js

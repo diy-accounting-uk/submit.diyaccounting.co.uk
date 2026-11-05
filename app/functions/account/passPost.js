@@ -38,6 +38,7 @@ import {
 } from "../../services/passService.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 
 const logger = createLogger({ source: "app/functions/account/passPost.js" });
 
@@ -185,6 +186,12 @@ export async function ingestHandler(event) {
       userSub: userId,
       userEmail,
       detail: { bundleId: result?.bundleId, passTypeId: result.pass?.passTypeId, code },
+    });
+    await requestCustomerEmail({
+      kind: "pass-redeemed",
+      userSub: userId,
+      synthetic: Boolean(result.pass?.testPass),
+      data: { bundleId: result.bundleId, passTypeId: result.pass?.passTypeId, expiry: grantResult.expiry || null },
     });
 
     const testPass = result.pass?.testPass || false;

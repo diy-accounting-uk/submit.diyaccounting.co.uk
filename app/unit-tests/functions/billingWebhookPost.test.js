@@ -136,6 +136,11 @@ vi.mock("@app/services/commissionLedger.js", () => ({
   reverseCommissionForCharge: (...args) => mockReverseCommissionForCharge(...args),
 }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({
+  requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
+}));
+
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -1782,6 +1787,85 @@ describe("billingWebhookPost", () => {
     expect(mockLoggerError).toHaveBeenCalledWith({
       message: "checkout.session.completed (payment mode) missing metadata",
       sessionId: "cs_test_activity_charge",
+    });
+  });
+
+  describe("the customer email request", () => {
+    beforeEach(() => {
+      mockRequestCustomerEmail.mockReset();
+      mockRequestCustomerEmail.mockResolvedValue({ requested: true });
+    });
+
+    test("a subscription checkout requests a subscription-started email with the webhook's address and hashed sub", async () => {
+      const payload = buildCheckoutSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+      const request = mockRequestCustomerEmail.mock.calls[0][0];
+      expect(request).toMatchObject({
+        kind: "subscription-started",
+        to: "user@example.com",
+        hashedSub: "hashed_sub_value",
+        synthetic: false,
+      });
+      expect(request.userSub).toBeUndefined();
+      expect(request.data.bundleId).toBe("resident-pro");
+      expect(request.data.currentPeriodEnd).toEqual(expect.any(String));
+    });
+
+    test("a Stripe test-mode checkout marks the request synthetic", async () => {
+      const payload = { ...buildCheckoutSessionPayload(), livemode: false };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].synthetic).toBe(true);
+    });
+
+    test("a checkout without a hashed sub requests no email", async () => {
+      const payload = buildCheckoutSessionPayload({ metadata: {}, client_reference_id: undefined });
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a payment-mode checkout requests no email", async () => {
+      const payload = buildActivityChargeSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a renewal requests no email", async () => {
+      mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+      const payload = {
+        id: "evt_test_invoice_no_email",
+        type: "invoice.paid",
+        data: { object: { id: "in_test_no_email", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("the response is unchanged when the request fails", async () => {
+      mockRequestCustomerEmail.mockResolvedValue({ requested: false });
+      const payload = buildCheckoutSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      const result = await ingestHandler(buildWebhookEvent(payload));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).received).toBe(true);
+      expect(mockPutBundleByHashedSub).toHaveBeenCalledTimes(1);
     });
   });
 });

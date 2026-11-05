@@ -1058,6 +1058,13 @@ const integrationRequestsMode = ({ id, label, org }) => {
     where: "target = 'live'" + orgFilter,
   };
   const orgName = (component) => INTEGRATION_ORG_LABELS[component.split(" ")[0]] ?? component;
+  const orgOrder = Object.keys(INTEGRATION_ORG_LABELS);
+  // Lines sit in organisation order and then status order, so a line keeps its colour in every range.
+  const orderOf = (component) => {
+    const [first, ...rest] = component.split(" ");
+    const position = orgOrder.indexOf(first);
+    return position < 0 ? component : `${position} ${rest.join(" ")}`;
+  };
   return {
     id,
     label,
@@ -1066,6 +1073,7 @@ const integrationRequestsMode = ({ id, label, org }) => {
       ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
       : "Live calls to every organisation added together.",
     ...(org ? {} : { maxComponents: 8 }),
+    orderOf: org ? (component) => component : orderOf,
     labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
     descriptionOf: (component) =>
       org
@@ -1084,6 +1092,7 @@ const integrationDurationMode = ({ id, label }) => {
     label,
     unit: "ms",
     total: null,
+    componentOrder: Object.keys(INTEGRATION_ORG_LABELS),
     labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
     descriptionOf: (component) =>
       `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
@@ -1312,7 +1321,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "Average API request duration",
       unit: "ms",
-      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over each day's calls. Days are UTC.",
+      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
       modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
@@ -1939,8 +1948,10 @@ export function buildChartSeries({ days, rows, mode }) {
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
   }
+  const byFixedOrder = (a, b) => mode.orderOf(a.id).localeCompare(mode.orderOf(b.id), "en", { numeric: true });
   if (mode.maxComponents && components.length > mode.maxComponents) {
     const kept = components.slice(0, mode.maxComponents);
+    if (mode.orderOf) kept.sort(byFixedOrder);
     const folded = components.slice(mode.maxComponents);
     kept.push({
       id: "other",
@@ -1949,6 +1960,8 @@ export function buildChartSeries({ days, rows, mode }) {
       values: days.map((_, index) => sum(folded.map((component) => component.values[index]))),
     });
     components = kept;
+  } else if (mode.orderOf) {
+    components.sort(byFixedOrder);
   }
 
   const series = components.map((component) => ({ ...component, values: component.values.map((value) => Math.round(value * 100) / 100) }));

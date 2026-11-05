@@ -38,6 +38,7 @@ import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
 import { warmOperators } from "../../lib/operators.js";
+import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
 import { setOwnerBooksRetention } from "../../data/s3DiyaGlRepository.js";
 import { listClientsByHashedSub } from "../../data/dynamoDbPracticeClientRepository.js";
@@ -342,6 +343,14 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     // checkout metadata — pass it straight through in detail rather than via
     // userSub, which would hash it a second time.
     detail: { bundleId, subscriptionId, hashedSub },
+  });
+
+  await requestCustomerEmail({
+    kind: "subscription-started",
+    to: customerEmail,
+    hashedSub,
+    synthetic: test,
+    data: { bundleId, currentPeriodEnd },
   });
 }
 

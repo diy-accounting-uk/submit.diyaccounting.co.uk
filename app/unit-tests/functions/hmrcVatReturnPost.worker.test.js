@@ -38,6 +38,9 @@ vi.mock("@app/lib/emfMetrics.js", () => ({
   emitMetric: (...args) => mockEmitMetric(...args),
 }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
+
 import { workerHandler as hmrcVatReturnPostWorker } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -140,6 +143,25 @@ describe("hmrcVatReturnPost workerHandler", () => {
     expect(completedUpdates[0].input.ExpressionAttributeValues[":status"]).toBe("completed");
     expect(completedUpdates[0].input.ExpressionAttributeValues[":data"].hmrcResponse.ok).toBe(true);
     expect(completedUpdates[0].input.ExpressionAttributeValues[":data"].receiptId).toBeDefined();
+
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "submission-receipt",
+        userSub: "user-123",
+        synthetic: false,
+        data: expect.objectContaining({ receiptKind: "vat-return" }),
+      }),
+    );
+  });
+
+  test("asks for the receipt email as synthetic when the filing used the synthetic HMRC account", async () => {
+    mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+
+    await hmrcVatReturnPostWorker({
+      Records: [buildSubmissionRecord({ requestId: "worker-test-synthetic", payloadOverrides: { hmrcAccount: "synthetic" } })],
+    });
+
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "submission-receipt", synthetic: true }));
   });
 
   test("stores the receipt before marking the request completed, so a poll never sees completed without it", async () => {

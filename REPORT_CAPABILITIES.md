@@ -27,6 +27,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
+    - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
+    - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -281,6 +283,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance: use when checking this service's obligations against UK GDPR or ICO requirements.
     - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes: use when the HMAC key that hashes stored email addresses must be rotated.
     - [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data: use when the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
+    - [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap: use when a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
+    - [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator: use when every key in the rotation set must roll, or a rotation-check issue lists due keys, and the operator is present for the console steps.
     - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt: use when the subject-ID salt needs backing up, restoring, or its resource policy reasserting, or a read must see data under every salt version.
     - [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule: use when you need to know which keys are overdue for a roll or end within 30 days, for ci or prod.
     - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags: use when a secret's value or rotation date needs checking or listing.
@@ -487,7 +491,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions: use when the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
   - [Local dev environment & secrets](#local-dev-environment--secrets-dev)
     - [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments: use when starting local development against native HTTPS with Docker, or a Docker-free simulator variant.
-    - [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets: use when a local proxy-variant run needs HMRC/Stripe secrets, or a renewed local TLS certificate needs publishing.
+    - [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets: use when a local proxy-variant run needs HMRC/Stripe secrets.
+    - [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate: use when a developer sets up local HTTPS for local.submit.diyaccounting.co.uk, or the stored certificate has been renewed.
     - [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle: use when a test lane needs a working Cognito login, native email/password auth toggled, or test users purged.
   - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev)
     - [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports: use when a behaviour or system test run's DynamoDB state needs exporting, reporting or publishing for review.
@@ -607,7 +612,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -649,6 +654,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
+- [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
+- [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -697,9 +704,29 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** requestCustomerEmail puts one CustomerEmailRequest on the activity bus and never throws. The customerEmailSend worker renders the message and sends it through SES. The customerEmailEvent function records bounces and complaints.
 - **Run:** `import { requestCustomerEmail } from "app/lib/customerEmailRequest.js"`
 - **Entry:** `app/lib/customerEmailRequest.js:requestCustomerEmail`; `app/functions/email/customerEmailSend.js:handler`; `app/functions/email/customerEmailEvent.js:handler`
-- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
+- **Files:** app/lib/customerEmailRequest.js, app/lib/customerEmailTemplates.js, app/lib/passMedia.js, app/services/customerEmailSender.js, app/functions/email/customerEmailSend.js, app/functions/email/customerEmailEvent.js, app/unit-tests/lib/customerEmailRequest.test.js, app/unit-tests/lib/customerEmailTemplates.test.js, app/unit-tests/lib/passMedia.test.js, app/unit-tests/services/customerEmailSender.test.js, app/unit-tests/functions/customerEmailSend.test.js, app/unit-tests/functions/customerEmailEvent.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java, .github/workflows/customer-email-proof.yml
 - **Keywords:** customer email, ses, transactional email, receipt email, pass email, subscription email, bounce, complaint
-- **Related:** DATA-01, OPS-182, OPS-181
+- **Related:** DATA-01, OPS-182, OPS-181, SITE-29
+
+#### SITE-28 Store a filed receipt and email a copy
+
+- **Use when:** a handler records the receipt of a filing that HMRC or Companies House accepted.
+- **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
+- **Run:** `import { recordFiledReceipt } from "app/services/filedReceipt.js"`
+- **Entry:** `app/services/filedReceipt.js:recordFiledReceipt`
+- **Files:** app/services/filedReceipt.js, app/unit-tests/services/filedReceipt.test.js, app/unit-tests/putReceiptImporters.test.js
+- **Keywords:** receipt, filed receipt, receipt email, putReceipt, submission receipt
+- **Related:** SITE-27
+
+#### SITE-29 Render the customer emails to files for a visual check
+
+- **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
+- **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+- **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
+- **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
+- **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
+- **Keywords:** customer email, render, fixtures, screenshot, visual check, pass email, receipt email
+- **Related:** SITE-27
 
 ### Server and API plumbing (SITE)
 
@@ -2039,7 +2066,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-25 Retrieve a Stripe checkout session's status
 
 - **Use when:** a page after checkout must know whether a session id succeeded.
-- **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. It tries the live Stripe client, then the test-mode client. A session id is only valid in the mode that created it.
+- **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. The id prefix picks the client: `cs_test_` reads with the test-mode client only and `cs_live_` with the live client only, so a probe's test session costs no live 404. An id with neither prefix tries the live client, then the test-mode client.
 - **Run:** `GET /api/v1/billing/checkout/:id`
 - **Entry:** `app/functions/billing/billingCheckoutSessionGet.js:ingestHandler`
 - **Files:** app/functions/billing/billingCheckoutSessionGet.js, app/unit-tests/functions/billingCheckoutSessionGet.test.js
@@ -2357,7 +2384,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -2432,11 +2459,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-04 Update Route53/CloudFront origins for a domain
 
 - **Use when:** an apex or environment domain must move to a different origin, or fall back to the holding page.
-- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment.
+- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment. For a deployment origin it also moves the apex API Gateway custom domain to that deployment's API.
 - **Run:** `gh workflow run set-origins.yml -f domain-source=<branch|holding|last-known-good> -f environment-name=<ci|prod>`
 - **Entry:** `.github/workflows/set-origins.yml`; `.github/actions/set-origins/action.yml`
 - **Files:** .github/actions/set-origins/action.yml, .github/workflows/set-origins.yml
-- **Keywords:** set origins, route53, cloudfront alias, holding page, last-known-good, domain cutover
+- **Keywords:** set origins, route53, cloudfront alias, api gateway custom domain, api mapping, holding page, last-known-good, domain cutover
 - **Related:** OPS-05
 
 #### OPS-05 Promote a CI deployment to the CI apex
@@ -2724,7 +2751,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-14 Destroy a named prod deployment on demand
 
 - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
+- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first. It refuses the live set, the last-known-good set, and a set whose API the apex API domain still maps to.
 - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 - **Entry:** `.github/workflows/destroy-prod.yml`
 - **Files:** .github/workflows/destroy-prod.yml
@@ -3229,7 +3256,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** local-tls-renew.yml reads the expiry of `ci/submit/local-tls/certificate`. When under 30 days remain, it issues a new certificate with certbot and the route53 DNS-01 plugin through the root account role `root-certbot-dns01`, then writes the certificate to that secret. A dry-run dispatch (the default) runs certbot against the Let's Encrypt staging service and writes nothing.
 - **Run:** `gh workflow run local-tls-renew.yml` (dry run); `gh workflow run local-tls-renew.yml -f dry-run=false` (live)
 - **Entry:** `.github/workflows/local-tls-renew.yml`
-- **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-publish.sh
+- **Files:** .github/workflows/local-tls-renew.yml, .github/workflows/certificate-check.yml, scripts/local-tls-fetch.sh
 - **Keywords:** local tls, certbot, lets encrypt, dns-01, route53, local.submit, certificate renewal, oidc
 - **Related:** OPS-37, OPS-45
 
@@ -3261,6 +3288,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance
 - [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes
 - [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data
+- [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap
+- [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator
 - [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt
 - [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule
 - [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags
@@ -3317,12 +3346,32 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-168 Roll the MCP blob key without breaking sealed data
 
 - **Use when:** the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
-- **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key.
-- **Run:** `gh workflow run mcp-blob-key-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`
-- **Entry:** `scripts/mcp-blob-key-rotate.js:main`; `app/lib/mcpBlobKey.js:parseBlobKeyRegistry`
-- **Files:** .github/workflows/mcp-blob-key-rotate.yml, scripts/mcp-blob-key-rotate.js, app/lib/mcpBlobKey.js, app/lib/mcpOauthBlob.js, app/lib/codesSeal.js, app/unit-tests/scripts/mcpBlobKeyRotate.test.js, app/unit-tests/lib/mcpBlobKey.test.js
-- **Keywords:** mcp blob key, key roll, key registry, key version, sealed grant, oauth blob, rotation schedule
+- **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key. With --prove-refresh, on ci only, it rolls the key between two reads of an MCP HMRC grant by one warm Lambda. It then reads that Lambda's log for the forced read of the keys.
+- **Run:** `gh workflow run mcp-blob-key-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`; `gh workflow run mcp-blob-key-rotate.yml -f environment-name=ci -f prove-refresh=true`
+- **Entry:** `scripts/mcp-blob-key-rotate.js:main`; `scripts/mcp-blob-key-rotate.js:proveRefresh`; `app/lib/mcpBlobKey.js:parseBlobKeyRegistry`; `app/lib/codesSeal.js:openFor`
+- **Files:** .github/workflows/mcp-blob-key-rotate.yml, scripts/mcp-blob-key-rotate.js, app/lib/mcpBlobKey.js, app/lib/mcpOauthBlob.js, app/lib/codesSeal.js, scripts/ensure-cognito-test-user.js, app/unit-tests/scripts/mcpBlobKeyRotate.test.js, app/unit-tests/lib/mcpBlobKey.test.js
+- **Keywords:** mcp blob key, key roll, key registry, key version, sealed grant, oauth blob, rotation schedule, refresh proof, warm container, stale key cache
 - **Related:** OPS-43, OPS-45, OPS-165
+
+#### OPS-183 Replace a Google refresh token or OAuth client without a gap
+
+- **Use when:** a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
+- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, checks the stored value, and only then revokes the old token. A failed step leaves the old token valid and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
+- **Run:** `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --token <youtube|ads|msads> [--dry-run]`; `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --client-json <path> [--dry-run]`
+- **Entry:** `scripts/google-reconsent.js`
+- **Files:** scripts/google-reconsent.js, app/unit-tests/scripts/googleReconsent.test.js, scripts/put-secret-with-rotation-tag.sh
+- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, revoke token, pkce, loopback consent
+- **Related:** OPS-93, OPS-45
+
+#### OPS-184 Run a full key rotation with the operator
+
+- **Use when:** every key in the rotation set must roll, or a rotation-check issue lists due keys, and the operator is present for the console steps.
+- **Does:** key-rotation runs the keys of secrets-rotation.toml, plus email-hash-secret, the Companies House presenter id and the local TLS certificate, in the order of the security runbook section 3.3. Per key it gives the operator one console action at a time, runs rotate-secret.yml, salt-rotate.yml, email-hash-rotate.yml, mcp-blob-key-rotate.yml or local-tls-renew.yml after the operator's go, proves the new value, retires the old one, and reads back the rotated-at tag or the GitHub secret date. It ends with rotation-check.yml, a PR for secrets-rotation.toml and a record in the private repository.
+- **Run:** `/key-rotation`
+- **Entry:** `.claude/skills/key-rotation/SKILL.md`
+- **Files:** .claude/skills/key-rotation/SKILL.md, secrets-rotation.toml, .github/workflows/rotate-secret.yml, scripts/rotate-secret-plan.js, scripts/put-secret-with-rotation-tag.sh, .github/workflows/rotation-check.yml
+- **Keywords:** key rotation, full rotation, roll secrets, rotate keys, rotation set, rotated-at, vendor console, operator walk-through
+- **Related:** OPS-165, OPS-166, OPS-169, OPS-170, OPS-171, OPS-43, OPS-45
 
 #### OPS-44 Hash and rotate the subject-ID salt
 
@@ -4519,11 +4568,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-61 Intake support email as private issues
 
 - **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
-- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
+- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own senders and threads already filed, and gives every other thread a lane (customer, record, notice, unverified or withheld) from the sender registry support-mail-registry.toml and the `Authentication-Results` header Google wrote (support-mail-lanes.mjs). It opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data; the other lanes are counted and open nothing. It prints counts only, one per lane, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
 - **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
 - **Entry:** `scripts/support-mail-intake.mjs:`
-- **Files:** scripts/support-mail-intake.mjs, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
-- **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
+- **Files:** scripts/support-mail-intake.mjs, scripts/support-mail-lanes.mjs, scripts/support-mail-registry.toml, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/scripts/supportMailLanes.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
+- **Keywords:** support mail intake, mail lanes, sender registry, dkim, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
 - **Related:** OPS-56, DATA-42
 
 #### DATA-23 Classify visitor kind as human, bot or synthetic
@@ -4827,7 +4876,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-42 Sync GCP workload identity and org policy
 
 - **Use when:** a Lambda's federated access to Google Cloud must be granted, or an org policy must match identity.toml.
-- **Does:** gcp-identity-sync.js makes the workload identity pool, its providers, the service account's roles/iam.workloadIdentityUser bindings and every declared org policy match identity.toml. It diffs live IAM and Org Policy API state and applies the difference. --write-cred-configs writes the external-account credential configuration files googleWorkloadIdentity.js's Lambdas build at runtime.
+- **Does:** gcp-identity-sync.js makes the workload identity pool, its providers, the service account's roles/iam.workloadIdentityUser bindings, each delegated service account's roles/iam.serviceAccountTokenCreator bindings and every declared org policy match identity.toml. It diffs live IAM and Org Policy API state and applies the difference. --write-cred-configs writes the external-account credential configuration files googleWorkloadIdentity.js's Lambdas build at runtime.
 - **Run:** `node infra/google/gcp/gcp-identity-sync.js`; `node infra/google/gcp/gcp-identity-sync.js --apply`; `node infra/google/gcp/gcp-identity-sync.js --apply --write-cred-configs`
 - **Entry:** `infra/google/gcp/gcp-identity-sync.js:`
 - **Files:** infra/google/gcp/gcp-identity-sync.js, app/unit-tests/scripts/gcpIdentitySync.test.js, infra/google/gcp/identity.toml
@@ -5178,11 +5227,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-12 Read invoices from the local mail index
 
 - **Use when:** supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
-- **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching mail-antony for each supplier within a date range. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
+- **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching both mailboxes (mail-antony, then mail-support) for each supplier within a date range, and keeps one line when the same invoice sits in both. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
 - **Run:** no command; see Does and Entry
 - **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`; `mcp/lib/finance/mail-invoices.js:runCorpus`
 - **Files:** mcp/lib/finance/mail-invoices.js, mcp/test/mail-invoices.test.js
-- **Keywords:** supplier invoices, corpus cli, mail-antony, invoice import, purchases lines, mail index search
+- **Keywords:** supplier invoices, corpus cli, mail-antony, mail-support, invoice de-duplication, invoice import, purchases lines, mail index search
 - **Related:** MCP-10, MCP-11
 
 #### MCP-13 Import Stripe transaction and payout lines
@@ -5258,7 +5307,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Simulator server & OAuth mocks](#simulator-server--oauth-mocks-dev): [DEV-01](#dev-01-run-the-http-simulator-server) Run the HTTP simulator server · [DEV-02](#dev-02-simulate-local-app-oauth) Simulate local app OAuth · [DEV-03](#dev-03-simulate-hmrc-oauth) Simulate HMRC OAuth · [DEV-04](#dev-04-simulate-companies-house-identity-and-filing) Simulate Companies House identity and filing · [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers) Simulate HMRC Agent Authorisation and fraud-prevention headers · [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs) Simulate HMRC test-user provisioning and API docs · [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth) Simulate the public demo's billing and OAuth
 - [Simulator tax APIs](#simulator-tax-apis-dev): [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api) Simulate HMRC VAT MTD API · [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api) Simulate HMRC ITSA MTD API
 - [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev): [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth · [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
-- [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
+- [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
 - [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board
@@ -5404,6 +5453,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group local-dev-environment--secrets-dev -->
 - [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments
 - [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets
+- [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate
 - [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 <!-- /generated:group local-dev-environment--secrets-dev -->
 
@@ -5419,13 +5469,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### DEV-15 Fetch and publish proxy-variant secrets
 
-- **Use when:** a local proxy-variant run needs HMRC/Stripe secrets, or a renewed local TLS certificate needs publishing.
-- **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC and Stripe secrets from Secrets Manager. It execs a given command with those secrets set in its environment. local-tls-publish.sh is a certbot deploy-hook that publishes a renewed local TLS certificate to Secrets Manager for CI.
-- **Run:** `scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy`; `scripts/local-tls-publish.sh`
-- **Entry:** `scripts/proxy-secrets.sh`; `scripts/local-tls-publish.sh`
-- **Files:** scripts/proxy-secrets.sh, scripts/local-tls-publish.sh
-- **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets, local tls, certbot deploy hook, certificate publish
+- **Use when:** a local proxy-variant run needs HMRC/Stripe secrets.
+- **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC and Stripe secrets from Secrets Manager. It execs a given command with those secrets set in its environment.
+- **Run:** `scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy`
+- **Entry:** `scripts/proxy-secrets.sh`
+- **Files:** scripts/proxy-secrets.sh
+- **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets
 - **Related:** DEV-14
+
+#### DEV-60 Fetch the local TLS certificate
+
+- **Use when:** a developer sets up local HTTPS for local.submit.diyaccounting.co.uk, or the stored certificate has been renewed.
+- **Does:** local-tls-fetch.sh reads the Secrets Manager secret `ci/submit/local-tls/certificate` with the `diya-submit-ci` profile. It writes fullchain.pem and privkey.pem (mode 600) to the directory that app/bin/server.js reads. The local-tls-renew.yml workflow is the only writer of the secret.
+- **Run:** `scripts/local-tls-fetch.sh`
+- **Entry:** `scripts/local-tls-fetch.sh`
+- **Files:** scripts/local-tls-fetch.sh, app/bin/server.js, .github/workflows/local-tls-renew.yml
+- **Keywords:** local tls, certificate, fullchain, privkey, secrets manager, local.submit, https
+- **Related:** OPS-171, DEV-15
 
 #### DEV-16 Manage the durable Cognito test-user lifecycle
 
@@ -5765,7 +5825,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-44 Check a batch against every CI gate locally
 
 - **Use when:** a batch branch is about to take its first push, or a local pass has gone red in CI.
-- **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the bundle, maven verify, npm test, the mcp tests, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
+- **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the content scan, the bundle, maven verify, npm test, the mcp tests, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
 - **Run:** `scripts/batch-check.sh <ref> [--docker]`
 - **Entry:** `scripts/batch-check.sh:run_gate`
 - **Files:** scripts/batch-check.sh
@@ -6720,11 +6780,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api call graphs: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - api docs: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - api gateway: [SITE-02](#site-02-verify-jwts-at-the-api-gateway), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- api gateway custom domain: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
+- api gateway custom domain: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - api gateway event shape: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - api gateway routes: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - api key: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [BILL-32](#bill-32-provision-stripe-secrets)
 - api lambda: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
+- api mapping: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - api request log: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
@@ -6976,9 +7037,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdn allowlist: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - cdp screencast: [DEV-40](#dev-40-record-a-product-demo-video)
 - certbot: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
-- certbot deploy hook: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
+- certificate: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - certificate expiry: [OPS-37](#ops-37-check-https-certificate-expiry), [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
-- certificate publish: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - certificate renewal: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - cfnnamedquery: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - change of address: [CH-05](#ch-05-file-a-change-of-registered-office-address)
@@ -7233,7 +7293,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
-- customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- customer email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - customer email proof: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci)
 - customer email queue: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
@@ -7377,7 +7437,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
-- dkim: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci), [OPS-182](#ops-182-provision-the-customer-email-sender)
+- dkim: [OPS-181](#ops-181-prove-the-customer-email-path-on-ci), [OPS-182](#ops-182-provision-the-customer-email-sender), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - dns cname token: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - dns validation: [SS-37](#ss-37-request-acm-certificates)
 - dns-01: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
@@ -7561,6 +7621,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ffmpeg: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [DEV-40](#dev-40-record-a-product-demo-video)
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -7584,7 +7645,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - first paint: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
 - fixed asset register: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - fixture: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
-- fixtures: [CH-12](#ch-12-generate-synthetic-test-companies), [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets), [DEV-01](#dev-01-run-the-http-simulator-server)
+- fixtures: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-12](#ch-12-generate-synthetic-test-companies), [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets), [DEV-01](#dev-01-run-the-http-simulator-server)
 - flatten envelope: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
@@ -7615,7 +7676,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - frs 102: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - frs 105: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - full deploy: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
+- full rotation: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - full tax year: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- fullchain: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - fullscreen: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - funding links: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - funnel steps: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -7696,6 +7759,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - google cloud apply: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - google cloud inventory: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
 - google drive: [SS-28](#ss-28-store-books-in-google-drive)
+- google refresh token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - google sts: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - google-apply workflow: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - google_application_credentials: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
@@ -7804,6 +7868,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - http response helper: [SITE-07](#site-07-format-http-responses-and-errors)
 - http simulator: [DEV-01](#dev-01-run-the-http-simulator-server)
 - http-simulator: [CH-12](#ch-12-generate-synthetic-test-companies)
+- https: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - https certificate: [OPS-37](#ops-37-check-https-certificate-expiry)
 - https local: [SITE-08](#site-08-bootstrap-the-app-server)
 - human bot synthetic: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
@@ -7867,6 +7932,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - investigation: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - invitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - invite_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
+- invoice de-duplication: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice import: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - irmark: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
@@ -7925,6 +7991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - key format: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - key registry: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - key roll: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data), [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
+- key rotation: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - key version: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - keyboard nav: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - keyword forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -8000,8 +8067,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - local server: [DEV-01](#dev-01-run-the-http-simulator-server)
 - local server routing: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - local session: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
-- local tls: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
-- local.submit: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
+- local tls: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
+- local.submit: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - localstorage wrapper: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - lock: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - log appenders: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
@@ -8017,6 +8084,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - look pass: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - lookup resources: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - loopback: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
+- loopback consent: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - loss carry forward: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - loss ranking: [DEV-37](#dev-37-write-the-session-report)
 - losses and claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
@@ -8026,7 +8094,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - machine-ask: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - mail from: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
+- mail lanes: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
+- mail-support: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - maintainer-review: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - maintenance page: [SS-30](#ss-30-serve-the-holding-page-and-failover)
@@ -8180,6 +8250,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oauth blob: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - oauth client assert: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - oauth client check: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
+- oauth client secret roll: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - oauth facade: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - oauth redirect: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - oauth state: [SITE-17](#site-17-trace-and-secure-client-requests)
@@ -8234,6 +8305,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - operator snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - operator snapshot api: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - operator tooling: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
+- operator walk-through: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - ops channel: [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - ops notifications: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - ops stack: [OPS-119](#ops-119-provision-the-ops-stack)
@@ -8281,7 +8353,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-56](#bill-56-delete-generated-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
@@ -8332,7 +8404,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pitr restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - pitr status: [OPS-48](#ops-48-verify-backup-health-daily)
 - pixelmatch: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
-- pkce: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- pkce: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - plain english: [DEV-38](#dev-38-write-plain-human-prose)
 - plain prose: [DEV-38](#dev-38-write-plain-human-prose)
 - plain-prose skill: [SS-57](#ss-57-write-plain-human-prose)
@@ -8403,6 +8475,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - private issue: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - private report: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DATA-61](#data-61-intake-support-email-as-private-issues)
+- privkey: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
@@ -8460,6 +8533,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - put-secret-with-rotation-tag: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
+- putreceipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - pwa: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - qr code: [SITE-19](#site-19-generate-qr-codes), [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - qualifier: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
@@ -8494,8 +8568,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - realistic data: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
-- receipt: [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
-- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event)
+- receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy), [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
+- receipt email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -8505,6 +8579,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reconciliation: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconciliation alarm: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - reconciliation pages: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- reconsent: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - redact: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
@@ -8527,6 +8602,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - referrer: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
+- refresh proof: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - refresh token: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - refresh token scopes: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - refresh_token: [DEV-03](#dev-03-simulate-hmrc-oauth)
@@ -8551,7 +8627,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
-- render: [CH-07](#ch-07-render-micro-entity-accounts-for-review)
+- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-accounts-for-review)
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
@@ -8617,18 +8693,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
+- revoke token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - role pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - role prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- roll secrets: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - rolled secret: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - root domain: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- rotate keys: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
+- rotate refresh token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - rotate secret: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
-- rotated-at: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
+- rotated-at: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator), [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - rotation check: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
 - rotation schedule: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
-- rotation set: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
+- rotation set: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator), [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - rotation tag: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
 - route53: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - route53 alias: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
@@ -8702,7 +8782,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema check: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
-- screenshot: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- screenshot: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot comparison: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
@@ -8725,7 +8805,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secret rotation: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
 - secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
-- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
+- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - secrets manager read: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
@@ -8761,6 +8841,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - send path: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - send point: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
+- sender registry: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
@@ -8860,6 +8941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stale blocker: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - stale branches: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- stale key cache: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - stall: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
@@ -8919,6 +9001,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subhasher: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - subject id salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - submission failure: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- submission receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - submission record: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
@@ -9148,6 +9231,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vatinterface: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - vatreturncsverror: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - vendor assert: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
+- vendor console: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
 - verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
@@ -9181,6 +9265,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - visitor-state.json: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - visitor_kind property: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - visitors by kind: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- visual check: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - visual review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - vitest config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - volatile cells: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
@@ -9195,7 +9280,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - walkthrough: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
-- warm container: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
+- warm container: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data), [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)

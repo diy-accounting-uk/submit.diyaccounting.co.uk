@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
-import { findWorkspaceRoot, invoiceLinesForPeriod } from "../lib/finance/mail-invoices.js";
+import { INVOICE_MAIL_SOURCES, findWorkspaceRoot, invoiceLinesForPeriod } from "../lib/finance/mail-invoices.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures", "finance");
 
@@ -193,6 +193,84 @@ describe("invoiceLinesForPeriod", () => {
       documentReference: "PL-PSC00000000000/12",
       detailComment: "Hiscox",
     });
+  });
+});
+
+// Searches answer per source; a doc is looked up by "<source>/<path>".
+function twoMailboxRunCorpus(hitsBySource, docs) {
+  const calls = [];
+  const runCorpus = async (args) => {
+    calls.push(args);
+    if (args[0] === "search") {
+      return hitsBySource[args[args.indexOf("--source") + 1]] ?? [];
+    }
+    const doc = docs[`${args.at(-2)}/${args.at(-1)}`];
+    if (!doc) throw new Error(`no doc for ${args.at(-2)}/${args.at(-1)}`);
+    return doc;
+  };
+  return { runCorpus, calls };
+}
+
+function invoiceMail(source, path, date, number, total) {
+  return {
+    hit: { source, path, title: `Invoice number: ${number}`, date },
+    doc: { source, path, title: `Invoice number: ${number}`, doc_date: date, content: `Total in GBP: £${total}` },
+  };
+}
+
+describe("invoiceLinesForPeriod across both mailboxes", () => {
+  const period = { from: "2026-03-01", to: "2026-03-31", suppliers: [{ name: "Acme", taxCode: "OS", ...CLOUD_HOSTING_ACCOUNT }] };
+
+  function setup(mails) {
+    const hitsBySource = {};
+    const docs = {};
+    for (const mail of mails) {
+      hitsBySource[mail.hit.source] = [...(hitsBySource[mail.hit.source] ?? []), mail.hit];
+      docs[`${mail.hit.source}/${mail.hit.path}`] = mail.doc;
+    }
+    return twoMailboxRunCorpus(hitsBySource, docs);
+  }
+
+  it("searches every invoice mail source for each supplier", async () => {
+    const { runCorpus, calls } = setup([]);
+    await invoiceLinesForPeriod(period, { runCorpus });
+    const sources = calls.filter((args) => args[0] === "search").map((args) => args[args.indexOf("--source") + 1]);
+    expect(INVOICE_MAIL_SOURCES).toEqual(["mail-antony", "mail-support"]);
+    expect(sources).toEqual(INVOICE_MAIL_SOURCES);
+  });
+
+  it("posts a hit found only in mail-support", async () => {
+    const { runCorpus } = setup([invoiceMail("mail-support", "a.eml", "2026-03-05T10:00:00+00:00", "A1", "10.00")]);
+    const lines = await invoiceLinesForPeriod(period, { runCorpus });
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ amount: 10, documentReference: "A1", postingDate: "2026-03-05" });
+  });
+
+  it("posts one line for an invoice that sits in both mailboxes, even with a later forward date", async () => {
+    const { runCorpus } = setup([
+      invoiceMail("mail-antony", "a.eml", "2026-03-05T10:00:00+00:00", "A1", "10.00"),
+      invoiceMail("mail-support", "b.eml", "2026-03-06T09:00:00+00:00", "A1", "10.00"),
+    ]);
+    const lines = await invoiceLinesForPeriod(period, { runCorpus });
+    expect(lines).toHaveLength(1);
+    expect(lines[0].postingDate).toBe("2026-03-05");
+  });
+
+  it("posts two lines for different invoices from one supplier in different mailboxes", async () => {
+    const { runCorpus } = setup([
+      invoiceMail("mail-antony", "a.eml", "2026-03-05T10:00:00+00:00", "A1", "10.00"),
+      invoiceMail("mail-support", "b.eml", "2026-03-20T09:00:00+00:00", "A2", "12.00"),
+    ]);
+    const lines = await invoiceLinesForPeriod(period, { runCorpus });
+    expect(lines.map((line) => line.documentReference)).toEqual(["A1", "A2"]);
+  });
+
+  it("fails when one source search fails", async () => {
+    const runCorpus = async (args) => {
+      if (args.includes("mail-support")) throw new Error("index down");
+      return [];
+    };
+    await expect(invoiceLinesForPeriod(period, { runCorpus })).rejects.toThrow(/index down/);
   });
 });
 

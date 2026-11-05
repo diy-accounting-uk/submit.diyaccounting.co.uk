@@ -4,7 +4,7 @@
 // app/unit-tests/lib/customerEmailTemplates.test.js
 
 import { describe, test, expect } from "vitest";
-import { renderEmail, buildCustomerEmail, buildOperatorCopy } from "@app/lib/customerEmailTemplates.js";
+import { renderEmail, buildCustomerEmail, buildOperatorCopy, buildPassAttachments } from "@app/lib/customerEmailTemplates.js";
 
 const catalog = { bundles: [{ id: "day-guest", name: "Day pass" }] };
 const baseUrl = "https://submit.example.test/";
@@ -83,6 +83,43 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.passQr).toBeNull();
   });
 
+  test("submission-receipt shows a processing time and a period in words", () => {
+    const vat = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "vat-return" },
+      baseUrl,
+      catalog,
+      receipt: { formBundleNumber: "FB1", processingDate: "2026-11-05T09:30:00.000Z" },
+    });
+    expect(vat.text).toContain("5 November 2026, 09:30 UTC");
+    expect(vat.text).not.toContain("2026-11-05T09:30");
+
+    const dateOnly = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "vat-return" },
+      baseUrl,
+      catalog,
+      receipt: { formBundleNumber: "FB1", processingDate: "2026-11-01" },
+    });
+    expect(dateOnly.text).toContain("1 November 2026");
+    expect(dateOnly.text).not.toContain("UTC");
+
+    const itsa = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "itsa-period-self-employment" },
+      baseUrl,
+      catalog,
+      receipt: { kind: "itsa-period-self-employment", correlationId: "c1", periodId: "2026-04-06_2026-07-05", taxYear: "2026-27" },
+    });
+    expect(itsa.text).toContain("6 April 2026 to 5 July 2026");
+  });
+
+  test("a pass with no end date says so", () => {
+    const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "a-b-c-d", bundleId: "day-guest" }, baseUrl, catalog });
+    expect(m.text).toContain("No end date");
+    expect(m.text).not.toContain("Not set");
+  });
+
   test("submission-receipt copies the allowlisted fields only", () => {
     const receipt = {
       formBundleNumber: "FB1",
@@ -106,8 +143,47 @@ describe("lib/customerEmailTemplates", () => {
 
   test("pass-generated asks for a QR code and builds the pass link", () => {
     const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "ab-cd", bundleId: "day-guest", maxUses: 1 }, baseUrl, catalog });
-    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/bundles.html?pass=ab-cd" });
+    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/bundles.html?pass=ab-cd", physical: false });
     expect(m.html).toContain("cid:pass-qr");
+  });
+
+  test("a physical pass asks for the media to print", () => {
+    const m = buildCustomerEmail({
+      kind: "pass-generated",
+      data: { code: "ab-cd", passTypeId: "physical-pass", bundleId: "day-guest" },
+      baseUrl,
+      catalog,
+    });
+    expect(m.passQr.physical).toBe(true);
+  });
+
+  test("a digital pass has the inline QR code as its only attachment", async () => {
+    const attachments = await buildPassAttachments({
+      code: "ab-cd",
+      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      physical: false,
+    });
+    expect(attachments.map((a) => a.FileName)).toEqual(["pass-ab-cd-qr.png"]);
+    expect(attachments[0]).toMatchObject({ ContentDisposition: "INLINE", ContentId: "pass-qr", ContentType: "image/png" });
+  });
+
+  test("a physical pass adds the front and back faces with the file names the generate page downloads", async () => {
+    const attachments = await buildPassAttachments({
+      code: "ab-cd",
+      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      physical: true,
+    });
+    expect(attachments.map((a) => [a.FileName, a.ContentType, a.ContentDisposition])).toEqual([
+      ["pass-ab-cd-qr.png", "image/png", "INLINE"],
+      ["pass-ab-cd-front.svg", "image/svg+xml", "ATTACHMENT"],
+      ["pass-ab-cd-back.svg", "image/svg+xml", "ATTACHMENT"],
+      ["pass-ab-cd-back.png", "image/png", "ATTACHMENT"],
+    ]);
+    const front = attachments[1].RawContent.toString("utf8");
+    expect(front).toContain(">ab<");
+    expect(front).toContain(">cd<");
+    expect(attachments[2].RawContent.toString("utf8")).toContain("ab-cd</text>");
+    expect(attachments[3].RawContent.subarray(1, 4).toString("latin1")).toBe("PNG");
   });
 
   test("pass-redeemed names the bundle", () => {

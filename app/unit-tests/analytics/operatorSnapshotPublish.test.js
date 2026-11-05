@@ -563,6 +563,45 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
     });
 
+    test("the duration graph orders its organisations the same way in the daily and the hourly range", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
+      const dailyRows = [
+        { day: END_DAY, component: "hmrc", value: "300" },
+        { day: END_DAY, component: "stripe", value: "100" },
+      ];
+      const hourlyRows = [
+        { day: hours.at(-1), component: "stripe", value: "500" },
+        { day: hours.at(-1), component: "hmrc", value: "50" },
+      ];
+
+      const daily = buildChartSeries({ days, rows: dailyRows, mode });
+      const hourly = buildChartSeries({ days: hours, rows: hourlyRows, mode });
+
+      expect(daily.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+      expect(hourly.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+    });
+
+    test("the requests graph orders its lines by organisation and status in every range", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
+      const lines = (day, values) => Object.entries(values).map(([component, value]) => ({ day, component, value: String(value) }));
+
+      const daily = buildChartSeries({ days, rows: lines(END_DAY, { "stripe 2xx": 90, "hmrc 4xx": 5, "hmrc 2xx": 40 }), mode });
+      const hourly = buildChartSeries({ days: hours, rows: lines(hours.at(-1), { "hmrc 2xx": 1, "stripe 2xx": 9, "hmrc 4xx": 4 }), mode });
+
+      const order = ["total", "hmrc 2xx", "hmrc 4xx", "stripe 2xx"];
+      expect(daily.map((line) => line.id)).toEqual(order);
+      expect(hourly.map((line) => line.id)).toEqual(order);
+    });
+
+    test("the duration graph note holds for the daily and the hourly range", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration");
+      expect(chart.note).toContain("averaged over the calls of each day or hour");
+    });
+
     test("the activity graph has a mode with a line for each HMRC API, an all APIs line and the test calls", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "activity-started-and-completed");
 
