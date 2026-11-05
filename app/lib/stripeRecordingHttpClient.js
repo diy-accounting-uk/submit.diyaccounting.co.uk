@@ -13,6 +13,7 @@ import { stripePathTemplate } from "./dataMasking.js";
 
 const STRIPE_TIMEOUT_ERROR_CODE = "ETIMEDOUT";
 const ERROR_STATUS = 400;
+const UNAUTHORIZED_STATUS = 401;
 
 /**
  * The target field of a record, from the mode of the secret key.
@@ -44,10 +45,13 @@ export class StripeRecordingHttpClient {
    * @param {Object} options
    * @param {"live"|"test"} options.target
    * @param {Object} [options.innerClient] - The client that sends, by default the SDK's Node client
+   * @param {(usedKey: string) => Promise<string|null>} [options.refreshKey] - Called after a 401 with the key
+   *   the request used. A new key makes the client send the request once more with it; null means no retry.
    */
-  constructor({ target, innerClient }) {
+  constructor({ target, innerClient, refreshKey }) {
     this.target = target;
     this.configuredInnerClient = innerClient;
+    this.refreshKey = refreshKey;
   }
 
   get innerClient() {
@@ -60,6 +64,24 @@ export class StripeRecordingHttpClient {
   }
 
   async makeRequest(host, port, path, method, headers, requestData, protocol, timeout) {
+    const response = await this.sendAndRecord(host, port, path, method, headers, requestData, protocol, timeout);
+    if (response.getStatusCode() !== UNAUTHORIZED_STATUS || !this.refreshKey) return response;
+    const usedKey = String(headers?.Authorization ?? "").replace(/^Bearer /, "");
+    const refreshedKey = await this.refreshKey(usedKey);
+    if (!refreshedKey) return response;
+    return this.sendAndRecord(
+      host,
+      port,
+      path,
+      method,
+      { ...headers, Authorization: `Bearer ${refreshedKey}` },
+      requestData,
+      protocol,
+      timeout,
+    );
+  }
+
+  async sendAndRecord(host, port, path, method, headers, requestData, protocol, timeout) {
     const authority = port ? `${host}:${port}` : host;
     const url = `${protocol}://${authority}${path}`;
     const attempt = {

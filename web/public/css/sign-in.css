@@ -91,5 +91,5 @@
 
 /* holds the place of content that arrives after first paint, so what follows does not jump */
 .reserve-viewport-height {
-  min-height: min(80vh, 40rem);
+  min-height: min(100vh, 48rem);
 }

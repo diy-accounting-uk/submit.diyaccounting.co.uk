@@ -47,6 +47,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability SITE-06 -->
 <!-- capability SITE-07 -->
+<!-- capability SITE-26 -->
 <!-- capability SITE-08 -->
 <!-- capability SITE-09 -->
 ### Site pages and content (SITE)
@@ -429,8 +430,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-41 -->
 <!-- capability OPS-42 -->
 <!-- capability OPS-43 -->
+<!-- capability OPS-168 -->
 <!-- capability OPS-44 -->
+<!-- capability OPS-165 -->
 <!-- capability OPS-45 -->
+<!-- capability OPS-166 -->
+<!-- capability OPS-169 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
 <!-- capability OPS-48 -->
@@ -490,6 +495,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability OPS-81 -->
 <!-- capability OPS-164 -->
+<!-- capability OPS-167 -->
 <!-- capability OPS-82 -->
 <!-- capability OPS-83 -->
 <!-- capability OPS-84 -->
@@ -707,6 +713,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability MCP-14 -->
 <!-- capability MCP-15 -->
+<!-- capability MCP-22 -->
 ## Developer workflow (DEV)
 
 <!-- generated:area DEV -->

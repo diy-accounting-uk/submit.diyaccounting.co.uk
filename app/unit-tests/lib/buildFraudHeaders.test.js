@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { readFileSync } from "fs";
 import { createHash } from "crypto";
 import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "../../lib/buildFraudHeaders.js";
+import { HOSTED_CLIENT_ADDRESS_HEADER, signHostedClientAddress } from "../../lib/hostedClientAddress.js";
 import { _setTestSalt, _clearSalt, hashSub } from "../../services/subHasher.js";
 
 // Read package info for test assertions (strip scope if present)
@@ -107,6 +108,92 @@ describe("buildFraudHeaders", () => {
       const { govClientHeaders: headers } = buildFraudHeaders(event);
 
       expect(headers["Gov-Client-Connection-Method"]).toBe("DESKTOP_APP_VIA_SERVER");
+    });
+
+    describe("MCP surfaces", () => {
+      const mcpEvent = (headers, sub = "cognito-user-abc123") => ({
+        headers: { "x-forwarded-for": "18.130.0.1", "cloudfront-viewer-address": "18.130.0.1:40000", ...headers },
+        requestContext: { authorizer: { lambda: { sub, client_id: "mcp-client-id" } } },
+      });
+      const signedAddress = (sub = "cognito-user-abc123") =>
+        signHostedClientAddress({ sub, ip: "198.51.100.77", port: "50100", collectedAt: "2026-11-04T10:15:30.123Z" });
+
+      beforeEach(async () => {
+        process.env.COGNITO_MCP_CLIENT_ID = "mcp-client-id";
+        _setTestSalt("build-fraud-headers-test-salt");
+        vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, text: () => Promise.resolve("203.0.113.9\n") });
+        await detectVendorPublicIp();
+      });
+
+      afterEach(() => {
+        _clearSalt();
+      });
+
+      it("passes the stdio server's device headers and joins its user and version to the server's", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders(
+          mcpEvent({
+            "Gov-Client-Local-IPs": "192.168.1.5",
+            "Gov-Client-Local-IPs-Timestamp": "2026-11-04T10:15:30.123Z",
+            "Gov-Client-MAC-Addresses": "aa%3Abb",
+            "Gov-Client-User-Agent": "os-family=macOS",
+            "Gov-Client-User-IDs": "os=alice",
+            "Gov-Vendor-Version": "diya-submit-mcp=0.1.1",
+          }),
+        );
+
+        expect(headers["Gov-Client-Local-IPs"]).toBe("192.168.1.5");
+        expect(headers["Gov-Client-Local-IPs-Timestamp"]).toBe("2026-11-04T10:15:30.123Z");
+        expect(headers["Gov-Client-MAC-Addresses"]).toBe("aa%3Abb");
+        expect(headers["Gov-Client-User-Agent"]).toBe("os-family=macOS");
+        expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123&os=alice");
+        expect(headers["Gov-Vendor-Version"]).toBe(`${packageName}=${packageVersion}&diya-submit-mcp=0.1.1`);
+        expect(headers["Gov-Client-Public-IP-Timestamp"]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      });
+
+      it("ignores a user value that is not one os pair", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders(mcpEvent({ "Gov-Client-User-IDs": "cognito=someone-else" }));
+
+        expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123");
+      });
+
+      it("uses the signed caller address and OTHER_VIA_SERVER for a hosted request", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders(mcpEvent({ [HOSTED_CLIENT_ADDRESS_HEADER]: signedAddress() }));
+
+        expect(headers["Gov-Client-Connection-Method"]).toBe("OTHER_VIA_SERVER");
+        expect(headers["Gov-Client-Public-IP"]).toBe("198.51.100.77");
+        expect(headers["Gov-Client-Public-Port"]).toBe("50100");
+        expect(headers["Gov-Client-Public-IP-Timestamp"]).toBe("2026-11-04T10:15:30.123Z");
+        expect(headers["Gov-Vendor-Forwarded"]).toBe("by=203.0.113.9&for=198.51.100.77,by=203.0.113.9&for=18.130.0.1");
+      });
+
+      it("treats an address signed for another user as no address", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders(
+          mcpEvent({ [HOSTED_CLIENT_ADDRESS_HEADER]: signedAddress("another-user") }),
+        );
+
+        expect(headers["Gov-Client-Connection-Method"]).toBe("DESKTOP_APP_VIA_SERVER");
+        expect(headers["Gov-Client-Public-IP"]).toBe("18.130.0.1");
+      });
+
+      it("takes no device header or client version from a browser caller", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders({
+          headers: { "x-forwarded-for": "198.51.100.1", "Gov-Client-MAC-Addresses": "aa%3Abb", "Gov-Vendor-Version": "x=1" },
+          requestContext: { authorizer: { lambda: { sub: "cognito-user-abc123", client_id: "submit-client" } } },
+        });
+
+        expect(headers["Gov-Client-MAC-Addresses"]).toBeUndefined();
+        expect(headers["Gov-Vendor-Version"]).toBe(`${packageName}=${packageVersion}`);
+      });
+
+      it("reads the user and client from the claims of a route behind the JWT authorizer", () => {
+        const { govClientHeaders: headers } = buildFraudHeaders({
+          headers: { "x-forwarded-for": "198.51.100.1" },
+          requestContext: { authorizer: { jwt: { claims: { sub: "cognito-user-abc123", client_id: "mcp-client-id" } } } },
+        });
+
+        expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123");
+        expect(headers["Gov-Client-Connection-Method"]).toBe("DESKTOP_APP_VIA_SERVER");
+      });
     });
 
     it("keeps WEB_APP_VIA_SERVER for a Submit-client caller once COGNITO_MCP_CLIENT_ID is set", () => {

@@ -174,13 +174,13 @@ describe("lib/integrationCalls", () => {
       expect(failedMetricCount(consoleSpy)).toBe(1);
     });
 
-    it("stops waiting for a slow record write after one second", async () => {
+    it("stops waiting for a slow record write after three seconds", async () => {
       vi.useFakeTimers();
       putIntegrationCall.mockReturnValue(new Promise(() => {}));
       const response = { status: 200, headers: {} };
 
       const sent = recordedFetch(URL_WITH_VRN, INIT, { ...CALL, fetchImplementation: async () => response });
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(3000);
 
       await expect(sent).resolves.toBe(response);
       expect(failedMetricCount(consoleSpy)).toBe(1);

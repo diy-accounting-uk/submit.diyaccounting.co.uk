@@ -6,8 +6,8 @@
 // - **Does:** operatorSnapshotPublish.js reads the analytics views behind the eight one-stop objectives. Its handler writes one JSON snapshot per environment, with trailing 30/90-day windows, value, trend and deep link, to s3://<lake>/snapshots/<env>/latest.json. OperatorSnapshotPublish.java provisions the Lambda and its own EventBridge rule inside AnalyticsStack.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/operatorSnapshotPublish.js:handler`
-// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
-// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot
+// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
+// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs
 // - **Related:** DATA-19, DATA-24
 // @end-capability
 
@@ -37,6 +37,11 @@ import { retentionObjective } from "../../lib/operatorSnapshot/retentionObjectiv
 import { operatorEffortObjective } from "../../lib/operatorSnapshot/operatorEffortObjective.js";
 import { complianceObjective } from "../../lib/operatorSnapshot/complianceObjective.js";
 import { companyAccountsObjective } from "../../lib/operatorSnapshot/companyAccountsObjective.js";
+import {
+  buildIntegrationSummarySql,
+  buildIntegrationCallsSql,
+  shapeIntegrationsSection,
+} from "../../lib/operatorSnapshot/integrationsSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -1020,6 +1025,102 @@ function hourlyLongFormSql({ componentExpression, valueExpression, view, where }
   );
 }
 
+// Long-form rows from the integration call views. The call views have a row for each api and
+// status, so a figure that does not add (an average) is written as a weighted aggregate in
+// `valueExpression`. Daily rows read v_integration_calls_daily; hourly rows read the hourly view.
+function integrationLongFormSql({ hourly, componentExpression, valueExpression, where }) {
+  const view = hourly ? "v_integration_calls_hourly" : "v_integration_calls_daily";
+  const window = hourly ? hourlyWindowFilter("hour") : dailyWindowFilter("day");
+  const conditions = [window, ...(where ? [where] : [])].join(" AND ");
+  const timeExpression = hourly ? "date_format(hour, '%Y-%m-%dT%H:00:00Z')" : "cast(day AS varchar)";
+  return (
+    `SELECT ${timeExpression} AS day, ${componentExpression} AS component, cast(${valueExpression} AS double) AS value\n` +
+    `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
+  );
+}
+
+const INTEGRATION_ORG_LABELS = { "hmrc": "HMRC", "companies-house": "Companies House", "stripe": "Stripe" };
+
+// The status class of a call: its first digit and "xx", or "failed" for a call with no response.
+const INTEGRATION_STATUS_CLASS = "CASE WHEN status IS NULL THEN 'failed' ELSE cast(status / 100 AS varchar) || 'xx' END";
+
+const integrationRequestsMode = ({ id, label, org }) => {
+  const orgFilter = org ? " AND org = '" + org + "'" : "";
+  const query = {
+    componentExpression: org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS,
+    valueExpression: "sum(calls)",
+    where: "target = 'live'" + orgFilter,
+  };
+  const orgName = (component) => INTEGRATION_ORG_LABELS[component.split(" ")[0]] ?? component;
+  return {
+    id,
+    label,
+    total: "All requests",
+    totalDescription: org
+      ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
+      : "Live calls to every organisation added together.",
+    ...(org ? {} : { maxComponents: 8 }),
+    labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
+    descriptionOf: (component) =>
+      org
+        ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} that ended with ${component}.`
+        : `Live calls to ${orgName(component)} that ended with ${component.split(" ").slice(1).join(" ")}.`,
+    sql: integrationLongFormSql({ hourly: false, ...query }),
+    hourlySql: integrationLongFormSql({ hourly: true, ...query }),
+  };
+};
+
+const integrationDurationMode = ({ id, label }) => {
+  const where = "target = 'live'";
+  const valueExpression = "sum(total_ms) / nullif(sum(calls), 0)";
+  return {
+    id,
+    label,
+    unit: "ms",
+    total: null,
+    labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
+    descriptionOf: (component) =>
+      `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
+    sql: integrationLongFormSql({ hourly: false, componentExpression: "org", valueExpression, where }),
+    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org", valueExpression, where }),
+  };
+};
+
+// One line per HMRC api that was called live, and one for all of them, with the test calls
+// (sandbox host, test key) as further lines.
+const HMRC_API_COMPONENT = "CASE WHEN target = 'live' THEN 'live:' || api ELSE 'test:' || api END";
+
+function hmrcApiCallsSql(hourly) {
+  const view = hourly ? "v_integration_calls_hourly" : "v_integration_calls_daily";
+  const window = hourly ? hourlyWindowFilter("hour") : dailyWindowFilter("day");
+  const timeColumn = hourly ? "hour" : "day";
+  const timeExpression = hourly ? "date_format(hour, '%Y-%m-%dT%H:00:00Z')" : "cast(day AS varchar)";
+  const lines = [
+    `SELECT ${timeColumn}, 'all' AS component, calls FROM ${view} WHERE org = 'hmrc' AND target = 'live' AND ${window}`,
+    `SELECT ${timeColumn}, 'all-test' AS component, calls FROM ${view} WHERE org = 'hmrc' AND target <> 'live' AND ${window}`,
+    `SELECT ${timeColumn}, ${HMRC_API_COMPONENT} AS component, calls FROM ${view} WHERE org = 'hmrc' AND ${window}`,
+  ];
+  return (
+    `SELECT ${timeExpression} AS day, component, cast(sum(calls) AS double) AS value\n` +
+    `FROM (\n  ${lines.join("\n  UNION ALL\n  ")}\n)\nGROUP  BY 1, 2`
+  );
+}
+
+const hmrcApiCallsLabel = (component) => {
+  if (component === "all") return "All APIs";
+  if (component === "all-test") return "All APIs (test)";
+  return component.startsWith("test:") ? `${component.slice(5)} (test)` : component.slice(5);
+};
+
+const hmrcApiCallsDescription = (component) => {
+  if (component === "all") return "Every live HMRC API call added together.";
+  if (component === "all-test")
+    return "Every HMRC API call to the sandbox or with a test key added together; customer calls are not in it.";
+  return component.startsWith("test:")
+    ? `Calls to ${component.slice(5)} on the HMRC sandbox or with a test key.`
+    : `Live calls to ${component.slice(5)}.`;
+};
+
 const STRIPE_DONATION_COMPONENT_CASE =
   `CASE WHEN ${STRIPE_DONATION_PRODUCT_FILTER} THEN 'stripe-donations' ` +
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
@@ -1079,7 +1180,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "activity-started-and-completed",
       title: "Activity started and completed",
       unit: "count",
-      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear.",
+      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear. HMRC API calls counts calls to HMRC from the call records: All APIs is the live calls, and the other lines start hidden, the test lines being sandbox and test-key calls.",
       modes: [
         {
           id: "started",
@@ -1120,6 +1221,15 @@ export function buildDailyChartDefinitions() {
             valueExpression: "completions",
             view: "v_submissions_by_activity_hourly",
           }),
+        },
+        {
+          id: "api-calls",
+          label: "HMRC API calls",
+          total: null,
+          labelOf: hmrcApiCallsLabel,
+          descriptionOf: hmrcApiCallsDescription,
+          sql: hmrcApiCallsSql(false),
+          hourlySql: hmrcApiCallsSql(true),
         },
       ],
     },
@@ -1179,6 +1289,25 @@ export function buildDailyChartDefinitions() {
           }),
         },
       ],
+    },
+    {
+      id: "integration-requests",
+      objectiveId: "integrations",
+      title: "API requests by organisation and status",
+      unit: "count",
+      note: "Live calls to HMRC, Companies House and Stripe, so sandbox probes do not hide customer traffic. A call with no response reads failed. Days are UTC.",
+      modes: [
+        integrationRequestsMode({ id: "all", label: "All" }),
+        ...Object.entries(INTEGRATION_ORG_LABELS).map(([org, label]) => integrationRequestsMode({ id: org, label, org })),
+      ],
+    },
+    {
+      id: "integration-duration",
+      objectiveId: "integrations",
+      title: "Average API request duration",
+      unit: "ms",
+      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over each day's calls. Days are UTC.",
+      modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
       id: "conversion-to-submission",
@@ -2038,6 +2167,27 @@ export async function buildPageVisitors({ workGroup, database }) {
 }
 
 /**
+ * The live calls to HMRC, Companies House and Stripe: one summary row per organisation and
+ * status over the standard windows, and each organisation's recent calls. A view with no rows
+ * gives an empty section, which the page shows as its empty note.
+ *
+ * @returns {Promise<{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>}>}
+ */
+export async function buildIntegrations({ workGroup, database, envName, region }) {
+  const [summaryRows, callRows] = await Promise.all([
+    runAthenaQuery({ workGroup, database, sql: buildIntegrationSummarySql(WINDOWED_COLUMNS) }),
+    runAthenaQuery({ workGroup, database, sql: buildIntegrationCallsSql() }),
+  ]);
+  return shapeIntegrationsSection({
+    summaryRows,
+    callRows,
+    tableName: `${envName}-env-integration-calls`,
+    region,
+    toWindows: toObservationWindows,
+  });
+}
+
+/**
  * The paying subscribers of the latest month with a charge, each row an acquisition
  * channel and bundle with its active subscribers, monthly recurring revenue and annualised
  * recurring revenue, and the three figures added over every row. A subscriber with no recorded
@@ -2295,6 +2445,14 @@ export async function handler() {
     failedPageVisitors = 1;
     logger.warn({ message: "Page visitors query failed, publishing none", error: error.message });
   }
+  let integrations = null;
+  let failedIntegrations = 0;
+  try {
+    integrations = await buildIntegrations({ workGroup, database, envName, region: context.region });
+  } catch (error) {
+    failedIntegrations = 1;
+    logger.warn({ message: "Integrations query failed, publishing none", error: error.message });
+  }
   let operators = null;
   let failedOperators = 0;
   try {
@@ -2334,6 +2492,7 @@ export async function handler() {
     ...(costDrivers ? { costDrivers } : {}),
     ...(paidSubscribers ? { paidSubscribers } : {}),
     ...(pageVisitors ? { pageVisitors } : {}),
+    ...(integrations ? { integrations } : {}),
     ...(operators ? { operators } : {}),
     ...(familyAffiliates ? { familyAffiliates } : {}),
     ...(affiliateGroups ? { affiliateGroups } : {}),
@@ -2343,6 +2502,7 @@ export async function handler() {
       failedCostDrivers +
       failedPaidSubscribers +
       failedPageVisitors +
+      failedIntegrations +
       failedOperators +
       failedFamilyAffiliates +
       failedAffiliateGroups,

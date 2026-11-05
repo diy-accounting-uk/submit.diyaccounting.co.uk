@@ -227,7 +227,7 @@ async function exchangeToken(code) {
     console.log("Stored HMRC token scope:", responseJson.scope);
   }
 
-  console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, accessToken);
+  console.log(`Exchanged token. Remote call completed successfully: POST ${url}`);
   return accessToken;
 }
 

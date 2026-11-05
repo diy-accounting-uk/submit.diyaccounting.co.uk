@@ -310,7 +310,7 @@ Neither check explains the headerless requests on FPH1. That question stays with
 
 ### A. Rule check
 
-`app/lib/fraudPreventionHeaderRules.js` is a pure function. It takes the headers and the connection method and returns rule ids, for example `Gov-Client-Public-Port:server-port`. It holds one rule set for `WEB_APP_VIA_SERVER` and one for `DESKTOP_APP_VIA_SERVER`, from HMRC's connection method pages.
+`app/lib/fraudPreventionHeaderRules.js` is a pure function. It takes the headers and the connection method and returns rule ids, for example `Gov-Client-Public-Port:server-port`. It holds one rule set for `WEB_APP_VIA_SERVER` and one for `DESKTOP_APP_VIA_SERVER` and `OTHER_VIA_SERVER`, from HMRC's connection method pages.
 
 Rules from the published spec:
 

@@ -4,6 +4,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import Stripe from "stripe";
+import { resetSecretCache } from "@app/lib/cachedSecret.js";
 
 // Mock Stripe SDK
 const mockSubscriptionsRetrieve = vi.fn();
@@ -40,10 +41,11 @@ vi.mock("stripe", () => {
 });
 
 // Mock Secrets Manager (stripeClient.js uses it)
+const mockSecretValue = vi.fn(() => "sk_test_mock");
 vi.mock("@aws-sdk/client-secrets-manager", () => ({
   SecretsManagerClient: class {
-    send() {
-      return { SecretString: "sk_test_mock" };
+    send(command) {
+      return { SecretString: mockSecretValue(command.input.SecretId) };
     }
   },
   GetSecretValueCommand: class {
@@ -278,6 +280,61 @@ describe("billingWebhookPost", () => {
     expect(result.statusCode).toBe(400);
     const body = JSON.parse(result.body);
     expect(body.error).toContain("Invalid webhook signature");
+  });
+
+  test("checks the signature again once with the new secret when the webhook secret was rolled", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_700_000_000_000);
+      resetSecretCache();
+      process.env.STRIPE_WEBHOOK_SECRET = "arn:aws:secretsmanager:eu-west-2:1:secret:webhook";
+      const reads = ["whsec_old", "whsec_new"];
+      mockSecretValue.mockImplementation((secretId) => {
+        if (!secretId.endsWith(":webhook")) return "sk_test_mock";
+        vi.setSystemTime(Date.now() + 11_000);
+        return reads.length > 1 ? reads.shift() : reads[0];
+      });
+      mockWebhooksConstructEvent.mockImplementation((body, signature, secret) => {
+        if (secret === "whsec_old") throw new Error("No signatures found matching the expected signature for payload");
+        return { id: "evt_1", type: "ping", livemode: true, data: { object: {} } };
+      });
+
+      const result = await ingestHandler(buildWebhookEvent({ type: "ping", livemode: true }));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockWebhooksConstructEvent.mock.calls.map((call) => call[2])).toEqual(["whsec_old", "whsec_new"]);
+    } finally {
+      vi.useRealTimers();
+      mockSecretValue.mockReset();
+      mockSecretValue.mockReturnValue("sk_test_mock");
+      resetSecretCache();
+    }
+  });
+
+  test("checks the signature only once when the webhook secret is unchanged", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_700_000_000_000);
+      resetSecretCache();
+      process.env.STRIPE_WEBHOOK_SECRET = "arn:aws:secretsmanager:eu-west-2:1:secret:webhook";
+      mockSecretValue.mockImplementation(() => {
+        vi.setSystemTime(Date.now() + 11_000);
+        return "whsec_same";
+      });
+      mockWebhooksConstructEvent.mockImplementation(() => {
+        throw new Error("No signatures found matching the expected signature for payload");
+      });
+
+      const result = await ingestHandler(buildWebhookEvent({ type: "ping", livemode: true }));
+
+      expect(result.statusCode).toBe(400);
+      expect(mockWebhooksConstructEvent).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      mockSecretValue.mockReset();
+      mockSecretValue.mockReturnValue("sk_test_mock");
+      resetSecretCache();
+    }
   });
 
   test("returns 200 and grants bundle on checkout.session.completed", async () => {

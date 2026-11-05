@@ -41,6 +41,13 @@ public interface AbstractApiLambdaProps extends AbstractLambdaProps {
         return false;
     }
 
+    /** False for a Lambda that API Gateway calls itself, such as an authorizer: its image command
+     * stays its own handler, with no check that the request came through CloudFront. */
+    @Value.Default
+    default boolean reachedThroughCloudFront() {
+        return true;
+    }
+
     /** True to also create an unauthenticated OPTIONS route on the same path, for CORS
      * preflight, answered by the same integration as the primary route. */
     @Value.Default

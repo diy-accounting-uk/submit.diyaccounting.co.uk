@@ -10,7 +10,7 @@ import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { FakeCodesEntryTable } from "@app/test-helpers/fakeCodesEntryTable.js";
 import { _setTestSalt } from "@app/services/subHasher.js";
-import { resetBlobKeyCache } from "@app/lib/mcpBlobKey.js";
+import { resetSecretCache } from "@app/lib/cachedSecret.js";
 
 const table = new FakeCodesEntryTable();
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
@@ -72,7 +72,7 @@ describe("mcpHmrcGrant", () => {
     process.env.HMRC_SANDBOX_CLIENT_ID = "sandbox-client";
     process.env.HMRC_SANDBOX_CLIENT_SECRET = "sandbox-secret";
     process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
-    resetBlobKeyCache();
+    resetSecretCache();
     _setTestSalt("test-salt-for-unit-tests");
     tokenEndpoint = vi.fn(async () =>
       tokenResponse(200, {

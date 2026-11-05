@@ -239,7 +239,8 @@
           "clear": true,
           "secret": true,
           "caption": "Type your presenter id.",
-          "headline": "Review the statement"
+          "headline": "Enter the presenter id",
+          "keyWord": "id"
         },
         {
           "action": "type",
@@ -248,7 +249,8 @@
           "clear": true,
           "secret": true,
           "caption": "Type your presenter authentication code.",
-          "headline": "Review the statement"
+          "headline": "Enter the presenter code",
+          "keyWord": "code"
         },
         {
           "action": "type",

@@ -187,6 +187,7 @@ const STORAGE_ALLOWLIST = new Set([
   "consent.rum",
   "consent.analytics",
   "feedbackEngagementRegistered",
+  "hmrcDeviceId",
 ]);
 
 function redactValue(key, value) {

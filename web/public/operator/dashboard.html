@@ -41,6 +41,7 @@
         <button type="button" class="dashboard-tab" data-tab-id="main" aria-pressed="true">Main</button>
         <button type="button" class="dashboard-tab" data-tab-id="adoption" aria-pressed="false">Adoption</button>
         <button type="button" class="dashboard-tab" data-tab-id="behaviour" aria-pressed="false">Behaviour</button>
+        <button type="button" class="dashboard-tab" data-tab-id="integrations" aria-pressed="false">Integrations</button>
         <button type="button" class="dashboard-tab" data-tab-id="ops" aria-pressed="false">Ops</button>
         <button type="button" class="dashboard-tab" data-tab-id="affiliates" aria-pressed="false">Affiliates</button>
         <button type="button" class="dashboard-tab" data-tab-id="aws-prod" aria-pressed="false">AWS prod</button>
@@ -175,6 +176,104 @@
           <p class="objective-empty" id="pageVisitorsEmpty" hidden>
             No page figures yet. They arrive with the next nightly Google Analytics pull.
           </p>
+        </section>
+        <section id="integrationsSummaryPanel" class="objective" hidden data-tab="integrations">
+          <h2>Requests to HMRC, Companies House and Stripe</h2>
+          <p class="subtitle">
+            Live calls only, one row for each organisation and response code. A call that got no response reads timeout, network-error or
+            refused. Figures come from the hourly snapshot.
+          </p>
+          <table class="observations data-table" id="integrationsSummaryTable">
+            <thead>
+              <tr>
+                <th>Organisation</th>
+                <th>Status</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
+                <th>Last 7 days</th>
+                <th>Last 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
+                <th>Last 90 days</th>
+              </tr>
+            </thead>
+            <tbody id="integrationsSummaryBody"></tbody>
+          </table>
+          <p class="objective-empty" id="integrationsSummaryEmpty" hidden>
+            No call records yet. They arrive once the call table's change log has reached the lake.
+          </p>
+          <p class="subtitle" id="integrationsAccountNote" hidden></p>
+        </section>
+        <section id="integrationsHmrcPanel" class="objective integrations-detail" hidden data-tab="integrations" data-org="hmrc">
+          <h2>HMRC calls</h2>
+          <p class="subtitle integrations-detail-note"></p>
+          <div class="integrations-scroll">
+            <table class="observations data-table integrations-table" id="integrationsHmrcPanelTable">
+              <thead>
+                <tr>
+                  <th>Time called</th>
+                  <th>API</th>
+                  <th title="Time until the response arrived, or until the call failed">Duration</th>
+                  <th>Status</th>
+                  <th title="Result of the in-process check of the fraud prevention headers against HMRC's published formats">
+                    Headers checked
+                  </th>
+                  <th>Raw record</th>
+                </tr>
+              </thead>
+              <tbody id="integrationsHmrcPanelBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="integrationsHmrcPanelEmpty" hidden>No calls recorded yet.</p>
+        </section>
+        <section
+          id="integrationsCompaniesHousePanel"
+          class="objective integrations-detail"
+          hidden
+          data-tab="integrations"
+          data-org="companies-house"
+        >
+          <h2>Companies House calls</h2>
+          <p class="subtitle integrations-detail-note"></p>
+          <div class="integrations-scroll">
+            <table class="observations data-table integrations-table" id="integrationsCompaniesHousePanelTable">
+              <thead>
+                <tr>
+                  <th>Time called</th>
+                  <th>API</th>
+                  <th title="Time until the response arrived, or until the call failed">Duration</th>
+                  <th>Status</th>
+                  <th title="Result of the in-process check of the fraud prevention headers against HMRC's published formats">
+                    Headers checked
+                  </th>
+                  <th>Raw record</th>
+                </tr>
+              </thead>
+              <tbody id="integrationsCompaniesHousePanelBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="integrationsCompaniesHousePanelEmpty" hidden>No calls recorded yet.</p>
+        </section>
+        <section id="integrationsStripePanel" class="objective integrations-detail" hidden data-tab="integrations" data-org="stripe">
+          <h2>Stripe calls</h2>
+          <p class="subtitle integrations-detail-note"></p>
+          <div class="integrations-scroll">
+            <table class="observations data-table integrations-table" id="integrationsStripePanelTable">
+              <thead>
+                <tr>
+                  <th>Time called</th>
+                  <th>API</th>
+                  <th title="Time until the response arrived, or until the call failed">Duration</th>
+                  <th>Status</th>
+                  <th title="Result of the in-process check of the fraud prevention headers against HMRC's published formats">
+                    Headers checked
+                  </th>
+                  <th>Raw record</th>
+                </tr>
+              </thead>
+              <tbody id="integrationsStripePanelBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="integrationsStripePanelEmpty" hidden>No calls recorded yet.</p>
         </section>
         <div data-objective-slot="low-running-cost" data-tab="main"></div>
         <div data-objective-slot="uptime" data-tab="ops"></div>

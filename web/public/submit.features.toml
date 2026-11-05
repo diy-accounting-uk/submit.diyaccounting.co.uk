@@ -10,6 +10,7 @@ version = "1.0.0"
 #   name        - human-readable name
 #   enabled     - whether the feature is active (true/false)
 #   description - what the feature does
+#   message     - optional text a feature shows (feedback-engagement)
 #
 # Future A/B testing extensions:
 #   rolloutPercent - percentage of users who see the feature (0-100)
@@ -22,5 +23,7 @@ version = "1.0.0"
 [[features]]
 id = "feedback-engagement"
 name = "Feedback Engagement"
-enabled = true
+enabled = false
 description = "Show feedback engagement banner for authenticated users"
+# The text of the invitation on the home page and the bundles page. Set it before you set enabled to true.
+message = "We're actively improving this service and would love to hear from you. If you're willing to share feedback, let us know and we'll be in touch."

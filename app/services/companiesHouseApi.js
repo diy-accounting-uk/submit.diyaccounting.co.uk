@@ -7,6 +7,7 @@
 import { createLogger, context } from "../lib/logger.js";
 import { DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
 import { sendJsonToCompaniesHouse } from "./companiesHouseSend.js";
+import { readSecret, refreshAfterAuthFailure } from "../lib/cachedSecret.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
@@ -17,19 +18,6 @@ import {
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseApi.js" });
-
-let secretsClient = null;
-let cachedCompaniesHouseApiKey;
-
-// Lazy initialization of SecretsManagerClient; caches the key across warm starts the same way
-// other secret-backed API clients in this app do.
-async function getSecretsClient() {
-  if (!secretsClient) {
-    const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
-    secretsClient = new SecretsManagerClient();
-  }
-  return secretsClient;
-}
 
 export function getCompaniesHouseBaseUrl() {
   const base = process.env.COMPANIES_HOUSE_BASE_URI;
@@ -43,19 +31,11 @@ export async function resolveApiKey() {
   if (process.env.COMPANIES_HOUSE_API_KEY) {
     return process.env.COMPANIES_HOUSE_API_KEY;
   }
-  if (!cachedCompaniesHouseApiKey) {
-    const secretArn = process.env.COMPANIES_HOUSE_API_KEY_ARN;
-    if (!secretArn) {
-      throw new Error("Missing required environment variable COMPANIES_HOUSE_API_KEY or COMPANIES_HOUSE_API_KEY_ARN");
-    }
-    logger.info("Retrieving Companies House API key from Secrets Manager");
-    const client = await getSecretsClient();
-    const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-    const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedCompaniesHouseApiKey = data.SecretString;
-    logger.info("Companies House API key retrieved from Secrets Manager and cached");
+  const secretArn = process.env.COMPANIES_HOUSE_API_KEY_ARN;
+  if (!secretArn) {
+    throw new Error("Missing required environment variable COMPANIES_HOUSE_API_KEY or COMPANIES_HOUSE_API_KEY_ARN");
   }
-  return cachedCompaniesHouseApiKey;
+  return readSecret(secretArn);
 }
 
 export function buildCompaniesHouseHeaders(apiKey) {
@@ -72,7 +52,6 @@ export function buildCompaniesHouseHeaders(apiKey) {
 export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
   const baseUrl = getCompaniesHouseBaseUrl();
   const apiKey = await resolveApiKey();
-  const headers = buildCompaniesHouseHeaders(apiKey);
 
   // Sanitize query params: drop undefined, null, and blank strings
   const cleanParams = Object.fromEntries(
@@ -82,9 +61,18 @@ export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
   const querySuffix = queryString ? `?${queryString}` : "";
   const requestUrl = `${baseUrl}${endpoint}${querySuffix}`;
 
-  logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
-
-  const result = await sendJsonToCompaniesHouse(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
+  const send = (key) => {
+    const headers = buildCompaniesHouseHeaders(key);
+    logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
+    return sendJsonToCompaniesHouse(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
+  };
+  let result = await send(apiKey);
+  if (result.status === 401 && !process.env.COMPANIES_HOUSE_API_KEY) {
+    // A 401 means the key was rolled. One forced read of the secret, and one more request, only
+    // when the secret now holds another key.
+    const refreshedKey = await refreshAfterAuthFailure(process.env.COMPANIES_HOUSE_API_KEY_ARN, apiKey);
+    if (refreshedKey) result = await send(refreshedKey);
+  }
 
   logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: result.status });
 

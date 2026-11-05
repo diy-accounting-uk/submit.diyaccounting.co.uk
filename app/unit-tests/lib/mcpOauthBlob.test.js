@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import { createHmac } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { signBlob, verifyBlob } from "@app/lib/mcpOauthBlob.js";
 
-const KEY = "k".repeat(64);
-const OTHER_KEY = "o".repeat(64);
+const KEY = { current: "v1", versions: { v1: "k".repeat(64) } };
+const OTHER_KEY = { current: "v1", versions: { v1: "o".repeat(64) } };
+const ROLLED = { current: "v2", versions: { v1: "k".repeat(64), v2: "n".repeat(64) } };
 const NOW = Date.UTC(2026, 0, 1, 12, 0, 0);
 
 describe("mcpOauthBlob", () => {
@@ -60,9 +62,50 @@ describe("mcpOauthBlob", () => {
   });
 
   it("refuses a short key and a missing typ", () => {
-    expect(() => signBlob({}, "short", { typ: "code", ttlSeconds: 60 })).toThrow(/at least 32/);
-    expect(() => verifyBlob("a.b", "short", "code")).toThrow(/at least 32/);
+    expect(() => signBlob({}, { current: "v1", versions: { v1: "short" } }, { typ: "code", ttlSeconds: 60 })).toThrow(/at least 32/);
+    expect(() => verifyBlob("a.b", { current: "v1", versions: { v1: "short" } }, "code")).toThrow(/at least 32/);
     expect(() => signBlob({}, KEY, { ttlSeconds: 60 })).toThrow(/typ/);
     expect(() => signBlob({}, KEY, { typ: "code", ttlSeconds: 0 })).toThrow(/ttlSeconds/);
+  });
+
+  it("signs under the current version and names it", () => {
+    const blob = signBlob({ a: 1 }, ROLLED, { typ: "code", ttlSeconds: 60, now: NOW });
+    expect(JSON.parse(Buffer.from(blob.split(".")[0], "base64url").toString("utf8")).kid).toBe("v2");
+    expect(verifyBlob(blob, ROLLED, "code", { now: NOW }).ok).toBe(true);
+  });
+
+  it("verifies a blob signed before a roll, after the roll", () => {
+    const blob = signBlob({ a: 1 }, KEY, { typ: "code", ttlSeconds: 60, now: NOW });
+    expect(verifyBlob(blob, ROLLED, "code", { now: NOW })).toEqual({ ok: true, fields: { a: 1 } });
+  });
+
+  it("verifies a blob that has no kid, from before key versions, under any held version", () => {
+    const payload = Buffer.from(JSON.stringify({ a: 1, typ: "code", exp: Math.floor(NOW / 1000) + 60 }), "utf8").toString("base64url");
+    const mac = createHmac("sha256", KEY.versions.v1).update(payload).digest("base64url");
+    expect(verifyBlob(`${payload}.${mac}`, ROLLED, "code", { now: NOW })).toEqual({ ok: true, fields: { a: 1 } });
+  });
+
+  it("refuses a blob whose version is no longer held", () => {
+    const blob = signBlob({ a: 1 }, ROLLED, { typ: "code", ttlSeconds: 60, now: NOW });
+    expect(verifyBlob(blob, KEY, "code", { now: NOW })).toEqual({ ok: false, reason: "bad_mac" });
+  });
+
+  it("refuses a blob that names one version but is signed under another", () => {
+    const payload = Buffer.from(JSON.stringify({ a: 1, typ: "code", kid: "v2", exp: Math.floor(NOW / 1000) + 60 }), "utf8").toString(
+      "base64url",
+    );
+    const mac = createHmac("sha256", ROLLED.versions.v1).update(payload).digest("base64url");
+    expect(verifyBlob(`${payload}.${mac}`, ROLLED, "code", { now: NOW }).reason).toBe("bad_mac");
+  });
+
+  it("does not take a kid from the fields", () => {
+    const blob = signBlob({ kid: "v1" }, ROLLED, { typ: "code", ttlSeconds: 60, now: NOW });
+    expect(verifyBlob(blob, ROLLED, "code", { now: NOW })).toEqual({ ok: true, fields: {} });
+  });
+
+  it("refuses keys whose current version is missing", () => {
+    expect(() => signBlob({}, { current: "v3", versions: { v1: "k".repeat(64) } }, { typ: "code", ttlSeconds: 60 })).toThrow(
+      /current version/,
+    );
   });
 });

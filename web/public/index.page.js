@@ -423,14 +423,12 @@ async function initFeedbackEngagementBanner() {
 
   if (!isLoggedIn || alreadyRegistered) return;
 
-  // Check feature flag
-  if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
-    const enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
-    if (!enabled) {
-      banner.hidden = true;
-      return;
-    }
+  const feature = window.featureFlags ? await window.featureFlags.getFeature("feedback-engagement") : null;
+  if (!feature || !feature.enabled || !feature.message) {
+    banner.hidden = true;
+    return;
   }
+  document.getElementById("feedbackEngagementMessage").textContent = feature.message;
 
   banner.hidden = false;
   banner.style.visibility = "visible";

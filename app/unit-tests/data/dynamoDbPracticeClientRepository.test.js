@@ -57,8 +57,11 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
+const mockSubHashCandidates = vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]);
+
 vi.mock("@app/services/subHasher.js", () => ({
   hashSub: vi.fn((sub) => `hashed-${sub}`),
+  subHashCandidates: (sub) => mockSubHashCandidates(sub),
 }));
 
 const {

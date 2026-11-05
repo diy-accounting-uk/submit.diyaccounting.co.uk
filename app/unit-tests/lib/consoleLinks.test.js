@@ -3,7 +3,13 @@
 
 import { describe, test, expect } from "vitest";
 
-import { encodeConsoleHashValue, buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "@app/lib/consoleLinks.js";
+import {
+  encodeConsoleHashValue,
+  buildAlarmConsoleLink,
+  buildLogsInsightsLink,
+  buildXRayTraceSearchLink,
+  buildDynamoItemLink,
+} from "@app/lib/consoleLinks.js";
 
 const WORKED_EXAMPLE_QUERY = [
   "SOURCE logGroups(namePrefix: ['/aws/lambda/prod-0f68ed8-app-hmrc-vat-return-post'])",
@@ -95,5 +101,21 @@ describe("buildAlarmConsoleLink", () => {
   test("encodes an alarm name containing a slash", () => {
     const link = buildAlarmConsoleLink("eu-west-2", "ci alarm/with special");
     expect(link).toContain(encodeURIComponent("ci alarm/with special"));
+  });
+});
+
+describe("buildDynamoItemLink", () => {
+  test("names the table, the encoded key and the item explorer route, and carries no item data", () => {
+    const link = buildDynamoItemLink(
+      "eu-west-2",
+      "prod-env-integration-calls",
+      "call#hmrc#2026-11-04",
+      "2026-11-04T10:15:30.123Z#a1b2c3d4",
+    );
+    expect(link).toBe(
+      "https://eu-west-2.console.aws.amazon.com/dynamodbv2/home?region=eu-west-2#edit-item?table=prod-env-integration-calls&itemMode=2" +
+        "&pk=call%23hmrc%232026-11-04&sk=2026-11-04T10%3A15%3A30.123Z%23a1b2c3d4" +
+        "&ref=%23item-explorer%3Ftable%3Dprod-env-integration-calls&route=ROUTE_ITEM_EXPLORER",
+    );
   });
 });

@@ -8,7 +8,7 @@
 // charge idempotently on checkout.session.completed; the activity's own consuming route marks it
 // used so a later attempt at the same filing cannot spend the same payment twice.
 
-import { hashSub } from "./subHasher.js";
+import { subHashCandidates } from "./subHasher.js";
 import {
   buildChargeKey,
   putActivityChargeIfAbsent,
@@ -17,9 +17,11 @@ import {
 } from "../data/dynamoDbActivityChargeRepository.js";
 
 export async function hasPaidCharge(userSub, activityId, subjectKey) {
-  const hashedSub = hashSub(userSub);
-  const charge = await getActivityCharge(hashedSub, buildChargeKey(activityId, subjectKey));
-  return charge?.status === "paid";
+  for (const { hashedSub } of subHashCandidates(userSub)) {
+    const charge = await getActivityCharge(hashedSub, buildChargeKey(activityId, subjectKey));
+    if (charge) return charge.status === "paid";
+  }
+  return false;
 }
 
 // The webhook only ever has the hashed sub from the checkout session's own metadata, never the
@@ -34,6 +36,8 @@ export async function recordPaidChargeByHashedSub(hashedSub, activityId, subject
 }
 
 export async function markChargeUsed(userSub, activityId, subjectKey) {
-  const hashedSub = hashSub(userSub);
-  return markActivityChargeUsed(hashedSub, buildChargeKey(activityId, subjectKey));
+  for (const { hashedSub } of subHashCandidates(userSub)) {
+    if (await markActivityChargeUsed(hashedSub, buildChargeKey(activityId, subjectKey))) return true;
+  }
+  return false;
 }

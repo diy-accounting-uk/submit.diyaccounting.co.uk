@@ -87,6 +87,7 @@ import {
   buildCostDrivers,
   buildPaidSubscribers,
   buildPageVisitors,
+  buildIntegrations,
   shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
@@ -524,6 +525,51 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[2].sql).toContain("failure_rate IS NOT NULL");
     });
 
+    test("the API request graph counts live calls by organisation and status class, with a mode for each organisation", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests");
+
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["all", "hmrc", "companies-house", "stripe"]);
+      const all = chart.modes[0];
+      expect(all.sql).toContain("FROM   v_integration_calls_daily");
+      expect(all.sql).toContain("target = 'live'");
+      expect(all.sql).toContain("org || ' ' || CASE WHEN status IS NULL THEN 'failed'");
+      expect(all.hourlySql).toContain("FROM   v_integration_calls_hourly");
+      expect(all.maxComponents).toBe(8);
+      expect(all.labelOf("companies-house 4xx")).toBe("Companies House 4xx");
+      expect(chart.modes[1].sql).toContain("status_label AS component");
+      expect(chart.modes[1].sql).toContain("org = 'hmrc'");
+      expect(chart.modes[1].maxComponents).toBeUndefined();
+    });
+
+    test("the API duration graph averages weighted by calls and carries no total line", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration");
+
+      expect(chart.unit).toBe("ms");
+      expect(chart.modes[0].total).toBeNull();
+      expect(chart.modes[0].sql).toContain("sum(total_ms) / nullif(sum(calls), 0)");
+      expect(chart.modes[0].sql).toContain("org AS component");
+      expect(chart.modes[0].labelOf("stripe")).toBe("Stripe");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
+    });
+
+    test("the activity graph has a mode with a line for each HMRC API, an all APIs line and the test calls", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "activity-started-and-completed");
+
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
+      const mode = chart.modes[2];
+      expect(mode.total).toBeNull();
+      expect(mode.sql).toContain("'all' AS component");
+      expect(mode.sql).toContain("target <> 'live'");
+      expect(mode.sql).toContain("'live:' || api");
+      expect(mode.hourlySql).toContain("v_integration_calls_hourly");
+      expect(["all", "all-test", "live:GET /organisations/vat/{vrn}/obligations", "test:POST /oauth/token"].map(mode.labelOf)).toEqual([
+        "All APIs",
+        "All APIs (test)",
+        "GET /organisations/vat/{vrn}/obligations",
+        "POST /oauth/token (test)",
+      ]);
+    });
+
     test("failures and agent cost sit on the objectives that own them, each with a description", () => {
       const observationsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations;
       const byId = (objectiveId, id) => observationsOf(objectiveId).find((observation) => observation.id === id);
@@ -849,6 +895,32 @@ describe("operatorSnapshotPublish", () => {
       });
     });
 
+    test("buildIntegrations reads the live summary and the recent calls, and gives an empty section when the views have no rows", async () => {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["org", "status"], []) });
+        }
+      });
+
+      const result = await buildIntegrations({ workGroup: "wg", database: "db", envName: "prod", region: "eu-west-2" });
+
+      expect(queries.some((sql) => sql.includes("FROM   v_integration_calls_daily") && sql.includes("target = 'live'"))).toBe(true);
+      expect(queries.some((sql) => sql.includes("FROM   v_integration_calls\n"))).toBe(true);
+      expect(result).toEqual({
+        table: "prod-env-integration-calls",
+        region: "eu-west-2",
+        summary: [],
+        calls: { "hmrc": [], "companies-house": [], "stripe": [] },
+      });
+    });
+
     test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -1092,6 +1164,8 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.charts.map((chart) => chart.id)).toEqual([
         "activity-started-and-completed",
         "hmrc-failures",
+        "integration-requests",
+        "integration-duration",
         "conversion-to-submission",
         "conversion-to-paid",
         "low-running-cost",
@@ -1105,7 +1179,7 @@ describe("operatorSnapshotPublish", () => {
         }
       }
       const activities = dailyCharts.charts[0];
-      expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed"]);
+      expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
     });
 
     test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
@@ -1122,6 +1196,12 @@ describe("operatorSnapshotPublish", () => {
       expect(withHourly).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "activity-started-and-completed/api-calls",
+        "integration-requests/all",
+        "integration-requests/hmrc",
+        "integration-requests/companies-house",
+        "integration-requests/stripe",
+        "integration-duration/organisation",
         "visitors/sessions",
       ]);
       for (const definition of buildDailyChartDefinitions()) {
@@ -1154,13 +1234,19 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(168);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(3);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(9);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
       expect(hourlyModes).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
+        "activity-started-and-completed/api-calls",
+        "integration-requests/all",
+        "integration-requests/hmrc",
+        "integration-requests/companies-house",
+        "integration-requests/stripe",
+        "integration-duration/organisation",
         "visitors/sessions",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
@@ -1205,8 +1291,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(35);
-      expect(queries).toHaveLength(3);
+      expect(firstRunQueryCount).toBe(47);
+      expect(queries).toHaveLength(9);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
@@ -1299,7 +1385,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual(["visitors"]);
       expect(dailyCharts.charts.map((chart) => chart.id)).not.toContain("visitors");
-      expect(dailyCharts.charts).toHaveLength(6);
+      expect(dailyCharts.charts).toHaveLength(8);
     });
 
     test("runAthenaQuery follows result pages, reading the header from the first only", async () => {
@@ -2348,7 +2434,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 32);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 38);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {

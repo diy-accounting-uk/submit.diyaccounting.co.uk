@@ -5,8 +5,8 @@
 
 import { isIP } from "node:net";
 
-// The rules come from HMRC's connection method pages for WEB_APP_VIA_SERVER and
-// DESKTOP_APP_VIA_SERVER. The check reads header values in memory and returns rule ids made of
+// The rules come from HMRC's connection method pages for WEB_APP_VIA_SERVER,
+// DESKTOP_APP_VIA_SERVER and OTHER_VIA_SERVER. The check reads header values in memory and returns rule ids made of
 // a header name and a rule name. No header value leaves this module.
 //
 // A header that is absent is not a rule failure here: the missing-header check reports it.
@@ -25,12 +25,10 @@ const BROKEN_PERCENT_ESCAPE = /%(?![0-9A-Fa-f]{2})/;
 const MULTI_FACTOR_TYPES = new Set(["TOTP", "AUTH_CODE", "OTHER"]);
 const SERVER_PORTS = new Set([80, 443]);
 
-const DESKTOP_ONLY_HEADERS = [
-  "Gov-Client-Local-IPs",
-  "Gov-Client-Local-IPs-Timestamp",
-  "Gov-Client-MAC-Addresses",
-  "Gov-Client-User-Agent",
-];
+// HMRC's desktop and other pages ask for a version pair for the server and one for the client
+// application. The web page does not.
+const DEVICE_METHODS = new Set(["DESKTOP_APP_VIA_SERVER", "OTHER_VIA_SERVER"]);
+const DEVICE_ONLY_HEADERS = ["Gov-Client-Local-IPs", "Gov-Client-Local-IPs-Timestamp", "Gov-Client-MAC-Addresses", "Gov-Client-User-Agent"];
 const WEB_ONLY_HEADERS = ["Gov-Client-Browser-JS-User-Agent"];
 const COMMON_HEADERS = [
   "Gov-Client-Connection-Method",
@@ -183,11 +181,11 @@ function checkForwardedFirstHop(values, fail) {
 /**
  * Check fraud prevention header values against HMRC's published format rules.
  * @param {object|Headers} headers The headers of an outbound HMRC request.
- * @param {string} [connectionMethod] WEB_APP_VIA_SERVER or DESKTOP_APP_VIA_SERVER. Any other value uses the web rules.
+ * @param {string} [connectionMethod] WEB_APP_VIA_SERVER, DESKTOP_APP_VIA_SERVER or OTHER_VIA_SERVER. Any other value uses the web rules.
  * @returns {string[]} Rule ids such as `Gov-Client-Public-Port:server-port`. Empty when every rule passes.
  */
 export function checkFraudPreventionHeaderRules(headers, connectionMethod) {
-  const desktop = connectionMethod === "DESKTOP_APP_VIA_SERVER";
+  const deviceMethod = DEVICE_METHODS.has(connectionMethod);
   const values = lowerCaseValues(headers);
   const failed = [];
   const fail = (name, rule) => {
@@ -195,7 +193,7 @@ export function checkFraudPreventionHeaderRules(headers, connectionMethod) {
     if (!failed.includes(id)) failed.push(id);
   };
 
-  const headerNames = [...COMMON_HEADERS, ...(desktop ? DESKTOP_ONLY_HEADERS : WEB_ONLY_HEADERS)];
+  const headerNames = [...COMMON_HEADERS, ...(deviceMethod ? DEVICE_ONLY_HEADERS : WEB_ONLY_HEADERS)];
   for (const name of headerNames) {
     const value = values.get(name.toLowerCase());
     if (value === undefined || value === "") continue;
@@ -210,7 +208,7 @@ export function checkFraudPreventionHeaderRules(headers, connectionMethod) {
 
   for (const name of ENCODED_STRUCTURE_HEADERS) {
     const value = present(name);
-    if (value && (desktop || !DESKTOP_ONLY_HEADERS.includes(name))) checkEncodedStructure(name, value, fail);
+    if (value && (deviceMethod || !DEVICE_ONLY_HEADERS.includes(name))) checkEncodedStructure(name, value, fail);
   }
 
   const clientIp = present("Gov-Client-Public-IP");
@@ -222,7 +220,7 @@ export function checkFraudPreventionHeaderRules(headers, connectionMethod) {
   const publicIpTimestamp = present("Gov-Client-Public-IP-Timestamp");
   if (publicIpTimestamp && !TIMESTAMP_MILLIS.test(publicIpTimestamp)) fail("Gov-Client-Public-IP-Timestamp", "timestamp");
   const localIpsTimestamp = present("Gov-Client-Local-IPs-Timestamp");
-  if (desktop && localIpsTimestamp && !TIMESTAMP_MILLIS.test(localIpsTimestamp)) fail("Gov-Client-Local-IPs-Timestamp", "timestamp");
+  if (deviceMethod && localIpsTimestamp && !TIMESTAMP_MILLIS.test(localIpsTimestamp)) fail("Gov-Client-Local-IPs-Timestamp", "timestamp");
 
   const port = present("Gov-Client-Public-Port");
   if (port) {
@@ -243,6 +241,9 @@ export function checkFraudPreventionHeaderRules(headers, connectionMethod) {
 
   const timezone = present("Gov-Client-Timezone");
   if (timezone && !TIMEZONE.test(timezone)) fail("Gov-Client-Timezone", "timezone");
+
+  const vendorVersion = present("Gov-Vendor-Version");
+  if (deviceMethod && vendorVersion && (parseStructure(vendorVersion)?.size ?? 0) < 2) fail("Gov-Vendor-Version", "two-pairs");
 
   checkForwardedFirstHop(values, fail);
   return failed;

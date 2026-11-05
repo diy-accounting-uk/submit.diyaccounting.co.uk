@@ -27,6 +27,7 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
+import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
 import { subscriptionPeriod } from "../../lib/stripeSubscriptionPeriod.js";
 import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -171,28 +172,22 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-let cachedWebhookSecret = null;
-let cachedTestWebhookSecret = null;
-
+/**
+ * The webhook signing secret for one mode, and the Secrets Manager id it was read from (null when
+ * an environment variable supplied it).
+ */
 async function resolveWebhookSecret({ test = false } = {}) {
   if (test) {
-    if (cachedTestWebhookSecret) return cachedTestWebhookSecret;
-
     // Local dev: direct env var
     const testSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
     if (testSecret && !testSecret.startsWith("arn:")) {
-      cachedTestWebhookSecret = testSecret;
-      return testSecret;
+      return { secret: testSecret, secretId: null };
     }
 
     // AWS: resolve from Secrets Manager ARN
     const testArn = testSecret || process.env.STRIPE_TEST_WEBHOOK_SECRET_ARN;
     if (testArn && testArn.startsWith("arn:")) {
-      const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-      const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-      const result = await smClient.send(new GetSecretValueCommand({ SecretId: testArn }));
-      cachedTestWebhookSecret = result.SecretString;
-      return cachedTestWebhookSecret;
+      return { secret: await readSecret(testArn), secretId: testArn };
     }
 
     // Fall through to live secret if no test secret configured
@@ -200,21 +195,14 @@ async function resolveWebhookSecret({ test = false } = {}) {
   }
 
   // Live mode (or fallback from test when no test secret configured)
-  if (cachedWebhookSecret) return cachedWebhookSecret;
-
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (secret && !secret.startsWith("arn:")) {
-    cachedWebhookSecret = secret;
-    return secret;
+    return { secret, secretId: null };
   }
 
   const arn = secret || process.env.STRIPE_WEBHOOK_SECRET_ARN;
   if (arn && arn.startsWith("arn:")) {
-    const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-    const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-    const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-    cachedWebhookSecret = result.SecretString;
-    return cachedWebhookSecret;
+    return { secret: await readSecret(arn), secretId: arn };
   }
 
   throw new Error("No Stripe webhook secret configured");
@@ -654,12 +642,20 @@ export async function ingestHandler(event) {
   // Verify webhook signature using the correct secret for test/live mode
   let stripeEvent;
   try {
-    const webhookSecret = await resolveWebhookSecret({ test: isTestMode });
+    const { secret: webhookSecret, secretId: webhookSecretId } = await resolveWebhookSecret({ test: isTestMode });
     const envKey = isTestMode ? "STRIPE_TEST_WEBHOOK_SECRET" : "STRIPE_WEBHOOK_SECRET";
     const secretSource = process.env[envKey] && !process.env[envKey].startsWith("arn:") ? "env" : "secretsmanager";
     logger.info({ message: "Webhook signature verification attempt", isTestMode, secretSource, hasSignature: !!sig });
     const stripe = await getStripeClient();
-    stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    try {
+      stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    } catch (signatureError) {
+      // A signature failure may mean the webhook secret was rolled. One forced read of the secret,
+      // and one more check, only when the secret now holds another value.
+      const refreshedSecret = webhookSecretId ? await refreshAfterAuthFailure(webhookSecretId, webhookSecret) : null;
+      if (!refreshedSecret) throw signatureError;
+      stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, refreshedSecret);
+    }
   } catch (error) {
     logger.error({
       message: "Webhook signature verification failed",

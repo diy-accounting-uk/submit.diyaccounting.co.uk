@@ -1,0 +1,265 @@
+{
+  "partitionTables": [
+    {
+      "table": "receipts",
+      "sortKey": "receiptId"
+    },
+    {
+      "table": "bundles",
+      "sortKey": "bundleId"
+    },
+    {
+      "table": "bundle-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "bundle-delete-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-return-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-return-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-obligation-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-liabilities-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-payments-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-penalties-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-business-details-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-obligations-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-period-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-periods-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-period-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-period-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-period-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-periods-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-period-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-period-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-annual-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-uk-property-annual-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-period-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-period-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-period-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-annual-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-annual-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-details-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-details-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-foreign-property-details-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-annual-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-self-employment-annual-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-crystallisation-obligations-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-status-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-trigger-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-self-employment-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-self-employment-adjust-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-uk-property-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-uk-property-adjust-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-foreign-property-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-bsas-foreign-property-adjust-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-calculation-trigger-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-calculation-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-final-declaration-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-assist-report-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-vat-assist-acknowledge-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-assist-report-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-assist-acknowledge-post-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-losses-and-claims-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-losses-and-claims-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-losses-and-claims-delete-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-tax-liability-adjustments-get-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-tax-liability-adjustments-put-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-itsa-tax-liability-adjustments-delete-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "companies-house-accounts-async-requests",
+      "sortKey": "requestId"
+    },
+    {
+      "table": "hmrc-api-requests",
+      "sortKey": "id"
+    },
+    {
+      "table": "activity-charges",
+      "sortKey": "chargeKey"
+    },
+    {
+      "table": "practice-clients",
+      "sortKey": "clientId"
+    }
+  ],
+  "rowTables": [
+    {
+      "table": "passes",
+      "partitionKey": "pk",
+      "attributes": ["issuedBy", "redeemedBy", "passIssuedBy", "hashedSub"]
+    },
+    {
+      "table": "commissions",
+      "partitionKey": "pk",
+      "sortKey": "sk",
+      "attributes": ["redeemerHash", "linePk"]
+    },
+    {
+      "table": "subscriptions",
+      "partitionKey": "pk",
+      "attributes": ["hashedSub"]
+    }
+  ],
+  "expiringTables": [
+    {
+      "table": "security-state",
+      "reason": "Rate counters, session geography and sign-in state expire within 30 days and start again under the new hash."
+    },
+    {
+      "table": "mcp-sessions",
+      "reason": "Sessions, HMRC grants and codes entries expire within 24 hours. A client whose session no longer matches opens a new one."
+    }
+  ],
+  "noHashTables": ["bundle-capacity", "alarm-issue-locks", "integration-calls"]
+}

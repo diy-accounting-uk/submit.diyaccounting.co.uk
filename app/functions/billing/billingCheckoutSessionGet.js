@@ -24,7 +24,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { initializeSalt, hashSub } from "../../services/subHasher.js";
+import { initializeSalt, isHashOfSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutSessionGet.js" });
@@ -89,10 +89,9 @@ export async function ingestHandler(event) {
 
   try {
     await initializeSalt();
-    const hashedSub = hashSub(userSub);
 
     const session = await retrieveCheckoutSession(sessionId);
-    if (!session || session.metadata?.hashedSub !== hashedSub) {
+    if (!session || !isHashOfSub(userSub, session.metadata?.hashedSub)) {
       return http404NotFoundResponse({
         request,
         headers: responseHeaders,

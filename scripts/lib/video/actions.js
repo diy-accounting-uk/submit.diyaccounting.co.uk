@@ -191,12 +191,17 @@ async function doType(page, step, ctx) {
   await overlay.highlight(page, rect, totalTypingMs + 200);
   if (step.clear) await locator.fill("");
   await locator.click();
+  // Each keystroke is due perCharMs after the previous one's due time, so the browser round trips
+  // of keyboard.type and typeChar come out of the wait and a loaded machine still types at the
+  // scripted cadence.
+  let nextKeystrokeDueMs = Date.now();
   for (const char of text) {
     await page.keyboard.type(char);
     // An off-camera or fast-forward scene types at zero pacing; its keystrokes carry no cadence,
     // so they leave no typeChar event for checkTypingCadence to average in.
     if (ctx.pacing.perCharMs > 0) await overlay.typeChar(page, rect);
-    await new Promise((resolve) => setTimeout(resolve, ctx.pacing.perCharMs));
+    nextKeystrokeDueMs += ctx.pacing.perCharMs;
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, nextKeystrokeDueMs - Date.now())));
   }
   return { waitMs: 0, rect };
 }

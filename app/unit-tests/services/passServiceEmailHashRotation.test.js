@@ -128,9 +128,17 @@ describe("email hash secret rotation", () => {
     // v1 removed entirely instead of kept alongside v2 — the rotation runbook must not do this
     // while any live pass still carries emailHashSecretVersion "v1".
     _setTestEmailHashSecretRegistry({ current: "v2", versions: { v2: V2_SECRET } });
+    // The re-read of the secret source also no longer holds v1.
+    const originalSecret = process.env.EMAIL_HASH_SECRET;
+    process.env.EMAIL_HASH_SECRET = JSON.stringify({ current: "v2", versions: { v2: V2_SECRET } });
 
     getPass.mockResolvedValue(checkable(pass));
 
-    await expect(checkPass(pass.code, "user@example.com")).rejects.toThrow('version "v1" not found in registry');
+    try {
+      await expect(checkPass(pass.code, "user@example.com")).rejects.toThrow('version "v1" not found in registry');
+    } finally {
+      if (originalSecret === undefined) delete process.env.EMAIL_HASH_SECRET;
+      else process.env.EMAIL_HASH_SECRET = originalSecret;
+    }
   });
 });

@@ -628,6 +628,113 @@ function renderPageVisitors(snapshot) {
   });
 }
 
+// ---- Integrations tab -------------------------------------------------------------------------
+
+const INTEGRATION_ORG_NAMES = { "hmrc": "HMRC", "companies-house": "Companies House", "stripe": "Stripe" };
+const INTEGRATION_PANEL_IDS = {
+  "hmrc": "integrationsHmrcPanel",
+  "companies-house": "integrationsCompaniesHousePanel",
+  "stripe": "integrationsStripePanel",
+};
+const RAW_RECORD_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatCallDuration(ms) {
+  if (ms === null || ms === undefined) return NOT_MEASURED;
+  return ms >= 1000 ? numberFormat.format(ms / 1000) + " s" : numberFormat.format(ms) + " ms";
+}
+
+// "Rules: pass", "Rules: fail (2)" or n/a for a call the header rules do not cover.
+function formatHeadersChecked(call) {
+  if (call.rules === "pass") return "Rules: pass";
+  if (call.rules === "fail") return "Rules: fail (" + call.rulesFailed.length + ")";
+  return NOT_APPLICABLE;
+}
+
+// The link to the call's item in the DynamoDB console. The item's key is built from the
+// organisation and the call id, so the snapshot holds no URL. The item leaves the table after
+// 90 days.
+function rawRecordCell(integrations, org, call, generatedAt) {
+  const cell = document.createElement("td");
+  if (new Date(generatedAt).getTime() - new Date(call.at).getTime() > RAW_RECORD_DAYS * DAY_MS) {
+    cell.textContent = "expired";
+    cell.title = "The raw record is kept for " + RAW_RECORD_DAYS + " days.";
+    return cell;
+  }
+  const anchor = document.createElement("a");
+  anchor.href = window.dynamoItemUrl(integrations.region, integrations.table, "call#" + org + "#" + call.id.slice(0, 10), call.id);
+  anchor.target = "_blank";
+  anchor.rel = "noopener noreferrer";
+  anchor.textContent = "View raw record";
+  cell.appendChild(anchor);
+  return cell;
+}
+
+function renderIntegrationsSummary(integrations) {
+  const body = document.getElementById("integrationsSummaryBody");
+  body.innerHTML = "";
+  document.getElementById("integrationsSummaryPanel").hidden = false;
+  const rows = integrations ? integrations.summary : [];
+  document.getElementById("integrationsSummaryEmpty").hidden = rows.length > 0;
+  document.getElementById("integrationsSummaryTable").hidden = rows.length === 0;
+  rows.forEach((observation) => {
+    const row = document.createElement("tr");
+    row.className = "integrations-summary-row";
+    row.dataset.org = observation.org;
+    row.dataset.status = observation.status;
+    [INTEGRATION_ORG_NAMES[observation.org] || observation.org, observation.status].forEach((text) => {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.appendChild(cell);
+    });
+    ["today", "previousDay", "last7", "last30"].forEach((key) => row.appendChild(windowCell(observation, key)));
+    row.appendChild(activityTrendCell(observation));
+    row.appendChild(windowCell(observation, "last90"));
+    body.appendChild(row);
+  });
+}
+
+function renderIntegrationDetail(integrations, org, generatedAt) {
+  const panel = document.getElementById(INTEGRATION_PANEL_IDS[org]);
+  const body = document.getElementById(INTEGRATION_PANEL_IDS[org] + "Body");
+  const calls = integrations ? integrations.calls[org] || [] : [];
+  body.innerHTML = "";
+  panel.hidden = false;
+  document.getElementById(INTEGRATION_PANEL_IDS[org] + "Empty").hidden = calls.length > 0;
+  panel.querySelector(".integrations-scroll").hidden = calls.length === 0;
+  panel.querySelector(".integrations-detail-note").textContent =
+    "Live calls, newest first: the latest calls, and the latest that did not return 2xx in the last 30 days.";
+  calls.forEach((call) => {
+    const row = document.createElement("tr");
+    row.className = "integrations-call-row";
+    row.dataset.callId = call.id;
+    [timestampFormat.format(new Date(call.at)), call.api, formatCallDuration(call.ms), call.status, formatHeadersChecked(call)].forEach(
+      (text, index) => {
+        const cell = document.createElement("td");
+        cell.textContent = text;
+        if (index === 4 && call.rulesFailed.length > 0) cell.title = "Failed: " + call.rulesFailed.join(", ");
+        row.appendChild(cell);
+      },
+    );
+    row.appendChild(rawRecordCell(integrations, org, call, generatedAt));
+    body.appendChild(row);
+  });
+}
+
+// A snapshot with no integrations section, or one from before the call table existed, shows
+// the empty notes.
+function renderIntegrations(snapshot) {
+  const integrations = snapshot.integrations || null;
+  renderIntegrationsSummary(integrations);
+  Object.keys(INTEGRATION_PANEL_IDS).forEach((org) => renderIntegrationDetail(integrations, org, snapshot.generatedAt));
+  const note = document.getElementById("integrationsAccountNote");
+  const account = window.awsConsoleAccount(snapshot.environment);
+  note.hidden = !integrations || !account;
+  if (account)
+    note.textContent =
+      "Sign in to " + account + " in the AWS console before opening a raw record. The console cannot switch account from a link.";
+}
+
 // The operator list. The emails come from the authenticated snapshot only.
 function renderOperators(snapshot) {
   const panel = document.getElementById("operatorsPanel");
@@ -927,6 +1034,10 @@ const STATIC_TABLE_PANELS = [
   "visitorsPanel",
   "activitiesPanel",
   "pageVisitorsPanel",
+  "integrationsSummaryPanel",
+  "integrationsHmrcPanel",
+  "integrationsCompaniesHousePanel",
+  "integrationsStripePanel",
   "companyAccountsPanel",
   "reservePanel",
   "monthlyMarketingBudgetPanel",
@@ -1043,7 +1154,7 @@ document.addEventListener("click", async (event) => {
 // The tabs show the sections whose data-tab names them (a section can name several, separated by
 // spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
 const TAB_STORAGE_KEY = "operatorDashboardTab";
-const TAB_IDS = ["main", "adoption", "behaviour", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TAB_IDS = ["main", "adoption", "behaviour", "integrations", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function storedTab() {
   try {
@@ -1113,6 +1224,7 @@ async function initPage() {
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);
     renderPageVisitors(snapshot);
+    renderIntegrations(snapshot);
     window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
     renderOperators(snapshot);

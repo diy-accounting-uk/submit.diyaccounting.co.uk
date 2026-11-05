@@ -106,23 +106,38 @@ describe("emailHash", () => {
       });
     });
 
-    it("hashes with a specific non-current version, for re-checking an older pass", () => {
-      const hash = hashEmailWithVersion("user@example.com", "v1");
+    it("hashes with a specific non-current version, for re-checking an older pass", async () => {
+      const hash = await hashEmailWithVersion("user@example.com", "v1");
       expect(hash).toBe(hashEmail("user@example.com", "secret-v1"));
-      expect(hash).not.toBe(hashEmailWithVersion("user@example.com", "v2"));
+      expect(hash).not.toBe(await hashEmailWithVersion("user@example.com", "v2"));
     });
 
-    it("hashes with the current version too", () => {
-      expect(hashEmailWithVersion("user@example.com", "v2")).toBe(hashEmail("user@example.com", "secret-v2"));
+    it("hashes with the current version too", async () => {
+      expect(await hashEmailWithVersion("user@example.com", "v2")).toBe(hashEmail("user@example.com", "secret-v2"));
     });
 
-    it("throws for a version not in the registry", () => {
-      expect(() => hashEmailWithVersion("user@example.com", "v99")).toThrow('Email hash secret version "v99" not found in registry');
+    it("re-reads the secret once when the stored version is not in the cached registry", async () => {
+      const cachedRegistry = '{"current":"v1","versions":{"v1":"secret-v1"}}';
+      process.env.EMAIL_HASH_SECRET = cachedRegistry;
+      await initializeEmailHashSecret();
+      process.env.EMAIL_HASH_SECRET = '{"current":"v2","versions":{"v1":"secret-v1","v2":"secret-v2"}}';
+
+      expect(await hashEmailWithVersion("user@example.com", "v2")).toBe(hashEmail("user@example.com", "secret-v2"));
+      expect(getEmailHashSecretVersion()).toBe("v2");
+      delete process.env.EMAIL_HASH_SECRET;
     });
 
-    it("throws when the secret is not initialized", () => {
+    it("throws for a version not in the registry, even after the re-read", async () => {
+      process.env.EMAIL_HASH_SECRET = '{"current":"v2","versions":{"v1":"secret-v1","v2":"secret-v2"}}';
+      await expect(hashEmailWithVersion("user@example.com", "v99")).rejects.toThrow(
+        'Email hash secret version "v99" not found in registry',
+      );
+      delete process.env.EMAIL_HASH_SECRET;
+    });
+
+    it("throws when the secret is not initialized", async () => {
       _clearEmailHashSecret();
-      expect(() => hashEmailWithVersion("user@example.com", "v1")).toThrow("not initialized");
+      await expect(hashEmailWithVersion("user@example.com", "v1")).rejects.toThrow("not initialized");
     });
   });
 

@@ -22,6 +22,7 @@ import {
   fetchWafBlockRows,
   readRotationToml,
   buildRotationRows,
+  rotationSchedule,
 } from "@app/functions/security/securityLakeNightly.js";
 
 function writeTempToml(contents) {
@@ -396,24 +397,54 @@ last_rotated = ""
     ]);
   });
 
-  test("buildRotationRows skips a github-store entry", async () => {
+  test("buildRotationRows reads a github-store entry from last_rotated and calls no AWS", async () => {
     const tomlPath = writeTempToml(`
-[[secret]]
-name = "stripe/secret_key"
-console = "Stripe"
-last_rotated = ""
-
 [[secret]]
 name = "RELEASE_PAT"
 console = "GitHub"
 last_rotated = "2026-09-16"
+expires_at = "2026-12-30"
 store = "github"
 location = "repo"
 `);
-    const send = vi.fn().mockResolvedValueOnce({ Tags: [{ Key: "rotated-at", Value: "2026-08-01" }] });
+    const send = vi.fn();
     const rows = await buildRotationRows({ send }, tomlPath, "ci", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
-    expect(send).toHaveBeenCalledTimes(1);
-    expect(rows).toEqual([expect.objectContaining({ secret_name: "stripe/secret_key", found: true })]);
+    expect(send).not.toHaveBeenCalled();
+    expect(rows).toEqual([
+      expect.objectContaining({
+        secret_name: "RELEASE_PAT",
+        store: "github",
+        rotated_at: "2026-09-16",
+        expires_at: "2026-12-30",
+        days_to_due: 113,
+        status: "ok",
+      }),
+    ]);
+  });
+
+  test("buildRotationRows falls back to last_rotated when the secret has no rotated-at tag", async () => {
+    const tomlPath = writeTempToml(`
+[[secret]]
+name = "user-sub-hash-salt"
+console = "Generated"
+last_rotated = "2026-02-21"
+max_age_days = 365
+`);
+    const send = vi.fn().mockResolvedValueOnce({ Tags: [] });
+    const rows = await buildRotationRows({ send }, tomlPath, "prod", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
+    expect(rows).toEqual([expect.objectContaining({ rotated_at: "2026-02-21", age_days: 199, days_to_due: 166, status: "ok" })]);
+  });
+
+  test("buildRotationRows reports a missing secret with status missing", async () => {
+    const tomlPath = writeTempToml(`
+[[secret]]
+name = "missing/secret"
+console = "Nowhere"
+last_rotated = ""
+`);
+    const send = vi.fn().mockRejectedValueOnce(Object.assign(new Error("not found"), { name: "ResourceNotFoundException" }));
+    const rows = await buildRotationRows({ send }, tomlPath, "ci", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
+    expect(rows).toEqual([expect.objectContaining({ found: false, status: "missing" })]);
   });
 
   test("buildRotationRows skips a ci-only entry in prod and includes it in ci", async () => {
@@ -434,5 +465,52 @@ environments = ["ci"]
     const ciRows = await buildRotationRows({ send: sendForCi }, tomlPath, "ci", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
     expect(sendForCi).toHaveBeenCalledTimes(1);
     expect(ciRows).toEqual([expect.objectContaining({ secret_name: "companies-house/presenter_code", found: true })]);
+  });
+});
+
+describe("rotation schedule", () => {
+  const now = new Date("2026-11-04T00:00:00Z");
+
+  test("a key inside its age limit is ok", () => {
+    expect(rotationSchedule({ max_age_days: 365 }, "2026-09-01", now)).toEqual(
+      expect.objectContaining({ age_days: 64, days_to_due: 301, status: "ok" }),
+    );
+  });
+
+  test("a key within 30 days of its age limit is due-soon", () => {
+    expect(rotationSchedule({ max_age_days: 90 }, "2026-08-20", now)).toEqual(
+      expect.objectContaining({ days_to_due: 14, status: "due-soon" }),
+    );
+  });
+
+  test("a key past its age limit is overdue", () => {
+    expect(rotationSchedule({ max_age_days: 90 }, "2026-01-01", now)).toEqual(expect.objectContaining({ status: "overdue" }));
+  });
+
+  test("the issuer's end date can make a key due before its age limit", () => {
+    expect(rotationSchedule({ max_age_days: 365, expires_at: "2026-11-20" }, "2026-10-01", now)).toEqual(
+      expect.objectContaining({ days_to_due: 16, status: "due-soon" }),
+    );
+  });
+
+  test("an end date needs no roll date", () => {
+    expect(rotationSchedule({ expires_at: "2027-09-13" }, null, now)).toEqual(expect.objectContaining({ days_to_due: 313, status: "ok" }));
+  });
+
+  test("an age limit with no roll date is unrecorded", () => {
+    expect(rotationSchedule({ max_age_days: 365 }, null, now)).toEqual(
+      expect.objectContaining({ days_to_due: null, status: "unrecorded" }),
+    );
+  });
+
+  test("a key with no limit is unscheduled", () => {
+    expect(rotationSchedule({}, "2026-01-01", now)).toEqual(expect.objectContaining({ status: "unscheduled" }));
+  });
+
+  test("the same record is red on a later date", () => {
+    const entry = { max_age_days: 365, expires_at: "2027-09-13" };
+    expect(rotationSchedule(entry, "2026-09-12", new Date("2026-11-04T00:00:00Z")).status).toBe("ok");
+    expect(rotationSchedule(entry, "2026-09-12", new Date("2027-08-20T00:00:00Z")).status).toBe("due-soon");
+    expect(rotationSchedule(entry, "2026-09-12", new Date("2027-09-20T00:00:00Z")).status).toBe("overdue");
   });
 });

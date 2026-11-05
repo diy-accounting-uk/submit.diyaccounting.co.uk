@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW v_returning_submitters_rolling_daily AS
 WITH submissions AS (
   SELECT hashed_sub,
          date(from_iso8601_timestamp(created_at)) AS submitted_on
-  FROM   dynamo_receipts
+  FROM   aliased_dynamo_receipts
   WHERE  change_type = 'INSERT' AND actor = 'customer' AND hashed_sub IS NOT NULL
          AND hashed_sub NOT IN (
            SELECT hashed_sub FROM activity_events_all

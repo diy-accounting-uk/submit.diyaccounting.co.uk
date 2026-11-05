@@ -641,41 +641,11 @@ jobs:
 
       - name: Force refresh Google Identity Provider (after secret rotation)
         if: ${{ needs.params.outputs.force-identity-refresh == 'true' }}
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
         run: |
-          echo "Force refreshing Google Identity Provider to pick up rotated secret..."
-          COGNITO_USER_POOL_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
-
-          # Get current Google IdP configuration
-          CURRENT_CONFIG=$(aws cognito-idp describe-identity-provider \
-            --user-pool-id "$COGNITO_USER_POOL_ID" \
-            --provider-name Google \
-            --query 'IdentityProvider.ProviderDetails' \
-            --output json)
-
-          # Get current attribute mapping
-          CURRENT_ATTRS=$(aws cognito-idp describe-identity-provider \
-            --user-pool-id "$COGNITO_USER_POOL_ID" \
-            --provider-name Google \
-            --query 'IdentityProvider.AttributeMapping' \
-            --output json)
-
-          # Fetch the new secret value from Secrets Manager
-          NEW_SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id "${{ needs.names.outputs.environment-name }}/submit/google/client_secret" \
-            --query 'SecretString' \
-            --output text)
-
-          # Update the IdP with the new secret - this forces Cognito to use the new value
-          # We need to re-specify all provider details including the updated client_secret
-          CLIENT_ID=$(echo "$CURRENT_CONFIG" | jq -r '.client_id')
-
-          aws cognito-idp update-identity-provider \
-            --user-pool-id "$COGNITO_USER_POOL_ID" \
-            --provider-name Google \
-            --provider-details "client_id=$CLIENT_ID,client_secret=$NEW_SECRET,authorize_scopes=email openid profile" \
-            --attribute-mapping "$CURRENT_ATTRS"
-
-          echo "Google Identity Provider updated with new secret"
+          COGNITO_USER_POOL_ID=$(jq -r --arg stack "${ENVIRONMENT_NAME}-env-IdentityStack" '.[$stack].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          scripts/refresh-google-identity-provider.sh "$ENVIRONMENT_NAME" "$COGNITO_USER_POOL_ID"
 
   deploy-billing-webhook:
     name: 'deploy billing webhook'

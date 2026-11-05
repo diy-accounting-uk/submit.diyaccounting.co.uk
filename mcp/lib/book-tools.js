@@ -35,6 +35,7 @@ import { PRODUCTS, productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 
 import { storedCredentials } from "./auth.js";
+import { desktopClientHeaders } from "./client-headers.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 
@@ -54,15 +55,27 @@ function baseUrl() {
  * supplies the bearer every API call sends (the stdio server's is auth.js's file-backed pair; the
  * hosted Lambda passes the request's bearer and an idToken that answers null). pollBudgetMs caps
  * how long one tool call polls an asynchronous route, null for the route's own attempt limit.
+ * clientHeaders answers the headers a call to an HMRC route carries for HMRC's fraud prevention
+ * data (the stdio server reads its own machine; the hosted Lambda passes what the caller gives).
  * @param {{credentials?: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
- *   pollBudgetMs?: number|null}} [options]
+ *   pollBudgetMs?: number|null, clientHeaders?: () => Promise<Object>}} [options]
  * @returns {{book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null,
  *   cloud: {bookId: string, clientId: string|null, etag: string}|null,
  *   credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
- *   pollBudgetMs: number|null}}
+ *   pollBudgetMs: number|null, clientHeaders: () => Promise<Object>}}
  */
-export function createSession({ credentials = storedCredentials, pollBudgetMs = null } = {}) {
-  return { book: null, lines: null, product: null, sourcePath: null, cloud: null, hmrcGrant: null, credentials, pollBudgetMs };
+export function createSession({ credentials = storedCredentials, pollBudgetMs = null, clientHeaders = desktopClientHeaders } = {}) {
+  return {
+    book: null,
+    lines: null,
+    product: null,
+    sourcePath: null,
+    cloud: null,
+    hmrcGrant: null,
+    credentials,
+    pollBudgetMs,
+    clientHeaders,
+  };
 }
 
 function requireLoaded(session) {

@@ -29,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 59;
+    private static final int VIEW_COUNT = 69;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -117,6 +117,9 @@ class BusinessViewsTest {
                 "v_submissions_by_activity_hourly",
                 "v_traffic_sources_daily",
                 "v_visitors_by_kind_hourly",
+                "v_integration_calls",
+                "v_integration_calls_daily",
+                "v_integration_calls_hourly",
                 "v_availability_sli_daily",
                 "v_alarm_state_changes_daily",
                 "v_dora_runs_daily",

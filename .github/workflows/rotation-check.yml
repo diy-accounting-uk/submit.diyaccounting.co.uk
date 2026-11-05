@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: rotation-check
+run-name: "rotation check of ${{ github.ref_name }}"
+
+# Fails when any key in secrets-rotation.toml is overdue for a roll or due within 30 days.
+# A failing run also opens or refreshes one issue per environment that names those keys.
+# as-of-date runs the same check as of another day, to prove the red path. That run raises no issue.
+
+on:
+  schedule:
+    - cron: '23 6 * * 1' # Weekly on Monday, after certificate-check
+  workflow_dispatch:
+    inputs:
+      as-of-date:
+        description: 'Check as of this date (YYYY-MM-DD). Empty means today.'
+        required: false
+        type: string
+
+concurrency:
+  group: rotation-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  check-rotation:
+    name: 'check rotation (${{ matrix.environment }})'
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [ci, prod]
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Check every key against its schedule
+        id: check
+        continue-on-error: true
+        shell: bash
+        env:
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
+          AS_OF_DATE: ${{ inputs.as-of-date }}
+          ISSUE_BODY_FILE: ${{ runner.temp }}/rotation-issue-body.md
+        run: |
+          set -euo pipefail
+          ARGS=(--environment "$ENVIRONMENT_NAME" --issue-body "$ISSUE_BODY_FILE")
+          if [ -n "$AS_OF_DATE" ]; then ARGS+=(--as-of "$AS_OF_DATE"); fi
+          node scripts/check-rotation.js "${ARGS[@]}"
+
+      - name: Open or refresh the rotation issue
+        if: steps.check.outcome == 'failure' && inputs.as-of-date == ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
+          ISSUE_BODY_FILE: ${{ runner.temp }}/rotation-issue-body.md
+        run: |
+          set -euo pipefail
+          if [ ! -f "$ISSUE_BODY_FILE" ]; then
+            echo "The check failed without a list of due keys; no issue to raise."
+            exit 0
+          fi
+          TITLE="Keys due for rotation in $ENVIRONMENT_NAME"
+          EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$ISSUE_BODY_FILE"
+            echo "Refreshed issue $EXISTING"
+          else
+            gh issue create --title "$TITLE" --body-file "$ISSUE_BODY_FILE" --label ops --label origin:machine
+          fi
+
+      - name: Fail the run when a key is due
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "A key is overdue or due within 30 days. See the check step."
+          exit 1

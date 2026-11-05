@@ -102,7 +102,7 @@ vi.mock("@app/data/dynamoDbHmrcGrantRepository.js", () => ({
 import { ingestHandler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 import { hashSub } from "@app/services/subHasher.js";
 import { sealFor, HMRC_GRANT_PURPOSE } from "@app/lib/codesSeal.js";
-import { resetBlobKeyCache } from "@app/lib/mcpBlobKey.js";
+import { resetSecretCache } from "@app/lib/cachedSecret.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -176,7 +176,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     async function storeGrant(ownerSub) {
       process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
-      resetBlobKeyCache();
+      resetSecretCache();
       mockGetHmrcGrant.mockResolvedValue({
         grantId: GRANT_ID,
         state: "granted",

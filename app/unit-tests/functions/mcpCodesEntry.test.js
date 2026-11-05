@@ -9,7 +9,7 @@ import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { FakeCodesEntryTable } from "@app/test-helpers/fakeCodesEntryTable.js";
 import { _setTestSalt } from "@app/services/subHasher.js";
-import { resetBlobKeyCache } from "@app/lib/mcpBlobKey.js";
+import { resetSecretCache } from "@app/lib/cachedSecret.js";
 
 const table = new FakeCodesEntryTable();
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
@@ -59,7 +59,7 @@ describe("mcpCodesEntry", () => {
     process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME = "test-mcp-sessions";
     process.env.DIY_SUBMIT_BASE_URL = "https://submit.example/";
     process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
-    resetBlobKeyCache();
+    resetSecretCache();
     _setTestSalt("test-salt-for-unit-tests");
   });
 

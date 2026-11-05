@@ -3,12 +3,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability OPS-43 Rotate stored email-address hashes
-// - **Use when:** the email-hash encryption key must be rotated across all stored hashes.
-// - **Does:** email-hash-rotate.js decrypts every stored email hash in DynamoDB with the old encryption key. It re-encrypts each one with a new key through a batch scan and update. EmailHashSecretHelper is the CDK-side Secrets-Manager-backed encrypt and decrypt helper it calls.
+// - **Use when:** the HMAC key that hashes stored email addresses must be rotated.
+// - **Does:** email-hash-rotate.js adds a new version to the email hash secret's registry and makes it current. It writes no stored hash, because each pass record keeps the version it was hashed with.
 // - **Run:** `gh workflow run email-hash-rotate.yml -f apply=<true|false>`
 // - **Entry:** `scripts/email-hash-rotate.js:main`; `infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java`
 // - **Files:** .github/workflows/email-hash-rotate.yml, scripts/email-hash-rotate.js, infra/main/java/co/uk/diyaccounting/submit/utils/EmailHashSecretHelper.java
-// - **Keywords:** email hash rotation, encryption key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
+// - **Keywords:** email hash rotation, HMAC key rotation, emailhashsecrethelper, batch scan update, email-hash-rotate.js
 // - **Related:** OPS-45, OPS-46
 // @end-capability
 

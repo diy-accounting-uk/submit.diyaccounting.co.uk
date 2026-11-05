@@ -34,7 +34,6 @@ import {
   http409ConflictResponse,
   http500ServerErrorResponse,
   http502BadGatewayResponse,
-  performTokenExchange,
   buildUpstreamRejectionResponse,
   safeHostname,
 } from "../../lib/httpResponseHelper.js";
@@ -49,7 +48,7 @@ import {
   deleteHmrcGrant,
 } from "../../data/dynamoDbHmrcGrantRepository.js";
 import { sealFor, HMRC_GRANT_PURPOSE } from "../../lib/codesSeal.js";
-import { prepareTokenExchangeRequest } from "../hmrc/hmrcTokenPost.js";
+import { prepareTokenExchangeRequest, performHmrcTokenExchange } from "../hmrc/hmrcTokenPost.js";
 import { openGrantFor, GRANT_ID_PATTERN } from "../../lib/mcpHmrcGrantAccess.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpHmrcGrant.js" });
@@ -165,7 +164,7 @@ async function callback(event, request, responseHeaders) {
 
   await initializeSalt();
   const exchangeRequest = await prepareTokenExchangeRequest(code, grant.hmrcAccount);
-  const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, parsed.grantId);
+  const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, parsed.grantId, grant.hmrcAccount);
   if (exchanged.failure) {
     await deleteHmrcGrant(parsed.grantId);
     return exchanged.failure;
@@ -182,10 +181,10 @@ async function callback(event, request, responseHeaders) {
 }
 
 // The token request is audited under the grant, since the callback carries no signed-in user.
-async function exchangeOrFail(request, responseHeaders, { url, body }, grantId) {
+async function exchangeOrFail(request, responseHeaders, { url, body }, grantId, hmrcAccount) {
   let result;
   try {
-    result = await performTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, { org: "hmrc" });
+    result = await performHmrcTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, hmrcAccount);
   } catch (error) {
     logger.error({ message: "HMRC token request failed", error: error.message });
     return {

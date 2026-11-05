@@ -39,13 +39,13 @@ import software.constructs.IDependable;
 
 /**
  * DynamoDB table changes into the lake: one consumer Lambda on the receipts, bundles,
- * subscriptions, passes and commissions streams, one delivery stream and one Glue table per table.
+ * subscriptions, passes, commissions and calls streams, one delivery stream and one Glue table per table.
  *
  * <p>The consumer Lambda does the redaction: only a per-table whitelist of fields ever leaves
  * DynamoDB (see {@code app/functions/analytics/dynamoStreamToFirehose.js}), so Firehose here
  * needs no processing Lambda of its own, unlike the activity-events stream.
  *
- * <p>Streams already exist on all five tables (enabled by {@code DataStack} via {@code
+ * <p>Streams already exist on all six tables (enabled by {@code DataStack} via {@code
  * KindCdk.ensureStream}). This construct resolves each stream's ARN at deploy time with its own
  * read-only {@code dynamodb:DescribeTable} call, because the ARN carries a timestamp suffix that
  * cannot be built from the table name alone and the event source mapping needs it as a synth-time
@@ -54,7 +54,7 @@ import software.constructs.IDependable;
 public class TableChangeDelivery extends Construct {
 
     private static final List<String> STREAMED_TABLE_KINDS =
-            List.of("receipts", "bundles", "subscriptions", "passes", "commissions");
+            List.of("receipts", "bundles", "subscriptions", "passes", "commissions", "calls");
 
     public final Function consumerLambda;
     /** The Lambda construct behind {@link #consumerLambda}, so the owning stack can fan in its checks. */
@@ -111,6 +111,7 @@ public class TableChangeDelivery extends Construct {
         tableNameByKind.put("subscriptions", sharedNames.data.subscriptionsTableName);
         tableNameByKind.put("passes", sharedNames.data.passesTableName);
         tableNameByKind.put("commissions", sharedNames.data.commissionsTableName);
+        tableNameByKind.put("calls", sharedNames.data.integrationCallsTableName);
 
         Map<String, String> deliveryStreamNameByTable = new LinkedHashMap<>();
         for (String kind : STREAMED_TABLE_KINDS) {
@@ -119,7 +120,7 @@ public class TableChangeDelivery extends Construct {
         }
 
         // ============================================================================
-        // Consumer Lambda: one function, five event source mappings
+        // Consumer Lambda: one function, six event source mappings
         // ============================================================================
         this.consumerLambdaConstruct = new Lambda(
                 this,
@@ -367,6 +368,28 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("reversal_reason", "string"));
                 columns.add(column("reversal_of", "string"));
                 columns.add(column("livemode", "boolean"));
+            }
+            case "calls" -> {
+                columns.add(column("call_id", "string"));
+                columns.add(column("record_type", "string"));
+                columns.add(column("org", "string"));
+                columns.add(column("target", "string"));
+                columns.add(column("api", "string"));
+                columns.add(column("method", "string"));
+                columns.add(column("started_at", "timestamp"));
+                columns.add(column("duration_ms", "bigint"));
+                columns.add(column("outcome", "string"));
+                columns.add(column("status", "bigint"));
+                columns.add(column("status_label", "string"));
+                columns.add(column("app_code", "bigint"));
+                columns.add(column("provider_request_id", "string"));
+                columns.add(column("request_id", "string"));
+                columns.add(column("traceparent", "string"));
+                columns.add(column("function_name", "string"));
+                columns.add(column("deployment", "string"));
+                columns.add(column("fph_rules", "string"));
+                columns.add(column("fph_rules_failed", "string"));
+                columns.add(column("fph_shape_hash", "string"));
             }
             default -> throw new IllegalArgumentException("No Glue columns declared for table kind: " + kind);
         }

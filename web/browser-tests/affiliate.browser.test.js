@@ -137,3 +137,89 @@ test.describe("apply to be an affiliate", () => {
     await expect(page.locator("#affiliateApplyBtn")).toBeHidden();
   });
 });
+
+test.describe("affiliate status in the current bundles list", () => {
+  const approved = {
+    state: "approved",
+    tier: "casual",
+    detailsSubmitted: true,
+    transfersActive: true,
+    terms: { name: "Casual affiliate" },
+  };
+
+  const answers =
+    (application, posted = []) =>
+    (url, request) => {
+      if (url.pathname === "/api/v1/bundle") return bundleAnswer("resident-pro");
+      if (url.pathname === "/api/v1/affiliate/application" && request.method() === "GET") return application;
+      if (url.pathname === "/api/v1/affiliate/application" && request.method() === "POST") {
+        posted.push(request.postDataJSON());
+        return { state: "ended", url: null };
+      }
+      return undefined;
+    };
+
+  test("an approved affiliate removes the status after a confirmation that names held commission", async ({ page }) => {
+    const posted = [];
+    await serveRealSite(page, { signedIn: true, apiHandler: answers(approved, posted) });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    const row = page.locator("[data-affiliate-row]");
+    await expect(row).toContainText("Affiliate");
+    await expect(row).toContainText("approved");
+    await row.locator("button[data-withdraw-affiliate]").click();
+    await expect(page.locator("#affiliateWithdrawConfirm")).toContainText("stays held and is not paid");
+    await page.screenshot({ path: "target/bnd1-affiliate-confirm.png", fullPage: true });
+    expect(posted).toEqual([]);
+
+    await page.locator(".affiliate-withdraw-confirm-yes").click();
+    await expect(page.locator("[data-affiliate-row]")).toHaveCount(0);
+    await expect(page.locator("#affiliateApplyState")).toHaveText("This affiliate has ended.");
+    expect(posted).toEqual([{ action: "withdraw" }]);
+  });
+
+  test("keeping the status sends nothing", async ({ page }) => {
+    const posted = [];
+    await serveRealSite(page, { signedIn: true, apiHandler: answers(approved, posted) });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await page.locator("button[data-withdraw-affiliate]").click();
+    await page.locator(".affiliate-withdraw-confirm-keep").click();
+    await expect(page.locator("#affiliateWithdrawConfirm")).toHaveCount(0);
+    await expect(page.locator("[data-affiliate-row]")).toHaveCount(1);
+    expect(posted).toEqual([]);
+  });
+
+  test("a family affiliate is listed with no Remove button", async ({ page }) => {
+    await serveRealSite(page, { signedIn: true, apiHandler: answers({ ...approved, configDriven: true }) });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    const row = page.locator("[data-affiliate-row]");
+    await expect(row).toContainText("Family affiliate");
+    await expect(row).toContainText("set by the site's configuration");
+    await expect(row.locator("button")).toHaveCount(0);
+    await page.screenshot({ path: "target/bnd1-family-row.png", fullPage: true });
+  });
+
+  test("an applicant who is not approved has no affiliate row", async ({ page }) => {
+    await serveRealSite(page, { signedIn: true, apiHandler: answers({ state: "applied", tier: "casual", detailsSubmitted: false }) });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#affiliateApplyState")).toContainText("Finish the Stripe steps");
+    await expect(page.locator("[data-affiliate-row]")).toHaveCount(0);
+  });
+
+  test("the operator bundle is listed with no Remove button", async ({ page }) => {
+    await serveRealSite(page, {
+      signedIn: true,
+      apiHandler: (url) => {
+        if (url.pathname === "/api/v1/bundle") {
+          return { bundles: [{ bundleId: "operator", allocated: true, configDriven: true }], tokensRemaining: 0 };
+        }
+        return undefined;
+      },
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    const row = page.locator("#currentBundles .bundle-row").filter({ hasText: "set by the site's configuration" });
+    await expect(row).toHaveCount(1);
+    await expect(row.locator("button[data-remove-bundle-id]")).toHaveCount(0);
+    await page.screenshot({ path: "target/bnd1-operator-row.png", fullPage: true });
+  });
+});
