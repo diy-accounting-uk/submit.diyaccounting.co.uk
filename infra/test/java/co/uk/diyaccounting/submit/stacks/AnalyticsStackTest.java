@@ -120,16 +120,34 @@ class AnalyticsStackTest {
         // counterpart, v_activity_started_hourly.
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 71);
 
-        // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
-        var customResources = analytics.findResources("Custom::AWS");
-        var viewCreatorFound = customResources.values().stream().anyMatch(resource -> {
+        // The union view is created by the shared Athena view Provider, which polls the query to
+        // a terminal state, so a failed CREATE OR REPLACE VIEW fails the stack update.
+        var viewCreators = analytics.findResources("Custom::AthenaView");
+        var unionViewCreated = viewCreators.values().stream().anyMatch(resource -> {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) resource.get("Properties");
-            var create = String.valueOf(properties.get("Create"));
-            return create.contains("startQueryExecution") && create.contains("CREATE OR REPLACE VIEW");
+            return "activity_events_all".equals(properties.get("ViewName"))
+                    && String.valueOf(properties.get("Sql")).contains("CREATE OR REPLACE VIEW activity_events_all AS");
         });
-        org.junit.jupiter.api.Assertions.assertTrue(
-                viewCreatorFound, "expected a Custom::AWS resource running the union view's CREATE OR REPLACE VIEW");
+        assertTrue(unionViewCreated, "expected a Custom::AthenaView resource creating activity_events_all");
+
+        // The union view reads activity_events and hash_aliases, so its resource names both tables.
+        var unionViewResource = viewCreators.entrySet().stream()
+                .filter(e -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) e.getValue().get("Properties");
+                    return "activity_events_all".equals(properties.get("ViewName"));
+                })
+                .findFirst()
+                .orElseThrow()
+                .getValue();
+        var dependsOn = String.valueOf(unionViewResource.get("DependsOn"));
+        assertTrue(
+                dependsOn.contains("HashAliases") || dependsOn.contains("hash"),
+                "union view must depend on the hash_aliases table: " + dependsOn);
+        assertTrue(
+                dependsOn.contains("ActivityEvents"),
+                "union view must depend on the curated activity_events table: " + dependsOn);
 
         // AnalyticsStack packs many AwsCustomResource instances (the union view, every BusinessViews
         // query, every TableChangeDelivery stream lookup) that all reuse one singleton provider
@@ -183,13 +201,13 @@ class AnalyticsStackTest {
         Template analytics = synthAnalyticsTemplate();
 
         var policies = analytics.findResources("AWS::IAM::Policy");
-        boolean grantsGetTableOnHashAliases = policies.values().stream().anyMatch(policy -> {
+        boolean grantsGetTableOnEveryTable = policies.values().stream().anyMatch(policy -> {
             var json = String.valueOf(policy.get("Properties"));
-            return json.contains("glue:GetTable") && json.contains("table/") && json.contains("hash_aliases");
+            return json.contains("AthenaViewCreator") && json.contains("glue:GetTable") && json.contains("table/");
         });
         assertTrue(
-                grantsGetTableOnHashAliases,
-                "the custom resource role that creates activity_events_all needs glue:GetTable on hash_aliases");
+                grantsGetTableOnEveryTable,
+                "the role that creates activity_events_all needs glue:GetTable on the tables it joins");
     }
 
     private static Template synthAnalyticsTemplate() throws IOException {
