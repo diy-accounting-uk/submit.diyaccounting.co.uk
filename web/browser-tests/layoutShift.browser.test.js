@@ -41,9 +41,21 @@ async function serveRealSiteWithSlowData(
       localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
     } catch {}
     window.__cumulativeLayoutShift = 0;
+    window.__shiftEntries = [];
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (!entry.hadRecentInput) window.__cumulativeLayoutShift += entry.value;
+        window.__shiftEntries.push({
+          at: Math.round(entry.startTime),
+          value: Number(entry.value.toFixed(4)),
+          moved: entry.sources.map((source) => ({
+            node: source.node
+              ? `${source.node.nodeName.toLowerCase()}${source.node.id ? "#" + source.node.id : ""}.${source.node.className}`
+              : "removed",
+            from: [source.previousRect.x, source.previousRect.y, source.previousRect.width, source.previousRect.height].map(Math.round),
+            to: [source.currentRect.x, source.currentRect.y, source.currentRect.width, source.currentRect.height].map(Math.round),
+          })),
+        });
       }
     }).observe({ type: "layout-shift", buffered: true });
   });
@@ -93,7 +105,10 @@ test.describe("Layout shift while data loads on a phone", () => {
         await delay(2000);
 
         const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
-        expect(cls).toBeLessThan(CLS_LIMIT);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
       });
     }
   }
