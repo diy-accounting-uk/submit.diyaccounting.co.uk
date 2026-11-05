@@ -4,7 +4,8 @@
 # Adds a new version to one environment's MCP blob key registry and makes it current, one job per
 # environment, keeping every earlier version so blobs and sealed values made under it still open
 # (scripts/mcp-blob-key-rotate.js; app/lib/mcpBlobKey.js reads the stored value as a registry).
-# A dispatch plans by default and applies with apply=true. The quarterly schedule applies.
+# A dispatch targets one environment (environment-name), plans by default and applies with apply=true.
+# The quarterly schedule applies to both environments.
 # Runbook section 3.4.16 covers the key this rolls.
 
 name: mcp blob key rotate
@@ -24,6 +25,14 @@ on:
         required: false
         default: false
         type: boolean
+      environment-name:
+        description: "The one environment this dispatch targets (a scheduled run covers both)"
+        required: true
+        default: ci
+        type: choice
+        options:
+          - ci
+          - prod
 
 env:
   AWS_REGION: 'eu-west-2'
@@ -38,7 +47,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        environment: [ci, prod]
+        environment: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.environment-name) || '["ci","prod"]') }}
     permissions:
       id-token: write
       contents: read
