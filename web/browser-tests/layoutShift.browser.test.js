@@ -246,5 +246,12 @@ test.describe("Layout shift while data loads on a phone", () => {
       return found;
     });
     expect(overlaps).toEqual([]);
+
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll("#mainContent > *")]
+        .filter((el) => el.getBoundingClientRect().height > 0 && el.scrollHeight - el.clientHeight > 1)
+        .map((el) => ({ id: el.id, shown: el.clientHeight, content: el.scrollHeight })),
+    );
+    expect(clipped, "blocks whose content is taller than the block").toEqual([]);
   });
 });
