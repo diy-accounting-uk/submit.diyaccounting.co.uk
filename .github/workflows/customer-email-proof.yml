@@ -76,9 +76,9 @@ jobs:
 
           EXPIRY="$(date -u -d '+30 days' +%Y-%m-%dT%H:%M:%SZ)"
           put_request subscription-started "$OPERATOR_ADDRESS" \
-            "{\"bundleId\":\"day-guest\",\"currentPeriodEnd\":\"${EXPIRY}\"}" operator-subscription
+            "{\"bundleId\":\"resident-vat\",\"currentPeriodEnd\":\"${EXPIRY}\"}" operator-subscription
           put_request pass-generated "$OPERATOR_ADDRESS" \
-            "{\"bundleId\":\"day-guest\",\"code\":\"physical-pass\",\"validUntil\":\"${EXPIRY}\",\"maxUses\":1}" operator-pass
+            "{\"bundleId\":\"day-guest\",\"passTypeId\":\"physical-pass\",\"code\":\"tiger-happy-mountain-silver\",\"validUntil\":\"${EXPIRY}\",\"maxUses\":1}" operator-pass
           put_request pass-redeemed "$OPERATOR_ADDRESS" \
             "{\"bundleId\":\"day-guest\",\"expiry\":\"${EXPIRY}\"}" operator-redeemed
           put_request pass-redeemed "bounce@simulator.amazonses.com" \
