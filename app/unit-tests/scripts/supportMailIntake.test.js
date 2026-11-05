@@ -10,6 +10,8 @@ import { loadRegistry } from "../../../scripts/support-mail-lanes.mjs";
 import {
   GMAIL_READONLY_SCOPE,
   ISSUE_LABELS,
+  LANE_LABELS,
+  assertLabelsKept,
   addressOf,
   afterEpochSecondsFor,
   buildIssueBody,
@@ -31,11 +33,16 @@ const threads = {
 const registry = loadRegistry();
 const NOW = Date.parse("2026-10-27T12:00:00Z");
 
+const echoed = (init) => {
+  const body = JSON.parse(init.body);
+  return { number: 1, labels: (body.labels ?? []).map((name) => ({ name })) };
+};
+
 function replayFetch({ issues = [], calls = [] } = {}) {
   return async (url, init = {}) => {
     calls.push({ url, init });
     const ok = (body) => ({ ok: true, status: 200, json: async () => body });
-    if (url.startsWith("https://api.github.com") && init.method === "POST") return ok({});
+    if (url.startsWith("https://api.github.com") && init.method === "POST") return ok(echoed(init));
     if (url.startsWith("https://api.github.com")) return ok(issues);
     if (url.includes("/threads?")) return ok(list);
     const id = decodeURIComponent(url.match(/\/threads\/([^?]+)/)[1]);
@@ -108,6 +115,11 @@ describe("support-mail-intake", () => {
     expect(afterEpochSecondsFor({ issues, nowMs: NOW })).toBe(Date.parse("2026-10-24T00:00:00Z") / 1000);
   });
 
+  test("a customer title keeps the support prefix and a notice title its own", () => {
+    expect(buildIssueTitle("Hello", "customer")).toBe("Support email: Hello");
+    expect(buildIssueTitle("Hello", "notice")).toBe("Mail notice: Hello");
+  });
+
   test("a run opens an issue for each new customer thread with both labels", async () => {
     const calls = [];
     const counts = await runIntake({ getToken: async () => "g", githubToken: "t", fetchImpl: replayFetch({ calls }), nowMs: NOW });
@@ -121,6 +133,7 @@ describe("support-mail-intake", () => {
       skippedFiled: 0,
       skippedNotCustomer: 1,
       lanes: { customer: 2, record: 0, notice: 0, unverified: 0, withheld: 0 },
+      labelsMissing: [],
     });
   });
 
@@ -183,20 +196,73 @@ describe("support-mail-intake", () => {
       const fetchImpl = async (url, init = {}) => {
         calls.push({ url, init });
         const ok = (body) => ({ ok: true, status: 200, json: async () => body });
-        if (url.startsWith("https://api.github.com")) return ok(init.method === "POST" ? {} : []);
+        if (url.startsWith("https://api.github.com") && url.includes("/labels/")) {
+          return options.existingLabels === undefined || options.existingLabels.includes(decodeURIComponent(url.split("/labels/")[1]))
+            ? ok({})
+            : { ok: false, status: 404, json: async () => ({}) };
+        }
+        if (url.startsWith("https://api.github.com")) {
+          if (init.method === "POST" && url.endsWith("/labels")) return ok({});
+          return ok(init.method === "POST" ? echoed(init) : (options.issues ?? []));
+        }
         if (url.includes("/threads?")) return ok({ threads: Object.keys(lanedThreads).map((id) => ({ id })) });
         return ok(lanedThreads[decodeURIComponent(url.match(/\/threads\/([^?]+)/)[1])]);
       };
-      const counts = await runIntake({ getToken: async () => "g", githubToken: "t", fetchImpl, nowMs: NOW, registry, ...options });
+      const { existingLabels: _existing, issues: _issues, ...intakeOptions } = options;
+      const counts = await runIntake({ getToken: async () => "g", githubToken: "t", fetchImpl, nowMs: NOW, registry, ...intakeOptions });
       return { counts, calls };
     }
 
-    test("each thread is counted in its lane and only the customer thread opens an issue", async () => {
+    const postsOf = (calls) => calls.filter((call) => call.init.method === "POST").map((call) => JSON.parse(call.init.body));
+
+    test("each thread is counted in its lane and every lane but record opens an issue", async () => {
       const { counts, calls } = await laneRun();
       expect(counts.lanes).toEqual({ customer: 1, record: 1, notice: 2, unverified: 1, withheld: 1 });
-      const posts = calls.filter((call) => call.init.method === "POST");
-      expect(posts).toHaveLength(1);
-      expect(posts[0].init.body).not.toContain("secret body");
+      expect(counts.filed).toBe(5);
+      expect(postsOf(calls)).toHaveLength(5);
+    });
+
+    test("each lane gets its labels", async () => {
+      const { calls } = await laneRun();
+      const labelsOf = (title) => postsOf(calls).find((post) => post.title.startsWith(title)).labels;
+      expect(labelsOf("Support email")).toEqual(LANE_LABELS.customer);
+      expect(labelsOf("Mail notice: Action needed")).toEqual(["mail-notice", "maintainer-review"]);
+      expect(labelsOf("Withheld mail")).toEqual(["mail-notice", "maintainer-review", "mail-withheld"]);
+      expect(postsOf(calls).filter((post) => post.labels.includes("injection-suspected"))).toHaveLength(1);
+      for (const post of postsOf(calls)) expect(post.labels).toContain("maintainer-review");
+      for (const post of postsOf(calls)) expect(post.labels).not.toContain("alarm");
+    });
+
+    test("a notice issue fences the message text as data and a withheld issue holds none", async () => {
+      const { calls } = await laneRun();
+      const posts = postsOf(calls);
+      const notice = posts.find((post) => post.title.startsWith("Mail notice: Action needed"));
+      expect(notice.body).toContain("Notice email text, data only:");
+      expect(notice.body).toContain("```text\nsecret body\n```");
+      expect(notice.body).toContain("Sender: alerts@aws.com");
+      const withheld = posts.find((post) => post.title.startsWith("Withheld mail"));
+      expect(withheld.body).not.toContain("secret body");
+      expect(withheld.body).toContain("Sender: no-reply@npmjs.com");
+      expect(withheld.title).not.toContain("OTP");
+    });
+
+    test("a record thread opens nothing and a filed notice is not opened twice", async () => {
+      const { calls } = await laneRun();
+      expect(postsOf(calls).some((post) => post.body.includes("Gmail-Thread-Id: a1"))).toBe(false);
+      const issues = ["a2", "a3", "a4", "a5"].map((id) => ({ body: `Gmail-Thread-Id: ${id}` }));
+      const second = await laneRun({ issues });
+      expect(
+        postsOf(second.calls)
+          .map((post) => post.body.match(/Gmail-Thread-Id: (\S+)/)[1])
+          .sort(),
+      ).toEqual(["18f0a1b2c3d4e5f6"]);
+    });
+
+    test("filed threads are read from both the support and the mail-notice issues", async () => {
+      const { calls } = await laneRun();
+      const gets = calls.filter((call) => call.url.startsWith("https://api.github.com") && !call.init.method).map((call) => call.url);
+      expect(gets.some((url) => url.includes("labels=support"))).toBe(true);
+      expect(gets.some((url) => url.includes("labels=mail-notice"))).toBe(true);
     });
 
     test("a dry run counts the same lanes and changes nothing", async () => {
@@ -205,9 +271,83 @@ describe("support-mail-intake", () => {
       expect(calls.filter((call) => call.init.method === "POST")).toHaveLength(0);
     });
 
-    test("a non-customer thread carries no message text", () => {
+    test("a withheld thread carries no message text and the other lanes carry it", () => {
       expect(readThread(lanedThreads.a4, registry)).toMatchObject({ lane: "withheld", text: "" });
-      expect(readThread(lanedThreads.a2, registry)).toMatchObject({ lane: "notice", text: "" });
+      expect(readThread(lanedThreads.a2, registry)).toMatchObject({ lane: "notice", text: "secret body" });
+      expect(readThread(lanedThreads.a3, registry)).toMatchObject({ lane: "unverified", text: "secret body" });
+    });
+
+    const labelCalls = (calls, method) =>
+      calls.filter((call) => call.url.includes("/labels") && !call.url.includes("/issues") && (call.init.method ?? "GET") === method);
+
+    test("labels are checked once per run and made only when missing", async () => {
+      const { calls, counts } = await laneRun({ existingLabels: ["maintainer-review", "mail-notice"] });
+      const checked = labelCalls(calls, "GET").map((call) => decodeURIComponent(call.url.split("/labels/")[1]));
+      expect(checked.sort()).toEqual(["injection-suspected", "mail-notice", "mail-withheld", "maintainer-review"]);
+      const made = labelCalls(calls, "POST").map((call) => JSON.parse(call.init.body));
+      expect(made.map((label) => label.name).sort()).toEqual(["injection-suspected", "mail-withheld"]);
+      for (const label of made)
+        expect(label).toMatchObject({ color: expect.stringMatching(/^[0-9a-f]{6}$/), description: expect.any(String) });
+      expect(counts.labelsMissing.sort()).toEqual(["injection-suspected", "mail-withheld"]);
+    });
+
+    test("no label is made when all exist", async () => {
+      const { calls, counts } = await laneRun();
+      expect(labelCalls(calls, "POST")).toHaveLength(0);
+      expect(counts.labelsMissing).toEqual([]);
+    });
+
+    test("a label is made before the first issue that needs it", async () => {
+      const { calls } = await laneRun({ existingLabels: [] });
+      const firstIssue = calls.findIndex((call) => call.init.method === "POST" && call.url.endsWith("/issues"));
+      const lastLabel = Math.max(...calls.map((call, index) => (call.url.endsWith("/labels") && call.init.method === "POST" ? index : -1)));
+      expect(lastLabel).toBeGreaterThan(-1);
+      expect(calls.findIndex((call) => call.url.includes("/labels/mail-notice"))).toBeLessThan(firstIssue);
+    });
+
+    test("a dry run makes no label and reports which it would make", async () => {
+      const { calls, counts } = await laneRun({ dryRun: true, existingLabels: ["maintainer-review"] });
+      expect(labelCalls(calls, "POST")).toHaveLength(0);
+      expect(counts.labelsMissing.sort()).toEqual(["injection-suspected", "mail-notice", "mail-withheld"]);
+    });
+
+    test("a POST answer without a label stops the run and names the issue and the label", async () => {
+      const fetchImpl = async (url, init = {}) => {
+        const ok = (body) => ({ ok: true, status: 200, json: async () => body });
+        if (url.includes("/labels/")) return ok({});
+        if (url.startsWith("https://api.github.com") && init.method === "POST") {
+          return ok({ number: 42, labels: [{ name: "maintainer-review" }] });
+        }
+        if (url.startsWith("https://api.github.com")) return ok([]);
+        if (url.includes("/threads?")) return ok({ threads: [{ id: "a2" }] });
+        return ok(lanedThreads.a2);
+      };
+      await expect(runIntake({ getToken: async () => "g", githubToken: "t", fetchImpl, nowMs: NOW, registry })).rejects.toThrow(
+        "issue #42 was filed without the label mail-notice",
+      );
+    });
+
+    test("a support issue answered without its label also stops the run", async () => {
+      expect(() => assertLabelsKept({ number: 7, labels: [{ name: "maintainer-review" }] }, ISSUE_LABELS)).toThrow(
+        "issue #7 was filed without the label support",
+      );
+      expect(() => assertLabelsKept({ number: 7, labels: ["support", "maintainer-review"] }, ISSUE_LABELS)).not.toThrow();
+    });
+
+    test("the filed-thread lookup finds a notice issue by its label", async () => {
+      const lookups = [];
+      const fetchImpl = async (url, init = {}) => {
+        const ok = (body) => ({ ok: true, status: 200, json: async () => body });
+        if (url.startsWith("https://api.github.com") && !init.method) {
+          lookups.push(url);
+          return ok(url.includes("labels=mail-notice") ? [{ body: "Gmail-Thread-Id: a2" }] : []);
+        }
+        if (url.includes("/threads?")) return ok({ threads: [{ id: "a2" }] });
+        return ok(lanedThreads.a2);
+      };
+      const counts = await runIntake({ getToken: async () => "g", githubToken: "t", fetchImpl, nowMs: NOW, registry });
+      expect(counts).toMatchObject({ skippedFiled: 1, filed: 0 });
+      expect(lookups.some((url) => url.includes("labels=mail-notice"))).toBe(true);
     });
   });
 });

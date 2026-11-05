@@ -69,6 +69,11 @@ export function loadRegistry(path = DEFAULT_REGISTRY_PATH) {
   return parseRegistry(readFileSync(path, "utf8"));
 }
 
+/** The sender domains in the registry, once each: the closed list a notice reader may name as the vendor. */
+export function registryVendors(registry) {
+  return [...new Set(registry.map((entry) => entry.domain))];
+}
+
 /** The entry for a sender domain and subject: longest domain, then the first subject match, then the default. */
 export function findEntry(registry, domain, subject) {
   const matching = registry.filter((entry) => underOrEqual(domain, entry.domain));

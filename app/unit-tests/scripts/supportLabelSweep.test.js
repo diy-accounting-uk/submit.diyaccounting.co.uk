@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect, vi } from "vitest";
-import { addLabel, needsReviewLabelBack, planSweep, sweep } from "../../../scripts/support-label-sweep.mjs";
+import { addLabel, ensureLabel, needsReviewLabelBack, planSweep, sweep } from "../../../scripts/support-label-sweep.mjs";
 import { isHandlingCandidate } from "../../../scripts/support-handling-input.mjs";
 import { isReaderCandidate } from "../../../scripts/support-reader-select.mjs";
 
@@ -122,5 +122,44 @@ describe("label writes", () => {
     expect(patch[1]).toBe("https://api.github.com/repos/o/r/issues/8");
     expect(JSON.parse(patch[2])).toEqual({ state: "closed", state_reason: "not_planned" });
     expect(calls.some(([, url]) => url.endsWith("/comments"))).toBe(false);
+  });
+});
+
+describe("ensureLabel", () => {
+  const run = async (status, options = {}) => {
+    const calls = [];
+    const fetchImpl = async (url, init = {}) => {
+      calls.push({ url, method: init.method ?? "GET", body: init.body });
+      return { ok: status === 200 || (init.method === "POST" && status === 404), status: init.method === "POST" ? 201 : status };
+    };
+    const made = await ensureLabel({ repo: "o/r", label: "mail-notice", token: "t", fetchImpl, ...options });
+    return { made, calls };
+  };
+
+  it("reads the label and makes nothing when it exists", async () => {
+    const { made, calls } = await run(200);
+    expect(made).toBe(false);
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+    expect(calls[0].url).toBe("https://api.github.com/repos/o/r/labels/mail-notice");
+  });
+
+  it("makes the label with its fixed colour and description on a 404", async () => {
+    const { made, calls } = await run(404);
+    expect(made).toBe(true);
+    expect(calls.map((call) => call.method)).toEqual(["GET", "POST"]);
+    expect(JSON.parse(calls[1].body)).toMatchObject({ name: "mail-notice", color: "0e8a16" });
+  });
+
+  it("makes nothing on a dry run but reports the label as missing", async () => {
+    const { made, calls } = await run(404, { dryRun: true });
+    expect(made).toBe(true);
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  it("fails on any other answer and refuses a label it does not describe", async () => {
+    await expect(run(403)).rejects.toThrow("403");
+    await expect(ensureLabel({ repo: "o/r", label: "other", token: "t", fetchImpl: async () => ({}) })).rejects.toThrow(
+      "not one this script writes",
+    );
   });
 });

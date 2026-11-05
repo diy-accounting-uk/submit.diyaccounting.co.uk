@@ -106,13 +106,84 @@ describe("support reader select", () => {
     });
 
     it("parses --reread with --issue", () => {
-      expect(parseReaderArgs(["--issue", "15", "--reread"])).toEqual({ only: 15, reread: true });
-      expect(parseReaderArgs(["--issue", "15"])).toEqual({ only: 15, reread: false });
-      expect(parseReaderArgs([])).toEqual({ only: undefined, reread: false });
+      expect(parseReaderArgs(["--issue", "15", "--reread"])).toEqual({ kind: "support", only: 15, reread: true });
+      expect(parseReaderArgs(["--issue", "15"])).toEqual({ kind: "support", only: 15, reread: false });
+      expect(parseReaderArgs([])).toEqual({ kind: "support", only: undefined, reread: false });
     });
 
     it("fails on --reread without --issue", () => {
       expect(() => parseReaderArgs(["--reread"])).toThrow(/--reread needs --issue/);
     });
+  });
+});
+
+describe("notice reader select", () => {
+  const notice = (number, overrides = {}) =>
+    issue(number, { labels: [{ name: "mail-notice" }, { name: "maintainer-review" }], ...overrides });
+  const pick = (issues, comments = {}, only) =>
+    selectIssueToRead({ issues, only, kind: "notice", commentsFor: async (n) => comments[n] ?? [] });
+
+  it("picks the oldest notice", async () => {
+    expect(await pick([notice(5), notice(3), notice(4)])).toBe(3);
+  });
+
+  it("leaves a support ticket to the support selection and a notice to the notice selection", async () => {
+    expect(await pick([issue(1)])).toBeNull();
+    expect(await select([notice(1)])).toBeNull();
+  });
+
+  it("skips a notice a person has already released, one with no label and one that is rejected", async () => {
+    const issues = [
+      notice(1, { labels: [{ name: "mail-notice" }] }),
+      notice(2, { labels: [{ name: "maintainer-review" }] }),
+      notice(3, { labels: [{ name: "mail-notice" }, { name: "maintainer-review" }, { name: "rejected" }] }),
+    ];
+    expect(await pick(issues)).toBeNull();
+  });
+
+  it("skips a withheld notice, which holds no message text", async () => {
+    const withheld = notice(1, { labels: [{ name: "mail-notice" }, { name: "maintainer-review" }, { name: "mail-withheld" }] });
+    expect(await pick([withheld, notice(2)])).toBe(2);
+  });
+
+  it("reads an unverified notice, so the operator gets a summary beside the warning label", async () => {
+    const unverified = notice(1, {
+      labels: [{ name: "mail-notice" }, { name: "maintainer-review" }, { name: "injection-suspected" }],
+    });
+    expect(await pick([unverified])).toBe(1);
+  });
+
+  it("skips a trusted-event issue that carries maintainer-review, even with the notice label", async () => {
+    const trusted = issue(1, { labels: [{ name: "trusted-event" }, { name: "maintainer-review" }, { name: "origin:machine" }] });
+    const mixed = notice(2, { labels: [{ name: "mail-notice" }, { name: "maintainer-review" }, { name: "trusted-event" }] });
+    expect(await pick([trusted])).toBeNull();
+    expect(await pick([mixed])).toBeNull();
+    expect(await pick([trusted, mixed, notice(3)])).toBe(3);
+    expect(await pick([trusted, mixed], {}, 1)).toBeNull();
+    expect(await pick([trusted, mixed], {}, 2)).toBeNull();
+  });
+
+  it("skips an author that is not on the allow list, closed issues and pull requests", async () => {
+    const issues = [notice(1, { user: { login: "stranger" } }), notice(2, { state: "closed" }), notice(3, { pull_request: {} })];
+    expect(await pick(issues)).toBeNull();
+  });
+
+  it("skips a notice that already has a reader comment from the agent App", async () => {
+    expect(await pick([notice(1), notice(2)], { 1: [readerComment()] })).toBe(2);
+  });
+
+  it("rereads the named notice but not a withheld, rejected or trusted-event one", () => {
+    expect(selectIssueToReread({ issue: notice(7, { labels: [{ name: "mail-notice" }] }), only: 7, kind: "notice" })).toBe(7);
+    for (const extra of ["mail-withheld", "rejected", "trusted-event"]) {
+      const labels = [{ name: "mail-notice" }, { name: extra }];
+      expect(selectIssueToReread({ issue: notice(7, { labels }), only: 7, kind: "notice" })).toBeNull();
+    }
+    expect(selectIssueToReread({ issue: issue(7), only: 7, kind: "notice" })).toBeNull();
+  });
+
+  it("parses --kind and defaults to support", () => {
+    expect(parseReaderArgs(["--kind", "notice", "--issue", "3"])).toEqual({ kind: "notice", only: 3, reread: false });
+    expect(parseReaderArgs([]).kind).toBe("support");
+    expect(() => parseReaderArgs(["--kind", "alarm"])).toThrow(/--kind must be/);
   });
 });

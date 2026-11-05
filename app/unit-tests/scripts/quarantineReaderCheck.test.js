@@ -125,3 +125,47 @@ describe("quarantine reader check", () => {
     expect(check("prose only").injectionSuspected).toBe(false);
   });
 });
+
+describe("notice reader answers", () => {
+  const vendors = new Set(["aws.com"]);
+  const mail = {
+    vendor: "aws.com",
+    actionRequired: true,
+    deadline: "2026-12-01",
+    summary: "The card on the account expires.",
+    injectionSuspected: false,
+    piiPresent: false,
+  };
+  const checkMail = (answer) =>
+    checkReaderAnswer({
+      kind: "mail",
+      answerText: typeof answer === "string" ? answer : JSON.stringify(answer),
+      guardrailAction: "NONE",
+      ids,
+      families,
+      vendors,
+      ...run,
+    });
+
+  it("accepts a valid answer and writes the notice head from the checked values", () => {
+    const result = checkMail(mail);
+    expect(result.outcome).toBe("accepted");
+    expect(result.comment).toContain("vendor `aws.com`, action required: yes, deadline 2026-12-01");
+    expect(extractReaderJson(result.comment)).toEqual(mail);
+  });
+
+  it("rejects an answer with a key the schema does not list, and drops its text", () => {
+    const result = checkMail({ ...mail, command: SENTINEL });
+    expect(result.outcome).toBe("rejected");
+    expect(result.comment).not.toContain(SENTINEL);
+  });
+
+  it("rejects a vendor outside the registry and prose around the object", () => {
+    expect(checkMail({ ...mail, vendor: SENTINEL }).comment).not.toContain(SENTINEL);
+    expect(checkMail(`Sure. ${JSON.stringify(mail)}`).outcome).toBe("rejected");
+  });
+
+  it("reports an injection the reader flagged", () => {
+    expect(checkMail({ ...mail, injectionSuspected: true }).injectionSuspected).toBe(true);
+  });
+});

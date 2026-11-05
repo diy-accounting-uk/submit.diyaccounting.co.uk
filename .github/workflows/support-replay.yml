@@ -3,10 +3,10 @@
 
 # @capability OPS-155 Replay the support prompts over synthetic tickets
 # - **Use when:** `prompts/support-triage.md`, `prompts/support-reader.md` or a replay fixture changes, or you need to know whether the support agents still give the right resolution and reply.
-# - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture through the Bedrock call that support-reader.yml makes. It fails a run whose resolution is wrong, whose reply holds a forbidden phrase or misses a required one, or whose reader answer has the wrong `injectionSuspected`. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
+# - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture and `prompts/mail-reader.md` over each mail fixture (vendor notices, some with injected instructions) through the Bedrock call that support-reader.yml makes. It fails a run whose resolution is wrong, whose reply holds a forbidden phrase or misses a required one, whose reader answer has the wrong `injectionSuspected`, or whose notice answer does not fit the mail schema. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
 # - **Run:** `gh workflow run support-replay.yml`; `npx vitest run app/unit-tests/scripts/supportReplay.test.js`
 # - **Entry:** `.github/workflows/support-replay.yml`; `scripts/support-replay.mjs:triageFailures`
-# - **Files:** .github/workflows/support-replay.yml, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-reader.md
+# - **Files:** .github/workflows/support-replay.yml, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-reader.md, prompts/mail-reader.md
 # - **Keywords:** replay, fixtures, support triage, support reader, prompt regression, injectionSuspected, resolution
 # - **Related:** OPS-18, OPS-142
 # @end-capability
@@ -25,6 +25,7 @@ on:
     paths:
       - 'prompts/support-triage.md'
       - 'prompts/support-reader.md'
+      - 'prompts/mail-reader.md'
       - 'app/unit-tests/fixtures/support-triage/**'
       - 'scripts/support-replay.mjs'
       - '.github/workflows/support-replay.yml'
@@ -168,14 +169,15 @@ jobs:
         with:
           environment-name: ci
 
-      # The same request support-reader.yml builds: the skeleton from the prompt, the ticket as
-      # one JSON string value, no tools, and the prefill.
+      # The same request support-reader.yml builds: the skeleton from the prompt of the fixture's
+      # reader (support or mail), the text as one JSON string value, no tools, and the prefill.
       - name: Build the request
         env:
           FIXTURE: ${{ matrix.fixture }}
         run: |
           set -euo pipefail
-          GITHUB_OUTPUT=/tmp/skeleton.out node scripts/quarantine-reader-request.mjs support
+          READER_KIND=$(node scripts/support-replay.mjs reader-kind "$FIXTURE")
+          GITHUB_OUTPUT=/tmp/skeleton.out node scripts/quarantine-reader-request.mjs "$READER_KIND"
           sed -n 's/^request=//p' /tmp/skeleton.out | base64 -d > /tmp/skeleton.json
           node scripts/support-replay.mjs ticket "$FIXTURE" /tmp/ticket.json
           jq -n --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '

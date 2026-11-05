@@ -4,7 +4,7 @@
 // app/lib/quarantineReaderSchema.js
 //
 // The shape of what a quarantine reader may say. The reader is a model call with no tools that
-// reads untrusted text (a support ticket, an alarm analysis) and answers with one JSON object.
+// reads untrusted text (a support ticket, an alarm analysis, a vendor notice) and answers with one JSON object.
 // Code parses that object with these schemas before anything else sees it; an answer that does
 // not fit is rejected and its text is dropped. `.strict()` rejects every key not listed, so an
 // injected "labels" or "command" key cannot ride along.
@@ -58,6 +58,33 @@ export function alarmReaderSchema(remedyFamilies) {
         .nullable(),
       summary,
       injectionSuspected: z.boolean(),
+      piiPresent: z.boolean(),
+    })
+    .strict();
+}
+
+const DEADLINE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const isCalendarDate = (text) => {
+  if (!DEADLINE_PATTERN.test(text)) return false;
+  const parsed = new Date(`${text}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(text);
+};
+
+/**
+ * @param {Set<string>} vendors the `domain` values in scripts/support-mail-registry.toml
+ */
+export function mailReaderSchema(vendors) {
+  return z
+    .object({
+      vendor: z
+        .string()
+        .refine((domain) => vendors.has(domain), { message: "not a registered vendor" })
+        .nullable(),
+      actionRequired: z.boolean(),
+      deadline: z.string().refine(isCalendarDate, { message: "a deadline is a calendar date, YYYY-MM-DD" }).nullable(),
+      summary,
+      injectionSuspected: z.boolean().describe(INJECTION_SUSPECTED_DESCRIPTION),
       piiPresent: z.boolean(),
     })
     .strict();

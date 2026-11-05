@@ -14,7 +14,12 @@ describe("support-replay.yml", () => {
     const on = text.slice(text.indexOf("\non:\n"), text.indexOf("\npermissions:"));
     expect(on).toMatch(/workflow_dispatch:/);
     expect(on).toMatch(/pull_request:\n {4}paths:/);
-    for (const path of ["prompts/support-triage.md", "prompts/support-reader.md", "app/unit-tests/fixtures/support-triage/**"]) {
+    for (const path of [
+      "prompts/support-triage.md",
+      "prompts/support-reader.md",
+      "prompts/mail-reader.md",
+      "app/unit-tests/fixtures/support-triage/**",
+    ]) {
       expect(on).toContain(`'${path}'`);
     }
   });
@@ -44,5 +49,10 @@ describe("support-replay.yml", () => {
   it("sends the reader request with no tools", () => {
     expect(text).toContain("aws bedrock-runtime invoke-model");
     expect(text).not.toMatch(/"tools"|^\s+tools:/m);
+  });
+
+  it("builds the reader request from the kind of the fixture", () => {
+    expect(text).toContain('node scripts/support-replay.mjs reader-kind "$FIXTURE"');
+    expect(text).toContain('node scripts/quarantine-reader-request.mjs "$READER_KIND"');
   });
 });
