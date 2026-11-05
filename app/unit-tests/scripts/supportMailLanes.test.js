@@ -118,3 +118,33 @@ describe("lane choice", () => {
     expect(choose({ domain: "person.example", subject: "I cannot sign in" })).toBe("customer");
   });
 });
+
+describe("the registry check key", () => {
+  const entry = (extra) => `
+[[sender]]
+domain = "vendor.example"
+dkim = "vendor.example"
+lane = "notice"
+${extra}
+`;
+
+  test("a known check id is kept on its entry", () => {
+    expect(parseRegistry(entry('check = "trusted-event"'))[0].check).toBe("trusted-event");
+    expect(parseRegistry(entry(""))[0].check).toBeNull();
+  });
+
+  test("an id outside the table is refused", () => {
+    expect(() => parseRegistry(entry('check = "delete-everything"'))).toThrow(/has the check delete-everything/);
+  });
+
+  test("a check on a record entry is refused", () => {
+    expect(() => parseRegistry(entry('check = "trusted-event"').replace('lane = "notice"', 'lane = "record"'))).toThrow(
+      /not in the notice lane/,
+    );
+  });
+
+  test("the live registry sets the check on the cost alerts entry only", () => {
+    const withCheck = loadRegistry().filter((row) => row.check !== null);
+    expect(withCheck.map((row) => [row.domain, row.check])).toEqual([["costalerts.amazonaws.com", "trusted-event"]]);
+  });
+});

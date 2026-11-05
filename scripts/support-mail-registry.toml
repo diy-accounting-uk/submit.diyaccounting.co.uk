@@ -10,6 +10,8 @@
 #   lane     "record" (counted, no issue) or "notice" (counted; an issue once the reader exists)
 #   subject  optional case-insensitive regular expression; an entry without one is the default for
 #            its domain, and every domain has one
+#   check    optional, notice lane only: the id of a read-only check the notice handler runs for
+#            mail from this entry (scripts/notice-handle.mjs holds the fixed table of ids)
 #
 # The longest matching domain wins. Within it, the first entry whose subject matches wins, then the
 # default. A registered sender whose DKIM check fails goes to the unverified lane.
@@ -35,6 +37,7 @@ lane = "record"
 domain = "costalerts.amazonaws.com"
 dkim = "costalerts.amazonaws.com"
 lane = "notice"
+check = "trusted-event"
 
 [[sender]]
 domain = "amazonaws.com"

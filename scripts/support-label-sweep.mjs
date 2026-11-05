@@ -29,6 +29,7 @@ const RECENT_CLOSED_DAYS = 7;
 
 export const MAIL_NOTICE_LABEL = "mail-notice";
 export const MAIL_WITHHELD_LABEL = "mail-withheld";
+export const NOTICE_HANDLED_LABEL = "notice-handled";
 
 export const LABELS = {
   [INJECTION_LABEL]: {
@@ -44,6 +45,10 @@ export const LABELS = {
     color: "6a737d",
     description:
       "Login mail whose text is not copied here; the quarantine reader skips it and the operator reads the thread in the mailbox",
+  },
+  [NOTICE_HANDLED_LABEL]: {
+    color: "1d76db",
+    description: "The notice handler ran its one action on this mail notice; the operator reads the comment and closes the issue",
   },
   [REJECTED_LABEL]: {
     color: "b60205",

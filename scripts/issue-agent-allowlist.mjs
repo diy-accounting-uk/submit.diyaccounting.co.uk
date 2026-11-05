@@ -19,7 +19,8 @@ import { pathToFileURL } from "node:url";
 
 export const OPERATOR_LOGIN = "antonycc";
 export const AGENT_APP_LOGIN = "diyaccounting-agent[bot]";
-export const ALLOWED_LOGINS = [OPERATOR_LOGIN, "diyaccounting-ops[bot]", AGENT_APP_LOGIN];
+export const OPS_APP_LOGIN = "diyaccounting-ops[bot]";
+export const ALLOWED_LOGINS = [OPERATOR_LOGIN, OPS_APP_LOGIN, AGENT_APP_LOGIN];
 
 function onList(login) {
   if (typeof login !== "string" || login.trim() === "") return false;
