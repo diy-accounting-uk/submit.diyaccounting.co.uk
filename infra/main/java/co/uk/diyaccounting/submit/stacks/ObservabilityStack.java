@@ -712,6 +712,26 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // Customer email failure alarm: a customer's email failed to send, bounced permanently, drew
+        // a complaint, or had no address. Built on the Submit/Business EMF metric the email worker
+        // and the SES event handler emit, scoped to Actor=customer so test traffic does not page
+        // anyone. No SnsAction: the alarm-state-change rule in OpsStack routes this to Telegram.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-CustomerEmailFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-customer-email-failure")
+                .alarmDescription("A customer email failed >= 1 time in 15 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("CustomerEmailFailure")
+                        .dimensionsMap(Map.of("Actor", "customer"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(15))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // Token charge unpaid alarm (B128). app/services/tokenEnforcement.js logs and swallows
         // "Token charge failed after HMRC success" when a token charge fails after HMRC has
         // already accepted the submission, so the customer keeps the filing but the ledger

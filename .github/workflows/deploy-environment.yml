@@ -81,6 +81,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/StaticSiteStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
@@ -97,6 +98,10 @@ on:
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
       - 'app/functions/ops/activityTelegramForwarder.js'
+      # Customer email Lambda source
+      - 'app/functions/email/**'
+      - 'app/lib/customerEmail*.js'
+      - 'app/services/customerEmailSender.js'
       # Holding page source
       - 'web/holding/**'
       # Developer site source
@@ -662,6 +667,25 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       image-name: billing-webhook
       stack-name: ${{ needs.names.outputs.environment-name }}-env-BillingWebhookStack
+
+  deploy-email:
+    name: 'deploy email'
+    needs:
+      - names
+      - create-secrets
+      - deploy-ecr
+      - deploy-identity
+      - deploy-activity
+      - deploy-data
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-env-image-stack.yml
+    secrets: inherit
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      image-name: email
+      stack-name: ${{ needs.names.outputs.environment-name }}-env-EmailStack
 
   deploy-cost-export:
     name: 'deploy cost export'

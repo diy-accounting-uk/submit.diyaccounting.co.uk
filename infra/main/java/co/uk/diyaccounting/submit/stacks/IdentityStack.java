@@ -287,6 +287,13 @@ public class IdentityStack extends Stack {
                 .values()
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
+        // The customer email worker looks up a user by id in this pool. EmailStack reads the
+        // value at deploy time, so the two stacks share no CloudFormation export.
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-UserPoolIdParameter")
+                .parameterName(props.sharedNames().email.userPoolIdParameterName)
+                .stringValue(this.userPool.getUserPoolId())
+                .build();
+
         var submitUserPoolClientIdParameterName = "/submit/%s/submit-app-client-id".formatted(props.envName());
         StringParameter.Builder.create(this, props.resourceNamePrefix() + "-SubmitUserPoolClientIdParameter")
                 .parameterName(submitUserPoolClientIdParameterName)
