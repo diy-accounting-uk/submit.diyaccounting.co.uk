@@ -243,6 +243,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
+          ConditionExpression: "attribute_exists(hashedSub)",
           UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
           ExpressionAttributeValues: {
             ":zero": 0,
@@ -260,6 +261,14 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   }
 }
 
+// What an update of a bundle item answers when the item does not exist. An update never creates an item:
+// an item built from one update alone holds only that update's fields.
+export const BUNDLE_MISSING = "bundle-missing";
+
+/**
+ * Resets the tokens on an existing bundle item.
+ * @returns {Promise<{updated: true} | {updated: false, reason: string}>} reason is BUNDLE_MISSING when no item exists
+ */
 export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt) {
   logger.info({ message: `resetTokensByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
@@ -271,6 +280,7 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
+          ConditionExpression: "attribute_exists(hashedSub)",
           UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
           ExpressionAttributeValues: {
             ":zero": 0,
@@ -282,7 +292,12 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
     );
 
     logger.info({ message: "Tokens reset by hashedSub", hashedSub, bundleId, tokensGranted, nextResetAt });
+    return { updated: true };
   } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.warn({ message: "Tokens not reset: no bundle item", hashedSub, bundleId });
+      return { updated: false, reason: BUNDLE_MISSING };
+    }
     logger.error({ message: "Error resetting tokens by hashedSub", error: error.message, hashedSub, bundleId });
     throw error;
   }
@@ -358,6 +373,11 @@ export async function recordTokenEvent(userId, bundleId, event) {
   }
 }
 
+/**
+ * Updates fields on an existing bundle item. A new expiry moves ttl and ttl_datestamp with it, so
+ * DynamoDB never deletes the item of a subscription that is still paid.
+ * @returns {Promise<{updated: true} | {updated: false, reason: string}>} reason is BUNDLE_MISSING when no item exists
+ */
 export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields) {
   logger.info({ message: `updateBundleSubscriptionFields [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
@@ -368,7 +388,14 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
     const values = {};
     const names = {};
 
-    for (const [key, value] of Object.entries(fields)) {
+    const written = { ...fields };
+    if (fields.expiry) {
+      const { ttl, ttl_datestamp } = calculateOneMonthTtl(new Date(fields.expiry));
+      written.ttl = ttl;
+      written.ttl_datestamp = ttl_datestamp;
+    }
+
+    for (const [key, value] of Object.entries(written)) {
       const attrName = `#${key}`;
       const attrValue = `:${key}`;
       expressions.push(`${attrName} = ${attrValue}`);
@@ -386,14 +413,20 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
+          ConditionExpression: "attribute_exists(hashedSub)",
           UpdateExpression: "SET " + expressions.join(", "),
           ExpressionAttributeNames: names,
           ExpressionAttributeValues: values,
         }),
     );
 
-    logger.info({ message: "Bundle subscription fields updated", hashedSub, bundleId, fields });
+    logger.info({ message: "Bundle subscription fields updated", hashedSub, bundleId, fields: written });
+    return { updated: true };
   } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.warn({ message: "Bundle subscription fields not updated: no bundle item", hashedSub, bundleId, fields });
+      return { updated: false, reason: BUNDLE_MISSING };
+    }
     logger.error({ message: "Error updating bundle subscription fields", error: error.message, hashedSub, bundleId });
     throw error;
   }
