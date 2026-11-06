@@ -6,7 +6,7 @@
 HMRC Corporation Tax filing in Submit: the CT600 and its computations through HMRC's Transaction Engine,
 the proofs on HMRC's test services (TPVS, then ETS), the approval steps with HMRC, and the prod launch
 that follows them, including the joint accounts and CT600 filing on prod (DF2b). Companies House
-filing and the Companies House forms' unhide on prod (UH4) are in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
+filing and the Companies House forms' unhide on prod (UH4) are live; their plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 ## User assertions
 
@@ -187,7 +187,7 @@ O34g is the operator's registration with HMRC's Software Developers Support Team
 | B34g2a | M | Sonnet | B34h design |
 | B34g2b | S | Sonnet | B34g2a, B34g1, O34g |
 
-B34g1 follows B34e (`PLAN_COMPANIES_HOUSE_APPROVAL.md`) because the CT600 carries B34e's full accounts document. B34g1 earns Opus for the
+B34g1 follows B34e (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`) because the CT600 carries B34e's full accounts document. B34g1 earns Opus for the
 IRmark canonicalisation and the CT600 box rules; the rest are Sonnet once the design fixes the
 tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 
