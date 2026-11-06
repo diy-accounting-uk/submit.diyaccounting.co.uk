@@ -1015,7 +1015,6 @@ async function fetchJson(path) {
 // already raised, so the reader sees it once.
 function showError(message) {
   const container = document.getElementById("objectivesContainer");
-  container.classList.add("objectives-failed");
   container.querySelectorAll("[data-objective-slot]").forEach((slot) => slot.replaceChildren());
   container.querySelectorAll(":scope > .objective").forEach((panel) => {
     panel.hidden = true;
@@ -1206,7 +1205,9 @@ function armTabs() {
 // The tab bar appears with the panels, after the entitlement check has passed. Sections built
 // since the page loaded take the chosen tab.
 function showTabs() {
-  document.getElementById("dashboardTabs").hidden = false;
+  const tabs = document.getElementById("dashboardTabs");
+  tabs.hidden = false;
+  tabs.classList.remove("dashboard-tabs-pending");
   showTab(currentTab);
 }
 
@@ -1218,7 +1219,6 @@ async function initPage() {
   try {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
-    document.getElementById("objectivesContainer").classList.add("objectives-settled");
     renderMonthlyMarketingBudget(snapshot);
     renderReserve(snapshot);
     renderCompanyAccounts(snapshot);
@@ -1235,8 +1235,10 @@ async function initPage() {
     document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
+      document.getElementById("dashboardTabs").hidden = true;
       showError(null);
     } else if (error.status === 401) {
+      document.getElementById("dashboardTabs").hidden = true;
       showError("Sign in with an operator account to see this page.");
     } else if (error.status === 404) {
       window.renderAwsLinks();

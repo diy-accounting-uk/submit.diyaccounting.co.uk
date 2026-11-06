@@ -12,6 +12,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { FIXTURE_CONSOLE_INDEX, FIXTURE_DAILY_CHARTS, PIXEL_PNG, fullShapeSnapshot } from "./operatorDashboardFixtures.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -33,10 +34,15 @@ const CONTENT_TYPES = {
 
 async function serveRealSiteWithSlowData(
   page,
-  { heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }] } = {},
+  {
+    heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }],
+    apiAnswers = {},
+    storage = {},
+  } = {},
 ) {
-  await page.addInitScript(() => {
+  await page.addInitScript((extraStorage) => {
     try {
+      for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
       localStorage.setItem("cognitoIdToken", "mock-id-token");
       localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
     } catch {}
@@ -58,7 +64,7 @@ async function serveRealSiteWithSlowData(
         });
       }
     }).observe({ type: "layout-shift", buffered: true });
-  });
+  }, storage);
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -68,6 +74,14 @@ async function serveRealSiteWithSlowData(
     }
     if (url.pathname.startsWith("/api/")) {
       await delay(DATA_RESPONSE_DELAY_MS);
+      if (url.pathname === "/api/v1/operator/console-image") {
+        await route.fulfill({ status: 200, contentType: "image/png", body: PIXEL_PNG });
+        return;
+      }
+      if (apiAnswers[url.pathname]) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(apiAnswers[url.pathname]) });
+        return;
+      }
       if (url.pathname === "/api/v1/bundle") {
         await route.fulfill({
           status: 200,
@@ -146,5 +160,98 @@ test.describe("Layout shift while data loads on a phone", () => {
       return pass.top - list.bottom;
     });
     expect(gap).toBeLessThan(80);
+  });
+
+  const CAPTURED_IMAGE_SLUGS = [
+    "cognito-sign-ins",
+    "hmrc-authentications",
+    "bundle-operations",
+    "bundle-grants",
+    "purchases",
+    "deploy-lead-time",
+    "analytics-all",
+    "lambda-errors",
+    "lambda-throttles",
+    "bundle-allocations",
+    "lambda-duration-slowest",
+    "lambda-duration-rest",
+    "rum-vitals",
+    "rum-errors",
+  ];
+
+  function operatorAnswers() {
+    const items = { ...FIXTURE_CONSOLE_INDEX.items };
+    for (const slug of CAPTURED_IMAGE_SLUGS) {
+      items[`prod-${slug}`] = {
+        id: `prod-${slug}`,
+        target: "prod",
+        env: "prod",
+        group: "operations",
+        title: slug,
+        kind: "image",
+        capturedAt: FIXTURE_CONSOLE_INDEX.generatedAt,
+        imageKey: `snapshots/prod/console/prod/prod-${slug}.png`,
+      };
+    }
+    return {
+      "/api/v1/operator/snapshot": {
+        ...fullShapeSnapshot(),
+        generatedAt: new Date().toISOString(),
+        dailyCharts: FIXTURE_DAILY_CHARTS,
+        console: { ...FIXTURE_CONSOLE_INDEX, items },
+      },
+      "/api/v1/pass/held": { passes: [] },
+    };
+  }
+
+  for (const [width, height] of [
+    [1440, 900],
+    [375, 800],
+    [375, 1000],
+  ]) {
+    for (const tab of ["main", "aws-prod"]) {
+      test(`operator/dashboard.html stays under the CLS limit on the ${tab} tab at ${width}x${height}`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: tab } });
+        await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+        await expect(page.locator("#dashboardTabs:not(.dashboard-tabs-pending)")).toBeVisible();
+        if (tab === "aws-prod") await expect(page.locator("img.console-capture-image").first()).toHaveAttribute("src", /^data:image\/png/);
+        await delay(1500);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+        await page.screenshot({ path: `target/screenshots/operator-dashboard-${tab}-${width}x${height}.png`, fullPage: true });
+      });
+    }
+  }
+
+  test("operator/dashboard.html draws no block over the line above it at 375 wide", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "aws-prod" } });
+    await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+    await expect(page.locator("#dashboardTabs:not(.dashboard-tabs-pending)")).toBeVisible();
+    await expect(page.locator("#awsLinksPanel")).toBeVisible();
+
+    const overlaps = await page.evaluate(() => {
+      const blocks = [...document.querySelectorAll("#mainContent > *")].filter((el) => el.getBoundingClientRect().height > 0);
+      const found = [];
+      for (let i = 1; i < blocks.length; i++) {
+        const above = blocks[i - 1].getBoundingClientRect();
+        const below = blocks[i].getBoundingClientRect();
+        if (below.top < above.bottom - 1) found.push({ above: blocks[i - 1].id, below: blocks[i].id, by: above.bottom - below.top });
+      }
+      return found;
+    });
+    expect(overlaps).toEqual([]);
+
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll("#mainContent > *")]
+        .filter((el) => el.getBoundingClientRect().height > 0 && el.scrollHeight - el.clientHeight > 1)
+        .map((el) => ({ id: el.id, shown: el.clientHeight, content: el.scrollHeight })),
+    );
+    expect(clipped, "blocks whose content is taller than the block").toEqual([]);
   });
 });

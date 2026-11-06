@@ -115,25 +115,50 @@ class ObservabilityStackTest {
     void rumClsP75AlarmWatchesTheNeedsImprovementBoundary() {
         Template template = Template.fromStack(synthObservabilityStack());
 
+        assertFlooredDailyP75Alarm(template, ".*-rum-cls-p75", "WebVitalsCumulativeLayoutShift", 0.25);
+    }
+
+    @Test
+    void rumLcpP75AlarmWatchesTheFourSecondBoundary() {
+        Template template = Template.fromStack(synthObservabilityStack());
+
+        assertFlooredDailyP75Alarm(template, ".*-rum-lcp-p75", "WebVitalsLargestContentfulPaint", 4000);
+    }
+
+    private static void assertFlooredDailyP75Alarm(
+            Template template, String alarmNameRegex, String metricName, Number threshold) {
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
                         "AlarmName",
-                        Match.stringLikeRegexp(".*-rum-cls-p75"),
-                        "Namespace",
-                        "AWS/RUM",
-                        "MetricName",
-                        "WebVitalsCumulativeLayoutShift",
-                        "ExtendedStatistic",
-                        "p75",
+                        Match.stringLikeRegexp(alarmNameRegex),
                         "Threshold",
-                        0.25,
+                        threshold,
                         "EvaluationPeriods",
-                        2,
+                        1,
                         "ComparisonOperator",
                         "GreaterThanThreshold",
                         "TreatMissingData",
-                        "notBreaching")));
+                        "notBreaching",
+                        "Metrics",
+                        Match.arrayWith(List.of(
+                                Match.objectLike(Map.of("Expression", "IF(samples >= 10, p75, 0)")),
+                                dailyMetric("samples", metricName, "SampleCount"),
+                                dailyMetric("p75", metricName, "p75"))))));
+    }
+
+    private static Object dailyMetric(String id, String metricName, String statistic) {
+        return Match.objectLike(Map.of(
+                "Id",
+                id,
+                "MetricStat",
+                Match.objectLike(Map.of(
+                        "Metric",
+                        Match.objectLike(Map.of("Namespace", "AWS/RUM", "MetricName", metricName)),
+                        "Period",
+                        86400,
+                        "Stat",
+                        statistic))));
     }
 
     @Test

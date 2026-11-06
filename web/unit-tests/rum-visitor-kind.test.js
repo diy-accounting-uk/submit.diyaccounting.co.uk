@@ -12,7 +12,7 @@ import path from "node:path";
 const submitJsPath = path.join(process.cwd(), "web/public/submit.bundle.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
-function setUpRum({ userAgent, requestIdPrefix, operatorFlag } = {}) {
+function setUpRum({ userAgent, requestIdPrefix, operatorFlag, pathname = "/" } = {}) {
   const metaTags = {
     "rum:appMonitorId": "test-monitor-123",
     "rum:region": "eu-west-2",
@@ -61,7 +61,7 @@ function setUpRum({ userAgent, requestIdPrefix, operatorFlag } = {}) {
     sessionStorage: global.sessionStorage,
     addEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-    location: { href: "http://localhost:3000", origin: "http://localhost:3000", search: "" },
+    location: { href: `http://localhost:3000${pathname}`, origin: "http://localhost:3000", pathname, search: "" },
     crypto: {
       getRandomValues: (arr) => arr,
       randomUUID: () => "test-uuid",
@@ -111,5 +111,19 @@ describe("RUM visitor_kind session attribute", () => {
 
     const attributesCall = global.window.AwsRumClient.q.find((entry) => entry.c === "addSessionAttributes");
     expect(attributesCall.p).toEqual({ visitor_kind: "bot" });
+  });
+});
+
+describe("RUM client start by page", () => {
+  it("starts the client on a customer page", () => {
+    setUpRum({ pathname: "/bundles.html" });
+
+    expect(global.window.AwsRumClient).toBeDefined();
+  });
+
+  it("does not start the client on a page under /operator/", () => {
+    setUpRum({ pathname: "/operator/dashboard.html" });
+
+    expect(global.window.AwsRumClient).toBeUndefined();
   });
 });

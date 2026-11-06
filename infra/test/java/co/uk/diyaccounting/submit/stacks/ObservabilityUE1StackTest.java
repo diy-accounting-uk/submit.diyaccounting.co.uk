@@ -80,96 +80,21 @@ class ObservabilityUE1StackTest {
     void spreadsheetsRumLcpP75AlarmWatchesTheLinkedAccountsMetric() {
         Template template = Template.fromStack(synthObservabilityUE1Stack());
 
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName",
-                        Match.stringLikeRegexp(".*-spreadsheets-rum-lcp-p75"),
-                        "Threshold",
-                        4000,
-                        "EvaluationPeriods",
-                        2,
-                        "ComparisonOperator",
-                        "GreaterThanThreshold",
-                        "TreatMissingData",
-                        "notBreaching",
-                        "Metrics",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "AccountId",
-                                "064390746177",
-                                "MetricStat",
-                                Match.objectLike(Map.of(
-                                        "Metric",
-                                        Match.objectLike(
-                                                Map.of(
-                                                        "Namespace", "AWS/RUM",
-                                                        "MetricName", "WebVitalsLargestContentfulPaint")),
-                                        "Stat",
-                                        "p75")))))))));
+        assertFlooredDailyP75Alarm(template, ".*-spreadsheets-rum-lcp-p75", "WebVitalsLargestContentfulPaint", 4000);
     }
 
     @Test
     void spreadsheetsRumInpP75AlarmWatchesTheLinkedAccountsMetric() {
         Template template = Template.fromStack(synthObservabilityUE1Stack());
 
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName",
-                        Match.stringLikeRegexp(".*-spreadsheets-rum-inp-p75"),
-                        "Threshold",
-                        500,
-                        "EvaluationPeriods",
-                        2,
-                        "ComparisonOperator",
-                        "GreaterThanThreshold",
-                        "TreatMissingData",
-                        "notBreaching",
-                        "Metrics",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "AccountId",
-                                "064390746177",
-                                "MetricStat",
-                                Match.objectLike(Map.of(
-                                        "Metric",
-                                        Match.objectLike(
-                                                Map.of(
-                                                        "Namespace", "AWS/RUM",
-                                                        "MetricName", "WebVitalsInteractionToNextPaint")),
-                                        "Stat",
-                                        "p75")))))))));
+        assertFlooredDailyP75Alarm(template, ".*-spreadsheets-rum-inp-p75", "WebVitalsInteractionToNextPaint", 500);
     }
 
     @Test
     void spreadsheetsRumClsP75AlarmWatchesTheLinkedAccountsMetric() {
         Template template = Template.fromStack(synthObservabilityUE1Stack());
 
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName",
-                        Match.stringLikeRegexp(".*-spreadsheets-rum-cls-p75"),
-                        "Threshold",
-                        0.25,
-                        "EvaluationPeriods",
-                        2,
-                        "ComparisonOperator",
-                        "GreaterThanThreshold",
-                        "TreatMissingData",
-                        "notBreaching",
-                        "Metrics",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "AccountId",
-                                "064390746177",
-                                "MetricStat",
-                                Match.objectLike(Map.of(
-                                        "Metric",
-                                        Match.objectLike(
-                                                Map.of(
-                                                        "Namespace", "AWS/RUM",
-                                                        "MetricName", "WebVitalsCumulativeLayoutShift")),
-                                        "Stat",
-                                        "p75")))))))));
+        assertFlooredDailyP75Alarm(template, ".*-spreadsheets-rum-cls-p75", "WebVitalsCumulativeLayoutShift", 0.25);
     }
 
     @Test
@@ -198,5 +123,43 @@ class ObservabilityUE1StackTest {
                                         "ACM Certificate Revoked")),
                         "Targets",
                         List.of(Match.objectLike(Map.of("Arn", Match.stringLikeRegexp(".*:event-bus/default")))))));
+    }
+
+    private static void assertFlooredDailyP75Alarm(
+            Template template, String alarmNameRegex, String metricName, Number threshold) {
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        Match.stringLikeRegexp(alarmNameRegex),
+                        "Threshold",
+                        threshold,
+                        "EvaluationPeriods",
+                        1,
+                        "ComparisonOperator",
+                        "GreaterThanThreshold",
+                        "TreatMissingData",
+                        "notBreaching",
+                        "Metrics",
+                        Match.arrayWith(List.of(
+                                Match.objectLike(Map.of("Expression", "IF(samples >= 10, p75, 0)")),
+                                linkedAccountMetric("samples", metricName, "SampleCount"),
+                                linkedAccountMetric("p75", metricName, "p75"))))));
+    }
+
+    private static Object linkedAccountMetric(String id, String metricName, String statistic) {
+        return Match.objectLike(Map.of(
+                "Id",
+                id,
+                "AccountId",
+                "064390746177",
+                "MetricStat",
+                Match.objectLike(Map.of(
+                        "Metric",
+                        Match.objectLike(Map.of("Namespace", "AWS/RUM", "MetricName", metricName)),
+                        "Period",
+                        86400,
+                        "Stat",
+                        statistic))));
     }
 }
