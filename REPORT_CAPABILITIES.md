@@ -2465,11 +2465,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-04 Update Route53/CloudFront origins for a domain
 
 - **Use when:** an apex or environment domain must move to a different origin, or fall back to the holding page.
-- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment. Each CloudFront alias moves to the target distribution with one associate-alias call (`scripts/move-cloudfront-aliases.sh`), so some distribution always holds it; an alias that no distribution holds is added. For a deployment origin it also moves the apex API Gateway custom domain mapping to that deployment's API in place, so the apex API has no gap.
+- **Does:** set-origins.yml atomically updates the Route53 ALIAS records and CloudFront distribution aliases for a domain. It points the domain at a branch-based origin, the holding page, or the last-known-good deployment. Each CloudFront alias moves to the target distribution with one associate-alias call (`scripts/move-cloudfront-aliases.sh`), so some distribution always holds it; an alias that no distribution holds is added. Before the move it writes the DNS TXT record `_<alias>` with the target's `cloudfront.net` name, which CloudFront requires for the call (`scripts/write-alias-txt-records.sh`), and retries the call while CloudFront does not yet see the record. For a deployment origin it also moves the apex API Gateway custom domain mapping to that deployment's API in place, so the apex API has no gap.
 - **Run:** `gh workflow run set-origins.yml -f domain-source=<branch|holding|last-known-good> -f environment-name=<ci|prod>`
-- **Entry:** `.github/workflows/set-origins.yml`; `.github/actions/set-origins/action.yml`; `scripts/move-cloudfront-aliases.sh`; `scripts/transfer-apigw-domain.sh`
-- **Files:** .github/actions/set-origins/action.yml, .github/workflows/set-origins.yml, scripts/move-cloudfront-aliases.sh, app/unit-tests/scripts/moveCloudfrontAliases.test.js, scripts/transfer-apigw-domain.sh, app/unit-tests/scripts/transferApigwDomain.test.js
-- **Keywords:** set origins, route53, cloudfront alias, associate-alias, alias move, api gateway custom domain, api mapping, holding page, last-known-good, domain cutover
+- **Entry:** `.github/workflows/set-origins.yml`; `.github/actions/set-origins/action.yml`; `scripts/move-cloudfront-aliases.sh`; `scripts/write-alias-txt-records.sh`; `scripts/transfer-apigw-domain.sh`
+- **Files:** .github/actions/set-origins/action.yml, .github/workflows/set-origins.yml, scripts/move-cloudfront-aliases.sh, app/unit-tests/scripts/moveCloudfrontAliases.test.js, scripts/write-alias-txt-records.sh, app/unit-tests/scripts/writeAliasTxtRecords.test.js, app/unit-tests/setOriginsAction.test.js, scripts/transfer-apigw-domain.sh, app/unit-tests/scripts/transferApigwDomain.test.js
+- **Keywords:** set origins, route53, cloudfront alias, associate-alias, alias move, alias txt record, api gateway custom domain, api mapping, holding page, last-known-good, domain cutover
 - **Related:** OPS-05
 
 #### OPS-05 Promote a CI deployment to the CI apex
@@ -6836,6 +6836,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alert topic: [OPS-119](#ops-119-provision-the-ops-stack)
 - alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - alias move: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
+- alias txt record: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - all-clients: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
 - allocation: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - allow-list: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
