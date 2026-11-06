@@ -1180,24 +1180,21 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         // The quarantine reader role reads untrusted text, so it can do three things and no more:
-        // invoke the one Haiku model (through its EU inference profile and the foundation model the
-        // profile routes to), screen the answer with the guardrail, and read the three parameters
+        // invoke the one Nova Pro foundation model in eu-west-2, screen the answer with the
+        // guardrail, and read the three parameters
         // the reader job needs. It has no telemetry, S3, DynamoDB or Marketplace grant.
         Role quarantineReaderRole = Role.Builder.create(this, props.resourceNamePrefix() + "-QuarantineReaderRole")
                 .roleName(props.sharedNames().observability.quarantineReaderRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Role the quarantine reader workflows chain into to summarise untrusted text"
-                        + " with Haiku and screen the answer with the guardrail")
+                        + " with Nova Pro and screen the answer with the guardrail")
                 .assumedBy(new ArnPrincipal(githubActionsRoleArn))
                 .build();
 
         quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("InvokeReaderModel")
                 .actions(List.of("bedrock:InvokeModel"))
-                .resources(List.of(
-                        "arn:aws:bedrock:eu-west-2:%s:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
-                                .formatted(this.getAccount()),
-                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"))
+                .resources(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"))
                 .build());
 
         quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
@@ -1219,7 +1216,7 @@ public class ObservabilityStack extends Stack {
 
         // The dashboard review role reads what the nightly dashboard review judges and nothing else:
         // the operator snapshot and the console images in the lake, the held passes through the
-        // issuer index of the passes table, one Sonnet profile, the guardrail and four parameters.
+        // issuer index of the passes table, Nova Pro, the guardrail and four parameters.
         // It has no ListBucket, so a missing key answers AccessDenied; the job reads both as "not
         // published yet". The LeadingKeys condition limits the query to the partition key "held".
         String dashboardReviewLakeArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
@@ -1227,7 +1224,7 @@ public class ObservabilityStack extends Stack {
                 .roleName(props.sharedNames().observability.dashboardReviewRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Role the nightly dashboard review workflow chains into to read the snapshot and"
-                        + " the held passes, and to judge the screenshots with Sonnet")
+                        + " the held passes, and to judge the screenshots with Nova Pro")
                 .assumedBy(new ArnPrincipal(githubActionsRoleArn))
                 .build();
 
@@ -1250,16 +1247,7 @@ public class ObservabilityStack extends Stack {
         dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("InvokeReviewModel")
                 .actions(List.of("bedrock:InvokeModel"))
-                .resources(List.of(
-                        "arn:aws:bedrock:eu-west-2:%s:inference-profile/eu.anthropic.claude-sonnet-5-5"
-                                .formatted(this.getAccount()),
-                        "arn:aws:bedrock:eu-north-1::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-west-3::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-south-1::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-west-2::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-south-2::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-west-1::foundation-model/anthropic.claude-sonnet-5-5",
-                        "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-sonnet-5-5"))
+                .resources(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"))
                 .build());
 
         dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
