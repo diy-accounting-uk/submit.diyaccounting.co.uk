@@ -42,6 +42,14 @@ async function serveRealSite(page) {
       await route.fallback();
       return;
     }
+    if (url.pathname === "/api/v1/pass") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ valid: true, bundleId: "resident-pro" }),
+      });
+      return;
+    }
     if (url.pathname.startsWith("/api/")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
       return;
@@ -76,9 +84,9 @@ test.describe("Activity-started click beacon", () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
     });
 
-    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "domcontentloaded" });
+    await page.goto("http://localhost:3000/pass.html?pass=word-word-word-word", { waitUntil: "domcontentloaded" });
 
-    const redeemButton = page.locator("#redeemPassBtn");
+    const redeemButton = page.locator("#passRedeemBtn");
     await expect(redeemButton).toBeVisible({ timeout: 5000 });
     await expect(redeemButton).toHaveAttribute("data-activity-start", "bundle");
 
@@ -99,15 +107,15 @@ test.describe("Activity-started click beacon", () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
     });
 
-    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "domcontentloaded" });
+    await page.goto("http://localhost:3000/pass.html?pass=word-word-word-word", { waitUntil: "domcontentloaded" });
 
-    const redeemButton = page.locator("#redeemPassBtn");
+    const redeemButton = page.locator("#passRedeemBtn");
     await expect(redeemButton).toBeVisible({ timeout: 5000 });
     await redeemButton.click();
 
     // The click must reach the page's own handling (no hang, no thrown error) whether or not
-    // a beacon was sent -- confirmed by the page still responding to a second interaction.
-    await expect(redeemButton).toBeEnabled();
+    // a beacon was sent: a signed-out click goes on to the sign-in page.
+    await expect(page).toHaveURL(/\/auth\/login\.html/);
     expect(beaconCalled).toBe(false);
   });
 

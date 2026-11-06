@@ -292,6 +292,8 @@
     sessionStorage.removeItem("pendingPass");
     sessionStorage.removeItem("postLoginRedirect");
     sessionStorage.removeItem("passValidation");
+    sessionStorage.removeItem("passAddOnReturn");
+    sessionStorage.removeItem("passResults");
     sessionStorage.removeItem("carriedVrn");
     sessionStorage.removeItem("carriedNino");
     sessionStorage.removeItem("carriedBusinessId");
