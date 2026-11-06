@@ -3,9 +3,9 @@
 
 // app/unit-tests/scripts/paypalAssert.test.js
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 
-import { parseConfig, findHostedButtonIds, assertTemplateMatches } from "../../../infra/paypal/paypal-assert.js";
+import { parseConfig, findHostedButtonIds, assertTemplateMatches, checkDonateUrl } from "../../../infra/paypal/paypal-assert.js";
 
 const SAMPLE_TOML = `
 [button]
@@ -84,5 +84,49 @@ describe("assertTemplateMatches", () => {
     const html = `${MATCHING_HTML}\n<input name="hosted_button_id" value="XTEQ73HM52QQW" />`;
     const mismatches = assertTemplateMatches(config, html);
     expect(mismatches.some((m) => m.includes("exactly one hosted_button_id"))).toBe(true);
+  });
+});
+
+describe("checkDonateUrl", () => {
+  const config = { donateUrl: "https://www.paypal.com/donate/?hosted_button_id=XTEQ73HM52QQW" };
+
+  async function run(fetchImpl, cfg = config) {
+    const failures = [];
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await checkDonateUrl(cfg, failures, fetchImpl);
+    const warnings = warn.mock.calls.length;
+    vi.restoreAllMocks();
+    return { failures, warnings, log, error };
+  }
+
+  test("passes on 200", async () => {
+    const r = await run(async () => ({ ok: true, status: 200 }));
+    expect(r.failures).toEqual([]);
+    expect(r.warnings).toBe(0);
+  });
+
+  test("a 403 from PayPal's edge warns once and does not fail", async () => {
+    const r = await run(async () => ({ ok: false, status: 403 }));
+    expect(r.failures).toEqual([]);
+    expect(r.warnings).toBe(1);
+  });
+
+  test("a 404 fails", async () => {
+    const r = await run(async () => ({ ok: false, status: 404 }));
+    expect(r.failures).toHaveLength(1);
+  });
+
+  test("a network error fails", async () => {
+    const r = await run(async () => {
+      throw new Error("boom");
+    });
+    expect(r.failures).toEqual(["donate url: boom"]);
+  });
+
+  test("a 403 from another host fails", async () => {
+    const r = await run(async () => ({ ok: false, status: 403 }), { donateUrl: "https://example.com/donate" });
+    expect(r.failures).toHaveLength(1);
   });
 });
