@@ -262,7 +262,7 @@ operator's approval to enable it for live users on prod.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
   `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
-  `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
+  `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4, which is live; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
   Authorisation API on Submit's production application; HMRC's approval of agent use; practice
@@ -277,7 +277,7 @@ IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7
 IA3 ──► IA6
 IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
 IA11 ──► IA6 (the recordings are cited in the application)
-IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_COMPANIES_HOUSE_APPROVAL.md UH4 and PLAN_HMRC_CT_APPROVAL.md UH7)
+IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_HMRC_CT_APPROVAL.md UH7)
 ```
 
 Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it

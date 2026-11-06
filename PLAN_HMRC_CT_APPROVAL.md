@@ -5,8 +5,8 @@
 
 HMRC Corporation Tax filing in Submit: the CT600 and its computations through HMRC's Transaction Engine,
 the proofs on HMRC's test services (TPVS, then ETS), the approval steps with HMRC, and the prod launch
-that follows them. Companies House filing, the joint filing (DF1, DF2a to DF2c) and the Companies
-House forms' unhide on prod (UH4) are in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
+that follows them, including the joint accounts and CT600 filing on prod (DF2b). Companies House
+filing and the Companies House forms' unhide on prod (UH4) are live; their plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 ## User assertions
 
@@ -21,9 +21,8 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | O34g | Register with HMRC's SDST for the CT test services; set the ETS sender ID, password and vendor ID on GitHub's `ci` environment | 0 | none | none |
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g |
 | B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity | ~2 | Sonnet | B34g1, O34g |
+| DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | B34g2b |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT production approval, B34g2b, the activity in a bundle sold on prod, the operator's approval |
-
-DF1, DF2a to DF2c (the joint filing) and IX2c (the CT600 page fills its accounts section from an iXBRL file) are in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 ### Human-driven
 
@@ -35,6 +34,8 @@ DF1, DF2a to DF2c (the joint filing) and IX2c (the CT600 page fills its accounts
 
 - [ ] **B34g2b. One ETS filing from the page.** Polled and deleted; then `prod` on the activity (NEXT.md B34g). Blocked on B34g1 and O34g. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **DF2b. The joint accounts and CT600 filing on prod.** `prod` on the joint filing's activity, both receipts under one entry. Blocked on B34g2b. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax production approval; B34g2b's ETS filing from the page; the activity in a bundle sold on prod; the operator's approval to enable it for live users. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
 ## Dependency graph
@@ -44,7 +45,7 @@ flowchart LR
     O34g[O34g HMRC SDST test credentials] --> B34g1
     B34g1 --> B34g2b
     O34g --> B34g2b
-    B34g2b --> DF2b["PLAN_COMPANIES_HOUSE_APPROVAL.md DF2b"]
+    B34g2b --> DF2b
     B34g2b --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
@@ -52,6 +53,7 @@ flowchart LR
 - O34g: blocked on SDST's answer
 - B34g1: built (PR #475); its ETS proof waits on O34g and runs with B34g2b as `NEXT.md` B34g
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
+- DF2b: blocked by B34g2b
 - UH7: blocked by HMRC's Corporation Tax production approval, B34g2b and the operator's approval
 
 ## Designs
@@ -185,7 +187,7 @@ O34g is the operator's registration with HMRC's Software Developers Support Team
 | B34g2a | M | Sonnet | B34h design |
 | B34g2b | S | Sonnet | B34g2a, B34g1, O34g |
 
-B34g1 follows B34e (`PLAN_COMPANIES_HOUSE_APPROVAL.md`) because the CT600 carries B34e's full accounts document. B34g1 earns Opus for the
+B34g1 follows B34e (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`) because the CT600 carries B34e's full accounts document. B34g1 earns Opus for the
 IRmark canonicalisation and the CT600 box rules; the rest are Sonnet once the design fixes the
 tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 
@@ -450,7 +452,7 @@ Ranked, most harm to the reader first:
 | 11 | The `h1` is in Title Case, against the site rule (DS 1.11) and its sibling "File micro-entity accounts" | Page | "File a Company Tax Return" [consistency] |
 | 12 | The review answers are nine separate tables, each with its own header row and its own column widths, so the Answer columns do not line up | Review | One column plan for every answers table (fixed layout, set widths) [consistency] |
 
-The joint filing's design (DF1) and its rows (DF2a to DF2c) are in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
+The joint filing's open row is DF2b on this plan's board.
 
 ### Design: supplementary page CT600A, loans to participators (CT8a)
 

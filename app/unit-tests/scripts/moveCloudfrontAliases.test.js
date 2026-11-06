@@ -21,6 +21,8 @@ const OLD_ORIGIN = "prod-aaaaaaa.submit.diyaccounting.co.uk";
 // A stub `aws` that keeps CloudFront state in files: $STUB_DIR/dists/<id>/aliases holds one alias per
 // line and .../originfor the OriginFor tag. Each call is logged to calls.log as "<verb> <id> <detail>".
 // STUB_REFUSE_ASSOCIATE makes associate-alias fail with IllegalUpdate and change nothing.
+// STUB_TXT_REFUSALS=<n> makes the first n associate-alias calls fail as CloudFront does while it does
+// not see the alias DNS TXT record, and change nothing.
 // STUB_VANISH_ON names a verb: the first call of that verb finds distribution STUB_VANISH_ID deleted,
 // as the self-destruct of an old deployment would leave it.
 const AWS_STUB = `#!/bin/bash
@@ -55,6 +57,10 @@ case "$verb" in
     id=$(flag --target-distribution-id); a=$(flag --alias)
     log "$id" "$a"
     [ -d "$D/$id" ] || nosuch AssociateAlias
+    if [ -n "\${STUB_TXT_REFUSALS:-}" ]; then
+      n=$(cat "$STUB_DIR/txt-refusals" 2>/dev/null || echo 0)
+      if [ "$n" -lt "$STUB_TXT_REFUSALS" ]; then echo $((n + 1)) > "$STUB_DIR/txt-refusals"; echo "An error occurred (IllegalUpdate) when calling the AssociateAlias operation: Invalid or missing alias DNS TXT records." >&2; exit 254; fi
+    fi
     if [ -n "\${STUB_REFUSE_ASSOCIATE:-}" ]; then echo "An error occurred (IllegalUpdate) when calling the AssociateAlias operation: refused" >&2; exit 254; fi
     h=$(holder "$a")
     if [ -z "$h" ]; then echo "An error occurred (InvalidArgument) when calling the AssociateAlias operation: no distribution holds the alias" >&2; exit 254; fi
@@ -80,8 +86,9 @@ case "$verb" in
     log "$(flag --id)"
     ;;
   get-distribution)
-    log "$(flag --id)"
-    jq -R . "$D/$(flag --id)/aliases" | jq -s .
+    id=$(flag --id); q=$(flag --query)
+    log "$id" "$q"
+    if [ "$q" = Distribution.DomainName ]; then echo "d$(echo "$id" | tr 'A-Z' 'a-z').cloudfront.net"; else jq -R . "$D/$id/aliases" | jq -s .; fi
     ;;
 esac
 exit 0
@@ -102,9 +109,15 @@ const aliasesOf = (id) => {
   return readFileSync(file, "utf8").split("\n").filter(Boolean);
 };
 
-const runScript = (aliases, env = {}) => {
-  const result = spawnSync("/bin/bash", [SCRIPT, NEW, ACCOUNT, NEW_ORIGIN, ...aliases], {
-    env: { ...process.env, PATH: `${join(dir, "bin")}:${process.env.PATH}`, STUB_DIR: dir, ...env },
+const runScript = (aliases, env = {}, mode = []) => {
+  const result = spawnSync("/bin/bash", [SCRIPT, ...mode, NEW, ACCOUNT, NEW_ORIGIN, ...aliases], {
+    env: {
+      ...process.env,
+      PATH: `${join(dir, "bin")}:${process.env.PATH}`,
+      STUB_DIR: dir,
+      MOVE_ALIAS_TXT_RETRY_INTERVAL: "0",
+      ...env,
+    },
     encoding: "utf8",
   });
   const logFile = join(dir, "calls.log");
@@ -197,11 +210,81 @@ describe("move-cloudfront-aliases.sh", { timeout: 30000 }, () => {
     const { status, stderr, verbs } = runScript([APEX, ALIAS], { STUB_REFUSE_ASSOCIATE: "1" });
 
     expect(status).toBe(1);
+    expect(verbs.filter((v) => v === "associate-alias")).toHaveLength(1);
+    expect(stderr).not.toMatch(/retry/);
     expect(stderr).toMatch(/associate-alias refused to move \[prod-submit\.diyaccounting\.co\.uk\]/);
     expect(verbs).not.toContain("update-distribution");
     expect(verbs).not.toContain("wait-distribution-deployed");
     expect(aliasesOf(OLD)).toEqual([OLD_ORIGIN, APEX, ALIAS]);
     expect(aliasesOf(NEW)).toEqual([NEW_ORIGIN]);
+  });
+
+  test("a move that CloudFront refuses for the DNS TXT record is retried until it succeeds", () => {
+    seedDist(OLD, [OLD_ORIGIN, APEX], OLD_ORIGIN);
+    seedDist(NEW, [NEW_ORIGIN], NEW_ORIGIN);
+
+    const { status, stderr, calls } = runScript([APEX], { STUB_TXT_REFUSALS: "2" });
+
+    expect(status, stderr).toBe(0);
+    expect(calls.filter((c) => c.startsWith("associate-alias"))).toEqual([
+      `associate-alias ${NEW} ${APEX}`,
+      `associate-alias ${NEW} ${APEX}`,
+      `associate-alias ${NEW} ${APEX}`,
+    ]);
+    expect(stderr).toMatch(/does not see the DNS TXT record \[_prod-submit\.diyaccounting\.co\.uk\] yet; retry 1 of 18/);
+    expect(stderr).toMatch(/retry 2 of 18/);
+    expect(aliasesOf(NEW)).toEqual([NEW_ORIGIN, APEX]);
+    expect(aliasesOf(OLD)).toEqual([OLD_ORIGIN]);
+  });
+
+  test("a move still refused for the DNS TXT record after the last retry fails and leaves the alias on its holder", () => {
+    seedDist(OLD, [OLD_ORIGIN, APEX], OLD_ORIGIN);
+    seedDist(NEW, [NEW_ORIGIN], NEW_ORIGIN);
+
+    const { status, stderr, verbs } = runScript([APEX], { STUB_TXT_REFUSALS: "99", MOVE_ALIAS_TXT_RETRY_COUNT: "2" });
+
+    expect(status).toBe(1);
+    expect(verbs.filter((v) => v === "associate-alias")).toHaveLength(3);
+    expect(stderr).toMatch(/did not accept the DNS TXT record \[_prod-submit\.diyaccounting\.co\.uk\] after 2 retries/);
+    expect(stderr).toMatch(/associate-alias refused to move \[prod-submit\.diyaccounting\.co\.uk\]/);
+    expect(verbs).not.toContain("update-distribution");
+    expect(verbs).not.toContain("wait-distribution-deployed");
+    expect(aliasesOf(OLD)).toEqual([OLD_ORIGIN, APEX]);
+    expect(aliasesOf(NEW)).toEqual([NEW_ORIGIN]);
+  });
+
+  test("the plan names only the aliases another distribution holds, with the target's domain name, and changes nothing", () => {
+    seedDist(OLD, [OLD_ORIGIN, APEX], OLD_ORIGIN);
+    seedDist(NEW, [NEW_ORIGIN, ALIAS], NEW_ORIGIN);
+
+    const { status, stdout, stderr, verbs } = runScript([APEX, ALIAS], {}, ["--plan"]);
+
+    expect(status, stderr).toBe(0);
+    expect(stdout).toBe(`moving-aliases=${APEX}\ntarget-domain-name=denewdist.cloudfront.net\n`);
+    expect(verbs).not.toContain("associate-alias");
+    expect(verbs).not.toContain("update-distribution");
+    expect(aliasesOf(OLD)).toEqual([OLD_ORIGIN, APEX]);
+  });
+
+  test("the plan names every alias that moves, in order", () => {
+    seedDist(OLD, [OLD_ORIGIN, APEX, ALIAS], OLD_ORIGIN);
+    seedDist(NEW, [NEW_ORIGIN], NEW_ORIGIN);
+
+    const { status, stdout } = runScript([APEX, ALIAS], {}, ["--plan"]);
+
+    expect(status).toBe(0);
+    expect(stdout).toBe(`moving-aliases=${APEX} ${ALIAS}\ntarget-domain-name=denewdist.cloudfront.net\n`);
+  });
+
+  test("an alias that no distribution holds needs no DNS TXT record in the plan", () => {
+    seedDist(NEW, [NEW_ORIGIN], NEW_ORIGIN);
+
+    const { status, stdout, verbs } = runScript([APEX, ALIAS], {}, ["--plan"]);
+
+    expect(status).toBe(0);
+    expect(stdout).toBe("moving-aliases=\ntarget-domain-name=\n");
+    expect(verbs).not.toContain("get-distribution");
+    expect(verbs).not.toContain("update-distribution");
   });
 
   test("aliases the target already holds cause no change and no wait", () => {
