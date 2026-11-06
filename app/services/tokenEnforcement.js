@@ -14,7 +14,7 @@
 // app/services/tokenEnforcement.js
 
 import { createLogger } from "../lib/logger.js";
-import { consumeToken, getUserBundles, recordTokenEvent } from "../data/dynamoDbBundleRepository.js";
+import { consumeToken, getUserBundles, recordTokenEvent, BUNDLE_MISSING } from "../data/dynamoDbBundleRepository.js";
 import { isUnlimitedTokenGrant } from "./productCatalog.js";
 
 const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
@@ -132,9 +132,21 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
     recordTokenEvent(userId, qualifyingBundle.bundleId, {
       activity: activityId,
       tokensUsed: tokenCost,
-    }).catch((err) => {
-      logger.warn({ message: "Failed to record token event", error: err.message, userId, activityId });
-    });
+    })
+      .then((recorded) => {
+        if (recorded?.reason === BUNDLE_MISSING) {
+          logger.warn({
+            message: "Token event not recorded: bundle item missing",
+            userId,
+            activityId,
+            bundleId: qualifyingBundle.bundleId,
+          });
+        }
+        return recorded;
+      })
+      .catch((err) => {
+        logger.warn({ message: "Failed to record token event", error: err.message, userId, activityId });
+      });
   }
 
   return { ...result, cost: tokenCost };

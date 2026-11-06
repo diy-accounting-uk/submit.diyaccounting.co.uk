@@ -326,6 +326,45 @@ describe("bundleGet ingestHandler", () => {
     expect(updateCmd.input.UpdateExpression).toMatch(/tokensConsumed\s*=\s*:zero/);
   });
 
+  test("a token refresh that finds the bundle item gone leaves the bundle as read and still answers 200", async () => {
+    const userId = "user-token-refresh-gone";
+    const event = buildEventWithToken(makeIdToken(userId), {});
+    event.headers["x-wait-time-ms"] = "500";
+
+    const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+    const expiredBundle = {
+      hashedSub: "hashed-" + userId,
+      bundleId: "invited-guest",
+      tokensGranted: 3,
+      tokensConsumed: 3,
+      tokenResetAt: "1970-01-01T00:00:00.000Z",
+    };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand && cmd.input.TableName === bundlesTableName) {
+        return { Items: [expiredBundle], Count: 1 };
+      }
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      if (cmd instanceof MockGetCommand) {
+        return { Item: undefined };
+      }
+      if (cmd instanceof MockUpdateCommand && cmd.input.TableName === bundlesTableName) {
+        const error = new Error("The conditional request failed");
+        error.name = "ConditionalCheckFailedException";
+        throw error;
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const invitedGuest = parseResponseBody(response).bundles.find((b) => b.bundleId === "invited-guest");
+    expect(invitedGuest.tokensRemaining).toBe(0);
+  });
+
   test("an unlimited-grant bundle is never refreshed and never pollutes the tokensRemaining total", async () => {
     const userId = "user-unlimited-grant";
     const token = makeIdToken(userId);

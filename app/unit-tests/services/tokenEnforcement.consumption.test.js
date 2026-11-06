@@ -14,6 +14,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   consumeToken: (...args) => mockConsumeToken(...args),
   getUserBundles: (...args) => mockGetUserBundles(...args),
   recordTokenEvent: (...args) => mockRecordTokenEvent(...args),
+  BUNDLE_MISSING: "bundle-missing",
 }));
 
 describe("services/tokenEnforcement - consumption recording", () => {
@@ -41,6 +42,30 @@ describe("services/tokenEnforcement - consumption recording", () => {
       activity: "submit-vat",
       tokensUsed: 1,
     });
+  });
+
+  test("a token event that finds no bundle item does not fail the charge, and the charge result is unchanged", async () => {
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 2 }]);
+    mockConsumeToken.mockResolvedValue({ consumed: true, tokensRemaining: 7, bundle: {} });
+    mockRecordTokenEvent.mockResolvedValue({ updated: false, reason: "bundle-missing" });
+    const catalog = { activities: [{ id: "submit-vat", tokenCost: 1, bundles: ["day-guest"] }] };
+
+    const result = await consumeTokenForActivity("test-user", "submit-vat", catalog);
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(result).toMatchObject({ consumed: true, tokensRemaining: 7 });
+    expect(mockRecordTokenEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test("a charge that finds no bundle item reports not consumed and records no event", async () => {
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 2 }]);
+    mockConsumeToken.mockResolvedValue({ consumed: false, reason: "bundle-missing", tokensRemaining: 0 });
+    const catalog = { activities: [{ id: "submit-vat", tokenCost: 1, bundles: ["day-guest"] }] };
+
+    const result = await consumeTokenForActivity("test-user", "submit-vat", catalog);
+
+    expect(result).toMatchObject({ consumed: false, reason: "bundle-missing" });
+    expect(mockRecordTokenEvent).not.toHaveBeenCalled();
   });
 
   test("does not record token event when consumption fails", async () => {

@@ -231,6 +231,14 @@ export async function deleteAllBundles(userId) {
   }
 }
 
+// What an update of a bundle item answers when the item does not exist. An update never creates an item:
+// an item built from one update alone holds only that update's fields.
+export const BUNDLE_MISSING = "bundle-missing";
+
+/**
+ * Resets the tokens on an existing bundle item.
+ * @returns {Promise<{updated: true} | {updated: false, reason: string}>} reason is BUNDLE_MISSING when no item exists
+ */
 export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) {
   logger.info({ message: `resetTokens [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
@@ -255,15 +263,16 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
     );
 
     logger.info({ message: "Tokens reset", hashedSub, bundleId, tokensGranted, nextResetAt });
+    return { updated: true };
   } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.warn({ message: "Tokens not reset: no bundle item", userId, bundleId });
+      return { updated: false, reason: BUNDLE_MISSING };
+    }
     logger.error({ message: "Error resetting tokens", error: error.message, userId, bundleId });
     throw error;
   }
 }
-
-// What an update of a bundle item answers when the item does not exist. An update never creates an item:
-// an item built from one update alone holds only that update's fields.
-export const BUNDLE_MISSING = "bundle-missing";
 
 /**
  * Resets the tokens on an existing bundle item.
@@ -316,7 +325,7 @@ export async function consumeToken(userId, bundleId, count = 1) {
           TableName: tableName,
           Key: { hashedSub, bundleId },
           UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
-          ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
+          ConditionExpression: "attribute_exists(hashedSub) AND (attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted)",
           ExpressionAttributeValues: {
             ":zero": 0,
             ":inc": count,
@@ -332,6 +341,20 @@ export async function consumeToken(userId, bundleId, count = 1) {
     return { consumed: true, tokensRemaining, bundle: updated };
   } catch (error) {
     if (error.name === "ConditionalCheckFailedException") {
+      // The one condition covers a missing item and an exhausted one; a read tells them apart.
+      const { hashedSub } = await locateBundleOwner(userId, bundleId);
+      const { Item } = await executeDynamoDbCommand(
+        (module) =>
+          new module.GetCommand({
+            TableName: getResourceName("BUNDLE_DYNAMODB_TABLE_NAME"),
+            Key: { hashedSub, bundleId },
+            ConsistentRead: true,
+          }),
+      );
+      if (!Item) {
+        logger.warn({ message: "Token not consumed: no bundle item", userId, bundleId });
+        return { consumed: false, reason: BUNDLE_MISSING, tokensRemaining: 0 };
+      }
       logger.info({ message: "Token consumption blocked - tokens exhausted", userId, bundleId });
       return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
     }
@@ -357,6 +380,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
+          ConditionExpression: "attribute_exists(hashedSub)",
           UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
           ExpressionAttributeValues: {
             ":empty": [],
@@ -367,7 +391,12 @@ export async function recordTokenEvent(userId, bundleId, event) {
     );
 
     logger.info({ message: "Token event recorded", hashedSub, bundleId, event: tokenEvent });
+    return { updated: true };
   } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.warn({ message: "Token event not recorded: no bundle item", userId, bundleId });
+      return { updated: false, reason: BUNDLE_MISSING };
+    }
     logger.error({ message: "Error recording token event", error: error.message, userId, bundleId });
     throw error;
   }

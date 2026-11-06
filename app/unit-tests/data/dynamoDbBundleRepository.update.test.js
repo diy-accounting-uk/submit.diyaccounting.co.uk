@@ -18,12 +18,24 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: vi.fn().mockReturnValue([{ version: "v1", hashedSub: "hash1" }]),
 }));
 
-const { updateBundleSubscriptionFields, resetTokensByHashedSub, putBundleByHashedSub, BUNDLE_MISSING } =
-  await import("@app/data/dynamoDbBundleRepository.js");
+const {
+  updateBundleSubscriptionFields,
+  resetTokensByHashedSub,
+  resetTokens,
+  recordTokenEvent,
+  consumeToken,
+  putBundleByHashedSub,
+  BUNDLE_MISSING,
+} = await import("@app/data/dynamoDbBundleRepository.js");
 const { calculateOneMonthTtl } = await import("@app/lib/dateUtils.js");
 
 const module = {
   UpdateCommand: class UpdateCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+  GetCommand: class GetCommand {
     constructor(input) {
       this.input = input;
     }
@@ -136,5 +148,50 @@ describe("dynamoDbBundleRepository updates", () => {
     expect(command.input.Item.ttl).toBe(ttl);
     expect(command.input.Item.ttl_datestamp).toBe(ttl_datestamp);
     expect(command.input).not.toHaveProperty("ConditionExpression");
+  });
+
+  test.each([
+    ["resetTokens", () => resetTokens("user1", "resident-pro", 100, "2026-12-09T10:00:00.000Z")],
+    ["recordTokenEvent", () => recordTokenEvent("user1", "resident-pro", { activity: "submit-vat", tokensUsed: 1 })],
+  ])("%s requires the item to exist and answers the named result when it does not", async (_name, call) => {
+    let command;
+    mockExecute.mockImplementationOnce(async (build) => {
+      command = build(module);
+      throw missingItemError();
+    });
+
+    expect(await call()).toEqual({ updated: false, reason: BUNDLE_MISSING });
+    expect(command.input.ConditionExpression).toBe("attribute_exists(hashedSub)");
+  });
+
+  test.each([
+    ["resetTokens", () => resetTokens("user1", "resident-pro", 100, "2026-12-09T10:00:00.000Z")],
+    ["recordTokenEvent", () => recordTokenEvent("user1", "resident-pro", { activity: "submit-vat", tokensUsed: 1 })],
+  ])("%s of an existing item answers updated, and other errors reach the caller", async (_name, call) => {
+    mockExecute.mockResolvedValueOnce({});
+    expect(await call()).toEqual({ updated: true });
+    mockExecute.mockRejectedValueOnce(new Error("throttled"));
+    await expect(call()).rejects.toThrow("throttled");
+  });
+
+  test("consumeToken requires the item to exist, and answers the named result when it is gone", async () => {
+    let command;
+    mockExecute
+      .mockImplementationOnce(async (build) => {
+        command = build(module);
+        throw missingItemError();
+      })
+      .mockResolvedValueOnce({});
+
+    const result = await consumeToken("user1", "resident-pro");
+
+    expect(command.input.ConditionExpression).toMatch(/^attribute_exists\(hashedSub\) AND /);
+    expect(result).toEqual({ consumed: false, reason: BUNDLE_MISSING, tokensRemaining: 0 });
+  });
+
+  test("consumeToken still answers tokens_exhausted when the item exists", async () => {
+    mockExecute.mockRejectedValueOnce(missingItemError()).mockResolvedValueOnce({ Item: { bundleId: "resident-pro" } });
+
+    expect(await consumeToken("user1", "resident-pro")).toEqual({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
   });
 });
