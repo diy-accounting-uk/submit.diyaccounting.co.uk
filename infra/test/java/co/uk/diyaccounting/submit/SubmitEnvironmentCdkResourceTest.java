@@ -271,6 +271,7 @@ class SubmitEnvironmentCdkResourceTest {
         assertAlarmTriageResources(observability);
         assertQuarantineReaderResources(observability);
         assertDashboardReviewResources(observability);
+        assertRumResourcePolicy(observability);
 
         // 8c) No CloudWatch dashboard: the operator dashboard page shows the figures.
         observability.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
@@ -778,6 +779,26 @@ class SubmitEnvironmentCdkResourceTest {
                 }
             }
         }
+    }
+
+    /**
+     * Asserts the RUM app monitor carries a resource policy that allows rum:PutRumEvents on the
+     * monitor's own ARN to any principal, so a client can send events without a signature. The
+     * policy document is a Fn::Join of literals and the account and region references, so the
+     * assertion reads its rendered JSON.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertRumResourcePolicy(Template observability) {
+        Map<String, Map<String, Object>> monitors = observability.findResources("AWS::RUM::AppMonitor");
+        assertEquals(1, monitors.size());
+        Map<String, Object> properties =
+                (Map<String, Object>) monitors.values().iterator().next().get("Properties");
+        Map<String, Object> resourcePolicy = (Map<String, Object>) properties.get("ResourcePolicy");
+        String policyDocument = String.valueOf(resourcePolicy.get("PolicyDocument"));
+        assertTrue(policyDocument.contains("\"Effect\":\"Allow\""));
+        assertTrue(policyDocument.contains("\"Action\":\"rum:PutRumEvents\""));
+        assertTrue(policyDocument.contains(":appmonitor/test-env-rum\""));
+        assertTrue(policyDocument.contains("\"Principal\":\"*\""));
     }
 
     private static Map<String, Object> statementWithSid(List<Map<String, Object>> statements, String sid) {

@@ -497,6 +497,22 @@ public class ObservabilityStack extends Stack {
                         .identityPoolId(rumIdentityPool.getRef())
                         .telemetries(List.of("performance", "errors", "http"))
                         .build())
+                .resourcePolicy(CfnAppMonitor.ResourcePolicyProperty.builder()
+                        .policyDocument(Stack.of(this)
+                                .toJsonString(Map.of(
+                                        "Version",
+                                        "2012-10-17",
+                                        "Statement",
+                                        List.of(Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "rum:PutRumEvents",
+                                                "Resource",
+                                                rumAppMonitorArn,
+                                                "Principal",
+                                                "*")))))
+                        .build())
                 .build();
 
         // RUM metrics and alarms

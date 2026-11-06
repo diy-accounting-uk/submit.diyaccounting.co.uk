@@ -16,8 +16,6 @@ function setUpRum({ userAgent, requestIdPrefix, operatorFlag, pathname = "/" } =
   const metaTags = {
     "rum:appMonitorId": "test-monitor-123",
     "rum:region": "eu-west-2",
-    "rum:identityPoolId": "eu-west-2:pool-456",
-    "rum:guestRoleArn": "arn:aws:iam::123456789:role/TestRole",
   };
 
   global.localStorage = {
@@ -119,6 +117,16 @@ describe("RUM client start by page", () => {
     setUpRum({ pathname: "/bundles.html" });
 
     expect(global.window.AwsRumClient).toBeDefined();
+  });
+
+  it("starts the client unsigned and without guest credentials", () => {
+    setUpRum({ pathname: "/bundles.html" });
+
+    const config = global.window.AwsRumClient.c;
+    expect(config.signing).toBe(false);
+    expect(config).not.toHaveProperty("guestRoleArn");
+    expect(config).not.toHaveProperty("identityPoolId");
+    expect(config.endpoint).toBe("https://dataplane.rum.eu-west-2.amazonaws.com");
   });
 
   it("does not start the client on a page under /operator/", () => {

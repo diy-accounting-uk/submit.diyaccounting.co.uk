@@ -272,7 +272,7 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   if (OPERATOR_PATH_PREFIX.test(window.location.pathname)) return;
   const c = window.__RUM_CONFIG__;
-  if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
+  if (!c.appMonitorId || !c.region) return;
 
   try {
     /* eslint-disable sonarjs/no-parameter-reassignment */
@@ -294,8 +294,7 @@ async function maybeInitRum() {
       document.head.appendChild(z);
     })("cwr", c.appMonitorId, "0.1.0", c.region, "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js", {
       sessionSampleRate: c.sessionSampleRate ?? 1,
-      guestRoleArn: c.guestRoleArn,
-      identityPoolId: c.identityPoolId,
+      signing: false,
       endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
       telemetries: ["performance", "errors", "http"],
       allowCookies: true,
@@ -317,7 +316,7 @@ function bootstrapRumConfigFromStorage() {
     const raw = localStorage.getItem("rum.config");
     if (!raw) return;
     const cfg = JSON.parse(raw);
-    if (cfg && cfg.appMonitorId && cfg.region && cfg.identityPoolId && cfg.guestRoleArn) {
+    if (cfg && cfg.appMonitorId && cfg.region) {
       window.__RUM_CONFIG__ = cfg;
     }
   } catch (error) {
@@ -329,10 +328,8 @@ function bootstrapRumConfigFromMeta() {
   if (window.__RUM_CONFIG__) return;
   const appMonitorId = readMeta("rum:appMonitorId");
   const region = readMeta("rum:region");
-  const identityPoolId = readMeta("rum:identityPoolId");
-  const guestRoleArn = readMeta("rum:guestRoleArn");
-  if (appMonitorId && region && identityPoolId && guestRoleArn) {
-    window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+  if (appMonitorId && region) {
+    window.__RUM_CONFIG__ = { appMonitorId, region, sessionSampleRate: 1 };
     try {
       localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
     } catch (error) {
