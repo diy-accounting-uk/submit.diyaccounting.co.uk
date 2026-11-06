@@ -451,6 +451,7 @@ function renderMonthlyMarketingBudget(snapshot) {
   ];
   const body = document.getElementById("monthlyMarketingBudgetBody");
   body.innerHTML = "";
+  const overBudget = typeof budget.leftToSpendGbp === "number" && budget.leftToSpendGbp < 0;
   rows.forEach(([id, label, text]) => {
     const row = document.createElement("tr");
     row.dataset.figureId = id;
@@ -458,6 +459,13 @@ function renderMonthlyMarketingBudget(snapshot) {
     labelCell.textContent = label;
     const valueCell = document.createElement("td");
     valueCell.textContent = text;
+    if (id === "left-to-spend" && overBudget) {
+      const state = document.createElement("span");
+      state.className = "status-message status-error";
+      state.dataset.state = "over-budget";
+      state.textContent = `Over budget by ${formatValue("gbp", -budget.leftToSpendGbp)}`;
+      valueCell.appendChild(state);
+    }
     row.appendChild(labelCell);
     row.appendChild(valueCell);
     body.appendChild(row);

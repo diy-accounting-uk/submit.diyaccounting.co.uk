@@ -887,6 +887,33 @@ test.describe("Operator Dashboard", () => {
     await expect(figure("search-floor")).toHaveText("£31.00");
   });
 
+  test("says over budget in words on the left to spend row when the spend passes the budget", async ({ page }) => {
+    const overspent = {
+      ...FIXTURE_SNAPSHOT,
+      monthlyMarketingBudget: {
+        ...FIXTURE_SNAPSHOT.monthlyMarketingBudget,
+        budgetGbp: 0,
+        spentThisMonthGbp: 16.63,
+        leftToSpendGbp: -16.63,
+      },
+    };
+    await setupRoutes(page, { snapshotBody: overspent });
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    const cell = page.locator('#monthlyMarketingBudgetPanel tr[data-figure-id="left-to-spend"] td').nth(1);
+    await expect(cell).toContainText("Over budget by £16.63");
+    await expect(cell.locator("[data-state=over-budget]")).toHaveClass(/status-error/);
+  });
+
+  test("shows no over budget state while money is left to spend", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    await expect(page.locator("#monthlyMarketingBudgetPanel [data-state=over-budget]")).toHaveCount(0);
+  });
+
   test("shows a figure that is not measured as not measured", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
