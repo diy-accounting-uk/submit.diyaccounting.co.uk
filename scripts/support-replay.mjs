@@ -201,13 +201,19 @@ function main() {
     console.log(byName(first).kind === "mail" ? "mail" : "support");
   } else if (command === "check-triage" || command === "check-reader") {
     const fixture = byName(first);
+    const answerText =
+      command === "check-triage" ? triageResultText(JSON.parse(readFileSync(second, "utf8"))) : readFileSync(second, "utf8");
     const failures =
       command === "check-triage"
-        ? triageFailures(fixture, triageResultText(JSON.parse(readFileSync(second, "utf8"))))
-        : (fixture.kind === "mail" ? mailFailures : readerFailures)(fixture, readFileSync(second, "utf8"));
+        ? triageFailures(fixture, answerText)
+        : (fixture.kind === "mail" ? mailFailures : readerFailures)(fixture, answerText);
     for (const failure of failures) console.error(`::error::${fixture.name}: ${failure}`);
     console.log(`${fixture.name}: ${failures.length === 0 ? "pass" : "fail"}`);
-    if (failures.length > 0) process.exit(1);
+    if (failures.length > 0) {
+      // Every fixture is synthetic, so the answer that failed is safe to print in a public log.
+      console.log(answerText);
+      process.exit(1);
+    }
   } else {
     console.error(
       "usage: support-replay.mjs list | triage-input <fixture> <out> | ticket <fixture> <out> | reader-kind <fixture> | check-triage <fixture> <result> | check-reader <fixture> <answer>",
