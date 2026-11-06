@@ -499,7 +499,7 @@ describe("dashboard review nightly, the browser profile folder", () => {
     const kept = await withJpegConverter(async (convert) => convert(Buffer.from("png")));
     expect(kept.toString()).toBe("tiny");
     expect(dirs).toHaveLength(1);
-    expect(dirs[0].startsWith(os.tmpdir()) || dirs[0].startsWith(env.RUNNER_TEMP)).toBe(true);
+    expect(dirs[0].startsWith(process.env.RUNNER_TEMP || os.tmpdir())).toBe(true);
     expect(fs.existsSync(dirs[0])).toBe(false);
   });
 
@@ -526,11 +526,13 @@ describe("dashboard review nightly, the browser profile folder", () => {
     const dependencies = deps();
     delete dependencies.withJpegConverter;
     const out = capture();
+    const runnerTempBefore = process.env.RUNNER_TEMP;
     process.env.RUNNER_TEMP = sandbox;
     try {
       expect(await runNightly({ argv: reviewArgs(), env, stdout: out, deps: dependencies })).toBe(0);
     } finally {
-      delete process.env.RUNNER_TEMP;
+      if (runnerTempBefore === undefined) delete process.env.RUNNER_TEMP;
+      else process.env.RUNNER_TEMP = runnerTempBefore;
     }
     expect(fs.readdirSync(sandbox).filter((name) => name.startsWith("review-"))).toEqual([]);
   });
