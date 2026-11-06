@@ -14,7 +14,7 @@ filing and the Companies House forms' unhide on prod (UH4) are live; their plan 
 
 ## Board
 
-The rows below are this plan's approval and launch work. `NEXT.md` carries the open ones, except DF2b, which stays here until B34g2b lands (operator, 2026-11-05).
+The rows below are this plan's approval and launch work. `NEXT.md` carries the open ones.
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
