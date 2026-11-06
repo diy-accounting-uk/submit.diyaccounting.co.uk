@@ -45,7 +45,7 @@ import { generatePassphrase } from "../app/lib/passphrase.js";
 import { SALT_CACHE_TTL_MS } from "../app/services/subHasher.js";
 
 const MANIFEST_PATH = join(dirname(fileURLToPath(import.meta.url)), "salt-rotation-tables.json");
-const HASH_PATTERN = /\b[0-9a-f]{64}\b/g;
+export const HASH_PATTERN = /\b[0-9a-f]{64}\b/g;
 const SALT_SECRET_SUFFIX = "submit/user-sub-hash-salt";
 const CANARY_INPUT = "salt-canary-verification-string";
 const ALIASES_KEY = "curated/hash-aliases/hash_aliases.json.gz";
@@ -305,7 +305,7 @@ async function readRows(context, tableName, table) {
   return rows;
 }
 
-async function mapLimit(values, limit, worker) {
+export async function mapLimit(values, limit, worker) {
   const queue = [...values];
   const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
     while (queue.length > 0) await worker(queue.shift());
@@ -673,7 +673,7 @@ export async function runRotation(context, { mode }) {
   return { before, after, report };
 }
 
-async function createContext(envName) {
+export async function createContext(envName) {
   const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
   const { DynamoDBDocumentClient } = await import("@aws-sdk/lib-dynamodb");
   const { S3Client } = await import("@aws-sdk/client-s3");
