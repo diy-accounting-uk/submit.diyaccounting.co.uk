@@ -21,13 +21,25 @@ async function nullWhenAccessDenied(read) {
   }
 }
 
+// The review role may query the passes index only under the held key. A refused query leaves the
+// held passes panel out of the review: null, where an empty list would show an empty panel.
+async function heldPassesOrNull() {
+  try {
+    return await listHeldPasses();
+  } catch (error) {
+    if (error && error.name === "AccessDeniedException") return null;
+    throw error;
+  }
+}
+
 /**
  * @returns {Promise<{
  *   snapshot: object|null,
  *   consoleIndex: object|null,
  *   images: Map<string, Buffer|null>,
- *   heldPasses: object[],
+ *   heldPasses: object[]|null,
  * }>} images holds one entry for each console item that has an imageKey, keyed by capture id.
+ * heldPasses is null when the read was refused.
  */
 export async function readReviewData() {
   const snapshot = await nullWhenAccessDenied(() => readLatestSnapshot());
@@ -38,7 +50,7 @@ export async function readReviewData() {
       images.set(captureId, await nullWhenAccessDenied(() => readConsoleImage(item.imageKey)));
     }
   }
-  const heldPasses = await listHeldPasses();
+  const heldPasses = await heldPassesOrNull();
   return { snapshot, consoleIndex, images, heldPasses };
 }
 

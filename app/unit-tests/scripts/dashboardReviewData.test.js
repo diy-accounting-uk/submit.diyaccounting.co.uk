@@ -127,6 +127,14 @@ describe("dashboard review data", () => {
     expect(data.images.get("b")).toBeNull();
   });
 
+  test("a refused held passes query gives null, and another error is thrown", async () => {
+    serve({ "snapshots/prod/latest.json": textBody(SNAPSHOT), "snapshots/prod/console/index.json": textBody(INDEX) });
+    mockGetHeldPasses.mockRejectedValueOnce(s3Error("AccessDeniedException"));
+    expect((await readReviewData()).heldPasses).toBeNull();
+    mockGetHeldPasses.mockRejectedValueOnce(s3Error("ThrottlingException"));
+    await expect(readReviewData()).rejects.toThrow("ThrottlingException");
+  });
+
   test("any other read error is thrown", async () => {
     serve({ "snapshots/prod/latest.json": s3Error("InternalError") });
     await expect(readReviewData()).rejects.toThrow("InternalError");

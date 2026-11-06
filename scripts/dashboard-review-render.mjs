@@ -77,7 +77,9 @@ function buildAnswerer({ publicDir, data, state }) {
       if (!png) return json(404, { message: "console-image-not-found", error: { code: "console-image-not-found" } });
       return { status: 200, contentType: "image/png", body: png };
     }
-    if (pathname === "/api/v1/pass/held") return json(200, { passes: data.heldPasses });
+    if (pathname === "/api/v1/pass/held") {
+      return data.heldPasses === null ? json(403, { message: "forbidden" }) : json(200, { passes: data.heldPasses });
+    }
     if (pathname === "/submit.env") return { status: 200, contentType: "text/plain", body: SUBMIT_ENV_BODY };
     if (pathname === "/api/v1/bundle") return json(401, { message: "not signed in" });
     if (pathname.startsWith("/api/")) {

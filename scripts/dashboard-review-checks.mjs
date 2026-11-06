@@ -226,8 +226,12 @@ function dataPresent(value) {
 // tokens it names. A panel token is a panel id, or an objective id whose panel is table-<id>.
 function parseMapRow(row) {
   const keys = [];
-  for (const match of String(row.section).matchAll(/`([A-Za-z0-9_]+)(?:\[([^\]]+)\])?`/g)) {
-    keys.push({ key: match[1], id: match[2] || null });
+  const section = String(row.section);
+  const ticked = [...section.matchAll(/`(\w+)(?:\[([^\]]+)\])?`/g)];
+  // readCriteria returns the section without its backticks, a hand-written row keeps them.
+  const parts = ticked.length > 0 ? ticked : section.split(",").map((part) => /^\s*(\w+)(?:\[([^\]]+)\])?\s*$/.exec(part));
+  for (const match of parts) {
+    if (match) keys.push({ key: match[1], id: match[2] || null });
   }
   const panels = [];
   const panelText = Array.isArray(row.panels) ? row.panels.map((panel) => `\`${panel}\``).join(" ") : String(row.panels);

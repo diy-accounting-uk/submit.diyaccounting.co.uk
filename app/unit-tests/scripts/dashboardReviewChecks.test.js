@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import fs from "node:fs";
 import { describe, test, expect } from "vitest";
+import { readCriteria } from "../../../scripts/dashboard-review-criteria.mjs";
 import { runCodeChecks, readHeadlines, readPath, HEADLINE_PATHS, CODE_CHECK_NUMBERS } from "../../../scripts/dashboard-review-checks.mjs";
 
 const NOW = Date.parse("2026-11-03T10:00:00.000Z");
@@ -71,6 +73,12 @@ const row = (cells, expectedLast30 = "3") => ({
 });
 
 describe("dashboard review code checks", () => {
+  test("the map as the skill's parser returns it names every key of a snapshot, so a clean render has no finding", () => {
+    const { sectionMap } = readCriteria(fs.readFileSync(".claude/skills/dashboard-review/SKILL.md", "utf8"));
+    const clean = snapshot({ objectives: [{ id: "uptime", observations: [] }] });
+    expect(run({ snapshot: clean, sectionMap })).toEqual([]);
+  });
+
   test("a clean render has no finding", () => {
     expect(run()).toEqual([]);
   });
