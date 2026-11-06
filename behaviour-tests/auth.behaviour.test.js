@@ -152,8 +152,6 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
   // Verify RUM meta tags are present with real values (not placeholders)
   const rumAppMonitorId = await page.locator('meta[name="rum:appMonitorId"]').getAttribute("content");
   const rumRegion = await page.locator('meta[name="rum:region"]').getAttribute("content");
-  const rumIdentityPoolId = await page.locator('meta[name="rum:identityPoolId"]').getAttribute("content");
-  const rumGuestRoleArn = await page.locator('meta[name="rum:guestRoleArn"]').getAttribute("content");
 
   // In deployed environments, these should be real values, not placeholders
   if (testUrl && !testUrl.includes("localhost") && !testUrl.includes("127.0.0.1")) {

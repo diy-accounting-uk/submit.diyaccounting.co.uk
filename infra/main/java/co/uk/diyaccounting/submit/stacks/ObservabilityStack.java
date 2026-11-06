@@ -50,8 +50,6 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
-import software.amazon.awscdk.services.cognito.CfnIdentityPool;
-import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.RuleTargetInput;
@@ -445,41 +443,15 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "BedrockInvocationLogGroupArn", bedrockInvocationLogGroup.getLogGroupArn());
 
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
-        // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
-        CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
-                        this, props.resourceNamePrefix() + "-RumIdentityPool")
-                .allowUnauthenticatedIdentities(true)
-                .build();
-
         String rumAppName = props.resourceNamePrefix() + "-rum";
-        // Built from the name: the monitor needs the role's ARN, so a reference to the monitor here would be a cycle.
+        // Built from the name: the monitor's own resource policy names it, so a reference to the monitor would be a
+        // cycle.
         String rumAppMonitorArn = Stack.of(this)
                 .formatArn(ArnComponents.builder()
                         .service("rum")
                         .resource("appmonitor")
                         .resourceName(rumAppName)
                         .build());
-
-        // Role for unauthenticated identities allowing PutRumEvents
-        Role rumGuestRole = Role.Builder.create(this, props.resourceNamePrefix() + "-RumGuestRole")
-                .assumedBy(new FederatedPrincipal(
-                        "cognito-identity.amazonaws.com",
-                        Map.of(
-                                "StringEquals", Map.of("cognito-identity.amazonaws.com:aud", rumIdentityPool.getRef()),
-                                "ForAnyValue:StringLike",
-                                        Map.of("cognito-identity.amazonaws.com:amr", "unauthenticated")),
-                        "sts:AssumeRoleWithWebIdentity"))
-                .build();
-        rumGuestRole.addToPolicy(PolicyStatement.Builder.create()
-                .actions(List.of("rum:PutRumEvents"))
-                .resources(List.of(rumAppMonitorArn))
-                .build());
-
-        // Attach role to Identity Pool
-        CfnIdentityPoolRoleAttachment.Builder.create(this, props.resourceNamePrefix() + "-RumIdentityPoolRole")
-                .identityPoolId(rumIdentityPool.getRef())
-                .roles(Map.of("unauthenticated", rumGuestRole.getRoleArn()))
-                .build();
 
         // Create RUM App Monitor
         CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
@@ -493,8 +465,6 @@ public class ObservabilityStack extends Stack {
                         .sessionSampleRate(1.0)
                         .allowCookies(true)
                         .enableXRay(true)
-                        .guestRoleArn(rumGuestRole.getRoleArn())
-                        .identityPoolId(rumIdentityPool.getRef())
                         .telemetries(List.of("performance", "errors", "http"))
                         .build())
                 .resourcePolicy(CfnAppMonitor.ResourcePolicyProperty.builder()
@@ -924,8 +894,6 @@ public class ObservabilityStack extends Stack {
 
         // Outputs for RUM configuration
         cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
-        cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
-        cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
         cfnOutput(this, "RumRegion", this.getRegion());
 
         // ============================================================================

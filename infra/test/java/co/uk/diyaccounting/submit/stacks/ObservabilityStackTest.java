@@ -216,30 +216,6 @@ class ObservabilityStackTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void rumGuestRoleWritesEventsOnlyToTheAppMonitor() {
-        var template = Template.fromStack(synthObservabilityStack());
-        var statements = new ArrayList<Map<String, Object>>();
-        for (var policy : template.findResources("AWS::IAM::Policy").values()) {
-            var properties = (Map<String, Object>) policy.get("Properties");
-            var roles = (List<Object>) properties.get("Roles");
-            if (roles.stream().anyMatch(role -> role.toString().contains("RumGuestRole"))) {
-                var document = (Map<String, Object>) properties.get("PolicyDocument");
-                statements.addAll((List<Map<String, Object>>) document.get("Statement"));
-            }
-        }
-        assertEquals(1, statements.size(), "the guest role has one statement");
-        var statement = statements.get(0);
-        assertEquals(List.of("rum:PutRumEvents"), actionsOf(statement));
-        assertEquals("Allow", statement.get("Effect"));
-        var resource = statement.get("Resource");
-        assertFalse(resource instanceof List, "exactly one resource");
-        assertFalse(resource.toString().equals("*"), "no wildcard resource");
-        assertTrue(resource.toString().contains("appmonitor/"), "names an app monitor: " + resource);
-        assertTrue(resource.toString().contains("-rum"), "names this stack's app monitor: " + resource);
-    }
-
-    @Test
     void trustedEventRoleReadsOnlyTheNamedResources() {
         var statements = trustedEventRoleStatements(Template.fromStack(synthObservabilityStack()));
 
