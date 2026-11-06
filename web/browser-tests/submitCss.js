@@ -11,9 +11,9 @@ import path from "path";
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 
-export function readSubmitCss() {
-  const entry = fs.readFileSync(path.join(PUBLIC_DIR, "submit.css"), "utf-8");
+export function readSubmitCss(publicDir = PUBLIC_DIR) {
+  const entry = fs.readFileSync(path.join(publicDir, "submit.css"), "utf-8");
   return entry.replace(/@import url\("([^"]+)"\);/g, (_match, file) =>
-    fs.readFileSync(path.join(PUBLIC_DIR, file), "utf-8").replaceAll('url("../', 'url("'),
+    fs.readFileSync(path.join(publicDir, file), "utf-8").replaceAll('url("../', 'url("'),
   );
 }
