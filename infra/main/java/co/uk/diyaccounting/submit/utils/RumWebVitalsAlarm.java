@@ -5,10 +5,12 @@
 
 package co.uk.diyaccounting.submit.utils;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.IMetric;
 import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
@@ -50,13 +52,14 @@ public final class RumWebVitalsAlarm {
             String sourceRegion,
             double threshold,
             String description) {
+        // An insertion-ordered map: the template lists the metrics in this order on every synth,
+        // so a deploy with no change makes no alarm update.
+        Map<String, IMetric> inputs = new LinkedHashMap<>();
+        inputs.put("samples", vitalsMetric(metricName, applicationName, sourceAccount, sourceRegion, "SampleCount"));
+        inputs.put("p75", vitalsMetric(metricName, applicationName, sourceAccount, sourceRegion, "p75"));
         MathExpression flooredP75 = MathExpression.Builder.create()
                 .expression("IF(samples >= " + MINIMUM_SAMPLES + ", p75, 0)")
-                .usingMetrics(Map.of(
-                        "samples",
-                        vitalsMetric(metricName, applicationName, sourceAccount, sourceRegion, "SampleCount"),
-                        "p75",
-                        vitalsMetric(metricName, applicationName, sourceAccount, sourceRegion, "p75")))
+                .usingMetrics(inputs)
                 .period(PERIOD)
                 .build();
         return Alarm.Builder.create(scope, id)
