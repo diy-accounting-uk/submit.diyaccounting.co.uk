@@ -289,4 +289,5 @@ jobs:
       - name: Apply the safety gate and the bar
         env:
           SONNET_BASELINE: ${{ inputs.sonnet-baseline }}
+        shell: bash
         run: node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$SONNET_BASELINE" | tee -a "$GITHUB_STEP_SUMMARY"
