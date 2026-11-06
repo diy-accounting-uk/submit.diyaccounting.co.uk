@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# Sets the agent kill switch for one environment. Every unattended agent path (alarm-triage.yml
-# and the three agentic-lib workflows) reads /submit/<env>/agents/kill-switch through
+# Sets the agent kill switch for one environment. Every unattended agent path (alarm-triage.yml)
+# reads /submit/<env>/agents/kill-switch through
 # .github/actions/agent-kill-switch before it acts and stops when the flag is on, so this one
 # dispatch is how the operator stops all of them from anywhere gh runs:
 #

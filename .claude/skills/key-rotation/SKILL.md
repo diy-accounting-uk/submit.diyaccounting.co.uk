@@ -389,13 +389,11 @@ For `support-gmail-draft` with `SUPPORT_GMAIL_DRAFT_KEY`:
 ### 3.15 Fine-grained PATs
 
 Regenerate replaces the value at once. Each token is read when its workflow starts, so roll it with
-none of its workflows running. `AGENT_TOKEN`, `AUTO_MERGE_TOKEN`, `RELEASE_PAT` and `ADMIN_TOKEN`
+none of its workflows running. `RELEASE_PAT` and `ADMIN_TOKEN`
 go away when GitHub App tokens replace them.
 
 | Secret | Repository | Proof |
 |---|---|---|
-| `AGENT_TOKEN` | submit | `gh workflow run agentic-lib-board.yml -f write-back=true` (it commits `NEXT.md`) |
-| `AUTO_MERGE_TOKEN` | submit | the next `agentic-lib-pr.yml` run with `dry-run=false` that merges |
 | `RELEASE_PAT` | submit | the next `publish.yml` run; do not dispatch one to prove it |
 | `ADMIN_TOKEN` | submit | `gh workflow run infra-apply.yml`, its `Run github-sync (plan)` step |
 | `HOMEBREW_DISPATCH_TOKEN` | spreadsheets | the next `publish-diya-gl.yml` run in the spreadsheets repository |
@@ -574,8 +572,6 @@ Every `[[secret]]` entry of `secrets-rotation.toml` has a row, plus three keys o
 | `companies-house/presenter_code` | 3.9 | rotate-secret.yml, on exposure |
 | `paypal/client_secret` | 3.10 | rotate-secret.yml |
 | `AGENT_APP_PRIVATE_KEY` | 3.1 | gh secret set |
-| `AGENT_TOKEN` | 3.15 | gh secret set |
-| `AUTO_MERGE_TOKEN` | 3.15 | gh secret set |
 | `RELEASE_PAT` | 3.15 | gh secret set |
 | `ADMIN_TOKEN` | 3.15 | gh secret set |
 | `HOMEBREW_DISPATCH_TOKEN` | 3.15 | gh secret set |

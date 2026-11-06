@@ -903,11 +903,6 @@ public class ObservabilityStack extends Stack {
         // role-chaining every other workflow uses), then chains into this role. That role is named
         // submit-{env}-github-actions-role in each deployment account (see GITHUB_SETUP.md), not the
         // plain "github-actions-role" a first draft of this stack assumed.
-        //
-        // The three agentic-lib workflows (board, do-next, auto-merge) chain into it the same way,
-        // for the same reason alarm-triage does: it is the only role in the account that can invoke
-        // the pinned Bedrock models, and cutting a second Bedrock-capable role per agent path would
-        // duplicate the deny list below rather than share it.
         String githubActionsRoleArn =
                 "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
 
@@ -1167,7 +1162,7 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "AlarmTriageGuardrailId", alarmTriageGuardrail.getAttrGuardrailId());
 
         // The agent kill switch: one flag every unattended agent path reads before acting
-        // (alarm-triage.yml and the three agentic-lib workflows, through
+        // (alarm-triage.yml, through
         // .github/actions/agent-kill-switch). `on` stops them; agent-kill-switch.yml sets it
         // through the deployment role, so the operator can stop everything with one dispatch.
         // CloudFormation only rewrites the value when this resource itself changes, so a flag

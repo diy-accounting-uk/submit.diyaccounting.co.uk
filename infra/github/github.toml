@@ -36,8 +36,6 @@ patterns_allowed = [
 repository_secrets = [
   "ADMIN_TOKEN",
   "AGENT_APP_PRIVATE_KEY",
-  "AGENT_TOKEN",
-  "AUTO_MERGE_TOKEN",
   "OPS_APP_PRIVATE_KEY",
   "RELEASE_PAT",
 ]

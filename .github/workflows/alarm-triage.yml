@@ -434,6 +434,7 @@ jobs:
           model-id: ${{ env.HAIKU_MODEL_ID }}
           small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
           output-file: /tmp/triage.haiku.json
+          echo-output: 'false'
 
       # Escalates to Sonnet when Haiku's pass is unusable (no result, an error, the turn budget
       # spent) or unsure (it answered "Is it still broken?" with an admission it could not tell).
@@ -484,6 +485,7 @@ jobs:
           model-id: ${{ env.MODEL_ID }}
           small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
           output-file: /tmp/triage.sonnet.json
+          echo-output: 'false'
 
       # A held run hands the first-pass result to the quarantine reader, encrypted. A step that
       # reads a job output shows the value in its log header, and this repository's logs are

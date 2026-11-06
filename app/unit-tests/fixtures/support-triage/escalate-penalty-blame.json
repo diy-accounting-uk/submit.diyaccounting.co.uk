@@ -1,0 +1,21 @@
+{
+  "kind": "triage",
+  "description": "A customer who blames the service for an HMRC penalty: it needs a person and no admission.",
+  "handlingInput": {
+    "issueNumber": 9024,
+    "category": "submission",
+    "faqId": null,
+    "ticketKind": "complaint",
+    "summary": "The customer received an HMRC late-filing penalty and says the service caused it by failing to submit on time.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "firstSentencePattern": "sorry|thank",
+    "requiredPhrases": ["person", "a person will look into it"],
+    "forbiddenPhrases": ["our fault", "we will pay", "already answers", "Dear ", "close this ticket"]
+  }
+}

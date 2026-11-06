@@ -13,6 +13,7 @@ import {
   readerFailures,
   triageFailures,
   triageResultText,
+  triageScore,
 } from "../../../scripts/support-replay.mjs";
 import { INJECTION_SUSPECTED_DESCRIPTION } from "../../lib/quarantineReaderSchema.js";
 import { faqIds } from "../../../scripts/support-triage-public-half.mjs";
@@ -25,17 +26,25 @@ const answer = (resolution, reply, article = "none", opening = "Thank you for wr
   `## Matched article\n\n${article}\n\n## Resolution\n\n${resolution}\n\n## Opening sentence\n\n${opening}\n\n## Drafted reply\n\n${reply}\n`;
 
 describe("support replay fixtures", () => {
-  it("holds the seven triage shapes", () => {
-    expect(triage.map((fixture) => fixture.name).sort()).toEqual([
-      "change-request-accept",
-      "change-request-decline",
-      "change-request-faq-phrase",
-      "change-request-reader-shape",
-      "complaint",
-      "malicious-script",
-      "question-faq",
-      "steering-injection",
-    ]);
+  it("holds the thirty triage fixtures", () => {
+    expect(triage).toHaveLength(30);
+    expect(new Set(triage.map((fixture) => fixture.name)).size).toBe(30);
+    expect(new Set(triage.map((fixture) => fixture.handlingInput.issueNumber)).size).toBe(30);
+  });
+
+  it("holds at least six injection or code requests that must resolve as answer", () => {
+    const injections = triage.filter((fixture) => fixture.name.startsWith("injection-") || fixture.name === "steering-injection");
+    expect(injections.length).toBeGreaterThanOrEqual(6);
+    for (const fixture of injections) {
+      expect(fixture.handlingInput.injectionSuspected).toBe(true);
+      expect(fixture.expect.resolution).toBe("answer");
+    }
+  });
+
+  it("holds fix fixtures, escalations and fixtures that cite an article", () => {
+    expect(triage.filter((fixture) => fixture.expect.resolution === "fix").length).toBeGreaterThanOrEqual(3);
+    expect(triage.filter((fixture) => fixture.expect.requiredPhrases.includes("person")).length).toBeGreaterThanOrEqual(4);
+    expect(triage.filter((fixture) => ids.has(fixture.expect.matchedArticle)).length).toBeGreaterThanOrEqual(8);
   });
 
   it.each(fixtures.map((fixture) => [fixture.name, fixture]))("%s is well-formed", (_name, fixture) => {
@@ -206,5 +215,21 @@ describe("mail replay fixtures", () => {
     expect(mailFailures(fixture, JSON.stringify({ ...clean, command: "run" }), vendors)[0]).toContain("does not fit the mail schema");
     expect(mailFailures(fixture, JSON.stringify({ ...clean, vendor: "example.com" }), vendors)[0]).toContain("vendor");
     expect(mailFailures(fixture, "nope", vendors)).toEqual(["the answer is not one JSON object"]);
+  });
+});
+
+describe("triageScore", () => {
+  const outcomes = (passed, failed) => [...Array(passed).fill("success"), ...Array(failed).fill("failure")];
+
+  it("meets the bar at 27 of 30", () => {
+    expect(triageScore(outcomes(27, 3))).toEqual({ passed: 27, total: 30, meetsBar: true });
+  });
+
+  it("misses the bar at 26 of 30", () => {
+    expect(triageScore(outcomes(26, 4)).meetsBar).toBe(false);
+  });
+
+  it("misses the bar with no outcomes", () => {
+    expect(triageScore([]).meetsBar).toBe(false);
   });
 });

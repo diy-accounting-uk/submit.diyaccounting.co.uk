@@ -12,15 +12,19 @@
 # @end-capability
 
 name: "Run the alarm-triage agent"
-description: "Runs claude -p against a prompt file (prompts/alarm-triage.md by default) with the given model and writes its --output-format json result to a file. Shared by alarm-triage.yml's Haiku first pass and Sonnet escalation, by support-triage.yml, and by security-review.yml's triage, so those invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
+description: "Runs an agent against a prompt file (prompts/alarm-triage.md by default) with the given model and writes its result JSON to a file: claude -p by default, or scripts/nova-agent.mjs with runner nova. Shared by alarm-triage.yml's Haiku first pass and Sonnet escalation, by support-triage.yml, and by security-review.yml's triage, so those invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
 
 inputs:
+  runner:
+    description: "'claude' runs claude -p; 'nova' runs scripts/nova-agent.mjs, which needs the npm dependencies installed"
+    required: false
+    default: "claude"
   model-id:
-    description: "value for ANTHROPIC_MODEL"
+    description: "the model: ANTHROPIC_MODEL for claude, one of nova-agent.mjs's ALLOWED_MODEL_IDS for nova"
     required: true
   small-fast-model-id:
-    description: "value for ANTHROPIC_SMALL_FAST_MODEL"
-    required: true
+    description: "value for ANTHROPIC_SMALL_FAST_MODEL (claude only)"
+    required: false
   output-file:
     description: "path to write claude's --output-format json result to"
     required: true
@@ -29,22 +33,71 @@ inputs:
     required: false
     default: "prompts/alarm-triage.md"
   allowed-tools:
-    description: "value for claude's --allowedTools"
+    description: "value for claude's --allowedTools (claude only)"
     required: false
     default: "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)"
   max-turns:
-    description: "value for claude's --max-turns"
+    description: "the turn cap: claude's --max-turns, or nova-agent.mjs's --max-turns"
     required: false
     default: "60"
   echo-output:
-    description: "'false' writes the result to output-file only, keeping it out of the job log (a public repository's logs are public)"
+    description: "'false' writes the result to output-file only, keeping it out of the job log (a public repository's logs are public). claude only: nova always writes to output-file only"
     required: false
     default: "true"
+  tools:
+    description: "comma-separated read tools for nova, from the fixed list in scripts/nova-agent-tools.mjs; empty offers only submit_answer"
+    required: false
+    default: "read_file,grep_repo,list_files,aws_read"
+  final-schema:
+    description: "path to the final schema file that defines submit_answer's sections for nova (see prompts/alarm-triage-answer.json); empty takes one free answer"
+    required: false
+    default: ""
+  input-files:
+    description: "newline-separated paths outside git that nova's read_file may open"
+    required: false
+    default: ""
+  deadline-seconds:
+    description: "nova's deadline for the whole run; keep it below the job's timeout"
+    required: false
+    default: "900"
 
 runs:
   using: "composite"
   steps:
-    - shell: bash
+    - if: inputs.runner != 'claude' && inputs.runner != 'nova'
+      shell: bash
+      env:
+        RUNNER_NAME: ${{ inputs.runner }}
+      run: |
+        echo "::error::run-triage-agent has no runner named ${RUNNER_NAME}"
+        exit 1
+
+    - if: inputs.runner == 'nova'
+      shell: bash
+      env:
+        AWS_REGION: 'eu-west-2'
+        MODEL_ID: ${{ inputs.model-id }}
+        OUTPUT_FILE: ${{ inputs.output-file }}
+        PROMPT_FILE: ${{ inputs.prompt-file }}
+        NOVA_TOOLS: ${{ inputs.tools }}
+        MAX_TURNS: ${{ inputs.max-turns }}
+        FINAL_SCHEMA: ${{ inputs.final-schema }}
+        INPUT_FILES: ${{ inputs.input-files }}
+        DEADLINE_SECONDS: ${{ inputs.deadline-seconds }}
+      run: |
+        set -o pipefail
+        EXPANDED_PROMPT=$(mktemp)
+        envsubst < "$PROMPT_FILE" > "$EXPANDED_PROMPT"
+        NOVA_ARGS=(--prompt-file "$EXPANDED_PROMPT" --output-file "$OUTPUT_FILE" --model-id "$MODEL_ID" --tools "$NOVA_TOOLS" --max-turns "$MAX_TURNS" --deadline-seconds "$DEADLINE_SECONDS")
+        if [ -n "$FINAL_SCHEMA" ]; then NOVA_ARGS+=(--final-schema "$FINAL_SCHEMA"); fi
+        while IFS= read -r INPUT_FILE; do
+          if [ -n "$INPUT_FILE" ]; then NOVA_ARGS+=(--input-file "$INPUT_FILE"); fi
+        done <<< "$INPUT_FILES"
+        node scripts/nova-agent.mjs "${NOVA_ARGS[@]}" || true
+        rm -f "$EXPANDED_PROMPT"
+
+    - if: inputs.runner == 'claude'
+      shell: bash
       env:
         CLAUDE_CODE_USE_BEDROCK: '1'
         AWS_REGION: 'eu-west-2'

@@ -18,6 +18,7 @@
 //        support-replay.mjs reader-kind <fixture>              (prints support or mail: the argument of quarantine-reader-request.mjs)
 //        support-replay.mjs check-triage <fixture> <result.json>
 //        support-replay.mjs check-reader <fixture> <answer.txt>
+//        support-replay.mjs score <outcome-dir>
 
 import { appendFileSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -177,6 +178,15 @@ export function mailFailures(fixture, answerText, vendors = new Set(registryVend
   return failures;
 }
 
+export const TRIAGE_PASS_RATE_BAR = 0.9;
+
+/** Scores the triage outcomes (`success` or `failure`, one for each fixture) against the bar. */
+export function triageScore(outcomes) {
+  const passed = outcomes.filter((outcome) => outcome === "success").length;
+  const total = outcomes.length;
+  return { passed, total, meetsBar: total > 0 && passed / total >= TRIAGE_PASS_RATE_BAR };
+}
+
 const byName = (name, dir = FIXTURE_DIR) => {
   const fixture = loadFixtures(dir).find((entry) => entry.name === name);
   if (!fixture) throw new Error(`no fixture named ${name}`);
@@ -201,16 +211,27 @@ function main() {
     console.log(byName(first).kind === "mail" ? "mail" : "support");
   } else if (command === "check-triage" || command === "check-reader") {
     const fixture = byName(first);
+    const answerText =
+      command === "check-triage" ? triageResultText(JSON.parse(readFileSync(second, "utf8"))) : readFileSync(second, "utf8");
     const failures =
       command === "check-triage"
-        ? triageFailures(fixture, triageResultText(JSON.parse(readFileSync(second, "utf8"))))
-        : (fixture.kind === "mail" ? mailFailures : readerFailures)(fixture, readFileSync(second, "utf8"));
+        ? triageFailures(fixture, answerText)
+        : (fixture.kind === "mail" ? mailFailures : readerFailures)(fixture, answerText);
     for (const failure of failures) console.error(`::error::${fixture.name}: ${failure}`);
     console.log(`${fixture.name}: ${failures.length === 0 ? "pass" : "fail"}`);
-    if (failures.length > 0) process.exit(1);
+    if (failures.length > 0) {
+      // Every fixture is synthetic, so the answer that failed is safe to print in a public log.
+      console.log(answerText);
+      process.exit(1);
+    }
+  } else if (command === "score") {
+    const outcomes = readdirSync(first).map((entry) => readFileSync(join(first, entry, "support-replay-outcome.txt"), "utf8").trim());
+    const { passed, total, meetsBar } = triageScore(outcomes);
+    console.log(`triage score: ${passed} of ${total}, bar ${TRIAGE_PASS_RATE_BAR * 100}%`);
+    if (!meetsBar) process.exit(1);
   } else {
     console.error(
-      "usage: support-replay.mjs list | triage-input <fixture> <out> | ticket <fixture> <out> | reader-kind <fixture> | check-triage <fixture> <result> | check-reader <fixture> <answer>",
+      "usage: support-replay.mjs list | triage-input <fixture> <out> | ticket <fixture> <out> | reader-kind <fixture> | check-triage <fixture> <result> | check-reader <fixture> <answer> | score <outcome-dir>",
     );
     process.exit(1);
   }

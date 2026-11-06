@@ -409,6 +409,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-191 -->
 <!-- capability OPS-192 -->
 <!-- capability OPS-193 -->
+<!-- capability OPS-194 -->
 <!-- capability OPS-72 -->
 <!-- capability OPS-73 -->
 <!-- capability OPS-74 -->
@@ -489,7 +490,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-54 -->
 <!-- capability OPS-55 -->
 <!-- capability OPS-56 -->
-<!-- capability OPS-57 -->
 ### Environment and accounts (OPS)
 
 <!-- generated:group environment-and-accounts-ops -->

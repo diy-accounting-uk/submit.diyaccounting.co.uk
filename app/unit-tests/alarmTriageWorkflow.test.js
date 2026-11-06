@@ -147,4 +147,11 @@ describe("alarm-triage.yml", () => {
     expect(maxWaitSeconds).toBeLessThanOrEqual(timeoutMinutes * 60 - 20 * 60);
     expect(wait).toContain(`WAIT_SECONDS=$MAX_WAIT_SECONDS`);
   });
+
+  it("keeps each triage result out of the public job log", () => {
+    const text = readFileSync(new URL("../../.github/workflows/alarm-triage.yml", import.meta.url), "utf8");
+    const steps = text.split("uses: ./.github/actions/run-triage-agent").slice(1);
+    expect(steps.length).toBe(2);
+    for (const step of steps) expect(step.slice(0, 300)).toContain("echo-output: 'false'");
+  });
 });

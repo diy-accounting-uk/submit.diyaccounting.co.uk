@@ -1,0 +1,33 @@
+{
+  "description": "Submit the final triage answer. This ends the run.",
+  "properties": {
+    "remedy": {
+      "type": "string",
+      "description": "What follows 'remedy:' on the last line, such as none or dispatch probe-test.yml."
+    },
+    "what_broke": {
+      "type": "string",
+      "description": "The answer to question 1 in plain sentences."
+    },
+    "still_broken": {
+      "type": "string",
+      "description": "The answer to question 2 in plain sentences."
+    },
+    "next_action": {
+      "type": "string",
+      "description": "The answer to question 3 in plain sentences."
+    },
+    "diff": {
+      "type": "string",
+      "description": "One change in git diff format. Leave this out unless you are confident in the change."
+    }
+  },
+  "required": ["remedy", "what_broke", "still_broken", "next_action"],
+  "render": [
+    { "property": "what_broke", "heading": "## What broke?" },
+    { "property": "still_broken", "heading": "## Is it still broken?" },
+    { "property": "next_action", "heading": "## What is the next action?" },
+    { "property": "diff", "fence": "diff" },
+    { "property": "remedy", "prefix": "remedy: " }
+  ]
+}
