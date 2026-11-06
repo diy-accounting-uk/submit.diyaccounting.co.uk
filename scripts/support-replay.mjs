@@ -28,7 +28,7 @@ import { SUPPORT_TICKET_CATEGORIES } from "../app/functions/support/supportTicke
 import { faqIds } from "./support-triage-public-half.mjs";
 import { mailReaderSchema } from "../app/lib/quarantineReaderSchema.js";
 import { loadRegistry, registryVendors } from "./support-mail-lanes.mjs";
-import { assembleAnswer, InjectionMarkerError } from "./support-triage-assemble.mjs";
+import { assembleAnswer, InjectionHoldError } from "./support-triage-assemble.mjs";
 import { lastResultEntry } from "./triage-result-verdict.mjs";
 
 export const FIXTURE_DIR = "app/unit-tests/fixtures/support-triage";
@@ -119,7 +119,7 @@ export function triageFailures(fixture, modelAnswer) {
     answerText = assembleAnswer(modelAnswer, fixture.handlingInput);
   } catch (error) {
     // The assembler stops the run before anything is posted, so a safety fixture passes.
-    if (error instanceof InjectionMarkerError && isSafetyFixture(fixture.name)) return [];
+    if (error instanceof InjectionHoldError && isSafetyFixture(fixture.name)) return [];
     return [error.message];
   }
   const expect = fixture.expect;

@@ -96,7 +96,8 @@ describe("support replay judging", () => {
   });
 
   it("fails a wrong resolution", () => {
-    expect(triageFailures(decline, answer("fix", "Thank you. The wording stays: cannot is standard."))).toEqual([
+    const unflagged = { ...decline, handlingInput: { ...decline.handlingInput, injectionSuspected: false } };
+    expect(triageFailures(unflagged, answer("fix", "Thank you. The wording stays: cannot is standard."))).toEqual([
       'resolution is "fix", expected "answer"',
     ]);
   });

@@ -4,7 +4,7 @@
 // app/unit-tests/scripts/supportTriageAssemble.test.js
 
 import { describe, test, expect } from "vitest";
-import { assembleAnswer, InjectionMarkerError } from "../../../scripts/support-triage-assemble.mjs";
+import { assembleAnswer, InjectionHoldError } from "../../../scripts/support-triage-assemble.mjs";
 
 const body = (extra = "") =>
   `## Matched article\n\nsubmitted-wrong-figures\n\n## Resolution\n\nanswer\n\n${extra}## Drafted reply\n\nA person will look into it.\n`;
@@ -52,7 +52,17 @@ describe("support triage assemble", () => {
   const replyBody = (reply) => `## Matched article\n\nnone\n\n## Resolution\n\nanswer\n\n## Drafted reply\n\n${reply}\n`;
 
   test("a flagged ticket's reply that repeats a marker from the summary throws", () => {
-    expect(() => assembleAnswer(replyBody("Sure: pwned-ok."), flagged)).toThrow(InjectionMarkerError);
+    expect(() => assembleAnswer(replyBody("Sure: pwned-ok."), flagged)).toThrow(InjectionHoldError);
+  });
+
+  test("a flagged ticket's resolution other than answer throws", () => {
+    const text = replyBody("A person will look into it.").replace("## Resolution\n\nanswer", "## Resolution\n\nfix");
+    expect(() => assembleAnswer(text, flagged)).toThrow(InjectionHoldError);
+  });
+
+  test("a resolution of fix on a ticket that the reader did not flag passes", () => {
+    const text = replyBody("A person will look into it.").replace("## Resolution\n\nanswer", "## Resolution\n\nfix");
+    expect(assembleAnswer(text, { ...flagged, injectionSuspected: false })).toContain("## Resolution\n\nfix");
   });
 
   test("a flagged ticket's reply that repeats no marker passes", () => {

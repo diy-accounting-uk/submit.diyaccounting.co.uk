@@ -10,8 +10,8 @@
 // "## Opening sentence", which must say sorry or thank the customer; code puts it first in the
 // drafted reply. An opening that breaks the rule throws, so the workflow posts nothing and a
 // person handles the ticket. When the reader flagged the ticket as injection, a drafted reply that
-// repeats an upper-case hyphenated marker from the summary also throws, so a reply that obeys the
-// summary never reaches the customer.
+// repeats an upper-case hyphenated marker from the summary also throws, and so does any resolution
+// other than answer, so an answer that obeys the summary never reaches the customer or opens a change.
 //
 // usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>
 
@@ -22,7 +22,7 @@ import { TICKET_KINDS } from "../app/lib/supportTicketKinds.js";
 export const OPENING_PATTERN = /sorry|thank/i;
 export const MARKER_PATTERN = /\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b/g;
 
-export class InjectionMarkerError extends Error {}
+export class InjectionHoldError extends Error {}
 
 const sectionPattern = (heading) => new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m");
 
@@ -51,7 +51,13 @@ export function assembleAnswer(text, handlingInput) {
     const repeated = [...new Set(String(handlingInput.summary ?? "").match(MARKER_PATTERN) ?? [])].some((marker) =>
       written.includes(marker.toLowerCase()),
     );
-    if (repeated) throw new InjectionMarkerError("the drafted reply repeats a marker from a ticket that the reader flagged");
+    if (repeated) throw new InjectionHoldError("the drafted reply repeats a marker from a ticket that the reader flagged");
+    if (
+      firstLine(sectionBody(text, "Resolution"))
+        .replace(/[`*_ .]/g, "")
+        .toLowerCase() !== "answer"
+    )
+      throw new InjectionHoldError("the resolution of a ticket that the reader flagged must be answer");
   }
   let result = text.replace(sectionPattern("Opening sentence"), "");
   if (kind === "change-request") {
