@@ -244,7 +244,8 @@ public class ObservabilityUE1Stack extends Stack {
                                 .policyArn(bedrockDenyPolicy.getManagedPolicyArn())
                                 .roles(List.of(
                                         props.sharedNames().observability.alarmTriageRoleName,
-                                        props.sharedNames().observability.quarantineReaderRoleName))
+                                        props.sharedNames().observability.quarantineReaderRoleName,
+                                        props.sharedNames().observability.dashboardReviewRoleName))
                                 .build())
                         .build())
                 .subscribers(List.of(CfnBudgetsAction.SubscriberProperty.builder()

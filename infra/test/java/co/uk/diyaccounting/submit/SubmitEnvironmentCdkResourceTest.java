@@ -190,7 +190,7 @@ class SubmitEnvironmentCdkResourceTest {
         observability.resourceCountIs("AWS::CloudWatch::Alarm", 14);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
-        observability.resourceCountIs("AWS::IAM::Role", 9);
+        observability.resourceCountIs("AWS::IAM::Role", 10);
         // Only prod opens issues for Health and ACM events, so this environment has the function
         // and no rule for it: the six rules are the security rules.
         observability.resourceCountIs("AWS::Events::Rule", 6);
@@ -270,6 +270,7 @@ class SubmitEnvironmentCdkResourceTest {
         // of its SSM parameters exist.
         assertAlarmTriageResources(observability);
         assertQuarantineReaderResources(observability);
+        assertDashboardReviewResources(observability);
 
         // 8c) No CloudWatch dashboard: the operator dashboard page shows the figures.
         observability.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
@@ -715,6 +716,66 @@ class SubmitEnvironmentCdkResourceTest {
                     "no reader statement may use a * resource");
             for (Object resource : statement.get("Resource") instanceof List<?> l ? l : List.of()) {
                 assertFalse("*".equals(resource), "no reader statement may use a * resource");
+            }
+        }
+    }
+
+    /**
+     * Asserts the dashboard review role exists with six statements: five Allow statements and one
+     * Deny of table scans. Every Allow names a resource, the held passes query carries the
+     * LeadingKeys condition, and the model statement names the Sonnet 5.5 profile and its seven
+     * foundation model ARNs.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertDashboardReviewResources(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of("RoleName", "test-env-dashboard-review-role", "MaxSessionDuration", 3600)));
+
+        List<Map<String, Object>> statements =
+                findPolicyStatementsContainingSid(observability, "ReadSnapshotAndConsole");
+        assertEquals(6, statements.size());
+
+        Map<String, Object> read = statementWithSid(statements, "ReadSnapshotAndConsole");
+        assertEquals(List.of("s3:GetObject"), actionsOf(read));
+        assertTrue(read.get("Resource").toString().contains("/snapshots/test/latest.json"));
+        assertTrue(read.get("Resource").toString().contains("/snapshots/test/console/*"));
+
+        Map<String, Object> held = statementWithSid(statements, "QueryHeldPasses");
+        assertEquals(List.of("dynamodb:Query"), actionsOf(held));
+        assertTrue(held.get("Resource").toString().contains("test-env-passes/index/issuedBy-index"));
+        assertEquals(
+                Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("held"))),
+                held.get("Condition"));
+
+        Map<String, Object> model = statementWithSid(statements, "InvokeReviewModel");
+        assertEquals(List.of("bedrock:InvokeModel"), actionsOf(model));
+        List<String> modelResources = resourcesOf(model);
+        assertEquals(8, modelResources.size());
+        assertTrue(modelResources.contains(
+                "arn:aws:bedrock:eu-west-2:111111111111:inference-profile/eu.anthropic.claude-sonnet-5-5"));
+        for (String region : List.of(
+                "eu-north-1", "eu-west-3", "eu-south-1", "eu-west-2", "eu-south-2", "eu-west-1", "eu-central-1")) {
+            assertTrue(modelResources.contains(
+                    "arn:aws:bedrock:" + region + "::foundation-model/anthropic.claude-sonnet-5-5"));
+        }
+
+        assertEquals(
+                List.of("bedrock:ApplyGuardrail"), actionsOf(statementWithSid(statements, "ApplyReviewGuardrail")));
+        Map<String, Object> parameters = statementWithSid(statements, "ReadReviewParameters");
+        assertEquals(List.of("ssm:GetParameter"), actionsOf(parameters));
+        assertEquals(3, ((List<Object>) parameters.get("Resource")).size());
+
+        Map<String, Object> deny = statementWithSid(statements, "DenyScans");
+        assertEquals("Deny", deny.get("Effect"));
+        assertEquals(List.of("dynamodb:Scan"), actionsOf(deny));
+        assertEquals("*", deny.get("Resource"));
+        for (Map<String, Object> statement : statements) {
+            if ("Allow".equals(statement.get("Effect"))) {
+                assertFalse("*".equals(statement.get("Resource")), "no Allow statement may use a * resource");
+                for (Object resource : statement.get("Resource") instanceof List<?> l ? l : List.of()) {
+                    assertFalse("*".equals(resource), "no Allow statement may use a * resource");
+                }
             }
         }
     }

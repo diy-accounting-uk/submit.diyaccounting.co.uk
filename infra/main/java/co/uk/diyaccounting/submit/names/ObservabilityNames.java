@@ -26,6 +26,7 @@ public class ObservabilityNames {
     public String alarmTriageRoleName;
     public String supportAcceptanceRoleName;
     public String quarantineReaderRoleName;
+    public String dashboardReviewRoleName;
     public String alarmTriageGuardrailName;
     public String alarmTriageGuardrailIdParameterName;
     public String alarmTriageGuardrailVersionParameterName;
@@ -59,6 +60,7 @@ public class ObservabilityNames {
         this.alarmTriageRoleName = "%s-alarm-triage-role".formatted(root.envResourceNamePrefix);
         this.supportAcceptanceRoleName = "%s-support-acceptance-role".formatted(root.envResourceNamePrefix);
         this.quarantineReaderRoleName = "%s-quarantine-reader-role".formatted(root.envResourceNamePrefix);
+        this.dashboardReviewRoleName = "%s-dashboard-review-role".formatted(root.envResourceNamePrefix);
         this.alarmTriageGuardrailName = "%s-alarm-triage-guardrail".formatted(root.envResourceNamePrefix);
         this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);
         this.alarmTriageGuardrailVersionParameterName =
