@@ -41,6 +41,15 @@ describe("registry", () => {
     expect(findEntry(registry, "notvendor.example", "invoice")).toBeNull();
   });
 
+  test("the shipped registry sends DMARC aggregate reports from Google and Microsoft to the record lane", () => {
+    const shipped = loadRegistry();
+    expect(findEntry(shipped, "google.com", "Report domain: diyaccounting.co.uk Submitter: google.com Report-ID: 1").lane).toBe("record");
+    expect(findEntry(shipped, "microsoft.com", "Report Domain: diyaccounting.co.uk Submitter: outlook.com Report-ID: 1").lane).toBe(
+      "record",
+    );
+    expect(findEntry(shipped, "microsoft.com", "Your account").lane).toBe("notice");
+  });
+
   test("an entry the intake could not apply is refused", () => {
     expect(() => parseRegistry('[[sender]]\ndomain = "a.example"\nlane = "notice"')).toThrow(/no dkim/);
     expect(() => parseRegistry('[[sender]]\ndomain = "a.example"\ndkim = "a.example"\nlane = "customer"')).toThrow(/lane customer/);

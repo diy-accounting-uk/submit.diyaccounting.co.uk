@@ -81,7 +81,7 @@ lane = "notice"
 domain = "google.com"
 dkim = "google.com"
 lane = "record"
-subject = "invoice"
+subject = "invoice|^report domain:"
 
 [[sender]]
 domain = "google.com"
@@ -92,6 +92,12 @@ lane = "notice"
 domain = "npmjs.com"
 dkim = "npmjs.com"
 lane = "notice"
+
+[[sender]]
+domain = "microsoft.com"
+dkim = "microsoft.com"
+lane = "record"
+subject = "^report domain:"
 
 [[sender]]
 domain = "microsoft.com"
