@@ -56,6 +56,98 @@ outputs:
 runs:
   using: "composite"
   steps:
+    # CloudFront refuses associate-alias until DNS answers a TXT record named _<alias> whose value
+    # is the target's domain name. These steps write that record for each alias that moves.
+    - name: Plan the CloudFront alias move
+      id: alias-plan
+      shell: bash
+      env:
+        SET_ORIGINS_ORIGIN_DOMAIN: ${{ inputs.origin-domain }}
+        SET_ORIGINS_APEX_DOMAIN: ${{ inputs.apex-domain }}
+        SET_ORIGINS_PROD_APEX_ALIAS: ${{ inputs.prod-apex-alias }}
+        SET_ORIGINS_AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+        SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID: ${{ inputs.cloudfront-distribution-id }}
+      run: |
+        set -eo pipefail
+
+        if [[ "${SET_ORIGINS_ORIGIN_DOMAIN?}" =~ \.cloudfront\.net$ ]]; then
+          echo "origin-domain ends with .cloudfront.net; no CloudFront alias moves."
+          exit 0
+        fi
+
+        ALIASES=("${SET_ORIGINS_APEX_DOMAIN?}")
+        if [ -n "${SET_ORIGINS_PROD_APEX_ALIAS:-}" ]; then
+          ALIASES+=("${SET_ORIGINS_PROD_APEX_ALIAS}")
+        fi
+
+        scripts/move-cloudfront-aliases.sh --plan \
+          "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
+          "${SET_ORIGINS_AWS_ACCOUNT_ID?}" \
+          "${SET_ORIGINS_ORIGIN_DOMAIN?}" \
+          "${ALIASES[@]}" | tee -a "$GITHUB_OUTPUT"
+
+    # --- Cross-account credential switch for the alias TXT records ---
+    - name: Assume Route53 account OIDC role for the alias TXT records
+      if: ${{ steps.alias-plan.outputs.moving-aliases != '' && inputs.route53-actions-role-arn != '' }}
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.route53-actions-role-arn }}
+        aws-region: eu-west-2
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Assume Route53 account deploy role for the alias TXT records
+      if: ${{ steps.alias-plan.outputs.moving-aliases != '' && inputs.route53-deploy-role-arn != '' }}
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.route53-deploy-role-arn }}
+        aws-region: eu-west-2
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Write the DNS TXT records that the alias move needs
+      if: ${{ steps.alias-plan.outputs.moving-aliases != '' }}
+      shell: bash
+      env:
+        SET_ORIGINS_HOSTED_ZONE_ID: ${{ inputs.hosted-zone-id }}
+        SET_ORIGINS_TARGET_DOMAIN_NAME: ${{ steps.alias-plan.outputs.target-domain-name }}
+        SET_ORIGINS_MOVING_ALIASES: ${{ steps.alias-plan.outputs.moving-aliases }}
+      run: |
+        set -euo pipefail
+        read -r -a MOVING <<< "${SET_ORIGINS_MOVING_ALIASES?}"
+        scripts/write-alias-txt-records.sh "${SET_ORIGINS_HOSTED_ZONE_ID?}" "${SET_ORIGINS_TARGET_DOMAIN_NAME?}" "${MOVING[@]}"
+
+    # --- Restore the environment account credentials for the CloudFront calls ---
+    - name: Restore original OIDC role for the alias move
+      if: ${{ steps.alias-plan.outputs.moving-aliases != '' && inputs.restore-actions-role-arn != '' }}
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.restore-actions-role-arn }}
+        aws-region: eu-west-2
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Restore original deploy role for the alias move
+      if: ${{ steps.alias-plan.outputs.moving-aliases != '' && inputs.restore-deploy-role-arn != '' }}
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      with:
+        role-to-assume: ${{ inputs.restore-deploy-role-arn }}
+        aws-region: eu-west-2
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
     - name: Move the CloudFront aliases to the distribution of origin-domain
       id: cloudfront
       shell: bash
@@ -81,7 +173,8 @@ runs:
         fi
 
         # Each alias moves to the target with associate-alias, so a client always reaches a
-        # distribution that holds it. The script waits for the target to deploy before DNS moves.
+        # distribution that holds it. The script retries while CloudFront does not yet see the TXT
+        # record, and waits for the target to deploy before DNS moves.
         EXISTING_DEPLOYMENT_NAME=$(scripts/move-cloudfront-aliases.sh \
           "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
           "${SET_ORIGINS_AWS_ACCOUNT_ID?}" \
