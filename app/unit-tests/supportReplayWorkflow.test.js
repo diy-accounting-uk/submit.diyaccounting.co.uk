@@ -42,11 +42,32 @@ describe("support-replay.yml", () => {
     for (const line of [
       "uses: ./.github/actions/run-triage-agent",
       "prompt-file: prompts/support-triage.md",
-      "allowed-tools: 'Read,Grep,Glob'",
+      "runner: nova",
+      "tools: none",
+      "final-schema: prompts/support-triage-answer.json",
+      "web/public/faqs.toml",
+      "web/public/help.html",
+      "web/public/guide.html",
+      "support-handling-input.json",
     ]) {
       expect(text).toContain(line);
       expect(triage).toContain(line);
     }
+  });
+
+  it("calls Nova Pro with no read tool and installs no Claude Code", () => {
+    const triage = readFileSync(resolve(ROOT, ".github/workflows/support-triage.yml"), "utf8");
+    for (const workflow of [text, triage]) {
+      expect(workflow).toContain("MODEL_ID: 'amazon.nova-pro-v1:0'");
+      expect(workflow).not.toMatch(/claude-code|CLAUDE_CODE_VERSION|allowed-tools/);
+    }
+  });
+
+  it("keeps the request well inside the model's input limit", () => {
+    const files = ["prompts/support-triage.md", "web/public/faqs.toml", "web/public/help.html", "web/public/guide.html"];
+    const bytes = files.reduce((sum, file) => sum + readFileSync(resolve(ROOT, file)).length, 0);
+    // Two bytes for each token is a safe floor, and the runner's request cap is 200,000 tokens.
+    expect(bytes / 2).toBeLessThan(100000);
   });
 
   it("uses the alarm triage role and skips a fork's pull request", () => {
@@ -56,7 +77,7 @@ describe("support-replay.yml", () => {
 
   it("sends the reader request with no tools", () => {
     expect(text).toContain("aws bedrock-runtime converse");
-    expect(text).not.toMatch(/"tools"|toolConfig|^\s+tools:/m);
+    expect(text.slice(text.indexOf("\n  reader:\n"))).not.toMatch(/"tools"|toolConfig|^\s+tools:/m);
   });
 
   it("builds the reader request from the kind of the fixture", () => {

@@ -4,7 +4,7 @@
 
 // @capability OPS-194 Run a read-only Nova agent
 // - **Use when:** a workflow needs an Amazon Nova model to read the repository or AWS evidence and write one structured answer.
-// - **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. The log shows only the turn number, the tool name and ok or refused.
+// - **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. The log shows only the turn number, the tool name and ok or refused.
 // - **Run:** `node scripts/nova-agent.mjs --prompt-file <file> --output-file <file>`; or set `runner: nova` on the run-triage-agent action
 // - **Entry:** `scripts/nova-agent.mjs`
 // - **Files:** scripts/nova-agent.mjs, scripts/nova-agent-tools.mjs, prompts/alarm-triage-answer.json, .github/actions/run-triage-agent/action.yml, app/unit-tests/scripts/novaAgent.test.js, app/unit-tests/scripts/novaAgentTools.test.js
@@ -16,7 +16,7 @@
 //
 // usage: nova-agent.mjs --prompt-file <file> --output-file <file> [--model-id <id>]
 //          [--tools a,b] [--max-turns n] [--final-schema <file>] [--input-file <file>]...
-//          [--deadline-seconds n] [--max-total-tokens n]
+//          [--deadline-seconds n] [--max-total-tokens n] [--context-file <file>]...
 //
 // A turn is one tool call, or one reply with no tool call, so a reply that holds many tool
 // calls cannot pass the cap. Actions logs are public: this script prints a fixed line for each
@@ -37,6 +37,18 @@ import {
   stripThinking,
   toolSpecs,
 } from "./nova-agent-tools.mjs";
+
+/**
+ * Adds each context file to the end of the prompt, in a <file name="..."> block. The text is
+ * not expanded, so a dollar sign in a page stays as it is.
+ * @param {string} prompt
+ * @param {string[]} contextFiles paths that the workflow names
+ * @param {(path: string) => string} [read]
+ */
+export function withContextFiles(prompt, contextFiles, read = (path) => readFileSync(path, "utf8")) {
+  const blocks = contextFiles.map((path) => `<file name="${path}">\n${read(path).trimEnd()}\n</file>`);
+  return blocks.length === 0 ? prompt : `${prompt.trimEnd()}\n\n${blocks.join("\n\n")}\n`;
+}
 
 export const DEFAULT_MODEL_ID = "amazon.nova-pro-v1:0";
 export const ALLOWED_MODEL_IDS = [DEFAULT_MODEL_ID, "global.amazon.nova-2-lite-v1:0"];
@@ -235,6 +247,7 @@ async function main() {
       "input-file": { type: "string", multiple: true, default: [] },
       "deadline-seconds": { type: "string" },
       "max-total-tokens": { type: "string" },
+      "context-file": { type: "string", multiple: true, default: [] },
     },
   });
   const outputFile = values["output-file"];
@@ -248,7 +261,7 @@ async function main() {
     const toolNames = values.tools === undefined ? DEFAULT_TOOLS : values.tools.split(",").filter((name) => name.length > 0);
     result = await runAgent({
       client: new BedrockRuntimeClient({ region: process.env.AWS_REGION, maxAttempts: 5 }),
-      prompt: readFileSync(values["prompt-file"], "utf8"),
+      prompt: withContextFiles(readFileSync(values["prompt-file"], "utf8"), values["context-file"]),
       runTool: createToolRunner({ repoRoot: process.cwd(), inputFiles: values["input-file"] }),
       modelId: values["model-id"],
       toolNames,
