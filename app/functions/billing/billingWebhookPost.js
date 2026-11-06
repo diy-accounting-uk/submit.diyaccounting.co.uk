@@ -28,7 +28,7 @@ import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
-import { subscriptionPeriod } from "../../lib/stripeSubscriptionPeriod.js";
+import { subscriptionPeriod, cancelsAtPeriodEnd } from "../../lib/stripeSubscriptionPeriod.js";
 import {
   putBundleByHashedSub,
   updateBundleSubscriptionFields,
@@ -479,7 +479,7 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     stripeSubscriptionId: subscriptionId,
     stripeCustomerId: customerId || null,
     subscriptionStatus: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
   });
 
   if (renewal.reason === BUNDLE_MISSING) {
@@ -563,7 +563,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   warnWhenBundleMissing(
     await updateBundleSubscriptionFields(hashedSub, bundleId, {
       subscriptionStatus: subscription.status,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
     }),
     { hashedSub, bundleId, subscriptionId: subscription.id, handler: "subscription.updated" },
   );
@@ -571,7 +571,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   // Update subscription record
   await updateSubscription(`stripe#${subscription.id}`, {
     status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
   });
 
   logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
@@ -598,7 +598,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   }
 
   // Notify when user schedules cancellation via Stripe portal
-  if (subscription.cancel_at_period_end) {
+  if (cancelsAtPeriodEnd(subscription)) {
     await publishActivityEvent({
       event: "subscription-cancellation-scheduled",
       site: "submit",

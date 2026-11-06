@@ -1413,6 +1413,71 @@ describe("billingWebhookPost", () => {
     });
   });
 
+  describe("a cancellation that Stripe schedules with cancel_at", () => {
+    const periodEnd = Math.floor(Date.now() / 1000) + 20 * 24 * 60 * 60;
+    const subscriptionEvent = (fields) => {
+      const payload = {
+        id: `evt_cancel_at_${Math.random()}`,
+        type: "customer.subscription.updated",
+        data: {
+          object: {
+            id: "sub_test_456",
+            status: "active",
+            cancel_at_period_end: false,
+            items: { data: [{ current_period_start: periodEnd - 30 * 24 * 60 * 60, current_period_end: periodEnd }] },
+            ...fields,
+          },
+        },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+      return buildWebhookEvent(payload);
+    };
+
+    beforeEach(() => {
+      mockGetSubscription.mockResolvedValue({
+        pk: "stripe#sub_test_456",
+        hashedSub: "hashed_sub_value",
+        bundleId: "resident-pro",
+        currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
+      });
+    });
+
+    test("cancel_at equal to the period end sets cancelAtPeriodEnd on the bundle and the record and publishes the event once", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: periodEnd }));
+
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: true,
+      });
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
+    });
+
+    test("clearing cancel_at clears cancelAtPeriodEnd and publishes nothing", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: null }));
+
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: false,
+      });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(0);
+    });
+
+    test("cancel_at after the period end is stored as no cancellation at this period end", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: periodEnd + 40 * 24 * 60 * 60 }));
+
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: false });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(0);
+    });
+
+    test("cancel_at_period_end true still schedules the cancellation", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at_period_end: true }));
+
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
+    });
+  });
+
   test("charge.refunded returns 200 and logs", async () => {
     const payload = {
       id: "evt_test_refund",
