@@ -75,13 +75,13 @@ describe("support-reader.yml", () => {
 
   it("sends a request with no tools", () => {
     const read = jobBlock("read");
-    expect(read).toContain("aws bedrock-runtime invoke-model");
+    expect(read).toContain("aws bedrock-runtime converse");
     const code = (block) =>
       block
         .split("\n")
         .filter((line) => !line.trim().startsWith("#"))
         .join("\n");
-    expect(code(read)).not.toMatch(/\btools\b/);
+    expect(code(read)).not.toMatch(/\btools\b|toolConfig/);
   });
 
   it("asks for issue read in select and read, and issue write in post only", () => {
@@ -132,6 +132,6 @@ describe("support-reader.yml", () => {
   it("reads the kill switch before the model is called", () => {
     const read = jobBlock("read");
     expect(read.indexOf("agents/kill-switch")).toBeGreaterThan(-1);
-    expect(read.indexOf("agents/kill-switch")).toBeLessThan(read.indexOf("invoke-model"));
+    expect(read.indexOf("agents/kill-switch")).toBeLessThan(read.indexOf("bedrock-runtime converse"));
   });
 });

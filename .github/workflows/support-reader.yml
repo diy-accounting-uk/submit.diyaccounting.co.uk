@@ -58,7 +58,7 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  READER_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  READER_MODEL_ID: 'amazon.nova-pro-v1:0'
   PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
   # The one place this number is written. The budget guard and its step name read it.
   SUPPORT_READER_BUDGET_PER_DAY: '20'
@@ -228,19 +228,20 @@ jobs:
           gh api "repos/${PRIVATE_REPO}/issues/${ISSUE_NUMBER}" --jq '{title, body}' > /tmp/ticket.json
 
       # jq puts the ticket into a JSON string value, so nothing in it can change the request's
-      # shape. The request has no `tools` key.
+      # shape. The request has no `toolConfig` key.
       - name: Build the request
         env:
           REQUEST_SKELETON: ${{ needs.select.outputs.request }}
         run: |
           set -euo pipefail
           printf '%s' "$REQUEST_SKELETON" | base64 -d > /tmp/skeleton.json
-          jq -n --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
+          jq -n --arg model_id "$READER_MODEL_ID" --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
             $skeleton[0] as $s | $ticket[0] as $t
             | $s
+            | .modelId = $model_id
             | .messages = [
-                { role: "user", content: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") },
-                { role: "assistant", content: $s.prefill }
+                { role: "user", content: [{ text: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") }] },
+                { role: "assistant", content: [{ text: $s.prefill }] }
               ]
             | del(.prefill, .tag)' > /tmp/request.json
           rm -f /tmp/ticket.json
@@ -248,11 +249,11 @@ jobs:
       - name: Ask the model
         run: |
           set -uo pipefail
-          if ! aws bedrock-runtime invoke-model --model-id "$READER_MODEL_ID" --body fileb:///tmp/request.json /tmp/response.json > /dev/null 2>/tmp/invoke.err; then
-            echo "::error::invoke-model failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+          if ! aws bedrock-runtime converse --cli-input-json file:///tmp/request.json > /tmp/response.json 2>/tmp/invoke.err; then
+            echo "::error::converse failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
             exit 1
           fi
-          { printf '{'; jq -j '.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+          { printf '{'; jq -j '.output.message.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
           rm -f /tmp/request.json /tmp/response.json
 
       - name: Apply the guardrail to the answer

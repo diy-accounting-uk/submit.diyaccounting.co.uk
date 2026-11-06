@@ -47,8 +47,8 @@ describe("support-replay.yml", () => {
   });
 
   it("sends the reader request with no tools", () => {
-    expect(text).toContain("aws bedrock-runtime invoke-model");
-    expect(text).not.toMatch(/"tools"|^\s+tools:/m);
+    expect(text).toContain("aws bedrock-runtime converse");
+    expect(text).not.toMatch(/"tools"|toolConfig|^\s+tools:/m);
   });
 
   it("builds the reader request from the kind of the fixture", () => {
