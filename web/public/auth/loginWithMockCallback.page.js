@@ -149,8 +149,16 @@ async function handleAuthCallback(code, state) {
     // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Redirect to bundles page or home
-    window.location.href = "../";
+    // Redirect to the stored return URL (e.g. pass.html?pass=CODE) or home
+    let redirectUrl = "../";
+    try {
+      const postLoginRedirect = sessionStorage.getItem("postLoginRedirect");
+      if (postLoginRedirect) {
+        sessionStorage.removeItem("postLoginRedirect");
+        redirectUrl = window.postLoginRedirectTarget(postLoginRedirect);
+      }
+    } catch {}
+    window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
     showStatus(`Authentication failed: ${error.message}`, "error");

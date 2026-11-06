@@ -27,6 +27,7 @@ import {
 import {
   goToBundlesPage,
   clearBundles,
+  createPassCode,
   ensureBundleViaPassApi,
   verifyBundleApiResponse,
   ensureBundlePresent,
@@ -641,6 +642,70 @@ test("Click through: A deleted generated pass is refused as expired on redemptio
   } finally {
     await redeemerContext.close();
   }
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: A pass link opened signed out redeems once after sign-in, and an activity page link waits for a click", async ({
+  page,
+}, testInfo) => {
+  const testUrl = baseUrl;
+  const passPosts = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/pass") passPosts.push(request.url());
+  });
+
+  addOnPageLogging(page);
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  // Two test passes for two bundles, so that the first redemption leaves the second bundle free.
+  await goToBundlesPage(page, screenshotPath);
+  await clearBundles(page, screenshotPath);
+  const signedOutPass = await createPassCode(page, "day-guest", { testPass: true });
+  const activityPass = await createPassCode(page, "resident-vat", { testPass: true });
+  expect(signedOutPass.ok && signedOutPass.code).toBeTruthy();
+  expect(activityPass.ok && activityPass.code).toBeTruthy();
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+  const origin = new URL(page.url()).origin;
+
+  // --- Signed out: Redeem pass leads to sign-in, and the page posts once on return ---
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+  passPosts.length = 0;
+  await page.goto(`${origin}/pass.html?pass=${encodeURIComponent(signedOutPass.code)}`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#passHeading")).toHaveText("You have a pass for Day pass", { timeout: 15000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-link-01-signed-out.png`, readerView: true });
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page).toHaveURL(/\/auth\/login\.html/, { timeout: 15000 });
+  expect(passPosts).toHaveLength(0);
+
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await expect(page.locator("#passHeading")).toHaveText("Pass redeemed", { timeout: 30000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-link-02-redeemed-after-sign-in.png`, readerView: true });
+  await page.waitForLoadState("networkidle");
+  expect(passPosts).toHaveLength(1);
+
+  // --- Signed in: an activity page link forwards to the pass page and posts nothing until the click ---
+  passPosts.length = 0;
+  await page.goto(`${origin}/hmrc/vat/vatObligations.html?pass=${encodeURIComponent(activityPass.code)}`, {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page).toHaveURL(/\/pass\.html\?pass=/, { timeout: 15000 });
+  await expect(page.locator("#passHeading")).toHaveText("You have a pass for Resident VAT", { timeout: 15000 });
+  await page.waitForLoadState("networkidle");
+  expect(passPosts).toHaveLength(0);
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-link-03-activity-link-waits.png`, readerView: true });
+
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page.locator("#passHeading")).toHaveText("Pass redeemed", { timeout: 15000 });
+  expect(passPosts).toHaveLength(1);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/hmrc\/vat\/vatObligations\.html$/, { timeout: 15000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-link-04-back-on-activity-page.png`, readerView: true });
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
