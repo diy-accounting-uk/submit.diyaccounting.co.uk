@@ -45,7 +45,7 @@ inputs:
     required: false
     default: "true"
   tools:
-    description: "comma-separated read tools for nova, from the fixed list in scripts/nova-agent-tools.mjs; empty offers only submit_answer"
+    description: "comma-separated read tools for nova, from the fixed list in scripts/nova-agent-tools.mjs; the word none offers only submit_answer"
     required: false
     default: "read_file,grep_repo,list_files,aws_read"
   final-schema:
@@ -54,6 +54,10 @@ inputs:
     default: ""
   input-files:
     description: "newline-separated paths outside git that nova's read_file may open"
+    required: false
+    default: ""
+  context-files:
+    description: "newline-separated paths that nova puts into the request after the prompt, unexpanded"
     required: false
     default: ""
   deadline-seconds:
@@ -83,9 +87,11 @@ runs:
         MAX_TURNS: ${{ inputs.max-turns }}
         FINAL_SCHEMA: ${{ inputs.final-schema }}
         INPUT_FILES: ${{ inputs.input-files }}
+        CONTEXT_FILES: ${{ inputs.context-files }}
         DEADLINE_SECONDS: ${{ inputs.deadline-seconds }}
       run: |
         set -o pipefail
+        if [ "$NOVA_TOOLS" = "none" ]; then NOVA_TOOLS=""; fi
         EXPANDED_PROMPT=$(mktemp)
         envsubst < "$PROMPT_FILE" > "$EXPANDED_PROMPT"
         NOVA_ARGS=(--prompt-file "$EXPANDED_PROMPT" --output-file "$OUTPUT_FILE" --model-id "$MODEL_ID" --tools "$NOVA_TOOLS" --max-turns "$MAX_TURNS" --deadline-seconds "$DEADLINE_SECONDS")
@@ -93,6 +99,9 @@ runs:
         while IFS= read -r INPUT_FILE; do
           if [ -n "$INPUT_FILE" ]; then NOVA_ARGS+=(--input-file "$INPUT_FILE"); fi
         done <<< "$INPUT_FILES"
+        while IFS= read -r CONTEXT_FILE; do
+          if [ -n "$CONTEXT_FILE" ]; then NOVA_ARGS+=(--context-file "$CONTEXT_FILE"); fi
+        done <<< "$CONTEXT_FILES"
         node scripts/nova-agent.mjs "${NOVA_ARGS[@]}" || true
         rm -f "$EXPANDED_PROMPT"
 

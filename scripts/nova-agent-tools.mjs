@@ -167,7 +167,10 @@ export function toolSpecs(toolNames, finalSchema) {
   return [...readTools, toolSpecEntry(SUBMIT_ANSWER, finalSchema)];
 }
 
-/** Reads a final schema file and proves that its render list covers each property once. */
+/**
+ * Reads a final schema file and proves that its render list covers each property once. A render
+ * entry with `hidden: true` names a property that the model fills and the runner never renders.
+ */
 export function loadFinalSchema(schemaPath) {
   const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
   const rendered = (schema.render ?? []).map((entry) => entry.property).sort();
@@ -206,6 +209,7 @@ export function renderAnswer(finalSchema, input) {
   try {
     const parts = [];
     for (const entry of finalSchema.render) {
+      if (entry.hidden === true) continue;
       const value = stripThinking(input[entry.property] ?? "");
       if (value.length > 0) parts.push(renderEntry(entry, value));
       else if (finalSchema.required.includes(entry.property)) refuse(`the required property ${entry.property} is empty`);
