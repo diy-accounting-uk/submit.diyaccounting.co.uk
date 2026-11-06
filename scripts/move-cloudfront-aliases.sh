@@ -3,7 +3,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 #
-# Usage: scripts/move-cloudfront-aliases.sh <target-distribution-id> <aws-account-id> <origin-domain> <alias> [<alias> ...]
+# Usage: scripts/move-cloudfront-aliases.sh [--plan] <target-distribution-id> <aws-account-id> <origin-domain> <alias> [<alias> ...]
 #
 # Puts each <alias> and <origin-domain> on the CloudFront distribution <target-distribution-id>, so
 # that no moment exists in which no distribution holds an alias.
@@ -17,6 +17,12 @@
 # - The move is refused and the holder still holds the alias: the script stops with exit 1. The
 #   holder keeps serving the alias.
 #
+# CloudFront refuses associate-alias until DNS answers a TXT record named _<alias> whose value is
+# the target's domain name (scripts/write-alias-txt-records.sh writes it). A new record takes a
+# moment to reach CloudFront's resolvers, so a refusal for that reason is retried every
+# MOVE_ALIAS_TXT_RETRY_INTERVAL seconds (default 10), at most MOVE_ALIAS_TXT_RETRY_COUNT times
+# (default 18). Any other refusal is final at once.
+#
 # A holder can disappear between two calls: the self-destruct of an old deployment deletes its
 # distribution. So the script reads the holder again after a refused move to decide.
 #
@@ -25,12 +31,22 @@
 # stdout holds only the deployment name of the first holder found, from its OriginFor tag (empty
 # when the holder had no such tag, or its OriginFor is the first alias). Progress goes to stderr.
 #
+# With --plan the script changes nothing. It prints two lines in the GITHUB_OUTPUT format:
+# moving-aliases=<the aliases that another distribution holds, space separated> and
+# target-domain-name=<the target's dxxxx.cloudfront.net name, empty when no alias moves>.
+#
 # Needs AWS credentials for the account that holds the distributions. Works on bash 3.2.
 
 set -uo pipefail
 
+PLAN=false
+if [ "${1:-}" = "--plan" ]; then
+  PLAN=true
+  shift
+fi
+
 if [ $# -lt 4 ] || [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
-  echo "Usage: $0 <target-distribution-id> <aws-account-id> <origin-domain> <alias> [<alias> ...]" >&2
+  echo "Usage: $0 [--plan] <target-distribution-id> <aws-account-id> <origin-domain> <alias> [<alias> ...]" >&2
   exit 2
 fi
 
@@ -39,6 +55,9 @@ ACCOUNT_ID="$2"
 ORIGIN_DOMAIN="$3"
 shift 3
 FIRST_ALIAS="$1"
+TXT_RETRY_INTERVAL="${MOVE_ALIAS_TXT_RETRY_INTERVAL:-10}"
+TXT_RETRY_COUNT="${MOVE_ALIAS_TXT_RETRY_COUNT:-18}"
+TXT_REFUSAL="Invalid or missing alias DNS TXT records"
 
 log() { echo "$*" >&2; }
 
@@ -74,6 +93,52 @@ deployment_name_of() {
   fi
 }
 
+# Moves alias $1 to the target with associate-alias. Retries while CloudFront refuses it for the
+# DNS TXT record. Returns 1 on any other refusal, or when the retries run out.
+associate_alias() {
+  local out retry=0
+  while true; do
+    if out=$(aws cloudfront associate-alias --target-distribution-id "$TARGET_ID" --alias "$1" 2>&1); then
+      [ -n "$out" ] && printf '%s\n' "$out" >&2
+      return 0
+    fi
+    printf '%s\n' "$out" >&2
+    if ! printf '%s' "$out" | grep -qF "$TXT_REFUSAL"; then
+      return 1
+    fi
+    if [ "$retry" -ge "$TXT_RETRY_COUNT" ]; then
+      log "CloudFront still did not accept the DNS TXT record [_${1}] after ${TXT_RETRY_COUNT} retries."
+      return 1
+    fi
+    retry=$((retry + 1))
+    log "CloudFront does not see the DNS TXT record [_${1}] yet; retry ${retry} of ${TXT_RETRY_COUNT} in ${TXT_RETRY_INTERVAL} seconds."
+    sleep "$TXT_RETRY_INTERVAL"
+  done
+}
+
+if [ "$PLAN" = "true" ]; then
+  MOVING=()
+  for ALIAS in "$@"; do
+    HOLDER=$(holder_of "$ALIAS") || { log "ERROR: could not list the CloudFront distributions"; exit 1; }
+    if [ -n "$HOLDER" ] && [ "$HOLDER" != "$TARGET_ID" ]; then
+      log "Distribution [${HOLDER}] holds [${ALIAS}]; it moves to [${TARGET_ID}] and needs the DNS TXT record [_${ALIAS}]."
+      MOVING+=("$ALIAS")
+    fi
+  done
+  TARGET_DOMAIN_NAME=""
+  if [ ${#MOVING[@]} -gt 0 ]; then
+    TARGET_DOMAIN_NAME=$(aws cloudfront get-distribution --id "$TARGET_ID" --query 'Distribution.DomainName' --output text) || {
+      log "ERROR: could not read the domain name of [${TARGET_ID}]"
+      exit 1
+    }
+  else
+    log "No alias moves from another distribution to [${TARGET_ID}]; no DNS TXT record is needed."
+  fi
+  echo "moving-aliases=${MOVING[*]+"${MOVING[*]}"}"
+  echo "target-domain-name=${TARGET_DOMAIN_NAME}"
+  exit 0
+fi
+
 EXISTING_DEPLOYMENT_NAME=""
 NAME_READ=false
 TO_ADD=()
@@ -99,7 +164,7 @@ for ALIAS in "$@"; do
   fi
 
   log "Moving [${ALIAS}] from distribution [${HOLDER}] to [${TARGET_ID}] with associate-alias."
-  if aws cloudfront associate-alias --target-distribution-id "$TARGET_ID" --alias "$ALIAS" >&2; then
+  if associate_alias "$ALIAS"; then
     CHANGED=true
     continue
   fi
