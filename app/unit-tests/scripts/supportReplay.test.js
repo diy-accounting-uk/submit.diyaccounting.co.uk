@@ -25,17 +25,25 @@ const answer = (resolution, reply, article = "none", opening = "Thank you for wr
   `## Matched article\n\n${article}\n\n## Resolution\n\n${resolution}\n\n## Opening sentence\n\n${opening}\n\n## Drafted reply\n\n${reply}\n`;
 
 describe("support replay fixtures", () => {
-  it("holds the seven triage shapes", () => {
-    expect(triage.map((fixture) => fixture.name).sort()).toEqual([
-      "change-request-accept",
-      "change-request-decline",
-      "change-request-faq-phrase",
-      "change-request-reader-shape",
-      "complaint",
-      "malicious-script",
-      "question-faq",
-      "steering-injection",
-    ]);
+  it("holds the thirty triage fixtures", () => {
+    expect(triage).toHaveLength(30);
+    expect(new Set(triage.map((fixture) => fixture.name)).size).toBe(30);
+    expect(new Set(triage.map((fixture) => fixture.handlingInput.issueNumber)).size).toBe(30);
+  });
+
+  it("holds at least six injection or code requests that must resolve as answer", () => {
+    const injections = triage.filter((fixture) => fixture.name.startsWith("injection-") || fixture.name === "steering-injection");
+    expect(injections.length).toBeGreaterThanOrEqual(6);
+    for (const fixture of injections) {
+      expect(fixture.handlingInput.injectionSuspected).toBe(true);
+      expect(fixture.expect.resolution).toBe("answer");
+    }
+  });
+
+  it("holds fix fixtures, escalations and fixtures that cite an article", () => {
+    expect(triage.filter((fixture) => fixture.expect.resolution === "fix").length).toBeGreaterThanOrEqual(3);
+    expect(triage.filter((fixture) => fixture.expect.requiredPhrases.includes("person")).length).toBeGreaterThanOrEqual(4);
+    expect(triage.filter((fixture) => ids.has(fixture.expect.matchedArticle)).length).toBeGreaterThanOrEqual(8);
   });
 
   it.each(fixtures.map((fixture) => [fixture.name, fixture]))("%s is well-formed", (_name, fixture) => {

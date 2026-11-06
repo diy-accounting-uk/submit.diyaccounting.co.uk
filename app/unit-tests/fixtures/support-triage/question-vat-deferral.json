@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "A question no entry answers: it needs a person.",
+  "handlingInput": {
+    "issueNumber": 9016,
+    "category": "other",
+    "faqId": null,
+    "ticketKind": "other",
+    "summary": "The customer asks whether they can agree a time-to-pay plan with HMRC for a late VAT payment through this service.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "requiredPhrases": ["person"],
+    "forbiddenPhrases": ["already answers", "Dear ", "close this ticket"]
+  }
+}

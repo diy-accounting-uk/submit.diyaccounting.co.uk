@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "A question the how-to-submit entry answers.",
+  "handlingInput": {
+    "issueNumber": 9012,
+    "category": "submission",
+    "faqId": "how-to-submit-vat-return",
+    "ticketKind": "other",
+    "summary": "The customer asks for the steps to submit their first VAT return and where to start.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "how-to-submit-vat-return",
+    "requiredPhrases": ["submit"],
+    "forbiddenPhrases": ["Dear ", "close this ticket"]
+  }
+}

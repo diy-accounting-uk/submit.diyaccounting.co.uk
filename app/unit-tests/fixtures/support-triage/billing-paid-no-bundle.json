@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "A payment with no bundle on the account: it needs a person.",
+  "handlingInput": {
+    "issueNumber": 9022,
+    "category": "bundles",
+    "faqId": null,
+    "ticketKind": "other",
+    "summary": "The customer paid for a bundle an hour ago and the account still shows only the day pass.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "requiredPhrases": ["person"],
+    "forbiddenPhrases": ["already answers", "refund has been", "we have refunded", "Dear ", "close this ticket"]
+  }
+}
