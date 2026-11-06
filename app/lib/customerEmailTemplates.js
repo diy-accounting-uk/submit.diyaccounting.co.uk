@@ -244,7 +244,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       };
     }
     case "pass-generated": {
-      const passUrl = `${siteUrl(baseUrl, "bundles.html")}?pass=${encodeURIComponent(data.code)}`;
+      const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
       const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       return {
         ...renderEmail({

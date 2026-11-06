@@ -341,19 +341,20 @@ describe("marketing-lib", () => {
   const network = (id) => data.networks.find((n) => n.id === id);
 
   it("reads a code from a pass link", () => {
-    const link = `https://submit.diyaccounting.co.uk/bundles.html?pass=${PASS}`;
+    const link = `https://submit.diyaccounting.co.uk/pass.html?pass=${PASS}`;
     expect(codeFromPassUrl(link, data)).toBe(PASS);
     expect(codeFromPassUrl(link.replace("https:", "http:"), data)).toBeNull();
     expect(codeFromPassUrl(link.replace("submit.", "other."), data)).toBeNull();
-    expect(codeFromPassUrl(link.replace("bundles.html", "index.html"), data)).toBeNull();
-    expect(codeFromPassUrl(`https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy`, data)).toBeNull();
+    expect(codeFromPassUrl(link.replace("pass.html", "index.html"), data)).toBeNull();
+    expect(codeFromPassUrl(`https://submit.diyaccounting.co.uk/pass.html?pass=tiger-happy`, data)).toBeNull();
     expect(codeFromPassUrl(`${link}&ref=x`, data)).toBe(PASS);
-    expect(codeFromPassUrl(`https://submit.diyaccounting.co.uk/bundles.html?pass=${PASS.toUpperCase()}`, data)).toBe(PASS);
+    expect(codeFromPassUrl(`https://submit.diyaccounting.co.uk/pass.html?pass=${PASS.toUpperCase()}`, data)).toBe(PASS);
+    expect(codeFromPassUrl(link.replace("pass.html", "bundles.html"), data)).toBe(PASS);
   });
 
   it("replaces only a Submit link with the pass link and adds the utm parameters", () => {
     const withPass = new URL(postLink(submitSet, { code: PASS, source: "copy", medium: "post", lengthId: "short" }, data));
-    expect(withPass.pathname).toBe("/bundles.html");
+    expect(withPass.pathname).toBe("/pass.html");
     expect(withPass.searchParams.get("pass")).toBe(PASS);
     expect(withPass.searchParams.get("utm_source")).toBe("copy");
     expect(withPass.searchParams.get("utm_medium")).toBe("post");

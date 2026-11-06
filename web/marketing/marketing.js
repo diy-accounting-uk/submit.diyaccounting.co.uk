@@ -20,7 +20,7 @@ import {
 const COPIED_FOR_MS = 3000;
 const OPEN_SET_ID = "submit-vat-mtd";
 const CODE_ERROR = "A pass code is four words joined by hyphens, for example tiger-happy-maple-river.";
-const URL_ERROR = "Paste the link from Generate a pass. It looks like https://submit.diyaccounting.co.uk/bundles.html?pass=…";
+const URL_ERROR = "Paste the link from Generate a pass. It looks like https://submit.diyaccounting.co.uk/pass.html?pass=…";
 const PASS_OK = "Your pass is in every DIY Accounting Submit link below. Posts that carry it start with #ad.";
 
 const state = { data: null, code: "" };

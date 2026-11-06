@@ -128,7 +128,7 @@ A signed-in user with a bundle that holds the activity opens `passes/generate-di
 
 ## Pass Redemption Flow
 
-1. The user opens `https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver`. `web/public/widgets/pass-redeemer.js` redeems a `?pass=` parameter on any page that includes it.
+1. The user opens `https://submit.diyaccounting.co.uk/pass.html?pass=tiger-happy-mountain-silver`. `web/public/widgets/pass-redeemer.js` redeems a `?pass=` parameter on any page that includes it.
 2. A user who is not signed in goes to login and returns to the pass URL.
 3. `POST /api/v1/pass` validates the pass and adds one use.
 4. The service grants the bundle with its tokens and skips the capacity cap.
@@ -273,7 +273,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
     "createdBy": "manual"
   }' | jq '.code' --raw-output) \
 && echo "Generated pass code: $PASS_CODE" \
-&& open "$BASE_URL/bundles.html?pass=$PASS_CODE"
+&& open "$BASE_URL/pass.html?pass=$PASS_CODE"
 ```
 
 You can also sign in first and enter the code in the pass field. The flow: enter the code, click "Redeem pass", then click "Request Day pass" to receive the bundle.
@@ -292,7 +292,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
     "createdBy": "manual"
   }' | jq '.code' --raw-output) \
 && echo "Generated pass code: $PASS_CODE" \
-&& open "$BASE_URL/bundles.html?pass=$PASS_CODE"
+&& open "$BASE_URL/pass.html?pass=$PASS_CODE"
 ```
 
 `resident-pro` is a self-service subscription, so the pass grants the bundle directly. The simulator fakes Stripe (`app/functions/non-lambda-mocks/mockBilling.js`).

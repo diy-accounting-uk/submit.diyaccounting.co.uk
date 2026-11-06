@@ -27,7 +27,7 @@ const EDGE_CSP =
   "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
   "img-src 'self' data: blob:; media-src 'self' blob:; frame-ancestors 'none'; form-action 'none';";
 const PASS = "tiger-happy-maple-river";
-const PASS_LINK = `https://submit.diyaccounting.co.uk/bundles.html?pass=${PASS}`;
+const PASS_LINK = `https://submit.diyaccounting.co.uk/pass.html?pass=${PASS}`;
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"], baseURL: ORIGIN });
 
@@ -94,8 +94,8 @@ test("a pass in the address fills both fields, scrolls to the group and reaches 
   const xHref = await page.locator('#submit-vat-price a.share[data-network="x"]').getAttribute("href");
   const linkedinHref = await page.locator('#submit-vat-price a.share[data-network="linkedin"]').getAttribute("href");
   expect(submitHrefs.length).toBe(6);
-  expect(linkedinHref).toContain("bundles.html%3Fpass%3Dtiger-happy-maple-river");
-  expect(xHref).toContain("bundles.html%3Fpass%3Dtiger-happy-maple-river");
+  expect(linkedinHref).toContain("pass.html%3Fpass%3Dtiger-happy-maple-river");
+  expect(xHref).toContain("pass.html%3Fpass%3Dtiger-happy-maple-river");
   expect(new URL(xHref).searchParams.get("text").startsWith("#ad ")).toBe(true);
   expect(xHref.split("text=")[1].startsWith("%23ad")).toBe(true);
   for (const id of ["spreadsheets-all", "diya-gl-all", "limited-all"]) {
@@ -123,7 +123,7 @@ test("typing a code fills the link and the reverse, a bad code shows the error, 
   expect(href).not.toContain("pass%3D");
   expect(page.url()).not.toContain("pass=");
 
-  await page.locator("#passUrl").fill("http://submit.diyaccounting.co.uk/bundles.html?pass=" + PASS);
+  await page.locator("#passUrl").fill("http://submit.diyaccounting.co.uk/pass.html?pass=" + PASS);
   await page.locator("#passUrl").blur();
   await expect(page.locator("#passStatus")).toContainText("Paste the link from Generate a pass");
 
@@ -194,7 +194,7 @@ test("Share shows when the browser can share and sends the pass link", async ({ 
   await expect.poll(() => page.evaluate(() => window.__shared.length)).toBe(1);
   const payload = await page.evaluate(() => window.__shared[0]);
   expect(Object.keys(payload).sort()).toEqual(["text", "title", "url"]);
-  expect(payload.url).toContain(`bundles.html?pass=${PASS}`);
+  expect(payload.url).toContain(`pass.html?pass=${PASS}`);
   expect(payload.text).not.toContain(payload.url);
   expect(payload.title.length).toBeGreaterThan(0);
 });

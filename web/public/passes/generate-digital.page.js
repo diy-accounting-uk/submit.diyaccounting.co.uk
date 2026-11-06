@@ -24,7 +24,7 @@ let __generatedQrSvg = "";
 
 // --- View existing pass (when ?code= parameter is present)
 async function viewExistingPass(code) {
-  const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(code)}`;
+  const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(code)}`;
   __generatedPassCode = code;
   __generatedPassUrl = passUrl;
 

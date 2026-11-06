@@ -128,9 +128,9 @@
         {
           "action": "point",
           "target": "#redeemPassBtn",
-          "caption": "Redeem pass adds the bundle it carries.",
-          "headline": "The bundle is added",
-          "keyWord": "added",
+          "caption": "Redeem pass opens a page that shows what the pass gives you.",
+          "headline": "The pass page opens",
+          "keyWord": "opens",
           "dwellMs": 600
         },
         {

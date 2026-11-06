@@ -25,7 +25,7 @@ describe("qrCodeGenerator", () => {
     createdAt: "2026-01-01T00:00:00.000Z",
   };
 
-  const testUrl = "https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver";
+  const testUrl = "https://submit.diyaccounting.co.uk/pass.html?pass=tiger-happy-mountain-silver";
 
   describe("generatePassQrCode", () => {
     it("should generate a data URL QR code", async () => {
@@ -73,8 +73,8 @@ describe("qrCodeGenerator", () => {
     });
 
     it("should generate different QR codes for different URLs", async () => {
-      const url1 = "https://submit.diyaccounting.co.uk/bundles.html?pass=code-one";
-      const url2 = "https://submit.diyaccounting.co.uk/bundles.html?pass=code-two";
+      const url1 = "https://submit.diyaccounting.co.uk/pass.html?pass=code-one";
+      const url2 = "https://submit.diyaccounting.co.uk/pass.html?pass=code-two";
 
       const qr1 = await generatePassQrCode({ code: "code-one", url: url1 });
       const qr2 = await generatePassQrCode({ code: "code-two", url: url2 });
@@ -186,7 +186,7 @@ describe("qrCodeGenerator", () => {
     it("should escape XML special characters in annotations", async () => {
       const svg = await generateAnnotatedPassQrCodeSvg({
         code: "test-code",
-        url: "https://example.com/bundles.html?pass=test&extra=1",
+        url: "https://example.com/pass.html?pass=test&extra=1",
         bundleName: 'Test <Bundle> & "Quotes"',
       });
 

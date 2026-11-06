@@ -87,6 +87,7 @@ const MOBILE_WIDTHS = [375, 414];
 const PAGES = [
   "index.html",
   "bundles.html",
+  "pass.html",
   "privacy.html",
   "terms.html",
   "accessibility.html",
