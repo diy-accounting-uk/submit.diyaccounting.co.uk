@@ -139,25 +139,32 @@ jobs:
             esac
           done
 
+      # The delivery stream to the lake writes a batch every 15 minutes, so the step reads until
+      # this run's events are there. It counts only the events at or after the first request.
       - name: Read the customer email events from the activity lake
         run: |
           set -euo pipefail
-          sleep 90
-          QUERY="SELECT event, count(*) AS c FROM ci_env_analytics.activity_events_all WHERE dt = current_date AND event LIKE 'customer-email-%' AND event_ts > current_timestamp - interval '1' hour GROUP BY 1 ORDER BY 1"
-          QUERY_ID="$(aws athena start-query-execution --work-group ci-env-analytics --query-string "$QUERY" --query QueryExecutionId --output text)"
-          STATE=RUNNING
-          for _ in $(seq 1 60); do
-            STATE="$(aws athena get-query-execution --query-execution-id "$QUERY_ID" --query 'QueryExecution.Status.State' --output text)"
-            case "$STATE" in SUCCEEDED|FAILED|CANCELLED) break ;; esac
-            sleep 2
+          QUERY="SELECT event, count(*) AS c FROM ci_env_analytics.activity_events_all WHERE dt >= current_date - interval '1' day AND event LIKE 'customer-email-%' AND to_unixtime(event_ts) * 1000 >= ${START_EPOCH_MS} GROUP BY 1 ORDER BY 1"
+          LAKE_SENT=0
+          LAKE_FAILED=0
+          for attempt in $(seq 1 20); do
+            QUERY_ID="$(aws athena start-query-execution --work-group ci-env-analytics --query-string "$QUERY" --query QueryExecutionId --output text)"
+            STATE=RUNNING
+            for _ in $(seq 1 60); do
+              STATE="$(aws athena get-query-execution --query-execution-id "$QUERY_ID" --query 'QueryExecution.Status.State' --output text)"
+              case "$STATE" in SUCCEEDED|FAILED|CANCELLED) break ;; esac
+              sleep 2
+            done
+            echo "athena state: ${STATE}"
+            test "$STATE" = "SUCCEEDED"
+            aws athena get-query-results --query-execution-id "$QUERY_ID" \
+              --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text | tee "${RUNNER_TEMP}/lake.log"
+            LAKE_SENT="$(awk -F'\t' '$1 == "customer-email-sent" { print $2 }' "${RUNNER_TEMP}/lake.log")"
+            LAKE_FAILED="$(awk -F'\t' '$1 == "customer-email-failed" { print $2 }' "${RUNNER_TEMP}/lake.log")"
+            echo "lake events, read ${attempt}: sent ${LAKE_SENT:-0} of ${EXPECTED_REQUESTS}, failed ${LAKE_FAILED:-0}"
+            if [ "${LAKE_SENT:-0}" -ge "$EXPECTED_REQUESTS" ] || [ "${LAKE_FAILED:-0}" != "0" ]; then break; fi
+            sleep 60
           done
-          echo "athena state: ${STATE}"
-          test "$STATE" = "SUCCEEDED"
-          aws athena get-query-results --query-execution-id "$QUERY_ID" \
-            --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text | tee "${RUNNER_TEMP}/lake.log"
-          LAKE_SENT="$(awk -F'\t' '$1 == "customer-email-sent" { print $2 }' "${RUNNER_TEMP}/lake.log")"
-          LAKE_FAILED="$(awk -F'\t' '$1 == "customer-email-failed" { print $2 }' "${RUNNER_TEMP}/lake.log")"
-          echo "lake events: sent ${LAKE_SENT:-0} of ${EXPECTED_REQUESTS}, failed ${LAKE_FAILED:-0}"
           test "${LAKE_SENT:-0}" -ge "$EXPECTED_REQUESTS"
           test "${LAKE_FAILED:-0}" = "0"
 
