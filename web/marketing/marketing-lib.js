@@ -24,7 +24,7 @@ export function passUrl(code, data) {
 }
 
 /**
- * The code in a pass link, or null. The link must be https, on a pass host, at /bundles.html,
+ * The code in a pass link, or null. The link must be https, on a pass host, at /pass.html or the older /bundles.html,
  * with a pass parameter of the right shape. Other parameters (for example ref) are ignored.
  */
 export function codeFromPassUrl(raw, data) {
@@ -36,7 +36,7 @@ export function codeFromPassUrl(raw, data) {
   }
   if (url.protocol !== "https:") return null;
   if (!data.passHosts.includes(url.hostname)) return null;
-  if (url.pathname !== "/bundles.html") return null;
+  if (url.pathname !== "/pass.html" && url.pathname !== "/bundles.html") return null;
   const code = normaliseCode(url.searchParams.get("pass"));
   return isPassCode(code, data) ? code : null;
 }

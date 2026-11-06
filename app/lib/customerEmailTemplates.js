@@ -244,7 +244,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       };
     }
     case "pass-generated": {
-      const passUrl = `${siteUrl(baseUrl, "bundles.html")}?pass=${encodeURIComponent(data.code)}`;
+      const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
       const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       return {
         ...renderEmail({
@@ -296,7 +296,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           intro: "You redeemed your pass. You can use the bundle now.",
           rows: [
             { label: "Bundle", value: name },
-            { label: "Ends on", value: formatDate(data.expiry) },
+            { label: "Ends on", value: data.expiry ? formatDate(data.expiry) : "No end date" },
           ],
           actions: [{ href: home, text: "Open the site" }],
           reason,

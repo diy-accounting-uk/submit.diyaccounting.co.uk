@@ -144,7 +144,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
     - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
-    - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
+    - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
+    - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page: use when a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
     - [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access: use when a practice must ask a client to authorise HMRC agent access for MTD-VAT or MTD-IT.
@@ -1575,7 +1576,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
-- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE_APPROVAL.md
+- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
 - **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
 
@@ -1708,7 +1709,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1790,6 +1791,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
 - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
+- [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 <!-- /generated:group passes-bill -->
 
@@ -1885,13 +1887,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### BILL-10 Redeem a pass
 
-- **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
-- **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
+- **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
+- **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/pass.html with web/public/pass.page.js shows what a ?pass= link gives and posts here when the person presses Redeem pass; bundles.html forwards a ?pass= link to it. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
 - **Run:** `POST /api/v1/pass`
 - **Entry:** `app/functions/account/passPost.js:ingestHandler`; `app/services/passService.js:redeemPass`
-- **Files:** app/functions/account/passPost.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
+- **Files:** app/functions/account/passPost.js, web/public/pass.html, web/public/pass.page.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
 - **Keywords:** pass, redeem pass, redeemPass, pass link, on-pass-on-subscription, passphrase, email hash
 - **Related:** BILL-01, BILL-06, BILL-08
+
+#### BILL-58 Pass link landing page
+
+- **Use when:** a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
+- **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
+- **Run:** open `/pass.html?pass=<code>`; `npx playwright test --project=browser-tests web/browser-tests/pass.browser.test.js`
+- **Entry:** `web/public/pass.page.js`
+- **Files:** web/public/pass.html, web/public/pass.page.js, web/public/widgets/pass-redeemer.js, web/public/auth/signed-out.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
+- **Keywords:** pass link, pass landing, redeem pass, pass.html, passAddOnReturn, passSummary
+- **Related:** BILL-08, BILL-10
 
 #### BILL-11 Generate admin passes from CLI or workflow
 
@@ -8451,12 +8463,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
 - pass figures: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
-- pass link: [BILL-10](#bill-10-redeem-a-pass)
+- pass landing: [BILL-58](#bill-58-pass-link-landing-page)
+- pass link: [BILL-10](#bill-10-redeem-a-pass), [BILL-58](#bill-58-pass-link-landing-page)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - pass uses: [DATA-68](#data-68-sql-view-campaign-results-by-place)
+- pass.html: [BILL-58](#bill-58-pass-link-landing-page)
+- passaddonreturn: [BILL-58](#bill-58-pass-link-landing-page)
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - passphrase: [BILL-10](#bill-10-redeem-a-pass)
 - passphrase salt: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- passsummary: [BILL-58](#bill-58-pass-link-landing-page)
 - path template: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
@@ -8682,7 +8698,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - redact: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - redaction: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - reddit search: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
-- redeem pass: [BILL-10](#bill-10-redeem-a-pass)
+- redeem pass: [BILL-10](#bill-10-redeem-a-pass), [BILL-58](#bill-58-pass-link-landing-page)
 - redeempass: [BILL-10](#bill-10-redeem-a-pass)
 - redirect: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
 - redirect engine: [SS-24](#ss-24-compile-the-redirect-engine)

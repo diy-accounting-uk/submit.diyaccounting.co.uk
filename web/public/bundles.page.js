@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// A pass link goes to the pass page. replace keeps this page out of the history.
+const passForward = new URLSearchParams(window.location.search).get("pass") ? "/pass.html" + window.location.search : null;
+if (passForward) window.location.replace(passForward);
+
 // --- helpers
 const getIdToken = () => {
   try {
@@ -312,10 +316,6 @@ const cardEl = (b) => {
     const held = heldCard();
     if (held) return held;
 
-    if (passCode) {
-      return serviceItemEl(bundleButton("btn service-btn", { "data-pass-code": String(passCode) }, `Request ${name}${tokenLabel}`, true));
-    }
-
     // Two prices per bundle (annual and monthly): the annual (default) price is the
     // main Subscribe button, the monthly price is a text link beneath it.
     const prices = Array.isArray(b.prices) ? b.prices : [];
@@ -375,16 +375,8 @@ const cardEl = (b) => {
     );
   }
 
-  // on-pass with valid pass: enabled, pass code attached
-  if (enable === "on-pass" && passCode) {
-    const passAttrs = { "data-pass-code": String(passCode) };
-    return serviceItemEl(bundleButton("btn service-btn", passAttrs, `Request ${name}${tokenLabel}`, true));
-  }
-
-  // enable = "always": normal enabled button (with pass code if a validated pass targets this bundle)
-  return serviceItemEl(
-    bundleButton("btn service-btn", passCode ? { "data-pass-code": String(passCode) } : {}, `Request ${name}${tokenLabel}`, true),
-  );
+  // enable = "always": normal enabled button
+  return serviceItemEl(bundleButton("btn service-btn", {}, `Request ${name}${tokenLabel}`, true));
 };
 
 // --- click handler for all request buttons
@@ -397,25 +389,6 @@ document.addEventListener("click", async (e) => {
   const bundleId = btn.getAttribute("data-bundle-id");
   const bundleName = btn.getAttribute("data-bundle-name") || bundleId;
   const original = btn.textContent;
-
-  // Pass-enabled bundle: redeem the pass to grant the bundle
-  const passCode = btn.getAttribute("data-pass-code");
-  if (passCode) {
-    btn.textContent = "Redeeming...";
-    btn.disabled = true;
-    const success = await redeemPassCode(passCode);
-    if (success) {
-      markGranted(btn, `Added ✓ ${bundleName}`);
-      // Clear pass validation after successful redemption
-      try {
-        sessionStorage.removeItem("passValidation");
-      } catch {}
-    } else {
-      btn.textContent = original;
-      btn.disabled = false;
-    }
-    return;
-  }
 
   // Normal bundle request
   const card = btn.closest(".service-item");
@@ -625,12 +598,32 @@ const __catalogueReady = (async function () {
   }
 })();
 
+const CONFIG_SET_NOTE = "Set for your account by DIY Accounting";
+
+// The catalogue phrase follows "you can"; shown alone it starts with a capital and ends with a full stop.
+function passSummarySentence(passSummary) {
+  const phrase = typeof passSummary === "string" ? passSummary.trim() : "";
+  return phrase ? phrase.charAt(0).toUpperCase() + phrase.slice(1) + "." : "";
+}
+
+// Two groups: bundles held through a plan, a pass or a request, and bundles that the site's
+// configuration sets. A group with no row has no heading.
+function groupedBundleRows(rows) {
+  const groups = [
+    ["From your plan or passes", rows.filter((entry) => !entry.configDriven)],
+    ["Set for your account", rows.filter((entry) => entry.configDriven)],
+  ];
+  return groups.flatMap(([title, members]) =>
+    members.length === 0 ? [] : [domEl("h3", { class: "bundle-group-heading" }, title), ...members.map((entry) => entry.row)],
+  );
+}
+
 // --- render current user bundles with remove buttons
 function renderCurrentBundles() {
   const container = document.getElementById("currentBundles");
   const bundles = parseUserBundles();
 
-  const bundleCards = bundles.map((bundleEntry) => {
+  const bundleRows = bundles.map((bundleEntry) => {
     const bundleId = typeof bundleEntry === "string" ? bundleEntry : bundleEntry.bundleId;
 
     // Look up display name from catalogue
@@ -666,8 +659,10 @@ function renderCurrentBundles() {
       }
     }
 
-    if (fullData?.configDriven) fragments.push("set by the site's configuration");
+    if (fullData?.configDriven) fragments.push(CONFIG_SET_NOTE);
 
+    const summary = passSummarySentence(catBundle?.passSummary);
+    const summaryLine = summary ? domEl("div", { class: "bundle-note bundle-summary" }, summary) : null;
     const infoLine = fragments.length > 0 ? domEl("div", { class: "bundle-note" }, fragments.join(" · ")) : null;
 
     // Show Manage Subscription button if bundle has an active subscription
@@ -679,7 +674,7 @@ function renderCurrentBundles() {
         )
       : null;
 
-    return domEl(
+    const row = domEl(
       "div",
       {
         class: "service-item bundle-row",
@@ -697,13 +692,16 @@ function renderCurrentBundles() {
               "Remove",
             ),
       ),
+      summaryLine,
       infoLine,
     );
+    return { row, configDriven: Boolean(fullData?.configDriven) };
   });
 
   const affiliateCard = affiliateRowEl();
-  if (affiliateCard) bundleCards.push(affiliateCard);
+  if (affiliateCard) bundleRows.push({ row: affiliateCard, configDriven: __affiliateApplication?.configDriven === true });
 
+  const bundleCards = groupedBundleRows(bundleRows);
   container.replaceChildren(...bundleCards);
 
   const section = document.getElementById("currentBundlesSection");
@@ -719,7 +717,7 @@ function affiliateRowEl() {
   const application = __affiliateApplication;
   if (!application || !(application.state === "approved" || application.configDriven)) return null;
   const approvedNote = ["approved", application.terms?.name].filter(Boolean).join(" · ");
-  const note = application.configDriven ? "set by the site's configuration" : approvedNote;
+  const note = application.configDriven ? CONFIG_SET_NOTE : approvedNote;
   return domEl(
     "div",
     { "class": "service-item bundle-row", "data-affiliate-row": "true" },
@@ -864,253 +862,6 @@ async function removeBundle(bundleId, fireAndForget = true) {
     console.error("Remove bundle error:", error);
   }
 }
-
-// --- pass redemption ---
-const passReasonMessages = {
-  not_found: "Pass not found. Please check the code and try again.",
-  expired: "This pass has expired.",
-  exhausted: "This pass has been fully used.",
-  revoked: "This pass has been revoked.",
-  wrong_email: "This pass is restricted to a different email address.",
-  email_required: "This pass requires email verification.",
-  not_yet_valid: "This pass is not yet valid.",
-  held_for_review: "This pass is on hold while we review it. Please try again later.",
-  own_pass: "You cannot redeem a pass you generated.",
-  referral_already_used: "This account has already redeemed a referral pass.",
-  already_redeemed: "This account has already redeemed this pass.",
-  network_error: "Could not reach the server to check the pass. Please try again.",
-};
-
-function showPassStatus(message, type) {
-  const el = document.getElementById("passStatus");
-  if (!el) return;
-  // Clear first and write on the next frame so the live region announces a repeated outcome.
-  el.textContent = "";
-  el.hidden = false;
-  el.className = `pass-status pass-status--${type === "success" ? "ok" : type === "error" ? "error" : "info"}`;
-  requestAnimationFrame(() => {
-    el.textContent = message;
-  });
-}
-
-function focusPassTarget(bundleId) {
-  const target = document.querySelector(`#catalogBundles button[data-bundle-id="${bundleId}"]`);
-  if (target) target.focus();
-}
-
-async function redeemPassCode(code) {
-  const idToken = getIdToken();
-  if (!idToken) {
-    try {
-      sessionStorage.setItem("pendingPass", code);
-    } catch {}
-    showPassStatus("Please log in to redeem your pass.", "info");
-    return false;
-  }
-
-  const btn = document.getElementById("redeemPassBtn");
-  if (btn) {
-    btn.textContent = "Redeeming...";
-    btn.disabled = true;
-  }
-
-  try {
-    const response = await window.fetchWithIdToken("/api/v1/pass", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const body = await response.json().catch(() => ({}));
-
-    if (body.requiresSubscription) {
-      // Pass is valid but bundle requires subscription — store validation and re-render
-      try {
-        sessionStorage.setItem(
-          "passValidation",
-          JSON.stringify({ code, bundleId: body.bundleId, valid: true, testPass: body.testPass || false }),
-        );
-      } catch {}
-      // If test pass, activate synthetic mode so checkout uses test Stripe
-      if (body.testPass) {
-        sessionStorage.setItem("hmrcAccount", "synthetic");
-        window.dispatchEvent(new CustomEvent("bundle-changed"));
-      }
-      showPassStatus(`Pass valid! Click "Subscribe" to start your subscription.`, "success");
-      renderCatalogueBundles();
-      return true;
-    }
-
-    if (body.redeemed) {
-      showPassStatus(`Pass redeemed! Bundle "${body.bundleId}" has been added.`, "success");
-      // If test pass, activate synthetic mode immediately
-      if (body.testPass) {
-        sessionStorage.setItem("hmrcAccount", "synthetic");
-      }
-      // Update local state
-      if (!hasBundle(__userBundles, body.bundleId)) {
-        __userBundles.push(body.bundleId);
-      }
-      invalidate("/api/v1/bundle");
-      // Clear persistent bundle cache so fetchUserBundles hits the API
-      try {
-        const uij = localStorage.getItem("userInfo");
-        const uid = uij && JSON.parse(uij)?.sub;
-        if (uid) await window.bundleCache.clearBundles(uid);
-      } catch {}
-      // Refresh full bundle data
-      await fetchUserBundles();
-      try {
-        renderCurrentBundles();
-      } catch {}
-      try {
-        updateBundleStatus();
-      } catch {}
-      window.dispatchEvent(new CustomEvent("bundle-changed"));
-      // Clear pending pass
-      try {
-        sessionStorage.removeItem("pendingPass");
-      } catch {}
-      // Remove ?pass= from URL without reload
-      const url = new URL(window.location);
-      url.searchParams.delete("pass");
-      window.history.replaceState({}, "", url);
-      return true;
-    } else {
-      const msg = passReasonMessages[body.reason] || `Pass redemption failed: ${body.reason || "unknown error"}`;
-      showPassStatus(msg, "error");
-      return false;
-    }
-  } catch (err) {
-    showPassStatus(`Failed to redeem pass: ${err?.message || err}`, "error");
-    return false;
-  } finally {
-    if (btn) {
-      btn.textContent = "Redeem Pass";
-      btn.disabled = false;
-    }
-  }
-}
-
-// --- validate pass code (GET, public, no auth needed)
-async function validatePassCode(code) {
-  try {
-    const response = await fetch(`/api/v1/pass?code=${encodeURIComponent(code)}`);
-    return await response.json();
-  } catch (err) {
-    return { valid: false, reason: "network_error" };
-  }
-}
-
-// Shows a signed-out visitor what the pass gives and what Submit costs afterwards. The
-// sign-in block that holds the bundle cards is hidden until they log in.
-function showPassOffer(passBundle) {
-  const offer = document.getElementById("passOffer");
-  if (!offer) return;
-  const days = /^P(\d+)D$/.exec(passBundle?.timeout || "");
-  if (!days || !passBundle.tokensGranted) return;
-  document.getElementById("passOfferTokens").textContent = String(passBundle.tokensGranted);
-  document.getElementById("passOfferDays").textContent = days[1];
-  const prices = __catalogueData?.bundles?.find((cb) => cb.id === "resident-vat")?.prices || [];
-  const monthly = prices.find((p) => p.interval === "month");
-  const annual = prices.find((p) => p.interval === "year");
-  if (monthly && annual) {
-    document.getElementById("passOfferPrice").textContent =
-      `${formatGbp(monthly.amount / 100)} a month or ${formatGbp(annual.amount / 100)} a year`;
-  }
-  offer.hidden = false;
-}
-
-// --- handle pass entry: validate first, then enable bundle or auto-redeem
-async function handlePassEntry(code) {
-  const btn = document.getElementById("redeemPassBtn");
-  if (btn) {
-    btn.textContent = "Checking...";
-    btn.disabled = true;
-  }
-
-  try {
-    const result = await validatePassCode(code);
-
-    if (!result.valid) {
-      const msg = passReasonMessages[result.reason] || `Pass not valid: ${result.reason || "unknown"}`;
-      showPassStatus(msg, "error");
-      return;
-    }
-
-    // Pass is valid — store validation in sessionStorage
-    const bundleId = result.bundleId;
-    try {
-      sessionStorage.setItem("passValidation", JSON.stringify({ code, bundleId, valid: true }));
-    } catch {}
-
-    const isLoggedIn = !!getIdToken();
-
-    // Look up bundle from catalogue
-    const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
-    const bundleName = catBundle?.name || bundleId;
-    const isHidden = !!catBundle?.hidden;
-
-    if (isLoggedIn && hasBundle(__userBundles, bundleId)) {
-      showPassStatus(`This account already has the "${bundleName}" bundle.`, "info");
-      return;
-    }
-
-    if (isLoggedIn) {
-      const isSubscriptionBundle = catBundle?.allocation === "on-pass-on-subscription";
-      if (result.emailRestricted) {
-        if (isSubscriptionBundle) {
-          showPassStatus(`Pass valid for the invited email. Click "Subscribe" to start your subscription.`, "success");
-        } else {
-          showPassStatus(`Pass valid for the invited email. Click "Request ${bundleName}" to add the bundle.`, "success");
-        }
-      } else if (isSubscriptionBundle) {
-        showPassStatus(`Pass valid! Click "Subscribe" to start your subscription.`, "success");
-      } else {
-        showPassStatus(`Pass valid! Click "Request ${bundleName}" to add the bundle.`, "success");
-      }
-    } else {
-      try {
-        sessionStorage.setItem("pendingPass", code);
-        sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
-      } catch {}
-      showPassOffer(catBundle);
-      if (result.emailRestricted) {
-        showPassStatus(`Pass valid! Log in with the invited email to add the "${bundleName}" bundle.`, "info");
-      } else {
-        showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
-      }
-    }
-    // Re-render catalogue to show the pass-unlocked bundle
-    renderCatalogueBundles();
-    if (isLoggedIn) focusPassTarget(bundleId);
-  } catch (err) {
-    showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
-  } finally {
-    if (btn) {
-      btn.textContent = "Redeem Pass";
-      btn.disabled = false;
-    }
-  }
-}
-
-// Pass form click handler
-document.getElementById("redeemPassBtn")?.addEventListener("click", async () => {
-  const input = document.getElementById("passInput");
-  const code = (input?.value || "").trim().toLowerCase();
-  if (!code) {
-    showPassStatus("Please enter a passphrase.", "error");
-    return;
-  }
-  await handlePassEntry(code);
-});
-
-// Allow Enter key to submit
-document.getElementById("passInput")?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    document.getElementById("redeemPassBtn")?.click();
-  }
-});
 
 // Feedback engagement section logic
 async function initFeedbackEngagementSection() {
@@ -1333,7 +1084,7 @@ async function fetchMyGeneratedPasses(append) {
           ? `${pass.useCount || 0} uses`
           : `${pass.useCount || 0} of ${pass.maxUses} uses`;
       const heldLabel = pass.heldForReview ? " · on hold for review" : "";
-      const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
+      const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
       const card = domEl(
@@ -1746,6 +1497,7 @@ try {
 
 // Initialize page - wait for submit.js module to be ready
 function initPage() {
+  if (passForward) return;
   checkAuthStatus();
   initFeedbackEngagementSection();
   fetchMyGeneratedPasses(false);
@@ -1810,25 +1562,6 @@ function initPage() {
     const url = new URL(window.location);
     url.searchParams.delete("checkout");
     window.history.replaceState({}, "", url);
-  }
-
-  // Handle ?pass= URL parameter
-  const passFromUrl = urlParams.get("pass");
-  if (passFromUrl) {
-    const input = document.getElementById("passInput");
-    if (input) input.value = passFromUrl;
-    // Validate pass (whether new or returning from login)
-    __catalogueReady.then(() => handlePassEntry(passFromUrl.trim().toLowerCase()));
-  } else {
-    // Check for pending pass from previous session (saved before login redirect)
-    try {
-      const pendingPass = sessionStorage.getItem("pendingPass");
-      if (pendingPass && getIdToken()) {
-        const input = document.getElementById("passInput");
-        if (input) input.value = pendingPass;
-        __catalogueReady.then(() => handlePassEntry(pendingPass.trim().toLowerCase()));
-      }
-    } catch {}
   }
 }
 

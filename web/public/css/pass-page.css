@@ -1,0 +1,73 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Pass link page
+   ============================================ */
+
+/* The card holds the room of its tallest state, so the change from Checking to the pass moves nothing. */
+.pass-card {
+  max-width: 40rem;
+  min-height: 26rem;
+  margin: var(--space-5) auto;
+  padding: var(--space-5);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  text-align: left;
+}
+
+.pass-card h2 {
+  margin-top: 0;
+}
+
+.pass-card h2:focus {
+  outline: none;
+}
+
+.pass-card h2:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 2px;
+}
+
+.pass-bundle {
+  margin: var(--space-4) 0;
+}
+
+.pass-message {
+  margin: var(--space-4) 0;
+  color: var(--c-ink);
+}
+
+.pass-error {
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border: 1px solid var(--c-error);
+  border-radius: var(--radius-control);
+  background: var(--c-error-tint);
+  color: var(--c-ink);
+}
+
+.pass-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.pass-actions .btn {
+  width: auto;
+}
+
+.pass-link {
+  font-weight: 600;
+}
+
+.pass-after-action {
+  margin-top: var(--space-3);
+}
+
+.pass-card [hidden] {
+  display: none;
+}

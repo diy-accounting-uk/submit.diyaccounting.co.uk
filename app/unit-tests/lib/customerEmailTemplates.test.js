@@ -150,7 +150,7 @@ describe("lib/customerEmailTemplates", () => {
 
   test("pass-generated asks for a QR code and builds the pass link", () => {
     const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "ab-cd", bundleId: "day-guest", maxUses: 1 }, baseUrl, catalog });
-    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/bundles.html?pass=ab-cd", physical: false });
+    expect(m.passQr).toEqual({ code: "ab-cd", url: "https://submit.example.test/pass.html?pass=ab-cd", physical: false });
     expect(m.html).toContain("cid:pass-qr");
   });
 
@@ -167,7 +167,7 @@ describe("lib/customerEmailTemplates", () => {
   test("a digital pass has the inline QR code as its only attachment", async () => {
     const attachments = await buildPassAttachments({
       code: "ab-cd",
-      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      url: "https://submit.example.test/pass.html?pass=ab-cd",
       physical: false,
     });
     expect(attachments.map((a) => a.FileName)).toEqual(["pass-ab-cd-qr.png"]);
@@ -177,7 +177,7 @@ describe("lib/customerEmailTemplates", () => {
   test("a physical pass adds the front and back faces with the file names the generate page downloads", async () => {
     const attachments = await buildPassAttachments({
       code: "ab-cd",
-      url: "https://submit.example.test/bundles.html?pass=ab-cd",
+      url: "https://submit.example.test/pass.html?pass=ab-cd",
       physical: true,
     });
     expect(attachments.map((a) => [a.FileName, a.ContentType, a.ContentDisposition])).toEqual([
@@ -196,6 +196,19 @@ describe("lib/customerEmailTemplates", () => {
   test("pass-redeemed names the bundle", () => {
     const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest" }, baseUrl, catalog });
     expect(m.subject).toBe("Your Day pass is ready");
+  });
+
+  test("pass-redeemed with no expiry says there is no end date, in both parts", () => {
+    const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest", expiry: null }, baseUrl, catalog });
+    for (const part of [m.text, m.html]) {
+      expect(part).toContain("No end date");
+      expect(part).not.toContain("Not set");
+    }
+  });
+
+  test("pass-redeemed with an expiry gives the date", () => {
+    const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest", expiry: "2026-12-01" }, baseUrl, catalog });
+    expect(m.text).toContain("Ends on: 1 December 2026");
   });
 
   test("notice-digest holds the count, the nearest deadline and the issue list link, in both parts", () => {
