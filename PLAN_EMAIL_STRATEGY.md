@@ -40,38 +40,38 @@ Every row changes the destination from the operator mailbox (or an alias of it) 
 
 | Id | Sender | Count | Method |
 |---|---|---|---|
-| S1 | AWS billing and invoices | 28 | API and Contact |
+| S1 | AWS billing and invoices | 28 | API and Filter |
 | S2 | AWS health and account notices | 39 | API |
 | S3 | AWS budgets and cost anomalies | 40 | Code |
-| S4 | AWS Free Tier alerts | 23 | Console |
+| S4 | AWS Free Tier alerts | 23 | API and Filter |
 | S5 | PayPal receipts and reports | 125 | Contact |
 | S6 | Stripe payouts and reports | 57 | Console |
 | S7 | Google billing, Cloud, Workspace, Search Console, Analytics | 45 | API and Console |
 | S8 | Google Ads notices | 34 | Console |
-| S9 | npm publish notices | 25 | Contact |
+| S9 | npm publish notices | 25 | Filter |
 | S10 | Microsoft Advertising notices | 6 | Console |
-| S11 | GitHub account and billing notices | 2 | Console |
-| S12 | Linktree billing | 1 | Contact |
-| S13 | Companies House filing records | 26 | Contact |
-| S14 | HMRC filing confirmations | 8 | Contact |
+| S11 | GitHub account and billing notices | 2 | API |
+| S12 | Linktree billing | 1 | None |
+| S13 | Companies House filing records | 26 | Filter |
+| S14 | HMRC filing confirmations | 8 | Console and Filter |
 | S15 | HMRC developer bulletins | 14 | Console |
 
-The method for each row, in order. A label that is not confirmed is named unconfirmed. Row EML11 confirms each one from the vendor's documents and API before a change.
+The method for each row, in order, as the research of 2026-11-06 left it. The confirmed calls, labels and current values, and the one open read for each row that still has one, are in `../private.diyaccounting.co.uk/operator/EMAIL_DESTINATIONS_2026-11-05.md`.
 
-- S1: The AWS billing alternate contact, set for each account with `aws account put-alternate-contact --alternate-contact-type BILLING`. The invoice delivery address in the billing console has an unconfirmed label. Contact AWS support if neither moves invoices.
-- S2: The operations alternate contact, `--alternate-contact-type OPERATIONS`, set for each account.
+- S1: The AWS billing alternate contact, set for each account with `aws account put-alternate-contact --alternate-contact-type BILLING`, with each account's own profile. It adds support@. admin@ stays on invoices, because AWS keeps the root user on billing and invoice mail, so a mail filter moves that copy. No account has an alternate contact today.
+- S2: The operations alternate contact for each account, then the removal of the primary contact from the Health Operations and Marketplace categories in AWS User Notifications. The first removal shows whether AWS accepts it.
 - S3: `alertEmail` in the root repository's `RootEnvironment.java`. This is a code change in our own repository.
-- S4: The Free Tier alert address in the billing preferences. The label is unconfirmed.
+- S4: The S1 billing alternate contact receives the alerts. admin@ keeps a copy, which a mail filter moves.
 - S5: PayPal sends notices to the primary address. The notification settings have an unconfirmed label. Contact PayPal for a separate notice address.
 - S6: Stripe sets notices for each user. Add a user at support@ and set its notifications. The settings label is unconfirmed.
-- S7: Google Cloud Essential Contacts for billing, technical and security notices. Workspace, Search Console and Analytics have per-user notification settings with unconfirmed labels. Suspension, past due and declined-payment notices stay at antony@ because they need a person the same day.
+- S7: Google Cloud Essential Contacts for billing, technical and security notices; its API is enabled in no project, so the read needs the console or the API enabled first. Workspace product notices cannot go to support@, because the secondary email must be outside the domain, so a mail filter moves them. Suspension, past due and declined-payment notices stay at antony@ because they need a person the same day.
 - S8: Notification preferences for each user in Google Ads, by an added user at support@. The label is unconfirmed.
-- S9: npm sends to the account address, which is also the login. Contact npm for a separate notice address.
+- S9: npm sends to the account address, which is also the login. A mail filter moves the notices, unless the profile page offers a separate notice address.
 - S10: The notification contact in the Microsoft Advertising account settings. The label is unconfirmed.
-- S11: GitHub notification routing per organisation, and the organisation billing email. Both labels are unconfirmed.
-- S12: Contact Linktree.
-- S13: Contact the Companies House XML team in the existing thread. They hold the presenter contact for filing records.
-- S14: Contact HMRC software developer support in the existing thread.
+- S11: The organisation billing email, by `gh api -X PATCH /orgs/diy-accounting-uk -f billing_email=<address>`. The enterprise billing email is already support@.
+- S12: No change. The subscription has ended.
+- S13: The records go to the filer's sign-in email, not to the XML presenter contact. A mail filter moves them.
+- S14: Seven of the eight are Developer Hub reports to the application's team members: add support@ to the team. The CT600 receipt and the payment confirmation go to the online services sign-in, so a mail filter moves them.
 - S15: The email preferences in the Developer Hub. The label is unconfirmed.
 
 Who contacts the vendor: the operator sends each message from antony@. Claude Code drafts it with the `email-draft` skill.
