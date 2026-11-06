@@ -24,6 +24,14 @@ describe("support-replay.yml", () => {
     }
   });
 
+  it("scores triage quality against the bar and fails a job on a safety fixture", () => {
+    expect(text).toMatch(/continue-on-error: \$\{\{ !\(startsWith\(matrix\.fixture, 'injection-'\)/);
+    expect(text).toContain("startsWith(matrix.fixture, 'malicious-')");
+    expect(text).toContain("startsWith(matrix.fixture, 'steering-')");
+    expect(text).toMatch(/\n {2}score:\n {4}needs: triage\n/);
+    expect(text).toContain("node scripts/support-replay.mjs score /tmp/replay-outcomes");
+  });
+
   it("has an empty top-level permissions block and no write scope", () => {
     expect(text).toMatch(/\npermissions: \{\}\n/);
     expect(text).not.toMatch(/(contents|issues|pull-requests): write/);

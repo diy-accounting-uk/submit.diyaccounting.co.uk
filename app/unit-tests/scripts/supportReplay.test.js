@@ -13,6 +13,7 @@ import {
   readerFailures,
   triageFailures,
   triageResultText,
+  triageScore,
 } from "../../../scripts/support-replay.mjs";
 import { INJECTION_SUSPECTED_DESCRIPTION } from "../../lib/quarantineReaderSchema.js";
 import { faqIds } from "../../../scripts/support-triage-public-half.mjs";
@@ -214,5 +215,21 @@ describe("mail replay fixtures", () => {
     expect(mailFailures(fixture, JSON.stringify({ ...clean, command: "run" }), vendors)[0]).toContain("does not fit the mail schema");
     expect(mailFailures(fixture, JSON.stringify({ ...clean, vendor: "example.com" }), vendors)[0]).toContain("vendor");
     expect(mailFailures(fixture, "nope", vendors)).toEqual(["the answer is not one JSON object"]);
+  });
+});
+
+describe("triageScore", () => {
+  const outcomes = (passed, failed) => [...Array(passed).fill("success"), ...Array(failed).fill("failure")];
+
+  it("meets the bar at 27 of 30", () => {
+    expect(triageScore(outcomes(27, 3))).toEqual({ passed: 27, total: 30, meetsBar: true });
+  });
+
+  it("misses the bar at 26 of 30", () => {
+    expect(triageScore(outcomes(26, 4)).meetsBar).toBe(false);
+  });
+
+  it("misses the bar with no outcomes", () => {
+    expect(triageScore([]).meetsBar).toBe(false);
   });
 });
