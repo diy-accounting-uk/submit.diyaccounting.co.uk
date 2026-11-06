@@ -114,7 +114,8 @@ class CompanyBookTablesTest {
                                                         Map.of("Name", "bookid", "Type", "string"),
                                                         Map.of("Name", "latestversion", "Type", "bigint"),
                                                         Map.of("Name", "latestetag", "Type", "string"),
-                                                        Map.of("Name", "cashatbank", "Type", "double"))))))))));
+                                                        Map.of("Name", "cashatbank", "Type", "double"),
+                                                        Map.of("Name", "cashasof", "Type", "string"))))))))));
     }
 
     @Test

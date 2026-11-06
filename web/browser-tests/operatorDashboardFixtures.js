@@ -132,6 +132,7 @@ export const FIXTURE_SNAPSHOT = {
           id: "company-cash-at-bank",
           label: "Cash at bank",
           unit: "gbp",
+          today: { value: 3500.5, asOf: "2026-09-07" },
           last30: { value: 3500.5, trend: 0 },
           last90: { value: 3500.5, trend: 0 },
         },

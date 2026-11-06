@@ -23,9 +23,18 @@ export const SIBLING_TARGETS = {
 const WIDGET_WIDTH = 800;
 const WIDGET_HEIGHT = 400;
 const SEARCH_SERIES_LIMIT = 10;
-const ANALYTICS_SERIES_LIMIT = 20;
+const COGNITO_QUERY = '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"';
+const COGNITO_BUSIEST_CLIENTS = 1;
+// The 20 largest Submit/Analytics metrics span cost, revenue and small counts, so one graph flattens
+// the small ones. Three graphs hold ranks 1 to 4, 5 to 12 and 13 to 20 by peak.
+const ANALYTICS_BANDS = [
+  { slug: "analytics-all", title: "Submit/Analytics metrics ranked 1 to 4 by peak", skip: 0, limit: 4 },
+  { slug: "analytics-all-middle", title: "Submit/Analytics metrics ranked 5 to 12 by peak", skip: 4, limit: 8 },
+  { slug: "analytics-all-rest", title: "Submit/Analytics metrics ranked 13 to 20 by peak", skip: 12, limit: 8 },
+];
 // The functions that peak far above the rest (tens of seconds against under ten) share one graph.
 const SLOWEST_FUNCTIONS = 6;
+const NEXT_FUNCTIONS_END = 11;
 
 // SEARCH answers an empty graph above 100 series, so each search is wrapped in a SORT that keeps
 // the largest few. A search with `skip` set keeps the series ranked after the first `skip`: metric
@@ -38,6 +47,7 @@ function searchExpression({ query, stat, period, sortBy, limit, skip }) {
 
 // `yAxisLabel` names the unit on the y axis for a search whose series share one unit. CloudWatch
 // prints "No unit" on a custom or math series otherwise; a search that mixes units sets none.
+// Every search graph starts its y axis at 0.
 function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM", limit = SEARCH_SERIES_LIMIT, skip = 0, yAxisLabel }) {
   return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit, skip, yAxisLabel };
 }
@@ -49,11 +59,23 @@ function analyticsItems(envName) {
   return [
     metricSearch({
       slug: "cognito-sign-ins",
-      title: "Cognito sign-ins and refreshes by client",
-      query: '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"',
+      title: "Cognito sign-ins and refreshes, the busiest client",
+      query: COGNITO_QUERY,
       stat: "Sum",
       period: 86400,
       start: "-P30D",
+      limit: COGNITO_BUSIEST_CLIENTS,
+      yAxisLabel: "Count",
+    }),
+    metricSearch({
+      slug: "cognito-sign-ins-rest",
+      title: "Cognito sign-ins and refreshes, the other clients",
+      query: COGNITO_QUERY,
+      stat: "Sum",
+      period: 86400,
+      start: "-P30D",
+      skip: COGNITO_BUSIEST_CLIENTS,
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "hmrc-authentications",
@@ -62,6 +84,7 @@ function analyticsItems(envName) {
       stat: "Maximum",
       period: 86400,
       start: "-P30D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "bundle-operations",
@@ -70,6 +93,7 @@ function analyticsItems(envName) {
       stat: "Maximum",
       period: 86400,
       start: "-P30D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "bundle-grants",
@@ -78,6 +102,7 @@ function analyticsItems(envName) {
       stat: "Maximum",
       period: 86400,
       start: "-P30D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "purchases",
@@ -86,6 +111,7 @@ function analyticsItems(envName) {
       stat: "Maximum",
       period: 86400,
       start: "-P30D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "deploy-lead-time",
@@ -96,16 +122,33 @@ function analyticsItems(envName) {
       start: "-P30D",
       yAxisLabel: "Hours",
     }),
-    metricSearch({
-      slug: "analytics-all",
-      title: "The 20 largest Submit/Analytics metrics",
-      query: "Submit/Analytics",
-      stat: "Maximum",
-      period: 86400,
-      start: "-P30D",
-      limit: ANALYTICS_SERIES_LIMIT,
-    }),
+    ...ANALYTICS_BANDS.map(({ slug, title, skip, limit }) =>
+      metricSearch({ slug, title, query: "Submit/Analytics", stat: "Maximum", period: 86400, start: "-P30D", sortBy: "MAX", skip, limit }),
+    ),
   ].map((item) => ({ ...item, group: "analytics", env: envName }));
+}
+
+// The paint and interaction times are milliseconds and the layout shift is a unitless score near
+// 0.1, so they take two graphs. The 75th percentile is the figure the web vitals thresholds use,
+// and one slow visit does not flatten it as the maximum does.
+function vitalsItems({ title, application }) {
+  const shared = { kind: "rum", application, stat: "p75", period: 3600, start: "-P3D" };
+  return [
+    {
+      ...shared,
+      slug: "rum-vitals",
+      title: title + ", paint and interaction times (p75)",
+      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint"],
+      yAxisLabel: "Milliseconds",
+    },
+    {
+      ...shared,
+      slug: "rum-vitals-score",
+      title: title + ", layout shift score (p75)",
+      metrics: ["WebVitalsCumulativeLayoutShift"],
+      yAxisLabel: "Score",
+    },
+  ];
 }
 
 function operationsItems(envName) {
@@ -118,6 +161,7 @@ function operationsItems(envName) {
       stat: "Sum",
       period: 3600,
       start: "-P3D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "lambda-throttles",
@@ -126,6 +170,7 @@ function operationsItems(envName) {
       stat: "Sum",
       period: 3600,
       start: "-P3D",
+      yAxisLabel: "Count",
     }),
     metricSearch({
       slug: "lambda-duration-slowest",
@@ -140,13 +185,26 @@ function operationsItems(envName) {
     }),
     metricSearch({
       slug: "lambda-duration-rest",
-      title: "Lambda duration by function, the next " + SEARCH_SERIES_LIMIT + " by peak",
+      title: "Lambda duration by function, ranks " + (SLOWEST_FUNCTIONS + 1) + " to " + NEXT_FUNCTIONS_END + " by peak",
       query: '{AWS/Lambda,FunctionName} MetricName="Duration" ' + functionTerm,
       stat: "Average",
       period: 3600,
       start: "-P3D",
       sortBy: "MAX",
       skip: SLOWEST_FUNCTIONS,
+      limit: NEXT_FUNCTIONS_END - SLOWEST_FUNCTIONS,
+      yAxisLabel: "Milliseconds",
+    }),
+    metricSearch({
+      slug: "lambda-duration-tail",
+      title:
+        "Lambda duration by function, ranks " + (NEXT_FUNCTIONS_END + 1) + " to " + (NEXT_FUNCTIONS_END + SEARCH_SERIES_LIMIT) + " by peak",
+      query: '{AWS/Lambda,FunctionName} MetricName="Duration" ' + functionTerm,
+      stat: "Average",
+      period: 3600,
+      start: "-P3D",
+      sortBy: "MAX",
+      skip: NEXT_FUNCTIONS_END,
       yAxisLabel: "Milliseconds",
     }),
     metricSearch({
@@ -157,17 +215,9 @@ function operationsItems(envName) {
       period: 3600,
       start: "-P3D",
       sortBy: "MAX",
+      yAxisLabel: "Count",
     }),
-    {
-      slug: "rum-vitals",
-      title: "Web vitals",
-      kind: "rum",
-      application: envName + "-env-rum",
-      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint", "WebVitalsCumulativeLayoutShift"],
-      stat: "Average",
-      period: 3600,
-      start: "-P3D",
-    },
+    ...vitalsItems({ title: "Web vitals", application: envName + "-env-rum" }),
     {
       slug: "rum-errors",
       title: "JavaScript errors, page views and sessions",
@@ -194,18 +244,11 @@ function operationsItems(envName) {
 function siblingItems(targetKey) {
   const sibling = SIBLING_TARGETS[targetKey];
   return [
-    {
-      slug: "rum-vitals",
-      title: sibling.label + " web vitals",
-      kind: "rum",
-      application: sibling.monitor,
-      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint", "WebVitalsCumulativeLayoutShift"],
-      stat: "Average",
-      period: 3600,
-      start: "-P3D",
+    ...vitalsItems({ title: sibling.label + " web vitals", application: sibling.monitor }).map((item) => ({
+      ...item,
       group: "operations",
       env: "prod",
-    },
+    })),
   ];
 }
 
@@ -262,14 +305,41 @@ export function buildMetricWidget(item, region) {
     return {
       ...base,
       metrics: [[{ expression: searchExpression(item), id: "e1", label: "" }]],
-      ...(item.yAxisLabel ? { yAxis: { left: { label: item.yAxisLabel, showUnits: false } } } : {}),
+      yAxis: { left: { min: 0, ...(item.yAxisLabel ? { label: item.yAxisLabel, showUnits: false } : {}) } },
     };
   }
   if (item.kind === "rum") {
     return {
       ...base,
       metrics: item.metrics.map((metricName) => ["AWS/RUM", metricName, "application_name", item.application, { stat: item.stat }]),
+      yAxis: { left: { min: 0, ...(item.yAxisLabel ? { label: item.yAxisLabel, showUnits: false } : {}) } },
     };
+  }
+  throw new Error("Not a metric item: " + item.id);
+}
+
+/** The seconds a graph's `start` looks back, for a start written "-P<days>D". */
+export function rangeSeconds(item) {
+  const days = /^-P(\d+)D$/.exec(item.start);
+  if (!days) throw new Error("Not a day range: " + item.start);
+  return Number(days[1]) * 86400;
+}
+
+/**
+ * The GetMetricData queries that read the same series as a graph, so the capture can say whether
+ * the graph holds any data. CloudWatch draws an empty graph with no text.
+ */
+export function metricDataQueries(item) {
+  if (item.kind === "metric-search") return [{ Id: "e1", Expression: searchExpression(item), Period: item.period }];
+  if (item.kind === "rum") {
+    return item.metrics.map((metricName, index) => ({
+      Id: "m" + index,
+      MetricStat: {
+        Metric: { Namespace: "AWS/RUM", MetricName: metricName, Dimensions: [{ Name: "application_name", Value: item.application }] },
+        Period: item.period,
+        Stat: item.stat,
+      },
+    }));
   }
   throw new Error("Not a metric item: " + item.id);
 }

@@ -213,7 +213,7 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
 
       await expect(page.locator("#console-ci-lambda-errors .console-capture-empty")).toHaveText("Not captured yet");
-      await expect(page.locator("#console-prod-rum .console-capture-empty")).toHaveCount(2);
+      await expect(page.locator("#console-prod-rum .console-capture-empty")).toHaveCount(3);
     });
 
     test("says Not captured yet everywhere when the snapshot has no console index", async ({ page }) => {
@@ -887,6 +887,33 @@ test.describe("Operator Dashboard", () => {
     await expect(figure("search-floor")).toHaveText("£31.00");
   });
 
+  test("says over budget in words on the left to spend row when the spend passes the budget", async ({ page }) => {
+    const overspent = {
+      ...FIXTURE_SNAPSHOT,
+      monthlyMarketingBudget: {
+        ...FIXTURE_SNAPSHOT.monthlyMarketingBudget,
+        budgetGbp: 0,
+        spentThisMonthGbp: 16.63,
+        leftToSpendGbp: -16.63,
+      },
+    };
+    await setupRoutes(page, { snapshotBody: overspent });
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    const cell = page.locator('#monthlyMarketingBudgetPanel tr[data-figure-id="left-to-spend"] td').nth(1);
+    await expect(cell).toContainText("Over budget by £16.63");
+    await expect(cell.locator("[data-state=over-budget]")).toHaveClass(/status-error/);
+  });
+
+  test("shows no over budget state while money is left to spend", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    await expect(page.locator("#monthlyMarketingBudgetPanel [data-state=over-budget]")).toHaveCount(0);
+  });
+
   test("shows a figure that is not measured as not measured", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -910,10 +937,32 @@ test.describe("Operator Dashboard", () => {
 
     const panel = page.locator("#reservePanel");
     await expect(panel).toBeVisible();
+    await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(0)).toHaveText("Cash at bank, book to 2026-09-07");
     await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(1)).toHaveText("£3,500.50");
     await expect(panel.locator('tr[data-figure-id="reserve-floor"] td').nth(1)).toHaveText("£2,000.00");
     await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("£1,500.50");
     await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "above-floor");
+  });
+
+  test("shows no book date when the cash figure carries none", async ({ page }) => {
+    const undated = {
+      ...FIXTURE_SNAPSHOT,
+      objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+        objective.id === "company-accounts"
+          ? {
+              ...objective,
+              observations: objective.observations.map((observation) =>
+                observation.id === "company-cash-at-bank" ? { ...observation, today: { value: 3500.5 } } : observation,
+              ),
+            }
+          : objective,
+      ),
+    };
+    await setupRoutes(page, { snapshotBody: undated });
+    await loadDashboard(page);
+
+    const label = page.locator('#reservePanel tr[data-figure-id="reserve-cash-at-bank"] td').nth(0);
+    await expect(label).toHaveText("Cash at bank");
   });
 
   test("marks the reserve block when cash at bank is below the floor", async ({ page }) => {

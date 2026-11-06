@@ -39,7 +39,18 @@ export async function deriveCompanyBookFigures(session, { requireDirectorsNote =
   return {
     accounts: microEntityAccountsFromResults(book, results, scenario, { requireDirectorsNote }),
     cashAtBank: cashAtBankFromResults(results),
+    cashAsOf: lastPostingDate(lines),
   };
+}
+
+/** The date of the book's last transaction, as YYYY-MM-DD, or null when no line carries a posting date. */
+export function lastPostingDate(lines) {
+  let latest = null;
+  for (const line of lines) {
+    const day = typeof line.postingDate === "string" ? line.postingDate.slice(0, 10) : null;
+    if (day && (latest === null || day > latest)) latest = day;
+  }
+  return latest;
 }
 
 /**

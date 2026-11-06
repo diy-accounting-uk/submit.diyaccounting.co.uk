@@ -413,7 +413,8 @@ function renderReserve(snapshot) {
 
   document.getElementById("reserveTable").hidden = false;
   const headroom = cash - RESERVE_FLOOR_GBP;
-  appendReserveRow(body, "reserve-cash-at-bank", "Cash at bank", formatValue("gbp", cash));
+  const bookDate = observation.today && observation.today.asOf ? observation.today.asOf : null;
+  appendReserveRow(body, "reserve-cash-at-bank", bookDate ? `Cash at bank, book to ${bookDate}` : "Cash at bank", formatValue("gbp", cash));
   appendReserveRow(body, "reserve-floor", "Reserve floor", formatValue("gbp", RESERVE_FLOOR_GBP));
   appendReserveRow(body, "reserve-headroom", "Headroom", formatValue("gbp", headroom));
   const below = cash < RESERVE_FLOOR_GBP;
@@ -450,6 +451,7 @@ function renderMonthlyMarketingBudget(snapshot) {
   ];
   const body = document.getElementById("monthlyMarketingBudgetBody");
   body.innerHTML = "";
+  const overBudget = typeof budget.leftToSpendGbp === "number" && budget.leftToSpendGbp < 0;
   rows.forEach(([id, label, text]) => {
     const row = document.createElement("tr");
     row.dataset.figureId = id;
@@ -457,6 +459,13 @@ function renderMonthlyMarketingBudget(snapshot) {
     labelCell.textContent = label;
     const valueCell = document.createElement("td");
     valueCell.textContent = text;
+    if (id === "left-to-spend" && overBudget) {
+      const state = document.createElement("span");
+      state.className = "status-message status-error";
+      state.dataset.state = "over-budget";
+      state.textContent = `Over budget by ${formatValue("gbp", -budget.leftToSpendGbp)}`;
+      valueCell.appendChild(state);
+    }
     row.appendChild(labelCell);
     row.appendChild(valueCell);
     body.appendChild(row);

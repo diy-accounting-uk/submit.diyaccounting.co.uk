@@ -290,6 +290,16 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("FROM   company_accounts");
     });
 
+    test("reports the date a row carries as the reading's day when the observation names one", () => {
+      const sql = buildWindowedBatchSql({
+        view: "company_accounts",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "cashatbank", asOfExpr: "cashasof", aggregation: "latest" }],
+      });
+      expect(sql).toContain("cast(max_by(cashasof, dt) FILTER (WHERE dt <=");
+      expect(sql).toContain("AS o0_today_as_of");
+    });
+
     test("builds every window as a conditional aggregate without a filter", () => {
       const sql = buildWindowedBatchSql({
         view: "v_availability_sli_daily",

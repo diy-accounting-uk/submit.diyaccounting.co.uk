@@ -9,6 +9,8 @@ import {
   BEDROCK_QUERY,
   buildMetricWidget,
   itemsForTarget,
+  metricDataQueries,
+  rangeSeconds,
   regionForTarget,
   targetsForRun,
 } from "@app/services/consoleCaptureCatalogue.js";
@@ -38,17 +40,17 @@ describe("consoleCaptureCatalogue", () => {
     expect(() => targetsForRun("test")).toThrow(/prod and ci only/);
   });
 
-  test("a submit target has 7 analytics, 5 operations metric searches, the RUM pair, alarms, Bedrock and X-Ray", () => {
+  test("a submit target has 10 analytics, 6 operations metric searches, the RUM set, alarms, Bedrock and X-Ray", () => {
     const items = itemsForTarget("prod");
-    expect(items.filter((item) => item.group === "analytics")).toHaveLength(7);
-    expect(items.filter((item) => item.kind === "metric-search")).toHaveLength(12);
-    expect(items.filter((item) => item.kind === "rum")).toHaveLength(2);
+    expect(items.filter((item) => item.group === "analytics")).toHaveLength(10);
+    expect(items.filter((item) => item.kind === "metric-search")).toHaveLength(16);
+    expect(items.filter((item) => item.kind === "rum")).toHaveLength(3);
     expect(items.map((item) => item.kind)).toEqual(expect.arrayContaining(["alarms", "bedrock", "service-graph"]));
     expect(items.every((item) => item.id.startsWith("prod-"))).toBe(true);
   });
 
-  test("sibling targets hold one RUM item each, read in us-east-1", () => {
-    expect(itemsForTarget("spreadsheets").map((item) => item.id)).toEqual(["spreadsheets-rum-vitals"]);
+  test("sibling targets hold a times graph and a score graph each, read in us-east-1", () => {
+    expect(itemsForTarget("spreadsheets").map((item) => item.id)).toEqual(["spreadsheets-rum-vitals", "spreadsheets-rum-vitals-score"]);
     expect(itemsForTarget("gateway")[0].application).toBe("gateway-web");
     expect(regionForTarget("gateway")).toBe("us-east-1");
     expect(regionForTarget("prod")).toBe("eu-west-2");
@@ -62,7 +64,7 @@ describe("consoleCaptureCatalogue", () => {
     expect(widget.region).toBe("eu-west-2");
   });
 
-  test("the Lambda duration graphs split by rank: the slowest 6, then the next 10", () => {
+  test("the Lambda duration graphs split by rank: the slowest 6, ranks 7 to 11, then ranks 12 to 21", () => {
     const items = itemsForTarget("prod");
     const search = "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Duration\" prod-env', 'Average', 3600)";
     const slowest = buildMetricWidget(
@@ -74,8 +76,34 @@ describe("consoleCaptureCatalogue", () => {
       "eu-west-2",
     );
     expect(slowest.metrics[0][0].expression).toBe("SORT(" + search + ", MAX, DESC, 6)");
-    expect(rest.metrics[0][0].expression).toBe("SLICE(SORT(" + search + ", MAX, DESC), 6, 16)");
+    const tail = buildMetricWidget(
+      items.find((entry) => entry.slug === "lambda-duration-tail"),
+      "eu-west-2",
+    );
+    expect(rest.metrics[0][0].expression).toBe("SLICE(SORT(" + search + ", MAX, DESC), 6, 11)");
+    expect(tail.metrics[0][0].expression).toBe("SLICE(SORT(" + search + ", MAX, DESC), 11, 21)");
     expect(items.some((entry) => entry.slug === "lambda-duration")).toBe(false);
+  });
+
+  test("the large series split by rank so the small ones stay readable", () => {
+    const items = itemsForTarget("prod");
+    const expressionOf = (slug) =>
+      buildMetricWidget(
+        items.find((entry) => entry.slug === slug),
+        "eu-west-2",
+      ).metrics[0][0].expression;
+    const cognito = "SEARCH('{AWS/Cognito,UserPool,UserPoolClient} MetricName=\"SignInSuccesses\"', 'Sum', 86400)";
+    expect(expressionOf("cognito-sign-ins")).toBe("SORT(" + cognito + ", SUM, DESC, 1)");
+    expect(expressionOf("cognito-sign-ins-rest")).toBe("SLICE(SORT(" + cognito + ", SUM, DESC), 1, 11)");
+    expect(expressionOf("analytics-all")).toBe("SORT(SEARCH('Submit/Analytics', 'Maximum', 86400), MAX, DESC, 4)");
+    expect(expressionOf("analytics-all-middle")).toBe("SLICE(SORT(SEARCH('Submit/Analytics', 'Maximum', 86400), MAX, DESC), 4, 12)");
+    expect(expressionOf("analytics-all-rest")).toBe("SLICE(SORT(SEARCH('Submit/Analytics', 'Maximum', 86400), MAX, DESC), 12, 20)");
+  });
+
+  test("every search graph starts its y axis at 0", () => {
+    for (const item of itemsForTarget("ci").filter((entry) => entry.kind === "metric-search")) {
+      expect(buildMetricWidget(item, "eu-west-2").yAxis.left.min).toBe(0);
+    }
   });
 
   test("a search with one unit labels its y axis and drops the No unit label; a mixed-unit search sets none", () => {
@@ -85,20 +113,25 @@ describe("consoleCaptureCatalogue", () => {
         items.find((entry) => entry.slug === slug),
         "eu-west-2",
       );
-      expect(widget.yAxis).toEqual({ left: { label: "Milliseconds", showUnits: false } });
+      expect(widget.yAxis).toEqual({ left: { min: 0, label: "Milliseconds", showUnits: false } });
     }
     const leadTime = buildMetricWidget(
       items.find((entry) => entry.slug === "deploy-lead-time"),
       "eu-west-2",
     );
     expect(leadTime.yAxis.left.label).toBe("Hours");
-    for (const slug of ["analytics-all", "lambda-errors"]) {
+    for (const slug of ["lambda-errors", "hmrc-authentications", "cognito-sign-ins-rest"]) {
       const widget = buildMetricWidget(
         items.find((entry) => entry.slug === slug),
         "eu-west-2",
       );
-      expect(widget.yAxis).toBeUndefined();
+      expect(widget.yAxis).toEqual({ left: { min: 0, label: "Count", showUnits: false } });
     }
+    const mixed = buildMetricWidget(
+      items.find((entry) => entry.slug === "analytics-all"),
+      "eu-west-2",
+    );
+    expect(mixed.yAxis).toEqual({ left: { min: 0 } });
   });
 
   test("every Submit/Analytics search plots a gauge with Maximum or Average, never Sum", () => {
@@ -111,6 +144,50 @@ describe("consoleCaptureCatalogue", () => {
     const item = itemsForTarget("ci").find((entry) => entry.slug === "rum-errors");
     const widget = buildMetricWidget(item, "eu-west-2");
     expect(widget.metrics[0]).toEqual(["AWS/RUM", "JsErrorCountPerSession", "application_name", "ci-env-rum", { stat: "Sum" }]);
+  });
+
+  test("web vitals draw milliseconds and the unitless layout shift score on separate graphs at p75", () => {
+    for (const targetKey of ["prod", "spreadsheets", "gateway"]) {
+      const items = itemsForTarget(targetKey);
+      const times = buildMetricWidget(
+        items.find((entry) => entry.slug === "rum-vitals"),
+        "eu-west-2",
+      );
+      const score = buildMetricWidget(
+        items.find((entry) => entry.slug === "rum-vitals-score"),
+        "eu-west-2",
+      );
+      expect(times.metrics.map((metric) => metric[1])).toEqual(["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint"]);
+      expect(score.metrics.map((metric) => metric[1])).toEqual(["WebVitalsCumulativeLayoutShift"]);
+      expect([...times.metrics, ...score.metrics].every((metric) => metric[4].stat === "p75")).toBe(true);
+      expect(times.yAxis.left).toEqual({ min: 0, label: "Milliseconds", showUnits: false });
+      expect(score.yAxis.left).toEqual({ min: 0, label: "Score", showUnits: false });
+    }
+  });
+
+  test("the data check reads the series the graph draws", () => {
+    const items = itemsForTarget("ci");
+    const search = items.find((entry) => entry.slug === "lambda-errors");
+    expect(metricDataQueries(search)).toEqual([
+      { Id: "e1", Expression: buildMetricWidget(search, "eu-west-2").metrics[0][0].expression, Period: 3600 },
+    ]);
+    const score = items.find((entry) => entry.slug === "rum-vitals-score");
+    expect(metricDataQueries(score)).toEqual([
+      {
+        Id: "m0",
+        MetricStat: {
+          Metric: {
+            Namespace: "AWS/RUM",
+            MetricName: "WebVitalsCumulativeLayoutShift",
+            Dimensions: [{ Name: "application_name", Value: "ci-env-rum" }],
+          },
+          Period: 3600,
+          Stat: "p75",
+        },
+      },
+    ]);
+    expect(rangeSeconds(search)).toBe(3 * 86400);
+    expect(() => metricDataQueries(items.find((entry) => entry.kind === "alarms"))).toThrow(/Not a metric item/);
   });
 
   test("an unknown target is an error", () => {

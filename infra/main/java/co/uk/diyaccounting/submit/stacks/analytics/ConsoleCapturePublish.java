@@ -122,8 +122,12 @@ public class ConsoleCapturePublish extends Construct {
                 .build();
 
         this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
+        this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricData", List.of("*")));
         this.executionRole.addToPolicy(readPolicyStatement(
                 "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
+        this.executionRole.addToPolicy(readPolicyStatement(
+                "cloudwatch:DescribeAlarmHistory",
+                List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         this.executionRole.addToPolicy(readPolicyStatement(
                 "logs:StartQuery",
                 List.of("arn:aws:logs:%s:%s:log-group:/%s/bedrock/invocations:*".formatted(region, account, envName))));
@@ -226,8 +230,12 @@ public class ConsoleCapturePublish extends Construct {
                 .maxSessionDuration(Duration.seconds(ASSUMED_SESSION_SECONDS_LIMIT))
                 .build();
         role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
+        role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricData", List.of("*")));
         role.addToPolicy(readPolicyStatement(
                 "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
+        role.addToPolicy(readPolicyStatement(
+                "cloudwatch:DescribeAlarmHistory",
+                List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         role.addToPolicy(readPolicyStatement(
                 "logs:StartQuery",
                 List.of("arn:aws:logs:%s:%s:log-group:/ci/bedrock/invocations:*".formatted(region, account))));
