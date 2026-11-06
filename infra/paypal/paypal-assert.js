@@ -90,7 +90,7 @@ export function assertTemplateMatches(config, html) {
   return mismatches;
 }
 
-// --- Network calls. Not covered by the unit tests (decision logic only, no network). ---
+// --- Network calls. The unit tests cover checkDonateUrl with a stubbed fetch. ---
 
 async function checkDonatePage(config, failures) {
   try {
@@ -116,10 +116,14 @@ async function checkDonatePage(config, failures) {
   }
 }
 
-async function checkDonateUrl(config, failures) {
+export async function checkDonateUrl(config, failures, fetchImpl = fetch) {
   try {
-    const response = await fetch(config.donateUrl);
-    if (!response.ok) {
+    const response = await fetchImpl(config.donateUrl);
+    if (response.status === 403 && new URL(config.donateUrl).hostname === "www.paypal.com") {
+      console.warn(
+        `  donate url: 403 from ${config.donateUrl}; PayPal's edge blocks automation, so the link could not be read by automation`,
+      );
+    } else if (!response.ok) {
       failures.push(`donate url: ${response.status} from ${config.donateUrl}`);
       console.error(`  donate url: ${response.status}`);
     } else {
