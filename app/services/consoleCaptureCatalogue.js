@@ -36,8 +36,10 @@ function searchExpression({ query, stat, period, sortBy, limit, skip }) {
   return "SORT(" + search + ", " + sortBy + ", DESC, " + limit + ")";
 }
 
-function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM", limit = SEARCH_SERIES_LIMIT, skip = 0 }) {
-  return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit, skip };
+// `yAxisLabel` names the unit on the y axis for a search whose series share one unit. CloudWatch
+// prints "No unit" on a custom or math series otherwise; a search that mixes units sets none.
+function metricSearch({ slug, title, query, stat, period, start, sortBy = "SUM", limit = SEARCH_SERIES_LIMIT, skip = 0, yAxisLabel }) {
+  return { slug, title, kind: "metric-search", query, stat, period, start, sortBy, limit, skip, yAxisLabel };
 }
 
 // Every Submit/Analytics metric is a gauge: analyticsMetricsPublish.js writes the prior day's value
@@ -92,6 +94,7 @@ function analyticsItems(envName) {
       stat: "Average",
       period: 86400,
       start: "-P30D",
+      yAxisLabel: "Hours",
     }),
     metricSearch({
       slug: "analytics-all",
@@ -133,6 +136,7 @@ function operationsItems(envName) {
       start: "-P3D",
       sortBy: "MAX",
       limit: SLOWEST_FUNCTIONS,
+      yAxisLabel: "Milliseconds",
     }),
     metricSearch({
       slug: "lambda-duration-rest",
@@ -143,6 +147,7 @@ function operationsItems(envName) {
       start: "-P3D",
       sortBy: "MAX",
       skip: SLOWEST_FUNCTIONS,
+      yAxisLabel: "Milliseconds",
     }),
     metricSearch({
       slug: "bundle-allocations",
@@ -257,6 +262,7 @@ export function buildMetricWidget(item, region) {
     return {
       ...base,
       metrics: [[{ expression: searchExpression(item), id: "e1", label: "" }]],
+      ...(item.yAxisLabel ? { yAxis: { left: { label: item.yAxisLabel, showUnits: false } } } : {}),
     };
   }
   if (item.kind === "rum") {
