@@ -19,7 +19,7 @@
 // console prefix, reads no DynamoDB item, no secret and no customer object, and stores no log
 // line: the Bedrock query keeps counts only.
 
-import { CloudWatchClient, GetMetricWidgetImageCommand, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
+import { CloudWatchClient, GetMetricWidgetImageCommand, GetMetricDataCommand, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
 import { CloudWatchLogsClient, StartQueryCommand, GetQueryResultsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { XRayClient, GetServiceGraphCommand } from "@aws-sdk/client-xray";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
@@ -30,6 +30,8 @@ import {
   BEDROCK_QUERY,
   buildMetricWidget,
   itemsForTarget,
+  metricDataQueries,
+  rangeSeconds,
   regionForTarget,
   targetsForRun,
 } from "../../services/consoleCaptureCatalogue.js";
@@ -100,6 +102,25 @@ async function renderMetricImage({ item, clients, region }) {
     throw new Error("GetMetricWidgetImage returned no image");
   }
   return Buffer.from(response.MetricWidgetImage);
+}
+
+// CloudWatch draws a graph with no series as an empty frame with no text, so the capture reads the
+// same series and records whether any datapoint exists in the range. `null` means the read failed.
+async function graphHasData({ item, clients, now }) {
+  try {
+    const answer = await clients.cloudWatch.send(
+      new GetMetricDataCommand({
+        MetricDataQueries: metricDataQueries(item),
+        StartTime: new Date(now.getTime() - rangeSeconds(item) * 1000),
+        EndTime: now,
+        MaxDatapoints: 1000,
+      }),
+    );
+    return (answer.MetricDataResults || []).some((result) => (result.Values || []).length > 0);
+  } catch (error) {
+    logger.warn({ message: "Console capture could not check a graph for data", id: item.id, error: errorText(error) });
+    return null;
+  }
 }
 
 async function readAlarms({ item, clients }) {
@@ -208,7 +229,7 @@ async function captureItem({ item, clients, region, envName, writeImage, now, sl
       const imageKey = consoleImageKey(envName, item.target, item.id);
       await writeImage(imageKey, image);
       logger.info({ message: "Captured widget image", id: item.id, bytes: image.length });
-      return { ...entry, kind: "image", imageKey };
+      return { ...entry, kind: "image", imageKey, hasData: await graphHasData({ item, clients, now }) };
     }
     if (item.kind === "alarms") return { ...entry, rows: await readAlarms({ item, clients }) };
     if (item.kind === "bedrock") return { ...entry, rows: await readBedrockCounts({ item, clients, now, sleep }) };

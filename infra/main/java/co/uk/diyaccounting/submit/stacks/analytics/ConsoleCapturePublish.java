@@ -122,6 +122,7 @@ public class ConsoleCapturePublish extends Construct {
                 .build();
 
         this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
+        this.executionRole.addToPolicy(readPolicyStatement("cloudwatch:GetMetricData", List.of("*")));
         this.executionRole.addToPolicy(readPolicyStatement(
                 "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         this.executionRole.addToPolicy(readPolicyStatement(
@@ -226,6 +227,7 @@ public class ConsoleCapturePublish extends Construct {
                 .maxSessionDuration(Duration.seconds(ASSUMED_SESSION_SECONDS_LIMIT))
                 .build();
         role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricWidgetImage", List.of("*")));
+        role.addToPolicy(readPolicyStatement("cloudwatch:GetMetricData", List.of("*")));
         role.addToPolicy(readPolicyStatement(
                 "cloudwatch:DescribeAlarms", List.of("arn:aws:cloudwatch:%s:%s:alarm:*".formatted(region, account))));
         role.addToPolicy(readPolicyStatement(

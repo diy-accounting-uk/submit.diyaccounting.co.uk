@@ -99,6 +99,7 @@ class ConsoleCapturePublishTest {
         var actions = actionsOfStatements(statements);
 
         assertTrue(actions.contains("cloudwatch:GetMetricWidgetImage"));
+        assertTrue(actions.contains("cloudwatch:GetMetricData"));
         assertTrue(actions.contains("cloudwatch:DescribeAlarms"));
         assertTrue(actions.contains("logs:StartQuery"));
         assertTrue(actions.contains("xray:GetServiceGraph"));
@@ -165,6 +166,7 @@ class ConsoleCapturePublishTest {
         assertTrue(trust.contains("aws:PrincipalArn=arn:aws:iam::972912397388:role/prod-env-console-capture"), trust);
         var readActions = actionsOfStatements(statementsOfRole(template, "ConsoleCaptureRead"));
         assertTrue(readActions.contains("cloudwatch:GetMetricWidgetImage"));
+        assertTrue(readActions.contains("cloudwatch:GetMetricData"));
         assertTrue(readActions.stream().noneMatch(action -> action.startsWith("s3:") || action.startsWith("sts:")));
     }
 

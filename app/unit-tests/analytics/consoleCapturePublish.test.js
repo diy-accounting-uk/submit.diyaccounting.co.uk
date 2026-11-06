@@ -25,6 +25,12 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
       this.name = "GetMetricWidgetImage";
     }
   },
+  GetMetricDataCommand: class {
+    constructor(input) {
+      this.input = input;
+      this.name = "GetMetricData";
+    }
+  },
   DescribeAlarmsCommand: class {
     constructor(input) {
       this.input = input;
@@ -91,6 +97,7 @@ function widgetAnswer() {
 
 function defaultCloudWatch(command) {
   if (command.name === "GetMetricWidgetImage") return widgetAnswer();
+  if (command.name === "GetMetricData") return { MetricDataResults: [{ Id: "e1", Values: [1] }] };
   return {
     MetricAlarms: [
       { AlarmName: "ci-env-b", StateValue: "OK", StateReason: "fine", StateUpdatedTimestamp: new Date("2026-11-01T00:00:00Z") },
@@ -214,6 +221,39 @@ describe("consoleCapturePublish", () => {
     const widget = JSON.parse(widgetCall.input.MetricWidget);
     expect(widget.region).toBe("eu-west-2");
     expect(widget.metrics[0][0].expression).toMatch(/^SORT\(SEARCH\(/);
+  });
+
+  test("an image entry records whether its graph holds data in the range", async () => {
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "GetMetricData") {
+        const empty = command.input.MetricDataQueries[0].Expression?.includes("HmrcAuthentications");
+        return { MetricDataResults: [{ Id: "e1", Values: empty ? [] : [2] }] };
+      }
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    await runConsoleCapture(dependencies);
+
+    const items = indexFrom(puts).items;
+    expect(items["ci-hmrc-authentications"].hasData).toBe(false);
+    expect(items["ci-lambda-errors"].hasData).toBe(true);
+    const call = cloudWatchHandler.mock.calls.map((entry) => entry[0]).find((command) => command.name === "GetMetricData");
+    expect(call.input.EndTime).toEqual(NOW);
+    expect(call.input.StartTime).toEqual(new Date(NOW.getTime() - 30 * 86400 * 1000));
+  });
+
+  test("a failed data check keeps the image and records no answer", async () => {
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "GetMetricData") throw new Error("denied");
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    const result = await runConsoleCapture(dependencies);
+
+    expect(result.failed).toBe(0);
+    expect(indexFrom(puts).items["ci-lambda-errors"]).toMatchObject({ kind: "image", hasData: null });
   });
 
   test("the alarms table puts ALARM rows first", async () => {

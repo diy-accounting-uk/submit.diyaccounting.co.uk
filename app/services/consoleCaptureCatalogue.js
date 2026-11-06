@@ -318,6 +318,32 @@ export function buildMetricWidget(item, region) {
   throw new Error("Not a metric item: " + item.id);
 }
 
+/** The seconds a graph's `start` looks back, for a start written "-P<days>D". */
+export function rangeSeconds(item) {
+  const days = /^-P(\d+)D$/.exec(item.start);
+  if (!days) throw new Error("Not a day range: " + item.start);
+  return Number(days[1]) * 86400;
+}
+
+/**
+ * The GetMetricData queries that read the same series as a graph, so the capture can say whether
+ * the graph holds any data. CloudWatch draws an empty graph with no text.
+ */
+export function metricDataQueries(item) {
+  if (item.kind === "metric-search") return [{ Id: "e1", Expression: searchExpression(item), Period: item.period }];
+  if (item.kind === "rum") {
+    return item.metrics.map((metricName, index) => ({
+      Id: "m" + index,
+      MetricStat: {
+        Metric: { Namespace: "AWS/RUM", MetricName: metricName, Dimensions: [{ Name: "application_name", Value: item.application }] },
+        Period: item.period,
+        Stat: item.stat,
+      },
+    }));
+  }
+  throw new Error("Not a metric item: " + item.id);
+}
+
 // The one query the Bedrock capture runs. It stores counts only, never a prompt or a response.
 export const BEDROCK_QUERY =
   "filter ispresent(modelId) | stats count(*) as invocations, sum(input.inputTokenCount) as inputTokens, sum(output.outputTokenCount) as outputTokens by bin(1h), modelId";

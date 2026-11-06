@@ -315,6 +315,7 @@
       return { element: wrapper };
     }
     if (entry.imageKey) {
+      if (entry.hasData === false) wrapper.appendChild(textElement("p", "console-capture-empty", "No data in the range"));
       wrapper.appendChild(imageElement(captureId, entry.title));
       return { element: wrapper };
     }

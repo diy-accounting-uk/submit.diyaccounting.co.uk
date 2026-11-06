@@ -9,6 +9,8 @@ import {
   BEDROCK_QUERY,
   buildMetricWidget,
   itemsForTarget,
+  metricDataQueries,
+  rangeSeconds,
   regionForTarget,
   targetsForRun,
 } from "@app/services/consoleCaptureCatalogue.js";
@@ -161,6 +163,31 @@ describe("consoleCaptureCatalogue", () => {
       expect(times.yAxis.left).toEqual({ min: 0, label: "Milliseconds", showUnits: false });
       expect(score.yAxis.left).toEqual({ min: 0, label: "Score", showUnits: false });
     }
+  });
+
+  test("the data check reads the series the graph draws", () => {
+    const items = itemsForTarget("ci");
+    const search = items.find((entry) => entry.slug === "lambda-errors");
+    expect(metricDataQueries(search)).toEqual([
+      { Id: "e1", Expression: buildMetricWidget(search, "eu-west-2").metrics[0][0].expression, Period: 3600 },
+    ]);
+    const score = items.find((entry) => entry.slug === "rum-vitals-score");
+    expect(metricDataQueries(score)).toEqual([
+      {
+        Id: "m0",
+        MetricStat: {
+          Metric: {
+            Namespace: "AWS/RUM",
+            MetricName: "WebVitalsCumulativeLayoutShift",
+            Dimensions: [{ Name: "application_name", Value: "ci-env-rum" }],
+          },
+          Period: 3600,
+          Stat: "p75",
+        },
+      },
+    ]);
+    expect(rangeSeconds(search)).toBe(3 * 86400);
+    expect(() => metricDataQueries(items.find((entry) => entry.kind === "alarms"))).toThrow(/Not a metric item/);
   });
 
   test("an unknown target is an error", () => {
