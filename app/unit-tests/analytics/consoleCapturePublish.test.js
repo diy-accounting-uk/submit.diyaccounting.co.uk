@@ -199,11 +199,11 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 17, failed: 0 });
-    expect(Object.keys(index.items)).toHaveLength(17);
+    expect(result).toEqual({ items: 21, failed: 0 });
+    expect(Object.keys(index.items)).toHaveLength(21);
     expect(index.environment).toBe("ci");
     expect(index.items["ci-lambda-errors"]).toMatchObject({ kind: "image", imageKey: "snapshots/ci/console/ci/ci-lambda-errors.png" });
-    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(14);
+    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(18);
     expect(puts.find((input) => input.Key.endsWith("ci-lambda-errors.png")).ContentType).toBe("image/png");
   });
 
@@ -257,7 +257,7 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 17, failed: 1 });
+    expect(result).toEqual({ items: 21, failed: 1 });
     expect(index.items["ci-lambda-throttles"].error).toBe("AccessDenied: not authorised");
     expect(index.items["ci-lambda-throttles"].imageKey).toBeUndefined();
     expect(index.items["ci-lambda-errors"].imageKey).toBeDefined();
@@ -297,7 +297,7 @@ describe("consoleCapturePublish", () => {
       "arn:aws:iam::283165661847:role/gateway-console-capture-read",
     ]);
     expect(assumed.every((input) => input.ExternalId === "submit-console-capture" && input.DurationSeconds === 900)).toBe(true);
-    expect(result).toEqual({ items: 36, failed: 0 });
+    expect(result).toEqual({ items: 44, failed: 0 });
     const index = indexFrom(puts);
     expect(index.items["spreadsheets-rum-vitals"].imageKey).toBe("snapshots/prod/console/spreadsheets/spreadsheets-rum-vitals.png");
     const siblingClient = constructed.filter((entry) => entry.config.region === "us-east-1");

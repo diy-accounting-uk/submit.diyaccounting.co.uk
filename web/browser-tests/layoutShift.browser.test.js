@@ -207,17 +207,21 @@ test.describe("Layout shift while data loads on a phone", () => {
 
   const CAPTURED_IMAGE_SLUGS = [
     "cognito-sign-ins",
+    "cognito-sign-ins-rest",
     "hmrc-authentications",
     "bundle-operations",
     "bundle-grants",
     "purchases",
     "deploy-lead-time",
     "analytics-all",
+    "analytics-all-middle",
+    "analytics-all-rest",
     "lambda-errors",
     "lambda-throttles",
     "bundle-allocations",
     "lambda-duration-slowest",
     "lambda-duration-rest",
+    "lambda-duration-tail",
     "rum-vitals",
     "rum-errors",
   ];

@@ -80,7 +80,12 @@
   // Each link has an id the console capture knows (app/services/consoleCaptureCatalogue.js) and
   // the capture ids whose image or table the page shows beside it.
   const analyticsQueries = [
-    ["cognito-sign-ins", "Cognito sign-ins and refreshes by client", '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"'],
+    [
+      "cognito-sign-ins",
+      "Cognito sign-ins and refreshes by client",
+      '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"',
+      ["cognito-sign-ins", "cognito-sign-ins-rest"],
+    ],
     ["hmrc-authentications", "HMRC authentications", "Submit/Analytics HmrcAuthentications"],
     ["bundle-operations", "Bundle operations by activity", '{Submit/Analytics,Activity} MetricName="BundleOperations"'],
     ["bundle-grants", "Bundle grants", "Submit/Analytics BundleGrants"],
@@ -90,7 +95,7 @@
       "Submit/Analytics Ga4Purchases OR StripePaidCharges OR ActivityActivations",
     ],
     ["deploy-lead-time", "Deploy lead time in hours", '{Submit/Analytics,Environment} MetricName="DeployLeadTimeHours"'],
-    ["analytics-all", "Every Submit/Analytics metric", "Submit/Analytics"],
+    ["analytics-all", "Every Submit/Analytics metric", "Submit/Analytics", ["analytics-all", "analytics-all-middle", "analytics-all-rest"]],
   ];
 
   const operationsQueries = [
@@ -115,8 +120,8 @@
     const result = [];
     ENVIRONMENTS.forEach((env) => {
       const analytics = { title: "Analytics on AWS " + env.id, env: env.id, links: [] };
-      analyticsQueries.forEach(([slug, label, query]) => {
-        analytics.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
+      analyticsQueries.forEach(([slug, label, query, captureSlugs]) => {
+        analytics.links.push(link(env, slug, label, metricsSearchUrl(env.region, query), captureSlugs));
       });
       result.push(analytics);
     });
@@ -131,7 +136,7 @@
           "lambda-duration",
           "Lambda duration by function",
           metricsSearchUrl(env.region, '{AWS/Lambda,FunctionName} MetricName="Duration" -app-'),
-          ["lambda-duration-slowest", "lambda-duration-rest"],
+          ["lambda-duration-slowest", "lambda-duration-rest", "lambda-duration-tail"],
         ),
       );
       operations.links.push(
