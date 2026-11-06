@@ -598,12 +598,32 @@ const __catalogueReady = (async function () {
   }
 })();
 
+const CONFIG_SET_NOTE = "Set for your account by DIY Accounting";
+
+// The catalogue phrase follows "you can"; shown alone it starts with a capital and ends with a full stop.
+function passSummarySentence(passSummary) {
+  const phrase = typeof passSummary === "string" ? passSummary.trim() : "";
+  return phrase ? phrase.charAt(0).toUpperCase() + phrase.slice(1) + "." : "";
+}
+
+// Two groups: bundles held through a plan, a pass or a request, and bundles that the site's
+// configuration sets. A group with no row has no heading.
+function groupedBundleRows(rows) {
+  const groups = [
+    ["From your plan or passes", rows.filter((entry) => !entry.configDriven)],
+    ["Set for your account", rows.filter((entry) => entry.configDriven)],
+  ];
+  return groups.flatMap(([title, members]) =>
+    members.length === 0 ? [] : [domEl("h3", { class: "bundle-group-heading" }, title), ...members.map((entry) => entry.row)],
+  );
+}
+
 // --- render current user bundles with remove buttons
 function renderCurrentBundles() {
   const container = document.getElementById("currentBundles");
   const bundles = parseUserBundles();
 
-  const bundleCards = bundles.map((bundleEntry) => {
+  const bundleRows = bundles.map((bundleEntry) => {
     const bundleId = typeof bundleEntry === "string" ? bundleEntry : bundleEntry.bundleId;
 
     // Look up display name from catalogue
@@ -639,8 +659,10 @@ function renderCurrentBundles() {
       }
     }
 
-    if (fullData?.configDriven) fragments.push("set by the site's configuration");
+    if (fullData?.configDriven) fragments.push(CONFIG_SET_NOTE);
 
+    const summary = passSummarySentence(catBundle?.passSummary);
+    const summaryLine = summary ? domEl("div", { class: "bundle-note bundle-summary" }, summary) : null;
     const infoLine = fragments.length > 0 ? domEl("div", { class: "bundle-note" }, fragments.join(" · ")) : null;
 
     // Show Manage Subscription button if bundle has an active subscription
@@ -652,7 +674,7 @@ function renderCurrentBundles() {
         )
       : null;
 
-    return domEl(
+    const row = domEl(
       "div",
       {
         class: "service-item bundle-row",
@@ -670,13 +692,16 @@ function renderCurrentBundles() {
               "Remove",
             ),
       ),
+      summaryLine,
       infoLine,
     );
+    return { row, configDriven: Boolean(fullData?.configDriven) };
   });
 
   const affiliateCard = affiliateRowEl();
-  if (affiliateCard) bundleCards.push(affiliateCard);
+  if (affiliateCard) bundleRows.push({ row: affiliateCard, configDriven: __affiliateApplication?.configDriven === true });
 
+  const bundleCards = groupedBundleRows(bundleRows);
   container.replaceChildren(...bundleCards);
 
   const section = document.getElementById("currentBundlesSection");
@@ -692,7 +717,7 @@ function affiliateRowEl() {
   const application = __affiliateApplication;
   if (!application || !(application.state === "approved" || application.configDriven)) return null;
   const approvedNote = ["approved", application.terms?.name].filter(Boolean).join(" · ");
-  const note = application.configDriven ? "set by the site's configuration" : approvedNote;
+  const note = application.configDriven ? CONFIG_SET_NOTE : approvedNote;
   return domEl(
     "div",
     { "class": "service-item bundle-row", "data-affiliate-row": "true" },
@@ -1059,7 +1084,7 @@ async function fetchMyGeneratedPasses(append) {
           ? `${pass.useCount || 0} uses`
           : `${pass.useCount || 0} of ${pass.maxUses} uses`;
       const heldLabel = pass.heldForReview ? " · on hold for review" : "";
-      const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
+      const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
       const card = domEl(
