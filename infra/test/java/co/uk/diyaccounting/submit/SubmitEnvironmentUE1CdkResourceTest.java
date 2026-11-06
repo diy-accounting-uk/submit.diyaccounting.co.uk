@@ -135,7 +135,10 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "IamActionDefinition",
                                 Match.objectLike(Map.of(
                                         "Roles",
-                                        List.of("test-env-alarm-triage-role", "test-env-quarantine-reader-role"))))))));
+                                        List.of(
+                                                "test-env-alarm-triage-role",
+                                                "test-env-quarantine-reader-role",
+                                                "test-env-dashboard-review-role"))))))));
 
         // 8) The deny managed policy denies both Bedrock invoke actions, attached to nothing at
         // deploy time - the budget action attaches it once the account crosses the threshold.

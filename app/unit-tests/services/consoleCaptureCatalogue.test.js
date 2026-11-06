@@ -78,6 +78,29 @@ describe("consoleCaptureCatalogue", () => {
     expect(items.some((entry) => entry.slug === "lambda-duration")).toBe(false);
   });
 
+  test("a search with one unit labels its y axis and drops the No unit label; a mixed-unit search sets none", () => {
+    const items = itemsForTarget("prod");
+    for (const slug of ["lambda-duration-slowest", "lambda-duration-rest"]) {
+      const widget = buildMetricWidget(
+        items.find((entry) => entry.slug === slug),
+        "eu-west-2",
+      );
+      expect(widget.yAxis).toEqual({ left: { label: "Milliseconds", showUnits: false } });
+    }
+    const leadTime = buildMetricWidget(
+      items.find((entry) => entry.slug === "deploy-lead-time"),
+      "eu-west-2",
+    );
+    expect(leadTime.yAxis.left.label).toBe("Hours");
+    for (const slug of ["analytics-all", "lambda-errors"]) {
+      const widget = buildMetricWidget(
+        items.find((entry) => entry.slug === slug),
+        "eu-west-2",
+      );
+      expect(widget.yAxis).toBeUndefined();
+    }
+  });
+
   test("every Submit/Analytics search plots a gauge with Maximum or Average, never Sum", () => {
     const searches = itemsForTarget("prod").filter((item) => item.kind === "metric-search" && item.query.includes("Submit/Analytics"));
     expect(searches.length).toBeGreaterThan(0);

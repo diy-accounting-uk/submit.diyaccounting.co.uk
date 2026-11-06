@@ -285,6 +285,9 @@ jobs:
       # Lambda in the us-east-1 environment ECR repository; deploy-ingestion pushes that
       # image (see its "push env observability ue1 image" steps below).
       - deploy-ingestion
+      # The budget action in this stack names roles that the eu-west-2 observability stack
+      # creates, so that stack deploys first.
+      - deploy-observability
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read

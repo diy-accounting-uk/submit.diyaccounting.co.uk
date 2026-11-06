@@ -17,3 +17,17 @@ export function subscriptionPeriod(subscription) {
     end: item?.current_period_end ?? subscription?.current_period_end ?? null,
   };
 }
+
+/**
+ * Whether a Stripe Subscription is scheduled to cancel at the end of its current period. The
+ * customer portal schedules that either with cancel_at_period_end or with cancel_at set to the
+ * period end. A cancel_at after the period end cancels a later period, so it is not this one.
+ *
+ * @param {object} subscription
+ * @returns {boolean}
+ */
+export function cancelsAtPeriodEnd(subscription) {
+  if (subscription?.cancel_at_period_end) return true;
+  const { end } = subscriptionPeriod(subscription);
+  return Boolean(subscription?.cancel_at && end && subscription.cancel_at <= end);
+}

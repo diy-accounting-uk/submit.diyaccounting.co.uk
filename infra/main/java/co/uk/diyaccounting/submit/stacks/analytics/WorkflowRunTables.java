@@ -220,6 +220,8 @@ public class WorkflowRunTables {
                 "guardrail_action", "string",
                 "pr_number", "bigint",
                 "duration_seconds", "bigint",
-                "finished_at", "string");
+                "finished_at", "string",
+                "input_tokens", "bigint",
+                "output_tokens", "bigint");
     }
 }

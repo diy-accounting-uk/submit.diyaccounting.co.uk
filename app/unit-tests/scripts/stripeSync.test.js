@@ -10,6 +10,7 @@ import {
   parseArgs,
   parseConfig,
   planEndpoints,
+  findUndeclaredEndpoints,
   planPaymentLinks,
   rewriteEnvLines,
   computeEnvUpdates,
@@ -376,6 +377,34 @@ describe("planEndpoints", () => {
     const existing = [{ id: "we_1", url: endpoints[0].url, status: "disabled", enabled_events: [...events] }];
     const plans = planEndpoints(endpoints, "test", existing, events);
     expect(plans[0]).toMatchObject({ action: "update", id: "we_1", eventsChanged: false, needsEnable: true });
+  });
+});
+
+describe("findUndeclaredEndpoints", () => {
+  const declared = [
+    { environment: "ci", url: "https://ci.example/webhook", modes: ["test"] },
+    { environment: "prod", url: "https://prod.example/webhook", modes: ["test", "live"] },
+  ];
+
+  test("lists an enabled endpoint that no declared endpoint names", () => {
+    const stray = { id: "we_stray", url: "https://ci.example/webhook", status: "enabled", enabled_events: [] };
+    expect(findUndeclaredEndpoints(declared, "live", [stray])).toEqual([{ id: "we_stray", url: stray.url, status: "enabled" }]);
+  });
+
+  test("lists a disabled endpoint with its status", () => {
+    const stray = { id: "we_old", url: "https://old.example/webhook", status: "disabled" };
+    expect(findUndeclaredEndpoints(declared, "test", [stray])).toEqual([stray]);
+  });
+
+  test("does not list a declared endpoint", () => {
+    const existing = [{ id: "we_1", url: "https://prod.example/webhook", status: "enabled" }];
+    expect(findUndeclaredEndpoints(declared, "live", existing)).toEqual([]);
+  });
+
+  test("a URL declared for test mode only is undeclared in live mode", () => {
+    const existing = [{ id: "we_ci", url: "https://ci.example/webhook", status: "enabled" }];
+    expect(findUndeclaredEndpoints(declared, "test", existing)).toEqual([]);
+    expect(findUndeclaredEndpoints(declared, "live", existing)).toHaveLength(1);
   });
 });
 

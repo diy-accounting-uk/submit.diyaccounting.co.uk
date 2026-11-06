@@ -28,8 +28,13 @@ import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
-import { subscriptionPeriod } from "../../lib/stripeSubscriptionPeriod.js";
-import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
+import { subscriptionPeriod, cancelsAtPeriodEnd } from "../../lib/stripeSubscriptionPeriod.js";
+import {
+  putBundleByHashedSub,
+  updateBundleSubscriptionFields,
+  resetTokensByHashedSub,
+  BUNDLE_MISSING,
+} from "../../data/dynamoDbBundleRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot, isUnlimitedTokenGrant } from "../../services/productCatalog.js";
@@ -242,6 +247,33 @@ function getCatalogTokensGranted(bundleId) {
   }
 }
 
+// The bundle item that a paid subscription grants: written at checkout, and again by a paid renewal
+// that finds the item gone.
+function buildSubscriptionBundleRecord({ bundleId, expiry, currentPeriodEnd, test, subscriptionId, customerId, status, actor }) {
+  return {
+    bundleId,
+    expiry,
+    qualifiers: { synthetic: test, stripeTestMode: test },
+    tokensGranted: getCatalogTokensGranted(bundleId),
+    tokensConsumed: 0,
+    tokenResetAt: nextTokenResetAt(bundleId, expiry),
+    stripeSubscriptionId: subscriptionId || null,
+    stripeCustomerId: customerId || null,
+    subscriptionStatus: status,
+    currentPeriodEnd: currentPeriodEnd || null,
+    cancelAtPeriodEnd: false,
+    actor,
+  };
+}
+
+// An update never creates a bundle item, so a handler that finds the item gone says so and leaves
+// the repair to the paid renewal.
+function warnWhenBundleMissing(result, { hashedSub, bundleId, subscriptionId, handler }) {
+  if (result?.reason !== BUNDLE_MISSING) return false;
+  logger.warn({ message: `${handler}: no bundle item to update`, hashedSub, bundleId, subscriptionId });
+  return true;
+}
+
 async function handleCheckoutComplete(session, { test = false } = {}) {
   const hashedSub = session.metadata?.hashedSub || session.client_reference_id;
   const bundleId = session.metadata?.bundleId || "resident-pro";
@@ -282,22 +314,16 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   // Grant bundle using hashedSub directly (webhook doesn't know the original user sub)
   const tokensGranted = getCatalogTokensGranted(bundleId);
-  const tokenRefreshDate = nextTokenResetAt(bundleId, currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
-
-  const bundleRecord = {
+  const bundleRecord = buildSubscriptionBundleRecord({
     bundleId,
     expiry: currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    qualifiers: { synthetic: test, stripeTestMode: test },
-    tokensGranted,
-    tokensConsumed: 0,
-    tokenResetAt: tokenRefreshDate,
-    stripeSubscriptionId: subscriptionId || null,
-    stripeCustomerId: customerId || null,
-    subscriptionStatus: "active",
-    currentPeriodEnd: currentPeriodEnd || null,
-    cancelAtPeriodEnd: false,
+    currentPeriodEnd,
+    test,
+    subscriptionId,
+    customerId,
+    status: "active",
     actor,
-  };
+  });
 
   const acquisition = acquisitionFromStripeMetadata(session.metadata);
   if (acquisition) {
@@ -441,17 +467,47 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   }
   const currentPeriodEnd = new Date(period.end * 1000).toISOString();
 
-  // Reset tokens for the new billing period - an unlimited grant (the resident-tax-agent practice
-  // licence) carries no count, so there is nothing to reset.
-  if (!isUnlimitedTokenGrant(tokensGranted)) {
-    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextTokenResetAt(bundleId, currentPeriodEnd));
-  }
+  const actor = subRecord.actor || (test ? "test-user" : "customer");
+  const customerId =
+    subRecord.stripeCustomerId || (typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id);
 
-  // Update period dates on the bundle
-  await updateBundleSubscriptionFields(hashedSub, bundleId, {
+  // The period dates and the subscription link go in one update, which also moves the item's TTL. An
+  // item that earlier updates created alone, or that DynamoDB deleted, gets its link back here.
+  const renewal = await updateBundleSubscriptionFields(hashedSub, bundleId, {
     currentPeriodEnd,
     expiry: currentPeriodEnd,
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId: customerId || null,
+    subscriptionStatus: subscription.status,
+    cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
   });
+
+  if (renewal.reason === BUNDLE_MISSING) {
+    // A paid renewal with no bundle item grants the whole bundle again, with a fresh token count.
+    logger.warn({ message: "invoice.paid: bundle item missing, granting the bundle again", hashedSub, bundleId, subscriptionId });
+    await putBundleByHashedSub(
+      hashedSub,
+      buildSubscriptionBundleRecord({
+        bundleId,
+        expiry: currentPeriodEnd,
+        currentPeriodEnd,
+        test,
+        subscriptionId,
+        customerId,
+        status: subscription.status,
+        actor,
+      }),
+    );
+  } else if (!isUnlimitedTokenGrant(tokensGranted)) {
+    // Reset tokens for the new billing period - an unlimited grant (the resident-tax-agent practice
+    // licence) carries no count, so there is nothing to reset.
+    warnWhenBundleMissing(await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextTokenResetAt(bundleId, currentPeriodEnd)), {
+      hashedSub,
+      bundleId,
+      subscriptionId,
+      handler: "invoice.paid token reset",
+    });
+  }
 
   // Update subscription record
   await updateSubscription(`stripe#${subscriptionId}`, {
@@ -468,7 +524,7 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     // The record's own actor, set once from the customer's email at checkout, so a probe
     // lane's renewals classify the same way its checkout did. Older records written before
     // that field existed fall back to the Stripe test/live mode flag.
-    actor: subRecord.actor || (test ? "test-user" : "customer"),
+    actor,
     flow: "user-journey",
     detail: { bundleId, subscriptionId, hashedSub },
   });
@@ -504,15 +560,18 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
 
   // Update bundle subscription status
-  await updateBundleSubscriptionFields(hashedSub, bundleId, {
-    subscriptionStatus: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-  });
+  warnWhenBundleMissing(
+    await updateBundleSubscriptionFields(hashedSub, bundleId, {
+      subscriptionStatus: subscription.status,
+      cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
+    }),
+    { hashedSub, bundleId, subscriptionId: subscription.id, handler: "subscription.updated" },
+  );
 
   // Update subscription record
   await updateSubscription(`stripe#${subscription.id}`, {
     status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
   });
 
   logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
@@ -524,14 +583,22 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   if (subscription.status === "active" && period.end) {
     const newPeriodEnd = new Date(period.end * 1000).toISOString();
     if (!subRecord.currentPeriodEnd || new Date(newPeriodEnd) > new Date(subRecord.currentPeriodEnd)) {
-      await updateBundleSubscriptionFields(hashedSub, bundleId, { currentPeriodEnd: newPeriodEnd, expiry: newPeriodEnd });
+      warnWhenBundleMissing(
+        await updateBundleSubscriptionFields(hashedSub, bundleId, { currentPeriodEnd: newPeriodEnd, expiry: newPeriodEnd }),
+        {
+          hashedSub,
+          bundleId,
+          subscriptionId: subscription.id,
+          handler: "subscription.updated expiry",
+        },
+      );
       await updateSubscription(`stripe#${subscription.id}`, { currentPeriodEnd: newPeriodEnd });
       logger.info({ message: "Bundle expiry extended on subscription.updated", hashedSub, bundleId, currentPeriodEnd: newPeriodEnd });
     }
   }
 
   // Notify when user schedules cancellation via Stripe portal
-  if (subscription.cancel_at_period_end) {
+  if (cancelsAtPeriodEnd(subscription)) {
     await publishActivityEvent({
       event: "subscription-cancellation-scheduled",
       site: "submit",
@@ -558,10 +625,13 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
 
   // Mark bundle subscription as canceled
-  await updateBundleSubscriptionFields(hashedSub, bundleId, {
-    subscriptionStatus: "canceled",
-    cancelAtPeriodEnd: false,
-  });
+  warnWhenBundleMissing(
+    await updateBundleSubscriptionFields(hashedSub, bundleId, {
+      subscriptionStatus: "canceled",
+      cancelAtPeriodEnd: false,
+    }),
+    { hashedSub, bundleId, subscriptionId: subscription.id, handler: "subscription.deleted" },
+  );
 
   // Update subscription record
   await updateSubscription(`stripe#${subscription.id}`, {
@@ -607,8 +677,11 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
 
   // Mark bundle as past_due so the UI can reflect payment issues
-  await updateBundleSubscriptionFields(hashedSub, bundleId, {
-    subscriptionStatus: "past_due",
+  warnWhenBundleMissing(await updateBundleSubscriptionFields(hashedSub, bundleId, { subscriptionStatus: "past_due" }), {
+    hashedSub,
+    bundleId,
+    subscriptionId,
+    handler: "payment_failed",
   });
 
   // Update subscription record
@@ -754,9 +827,17 @@ export async function ingestHandler(event) {
               disputed: true,
               disputeId: dispute.id,
             });
-            await updateBundleSubscriptionFields(disputeSubRecord.hashedSub, disputeSubRecord.bundleId, {
-              disputed: true,
-            });
+            warnWhenBundleMissing(
+              await updateBundleSubscriptionFields(disputeSubRecord.hashedSub, disputeSubRecord.bundleId, {
+                disputed: true,
+              }),
+              {
+                hashedSub: disputeSubRecord.hashedSub,
+                bundleId: disputeSubRecord.bundleId,
+                subscriptionId: disputeSubscriptionId,
+                handler: "dispute",
+              },
+            );
             logger.info({
               message: "Dispute flagged on subscription and bundle",
               disputeId: dispute.id,

@@ -497,6 +497,22 @@ public class ObservabilityStack extends Stack {
                         .identityPoolId(rumIdentityPool.getRef())
                         .telemetries(List.of("performance", "errors", "http"))
                         .build())
+                .resourcePolicy(CfnAppMonitor.ResourcePolicyProperty.builder()
+                        .policyDocument(Stack.of(this)
+                                .toJsonString(Map.of(
+                                        "Version",
+                                        "2012-10-17",
+                                        "Statement",
+                                        List.of(Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "rum:PutRumEvents",
+                                                "Resource",
+                                                rumAppMonitorArn,
+                                                "Principal",
+                                                "*")))))
+                        .build())
                 .build();
 
         // RUM metrics and alarms
@@ -1232,6 +1248,75 @@ public class ObservabilityStack extends Stack {
                 .build());
 
         cfnOutput(this, "QuarantineReaderRoleArn", quarantineReaderRole.getRoleArn());
+
+        // The dashboard review role reads what the nightly dashboard review judges and nothing else:
+        // the operator snapshot and the console images in the lake, the held passes through the
+        // issuer index of the passes table, one Sonnet profile, the guardrail and four parameters.
+        // It has no ListBucket, so a missing key answers AccessDenied; the job reads both as "not
+        // published yet". The LeadingKeys condition limits the query to the partition key "held".
+        String dashboardReviewLakeArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
+        Role dashboardReviewRole = Role.Builder.create(this, props.resourceNamePrefix() + "-DashboardReviewRole")
+                .roleName(props.sharedNames().observability.dashboardReviewRoleName)
+                .maxSessionDuration(Duration.hours(1))
+                .description("Role the nightly dashboard review workflow chains into to read the snapshot and"
+                        + " the held passes, and to judge the screenshots with Sonnet")
+                .assumedBy(new ArnPrincipal(githubActionsRoleArn))
+                .build();
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadSnapshotAndConsole")
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(
+                        dashboardReviewLakeArn + "/snapshots/" + props.envName() + "/latest.json",
+                        dashboardReviewLakeArn + "/snapshots/" + props.envName() + "/console/*"))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("QueryHeldPasses")
+                .actions(List.of("dynamodb:Query"))
+                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s/index/issuedBy-index"
+                        .formatted(this.getRegion(), this.getAccount(), props.sharedNames().data.passesTableName)))
+                .conditions(Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("held"))))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("InvokeReviewModel")
+                .actions(List.of("bedrock:InvokeModel"))
+                .resources(List.of(
+                        "arn:aws:bedrock:eu-west-2:%s:inference-profile/eu.anthropic.claude-sonnet-5-5"
+                                .formatted(this.getAccount()),
+                        "arn:aws:bedrock:eu-north-1::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-west-3::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-south-1::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-west-2::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-south-2::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-west-1::foundation-model/anthropic.claude-sonnet-5-5",
+                        "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-sonnet-5-5"))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ApplyReviewGuardrail")
+                .actions(List.of("bedrock:ApplyGuardrail"))
+                .resources(List.of(alarmTriageGuardrail.getAttrGuardrailArn()))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadReviewParameters")
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        guardrailIdParameter.getParameterArn(),
+                        guardrailVersionParameter.getParameterArn(),
+                        killSwitchParameter.getParameterArn()))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DenyScans")
+                .effect(Effect.DENY)
+                .actions(List.of("dynamodb:Scan"))
+                .resources(List.of("*"))
+                .build());
+
+        cfnOutput(this, "DashboardReviewRoleArn", dashboardReviewRole.getRoleArn());
 
         // ============================================================================
         // Trusted events: AWS Health and ACM notices as private issues

@@ -545,6 +545,8 @@ jobs:
         shell: bash
 
       - name: 'Run behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
+        # A suite ends in a few minutes. With no limit, a hung browser holds the job for six hours.
+        timeout-minutes: 20
         id: behaviour-test
         continue-on-error: true
         if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
@@ -606,6 +608,8 @@ jobs:
         shell: bash
 
       - name: 'Retry behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
+        # A suite ends in a few minutes. With no limit, a hung browser holds the job for six hours.
+        timeout-minutes: 20
         id: behaviour-test-retry
         if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
         run: |

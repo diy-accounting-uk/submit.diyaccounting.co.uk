@@ -18,7 +18,7 @@ description: Read every tab of the prod operator dashboard (https://submit.diyac
 # dashboard-review
 
 The operator dashboard draws every number from one JSON snapshot. `operatorSnapshotPublish.js`
-writes it hourly in prod as the last step of the ingestion workflow, to
+writes it in prod every six hours (02:15, 08:15, 14:15 and 20:15 UTC) as the last step of the ingestion workflow, to
 `s3://prod-env-analytics-lake-972912397388/snapshots/prod/latest.json`.
 `GET /api/v1/operator/snapshot` returns the same file to the page, with one extra key:
 `console`, the index of the captured AWS console images. The S3 file has no `console` key.
@@ -41,7 +41,10 @@ aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/s
 ```
 
 When the SSO session is expired, print `aws sso login --sso-session diyaccounting` once, and
-take the snapshot from the page instead. Run this in the dashboard tab with the `javascript_tool`:
+take the snapshot from the page instead. Load the dashboard tab and wait until it has finished
+loading. Then run this in the tab with the `javascript_tool`. The stored id token may have
+expired, so the first run can answer 401 while the page refreshes its token. Run the script once
+more after a 401.
 
 ```js
 const t = localStorage.getItem("cognitoIdToken");
@@ -69,12 +72,15 @@ The script returns four things:
 `ci-alarms`, `spreadsheets-rum-vitals`). An entry holds `title`, `kind`, `capturedAt` and one of
 `imageKey` (a graph), `rows` (a table) or `error`. The image bytes are not in the script's
 result. The page loads each one from `/api/v1/operator/console-image?id=<capture id>`, so the
-page pass is the only way to see an image.
+page pass is the only way to see an image. The page is the source of the list of capture items
+and of links. Their counts can differ, because one link can show two items (the two Lambda
+duration graphs are two items). Count nothing from this skill.
 
 **Map the snapshot to the page.** List the snapshot's top-level keys. Set each one against the
 tab and panel that show it, from the table below. Then compare the table with
 `web/public/operator/dashboard.html` and `dashboard.page.js`, because both can have changed.
 
+<!-- review-map:start -->
 | Snapshot section | Tab | Panel (id or objective slot) |
 |---|---|---|
 | `dailyCharts` | main | `chartsPanel` |
@@ -94,6 +100,7 @@ tab and panel that show it, from the table below. Then compare the table with
 | `affiliateGroups` | affiliates | `affiliateGroupsPanel` |
 | `console` (API response only) | aws-prod, aws-ci | `awsLinksPanel`, one `console-<link id>` section for each link |
 | `generatedAt`, `environment`, `failedObservationCount` | all | the header lines above the tabs |
+<!-- review-map:end -->
 
 The held passes panel (`heldPassesPanel`, affiliates tab) has no snapshot section.
 
@@ -114,8 +121,8 @@ For each tab, in order:
 
 1. Click its button. A panel on a tab that is not open is not on screen, so read a tab only while it is open.
 2. Wait for its panels. For the two AWS tabs, wait until every `.console-capture-image` has `naturalWidth > 0`, or has been replaced by a `.console-capture-error` message. The page loads each image after the tab builds.
-3. Take `get_page_text` for the tab.
-4. Take one screenshot for each panel with `save_to_disk: true`. On the AWS tabs, take one screenshot for each `.console-capture-item`, so the caption with the capture time is in the shot.
+3. Read the tab's text with the `javascript_tool`. `get_page_text` returns the first `<article>` only and cuts long text at about 1,500 characters, so it is not used. Run a script that reads the `innerText` of each visible panel by panel id, in chunks, so no result is cut.
+4. Read each capture image on screen, with its caption. Save a screenshot with `save_to_disk: true` only for an item that a finding cites, so the caption with the capture time is in the shot. Saving one for every panel and item is too slow on the two AWS tabs.
 
 The page remembers the chosen tab in local storage, so the pass ends on the main tab to leave the
 page as it began.
@@ -128,6 +135,7 @@ page as it began.
 
 ## 2. Judge
 
+<!-- review-criteria:start -->
 Use the snapshot's own structure. `objectives[]` each hold `observations[]`, with windows
 `today`, `previousDay`, `last7`, `last30` (with `trend`) and `last90`. The other top-level
 fields are in the table in section 1, and any field added since. Read every key the page renders.
@@ -140,7 +148,7 @@ A finding falls in one of two lists. Each row of a list carries a tag for its ki
 | Tag | What it is | List it goes in | Example |
 |---|---|---|---|
 | fault | A figure is wrong, missing when its source has data, or the page and the snapshot differ | Dashboard improvements | `revenue-net-gbp` null while `revenue-gbp` has a value |
-| stale | The snapshot is older than 2 hours (prod publishes hourly), or a source has stopped | Dashboard improvements | `generatedAt` 9 hours old |
+| stale | The snapshot is older than 7 hours (prod publishes every six hours), or a source has stopped | Dashboard improvements | `generatedAt` 9 hours old |
 | gap | Something the operator would need that the panel does not show | Dashboard improvements | No cost per paid customer by channel |
 | movement | A figure that moved more than 25% between `last30` and the previous 30 days, or against the last report | Changes the observations call for | Paid subscribers 12 to 9 |
 | target | A figure on the wrong side of its target, where the observation or the plan names one | Changes the observations call for | AWS cost above `v_cost_vs_target_monthly`'s target |
@@ -157,18 +165,22 @@ Checks that apply to every review. Each finding names the tab it was read on.
 4. **Money** (main, adoption, affiliates): revenue (gross and net), the marketing budget and its inputs, spend so far, AWS cost against target, commissions (earned, held, payable, paid), cash at bank.
 5. **Funnel** (adoption, main, behaviour): visitors, then day passes, then HMRC connections, then submissions, then paid conversions, each with its trend.
 6. **Alarms** (ops, aws-prod, aws-ci): each open alarm issue set against the panel that should show it (uptime, security, compliance), and against the alarms table of the AWS tabs.
-7. **AWS links** (aws-prod, aws-ci): open one link of each kind in a new tab. A link that lands on an error, an empty console page or the wrong account is a fault. Close each tab after use.
+7. **AWS links** (aws-prod, aws-ci): check each link's host and account id. A link on the wrong host or for the wrong account is a fault. Open a link in a new tab only when the operator is signed in to that console, and close each tab after use. A link that lands on an error or an empty console page is a fault.
 8. **Hidden panels** (each tab, on its own open tab): a panel that stays `hidden` while its tab is open, and whose snapshot field has data, is a fault. A panel on a tab that is not open is not a finding. The `panels` list from the script gives the `hidden` state of each panel; confirm it on the tab while that tab is open.
-9. **Console images** (aws-prod, aws-ci): read each saved screenshot of a capture item with the Read tool, as an image. Judge:
-   - The capture time in the caption against `generatedAt`: a capture older than the snapshot by more than a day is stale.
+9. **Console images** (aws-prod, aws-ci): read each capture image on screen. Read a saved screenshot with the Read tool, as an image. Judge:
+   - The capture time in the caption against `generatedAt`: a capture older than 26 hours is stale (the capture runs once a day).
    - Lines that cannot be read against the axis: a flat line at the floor of a graph with large peaks, overlapping lines, a legend of unreadable names.
    - An empty graph: no lines, or "No data". Judge whether the source has data, from the matching metric in the snapshot or the alarm list.
    - A graph for the wrong account or environment: a prod graph on the ci tab, a function name that carries the other environment's prefix.
    - A capture that shows "Capture failed" or "The image did not load", or "Not captured yet".
 
 Each finding cites its evidence: the snapshot key path (`objectives[conversion-to-paid].observations[revenue-gbp].last30.value`), the screenshot file, or the command output.
+<!-- review-criteria:end -->
 
 ## 3. Write the report
+
+The session that the operator talks to writes the report file from the findings. A sub-agent that
+runs this skill cannot write the file with its Write tool, so it returns the findings as text.
 
 Write the report to
 `../private.diyaccounting.co.uk/operator/dashboard-reviews/REPORT_DASHBOARD_REVIEW_<YYYY-MM-DD>.md`,
@@ -204,6 +216,15 @@ Affiliates appear by group and count only.
 
 Add a proposed row to `NEXT.md` only when the operator says yes, and then through `/refine`'s
 rules. Close the Chrome tabs this pass opened.
+
+## The nightly run
+
+The workflow `dashboard-review-nightly.yml` runs this review each night with no browser of yours.
+It reads section 1's map and section 2 between the `review-map` and `review-criteria` markers when it runs.
+A change between those markers changes the nightly prompt and its checks.
+The unit test of `scripts/dashboard-review-criteria.mjs` fails when a check has no owner, code or model, so assign each new check there.
+A new tag needs a row in the tag table and nothing else.
+Keep the markers in place.
 
 ## When the dashboard changes
 

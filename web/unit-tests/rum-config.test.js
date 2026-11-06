@@ -3,7 +3,7 @@
 
 // @capability DATA-25 Configure and gate CloudWatch RUM
 // - **Use when:** a page's RUM telemetry must read its app monitor config and respect consent.
-// - **Does:** The RUM client reads its app monitor id, region, identity pool and guest role from page meta tags. It sends telemetry only once consent.rum, or the legacy consent.analytics, is granted. rum-placeholders.system.test.js confirms the RUM_ placeholders exist in source HTML before deployment substitutes them.
+// - **Does:** The RUM client reads its app monitor id and region from page meta tags and sends without a signature. It sends telemetry only once consent.rum, or the legacy consent.analytics, is granted. rum-placeholders.system.test.js confirms the RUM_ placeholders exist in source HTML before deployment substitutes them.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `web/unit-tests/rum-config.test.js:`; `app/system-tests/rum-placeholders.system.test.js:`
 // - **Files:** web/unit-tests/rum-config.test.js, web/unit-tests/rum-consent.test.js, app/system-tests/rum-placeholders.system.test.js
@@ -28,8 +28,6 @@ describe("RUM Configuration", () => {
     metaTags = {
       "rum:appMonitorId": "test-monitor-123",
       "rum:region": "eu-west-2",
-      "rum:identityPoolId": "eu-west-2:pool-456",
-      "rum:guestRoleArn": "arn:aws:iam::123456789:role/TestRole",
     };
 
     // Mock localStorage
@@ -138,8 +136,6 @@ describe("RUM Configuration", () => {
 
       expect(readMeta("rum:appMonitorId")).toBe("test-monitor-123");
       expect(readMeta("rum:region")).toBe("eu-west-2");
-      expect(readMeta("rum:identityPoolId")).toBe("eu-west-2:pool-456");
-      expect(readMeta("rum:guestRoleArn")).toBe("arn:aws:iam::123456789:role/TestRole");
     });
 
     it("should handle missing meta tags gracefully", () => {
@@ -153,8 +149,6 @@ describe("RUM Configuration", () => {
 
       expect(readMeta("rum:appMonitorId")).toBe("");
       expect(readMeta("rum:region")).toBe("");
-      expect(readMeta("rum:identityPoolId")).toBe("");
-      expect(readMeta("rum:guestRoleArn")).toBe("");
     });
 
     it("should handle meta tags with empty content", () => {
@@ -187,18 +181,15 @@ describe("RUM Configuration", () => {
 
       const appMonitorId = readMeta("rum:appMonitorId");
       const region = readMeta("rum:region");
-      const identityPoolId = readMeta("rum:identityPoolId");
-      const guestRoleArn = readMeta("rum:guestRoleArn");
 
-      if (appMonitorId && region && identityPoolId && guestRoleArn) {
-        window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+      if (appMonitorId && region) {
+        window.__RUM_CONFIG__ = { appMonitorId, region, sessionSampleRate: 1 };
       }
 
       expect(window.__RUM_CONFIG__).toBeDefined();
       expect(window.__RUM_CONFIG__.appMonitorId).toBe("test-monitor-123");
       expect(window.__RUM_CONFIG__.region).toBe("eu-west-2");
-      expect(window.__RUM_CONFIG__.identityPoolId).toBe("eu-west-2:pool-456");
-      expect(window.__RUM_CONFIG__.guestRoleArn).toBe("arn:aws:iam::123456789:role/TestRole");
+      expect(window.__RUM_CONFIG__).toEqual({ appMonitorId: "test-monitor-123", region: "eu-west-2", sessionSampleRate: 1 });
       expect(window.__RUM_CONFIG__.sessionSampleRate).toBe(1);
     });
 
@@ -214,11 +205,9 @@ describe("RUM Configuration", () => {
 
       const appMonitorId = readMeta("rum:appMonitorId");
       const region = readMeta("rum:region");
-      const identityPoolId = readMeta("rum:identityPoolId");
-      const guestRoleArn = readMeta("rum:guestRoleArn");
 
-      if (appMonitorId && region && identityPoolId && guestRoleArn) {
-        window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+      if (appMonitorId && region) {
+        window.__RUM_CONFIG__ = { appMonitorId, region, sessionSampleRate: 1 };
       }
 
       expect(window.__RUM_CONFIG__).toBeUndefined();
@@ -228,8 +217,6 @@ describe("RUM Configuration", () => {
       const existingConfig = {
         appMonitorId: "existing-123",
         region: "us-east-1",
-        identityPoolId: "us-east-1:existing",
-        guestRoleArn: "arn:aws:iam::999:role/Existing",
         sessionSampleRate: 0.5,
       };
 
@@ -243,11 +230,9 @@ describe("RUM Configuration", () => {
         };
         const appMonitorId = readMeta("rum:appMonitorId");
         const region = readMeta("rum:region");
-        const identityPoolId = readMeta("rum:identityPoolId");
-        const guestRoleArn = readMeta("rum:guestRoleArn");
 
-        if (appMonitorId && region && identityPoolId && guestRoleArn) {
-          window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+        if (appMonitorId && region) {
+          window.__RUM_CONFIG__ = { appMonitorId, region, sessionSampleRate: 1 };
         }
       }
 
@@ -260,8 +245,6 @@ describe("RUM Configuration", () => {
       const config = {
         appMonitorId: "test-123",
         region: "us-east-1",
-        identityPoolId: "pool-456",
-        guestRoleArn: "arn:aws:iam::123:role/Test",
         sessionSampleRate: 1,
       };
 
@@ -275,8 +258,6 @@ describe("RUM Configuration", () => {
       const config = {
         appMonitorId: "stored-123",
         region: "eu-west-1",
-        identityPoolId: "eu-west-1:stored",
-        guestRoleArn: "arn:aws:iam::789:role/Stored",
         sessionSampleRate: 0.5,
       };
 
@@ -307,15 +288,13 @@ describe("RUM Configuration", () => {
   });
 
   describe("RUM config validation", () => {
-    it("should require all fields for valid config", () => {
+    it("should require the monitor id and the region for a valid config", () => {
       const validConfig = {
         appMonitorId: "test-123",
         region: "eu-west-2",
-        identityPoolId: "eu-west-2:pool",
-        guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(validConfig.appMonitorId && validConfig.region && validConfig.identityPoolId && validConfig.guestRoleArn);
+      const isValid = !!(validConfig.appMonitorId && validConfig.region);
 
       expect(isValid).toBe(true);
     });
@@ -324,11 +303,9 @@ describe("RUM Configuration", () => {
       const invalidConfig = {
         appMonitorId: "",
         region: "eu-west-2",
-        identityPoolId: "eu-west-2:pool",
-        guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region && invalidConfig.identityPoolId && invalidConfig.guestRoleArn);
+      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region);
 
       expect(isValid).toBe(false);
     });
@@ -337,11 +314,9 @@ describe("RUM Configuration", () => {
       const invalidConfig = {
         appMonitorId: "test-123",
         region: "",
-        identityPoolId: "eu-west-2:pool",
-        guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region && invalidConfig.identityPoolId && invalidConfig.guestRoleArn);
+      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region);
 
       expect(isValid).toBe(false);
     });

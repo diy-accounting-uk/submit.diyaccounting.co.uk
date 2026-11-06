@@ -4,7 +4,7 @@
 
 // @capability BILL-30 Sync the Stripe product/price catalogue
 // - **Use when:** a bundle's price changes, or a new on-subscription bundle needs a Stripe product.
-// - **Does:** The stripe-sync.js script plans changes by default. With --apply, it creates a Stripe product and price per on-subscription bundle, plus each webhook endpoint. Account API keys come from Secrets Manager, never an environment variable.
+// - **Does:** The stripe-sync.js script plans changes by default. With --apply, it creates a Stripe product and price per on-subscription bundle, plus each webhook endpoint. It lists every webhook endpoint in the account that the config does not declare, and exits non-zero while an enabled one exists; it never removes one. Account API keys come from Secrets Manager, never an environment variable.
 // - **Run:** `node infra/stripe/stripe-sync.js --environment ci --mode test`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply`; `node infra/stripe/stripe-sync.js --environment prod --mode live --apply --products-only`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply --bundle <bundle-id>`; `/stripe-catalogue-sync`
 // - **Entry:** `infra/stripe/stripe-sync.js`; `infra/stripe/lib/stripeCatalogue.js:buildStripeProductsFromCatalog`
 // - **Files:** infra/stripe/stripe-sync.js, infra/stripe/lib/stripeCatalogue.js, infra/stripe/stripe.toml, app/unit-tests/scripts/stripeSync.test.js
@@ -195,6 +195,20 @@ export function planEndpoints(endpoints, mode, existingWebhooksForMode, desiredE
       secret: endpoint.secrets[mode],
       ...planWebhookAction({ url: endpoint.url, existingWebhooksForMode, desiredEvents }),
     }));
+}
+
+/**
+ * List the endpoints of one mode's live list that no declared endpoint names for that mode.
+ * Pure. A disabled endpoint is listed with its status, because the reader needs both.
+ *
+ * @param {object[]} endpoints - stripe.toml's parsed [[endpoint]] entries
+ * @param {string} mode - "test" or "live"
+ * @param {Array<{id:string,url:string,status:string}>} existingWebhooksForMode
+ * @returns {Array<{id: string, url: string, status: string}>}
+ */
+export function findUndeclaredEndpoints(endpoints, mode, existingWebhooksForMode) {
+  const declaredUrls = new Set(endpoints.filter((endpoint) => endpoint.modes.includes(mode)).map((endpoint) => endpoint.url));
+  return existingWebhooksForMode.filter((webhook) => !declaredUrls.has(webhook.url)).map(({ id, url, status }) => ({ id, url, status }));
 }
 
 /**
@@ -403,7 +417,7 @@ async function applyEnvUpdates(mode, results) {
 
 async function syncEndpoints(stripe, config, opts) {
   console.log(`\n=== webhook endpoints (${opts.mode}) ===`);
-  const existingWebhooksForMode = (await stripe.webhookEndpoints.list()).data;
+  const existingWebhooksForMode = (await stripe.webhookEndpoints.list({ limit: 100 })).data;
   const plans = planEndpoints(config.endpoints, opts.mode, existingWebhooksForMode, config.events);
 
   for (const plan of plans) {
@@ -434,6 +448,20 @@ async function syncEndpoints(stripe, config, opts) {
     await stripe.webhookEndpoints.update(plan.id, updateBody);
     console.log(`    updated ${plan.id}`);
   }
+
+  const undeclared = findUndeclaredEndpoints(config.endpoints, opts.mode, existingWebhooksForMode);
+  console.log(`\n--- webhook endpoints in the ${opts.mode} account that stripe.toml does not declare ---`);
+  if (undeclared.length === 0) {
+    console.log("  none");
+  }
+  const liveFlag = opts.mode === "live" ? " --live" : "";
+  for (const webhook of undeclared) {
+    console.log(`  ${webhook.id} ${webhook.url} (${webhook.status})`);
+    console.log(
+      `    remove with: stripe webhook_endpoints delete ${webhook.id}${liveFlag} (API: DELETE /v1/webhook_endpoints/${webhook.id})`,
+    );
+  }
+  return undeclared.filter((webhook) => webhook.status === "enabled");
 }
 
 async function syncPaymentLinks(stripe, config, opts) {
@@ -485,12 +513,19 @@ export async function main() {
     await applyEnvUpdates(opts.mode, results);
   }
 
+  let enabledUndeclared = [];
   if (!opts.productsOnly) {
-    await syncEndpoints(stripe, config, opts);
+    enabledUndeclared = await syncEndpoints(stripe, config, opts);
     await syncPaymentLinks(stripe, config, opts);
   }
 
   console.log(`\n${opts.apply ? "Applied." : "Plan complete. Re-run with --apply to make these changes."}`);
+  if (enabledUndeclared.length > 0) {
+    const named = enabledUndeclared.map((w) => w.id + " " + w.url).join(", ");
+    throw new Error(
+      `${enabledUndeclared.length} enabled webhook endpoint(s) in the ${opts.mode} account are not declared in ${CONFIG_PATH}: ${named}`,
+    );
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
