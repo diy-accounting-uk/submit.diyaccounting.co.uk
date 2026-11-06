@@ -220,7 +220,7 @@ jobs:
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
       MODE: ${{ needs.triage.outputs.mode }}
-      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+      MODEL_ID: 'eu.anthropic.claude-sonnet-5-5'
       HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
     outputs:

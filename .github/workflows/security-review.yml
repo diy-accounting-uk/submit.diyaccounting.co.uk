@@ -329,7 +329,7 @@ jobs:
     env:
       ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
       REVIEW_REF: ${{ github.ref_name }}
-      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+      MODEL_ID: 'eu.anthropic.claude-sonnet-5-5'
       SMALL_FAST_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       REPORT_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'

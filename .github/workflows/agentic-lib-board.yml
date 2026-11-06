@@ -257,7 +257,7 @@ jobs:
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'
           AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-5-5'
           ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
           CLAUDE_CODE_MAX_OUTPUT_TOKENS: '16384'
           DISABLE_TELEMETRY: '1'
@@ -430,7 +430,7 @@ jobs:
             '{
               workflow: "agentic-lib-board", run_id: $run_id, run_url: $run_url, trigger: $trigger,
               environment: "ci", issue_number: null,
-              model_id: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+              model_id: "eu.anthropic.claude-sonnet-5-5",
               outcome: $outcome, escalated: false,
               redactions: null, guardrail_action: null, pr_number: null,
               duration_seconds: $duration_seconds, finished_at: $finished_at
