@@ -296,6 +296,7 @@ for (const width of WIDTHS) {
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(page.getByRole("alert")).toHaveText("This pass is for a different email address. You are signed in as pat@example.com.");
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Sign out and use another account" })).not.toHaveAttribute("data-activity-start");
       await shot(page, "error-wrong-email", width);
     });
 
@@ -328,6 +329,7 @@ for (const width of WIDTHS) {
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(page.getByRole("alert")).toHaveText("We could not reach DIY Accounting Submit. Check your connection and try again.");
       await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Try again" })).not.toHaveAttribute("data-activity-start");
       await shot(page, "error-network", width);
     });
   });

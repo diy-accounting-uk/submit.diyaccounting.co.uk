@@ -158,6 +158,7 @@ function render({
     redeemBtn.textContent = redeem.label;
     redeemBtn.disabled = Boolean(redeem.disabled);
     redeemBtn.onclick = redeem.onClick || null;
+    // Only "Redeem pass" starts the bundle activity; the button's other labels act on the page.
     if (redeem.leaves) redeemBtn.removeAttribute("data-activity-start");
     else redeemBtn.setAttribute("data-activity-start", "bundle");
   }
@@ -201,7 +202,7 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
     render({
       heading: "This pass did not work",
       error: `This pass is for a different email address.${signedInAs}`,
-      redeem: { label: "Sign out and use another account", onClick: signOutAndReturn },
+      redeem: { label: "Sign out and use another account", leaves: true, onClick: signOutAndReturn },
     });
     return;
   }
@@ -210,7 +211,7 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
     render({
       heading: "This pass did not work",
       error: sentence,
-      redeem: { label: "Try again", onClick: () => start() },
+      redeem: { label: "Try again", leaves: true, onClick: () => start() },
     });
     return;
   }
