@@ -30,6 +30,6 @@ import { requestCustomerEmail } from "../lib/customerEmailRequest.js";
  * @param {boolean} params.synthetic - True when a test or sandbox flow caused the filing
  */
 export async function recordFiledReceipt({ userSub, receiptId, receipt, actor, clientId, receiptKind, synthetic }) {
-  await putReceipt(userSub, receiptId, receipt, actor, clientId);
+  await putReceipt(userSub, receiptId, receipt, actor, clientId, synthetic);
   await requestCustomerEmail({ kind: "submission-receipt", userSub, synthetic, data: { receiptId, receiptKind, clientId } });
 }

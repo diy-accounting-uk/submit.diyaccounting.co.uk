@@ -27,7 +27,7 @@ async function call(params, requestContext) {
 
   if (!hmrcResponse.ok) return { hmrcResponse, hmrcResponseBody, data: null };
 
-  await acknowledgeReceipt(requestContext.userSub, receiptId);
+  await acknowledgeReceipt(requestContext.userSub, receiptId, requestContext.hmrcAccount === "synthetic");
   await publishActivityEvent({
     event: "itsa-assist-report-acknowledged",
     summary: "Self Assessment Assist report acknowledged",
