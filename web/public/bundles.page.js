@@ -52,6 +52,7 @@ let __userBundles = [];
 let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
 let __fetchBundlesController = null;
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
+let __userBundlesLoaded = false; // True once the first answer about held bundles has arrived
 let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
 let __currentEnv = null; // Current environment name
 let __affiliateApplication = null; // The caller's own affiliate state from GET /api/v1/affiliate/application
@@ -561,6 +562,7 @@ const __catalogueReady = (async function () {
   const container = document.getElementById("catalogBundles");
   try {
     await fetchUserBundles();
+    __userBundlesLoaded = true;
     // Rows take their place now with a blank name; the catalogue supplies the names.
     renderCurrentBundles();
 
@@ -708,7 +710,8 @@ function renderCurrentBundles() {
   if (section) {
     section.style.display = bundleCards.length > 0 ? "block" : "none";
   }
-  document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundleCards.length === 0);
+  // A render that runs before the held bundles arrive sees an empty list; it must not hand the reserved room back.
+  if (__userBundlesLoaded) document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundleCards.length === 0);
 }
 
 // The affiliate status row of the current list: shown for an approved affiliate and for one that
