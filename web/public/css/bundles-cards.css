@@ -8,14 +8,14 @@
   border-top: 1px solid var(--c-rule-subtle);
 }
 
-.form-container > .bundles-section:first-child {
+.form-container > .bundles-section:first-child,
+.bundles-block > .bundles-section:first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
 }
 
 .bundles-section[hidden],
-#passStatus[hidden],
 #generatedPassesEmpty[hidden],
 #generatedPassesLoadMore[hidden] {
   display: none;

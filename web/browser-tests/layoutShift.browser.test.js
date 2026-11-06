@@ -150,6 +150,26 @@ test.describe("Layout shift while data loads on a phone", () => {
     }
   }
 
+  test("bundles.html starts the card with Your current bundles, with no empty band above it", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await serveRealSiteWithSlowData(page, {
+      heldBundles: [
+        { bundleId: "operator", allocated: true, configDriven: true },
+        { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 80 },
+      ],
+    });
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+    await expect(page.locator("#currentBundles .service-item").first()).toBeVisible();
+
+    const band = await page.evaluate(() => {
+      const card = document.querySelector(".form-container").getBoundingClientRect();
+      const heading = document.querySelector("#currentBundlesSection h2").getBoundingClientRect();
+      return heading.top - card.top;
+    });
+    expect(band).toBeLessThan(40);
+    await page.screenshot({ path: "target/screenshots/bundles-current-bundles-375.png" });
+  });
+
   test("bundles.html leaves no gap above Redeem a pass when no bundles are held", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await serveRealSiteWithSlowData(page, { heldBundles: [] });
