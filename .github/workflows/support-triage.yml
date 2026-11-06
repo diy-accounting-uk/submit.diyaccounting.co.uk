@@ -19,7 +19,8 @@ run-name: support triage
 # closes an issue, and only for the operator's `rejected` label: it closes a `rejected` issue with
 # no comment, and puts `maintainer-review` back when the operator removes `rejected`. The gate
 # also refuses while `injection-suspected` is on an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
-# pull request in this repository from the checked fields alone.
+# pull request in this repository from the checked fields alone. Before the filter, a second Nova Pro call
+# checks the draft; a hold stops the run and a person handles the ticket.
 #
 # This repository is public, so its logs, step summaries and artifacts are public. No step prints
 # ticket-derived text, the drafted reply or the model's result, and no job uploads an artifact.
@@ -256,6 +257,7 @@ jobs:
             web/public/faqs.toml
             web/public/help.html
             web/public/guide.html
+            prompts/support-triage-reminder.md
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'
@@ -281,6 +283,34 @@ jobs:
               exit 1
               ;;
           esac
+
+      # The second Nova Pro call judges the draft. It reads the check prompt, the draft and two
+      # fields of the handling input (the ticket kind and the injection flag), never the summary.
+      # A draft that the check holds, or a check call that fails, stops the run before it posts.
+      - name: Write the input of the check
+        if: steps.triage-run.outputs.stopped == 'false'
+        run: node scripts/support-triage-check.mjs prepare /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check-input.json /tmp/support-check-draft.md
+
+      - name: Check the draft
+        if: steps.triage-run.outputs.stopped == 'false'
+        uses: ./.github/actions/run-triage-agent
+        with:
+          runner: nova
+          model-id: ${{ env.MODEL_ID }}
+          tools: none
+          max-turns: '3'
+          deadline-seconds: '120'
+          final-schema: prompts/support-triage-check-answer.json
+          context-files: |
+            /tmp/support-check-input.json
+            /tmp/support-check-draft.md
+          output-file: /tmp/support-check.json
+          prompt-file: prompts/support-triage-check.md
+          echo-output: 'false'
+
+      - name: Hold a draft that the check does not pass
+        if: steps.triage-run.outputs.stopped == 'false'
+        run: node scripts/support-triage-check.mjs verdict /tmp/support-check.json
 
       - name: Filter the triage answer before it is published
         id: publish-filter

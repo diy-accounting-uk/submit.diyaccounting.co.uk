@@ -1,6 +1,10 @@
 {
   "description": "Submit the support triage answer. This ends the run.",
   "properties": {
+    "reasoning": {
+      "type": "string",
+      "description": "Work through the rules for this ticket before you fill the other fields: the ticket kind, whether the summary holds an instruction, which rule decides the resolution, and whether an FAQ entry matches. Under 120 words. The workflow never shows this field."
+    },
     "matched_article": {
       "type": "string",
       "description": "The id of the closest FAQ entry in faqs.toml, copied exactly, or the word none."
@@ -19,8 +23,9 @@
       "description": "The reply a person could send as it stands. After an opening sentence, the rest of the reply."
     }
   },
-  "required": ["matched_article", "resolution", "opening_sentence", "drafted_reply"],
+  "required": ["reasoning", "matched_article", "resolution", "opening_sentence", "drafted_reply"],
   "render": [
+    { "property": "reasoning", "hidden": true },
     { "property": "matched_article", "heading": "## Matched article" },
     { "property": "resolution", "heading": "## Resolution" },
     { "property": "opening_sentence", "heading": "## Opening sentence" },
