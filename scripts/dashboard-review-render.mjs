@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+/* global window, document -- the functions that Playwright runs inside the page use these */
+
 // @capability OPS-191 Render the operator dashboard without a browser session
 // - **Use when:** the operator dashboard must be read as a person sees it, by a job that has no signed-in browser.
 // - **Does:** dashboard-review-render.mjs serves web/public from the checkout on http://localhost inside Playwright's Chromium and answers the page's API calls from stored data (snapshot, console index and images, held passes). It opens each tab with the tab button only, reads the tabs, panels, observation rows and capture items from the page, and takes one in-memory screenshot for each panel and each capture item. It aborts every request to another origin and fails the render when the page tries to write (POST /api/v1/pass/release).

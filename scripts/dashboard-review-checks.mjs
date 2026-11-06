@@ -48,7 +48,7 @@ export function readPath(snapshot, path) {
   let node = snapshot;
   for (const step of path.split(".")) {
     if (node === null || node === undefined) return undefined;
-    const picked = /^([A-Za-z0-9_]+)\[([^\]]+)\]$/.exec(step);
+    const picked = /^(\w+)\[([^\]]+)\]$/.exec(step);
     if (picked) {
       const list = node[picked[1]];
       node = Array.isArray(list) ? list.find((entry) => entry && entry.id === picked[2]) : undefined;
@@ -195,6 +195,7 @@ function notMeasuredFindings({ snapshot, dom }) {
     if (names.length === 0) continue;
     const observation = byKey.get(`${row.objectiveId}/${row.observationId}`);
     const source = observation && (observation.view || observation.source);
+    const sourceSuffix = source ? `, source ${source}` : "";
     found.push(
       finding(
         CODE_CHECK_NUMBERS.notMeasured,
@@ -202,7 +203,7 @@ function notMeasuredFindings({ snapshot, dom }) {
         row.objectiveId ? `table-${row.objectiveId}` : "page",
         "gap",
         `${row.observationId} shows "not measured" in ${names.join(", ")}.`,
-        `observation ${row.observationId}${source ? `, source ${source}` : ""}`,
+        `observation ${row.observationId}${sourceSuffix}`,
         "Name the reason for each empty window and fix the source, or show the reason on the page.",
       ),
     );
@@ -292,6 +293,7 @@ function mapFindings({ snapshot, dom, sectionMap }) {
       const panel = panelById.get(token) || panelById.get(`table-${token}`);
       if (panel) named.add(panel.id);
       if (!panel || !withData || panel.openOn.length > 0) continue;
+      const keyNames = row.keys.map((entry) => (entry.id ? `${entry.key}[${entry.id}]` : entry.key)).join(", ");
       found.push(
         finding(
           CODE_CHECK_NUMBERS.hiddenPanels,
@@ -299,7 +301,7 @@ function mapFindings({ snapshot, dom, sectionMap }) {
           panel.id,
           "fault",
           `The panel ${panel.id} stays hidden while its tab is open, and its snapshot data is present.`,
-          `panel ${panel.id}, keys ${row.keys.map((entry) => (entry.id ? `${entry.key}[${entry.id}]` : entry.key)).join(", ")}`,
+          `panel ${panel.id}, keys ${keyNames}`,
           "Find why the page does not show the panel.",
         ),
       );
@@ -397,7 +399,9 @@ function alarmFindings({ snapshot, alarms }) {
   );
   for (const alarm of alarms) {
     const title = String(alarm.title).toLowerCase();
-    const tab = title.includes("prod") ? "aws-prod" : title.includes("ci") ? "aws-ci" : "ops";
+    let tab = "ops";
+    if (title.includes("prod")) tab = "aws-prod";
+    else if (title.includes("ci")) tab = "aws-ci";
     const rows = items.flatMap((item) => item.rows.map((row) => ({ ...row, itemId: item.id })));
     const match = rows.find((row) => row.name && title.includes(String(row.name).toLowerCase()));
     if (!match) {
