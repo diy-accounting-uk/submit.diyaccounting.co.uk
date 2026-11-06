@@ -227,26 +227,15 @@ async function sendToBedrock(build) {
   }
 }
 
-function parseJsonOrEmpty(text) {
-  try {
-    return JSON.parse(text) || {};
-  } catch {
-    return {};
-  }
-}
-
 async function defaultInvokeModel({ modelId, body }) {
-  const response = await sendToBedrock(
-    (sdk) =>
-      new sdk.InvokeModelCommand({ modelId, contentType: "application/json", accept: "application/json", body: JSON.stringify(body) }),
-  );
-  const parsed = parseJsonOrEmpty(Buffer.from(response.body).toString("utf8"));
-  const text = (Array.isArray(parsed.content) ? parsed.content : [])
-    .filter((block) => block && block.type === "text" && typeof block.text === "string")
+  const response = await sendToBedrock((sdk) => new sdk.ConverseCommand({ modelId, ...body }));
+  const blocks = response && response.output && response.output.message && response.output.message.content;
+  const text = (Array.isArray(blocks) ? blocks : [])
+    .filter((block) => block && typeof block.text === "string")
     .map((block) => block.text)
     .join("");
-  const usage = parsed.usage || {};
-  return { text, inputTokens: Number(usage.input_tokens) || 0, outputTokens: Number(usage.output_tokens) || 0 };
+  const usage = (response && response.usage) || {};
+  return { text, inputTokens: Number(usage.inputTokens) || 0, outputTokens: Number(usage.outputTokens) || 0 };
 }
 
 async function defaultApplyGuardrail({ id, version, text }) {

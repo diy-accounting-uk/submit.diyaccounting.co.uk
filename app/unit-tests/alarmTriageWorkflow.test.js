@@ -90,7 +90,7 @@ describe("alarm-triage.yml", () => {
     const perms = quarantine.match(/\n {4}permissions:\n((?: {6}.+\n)+)/)[1];
     expect(perms.trim()).toBe("id-token: write");
     expect(quarantine).toContain("-env-quarantine-reader-role");
-    expect(quarantine).toContain("aws bedrock-runtime invoke-model");
+    expect(quarantine).toContain("aws bedrock-runtime converse");
   });
 
   it("gives the hold job no AWS credentials and adds the label with an App token", () => {

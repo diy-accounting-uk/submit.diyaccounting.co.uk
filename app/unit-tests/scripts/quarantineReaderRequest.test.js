@@ -16,19 +16,19 @@ describe("quarantine reader request skeleton", () => {
   });
 
   it("fills the allowed values into the system prompt", () => {
-    expect(skeleton.system).toContain("connection, other");
-    expect(skeleton.system).toContain("faq-one, faq-two");
-    expect(skeleton.system).not.toContain("{{");
+    expect(skeleton.system[0].text).toContain("connection, other");
+    expect(skeleton.system[0].text).toContain("faq-one, faq-two");
+    expect(skeleton.system[0].text).not.toContain("{{");
   });
 
   it("limits the answer and prefills the opening brace", () => {
-    expect(skeleton.max_tokens).toBe(READER_MAX_TOKENS);
-    expect(skeleton.temperature).toBe(0);
+    expect(skeleton.inferenceConfig.maxTokens).toBe(READER_MAX_TOKENS);
+    expect(skeleton.inferenceConfig.temperature).toBe(0);
     expect(skeleton.prefill).toBe("{");
   });
 
   it("has no tools key and no ticket text", () => {
-    expect(skeleton).not.toHaveProperty("tools");
+    expect(skeleton).not.toHaveProperty("toolConfig");
     expect(skeleton).not.toHaveProperty("messages");
   });
 
@@ -42,15 +42,15 @@ describe("quarantine reader request skeleton for a notice", () => {
   const skeleton = buildRequestSkeleton({ kind: "mail", promptText, vendorList: ["aws.com", "stripe.com"] });
 
   it("fills the registry vendors into the system prompt and leaves no placeholder", () => {
-    expect(skeleton.system).toContain("aws.com, stripe.com");
-    expect(skeleton.system).not.toContain("{{");
+    expect(skeleton.system[0].text).toContain("aws.com, stripe.com");
+    expect(skeleton.system[0].text).not.toContain("{{");
   });
 
   it("wraps the notice in its own tag, with no tools and the same limits", () => {
     expect(skeleton.tag).toBe("notice");
-    expect(skeleton).not.toHaveProperty("tools");
+    expect(skeleton).not.toHaveProperty("toolConfig");
     expect(skeleton).not.toHaveProperty("messages");
-    expect(skeleton.max_tokens).toBe(READER_MAX_TOKENS);
+    expect(skeleton.inferenceConfig.maxTokens).toBe(READER_MAX_TOKENS);
     expect(skeleton.prefill).toBe("{");
   });
 

@@ -591,11 +591,12 @@ class SubmitEnvironmentCdkResourceTest {
                 .findFirst()
                 .orElseThrow();
         List<Object> invokeModelResources = (List<Object>) invokeModelStatement.get("Resource");
-        assertEquals(4, invokeModelResources.size());
+        assertEquals(5, invokeModelResources.size());
         List<String> resolvedInvokeModelResources = invokeModelResources.stream()
                 .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
                 .toList();
         assertTrue(resolvedInvokeModelResources.containsAll(List.of(
+                "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -695,10 +696,7 @@ class SubmitEnvironmentCdkResourceTest {
         Map<String, Object> invoke = statementWithSid(statements, "InvokeReaderModel");
         assertEquals(List.of("bedrock:InvokeModel"), actionsOf(invoke));
         List<String> invokeResources = resourcesOf(invoke);
-        assertEquals(2, invokeResources.size());
-        assertTrue(invokeResources.containsAll(List.of(
-                "arn:aws:bedrock:eu-west-2:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
-                "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0")));
+        assertEquals(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"), invokeResources);
 
         Map<String, Object> guardrail = statementWithSid(statements, "ApplyReaderGuardrail");
         assertEquals(List.of("bedrock:ApplyGuardrail"), actionsOf(guardrail));
@@ -753,14 +751,7 @@ class SubmitEnvironmentCdkResourceTest {
         Map<String, Object> model = statementWithSid(statements, "InvokeReviewModel");
         assertEquals(List.of("bedrock:InvokeModel"), actionsOf(model));
         List<String> modelResources = resourcesOf(model);
-        assertEquals(8, modelResources.size());
-        assertTrue(modelResources.contains(
-                "arn:aws:bedrock:eu-west-2:111111111111:inference-profile/eu.anthropic.claude-sonnet-5-5"));
-        for (String region : List.of(
-                "eu-north-1", "eu-west-3", "eu-south-1", "eu-west-2", "eu-south-2", "eu-west-1", "eu-central-1")) {
-            assertTrue(modelResources.contains(
-                    "arn:aws:bedrock:" + region + "::foundation-model/anthropic.claude-sonnet-5-5"));
-        }
+        assertEquals(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"), modelResources);
 
         assertEquals(
                 List.of("bedrock:ApplyGuardrail"), actionsOf(statementWithSid(statements, "ApplyReviewGuardrail")));

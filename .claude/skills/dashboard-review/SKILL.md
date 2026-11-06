@@ -12,7 +12,7 @@ description: Read every tab of the prod operator dashboard (https://submit.diyac
 - **Entry:** `.claude/skills/dashboard-review/SKILL.md`
 - **Files:** .claude/skills/dashboard-review/SKILL.md, app/functions/analytics/operatorSnapshotPublish.js, web/public/operator/dashboard.html, web/public/operator/dashboard.page.js
 - **Keywords:** dashboard review, operator dashboard, snapshot review, business review, objectives report, not measured, kpi review, dashboard tabs, console image review, dashboard improvements
-- **Related:** DEV-27, DEV-50
+- **Related:** DEV-27, DEV-50, OPS-193
 @end-capability -->
 
 # dashboard-review

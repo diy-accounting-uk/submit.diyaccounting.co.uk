@@ -4,12 +4,12 @@
 
 // scripts/quarantine-reader-request.mjs
 //
-// Builds the skeleton of the one Bedrock invoke-model request a quarantine reader sends. The
+// Builds the skeleton of the one Bedrock Converse request a quarantine reader sends. The
 // skeleton holds everything except the untrusted text: the system prompt (from
 // prompts/support-reader.md, prompts/alarm-reader.md or prompts/mail-reader.md, with the allowed values filled in), the
 // limits and the assistant prefill. The `tag` and `prefill` keys are working keys for the job
 // that adds the text; the job deletes them before it sends the request. The request has no
-// `tools` key, so the model cannot act.
+// `toolConfig` key, so the model cannot act.
 //
 // usage: quarantine-reader-request.mjs support|alarm|mail
 // Writes `request=<base64 of the skeleton JSON>` to $GITHUB_OUTPUT. This job holds no ticket
@@ -23,7 +23,7 @@ import { loadRegistry, registryVendors } from "./support-mail-lanes.mjs";
 
 export const READER_MAX_TOKENS = 400;
 export const READER_PREFILL = "{";
-export const READER_MODEL_ID = "eu.anthropic.claude-haiku-4-5-20251001-v1:0";
+export const READER_MODEL_ID = "amazon.nova-pro-v1:0";
 
 const KINDS = {
   support: { promptPath: "prompts/support-reader.md", tag: "ticket" },
@@ -40,10 +40,8 @@ export function buildRequestSkeleton({ kind, promptText, categories, faqIdList, 
     .replaceAll("{{REMEDY_FAMILIES}}", (familyList ?? []).join(", "))
     .replaceAll("{{VENDORS}}", (vendorList ?? []).join(", "));
   return {
-    anthropic_version: "bedrock-2023-05-31",
-    max_tokens: READER_MAX_TOKENS,
-    temperature: 0,
-    system,
+    system: [{ text: system }],
+    inferenceConfig: { maxTokens: READER_MAX_TOKENS, temperature: 0 },
     tag: spec.tag,
     prefill: READER_PREFILL,
   };
