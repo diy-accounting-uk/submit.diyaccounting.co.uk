@@ -2136,7 +2136,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-30 Sync the Stripe product/price catalogue
 
 - **Use when:** a bundle's price changes, or a new on-subscription bundle needs a Stripe product.
-- **Does:** The stripe-sync.js script plans changes by default. With --apply, it creates a Stripe product and price per on-subscription bundle, plus each webhook endpoint. Account API keys come from Secrets Manager, never an environment variable.
+- **Does:** The stripe-sync.js script plans changes by default. With --apply, it creates a Stripe product and price per on-subscription bundle, plus each webhook endpoint. It lists every webhook endpoint in the account that the config does not declare, and exits non-zero while an enabled one exists; it never removes one. Account API keys come from Secrets Manager, never an environment variable.
 - **Run:** `node infra/stripe/stripe-sync.js --environment ci --mode test`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply`; `node infra/stripe/stripe-sync.js --environment prod --mode live --apply --products-only`; `node infra/stripe/stripe-sync.js --environment ci --mode test --apply --bundle <bundle-id>`; `/stripe-catalogue-sync`
 - **Entry:** `infra/stripe/stripe-sync.js`; `infra/stripe/lib/stripeCatalogue.js:buildStripeProductsFromCatalog`
 - **Files:** infra/stripe/stripe-sync.js, infra/stripe/lib/stripeCatalogue.js, infra/stripe/stripe.toml, app/unit-tests/scripts/stripeSync.test.js
