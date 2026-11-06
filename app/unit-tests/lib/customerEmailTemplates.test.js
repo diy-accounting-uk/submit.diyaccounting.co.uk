@@ -198,6 +198,19 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.subject).toBe("Your Day pass is ready");
   });
 
+  test("pass-redeemed with no expiry says there is no end date, in both parts", () => {
+    const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest", expiry: null }, baseUrl, catalog });
+    for (const part of [m.text, m.html]) {
+      expect(part).toContain("No end date");
+      expect(part).not.toContain("Not set");
+    }
+  });
+
+  test("pass-redeemed with an expiry gives the date", () => {
+    const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest", expiry: "2026-12-01" }, baseUrl, catalog });
+    expect(m.text).toContain("Ends on: 1 December 2026");
+  });
+
   test("notice-digest holds the count, the nearest deadline and the issue list link, in both parts", () => {
     const message = buildCustomerEmail({ kind: "notice-digest", data: { count: 3, nearestDeadline: "2026-11-12" }, baseUrl, catalog });
     expect(message.subject).toBe("3 notices wait for you");

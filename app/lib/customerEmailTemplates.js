@@ -296,7 +296,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           intro: "You redeemed your pass. You can use the bundle now.",
           rows: [
             { label: "Bundle", value: name },
-            { label: "Ends on", value: formatDate(data.expiry) },
+            { label: "Ends on", value: data.expiry ? formatDate(data.expiry) : "No end date" },
           ],
           actions: [{ href: home, text: "Open the site" }],
           reason,
