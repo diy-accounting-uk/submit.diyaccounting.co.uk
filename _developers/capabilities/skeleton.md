@@ -251,6 +251,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-49 -->
 <!-- capability BILL-50 -->
 <!-- capability BILL-10 -->
+<!-- capability BILL-58 -->
 <!-- capability BILL-11 -->
 ### Practice clients and HMRC authorisation (BILL)
 
