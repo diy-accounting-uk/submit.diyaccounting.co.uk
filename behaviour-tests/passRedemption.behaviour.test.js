@@ -218,37 +218,26 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Pass check result: ${JSON.stringify(checkResult)}`);
   expect(checkResult.valid).toBe(true);
 
-  // --- Step 4: Enter pass code into the form and validate ---
+  // --- Step 4: Enter pass code into the form; the pass page opens ---
   const passInput = page.locator("#passInput");
   await expect(passInput).toBeVisible({ timeout: 5000 });
   await passInput.fill(passCode);
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-03-code-entered.png`, readerView: true });
 
-  const redeemBtn = page.locator("#redeemPassBtn");
-  await expect(redeemBtn).toBeVisible({ timeout: 5000 });
-  await redeemBtn.click();
-  console.log("[pass-test]: Clicked Redeem Pass button (validates first)");
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  console.log("[pass-test]: Submitted the code from the bundles page");
 
-  // --- Step 5: Wait for validation/auto-redeem and verify Test bundle is granted ---
-  const passStatus = page.locator("#passStatus");
-  await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04-validation-status.png`, readerView: true });
+  // --- Step 5: The pass page names the bundle; one click on Redeem pass adds it ---
+  await expect(page.locator("#passHeading")).toHaveText("You have a pass for Day pass", { timeout: 15000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04-pass-page.png`, readerView: true });
 
-  const statusText = await passStatus.textContent();
-  console.log(`[pass-test]: Pass status message: ${statusText}`);
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  console.log("[pass-test]: Clicked Redeem pass on the pass page");
 
-  // All bundles follow the same flow: validate → card appears → click Request → bundle granted
-  expect(statusText).toMatch(/valid|Request/i);
-  const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day pass"):not([disabled])');
-  await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
-  console.log("[pass-test]: Day pass bundle button is now enabled after pass validation");
-  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png`, readerView: true });
-
-  await enabledDayGuestBtn.click();
-  console.log("[pass-test]: Clicked enabled Day pass bundle button to redeem pass");
-
-  await page.waitForTimeout(3000);
+  await expect(page.locator("#passHeading")).toHaveText("Pass redeemed", { timeout: 15000 });
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png`, readerView: true });
+
+  await page.getByRole("link", { name: "See your bundles" }).click();
 
   // --- Step 6: Verify the Day pass bundle is now granted ---
   const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');

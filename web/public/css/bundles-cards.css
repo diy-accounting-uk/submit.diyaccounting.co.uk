@@ -34,30 +34,6 @@
   margin-top: var(--space-3);
 }
 
-.pass-status {
-  margin-top: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--pass-ink);
-  border-radius: var(--radius-control);
-  background: var(--pass-tint);
-  color: var(--c-ink);
-}
-
-.pass-status--ok {
-  --pass-ink: var(--c-ok);
-  --pass-tint: var(--c-ok-tint);
-}
-
-.pass-status--error {
-  --pass-ink: var(--c-error);
-  --pass-tint: var(--c-error-tint);
-}
-
-.pass-status--info {
-  --pass-ink: var(--c-info);
-  --pass-tint: var(--c-info-tint);
-}
-
 .service-item {
   text-align: left;
 }

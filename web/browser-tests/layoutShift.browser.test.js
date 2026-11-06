@@ -127,6 +127,29 @@ test.describe("Layout shift while data loads on a phone", () => {
     }
   }
 
+  for (const [width, height] of [
+    [375, 800],
+    [1280, 900],
+  ]) {
+    for (const pagePath of ["pass.html?pass=river-cloud-stone-lamp", "bundles.html?pass=river-cloud-stone-lamp"]) {
+      test(`${pagePath.split("?")[0]} with a pass in the link stays under the CLS limit at ${width}x${height}`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, {
+          apiAnswers: { "/api/v1/pass": { valid: true, bundleId: "resident-pro" } },
+        });
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+        await expect(page.locator("#passHeading")).toHaveText("You have a pass for Resident Pro");
+        await delay(1000);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+      });
+    }
+  }
+
   test("bundles.html leaves no gap above Redeem a pass when no bundles are held", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await serveRealSiteWithSlowData(page, { heldBundles: [] });
