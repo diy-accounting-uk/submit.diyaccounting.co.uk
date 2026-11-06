@@ -12,8 +12,8 @@ run-name: support triage
 # issues that scripts/maintainer-review-gate.mjs approves.
 #
 # The handling agent never sees the ticket. It reads the reader's checked fields and the
-# operator's later comments from one file, and it has Read, Grep and Glob only. It chains into
-# the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
+# operator's later comments from one file. It has no tool except the one that submits its answer, and its request holds the
+# three published pages. It chains into the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
 # for the Bedrock model invocation and the guardrail's SSM parameters that the shared
 # publish-filter action needs. Only the `sweep` job edits a label on the private repository or
 # closes an issue, and only for the operator's `rejected` label: it closes a `rejected` issue with
@@ -67,8 +67,7 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  CLAUDE_CODE_VERSION: '2.0.30'
-  MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+  MODEL_ID: 'amazon.nova-pro-v1:0'
   PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
   # The one place this number is written. The budget guard and its step name read it.
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
@@ -217,7 +216,7 @@ jobs:
       - name: Set up the toolchain
         uses: ./.github/actions/setup-toolchain
         with:
-          npm-install: none
+          npm-install: scripts
           npm-cache: 'false'
 
       - name: Assume the AWS actions and deployment roles
@@ -243,15 +242,20 @@ jobs:
           printf '%s' "$HANDLING_INPUT_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-handling-input.json
           jq -e '.issueNumber' /tmp/support-handling-input.json > /dev/null
 
-      - name: Install Claude Code
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
       - name: Run triage
         uses: ./.github/actions/run-triage-agent
         with:
+          runner: nova
           model-id: ${{ env.MODEL_ID }}
-          small-fast-model-id: ${{ env.MODEL_ID }}
-          allowed-tools: 'Read,Grep,Glob'
+          tools: none
+          max-turns: '3'
+          deadline-seconds: '300'
+          final-schema: prompts/support-triage-answer.json
+          context-files: |
+            /tmp/support-handling-input.json
+            web/public/faqs.toml
+            web/public/help.html
+            web/public/guide.html
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'

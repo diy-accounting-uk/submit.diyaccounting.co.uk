@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { load as parseYaml } from "js-yaml";
-import { DEFAULT_MODEL_ID, MAX_REQUEST_INPUT_TOKENS, runAgent } from "../../../scripts/nova-agent.mjs";
+import { DEFAULT_MODEL_ID, MAX_REQUEST_INPUT_TOKENS, runAgent, withContextFiles } from "../../../scripts/nova-agent.mjs";
 import { loadFinalSchema } from "../../../scripts/nova-agent-tools.mjs";
 import { triageVerdict } from "../../../scripts/triage-result-verdict.mjs";
 
@@ -336,5 +336,20 @@ describe("run-triage-agent action", () => {
     expect(novaStep.run).toContain("node scripts/nova-agent.mjs");
     expect(novaStep.run).not.toContain("tee");
     expect(novaStep.run).not.toContain("cat ");
+  });
+});
+
+describe("context files", () => {
+  const files = { "a.toml": 'price = "$5"\n', "b.html": "<p>x</p>\n" };
+  const read = (path) => files[path];
+
+  it("puts each file after the prompt in a named block and leaves dollar signs alone", () => {
+    expect(withContextFiles("Prompt.\n", ["a.toml", "b.html"], read)).toBe(
+      'Prompt.\n\n<file name="a.toml">\nprice = "$5"\n</file>\n\n<file name="b.html">\n<p>x</p>\n</file>\n',
+    );
+  });
+
+  it("returns the prompt as it is when there is no file", () => {
+    expect(withContextFiles("Prompt.\n", [], read)).toBe("Prompt.\n");
   });
 });

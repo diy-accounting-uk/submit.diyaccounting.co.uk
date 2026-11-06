@@ -1,0 +1,29 @@
+{
+  "description": "Submit the support triage answer. This ends the run.",
+  "properties": {
+    "matched_article": {
+      "type": "string",
+      "description": "The id of the closest FAQ entry in faqs.toml, copied exactly, or the word none."
+    },
+    "resolution": {
+      "type": "string",
+      "enum": ["fix", "answer"],
+      "description": "fix when the ticket needs a change to the product or its pages; otherwise answer."
+    },
+    "opening_sentence": {
+      "type": "string",
+      "description": "For a complaint or a change request, one sentence that starts with Sorry or Thank you; otherwise the word none."
+    },
+    "drafted_reply": {
+      "type": "string",
+      "description": "The reply a person could send as it stands. After an opening sentence, the rest of the reply."
+    }
+  },
+  "required": ["matched_article", "resolution", "opening_sentence", "drafted_reply"],
+  "render": [
+    { "property": "matched_article", "heading": "## Matched article" },
+    { "property": "resolution", "heading": "## Resolution" },
+    { "property": "opening_sentence", "heading": "## Opening sentence" },
+    { "property": "drafted_reply", "heading": "## Drafted reply" }
+  ]
+}

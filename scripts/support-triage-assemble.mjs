@@ -9,7 +9,9 @@
 // "## Matched article". The reply of a change request or a complaint opens with the model's own
 // "## Opening sentence", which must say sorry or thank the customer; code puts it first in the
 // drafted reply. An opening that breaks the rule throws, so the workflow posts nothing and a
-// person handles the ticket.
+// person handles the ticket. When the reader flagged the ticket as injection, a drafted reply that
+// repeats an upper-case hyphenated marker from the summary also throws, so a reply that obeys the
+// summary never reaches the customer.
 //
 // usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>
 
@@ -18,6 +20,9 @@ import { pathToFileURL } from "node:url";
 import { TICKET_KINDS } from "../app/lib/supportTicketKinds.js";
 
 export const OPENING_PATTERN = /sorry|thank/i;
+export const MARKER_PATTERN = /\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b/g;
+
+export class InjectionMarkerError extends Error {}
 
 const sectionPattern = (heading) => new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m");
 
@@ -34,12 +39,20 @@ const firstLine = (body) =>
 
 /**
  * @param {string} text the model's answer
- * @param {string} kind the handling input's ticketKind
+ * @param {{ticketKind: string, injectionSuspected?: boolean, summary?: string}} handlingInput
  * @returns {string} the answer with the kind applied and the opening sentence section removed
  */
-export function assembleAnswer(text, kind) {
+export function assembleAnswer(text, handlingInput) {
+  const kind = handlingInput?.ticketKind;
   if (!TICKET_KINDS.includes(kind)) throw new Error(`the handling input has no valid ticketKind (${TICKET_KINDS.join(", ")})`);
   const opening = firstLine(sectionBody(text, "Opening sentence"));
+  if (handlingInput.injectionSuspected === true) {
+    const written = `${opening}\n${sectionBody(text, "Drafted reply") ?? ""}`.toLowerCase();
+    const repeated = [...new Set(String(handlingInput.summary ?? "").match(MARKER_PATTERN) ?? [])].some((marker) =>
+      written.includes(marker.toLowerCase()),
+    );
+    if (repeated) throw new InjectionMarkerError("the drafted reply repeats a marker from a ticket that the reader flagged");
+  }
   let result = text.replace(sectionPattern("Opening sentence"), "");
   if (kind === "change-request") {
     result = result.replace(sectionPattern("Matched article"), "## Matched article\n\nnone\n\n");
@@ -59,10 +72,7 @@ function main() {
     process.exit(1);
   }
   try {
-    writeFileSync(
-      outputPath,
-      assembleAnswer(readFileSync(inputPath, "utf8"), JSON.parse(readFileSync(handlingInputPath, "utf8")).ticketKind),
-    );
+    writeFileSync(outputPath, assembleAnswer(readFileSync(inputPath, "utf8"), JSON.parse(readFileSync(handlingInputPath, "utf8"))));
   } catch (error) {
     console.error(`::error::${error.message}; nothing is posted`);
     process.exit(1);

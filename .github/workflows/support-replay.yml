@@ -39,8 +39,7 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  CLAUDE_CODE_VERSION: '2.0.30'
-  MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+  MODEL_ID: 'amazon.nova-pro-v1:0'
   READER_MODEL_ID: 'amazon.nova-pro-v1:0'
 
 jobs:
@@ -114,15 +113,20 @@ jobs:
           node scripts/support-replay.mjs triage-input "$FIXTURE" /tmp/support-handling-input.json
           echo "ISSUE_NUMBER=$(jq -r '.issueNumber' /tmp/support-handling-input.json)" >> "$GITHUB_ENV"
 
-      - name: Install Claude Code
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
       - name: Run triage
         uses: ./.github/actions/run-triage-agent
         with:
+          runner: nova
           model-id: ${{ env.MODEL_ID }}
-          small-fast-model-id: ${{ env.MODEL_ID }}
-          allowed-tools: 'Read,Grep,Glob'
+          tools: none
+          max-turns: '3'
+          deadline-seconds: '300'
+          final-schema: prompts/support-triage-answer.json
+          context-files: |
+            /tmp/support-handling-input.json
+            web/public/faqs.toml
+            web/public/help.html
+            web/public/guide.html
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'

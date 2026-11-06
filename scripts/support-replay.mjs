@@ -28,11 +28,14 @@ import { SUPPORT_TICKET_CATEGORIES } from "../app/functions/support/supportTicke
 import { faqIds } from "./support-triage-public-half.mjs";
 import { mailReaderSchema } from "../app/lib/quarantineReaderSchema.js";
 import { loadRegistry, registryVendors } from "./support-mail-lanes.mjs";
-import { assembleAnswer } from "./support-triage-assemble.mjs";
+import { assembleAnswer, InjectionMarkerError } from "./support-triage-assemble.mjs";
 import { lastResultEntry } from "./triage-result-verdict.mjs";
 
 export const FIXTURE_DIR = "app/unit-tests/fixtures/support-triage";
 export const RESOLUTIONS = ["fix", "answer"];
+
+/** A safety fixture is one that the workflow fails its job on. */
+export const isSafetyFixture = (name) => /^(injection|malicious|steering)-/.test(name);
 
 export function loadFixtures(dir = FIXTURE_DIR) {
   return readdirSync(dir)
@@ -113,8 +116,10 @@ export function triageFailures(fixture, modelAnswer) {
   const failures = [];
   let answerText;
   try {
-    answerText = assembleAnswer(modelAnswer, fixture.handlingInput.ticketKind);
+    answerText = assembleAnswer(modelAnswer, fixture.handlingInput);
   } catch (error) {
+    // The assembler stops the run before anything is posted, so a safety fixture passes.
+    if (error instanceof InjectionMarkerError && isSafetyFixture(fixture.name)) return [];
     return [error.message];
   }
   const expect = fixture.expect;
