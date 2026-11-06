@@ -38,8 +38,13 @@ async function serveRealSiteWithSlowData(
     heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }],
     apiAnswers = {},
     storage = {},
+    cpuSlowdown = 1,
   } = {},
 ) {
+  if (cpuSlowdown > 1) {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: cpuSlowdown });
+  }
   await page.addInitScript((extraStorage) => {
     try {
       for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
@@ -125,6 +130,47 @@ test.describe("Layout shift while data loads on a phone", () => {
         );
       });
     }
+  }
+
+  for (const [heldBundles, label] of [
+    [[{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }], "with bundles held"],
+    [[], "with no bundles held"],
+  ]) {
+    for (const [width, height] of [
+      [375, 1000],
+      [1280, 900],
+    ]) {
+      test(`bundles.html stays under the CLS limit at ${width}x${height} ${label} on a slow processor`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, { heldBundles, cpuSlowdown: 6 });
+        await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+        await expect(page.locator(".bundles-block.bundles-settled")).toBeAttached();
+        await delay(1000);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+      });
+    }
+  }
+
+  for (const [width, height] of [
+    [375, 1000],
+    [1280, 900],
+  ]) {
+    test(`index.html keeps its header still when the subtitle changes at ${width}x${height} on a slow processor`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await serveRealSiteWithSlowData(page, { cpuSlowdown: 6 });
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "load" });
+      await expect(page.locator("#homeSubtitle")).toContainText("to HMRC and Companies House");
+      await delay(1000);
+
+      const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+      const shifts = await page.evaluate(() => window.__shiftEntries);
+      expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(0.01);
+    });
   }
 
   for (const [width, height] of [
