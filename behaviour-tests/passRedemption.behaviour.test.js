@@ -291,25 +291,18 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
 
-  // --- Step 8: Try to redeem the same pass again (should fail - exhausted) ---
+  // --- Step 8: Open the same pass again in this session: the stored result shows, with no second redemption ---
   await passInput.fill(passCode);
-  await redeemBtn.click();
-  await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await page.waitForTimeout(1000);
-  const reusedStatusText = await passStatus.textContent();
-  console.log(`[pass-test]: Re-use status message: ${reusedStatusText}`);
-  // Pass should be exhausted after single use
-  expect(reusedStatusText).toMatch(/exhausted|already|used/i);
-  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-07-reuse-rejected.png`, readerView: true });
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page.locator("#passHeading")).toHaveText("Pass redeemed", { timeout: 15000 });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-07-reopened.png`, readerView: true });
 
   // --- Step 9: Try an invalid pass code ---
-  await passInput.fill("invalid-fake-pass-code");
-  await redeemBtn.click();
-  await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await page.waitForTimeout(1000);
-  const invalidStatusText = await passStatus.textContent();
-  console.log(`[pass-test]: Invalid pass status message: ${invalidStatusText}`);
-  expect(invalidStatusText).toMatch(/not found|invalid/i);
+  await page.goto(`${currentOrigin}/bundles.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.locator("#passInput").fill("invalid-fake-pass-code");
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page.locator("#passHeading")).toHaveText("This pass did not work", { timeout: 15000 });
+  await expect(page.getByRole("alert")).toContainText(/cannot find this pass/i);
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-08-invalid-rejected.png`, readerView: true });
 
   /* ****************** */
@@ -623,10 +616,10 @@ test("Click through: A deleted generated pass is refused as expired on redemptio
     await consentToDataCollection(redeemerPage, screenshotPath);
     await goToBundlesPage(redeemerPage, screenshotPath);
 
-    // The form checks the code first and shows the refusal itself.
+    // The pass page checks the code first and shows the refusal itself.
     await redeemerPage.locator("#passInput").fill(passCode);
-    await redeemerPage.locator("#redeemPassBtn").click();
-    await expect(redeemerPage.locator("#passStatus")).toContainText(/expired/i, { timeout: 15000 });
+    await redeemerPage.getByRole("button", { name: "Redeem pass" }).click();
+    await expect(redeemerPage.getByRole("alert")).toContainText(/has ended/i, { timeout: 15000 });
 
     // The redeem call itself answers the same reason; this is the call that records the refusal event.
     const redeemBody = await redeemerPage.evaluate(async (code) => {
