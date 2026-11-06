@@ -36,6 +36,7 @@ import {
   redeemPass,
   releaseReferral,
 } from "../../services/passService.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
@@ -117,6 +118,22 @@ export async function ingestHandler(event) {
           error: { reason: "already_redeemed" },
         });
       }
+    }
+
+    // An account that pays for the bundle keeps its subscription link: a grant would replace the
+    // bundle item that carries it. The refusal comes before any use or referral claim is counted.
+    const heldBundle = storedPass ? (await getUserBundles(userId)).find((bundle) => bundle?.bundleId === storedPass.bundleId) : undefined;
+    if (heldBundle?.stripeSubscriptionId) {
+      await publishRefusal({ reason: "already_held", code, passTypeId: storedPass.passTypeId, userSub: userId });
+      return http409ConflictResponse({
+        request,
+        headers: responseHeaders,
+        message: `This account already holds the bundle '${storedPass.bundleId}' with a subscription.`,
+        error: { reason: "already_held" },
+      });
+    }
+
+    if (isReferral) {
       // A pass that cannot be redeemed takes no claim, so redeemPass below gives its own refusal.
       const { valid: redeemable } = await checkPass(code, userEmail);
       if (redeemable) {

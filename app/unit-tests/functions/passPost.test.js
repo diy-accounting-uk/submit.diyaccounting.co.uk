@@ -60,6 +60,11 @@ vi.mock("@app/services/productCatalog.js", () => ({
   }),
 }));
 
+const mockGetUserBundles = vi.fn();
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: (...args) => mockGetUserBundles(...args),
+}));
+
 const mockRequestCustomerEmail = vi.fn();
 vi.mock("@app/lib/customerEmailRequest.js", () => ({
   requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
@@ -84,6 +89,8 @@ describe("passPost", () => {
     mockGetRedemption.mockResolvedValue(null);
     mockReleaseReferral.mockReset();
     mockRecordRedemption.mockReset();
+    mockGetUserBundles.mockReset();
+    mockGetUserBundles.mockResolvedValue([]);
     mockGrantBundle.mockReset();
     mockGrantBundle.mockResolvedValue({ status: "granted", expiry: "2026-03-01T00:00:00.000Z" });
     mockEventBridgeSend.mockClear();
@@ -320,6 +327,58 @@ describe("passPost", () => {
 
       const events = mockEventBridgeSend.mock.calls.map((call) => JSON.parse(call[0].input.Entries[0].Detail).event);
       expect(events).toEqual(["pass-redeemed"]);
+    });
+  });
+
+  describe("an account that already holds the bundle", () => {
+    const heldPass = { code: "test-pass-code", passTypeId: "digital-pass", bundleId: "resident-pro", issuedBy: "hashed_issuer-sub" };
+
+    beforeEach(() => {
+      mockGetPassRecord.mockResolvedValue(heldPass);
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "resident-pro", pass: { ...heldPass, testPass: false } });
+    });
+
+    test("a subscriber is refused with already_held, no use is counted and no referral is claimed", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", stripeSubscriptionId: "sub_123" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(result.statusCode).toBe(409);
+      const body = JSON.parse(result.body);
+      expect(body.reason).toBe("already_held");
+      expect(body.message).toContain("resident-pro");
+      expect(mockRedeemPass).not.toHaveBeenCalled();
+      expect(mockClaimReferral).not.toHaveBeenCalled();
+      expect(mockGrantBundle).not.toHaveBeenCalled();
+    });
+
+    test("an account that holds the bundle with no subscription is topped up", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).redeemed).toBe(true);
+      expect(mockRedeemPass).toHaveBeenCalledTimes(1);
+      expect(mockGrantBundle).toHaveBeenCalledTimes(1);
+    });
+
+    test("an account that holds another bundle with a subscription redeems as before", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "other-bundle", stripeSubscriptionId: "sub_123" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(JSON.parse(result.body).redeemed).toBe(true);
+      expect(mockClaimReferral).toHaveBeenCalledTimes(1);
+    });
+
+    test("an unknown code reads no bundles", async () => {
+      mockGetPassRecord.mockResolvedValue(null);
+      mockRedeemPass.mockResolvedValue({ valid: false, reason: "not_found" });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "nope" }));
+
+      expect(mockGetUserBundles).not.toHaveBeenCalled();
     });
   });
 
