@@ -76,6 +76,20 @@ describe("testScenario steps", () => {
   });
 });
 
+describe("createPass steps", () => {
+  const withStep = (auth, step) =>
+    baseScript({ auth, scenes: [{ id: "make-pass", chapter: "Make a pass", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("names the bundle it creates a pass for", () => {
+    expect(() => validateScript(withStep("user", { action: "createPass", bundle: "Day pass", testPass: true }))).not.toThrow();
+    expect(() => validateScript(withStep("user", { action: "createPass" }))).toThrow(/bundle/);
+  });
+
+  test("needs a signed-in script", () => {
+    expect(() => validateScript(withStep("none", { action: "createPass", bundle: "Day pass" }))).toThrow(/auth to be "user"/);
+  });
+});
+
 describe("notePeriod steps", () => {
   const withStep = (auth, step) =>
     baseScript({ auth, scenes: [{ id: "form", chapter: "Form", steps: [{ action: "goto", url: "/" }, step] }] });
