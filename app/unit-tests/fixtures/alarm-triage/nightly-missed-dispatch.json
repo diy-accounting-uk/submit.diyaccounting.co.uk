@@ -1,0 +1,74 @@
+{
+  "description": "The nightly job did not start; the row dispatches run-nightly.yml and the alarm is still in ALARM.",
+  "alarm": {
+    "name": "prod-env-report-nightly-missed",
+    "environment": "prod",
+    "deployment": "none",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9114
+  },
+  "remedyRow": {
+    "family": "prod-env-report-nightly-missed",
+    "remedy": "dispatch",
+    "workflow": "run-nightly.yml",
+    "inputs": {
+      "environment-name": "prod"
+    },
+    "budgetPerDay": 1,
+    "why": "One run replays the night."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "none",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-env-nightly-start-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-env-nightly-start-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [0.0 (15/01/26 03:10:00)] was less than the threshold (1.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [0.0 (15/01/26 03:10:00)] was less than the threshold (1.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-env-report-nightly-missed\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [0.0 (15/01/26 03:10:00)] was less than the threshold (1.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-env-nightly-start-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"INFO nightly scheduler tick at 02:00 found the lock held by a run that ended on 2026-01-13\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["nightly"], ["did not start", "missed", "lock", "not run"]],
+    "nextAction": [["run-nightly.yml", "dispatch", "re-run", "rerun"]],
+    "remedy": "dispatch run-nightly.yml"
+  }
+}

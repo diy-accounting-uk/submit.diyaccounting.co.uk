@@ -60,6 +60,10 @@ inputs:
     description: "newline-separated paths that nova puts into the request after the prompt, unexpanded"
     required: false
     default: ""
+  frozen-results:
+    description: "path to a JSON file of recorded aws results for nova's aws_read, so a replay makes no live aws call; empty makes live calls"
+    required: false
+    default: ""
   deadline-seconds:
     description: "nova's deadline for the whole run; keep it below the job's timeout"
     required: false
@@ -88,6 +92,7 @@ runs:
         FINAL_SCHEMA: ${{ inputs.final-schema }}
         INPUT_FILES: ${{ inputs.input-files }}
         CONTEXT_FILES: ${{ inputs.context-files }}
+        FROZEN_RESULTS: ${{ inputs.frozen-results }}
         DEADLINE_SECONDS: ${{ inputs.deadline-seconds }}
       run: |
         set -o pipefail
@@ -96,6 +101,7 @@ runs:
         envsubst < "$PROMPT_FILE" > "$EXPANDED_PROMPT"
         NOVA_ARGS=(--prompt-file "$EXPANDED_PROMPT" --output-file "$OUTPUT_FILE" --model-id "$MODEL_ID" --tools "$NOVA_TOOLS" --max-turns "$MAX_TURNS" --deadline-seconds "$DEADLINE_SECONDS")
         if [ -n "$FINAL_SCHEMA" ]; then NOVA_ARGS+=(--final-schema "$FINAL_SCHEMA"); fi
+        if [ -n "$FROZEN_RESULTS" ]; then NOVA_ARGS+=(--frozen-results "$FROZEN_RESULTS"); fi
         while IFS= read -r INPUT_FILE; do
           if [ -n "$INPUT_FILE" ]; then NOVA_ARGS+=(--input-file "$INPUT_FILE"); fi
         done <<< "$INPUT_FILES"

@@ -1,0 +1,76 @@
+{
+  "description": "One datapoint of 5xx at the API with a single failed request id, no row, and the newest datapoints clean.",
+  "alarm": {
+    "name": "prod-zz20sage-app-api-5xx",
+    "environment": "prod",
+    "deployment": "zz20sage",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9119
+  },
+  "remedyRow": null,
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz20sage",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-zz20sage-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-zz20sage-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:14:00Z",
+          "summary": "Alarm updated from ALARM to OK",
+          "newState": {
+            "value": "OK",
+            "stateReason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching]."
+          }
+        },
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:14:00Z\",\"summary\":\"Alarm updated from ALARM to OK\",\"newState\":{\"value\":\"OK\",\"stateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}},{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-zz20sage-app-api-5xx\",\"StateValue\":\"OK\",\"StateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-zz20sage-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-2001 integration timeout after 29000 ms\"},{\"timestamp\":1768467901000,\"message\":\"INFO req-2002 served in 90 ms\"},{\"timestamp\":1768467902000,\"message\":\"INFO req-2003 served in 88 ms\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [
+      ["5xx", "timeout"],
+      ["req-2001", "single", "one request", "one datapoint", "isolated"]
+    ],
+    "nextAction": [["watch", "no action"]],
+    "remedy": "none"
+  }
+}
