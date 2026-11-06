@@ -190,7 +190,8 @@ class SubmitEnvironmentCdkResourceTest {
         observability.resourceCountIs("AWS::CloudWatch::Alarm", 14);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
-        observability.resourceCountIs("AWS::IAM::Role", 10);
+        observability.resourceCountIs("AWS::IAM::Role", 9);
+        observability.resourceCountIs("AWS::Cognito::IdentityPool", 0);
         // Only prod opens issues for Health and ACM events, so this environment has the function
         // and no rule for it: the six rules are the security rules.
         observability.resourceCountIs("AWS::Events::Rule", 6);
@@ -799,6 +800,9 @@ class SubmitEnvironmentCdkResourceTest {
         assertTrue(policyDocument.contains("\"Action\":\"rum:PutRumEvents\""));
         assertTrue(policyDocument.contains(":appmonitor/test-env-rum\""));
         assertTrue(policyDocument.contains("\"Principal\":\"*\""));
+        String configuration = String.valueOf(properties.get("AppMonitorConfiguration"));
+        assertFalse(configuration.contains("GuestRoleArn"));
+        assertFalse(configuration.contains("IdentityPoolId"));
     }
 
     private static Map<String, Object> statementWithSid(List<Map<String, Object>> statements, String sid) {
