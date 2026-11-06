@@ -213,7 +213,7 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
 
       await expect(page.locator("#console-ci-lambda-errors .console-capture-empty")).toHaveText("Not captured yet");
-      await expect(page.locator("#console-prod-rum .console-capture-empty")).toHaveCount(2);
+      await expect(page.locator("#console-prod-rum .console-capture-empty")).toHaveCount(3);
     });
 
     test("says Not captured yet everywhere when the snapshot has no console index", async ({ page }) => {
