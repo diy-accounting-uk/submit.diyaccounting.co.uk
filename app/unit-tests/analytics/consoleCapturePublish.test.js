@@ -31,6 +31,12 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
       this.name = "GetMetricData";
     }
   },
+  DescribeAlarmHistoryCommand: class {
+    constructor(input) {
+      this.input = input;
+      this.name = "DescribeAlarmHistory";
+    }
+  },
   DescribeAlarmsCommand: class {
     constructor(input) {
       this.input = input;
@@ -98,6 +104,7 @@ function widgetAnswer() {
 function defaultCloudWatch(command) {
   if (command.name === "GetMetricWidgetImage") return widgetAnswer();
   if (command.name === "GetMetricData") return { MetricDataResults: [{ Id: "e1", Values: [1] }] };
+  if (command.name === "DescribeAlarmHistory") return { AlarmHistoryItems: [] };
   return {
     MetricAlarms: [
       { AlarmName: "ci-env-b", StateValue: "OK", StateReason: "fine", StateUpdatedTimestamp: new Date("2026-11-01T00:00:00Z") },
@@ -262,6 +269,53 @@ describe("consoleCapturePublish", () => {
     const rows = indexFrom(puts).items["ci-alarms"].rows;
     expect(rows.map((row) => row.name)).toEqual(["ci-env-a", "ci-env-b"]);
     expect(rows[0].state).toBe("ALARM");
+  });
+
+  test("an alarm that fired in the range and is OK again sorts after ALARM and before OK, with its last fired time", async () => {
+    const okAgain = (name) => ({
+      AlarmName: name,
+      StateValue: "OK",
+      StateReason: "ok",
+      StateUpdatedTimestamp: new Date("2026-11-02T01:30:00Z"),
+    });
+    const entered = (name, at, state) => ({
+      AlarmName: name,
+      Timestamp: new Date(at),
+      HistoryData: JSON.stringify({ newState: { stateValue: state } }),
+    });
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "DescribeAlarmHistory") {
+        return {
+          AlarmHistoryItems: [
+            entered("ci-env-fired-late", "2026-11-02T01:00:00Z", "OK"),
+            entered("ci-env-fired-late", "2026-11-01T22:00:00Z", "ALARM"),
+            entered("ci-env-fired-early", "2026-10-31T10:00:00Z", "ALARM"),
+          ],
+        };
+      }
+      if (command.name === "DescribeAlarms") {
+        return {
+          MetricAlarms: [
+            okAgain("ci-env-a-quiet"),
+            okAgain("ci-env-fired-early"),
+            okAgain("ci-env-fired-late"),
+            { AlarmName: "ci-env-z-now", StateValue: "ALARM", StateReason: "x", StateUpdatedTimestamp: new Date("2026-11-02T02:00:00Z") },
+          ],
+        };
+      }
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    await runConsoleCapture(dependencies);
+
+    const rows = indexFrom(puts).items["ci-alarms"].rows;
+    expect(rows.map((row) => row.name)).toEqual(["ci-env-z-now", "ci-env-fired-late", "ci-env-fired-early", "ci-env-a-quiet"]);
+    expect(rows[1].lastFiredAt).toBe("2026-11-01T22:00:00.000Z");
+    expect(rows[3].lastFiredAt).toBeNull();
+    const history = cloudWatchHandler.mock.calls.map((call) => call[0]).find((command) => command.name === "DescribeAlarmHistory");
+    expect(history.input).toMatchObject({ HistoryItemType: "StateUpdate", EndDate: NOW });
+    expect(history.input.StartDate).toEqual(new Date(NOW.getTime() - 3 * 86400 * 1000));
   });
 
   test("the Bedrock item stores counts from the fixed query and no log line", async () => {

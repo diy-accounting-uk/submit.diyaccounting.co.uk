@@ -210,6 +210,7 @@
     { heading: "Alarm", value: (row) => row.name },
     { heading: "State", value: (row) => row.state },
     { heading: "Since", value: (row) => (row.stateUpdatedAt ? formatCaptured(row.stateUpdatedAt) : "") },
+    { heading: "Last fired", value: (row) => (row.lastFiredAt ? formatCaptured(row.lastFiredAt) : "") },
     { heading: "Reason", value: (row) => row.reason },
   ];
 
