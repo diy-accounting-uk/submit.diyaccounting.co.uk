@@ -13,7 +13,7 @@ vi.mock("@aws-sdk/client-bedrock-runtime", () => ({
       return sendMock(command);
     }
   },
-  InvokeModelCommand: class {
+  ConverseCommand: class {
     constructor(input) {
       this.input = input;
       this.kind = "invoke";
@@ -101,12 +101,11 @@ function deps(overrides = {}) {
 }
 
 function imageCountOf(command) {
-  const body = JSON.parse(command.input.body);
-  return body.messages[0].content.filter((block) => block.type === "image").length;
+  return command.input.messages[0].content.filter((block) => block.image).length;
 }
 
 function tabOf(command) {
-  const text = JSON.parse(command.input.body).messages[0].content[0].text;
+  const text = command.input.messages[0].content[0].text;
   return JSON.parse(text.replace(/<\/?panel-metadata>/g, "")).tabId;
 }
 
@@ -138,7 +137,8 @@ function serveModel({ answerFor = (command) => modelAnswer(command), guardrail =
     const answer = answerFor(command);
     const text = typeof answer === "string" ? answer : JSON.stringify(answer);
     return {
-      body: Buffer.from(JSON.stringify({ content: [{ type: "text", text }], usage: { input_tokens: 100, output_tokens: 20 } })),
+      output: { message: { role: "assistant", content: [{ text }] } },
+      usage: { inputTokens: 100, outputTokens: 20 },
     };
   });
 }
@@ -208,7 +208,7 @@ beforeEach(() => {
   fs.writeFileSync(path.join(sandbox, "out.txt"), "");
   env = {
     TRANSIT_PASS: PASS,
-    REVIEW_MODEL_ID: "eu.anthropic.claude-sonnet-5-5",
+    REVIEW_MODEL_ID: "amazon.nova-pro-v1:0",
     GUARDRAIL_ID: "gr-id",
     GUARDRAIL_VERSION: "3",
     GITHUB_OUTPUT: path.join(sandbox, "out.txt"),
@@ -241,10 +241,10 @@ describe("dashboard review nightly, review mode", () => {
     const calls = sendMock.mock.calls.map(([command]) => command).filter((command) => command.kind === "invoke");
     expect(calls).toHaveLength(2);
     for (const command of calls) {
-      const body = JSON.parse(command.input.body);
-      expect(command.input.modelId).toBe("eu.anthropic.claude-sonnet-5-5");
-      expect(Object.keys(body)).not.toContain("tools");
-      expect(Object.keys(body)).not.toContain("temperature");
+      const body = command.input;
+      expect(body.modelId).toBe("amazon.nova-pro-v1:0");
+      expect(Object.keys(body)).not.toContain("toolConfig");
+      expect(Object.keys(body.inferenceConfig)).not.toContain("temperature");
       expect(body.messages.at(-1).role).toBe("user");
     }
   });

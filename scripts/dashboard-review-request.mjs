@@ -3,18 +3,20 @@
 
 // scripts/dashboard-review-request.mjs
 //
-// Pure builders for the nightly dashboard review's Bedrock invoke-model requests. One request
-// judges one batch: some screenshots of one tab. The request has no `tools` key, no sampling
-// parameter and no assistant turn after the user's, because the judge model rejects the last two
-// and must not act. The metadata block holds ids and times only, never a figure or a name.
+// Pure builders for the nightly dashboard review's Bedrock Converse requests. One request
+// judges one batch: some screenshots of one tab. The request has no `toolConfig` key, no sampling
+// parameter and no assistant turn after the user's, so the judge model cannot act. The metadata block holds ids and times only, never a figure or a name.
 
 import { LISTS } from "../app/lib/dashboardReviewSchema.js";
 
 export const REVIEW_MAX_TOKENS = 8000;
+// Nova accepts at most 20 images in a request and 3.75 MB for each one.
+export const NOVA_MAX_IMAGES = 20;
+export const NOVA_MAX_IMAGE_BYTES = 3_750_000;
 
 const ID_SHAPE = /^[A-Za-z0-9_.-]{1,120}$/;
 const TIME_SHAPE = /^[0-9T:.+\-Z ]{1,40}$/;
-const MEDIA_TYPES = new Set(["image/png", "image/jpeg"]);
+const IMAGE_FORMATS = { "image/png": "png", "image/jpeg": "jpeg" };
 
 function imageBytes(image) {
   return typeof image.data === "string" ? Buffer.byteLength(image.data, "base64") : image.data.length;
@@ -39,14 +41,15 @@ function checkedTime(value, what) {
  * @param {number} [maxBytes] the most image bytes (before base64) in one batch
  * @returns {{ tabId: string, generatedAt: string, images: object[] }[]}
  */
-export function buildBatches(tabs, maxImages = 20, maxBytes = 8_000_000) {
+export function buildBatches(tabs, maxImages = NOVA_MAX_IMAGES, maxBytes = 8_000_000) {
   const batches = [];
   for (const tab of tabs) {
     let current = null;
     let bytes = 0;
     for (const image of tab.images) {
       const size = imageBytes(image);
-      if (size > maxBytes) throw new Error(`the image of panel ${image.panelId} is larger than ${maxBytes} bytes`);
+      const imageLimit = Math.min(maxBytes, NOVA_MAX_IMAGE_BYTES);
+      if (size > imageLimit) throw new Error(`the image of panel ${image.panelId} is larger than ${imageLimit} bytes`);
       if (!current || current.images.length >= maxImages || bytes + size > maxBytes) {
         current = { tabId: tab.tabId, generatedAt: tab.generatedAt, images: [] };
         batches.push(current);
@@ -79,24 +82,22 @@ function metadataBlock(batch) {
 
 /**
  * @param {{ system: string, batch: { tabId: string, generatedAt: string, images: object[] } }} input
- * @returns {object} the body of one `InvokeModel` call
+ * @returns {object} the input of one `Converse` call, without the model id
  */
 export function buildRequest({ system, batch }) {
   if (!system) throw new Error("the system prompt is empty");
   if (batch.images.length === 0) throw new Error("the batch holds no images");
-  const content = [{ type: "text", text: metadataBlock(batch) }];
+  const content = [{ text: metadataBlock(batch) }];
   batch.images.forEach((image, index) => {
-    const mediaType = image.mediaType ?? "image/png";
-    if (!MEDIA_TYPES.has(mediaType)) throw new Error("the image type is not png or jpeg");
-    const data = typeof image.data === "string" ? image.data : image.data.toString("base64");
-    content.push({ type: "text", text: `Image ${index + 1}` });
-    content.push({ type: "image", source: { type: "base64", media_type: mediaType, data } });
+    const format = IMAGE_FORMATS[image.mediaType ?? "image/png"];
+    if (!format) throw new Error("the image type is not png or jpeg");
+    const bytes = typeof image.data === "string" ? Buffer.from(image.data, "base64") : image.data;
+    content.push({ text: `Image ${index + 1}` });
+    content.push({ image: { format, source: { bytes } } });
   });
   return {
-    anthropic_version: "bedrock-2023-05-31",
-    max_tokens: REVIEW_MAX_TOKENS,
-    output_config: { effort: "low" },
-    system,
+    system: [{ text: system }],
+    inferenceConfig: { maxTokens: REVIEW_MAX_TOKENS },
     messages: [{ role: "user", content }],
   };
 }

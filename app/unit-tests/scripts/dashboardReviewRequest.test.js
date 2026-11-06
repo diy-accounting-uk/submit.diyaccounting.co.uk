@@ -32,6 +32,10 @@ describe("buildBatches", () => {
     expect(batches.map((b) => b.tabId)).toEqual(["main", "ops"]);
   });
 
+  it("throws on one image over the Nova image size", () => {
+    expect(() => buildBatches([{ tabId: "main", generatedAt: "x", images: [panel("a", 3_750_001)] }])).toThrow();
+  });
+
   it("throws on one image over the byte limit", () => {
     expect(() => buildBatches([{ tabId: "main", generatedAt: "x", images: [panel("a", 50)] }], 20, 10)).toThrow();
   });
@@ -55,22 +59,21 @@ describe("buildRequest", () => {
   const request = buildRequest({ system: "SYSTEM", batch });
 
   it("sends no tools, no sampling parameter and no assistant turn", () => {
-    expect(request).not.toHaveProperty("tools");
-    expect(request).not.toHaveProperty("temperature");
-    expect(request).not.toHaveProperty("top_p");
-    expect(request).not.toHaveProperty("top_k");
+    expect(request).not.toHaveProperty("toolConfig");
+    expect(request.inferenceConfig).toEqual({ maxTokens: 8000 });
     expect(request.messages).toHaveLength(1);
     expect(request.messages[0].role).toBe("user");
-    expect(request.system).toBe("SYSTEM");
-    expect(request.max_tokens).toBe(8000);
-    expect(request.output_config).toEqual({ effort: "low" });
+    expect(request.system).toEqual([{ text: "SYSTEM" }]);
+    expect(request).not.toHaveProperty("output_config");
   });
 
   it("labels each image and holds the same count of image blocks", () => {
     const content = request.messages[0].content;
-    expect(content.filter((c) => c.type === "image")).toHaveLength(2);
+    expect(content.filter((c) => c.image)).toHaveLength(2);
     expect(content.filter((c) => c.text === "Image 1" || c.text === "Image 2")).toHaveLength(2);
-    expect(content.find((c) => c.type === "image").source.media_type).toBe("image/png");
+    const first = content.find((c) => c.image).image;
+    expect(first.format).toBe("png");
+    expect(Buffer.isBuffer(first.source.bytes)).toBe(true);
   });
 
   it("holds ids and times only in the metadata", () => {
@@ -104,7 +107,7 @@ describe("buildRequest", () => {
 
   it("accepts a jpeg and rejects other types", () => {
     const jpeg = { ...batch, images: [{ ...panel("a"), mediaType: "image/jpeg" }] };
-    expect(buildRequest({ system: "S", batch: jpeg }).messages[0].content[2].source.media_type).toBe("image/jpeg");
+    expect(buildRequest({ system: "S", batch: jpeg }).messages[0].content[2].image.format).toBe("jpeg");
     const gif = { ...batch, images: [{ ...panel("a"), mediaType: "image/gif" }] };
     expect(() => buildRequest({ system: "S", batch: gif })).toThrow();
   });
