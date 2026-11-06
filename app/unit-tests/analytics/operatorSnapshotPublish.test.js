@@ -1600,6 +1600,21 @@ describe("operatorSnapshotPublish", () => {
       expect(silent.today).toEqual({ value: null });
     });
 
+    test("a month-to-date figure is one reading under Today and has no other window", () => {
+      const windows = toObservationWindows(
+        { today: "40.5", today_as_of: "2026-10-28", last_7: "40.5", last_30: "40.5", last_90: "40.5", first_day: "2026-09-05" },
+        "latest",
+        TODAY,
+        { latestReading: true, monthToDate: true },
+      );
+      expect(windows.today).toEqual({ value: 40.5, asOf: "2026-10-28" });
+      for (const key of ["previousDay", "last7", "last30", "last90"]) {
+        expect(windows[key].value).toBeNull();
+        expect(windows[key].notApplicable).toBe(true);
+        expect(windows[key].notApplicableReason).toContain("Month to date");
+      }
+    });
+
     test("a monthly figure has no Today or Previous day", () => {
       const windows = toObservationWindows({ last_30: "5", first_day: "2026-01-01" }, "avg", TODAY, { periodic: true });
       expect(windows.today).toEqual({ value: null, notApplicable: true });

@@ -471,7 +471,7 @@ function windowCell(observation, key, unavailableTitle) {
   const unit = (observation && observation.unit) || "count";
   if (window && window.notApplicable) {
     cell.textContent = NOT_APPLICABLE;
-    cell.title = "This figure is reported by month or quarter, so it has no daily window.";
+    cell.title = window.notApplicableReason || "This figure is reported by month or quarter, so it has no daily window.";
     return cell;
   }
   if (observation && observation.notCollected) {

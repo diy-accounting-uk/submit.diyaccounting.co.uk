@@ -659,7 +659,18 @@ function readLatestToday(row) {
   return value === null ? { value: null } : { value, ...(row?.today_as_of ? { asOf: row.today_as_of.slice(0, 10) } : {}) };
 }
 
-export function toObservationWindows(row, aggregation, today = new Date(), { latestReading = false, periodic = false } = {}) {
+const MONTH_TO_DATE_ONLY_WINDOW = {
+  value: null,
+  notApplicable: true,
+  notApplicableReason: "Month to date is one reading, shown under Today. It has no window of its own.",
+};
+
+export function toObservationWindows(
+  row,
+  aggregation,
+  today = new Date(),
+  { latestReading = false, periodic = false, monthToDate = false } = {},
+) {
   const current30 = readWindow(row, "last_30", aggregation, today);
   const previous30 = readWindow(row, "prev_30", aggregation, today);
   const current90 = readWindow(row, "last_90", aggregation, today);
@@ -684,6 +695,15 @@ export function toObservationWindows(row, aggregation, today = new Date(), { lat
     },
   };
   if (row?.data_since) windows.dataSince = row.data_since;
+  if (monthToDate) {
+    return {
+      today: dayWindow,
+      previousDay: MONTH_TO_DATE_ONLY_WINDOW,
+      last7: MONTH_TO_DATE_ONLY_WINDOW,
+      last30: MONTH_TO_DATE_ONLY_WINDOW,
+      last90: MONTH_TO_DATE_ONLY_WINDOW,
+    };
+  }
   return windows;
 }
 
@@ -920,6 +940,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
         toObservationWindows(row, observation.aggregation, new Date(), {
           latestReading: LATEST_READING_VIEWS.has(observation.view),
           periodic: isPeriodicDayColumn(observation.dayColumn),
+          monthToDate: observation.monthToDate === true,
         }),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
