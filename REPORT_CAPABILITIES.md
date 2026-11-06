@@ -144,7 +144,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
     - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
-    - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
+    - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
     - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page: use when a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
@@ -1887,11 +1887,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### BILL-10 Redeem a pass
 
-- **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
-- **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
+- **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
+- **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/pass.html with web/public/pass.page.js shows what a ?pass= link gives and posts here when the person presses Redeem pass; bundles.html forwards a ?pass= link to it. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
 - **Run:** `POST /api/v1/pass`
 - **Entry:** `app/functions/account/passPost.js:ingestHandler`; `app/services/passService.js:redeemPass`
-- **Files:** app/functions/account/passPost.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
+- **Files:** app/functions/account/passPost.js, web/public/pass.html, web/public/pass.page.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
 - **Keywords:** pass, redeem pass, redeemPass, pass link, on-pass-on-subscription, passphrase, email hash
 - **Related:** BILL-01, BILL-06, BILL-08
 
