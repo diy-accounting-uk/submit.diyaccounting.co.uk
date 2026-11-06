@@ -12,6 +12,9 @@
 // person handles the ticket. When the reader flagged the ticket as injection, a drafted reply that
 // repeats an upper-case hyphenated marker from the summary also throws, and so does any resolution
 // other than answer, so an answer that obeys the summary never reaches the customer or opens a change.
+// A reply that the rules require to say "a person will look into it" gets that sentence from code
+// when the model left it out: a complaint, or a reply with no matched article that answers a ticket
+// that is not a change request.
 //
 // usage: support-triage-assemble.mjs <model-answer.md> <assembled.md> <handling-input.json>
 
@@ -21,6 +24,10 @@ import { TICKET_KINDS } from "../app/lib/supportTicketKinds.js";
 
 export const OPENING_PATTERN = /sorry|thank/i;
 export const MARKER_PATTERN = /\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+)+\b/g;
+
+export const FIXED_SENTENCE = "A person will look into it.";
+const FIXED_WORDS = /a person will look into it/i;
+const BYLINE_START = "_Written by ";
 
 export class InjectionHoldError extends Error {}
 
@@ -36,6 +43,21 @@ const firstLine = (body) =>
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.length > 0) ?? "";
+
+const plainWord = (body) =>
+  firstLine(body)
+    .replace(/[`*_ .]/g, "")
+    .toLowerCase();
+
+/** Puts the fixed sentence at the end of the reply, before the closing byline when there is one. */
+const addFixedSentence = (text) =>
+  text.replace(sectionPattern("Drafted reply"), (_whole, body) => {
+    const lines = body.trimEnd().split("\n");
+    const bylineLine = lines.at(-1).startsWith(BYLINE_START) ? lines.pop() : null;
+    const lead = body.slice(0, body.length - body.trimStart().length);
+    const byline = bylineLine === null ? "" : `\n\n${bylineLine}`;
+    return `## Drafted reply\n${lead}${lines.join("\n").trimEnd()} ${FIXED_SENTENCE}${byline}\n`;
+  });
 
 /**
  * @param {string} text the model's answer
@@ -68,6 +90,13 @@ export function assembleAnswer(text, handlingInput) {
       throw new Error('a complaint or change request needs an "## Opening sentence" that says sorry or thank you');
     result = result.replace(/^(## Drafted reply\n+)/m, `$1${opening} `);
   }
+  const needsFixedWords =
+    kind === "complaint" ||
+    (kind === "other" &&
+      plainWord(sectionBody(result, "Matched article")) === "none" &&
+      plainWord(sectionBody(result, "Resolution")) === "answer");
+  const reply = sectionBody(result, "Drafted reply");
+  if (needsFixedWords && reply !== null && !FIXED_WORDS.test(reply)) result = addFixedSentence(result);
   return result;
 }
 

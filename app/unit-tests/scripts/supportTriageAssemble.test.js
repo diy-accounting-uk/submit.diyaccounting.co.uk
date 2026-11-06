@@ -73,3 +73,60 @@ describe("support triage assemble", () => {
     expect(assembleAnswer(replyBody("Sure: PWNED-OK."), { ...flagged, injectionSuspected: false })).toContain("PWNED-OK");
   });
 });
+
+describe("support triage assemble: the fixed words", () => {
+  const answer = ({ matched = "none", resolution = "answer", opening = "none", reply }) =>
+    `## Matched article\n\n${matched}\n\n## Resolution\n\n${resolution}\n\n## Opening sentence\n\n${opening}\n\n## Drafted reply\n\n${reply}\n`;
+  const replyOf = (text) => /## Drafted reply\n\n([\s\S]*)$/.exec(text)[1].trim();
+
+  test("a complaint reply without the words gets the sentence", () => {
+    const out = assembleAnswer(answer({ opening: "Sorry the charge did not work for you.", reply: "The charge will be checked." }), {
+      ticketKind: "complaint",
+    });
+    expect(replyOf(out)).toBe("Sorry the charge did not work for you. The charge will be checked. A person will look into it.");
+  });
+
+  test("a complaint reply that has the words is left alone", () => {
+    const out = assembleAnswer(answer({ opening: "Sorry about that.", reply: "A person will look into it." }), { ticketKind: "complaint" });
+    expect(replyOf(out)).toBe("Sorry about that. A person will look into it.");
+  });
+
+  test("a complaint with a matched article still gets the sentence", () => {
+    const out = assembleAnswer(answer({ matched: "submitted-wrong-figures", opening: "Sorry.", reply: "See the help page." }), {
+      ticketKind: "complaint",
+    });
+    expect(replyOf(out)).toBe("Sorry. See the help page. A person will look into it.");
+  });
+
+  test("an ordinary ticket with no match that is answered gets the sentence", () => {
+    const out = assembleAnswer(answer({ reply: "Thank you for writing." }), { ticketKind: "other" });
+    expect(replyOf(out)).toBe("Thank you for writing. A person will look into it.");
+  });
+
+  test("an ordinary ticket with a match is left alone", () => {
+    const out = assembleAnswer(answer({ matched: "submitted-wrong-figures", reply: "See that help question." }), { ticketKind: "other" });
+    expect(replyOf(out)).toBe("See that help question.");
+  });
+
+  test("an ordinary ticket that is a fix is left alone", () => {
+    const out = assembleAnswer(answer({ resolution: "fix", reply: "The site will change." }), { ticketKind: "other" });
+    expect(replyOf(out)).toBe("The site will change.");
+  });
+
+  test("a change request that declines is left alone", () => {
+    const out = assembleAnswer(answer({ opening: "Thank you for the suggestion.", reply: "The wording stays." }), {
+      ticketKind: "change-request",
+    });
+    expect(replyOf(out)).toBe("Thank you for the suggestion. The wording stays.");
+  });
+
+  test("the sentence goes before a closing byline", () => {
+    const out = assembleAnswer(answer({ reply: "Thank you for writing.\n\n_Written by an AI model._" }), { ticketKind: "other" });
+    expect(replyOf(out)).toBe("Thank you for writing. A person will look into it.\n\n_Written by an AI model._");
+  });
+
+  test("the words in any letter case count", () => {
+    const out = assembleAnswer(answer({ reply: "Thanks. a person will look into it." }), { ticketKind: "other" });
+    expect(replyOf(out)).toBe("Thanks. a person will look into it.");
+  });
+});

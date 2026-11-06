@@ -16,7 +16,7 @@
 //        support-replay.mjs triage-input <fixture> <out.json>  (the handling input file for the triage agent)
 //        support-replay.mjs ticket <fixture> <out.json>        (the ticket file for the reader request)
 //        support-replay.mjs reader-kind <fixture>              (prints support or mail: the argument of quarantine-reader-request.mjs)
-//        support-replay.mjs check-triage <fixture> <result.json> [<check-result.json>]
+//        support-replay.mjs check-triage <fixture> <result.json> [<check-result.json> [<repair-note.txt>]]
 //        support-replay.mjs check-reader <fixture> <answer.txt>
 //        support-replay.mjs score <outcome-dir>
 
@@ -228,7 +228,7 @@ function main() {
     console.log(byName(first).kind === "mail" ? "mail" : "support");
   } else if (command === "check-triage" || command === "check-reader") {
     const fixture = byName(first);
-    const checkFile = process.argv[5];
+    const [checkFile, repairNoteFile] = process.argv.slice(5);
     const answerText =
       command === "check-triage" ? triageResultText(JSON.parse(readFileSync(second, "utf8"))) : readFileSync(second, "utf8");
     const check = checkFile ? checkVerdict(readJsonOrNull(checkFile)) : undefined;
@@ -238,6 +238,7 @@ function main() {
     console.log(`${fixture.name}: ${failures.length === 0 ? "pass" : "fail"}`);
     if (failures.length > 0) {
       // Every fixture is synthetic, so the answer that failed is safe to print in a public log.
+      if (repairNoteFile) console.log(readFileSync(repairNoteFile, "utf8").trim());
       console.log(answerText);
       process.exit(1);
     }
@@ -248,7 +249,7 @@ function main() {
     if (!meetsBar) process.exit(1);
   } else {
     console.error(
-      "usage: support-replay.mjs list | triage-input <fixture> <out> | ticket <fixture> <out> | reader-kind <fixture> | check-triage <fixture> <result> [<check-result>] | check-reader <fixture> <answer> | score <outcome-dir>",
+      "usage: support-replay.mjs list | triage-input <fixture> <out> | ticket <fixture> <out> | reader-kind <fixture> | check-triage <fixture> <result> [<check-result> [<repair-note>]] | check-reader <fixture> <answer> | score <outcome-dir>",
     );
     process.exit(1);
   }

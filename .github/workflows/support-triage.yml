@@ -192,7 +192,7 @@ jobs:
     needs: select
     if: needs.select.outputs.proceed == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: prod
     permissions:
       id-token: write
@@ -284,33 +284,12 @@ jobs:
               ;;
           esac
 
-      # The second Nova Pro call judges the draft. It reads the check prompt, the draft and two
-      # fields of the handling input (the ticket kind and the injection flag), never the summary.
-      # A draft that the check holds, or a check call that fails, stops the run before it posts.
-      - name: Write the input of the check
+      # The assembler and the second Nova Pro call judge the draft. When either rejects it, one
+      # repair call gets the rejection text and the answer is judged again. A second rejection
+      # fails the step, so nothing is posted. The step prints fixed lines and no answer text.
+      - name: Judge the draft and repair it once
         if: steps.triage-run.outputs.stopped == 'false'
-        run: node scripts/support-triage-check.mjs prepare /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check-input.json /tmp/support-check-draft.md
-
-      - name: Check the draft
-        if: steps.triage-run.outputs.stopped == 'false'
-        uses: ./.github/actions/run-triage-agent
-        with:
-          runner: nova
-          model-id: ${{ env.MODEL_ID }}
-          tools: none
-          max-turns: '3'
-          deadline-seconds: '120'
-          final-schema: prompts/support-triage-check-answer.json
-          context-files: |
-            /tmp/support-check-input.json
-            /tmp/support-check-draft.md
-          output-file: /tmp/support-check.json
-          prompt-file: prompts/support-triage-check.md
-          echo-output: 'false'
-
-      - name: Hold a draft that the check does not pass
-        if: steps.triage-run.outputs.stopped == 'false'
-        run: node scripts/support-triage-check.mjs verdict /tmp/support-check.json
+        run: node scripts/support-triage-settle.mjs /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt
 
       - name: Filter the triage answer before it is published
         id: publish-filter

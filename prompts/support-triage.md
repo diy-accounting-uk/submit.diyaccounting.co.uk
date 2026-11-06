@@ -71,6 +71,12 @@ Your job is to answer these questions and stop:
       the mistake: the page may have changed, and the operator checks it on the draft pull request.
    d. Otherwise, use the rules below.
 
+   A problem with one customer's account, payment or bundle is `answer`, because a person looks at
+   that account. It is `answer` even when it reads like a defect. Example of `answer`: the customer
+   says a renewal was taken from their card twice and asks for it to be put right. A correct change
+   to a page, or a help entry that is missing, is `fix`. Example of `fix`: the customer says the
+   receipts page has no entry on saving a receipt as a file and asks for one.
+
    Write `fix` when the summary describes a
    defect, a wrong or missing page, or a missing feature that a code or content change would
    resolve, and no help-page entry already answers it. Write `answer` when a reply can resolve the

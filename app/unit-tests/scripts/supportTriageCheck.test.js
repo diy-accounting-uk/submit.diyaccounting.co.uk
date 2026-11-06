@@ -2,12 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
 import { runAgent } from "../../../scripts/nova-agent.mjs";
 import { loadFinalSchema, renderAnswer } from "../../../scripts/nova-agent-tools.mjs";
 import { checkInput, checkVerdict } from "../../../scripts/support-triage-check.mjs";
+import { novaArgs, writeCheckFiles } from "../../../scripts/support-triage-settle.mjs";
 import { loadFixtures, triageFailures } from "../../../scripts/support-replay.mjs";
 
 const answerSchema = loadFinalSchema("prompts/support-triage-answer.json");
@@ -143,18 +143,12 @@ describe("the check call input", () => {
 
   it("writes the draft beside the two fields and nothing from the summary", () => {
     const dir = mkdtempSync(join("target", "support-check-"));
-    const handling = join(dir, "handling.json");
-    const result = join(dir, "result.json");
-    writeFileSync(handling, JSON.stringify({ ticketKind: "other", injectionSuspected: false, summary: "SUMMARY-SENTINEL" }));
-    writeFileSync(result, JSON.stringify(resultOf("## Drafted reply\n\nA person will look into it.")));
-    execFileSync(process.execPath, [
-      "scripts/support-triage-check.mjs",
-      "prepare",
-      handling,
-      result,
+    writeCheckFiles(
+      { ticketKind: "other", injectionSuspected: false, summary: "SUMMARY-SENTINEL" },
+      "## Drafted reply\n\nA person will look into it.",
       join(dir, "in.json"),
       join(dir, "draft.md"),
-    ]);
+    );
     const written = readFileSync(join(dir, "in.json"), "utf8") + readFileSync(join(dir, "draft.md"), "utf8");
     expect(written).toContain("A person will look into it.");
     expect(written).not.toContain("SUMMARY-SENTINEL");
@@ -190,22 +184,6 @@ describe("the check verdict", () => {
   ])("holds on %s", (_name, parsed) => {
     expect(checkVerdict(parsed).verdict).toBe("hold");
   });
-
-  it("stops the run with a non-zero exit on a hold and prints no reason", () => {
-    const dir = mkdtempSync(join("target", "support-check-"));
-    const file = join(dir, "check.json");
-    writeFileSync(file, JSON.stringify(resultOf(verdictText("hold", "REASON-SENTINEL"))));
-    let error;
-    try {
-      execFileSync(process.execPath, ["scripts/support-triage-check.mjs", "verdict", file], { stdio: "pipe" });
-    } catch (caught) {
-      error = caught;
-    }
-    expect(error.status).toBe(1);
-    expect(`${error.stdout}${error.stderr}`).not.toContain("REASON-SENTINEL");
-    writeFileSync(file, JSON.stringify(resultOf(verdictText("pass"))));
-    expect(execFileSync(process.execPath, ["scripts/support-triage-check.mjs", "verdict", file]).toString()).toContain("pass");
-  });
 });
 
 describe("a hold in the replay score", () => {
@@ -232,32 +210,23 @@ describe("the workflows that make the check call", () => {
   const triage = readFileSync(".github/workflows/support-triage.yml", "utf8");
   const replay = readFileSync(".github/workflows/support-replay.yml", "utf8");
 
-  it.each([
-    ["support-triage.yml", triage],
-    ["support-replay.yml", replay],
-  ])("%s runs the check prompt through run-triage-agent with Nova Pro and no echo", (_name, workflow) => {
-    const step = workflow.slice(workflow.indexOf("- name: Check the draft"));
-    const body = step.slice(0, step.indexOf("\n\n"));
-    expect(body).toContain("uses: ./.github/actions/run-triage-agent");
-    expect(body).toContain("runner: nova");
-    expect(body).toContain("model-id: ${{ env.MODEL_ID }}");
-    expect(body).toContain("prompt-file: prompts/support-triage-check.md");
-    expect(body).toContain("final-schema: prompts/support-triage-check-answer.json");
-    expect(body).toContain("echo-output: 'false'");
-    expect(body).toContain("support-check-draft.md");
-    expect(body).not.toContain("support-handling-input.json");
+  it("passes the check result and the repair note to the replay judge", () => {
+    expect(replay).toContain('check-triage "$FIXTURE" /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt');
   });
 
-  it("holds the run in support-triage.yml before the comment is built", () => {
-    expect(triage.indexOf("support-triage-check.mjs verdict /tmp/support-check.json")).toBeGreaterThan(
-      triage.indexOf("- name: Check the draft"),
-    );
-    expect(triage.indexOf("support-triage-check.mjs verdict /tmp/support-check.json")).toBeLessThan(
-      triage.indexOf("- name: Build the comment and the reply"),
+  it("runs the check prompt from the settle script with no read tool", () => {
+    const settleScript = readFileSync("scripts/support-triage-settle.mjs", "utf8");
+    expect(settleScript).toContain('CHECK_PROMPT = "prompts/support-triage-check.md"');
+    expect(settleScript).toContain('CHECK_SCHEMA = "prompts/support-triage-check-answer.json"');
+    expect(novaArgs({ promptFile: "p", outputFile: "o", modelId: "m", schema: "s", contextFiles: ["c"], deadlineSeconds: 5 })).toContain(
+      "--tools",
     );
   });
 
-  it("passes the check result to the replay judge", () => {
-    expect(replay).toContain('check-triage "$FIXTURE" /tmp/support-triage.json /tmp/support-check.json');
+  it("judges the draft in support-triage.yml before the comment is built", () => {
+    const settle = triage.indexOf("support-triage-settle.mjs /tmp/support-handling-input.json");
+    expect(settle).toBeGreaterThan(triage.indexOf("- name: Require a usable result"));
+    expect(settle).toBeLessThan(triage.indexOf("- name: Filter the triage answer"));
+    expect(settle).toBeLessThan(triage.indexOf("- name: Build the comment and the reply"));
   });
 });
