@@ -199,11 +199,11 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 21, failed: 0 });
-    expect(Object.keys(index.items)).toHaveLength(21);
+    expect(result).toEqual({ items: 22, failed: 0 });
+    expect(Object.keys(index.items)).toHaveLength(22);
     expect(index.environment).toBe("ci");
     expect(index.items["ci-lambda-errors"]).toMatchObject({ kind: "image", imageKey: "snapshots/ci/console/ci/ci-lambda-errors.png" });
-    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(18);
+    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(19);
     expect(puts.find((input) => input.Key.endsWith("ci-lambda-errors.png")).ContentType).toBe("image/png");
   });
 
@@ -257,7 +257,7 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 21, failed: 1 });
+    expect(result).toEqual({ items: 22, failed: 1 });
     expect(index.items["ci-lambda-throttles"].error).toBe("AccessDenied: not authorised");
     expect(index.items["ci-lambda-throttles"].imageKey).toBeUndefined();
     expect(index.items["ci-lambda-errors"].imageKey).toBeDefined();
@@ -297,7 +297,7 @@ describe("consoleCapturePublish", () => {
       "arn:aws:iam::283165661847:role/gateway-console-capture-read",
     ]);
     expect(assumed.every((input) => input.ExternalId === "submit-console-capture" && input.DurationSeconds === 900)).toBe(true);
-    expect(result).toEqual({ items: 44, failed: 0 });
+    expect(result).toEqual({ items: 48, failed: 0 });
     const index = indexFrom(puts);
     expect(index.items["spreadsheets-rum-vitals"].imageKey).toBe("snapshots/prod/console/spreadsheets/spreadsheets-rum-vitals.png");
     const siblingClient = constructed.filter((entry) => entry.config.region === "us-east-1");
@@ -331,7 +331,7 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result.failed).toBe(1);
+    expect(result.failed).toBe(2);
     expect(index.items["spreadsheets-rum-vitals"].error).toBe("AccessDenied: not authorized to assume");
     expect(index.items["gateway-rum-vitals"].imageKey).toBeDefined();
     expect(index.items["ci-alarms"].rows).toHaveLength(2);

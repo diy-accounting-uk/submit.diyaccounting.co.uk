@@ -38,17 +38,17 @@ describe("consoleCaptureCatalogue", () => {
     expect(() => targetsForRun("test")).toThrow(/prod and ci only/);
   });
 
-  test("a submit target has 10 analytics, 6 operations metric searches, the RUM pair, alarms, Bedrock and X-Ray", () => {
+  test("a submit target has 10 analytics, 6 operations metric searches, the RUM set, alarms, Bedrock and X-Ray", () => {
     const items = itemsForTarget("prod");
     expect(items.filter((item) => item.group === "analytics")).toHaveLength(10);
     expect(items.filter((item) => item.kind === "metric-search")).toHaveLength(16);
-    expect(items.filter((item) => item.kind === "rum")).toHaveLength(2);
+    expect(items.filter((item) => item.kind === "rum")).toHaveLength(3);
     expect(items.map((item) => item.kind)).toEqual(expect.arrayContaining(["alarms", "bedrock", "service-graph"]));
     expect(items.every((item) => item.id.startsWith("prod-"))).toBe(true);
   });
 
-  test("sibling targets hold one RUM item each, read in us-east-1", () => {
-    expect(itemsForTarget("spreadsheets").map((item) => item.id)).toEqual(["spreadsheets-rum-vitals"]);
+  test("sibling targets hold a times graph and a score graph each, read in us-east-1", () => {
+    expect(itemsForTarget("spreadsheets").map((item) => item.id)).toEqual(["spreadsheets-rum-vitals", "spreadsheets-rum-vitals-score"]);
     expect(itemsForTarget("gateway")[0].application).toBe("gateway-web");
     expect(regionForTarget("gateway")).toBe("us-east-1");
     expect(regionForTarget("prod")).toBe("eu-west-2");
@@ -142,6 +142,25 @@ describe("consoleCaptureCatalogue", () => {
     const item = itemsForTarget("ci").find((entry) => entry.slug === "rum-errors");
     const widget = buildMetricWidget(item, "eu-west-2");
     expect(widget.metrics[0]).toEqual(["AWS/RUM", "JsErrorCountPerSession", "application_name", "ci-env-rum", { stat: "Sum" }]);
+  });
+
+  test("web vitals draw milliseconds and the unitless layout shift score on separate graphs at p75", () => {
+    for (const targetKey of ["prod", "spreadsheets", "gateway"]) {
+      const items = itemsForTarget(targetKey);
+      const times = buildMetricWidget(
+        items.find((entry) => entry.slug === "rum-vitals"),
+        "eu-west-2",
+      );
+      const score = buildMetricWidget(
+        items.find((entry) => entry.slug === "rum-vitals-score"),
+        "eu-west-2",
+      );
+      expect(times.metrics.map((metric) => metric[1])).toEqual(["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint"]);
+      expect(score.metrics.map((metric) => metric[1])).toEqual(["WebVitalsCumulativeLayoutShift"]);
+      expect([...times.metrics, ...score.metrics].every((metric) => metric[4].stat === "p75")).toBe(true);
+      expect(times.yAxis.left).toEqual({ min: 0, label: "Milliseconds", showUnits: false });
+      expect(score.yAxis.left).toEqual({ min: 0, label: "Score", showUnits: false });
+    }
   });
 
   test("an unknown target is an error", () => {

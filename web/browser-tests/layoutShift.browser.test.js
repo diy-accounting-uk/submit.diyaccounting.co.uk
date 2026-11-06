@@ -223,6 +223,7 @@ test.describe("Layout shift while data loads on a phone", () => {
     "lambda-duration-rest",
     "lambda-duration-tail",
     "rum-vitals",
+    "rum-vitals-score",
     "rum-errors",
   ];
 

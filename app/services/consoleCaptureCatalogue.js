@@ -128,6 +128,29 @@ function analyticsItems(envName) {
   ].map((item) => ({ ...item, group: "analytics", env: envName }));
 }
 
+// The paint and interaction times are milliseconds and the layout shift is a unitless score near
+// 0.1, so they take two graphs. The 75th percentile is the figure the web vitals thresholds use,
+// and one slow visit does not flatten it as the maximum does.
+function vitalsItems({ title, application }) {
+  const shared = { kind: "rum", application, stat: "p75", period: 3600, start: "-P3D" };
+  return [
+    {
+      ...shared,
+      slug: "rum-vitals",
+      title: title + ", paint and interaction times (p75)",
+      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint"],
+      yAxisLabel: "Milliseconds",
+    },
+    {
+      ...shared,
+      slug: "rum-vitals-score",
+      title: title + ", layout shift score (p75)",
+      metrics: ["WebVitalsCumulativeLayoutShift"],
+      yAxisLabel: "Score",
+    },
+  ];
+}
+
 function operationsItems(envName) {
   const functionTerm = envName + "-env";
   const items = [
@@ -194,16 +217,7 @@ function operationsItems(envName) {
       sortBy: "MAX",
       yAxisLabel: "Count",
     }),
-    {
-      slug: "rum-vitals",
-      title: "Web vitals",
-      kind: "rum",
-      application: envName + "-env-rum",
-      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint", "WebVitalsCumulativeLayoutShift"],
-      stat: "Average",
-      period: 3600,
-      start: "-P3D",
-    },
+    ...vitalsItems({ title: "Web vitals", application: envName + "-env-rum" }),
     {
       slug: "rum-errors",
       title: "JavaScript errors, page views and sessions",
@@ -230,18 +244,11 @@ function operationsItems(envName) {
 function siblingItems(targetKey) {
   const sibling = SIBLING_TARGETS[targetKey];
   return [
-    {
-      slug: "rum-vitals",
-      title: sibling.label + " web vitals",
-      kind: "rum",
-      application: sibling.monitor,
-      metrics: ["WebVitalsLargestContentfulPaint", "WebVitalsInteractionToNextPaint", "WebVitalsCumulativeLayoutShift"],
-      stat: "Average",
-      period: 3600,
-      start: "-P3D",
+    ...vitalsItems({ title: sibling.label + " web vitals", application: sibling.monitor }).map((item) => ({
+      ...item,
       group: "operations",
       env: "prod",
-    },
+    })),
   ];
 }
 
@@ -305,6 +312,7 @@ export function buildMetricWidget(item, region) {
     return {
       ...base,
       metrics: item.metrics.map((metricName) => ["AWS/RUM", metricName, "application_name", item.application, { stat: item.stat }]),
+      yAxis: { left: { min: 0, ...(item.yAxisLabel ? { label: item.yAxisLabel, showUnits: false } : {}) } },
     };
   }
   throw new Error("Not a metric item: " + item.id);

@@ -140,7 +140,11 @@
         ),
       );
       operations.links.push(
-        link(env, "rum", "Web vitals and JavaScript errors", rumUrl(env.region, env.id + "-env-rum"), ["rum-vitals", "rum-errors"]),
+        link(env, "rum", "Web vitals and JavaScript errors", rumUrl(env.region, env.id + "-env-rum"), [
+          "rum-vitals",
+          "rum-vitals-score",
+          "rum-errors",
+        ]),
       );
       operations.links.push(link(env, "alarms", "Alarms", alarmsUrl(env.region, env.id + "-")));
       operations.links.push(
@@ -151,7 +155,7 @@
         SIBLING_RUM.forEach((rum) => {
           operations.links.push({
             id: rum.key + "-rum",
-            captures: [rum.key + "-rum-vitals"],
+            captures: [rum.key + "-rum-vitals", rum.key + "-rum-vitals-score"],
             label: rum.label,
             account: rum.account,
             env: "prod",
