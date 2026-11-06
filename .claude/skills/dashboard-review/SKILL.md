@@ -41,7 +41,10 @@ aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/s
 ```
 
 When the SSO session is expired, print `aws sso login --sso-session diyaccounting` once, and
-take the snapshot from the page instead. Run this in the dashboard tab with the `javascript_tool`:
+take the snapshot from the page instead. Load the dashboard tab and wait until it has finished
+loading. Then run this in the tab with the `javascript_tool`. The stored id token may have
+expired, so the first run can answer 401 while the page refreshes its token. Run the script once
+more after a 401.
 
 ```js
 const t = localStorage.getItem("cognitoIdToken");
@@ -69,7 +72,9 @@ The script returns four things:
 `ci-alarms`, `spreadsheets-rum-vitals`). An entry holds `title`, `kind`, `capturedAt` and one of
 `imageKey` (a graph), `rows` (a table) or `error`. The image bytes are not in the script's
 result. The page loads each one from `/api/v1/operator/console-image?id=<capture id>`, so the
-page pass is the only way to see an image.
+page pass is the only way to see an image. The page is the source of the list of capture items
+and of links. Their counts can differ, because one link can show two items (the two Lambda
+duration graphs are two items). Count nothing from this skill.
 
 **Map the snapshot to the page.** List the snapshot's top-level keys. Set each one against the
 tab and panel that show it, from the table below. Then compare the table with
@@ -116,8 +121,8 @@ For each tab, in order:
 
 1. Click its button. A panel on a tab that is not open is not on screen, so read a tab only while it is open.
 2. Wait for its panels. For the two AWS tabs, wait until every `.console-capture-image` has `naturalWidth > 0`, or has been replaced by a `.console-capture-error` message. The page loads each image after the tab builds.
-3. Take `get_page_text` for the tab.
-4. Take one screenshot for each panel with `save_to_disk: true`. On the AWS tabs, take one screenshot for each `.console-capture-item`, so the caption with the capture time is in the shot.
+3. Read the tab's text with the `javascript_tool`. `get_page_text` returns the first `<article>` only and cuts long text at about 1,500 characters, so it is not used. Run a script that reads the `innerText` of each visible panel by panel id, in chunks, so no result is cut.
+4. Read each capture image on screen, with its caption. Save a screenshot with `save_to_disk: true` only for an item that a finding cites, so the caption with the capture time is in the shot. Saving one for every panel and item is too slow on the two AWS tabs.
 
 The page remembers the chosen tab in local storage, so the pass ends on the main tab to leave the
 page as it began.
@@ -160,9 +165,9 @@ Checks that apply to every review. Each finding names the tab it was read on.
 4. **Money** (main, adoption, affiliates): revenue (gross and net), the marketing budget and its inputs, spend so far, AWS cost against target, commissions (earned, held, payable, paid), cash at bank.
 5. **Funnel** (adoption, main, behaviour): visitors, then day passes, then HMRC connections, then submissions, then paid conversions, each with its trend.
 6. **Alarms** (ops, aws-prod, aws-ci): each open alarm issue set against the panel that should show it (uptime, security, compliance), and against the alarms table of the AWS tabs.
-7. **AWS links** (aws-prod, aws-ci): open one link of each kind in a new tab. A link that lands on an error, an empty console page or the wrong account is a fault. Close each tab after use.
+7. **AWS links** (aws-prod, aws-ci): check each link's host and account id. A link on the wrong host or for the wrong account is a fault. Open a link in a new tab only when the operator is signed in to that console, and close each tab after use. A link that lands on an error or an empty console page is a fault.
 8. **Hidden panels** (each tab, on its own open tab): a panel that stays `hidden` while its tab is open, and whose snapshot field has data, is a fault. A panel on a tab that is not open is not a finding. The `panels` list from the script gives the `hidden` state of each panel; confirm it on the tab while that tab is open.
-9. **Console images** (aws-prod, aws-ci): read each saved screenshot of a capture item with the Read tool, as an image. Judge:
+9. **Console images** (aws-prod, aws-ci): read each capture image on screen. Read a saved screenshot with the Read tool, as an image. Judge:
    - The capture time in the caption against `generatedAt`: a capture older than 26 hours is stale (the capture runs once a day).
    - Lines that cannot be read against the axis: a flat line at the floor of a graph with large peaks, overlapping lines, a legend of unreadable names.
    - An empty graph: no lines, or "No data". Judge whether the source has data, from the matching metric in the snapshot or the alarm list.
@@ -173,6 +178,9 @@ Each finding cites its evidence: the snapshot key path (`objectives[conversion-t
 <!-- review-criteria:end -->
 
 ## 3. Write the report
+
+The session that the operator talks to writes the report file from the findings. A sub-agent that
+runs this skill cannot write the file with its Write tool, so it returns the findings as text.
 
 Write the report to
 `../private.diyaccounting.co.uk/operator/dashboard-reviews/REPORT_DASHBOARD_REVIEW_<YYYY-MM-DD>.md`,
