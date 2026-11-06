@@ -50,7 +50,7 @@ function stubBook({ retention = "resident", latestVersion = 3 } = {}) {
   mockReadMetadata.mockResolvedValue({ metadata: { retention, latestVersion }, metaETag: "meta-etag" });
   mockGetVersion.mockResolvedValue({ bytes: Buffer.from("zip-bytes"), etag: "version-etag" });
   mockReadBookSource.mockResolvedValue({ product: "ltd", book: BOOK, lines: LINES });
-  mockDeriveCompanyBookFigures.mockResolvedValue({ accounts: ACCOUNTS, cashAtBank: 3500.5 });
+  mockDeriveCompanyBookFigures.mockResolvedValue({ accounts: ACCOUNTS, cashAtBank: 3500.5, cashAsOf: "2026-10-31" });
 }
 
 describe("companyBookPull", () => {
@@ -143,6 +143,7 @@ describe("companyBookPull", () => {
     expect(observation.latestETag).toBe("version-etag");
     expect(observation.accounts).toEqual(ACCOUNTS);
     expect(observation.cashAtBank).toBe(3500.5);
+    expect(observation.cashAsOf).toBe("2026-10-31");
 
     expect(result.key).toBe("curated/finance/dt=2026-09-25/company-accounts.json");
     expect(result.latestVersion).toBe(5);

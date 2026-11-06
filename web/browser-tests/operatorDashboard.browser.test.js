@@ -910,10 +910,32 @@ test.describe("Operator Dashboard", () => {
 
     const panel = page.locator("#reservePanel");
     await expect(panel).toBeVisible();
+    await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(0)).toHaveText("Cash at bank, book to 2026-09-07");
     await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(1)).toHaveText("£3,500.50");
     await expect(panel.locator('tr[data-figure-id="reserve-floor"] td').nth(1)).toHaveText("£2,000.00");
     await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("£1,500.50");
     await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "above-floor");
+  });
+
+  test("shows no book date when the cash figure carries none", async ({ page }) => {
+    const undated = {
+      ...FIXTURE_SNAPSHOT,
+      objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+        objective.id === "company-accounts"
+          ? {
+              ...objective,
+              observations: objective.observations.map((observation) =>
+                observation.id === "company-cash-at-bank" ? { ...observation, today: { value: 3500.5 } } : observation,
+              ),
+            }
+          : objective,
+      ),
+    };
+    await setupRoutes(page, { snapshotBody: undated });
+    await loadDashboard(page);
+
+    const label = page.locator('#reservePanel tr[data-figure-id="reserve-cash-at-bank"] td').nth(0);
+    await expect(label).toHaveText("Cash at bank");
   });
 
   test("marks the reserve block when cash at bank is below the floor", async ({ page }) => {

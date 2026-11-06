@@ -463,6 +463,7 @@ function caseFilter(where) {
  * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
  * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
  *
+ * `asOfExpr` replaces the row day in `o<i>_today_as_of` for a latest-reading view.
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
@@ -472,14 +473,14 @@ function caseFilter(where) {
  * finds its newest day with a window function over the one scan of the view, so the query reads
  * the view once however many windows it has.
  *
- * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
+ * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean, asOfExpr?: string}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const latestReading = LATEST_READING_VIEWS.has(view);
   const periodic = isPeriodicDayColumn(dayColumn);
   const newestDayColumns = [];
-  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince }, index) => {
+  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince, asOfExpr }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
@@ -509,7 +510,9 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
       },
     );
     if (latestReading && !periodic) {
-      windowColumns.push(`cast(max(${dayColumn}) FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
+      // asOfExpr names a date the row carries that is more exact than the day the row was written.
+      const asOf = asOfExpr ? `max_by(${asOfExpr}, ${dayColumn})` : `max(${dayColumn})`;
+      windowColumns.push(`cast(${asOf} FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
     }
     // The view's earliest day, whatever the observation's filter: a window that ends on or after
     // it was covered by the source, so an empty window there is a measured zero.
