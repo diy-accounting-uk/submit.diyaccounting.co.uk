@@ -1,18 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// A pass link, or a pass stored before sign-in, goes to the pass page. replace keeps this page out of the history.
-const passForward = (() => {
-  const fromUrl = new URLSearchParams(window.location.search).get("pass");
-  let stored = null;
-  try {
-    stored = sessionStorage.getItem("pendingPass");
-    if (stored) sessionStorage.removeItem("pendingPass");
-  } catch {}
-  if (fromUrl) return "/pass.html" + window.location.search;
-  if (stored) return "/pass.html?pass=" + encodeURIComponent(stored);
-  return null;
-})();
+// A pass link goes to the pass page. replace keeps this page out of the history.
+const passForward = new URLSearchParams(window.location.search).get("pass") ? "/pass.html" + window.location.search : null;
 if (passForward) window.location.replace(passForward);
 
 // --- helpers

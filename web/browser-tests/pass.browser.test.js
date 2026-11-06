@@ -400,6 +400,93 @@ test.describe("pass.html sign-in round trip", () => {
   });
 });
 
+test.describe("pass.html with a next page from an activity page", () => {
+  const NEXT = "/vat-obligations.html?vrn=123456789";
+  const link = (next) => `?pass=${CODE}&next=${encodeURIComponent(next)}`;
+
+  test("a path on this site becomes Continue, and Go to your activities stays a link", async ({ page }) => {
+    const calls = await serveRealSite(page);
+    await open(page, 375, link(NEXT));
+    await expect(page).toHaveURL(`${SITE}/pass.html${link(NEXT)}`);
+    await page.getByRole("button", { name: "Redeem pass" }).click();
+    await expect(heading(page)).toHaveText("Pass redeemed");
+    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Go to your activities" })).toBeVisible();
+    expect(calls.redeem).toBe(1);
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page).toHaveURL(`${SITE}${NEXT}`);
+  });
+
+  test("the page does not leave on its own", async ({ page }) => {
+    await serveRealSite(page);
+    await open(page, 375, link(NEXT));
+    await page.getByRole("button", { name: "Redeem pass" }).click();
+    await expect(heading(page)).toHaveText("Pass redeemed");
+    await page.waitForTimeout(500);
+    expect(new URL(page.url()).pathname).toBe("/pass.html");
+  });
+
+  const REFUSED = [
+    ["another host", "https://evil.example/x"],
+    ["a protocol-relative address", "//evil.example/x"],
+    ["a javascript address", "javascript:alert(1)"],
+    ["a path with a backslash", "/\\evil.example"],
+    ["a relative path", "vat-obligations.html"],
+  ];
+  for (const [label, next] of REFUSED) {
+    test(`next to ${label} is ignored`, async ({ page }) => {
+      await serveRealSite(page);
+      await open(page, 375, link(next));
+      await page.getByRole("button", { name: "Redeem pass" }).click();
+      await expect(heading(page)).toHaveText("Pass redeemed");
+      await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Go to your activities" })).toBeVisible();
+    });
+  }
+
+  test("next survives the sign-in round trip in the stored return address", async ({ page }) => {
+    await serveRealSite(page, { signedIn: false });
+    await open(page, 375, link(NEXT));
+    await page.getByRole("button", { name: "Redeem pass" }).click();
+    await expect(page).toHaveURL(/\/auth\/login\.html/);
+    const stored = await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"));
+    expect(stored).toBe(`/pass.html${link(NEXT)}`);
+    expect(new URLSearchParams(stored.split("?")[1]).get("next")).toBe(NEXT);
+  });
+
+  test("the sign-out from a wrong email returns to the same pass link, signed out", async ({ page }) => {
+    await serveRealSite(page, { redeem: { redeemed: false, reason: "wrong_email" } });
+    // The page seeds a signed-in person on every load; after the sign-out the seed must not apply.
+    await page.addInitScript(() => {
+      if (localStorage.getItem("testSignedOut")) {
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("userInfo");
+      }
+    });
+    // The Cognito logout endpoint sends the browser on to the logout_uri it was given.
+    await page.route("**/test-cognito/logout*", (route) => {
+      const back = new URL(route.request().url()).searchParams.get("logout_uri");
+      return route.fulfill({ status: 200, contentType: "text/html", body: `<script>location.replace(${JSON.stringify(back)})</script>` });
+    });
+    await open(page, 375, link(NEXT));
+    await page.getByRole("button", { name: "Redeem pass" }).click();
+    await page.evaluate(() => localStorage.setItem("testSignedOut", "1"));
+    await page.getByRole("button", { name: "Sign out and use another account" }).click();
+    await expect(page).toHaveURL(`${SITE}/pass.html${link(NEXT)}`);
+    await expect(heading(page)).toHaveText("You have a pass for Resident Pro");
+    await expect(page.getByRole("button", { name: "Redeem pass" })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("passReturnAfterSignOut"))).toBeNull();
+  });
+
+  test("signed-out.html with nothing stored stays put", async ({ page }) => {
+    await serveRealSite(page, { signedIn: false });
+    await page.goto(`${SITE}/auth/signed-out.html`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(300);
+    expect(new URL(page.url()).pathname).toBe("/auth/signed-out.html");
+  });
+});
+
 test.describe("bundles.html with a pass in the link", () => {
   test("forwards to pass.html with the query, and Back does not loop", async ({ page }) => {
     await serveRealSite(page);
@@ -410,19 +497,6 @@ test.describe("bundles.html with a pass in the link", () => {
 
     await page.goBack({ waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(`${SITE}/about.html`);
-  });
-
-  test("a pass stored before sign-in forwards once and is removed", async ({ page }) => {
-    await serveRealSite(page);
-    await page.addInitScript((code) => {
-      if (!sessionStorage.getItem("seeded")) {
-        sessionStorage.setItem("seeded", "1");
-        sessionStorage.setItem("pendingPass", code);
-      }
-    }, CODE);
-    await page.goto(`${SITE}/bundles.html`, { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(`${SITE}/pass.html?pass=${CODE}`);
-    expect(await page.evaluate(() => sessionStorage.getItem("pendingPass"))).toBeNull();
   });
 
   test("the Have a pass form opens pass.html with the typed code", async ({ page }) => {

@@ -3,16 +3,17 @@
 
 // @capability BILL-58 Pass link landing page
 // - **Use when:** a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
-// - **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
+// - **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
 // - **Run:** open `/pass.html?pass=<code>`; `npx playwright test --project=browser-tests web/browser-tests/pass.browser.test.js`
 // - **Entry:** `web/public/pass.page.js`
-// - **Files:** web/public/pass.html, web/public/pass.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
+// - **Files:** web/public/pass.html, web/public/pass.page.js, web/public/widgets/pass-redeemer.js, web/public/auth/signed-out.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
 // - **Keywords:** pass link, pass landing, redeem pass, pass.html, passAddOnReturn, passSummary
 // - **Related:** BILL-08, BILL-10
 // @end-capability
 
 const PASS_RESULTS_KEY = "passResults";
 const ADD_ON_RETURN_KEY = "passAddOnReturn";
+const SIGN_OUT_RETURN_KEY = "passReturnAfterSignOut";
 
 const el = (id) => document.getElementById(id);
 
@@ -83,8 +84,24 @@ const tokensWords = (tokensGranted) => {
   return `${tokensGranted} token${tokensGranted === 1 ? "" : "s"}`;
 };
 
+// A pass link from an activity page carries that page as `next`. Only a path on this site is kept.
+const readNext = () => {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next || next.includes("\\") || typeof window.postLoginRedirectTarget !== "function") return "";
+  return window.postLoginRedirectTarget(next) === next ? next : "";
+};
+
+// The sign-out returns to a fixed address, which forwards here once from this key.
+const signOutAndReturn = () => {
+  try {
+    sessionStorage.setItem(SIGN_OUT_RETURN_KEY, window.location.pathname + window.location.search);
+  } catch {}
+  window.logout?.();
+};
+
 let catalogueBundles = [];
 let currentCode = "";
+let nextPath = "";
 let passCheck = null;
 let firstRender = true;
 
@@ -141,6 +158,8 @@ function render({
     redeemBtn.textContent = redeem.label;
     redeemBtn.disabled = Boolean(redeem.disabled);
     redeemBtn.onclick = redeem.onClick || null;
+    if (redeem.leaves) redeemBtn.removeAttribute("data-activity-start");
+    else redeemBtn.setAttribute("data-activity-start", "bundle");
   }
   el("passHomeLink").hidden = !home;
   el("passBundlesLink").hidden = !bundles;
@@ -182,7 +201,7 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
     render({
       heading: "This pass did not work",
       error: `This pass is for a different email address.${signedInAs}`,
-      redeem: { label: "Sign out and use another account", onClick: () => window.logout?.() },
+      redeem: { label: "Sign out and use another account", onClick: signOutAndReturn },
     });
     return;
   }
@@ -199,6 +218,7 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
 }
 
 function showRedeemed(result) {
+  const goOn = nextPath ? { label: "Continue", leaves: true, onClick: () => window.location.assign(nextPath) } : null;
   const info = bundleInfo(result.bundleId);
   const tokens = tokensWords(info.tokensGranted);
   const endsWords = endDateWords(result.expiry, info.timeout);
@@ -212,6 +232,7 @@ function showRedeemed(result) {
     heading: "Pass redeemed",
     message: sentences.join(" "),
     card: bundleCardEl(info, noteParts),
+    redeem: goOn,
     home: true,
     bundles: true,
   });
@@ -366,6 +387,10 @@ function showEntry() {
 async function start() {
   const params = new URLSearchParams(window.location.search);
   currentCode = (params.get("pass") || "").trim().toLowerCase();
+  nextPath = readNext();
+  try {
+    sessionStorage.removeItem(SIGN_OUT_RETURN_KEY);
+  } catch {}
   if (!currentCode) {
     showEntry();
     return;
