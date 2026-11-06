@@ -2,6 +2,19 @@
 /* Copyright (C) 2006-2026 DIY Accounting Limited */
 
 /* Home: activities by area, the feedback banner and the two proof notes */
+
+/* The subtitle gains the names of the listed filings once the catalogue loads; the header holds
+   the room of the longest text, so the page does not move down when it wraps to more lines. */
+#homeSubtitle {
+  min-height: 2lh;
+}
+
+@media (max-width: 600px) {
+  #homeSubtitle {
+    min-height: 3lh;
+  }
+}
+
 #dynamicActivities {
   margin: var(--space-4) 0;
 }
