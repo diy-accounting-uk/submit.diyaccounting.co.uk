@@ -1615,6 +1615,29 @@ describe("operatorSnapshotPublish", () => {
       }
     });
 
+    test("a ledger view with no rows reads 0 in every window, and an unanswered query stays null", () => {
+      const emptyLedger = {
+        today: null,
+        prev_1: null,
+        last_7: null,
+        last_30: null,
+        prev_30: null,
+        last_90: null,
+        prev_90: null,
+        first_day: null,
+      };
+      const windows = toObservationWindows(emptyLedger, "sum", TODAY, { ledger: true });
+      for (const key of ["today", "previousDay", "last7", "last30", "last90"]) expect(windows[key].value).toBe(0);
+      expect(toObservationWindows(emptyLedger, "sum", TODAY).last30.value).toBeNull();
+      expect(toObservationWindows(undefined, "sum", TODAY, { ledger: true }).last30.value).toBeNull();
+    });
+
+    test("every commission observation is a ledger observation", () => {
+      const commission = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations).filter((o) => o.id.includes("commission"));
+      expect(commission).toHaveLength(7);
+      expect(commission.every((o) => o.ledger === true)).toBe(true);
+    });
+
     test("a monthly figure has no Today or Previous day", () => {
       const windows = toObservationWindows({ last_30: "5", first_day: "2026-01-01" }, "avg", TODAY, { periodic: true });
       expect(windows.today).toEqual({ value: null, notApplicable: true });

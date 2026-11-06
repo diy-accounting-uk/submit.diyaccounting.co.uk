@@ -641,9 +641,14 @@ const ukDayFormat = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London"
 // A window the source covered but that held no rows: a sum is a measured zero; an average has
 // no figure to give but is flagged noEvents so the page says "none" rather than "not measured".
 // A window that ends before the source's first day stays null.
-function readWindow(row, column, aggregation, today) {
+//
+// A ledger view (an observation with `ledger: true`) holds a row for each event, so an answered
+// query that found no rows at all means no event happened and a sum reads 0. A query that failed
+// never reaches this function: its observations publish null.
+function readWindow(row, column, aggregation, today, ledger = false) {
   const value = toNumberOrNull(row?.[column]);
-  if (value !== null || !row?.first_day) return { value };
+  if (value !== null) return { value };
+  if (!row?.first_day) return ledger && row && aggregation === "sum" ? { value: 0 } : { value };
   const windowEnd = new Date(today);
   windowEnd.setUTCDate(windowEnd.getUTCDate() - WINDOW_END_DAYS_BACK[column]);
   const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
@@ -669,18 +674,18 @@ export function toObservationWindows(
   row,
   aggregation,
   today = new Date(),
-  { latestReading = false, periodic = false, monthToDate = false } = {},
+  { latestReading = false, periodic = false, monthToDate = false, ledger = false } = {},
 ) {
-  const current30 = readWindow(row, "last_30", aggregation, today);
-  const previous30 = readWindow(row, "prev_30", aggregation, today);
-  const current90 = readWindow(row, "last_90", aggregation, today);
-  const previous90 = readWindow(row, "prev_90", aggregation, today);
+  const current30 = readWindow(row, "last_30", aggregation, today, ledger);
+  const previous30 = readWindow(row, "prev_30", aggregation, today, ledger);
+  const current90 = readWindow(row, "last_90", aggregation, today, ledger);
+  const previous90 = readWindow(row, "prev_90", aggregation, today, ledger);
   const [last30, prev30, last90, prev90] = [current30, previous30, current90, previous90].map((window) => window.value);
-  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today);
+  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today, ledger);
   const windows = {
     today: periodic ? { value: null, notApplicable: true } : dayWindow,
-    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today),
-    last7: readWindow(row, "last_7", aggregation, today),
+    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today, ledger),
+    last7: readWindow(row, "last_7", aggregation, today, ledger),
     last30: {
       value: last30,
       trend: computeTrend(last30, prev30),
@@ -941,6 +946,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
           latestReading: LATEST_READING_VIEWS.has(observation.view),
           periodic: isPeriodicDayColumn(observation.dayColumn),
           monthToDate: observation.monthToDate === true,
+          ledger: observation.ledger === true,
         }),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
