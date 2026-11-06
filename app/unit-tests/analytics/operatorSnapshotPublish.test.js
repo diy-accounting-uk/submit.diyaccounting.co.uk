@@ -73,6 +73,7 @@ import {
   buildAffiliateGroups,
   FAMILY_AFFILIATE_MEASURES,
   buildWindowedBatchSql,
+  LATEST_READING_VIEWS,
   buildFastWindowBatchSql,
   computeTrend,
   betterDirection,
@@ -253,6 +254,29 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("cast(min(CASE WHEN kind = 'a' THEN day END) AS varchar) AS o2_data_since");
     });
 
+    test("revenue's Today is the sum of today's rows, never the newest day's single row", () => {
+      expect(LATEST_READING_VIEWS.has("v_revenue_daily")).toBe(false);
+      const sql = buildWindowedBatchSql({
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "revenue_gbp", aggregation: "sum" }],
+      });
+      expect(sql).toContain(
+        "sum(CASE WHEN day >= CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date) THEN revenue_gbp END) AS o0_today",
+      );
+      expect(sql).not.toContain("max_by");
+    });
+
+    test("a sum in a whole-day view reads Today as the sum of the newest day's rows", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "billed_cost_usd", aggregation: "sum", where: "service_name LIKE '%Bedrock%'" }],
+      });
+      expect(sql).toContain("sum(billed_cost_usd) FILTER (WHERE day = o0_today_newest_day");
+      expect(sql).not.toContain("max_by(billed_cost_usd, day) FILTER (WHERE day <=");
+    });
+
     test("reads the value on the newest day in each window for a latest aggregation", () => {
       const sql = buildWindowedBatchSql({
         view: "company_accounts",
@@ -311,7 +335,8 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "cost_usd", aggregation: "sum", where: "sub_account_id = '1'" }],
       });
       const ukToday = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
-      expect(sql).toContain(`max_by(cost_usd, day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS o0_today`);
+      expect(sql).toContain(`sum(cost_usd) FILTER (WHERE day = o0_today_newest_day AND (sub_account_id = '1')) AS o0_today`);
+      expect(sql).toContain(`max(CASE WHEN day <= ${ukToday} AND (sub_account_id = '1') THEN day END) OVER () AS o0_today_newest_day`);
       expect(sql).toContain(`cast(max(day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS varchar) AS o0_today_as_of`);
       expect(sql).toContain(
         `sum(CASE WHEN day = date_add('day', -1, ${ukToday}) AND (sub_account_id = '1') THEN cost_usd END) AS o0_prev_1`,
@@ -1939,7 +1964,7 @@ describe("operatorSnapshotPublish", () => {
     });
 
     test("a failing view query answers null for every observation of that view and counts each one", async () => {
-      mockQueriesWithOneFailing("FROM   v_dora_runs_daily", ["10", "5", "30", "20"]);
+      mockQueriesWithOneFailing("v_dora_runs_daily", ["10", "5", "30", "20"]);
 
       const context = {
         envName: "test",

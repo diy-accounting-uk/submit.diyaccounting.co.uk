@@ -403,7 +403,7 @@ const FAST_WINDOW_COLUMNS = [
 ];
 
 // Views whose sources report whole days (the FOCUS cost export, Google Ads, GA4's daily export,
-// Stripe and PayPal reconciliation, the operator effort pulls, security findings, the company
+// the operator effort pulls, security findings, the company
 // book, rolling retention). Their Today is the latest reading, never a count of zero for a day
 // the source has not reported yet; the reading's own day goes in `today_as_of`.
 export const LATEST_READING_VIEWS = new Set([
@@ -412,7 +412,6 @@ export const LATEST_READING_VIEWS = new Set([
   "v_traffic_sources_daily",
   "v_visitors_by_kind_daily",
   "v_visitors_cloudfront_daily",
-  "v_revenue_daily",
   "v_paid_landings_daily",
   "v_ads_cost_daily",
   "v_ads_cost_per_paid_landing_daily",
@@ -490,7 +489,7 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
       ([alias, condition]) => {
         const newestDay = latestReading && alias === "today";
-        if (aggregation === "latest-total") {
+        if (aggregation === "latest-total" || (newestDay && aggregation === "sum")) {
           // The open items counted on the newest day that has a row in the window: a count of
           // open items is a reading, so summing it over the days would count each item once a day.
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
