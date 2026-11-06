@@ -189,29 +189,26 @@ export async function checkPass(code, userEmail, emailHashSecret) {
 export async function redeemPass(code, userEmail, emailHashSecret) {
   const now = new Date().toISOString();
 
-  // Try atomic redeem first (optimistic)
+  // The email check runs before the atomic update so a wrong account spends no use. The
+  // restriction never changes on a stored pass, so the update needs no second check.
+  const stored = await passRepository.getPass(code);
+  if (stored?.restrictedToEmailHash) {
+    if (!emailHashSecret) {
+      await initializeEmailHashSecret();
+    }
+    const emailCheck = await validatePass(stored, now, userEmail, emailHashSecret);
+    if (emailCheck.valid && emailCheck.emailRestricted) {
+      return { valid: false, reason: "email_required", pass: stored };
+    }
+    if (emailCheck.reason === "wrong_email") {
+      return emailCheck;
+    }
+  }
+
   const redeemed = await passRepository.redeemPass(code, now);
 
   if (redeemed) {
     if (isHeldForReview(redeemed)) await markHeld(redeemed);
-
-    // Atomic redeem succeeded, but still need to check email restriction
-    if (redeemed.restrictedToEmailHash) {
-      if (!userEmail) {
-        return { valid: false, reason: "email_required", pass: redeemed };
-      }
-
-      if (!emailHashSecret) {
-        await initializeEmailHashSecret();
-      }
-      const emailHash = await hashEmailForComparison(userEmail, emailHashSecret, redeemed.emailHashSecretVersion);
-
-      if (redeemed.restrictedToEmailHash !== emailHash) {
-        // Email doesn't match - we already incremented useCount, but this is acceptable
-        // because the pass is email-restricted and the wrong person can't use the bundle
-        return { valid: false, reason: "wrong_email", pass: redeemed };
-      }
-    }
 
     return {
       valid: true,

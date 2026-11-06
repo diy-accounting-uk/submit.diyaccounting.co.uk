@@ -471,7 +471,7 @@ describe("passService", () => {
 
     it("redeemPass reports held_for_review when the atomic redeem fails at the limit", async () => {
       redeemPassRepo.mockResolvedValueOnce(null);
-      getPass.mockResolvedValueOnce(heldPass);
+      getPass.mockResolvedValueOnce(heldPass).mockResolvedValueOnce(heldPass).mockResolvedValueOnce(heldPass);
       const result = await redeemPass("code");
       expect(result).toMatchObject({ valid: false, reason: "held_for_review" });
     });
@@ -602,6 +602,50 @@ describe("passService", () => {
       getPass.mockResolvedValue(null);
       expect(await releasePass("c", { raiseBy: 1 })).toBeNull();
       expect(setReviewLimit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("redeemPass on an email-restricted pass", () => {
+    const secret = "test-email-hash-secret-for-unit-tests";
+    const restrictedPass = () => ({
+      pk: "pass#test-code",
+      code: "test-code",
+      bundleId: "invited-guest",
+      validFrom: "2020-01-01T00:00:00.000Z",
+      validUntil: "2099-12-31T23:59:59.000Z",
+      maxUses: 1,
+      useCount: 0,
+      restrictedToEmailHash: hashEmail("invited@example.com", secret),
+      emailHashSecretVersion: "test-v1",
+    });
+
+    it("counts no use and returns wrong_email for another account", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      const result = await redeemPass("test-code", "someone-else@example.com");
+      expect(result).toMatchObject({ valid: false, reason: "wrong_email" });
+      expect(redeemPassRepo).not.toHaveBeenCalled();
+    });
+
+    it("counts no use and returns email_required when no email is given", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      const result = await redeemPass("test-code");
+      expect(result).toMatchObject({ valid: false, reason: "email_required" });
+      expect(redeemPassRepo).not.toHaveBeenCalled();
+    });
+
+    it("counts one use for the invited email", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      redeemPassRepo.mockResolvedValueOnce({ ...restrictedPass(), useCount: 1 });
+      const result = await redeemPass("test-code", "invited@example.com");
+      expect(result).toMatchObject({ valid: true, bundleId: "invited-guest", usesRemaining: 0 });
+      expect(redeemPassRepo).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports an exhausted pass as exhausted for another account", async () => {
+      getPass.mockResolvedValue({ ...restrictedPass(), useCount: 1 });
+      redeemPassRepo.mockResolvedValueOnce(null);
+      const result = await redeemPass("test-code", "someone-else@example.com");
+      expect(result).toMatchObject({ valid: false, reason: "exhausted" });
     });
   });
 });

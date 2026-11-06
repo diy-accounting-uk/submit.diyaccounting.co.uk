@@ -198,6 +198,16 @@ describe("passPost", () => {
     expect(body.reason).toBe("not_found");
   });
 
+  test.each(["wrong_email", "email_required"])("a %s refusal answers 200 and grants nothing", async (reason) => {
+    mockRedeemPass.mockResolvedValue({ valid: false, reason, pass: { passTypeId: "day-guest-pass" } });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({ redeemed: false, reason });
+    expect(mockGrantBundle).not.toHaveBeenCalled();
+  });
+
   test("publishes the pass-redeemed event with the hashed sub, never the raw sub", async () => {
     mockRedeemPass.mockResolvedValue({
       valid: true,
