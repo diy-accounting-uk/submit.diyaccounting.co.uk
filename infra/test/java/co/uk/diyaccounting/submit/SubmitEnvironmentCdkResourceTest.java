@@ -595,9 +595,9 @@ class SubmitEnvironmentCdkResourceTest {
                 .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
                 .toList();
         assertTrue(resolvedInvokeModelResources.containsAll(List.of(
-                "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-5-5",
+                "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
-                "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-5-5",
+                "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0")));
 
         Map<String, Object> listInferenceProfilesStatement = statements.stream()

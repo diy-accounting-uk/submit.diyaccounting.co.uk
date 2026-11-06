@@ -279,7 +279,7 @@ jobs:
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'
           AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-5-5'
+          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
           ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
           CLAUDE_CODE_MAX_OUTPUT_TOKENS: '16384'
           DISABLE_TELEMETRY: '1'
@@ -447,7 +447,7 @@ jobs:
           input-file: ${{ env.OUT_DIR }}/pr-body.md
           format: markdown
           environment-name: ci
-          model-id: 'eu.anthropic.claude-sonnet-5-5'
+          model-id: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
           workflow-name: ${{ github.workflow }}
           run-number: ${{ github.run_number }}
           run-url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
@@ -593,7 +593,7 @@ jobs:
               workflow: "agentic-lib-code", run_id: $run_id, run_url: $run_url, trigger: $trigger,
               environment: "ci",
               issue_number: (if $issue_number == "" then null else ($issue_number | tonumber) end),
-              model_id: "eu.anthropic.claude-sonnet-5-5",
+              model_id: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
               outcome: $outcome, escalated: false,
               redactions: (if $redactions == "" then null else ($redactions | tonumber) end),
               guardrail_action: (if $guardrail_action == "" then null else $guardrail_action end),
