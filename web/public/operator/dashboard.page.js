@@ -744,6 +744,97 @@ function renderIntegrations(snapshot) {
       "Sign in to " + account + " in the AWS console before opening a raw record. The console cannot switch account from a link.";
 }
 
+// ---- Data tab ---------------------------------------------------------------------------------
+
+const DATA_WINDOW_KEYS = ["today", "d1", "d7", "d30", "d90"];
+const NO_FIGURE = "no figure";
+
+// A stored count, or "no figure" for a day the history does not hold. An absent day is never 0.
+function dataCountCell(count) {
+  const cell = document.createElement("td");
+  const known = count !== null && count !== undefined;
+  cell.textContent = known ? numberFormat.format(count) : NO_FIGURE;
+  if (!known) cell.classList.add("data-no-figure");
+  return cell;
+}
+
+function dataTextCell(text) {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  return cell;
+}
+
+function dataTtlText(ttl) {
+  if (!ttl) return NOT_MEASURED;
+  return ttl.enabled ? "On, " + ttl.attribute : "Off";
+}
+
+function renderDataTables(data) {
+  const body = document.getElementById("dataTablesBody");
+  body.innerHTML = "";
+  const rows = data ? data.tables : [];
+  document.getElementById("dataTablesPanel").hidden = false;
+  document.getElementById("dataTablesEmpty").hidden = rows.length > 0;
+  document.getElementById("dataTablesTable").hidden = rows.length === 0;
+  rows.forEach((table) => {
+    const row = document.createElement("tr");
+    row.className = "data-table-row";
+    row.dataset.table = table.name;
+    row.appendChild(dataTextCell(table.name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(table.items[key])));
+    row.appendChild(dataTextCell(dataTtlText(table.ttl)));
+    body.appendChild(row);
+  });
+}
+
+function renderDataSplit(data) {
+  const body = document.getElementById("dataSplitBody");
+  body.innerHTML = "";
+  const rows = data ? data.tables.filter((table) => table.split) : [];
+  document.getElementById("dataSplitPanel").hidden = false;
+  document.getElementById("dataSplitEmpty").hidden = rows.length > 0;
+  document.getElementById("dataSplitTable").hidden = rows.length === 0;
+  rows.forEach((table) => {
+    const row = document.createElement("tr");
+    row.className = "data-split-row";
+    row.dataset.table = table.name;
+    row.appendChild(dataTextCell(table.name));
+    ["customer", "test", "synthetic", "other", "unknown"].forEach((key) => row.appendChild(dataCountCell(table.split[key])));
+    body.appendChild(row);
+  });
+}
+
+function renderDataBuckets(data) {
+  const body = document.getElementById("dataBucketsBody");
+  body.innerHTML = "";
+  const rows = data
+    ? [
+        ...data.buckets.map((bucket) => [bucket.name, bucket.objects]),
+        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count]),
+      ]
+    : [];
+  document.getElementById("dataBucketsPanel").hidden = false;
+  document.getElementById("dataBucketsEmpty").hidden = rows.length > 0;
+  document.getElementById("dataBucketsTable").hidden = rows.length === 0;
+  document.getElementById("dataBooksNote").hidden = !(data && data.booksTruncated);
+  rows.forEach(([name, figures]) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-row";
+    row.dataset.name = name;
+    row.appendChild(dataTextCell(name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(figures[key])));
+    body.appendChild(row);
+  });
+}
+
+// A snapshot with no data section shows the empty notes.
+function renderData(snapshot) {
+  const data = snapshot.data || null;
+  renderDataTables(data);
+  renderDataSplit(data);
+  renderDataBuckets(data);
+}
+
 // The operator list. The emails come from the authenticated snapshot only.
 function renderOperators(snapshot) {
   const panel = document.getElementById("operatorsPanel");
@@ -1162,7 +1253,7 @@ document.addEventListener("click", async (event) => {
 // The tabs show the sections whose data-tab names them (a section can name several, separated by
 // spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
 const TAB_STORAGE_KEY = "operatorDashboardTab";
-const TAB_IDS = ["main", "adoption", "behaviour", "integrations", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TAB_IDS = ["main", "adoption", "behaviour", "integrations", "data", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function storedTab() {
   try {
@@ -1234,6 +1325,7 @@ async function initPage() {
     renderActivities(snapshot);
     renderPageVisitors(snapshot);
     renderIntegrations(snapshot);
+    renderData(snapshot);
     window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
     renderOperators(snapshot);

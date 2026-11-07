@@ -46,6 +46,11 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
+const mockBuildDataSection = vi.fn();
+vi.mock("@app/lib/operatorSnapshot/dataSection.js", () => ({
+  buildDataSection: (...args) => mockBuildDataSection(...args),
+}));
+
 const mockLoadOperators = vi.fn();
 vi.mock("@app/lib/operators.js", () => ({
   loadOperators: (...args) => mockLoadOperators(...args),
@@ -215,6 +220,8 @@ describe("operatorSnapshotPublish", () => {
     mockLoadFamilyAffiliateEmails.mockReset();
     mockLoadFamilyAffiliateEmails.mockResolvedValue([]);
     mockGetFamilyAffiliateByEmailKey.mockReset();
+    mockBuildDataSection.mockReset();
+    mockBuildDataSection.mockResolvedValue({ tables: [], buckets: [], books: [] });
 
     process.env.ENVIRONMENT_NAME = "test";
     process.env.ATHENA_WORK_GROUP_NAME = "test-workgroup";
@@ -2566,6 +2573,22 @@ describe("operatorSnapshotPublish", () => {
       await expect(handler()).rejects.toThrow(/1 observation/);
       const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
       expect(JSON.parse(putCalls[0][0].input.Body).costDrivers).toBeUndefined();
+    });
+
+    test("publishes the data section, and a failed data section leaves every other section published", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+      await handler();
+      const publishedBody = () => {
+        const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+        return JSON.parse(putCalls[0][0].input.Body);
+      };
+      expect(publishedBody().data).toEqual({ tables: [], buckets: [], books: [] });
+
+      mockS3Send.mockClear();
+      mockBuildDataSection.mockRejectedValue(new Error("DescribeTable denied"));
+      await expect(handler()).rejects.toThrow(/1 observation/);
+      expect(publishedBody().data).toBeUndefined();
+      expect(publishedBody().objectives).toHaveLength(10);
     });
 
     test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {

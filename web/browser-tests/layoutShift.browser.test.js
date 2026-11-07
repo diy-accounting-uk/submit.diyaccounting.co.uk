@@ -303,13 +303,14 @@ test.describe("Layout shift while data loads on a phone", () => {
     [375, 800],
     [375, 1000],
   ]) {
-    for (const tab of ["main", "aws-prod"]) {
+    for (const tab of ["main", "data", "aws-prod"]) {
       test(`operator/dashboard.html stays under the CLS limit on the ${tab} tab at ${width}x${height}`, async ({ page }) => {
         await page.setViewportSize({ width, height });
         await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: tab } });
         await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
         await expect(page.locator("#dashboardTabs:not(.dashboard-tabs-pending)")).toBeVisible();
         if (tab === "aws-prod") await expect(page.locator("img.console-capture-image").first()).toHaveAttribute("src", /^data:image\/png/);
+        if (tab === "data") await expect(page.locator("#dataTablesBody .data-table-row").first()).toBeVisible();
         await delay(1500);
 
         const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
@@ -321,6 +322,19 @@ test.describe("Layout shift while data loads on a phone", () => {
       });
     }
   }
+
+  test("operator/dashboard.html Data tab shows no figure for an absent day and never 0", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "data" } });
+    await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+    const bundles = page.locator('#dataTablesBody tr[data-table="bundles"] td');
+    await expect(bundles).toHaveText(["bundles", "1,296", "1,290", "1,250", "900", "no figure", "On, ttl"]);
+    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
+    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(5);
+    await expect(page.locator("#chart-data-totals")).toBeHidden();
+    await page.locator('.dashboard-tab[data-tab-id="main"]').click();
+    await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);
+  });
 
   test("operator/dashboard.html draws no block over the line above it at 375 wide", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
