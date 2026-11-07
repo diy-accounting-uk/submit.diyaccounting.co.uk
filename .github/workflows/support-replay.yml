@@ -46,8 +46,8 @@ on:
       reasoning-effort:
         description: 'Nova 2 reasoning effort (maxReasoningEffort): low, medium or high; off leaves reasoning off'
         type: choice
-        options: [off, low, medium, high]
-        default: off
+        options: ['off', low, medium, high]
+        default: 'off'
 
 permissions: {}
 
