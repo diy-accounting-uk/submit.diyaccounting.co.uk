@@ -591,12 +591,15 @@ class SubmitEnvironmentCdkResourceTest {
                 .findFirst()
                 .orElseThrow();
         List<Object> invokeModelResources = (List<Object>) invokeModelStatement.get("Resource");
-        assertEquals(5, invokeModelResources.size());
+        assertEquals(8, invokeModelResources.size());
         List<String> resolvedInvokeModelResources = invokeModelResources.stream()
                 .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
                 .toList();
         assertTrue(resolvedInvokeModelResources.containsAll(List.of(
                 "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
+                "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0",
+                "arn:aws:bedrock:eu-west-2::foundation-model/amazon.titan-embed-text-v2:0",
+                "arn:aws:bedrock:*:111111111111:inference-profile/global.amazon.nova-2-lite-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
