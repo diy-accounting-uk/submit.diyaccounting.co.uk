@@ -68,7 +68,16 @@ describe("data/dynamoDbPassRepository - figures items", () => {
 
   test("putPassFigures keys the item by code and sets no issuer", async () => {
     mockSend.mockResolvedValue({});
-    await putPassFigures({ code: "a", uses: 5, newAccounts: 3, filed: 2, subscribers: 1, paidCharges: 4, lastUsed: "t", computedAt: "u" });
+    await putPassFigures({
+      code: "a",
+      uses: 5,
+      newAccounts: 3,
+      filed: 2,
+      subscribers: 1,
+      paidCharges: 4,
+      lastUsed: "t",
+      computedAt: "2026-11-06T12:00:00.000Z",
+    });
     const item = mockSend.mock.calls[0][0].params.Item;
     expect(item).toEqual({
       pk: "figures#a",
@@ -79,8 +88,27 @@ describe("data/dynamoDbPassRepository - figures items", () => {
       subscribers: 1,
       paidCharges: 4,
       lastUsed: "t",
-      computedAt: "u",
+      computedAt: "2026-11-06T12:00:00.000Z",
+      ttl: expect.any(Number),
+      ttl_datestamp: expect.any(String),
     });
     expect(item.issuedBy).toBeUndefined();
+  });
+
+  test("putPassFigures sets the ttl 13 months after the computed time", async () => {
+    mockSend.mockResolvedValue({});
+    await putPassFigures({
+      code: "a",
+      uses: 1,
+      newAccounts: 0,
+      filed: 0,
+      subscribers: 0,
+      paidCharges: 0,
+      lastUsed: null,
+      computedAt: "2026-01-31T00:00:00.000Z",
+    });
+    const item = mockSend.mock.calls[0][0].params.Item;
+    expect(item.ttl_datestamp.slice(0, 10)).toBe("2027-03-03");
+    expect(item.ttl).toBe(Math.floor(new Date(item.ttl_datestamp).getTime() / 1000));
   });
 });

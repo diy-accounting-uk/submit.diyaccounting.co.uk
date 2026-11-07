@@ -77,6 +77,45 @@ describe("data/dynamoDbReceiptRepository", () => {
     });
   });
 
+  describe("putReceipt ttl", () => {
+    const SEVEN_YEARS_SECONDS = 2555 * 86400;
+    const TWO_DAYS_SECONDS = 2 * 86400;
+    const ttlSpan = () => {
+      const item = mockPutCommand.mock.calls[0][0].Item;
+      return item.ttl - Math.floor(new Date(item.createdAt).getTime() / 1000);
+    };
+
+    test("a customer filing keeps the 7-year ttl", async () => {
+      await putReceipt("real-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer", undefined, false);
+
+      expect(ttlSpan()).toBe(SEVEN_YEARS_SECONDS);
+    });
+
+    test("a customer filing in a sandbox flow keeps the 7-year ttl", async () => {
+      await putReceipt("real-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer", undefined, true);
+
+      expect(ttlSpan()).toBe(SEVEN_YEARS_SECONDS);
+    });
+
+    test.each(["test-user", "probe"])("a %s filing in a synthetic flow gets a 2-day ttl", async (actor) => {
+      await putReceipt("test-sub", "receipt-1", { formBundleNumber: "FB1" }, actor, undefined, true);
+
+      expect(ttlSpan()).toBe(TWO_DAYS_SECONDS);
+    });
+
+    test("a test actor filing that is not marked synthetic keeps the 7-year ttl", async () => {
+      await putReceipt("test-sub", "receipt-1", { formBundleNumber: "FB1" }, "test-user");
+
+      expect(ttlSpan()).toBe(SEVEN_YEARS_SECONDS);
+    });
+
+    test.each([undefined, null, "", "system", "operator"])("an actor of %s keeps the 7-year ttl", async (actor) => {
+      await putReceipt("unknown-sub", "receipt-1", { formBundleNumber: "FB1" }, actor, undefined, true);
+
+      expect(ttlSpan()).toBe(SEVEN_YEARS_SECONDS);
+    });
+  });
+
   describe("listUserReceipts", () => {
     const items = [
       { hashedSub: "hashed-practice-sub", receiptId: "2026-01-01T00:00:00.000Z-FB1", createdAt: "2026-01-01T00:00:00.000Z" },

@@ -42,7 +42,7 @@ describe("recordFiledReceipt", () => {
 
   test("stores the receipt with the same arguments, then requests the email", async () => {
     await recordFiledReceipt(filing);
-    expect(mockPutReceipt).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1");
+    expect(mockPutReceipt).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1", true);
     expect(calls).toEqual(["putReceipt", "requestCustomerEmail"]);
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
       kind: "submission-receipt",

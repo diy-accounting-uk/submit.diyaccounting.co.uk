@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Clears old test records out of one environment's customer tables (scripts/data-clearout.js).
+# Dispatch-only. plan exports the tables and writes the plan to the results bucket. It writes no
+# table and no Stripe object, and it prints counts only, because this log is public.
+# apply needs the run id of a plan. On prod it also needs the confirmation value that the plan
+# prints. It deletes by key with a condition, so a row that changed since the export stays.
+# This workflow shares the concurrency group of salt-rotate.yml, because both write these tables.
+
+name: data clearout
+run-name: "data clearout (${{ inputs.mode }}) ${{ inputs.environment-name }} from ${{ github.ref_name }}"
+
+concurrency:
+  group: salt-rotate-${{ inputs.environment-name }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        description: 'Environment'
+        type: choice
+        required: true
+        default: 'ci'
+        options:
+          - 'ci'
+          - 'prod'
+      mode:
+        description: 'plan writes no table; apply deletes the rows that its plan counted'
+        type: choice
+        required: true
+        default: 'plan'
+        options:
+          - 'plan'
+          - 'apply'
+      plan-run-id:
+        description: 'apply only: the run id of the plan run'
+        type: string
+        required: false
+        default: ''
+      confirmation:
+        description: 'apply on prod only: the value that the plan run prints'
+        type: string
+        required: false
+        default: ''
+
+env:
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  clearout:
+    name: ${{ inputs.mode }} (${{ inputs.environment-name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    environment: ${{ inputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Look up the Cognito user pool
+        id: lookup-resources
+        uses: ./.github/actions/lookup-resources
+        with:
+          environment-name: ${{ inputs.environment-name }}
+
+      - name: Run the clear-out
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          COGNITO_USER_POOL_ID: ${{ steps.lookup-resources.outputs.cognito-user-pool-id }}
+          MODE: ${{ inputs.mode }}
+          PLAN_RUN_ID: ${{ inputs.plan-run-id }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -o pipefail
+          node scripts/data-clearout.js --mode "$MODE" --plan-run-id "$PLAN_RUN_ID" --confirmation "$CONFIRMATION" 2>&1 | tee data-clearout.log
+
+      - name: Generate step summary
+        if: always()
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          {
+            echo "# Data clear-out, $ENVIRONMENT_NAME ($MODE)"
+            echo '```'
+            cat data-clearout.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

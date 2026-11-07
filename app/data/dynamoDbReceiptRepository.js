@@ -6,7 +6,7 @@
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
-import { calculateHmrcTaxRecordTtl } from "../lib/dateUtils.js";
+import { receiptRetention } from "../lib/recordRetention.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
 
@@ -19,8 +19,10 @@ const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" })
  *   so real filings can be counted apart from CI and behaviour-test submissions
  * @param {string} [clientId] - The practice's client id when the filing was client-scoped;
  *   omitted for the practice's own filings, so existing receipts with no client id stay readable
+ * @param {boolean} [synthetic] - True when a test or sandbox flow caused the filing. A receipt gets a short
+ *   ttl only when this is true and the actor is "test-user" or "probe"; every other receipt keeps 7 years
  */
-export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
+export async function putReceipt(userSub, receiptId, receipt, actor, clientId, synthetic) {
   logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -40,8 +42,8 @@ export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
       createdAt: now.toISOString(),
     };
 
-    // Calculate TTL as 7 years (2555 days) after creation for HMRC tax record requirements
-    const { ttl, ttl_datestamp } = calculateHmrcTaxRecordTtl(now);
+    // TTL is 7 years (2555 days) after creation for HMRC tax record requirements, unless a test actor filed it
+    const { ttl, ttl_datestamp } = receiptRetention({ actor, synthetic }, now);
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 

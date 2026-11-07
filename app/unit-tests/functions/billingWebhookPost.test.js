@@ -946,7 +946,60 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
       status: "canceled",
       canceledAt: new Date(1_700_000_000 * 1000).toISOString(),
+      ttl: 1_700_000_000 + 180 * 86400,
+      ttl_datestamp: new Date((1_700_000_000 + 180 * 86400) * 1000).toISOString(),
     });
+  });
+
+  test("customer.subscription.deleted of a test-mode subscription sets a ttl 2 days from now", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+    const payload = { ...buildSubscriptionDeletedPayload(), livemode: false };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+    const before = Math.floor(Date.now() / 1000);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const updates = mockUpdateSubscription.mock.calls[0][1];
+    expect(updates.ttl).toBeGreaterThanOrEqual(before + 2 * 86400);
+    expect(updates.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+  });
+
+  test("a live-mode checkout writes a subscription row with livemode true and no ttl, whatever the actor", async () => {
+    const payload = { ...buildCheckoutSessionPayload({ customer_email: "someone@test.diyaccounting.co.uk" }), livemode: true };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.actor).toBe("test-user");
+    expect(subRecord.livemode).toBe(true);
+    expect(subRecord.ttl).toBeUndefined();
+    expect(subRecord.ttl_datestamp).toBeUndefined();
+  });
+
+  test("a checkout with no actor proof and no mode flag writes a row with no ttl", async () => {
+    const payload = buildCheckoutSessionPayload({ customer_email: "" });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.ttl).toBeUndefined();
+  });
+
+  test("a test-mode checkout writes a subscription row with livemode false and a ttl 2 days from now", async () => {
+    const payload = { ...buildCheckoutSessionPayload(), livemode: false };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+    const before = Math.floor(Date.now() / 1000);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.livemode).toBe(false);
+    expect(subRecord.ttl).toBeGreaterThanOrEqual(before + 2 * 86400);
+    expect(subRecord.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+    expect(subRecord.ttl_datestamp).toBe(new Date(subRecord.ttl * 1000).toISOString());
   });
 
   function buildSubscriptionDeletedPayload(subscriptionId = "sub_test_456") {

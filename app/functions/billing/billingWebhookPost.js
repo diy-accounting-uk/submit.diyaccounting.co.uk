@@ -42,6 +42,7 @@ import { bundleIdsIncluding } from "../../../web/public/lib/services/catalogue-a
 import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
+import { subscriptionRetention, endedSubscriptionRetention } from "../../lib/recordRetention.js";
 import { warmOperators } from "../../lib/operators.js";
 import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
@@ -344,7 +345,8 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   // Store subscription record for audit trail
   if (subscriptionId) {
-    await putSubscription({
+    const now = new Date();
+    const subscriptionRecord = {
       pk: `stripe#${subscriptionId}`,
       hashedSub,
       stripeCustomerId: customerId || null,
@@ -353,9 +355,17 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
       currentPeriodStart,
       currentPeriodEnd,
       canceledAt: null,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
       actor,
-    });
+      livemode: test !== true,
+    };
+    // Only a test-mode event proves a test row; a live-mode row never gets a ttl here.
+    const retention = subscriptionRetention({ test }, now);
+    if (retention) {
+      subscriptionRecord.ttl = retention.ttl;
+      subscriptionRecord.ttl_datestamp = retention.ttl_datestamp;
+    }
+    await putSubscription(subscriptionRecord);
     logger.info({ message: "Subscription record stored", subscriptionId, hashedSub });
   }
 
@@ -634,9 +644,13 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
   );
 
   // Update subscription record
+  const endedAt = new Date(subscription.ended_at * 1000);
+  const retention = endedSubscriptionRetention({ test }, endedAt, new Date());
   await updateSubscription(`stripe#${subscription.id}`, {
     status: "canceled",
-    canceledAt: new Date(subscription.ended_at * 1000).toISOString(),
+    canceledAt: endedAt.toISOString(),
+    ttl: retention.ttl,
+    ttl_datestamp: retention.ttl_datestamp,
   });
 
   if (diyaGlPersonalBundleIds().includes(bundleId)) {

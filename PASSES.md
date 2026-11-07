@@ -149,6 +149,20 @@ A signed-in user with a bundle that holds the activity opens `passes/generate-di
 
 A referral pass adds two refusals on `POST /api/v1/pass`: `own_pass` (403, the issuer cannot redeem it) and `referral_already_used` (409, an account redeems one referral pass, ever).
 
+## Retention
+
+A pass row in the passes table carries a `ttl`. DynamoDB deletes the row after that time.
+
+| Pass | Row `ttl` |
+| --- | --- |
+| Made by a test or a probe | 2 days after creation |
+| Has a `validUntil` | 30 days after `validUntil` |
+| Has no end date | None until `maxUses` is reached, then 30 days after the last use |
+
+A pass whose row has gone answers `not_found`, not `expired`. The `referral#`, `redemption#`, `affiliate#` and `family#` rows have no `ttl`, because the commission ledger reads them.
+
+Erasure of an account (`scripts/delete-user-data.js`) deletes the account's subscription rows, activity charges and practice clients, and moves its receipts to an anonymised copy.
+
 ## Referrals and affiliates
 
 ### How a pass links a referrer to a redeemer

@@ -165,6 +165,7 @@ async function main() {
       restrictedToEmail: args.email || undefined,
       createdBy: `local-script#${process.env.USER || "unknown"}`,
       notes: args.notes || undefined,
+      actor: passType.test ? "test-user" : "operator",
       ...(passType.test ? { testPass: true } : {}),
     });
     results.push(pass);

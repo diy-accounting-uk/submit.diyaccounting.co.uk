@@ -70,6 +70,7 @@ async function main() {
       restrictedToEmail: email || undefined,
       createdBy,
       notes: notes || undefined,
+      actor: testPass ? "test-user" : "operator",
       ...(testPass ? { testPass: true } : {}),
     });
 
