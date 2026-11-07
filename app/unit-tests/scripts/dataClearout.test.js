@@ -229,6 +229,19 @@ describe("delete rules name their proof", () => {
   });
 });
 
+describe("an expired bundle that no Stripe record stands behind", () => {
+  test("goes, even for a real account", () => {
+    expect(classifyBundle(testBundle({ hashedSub: CUSTOMER_HASH, qualifiers: undefined }), facts, NOW)).toEqual({
+      action: "delete",
+      rule: "expired-no-stripe-owner",
+    });
+  });
+
+  test("stays while its owner filed a return", () => {
+    expect(classifyBundle(testBundle({ hashedSub: FILER_HASH, qualifiers: undefined }), facts, NOW).action).toBe("keep");
+  });
+});
+
 describe("an unknown or empty actor is never proof", () => {
   test.each([undefined, null, "", "system", "someone-else"])("actor %s", (actor) => {
     expect(classifyPass(realPass({ actor }), facts, NOW)).toEqual({ action: "keep", rule: "no-proof" });
@@ -236,7 +249,10 @@ describe("an unknown or empty actor is never proof", () => {
       action: "keep",
       rule: "no-proof",
     });
-    expect(classifyBundle(testBundle({ qualifiers: undefined, actor }), facts, NOW)).toEqual({ action: "keep", rule: "no-proof" });
+    expect(classifyBundle(testBundle({ qualifiers: undefined, actor, stripeCustomerId: "cus_unknown" }), facts, NOW)).toEqual({
+      action: "keep",
+      rule: "no-proof",
+    });
     expect(classifyReceipt(testReceipt({ actor }), facts, NOW)).toEqual({ action: "keep", rule: "no-proof" });
   });
 
@@ -329,7 +345,7 @@ describe("keep rules, each on a row that has a delete proof, so keep wins", () =
     ["its owner has a live subscription", { hashedSub: LIVE_OWNER_HASH }, "live-stripe-owner"],
     ["its owner filed a return", { hashedSub: FILER_HASH }, "filed-return-owner"],
     ["its owner earns commission", { hashedSub: COMMISSION_HASH }, "commission-owner"],
-    ["its owner is a customer", { hashedSub: CUSTOMER_HASH }, "real-account"],
+    ["its owner is a customer and it has a Stripe id", { hashedSub: CUSTOMER_HASH, stripeCustomerId: "cus_unknown" }, "real-account"],
   ])("a test bundle stays when %s", (_name, overrides, rule) => {
     expect(classifyBundle(testBundle(overrides), facts, NOW)).toEqual({ action: "keep", rule });
   });

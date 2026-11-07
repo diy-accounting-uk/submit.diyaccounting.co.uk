@@ -209,10 +209,13 @@ export function classifyBundle(row, facts, now) {
   if (expiry >= Date.parse(now)) return { action: "keep", rule: "in-date" };
   const keepRule =
     stripeKeepRule(row.stripeSubscriptionId, row.stripeCustomerId, facts) ?? realActorRule(row) ?? ownerKeepRule(row.hashedSub, facts);
-  if (keepRule) return { action: "keep", rule: keepRule };
   const proof = bundleProof(row, facts);
-  if (!proof) return { action: "keep", rule: "no-proof" };
-  return { action: "delete", rule: proof };
+  if (keepRule && !(keepRule === "real-account" && !row.stripeSubscriptionId && !row.stripeCustomerId))
+    return { action: "keep", rule: keepRule };
+  if (proof) return { action: "delete", rule: proof };
+  // An expired entitlement that no Stripe record stands behind grants nothing, so the row has no reason to stay.
+  if (!row.stripeSubscriptionId && !row.stripeCustomerId) return { action: "delete", rule: "expired-no-stripe-owner" };
+  return { action: "keep", rule: "no-proof" };
 }
 
 export function classifyReceipt(row, facts, now) {
