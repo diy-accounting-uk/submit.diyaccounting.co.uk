@@ -183,10 +183,16 @@ One sandbox application serves ci, prod and the local proxy. It fills `HMRC_SAND
 One test key fills `STRIPE_TEST_SECRET_KEY` (ci, prod) and `STRIPE_SECRET_KEY` (ci). The old key
 works for the expiry you choose, up to 7 days, and then ends by itself.
 
-1. operator: open https://dashboard.stripe.com/test/apikeys, roll the secret key, and set the old
-   key to expire in 7 days.
-2. operator: Set `STRIPE_TEST_SECRET_KEY` ci, `STRIPE_SECRET_KEY` ci, then
-   `STRIPE_TEST_SECRET_KEY` prod.
+Warning: the test keys and test webhooks live in the sandbox "DIY Accounting Limited sandbox"
+(`acct_1SyN31FdFHdRoTOj`), not in the main account's test mode. A key from the main account's test
+mode passes the store's assert, but it holds no prices or webhooks, so ci checkout breaks.
+
+1. operator: in the Stripe dashboard's account menu, switch to "DIY Accounting Limited sandbox".
+   Open its API keys page, roll the secret key, and set the old key to expire in 7 days.
+2. machine: before the operator pastes anything, check the new key's account. The operator
+   copies the key, and the session reads only the account id behind it.
+3. operator: Set `STRIPE_TEST_SECRET_KEY` ci, `STRIPE_SECRET_KEY` ci, then
+   `STRIPE_TEST_SECRET_KEY` prod, in the operator's own terminal.
 3. machine after go: Store `stripe/test_secret_key` ci, `stripe/secret_key` ci, then
    `stripe/test_secret_key` prod. Each runs `infra/stripe/stripe-sync.js` as a plan.
 4. machine after go: proof. Run `probe-test.yml` as in 3.3 step 5 with
@@ -202,8 +208,8 @@ of the order, after 3.7). Both secrets sign each event for up to 24 hours.
 Warning: finish steps 2 to 4 inside 24 hours. After that, a reader with the old secret refuses
 events with a 400.
 
-1. operator: open https://dashboard.stripe.com/webhooks (test mode for a test endpoint), select the
-   endpoint, roll its signing secret, and delay the old secret's expiry by 24 hours.
+1. operator: open the webhooks page (for a test endpoint, in the sandbox "DIY Accounting Limited
+   sandbox"), select the endpoint, roll its signing secret, and delay the old secret's expiry by 24 hours.
 2. operator: Set the GitHub secret of that endpoint for its environment.
 3. machine after go: Store `stripe/test_webhook_secret` (or `stripe/webhook_secret` for live) for
    that environment.
