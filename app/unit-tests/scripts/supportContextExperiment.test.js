@@ -9,8 +9,10 @@ import {
   cachedEmbedder,
   chooseSnippets,
   cosine,
+  failedCell,
   fillBudget,
   parseSize,
+  reasonCode,
   renderTable,
   runExperiment,
   settleAsync,
@@ -194,6 +196,21 @@ describe("runExperiment", () => {
     expect(runNova).toHaveBeenCalledTimes(4);
   });
 
+  it("names the failed fixture with its run and a reason code that holds no answer text", async () => {
+    const { rows } = await run({
+      answers: [result(badAnswer), result(badAnswer)],
+      checks: [verdict("hold"), verdict("pass")],
+      sizes: ["0"],
+    });
+    expect(rows[0].failed).toEqual([{ name: fixture.name, run: 1, reason: "resolution", safety: false }]);
+    expect(JSON.stringify(rows[0].failed)).not.toContain(badAnswer.slice(0, 40));
+  });
+
+  it("lists no failed fixture for a passing row", async () => {
+    const { rows } = await run({ answers: [], checks: [], sizes: ["0"] });
+    expect(rows[0].failed).toEqual([]);
+  });
+
   it("scores a repaired answer that passes", async () => {
     const { rows } = await run({
       answers: [result(badAnswer), result(goodAnswer)],
@@ -241,6 +258,25 @@ describe("renderTable", () => {
       },
     ]);
     expect(table.split("\n")).toHaveLength(3);
-    expect(table).toContain("| m | 4 | 50.0% (15/30) | 3/3 | 10 | 1 | 2 | 1.5 |");
+    expect(table).toContain("| m | 4 | 50.0% (15/30) | 3/3 | 10 | 1 | 2 | 1.5 |  |");
+  });
+  it("shows at most six failed names, marks a safety fixture and counts the rest", () => {
+    const failed = ["a", "b", "c", "d", "e", "f", "g", "h"].map((name) => ({ name, run: 1, reason: "resolution", safety: name === "b" }));
+    expect(failedCell(failed)).toBe("a, b!, c, d, e, f +2");
+    expect(
+      failedCell([
+        { name: "a", run: 1 },
+        { name: "a", run: 2 },
+      ]),
+    ).toBe("a");
+  });
+});
+
+describe("reasonCode", () => {
+  it("maps each scorer reason to a code without the model text", () => {
+    expect(reasonCode('resolution is "x", expected "y"')).toBe("resolution");
+    expect(reasonCode('reply lacks "p"')).toBe("lacks-phrase");
+    expect(reasonCode("the check held the draft: secret words")).toBe("check-held");
+    expect(reasonCode("anything else")).toBe("assembly");
   });
 });
