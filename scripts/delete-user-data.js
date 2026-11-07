@@ -4,10 +4,10 @@
 
 // @capability OPS-40 Delete a customer's data for GDPR erasure
 // - **Use when:** a customer has exercised their GDPR right to erasure.
-// - **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. delete-user-data-by-email.yml resolves an email to its hashed subject through an Athena lookup first; delete-user-data.yml deletes directly by hashed subject. confirm=false runs a dry run.
+// - **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. It reads the ids of the customer's subscription rows from the analytics lake, because the subscriptions table has no hashed-sub key. delete-user-data-by-email.yml resolves an email to its hashed subject through an Athena lookup first; delete-user-data.yml deletes directly by hashed subject. confirm=false runs a dry run.
 // - **Run:** `gh workflow run delete-user-data-by-email.yml -f email=<email> -f environment-name=<ci|prod> -f confirm=<true|false>`; `gh workflow run delete-user-data.yml -f hashed-sub=<hash> -f environment-name=<ci|prod> -f confirm=<true|false>`
 // - **Entry:** `scripts/delete-user-data.js:main`
-// - **Files:** .github/workflows/delete-user-data-by-email.yml, .github/workflows/delete-user-data.yml, scripts/delete-user-data.js
+// - **Files:** .github/workflows/delete-user-data-by-email.yml, .github/workflows/delete-user-data.yml, scripts/delete-user-data.js, app/unit-tests/scripts/deleteUserData.test.js
 // - **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, athena lookup, dry run
 // - **Related:** OPS-41, OPS-49
 // @end-capability
@@ -15,8 +15,10 @@
 /**
  * Delete user data (GDPR Right to Erasure / "Right to be Forgotten")
  *
- * Queries all 8 DynamoDB tables (`<environment-name>-env-<table>`) by hashedSub partition
- * key (not scan). HMRC receipts are anonymized (not deleted) for 7-year legal retention.
+ * Queries each customer DynamoDB table (`<environment-name>-env-<table>`) by hashedSub partition
+ * key (never a scan). HMRC receipts are anonymized (not deleted) for 7-year legal retention.
+ * The subscriptions table has no hashedSub key. The ids of the subscription rows come from the
+ * analytics lake, and each row is deleted by its key.
  *
  * Usage:
  *   node scripts/delete-user-data.js <environment-name> --user-sub <sub> [--confirm]
@@ -24,6 +26,7 @@
  *
  * Options:
  *   --user-sub <sub>       User sub (will be hashed with all salt versions)
+ *   --test-user-purge      Skip the lake read of subscription ids; for a durable test user
  *   --hashed-sub <hash>    Pre-computed hashed sub (skip salt computation)
  *   --confirm              Execute deletion (default: dry-run)
  *   --json                 Output structured JSON summary
@@ -35,7 +38,14 @@
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, DeleteCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { pathToFileURL } from "node:url";
+
+const ANONYMIZED_PARTITION = "DELETED";
+const RECEIPT_PERSONAL_FIELDS = ["email", "userName", "address"];
+const HASHED_SUB_PATTERN = /^[A-Za-z0-9_-]+$/;
+const ATHENA_POLL_MS = 2000;
+const ATHENA_TIMEOUT_MS = 5 * 60 * 1000;
 
 // Create DynamoDB Document Client
 function makeDocClient(region) {
@@ -88,34 +98,18 @@ async function deleteItems(docClient, tableName, items, sortKeyAttribute) {
 }
 
 /**
- * Anonymize receipt items — replace hashedSub with 'DELETED', strip PII fields,
- * keep transaction metadata for 7-year legal compliance.
+ * Anonymize receipt items. For each receipt, write a copy under the DELETED partition without
+ * the personal fields, then delete the original. A failed write stops the delete of that
+ * receipt, so a receipt is never lost without its anonymised copy.
  */
-async function anonymizeReceipts(docClient, tableName, items) {
+export async function anonymizeReceipts(docClient, tableName, items) {
   let anonymized = 0;
   for (const item of items) {
-    await docClient.send(
-      new UpdateCommand({
-        TableName: tableName,
-        Key: {
-          hashedSub: item.hashedSub,
-          receiptId: item.receiptId,
-        },
-        UpdateExpression: "SET #hs = :deleted, anonymizedAt = :now REMOVE #email, #name, #addr",
-        ExpressionAttributeNames: {
-          "#hs": "originalHashedSub",
-          "#email": "email",
-          "#name": "userName",
-          "#addr": "address",
-        },
-        ExpressionAttributeValues: {
-          ":deleted": "DELETED",
-          ":now": new Date().toISOString(),
-        },
-      }),
-    );
+    const copy = { ...item, hashedSub: ANONYMIZED_PARTITION, anonymizedAt: new Date().toISOString() };
+    for (const field of RECEIPT_PERSONAL_FIELDS) delete copy[field];
 
-    // Delete and re-create with DELETED partition key to truly decouple from user
+    await docClient.send(new PutCommand({ TableName: tableName, Item: copy }));
+
     await docClient.send(
       new DeleteCommand({
         TableName: tableName,
@@ -132,6 +126,59 @@ async function anonymizeReceipts(docClient, tableName, items) {
 }
 
 /**
+ * Read the subscription ids of the given hashed subs from the analytics lake. The lake keeps the
+ * hashed sub of every subscription row, and the table has no index on it.
+ */
+export async function lookupSubscriptionIdsInLake({ environmentName, hashedSubs }) {
+  for (const hashedSub of hashedSubs) {
+    if (!HASHED_SUB_PATTERN.test(hashedSub)) throw new Error("A hashed sub has a character that the lake query does not accept");
+  }
+  const { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } =
+    await import("@aws-sdk/client-athena");
+  const athena = new AthenaClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const list = hashedSubs.map((hashedSub) => `'${hashedSub}'`).join(", ");
+  const sql = `SELECT subscription_id FROM dynamo_subscriptions WHERE subscription_id IS NOT NULL AND hashed_sub IN (${list})
+UNION SELECT subscription_id FROM aliased_dynamo_subscriptions WHERE subscription_id IS NOT NULL AND hashed_sub IN (${list})`;
+
+  const { QueryExecutionId } = await athena.send(
+    new StartQueryExecutionCommand({
+      QueryString: sql,
+      WorkGroup: `${environmentName}-env-analytics`,
+      QueryExecutionContext: { Database: `${environmentName}_env_analytics` },
+    }),
+  );
+  const deadline = Date.now() + ATHENA_TIMEOUT_MS;
+  for (;;) {
+    const { QueryExecution } = await athena.send(new GetQueryExecutionCommand({ QueryExecutionId }));
+    const state = QueryExecution?.Status?.State;
+    if (state === "SUCCEEDED") break;
+    if (state === "FAILED" || state === "CANCELLED") throw new Error(`The lake query ${state}`);
+    if (Date.now() > deadline) throw new Error("The lake query timed out");
+    await new Promise((resolve) => setTimeout(resolve, ATHENA_POLL_MS));
+  }
+  const ids = [];
+  let token;
+  do {
+    const page = await athena.send(new GetQueryResultsCommand({ QueryExecutionId, NextToken: token }));
+    ids.push(...(page.ResultSet?.Rows ?? []).map((row) => row.Data?.[0]?.VarCharValue));
+    token = page.NextToken;
+  } while (token);
+  return [...new Set(ids.slice(1).filter(Boolean))];
+}
+
+/**
+ * Delete subscription rows by key. The key is `stripe#<subscription id>`.
+ */
+export async function deleteSubscriptions(docClient, tableName, subscriptionIds) {
+  let deleted = 0;
+  for (const subscriptionId of subscriptionIds) {
+    await docClient.send(new DeleteCommand({ TableName: tableName, Key: { pk: `stripe#${subscriptionId}` } }));
+    deleted++;
+  }
+  return deleted;
+}
+
+/**
  * Compute all hashedSub variants for a user sub using multi-version salt.
  */
 async function computeAllHashedSubs(userSub) {
@@ -145,8 +192,8 @@ async function computeAllHashedSubs(userSub) {
   return [...new Set(hashes)]; // deduplicate
 }
 
-// All 8 DynamoDB tables with their sort key attributes
-const TABLE_DEFS = [
+// DynamoDB tables keyed by hashedSub, with their sort key attributes
+export const TABLE_DEFS = [
   { suffix: "bundles", sortKey: "bundleId", action: "delete" },
   { suffix: "receipts", sortKey: "receiptId", action: "anonymize" },
   { suffix: "hmrc-api-requests", sortKey: "id", action: "delete" },
@@ -155,15 +202,22 @@ const TABLE_DEFS = [
   { suffix: "hmrc-vat-return-post-async-requests", sortKey: "requestId", action: "delete" },
   { suffix: "hmrc-vat-return-get-async-requests", sortKey: "requestId", action: "delete" },
   { suffix: "hmrc-vat-obligation-get-async-requests", sortKey: "requestId", action: "delete" },
+  { suffix: "activity-charges", sortKey: "chargeKey", action: "delete" },
+  { suffix: "practice-clients", sortKey: "clientId", action: "delete" },
 ];
 
 /**
  * Main deletion function.
  */
-async function deleteUserData({ environmentName, hashedSubs, confirm = false, jsonOutput = false }) {
-  const region = process.env.AWS_REGION || "eu-west-2";
-  const docClient = makeDocClient(region);
-
+export async function deleteUserData({
+  environmentName,
+  hashedSubs,
+  confirm = false,
+  jsonOutput = false,
+  docClient = makeDocClient(process.env.AWS_REGION || "eu-west-2"),
+  lookupSubscriptionIds = lookupSubscriptionIdsInLake,
+  testUserPurge = false,
+}) {
   const summary = {
     timestamp: new Date().toISOString(),
     environmentName,
@@ -182,7 +236,7 @@ async function deleteUserData({ environmentName, hashedSubs, confirm = false, js
 
   for (const tableDef of TABLE_DEFS) {
     const tableName = `${environmentName}-env-${tableDef.suffix}`;
-    let allItems = [];
+    const allItems = [];
 
     // Query for all hashedSub variants
     for (const hashedSub of hashedSubs) {
@@ -210,6 +264,18 @@ async function deleteUserData({ environmentName, hashedSubs, confirm = false, js
     }
   }
 
+  // A test user's subscription rows expire by their ttl, so a test-user purge needs no lake read.
+  const subscriptionIds = testUserPurge ? [] : await lookupSubscriptionIds({ environmentName, hashedSubs });
+  summary.tables.subscriptions = { found: subscriptionIds.length, action: "delete" };
+  if (!jsonOutput) {
+    console.log(`  subscriptions: ${subscriptionIds.length} item(s) [delete]`);
+  }
+  if (confirm && subscriptionIds.length > 0) {
+    const count = await deleteSubscriptions(docClient, `${environmentName}-env-subscriptions`, subscriptionIds);
+    summary.tables.subscriptions.processed = count;
+    summary.totals.deleted += count;
+  }
+
   if (!jsonOutput) {
     console.log("");
     if (!confirm) {
@@ -230,47 +296,54 @@ async function deleteUserData({ environmentName, hashedSubs, confirm = false, js
 
 // --- CLI ---
 
-const args = process.argv.slice(2);
+function runCli() {
+  const args = process.argv.slice(2);
 
-function getArg(name) {
-  const idx = args.indexOf(name);
-  if (idx !== -1 && args[idx + 1]) return args[idx + 1];
-  return null;
-}
+  function getArg(name) {
+    const idx = args.indexOf(name);
+    if (idx !== -1 && args[idx + 1]) return args[idx + 1];
+    return null;
+  }
 
-const environmentName = args[0];
-const userSub = getArg("--user-sub");
-const hashedSub = getArg("--hashed-sub");
-const confirm = args.includes("--confirm");
-const jsonOutput = args.includes("--json");
+  const environmentName = args[0];
+  const userSub = getArg("--user-sub");
+  const hashedSub = getArg("--hashed-sub");
+  const confirm = args.includes("--confirm");
+  const jsonOutput = args.includes("--json");
+  const testUserPurge = args.includes("--test-user-purge");
 
-if (!environmentName || (!userSub && !hashedSub)) {
-  console.error("Usage:");
-  console.error("  node scripts/delete-user-data.js <environment-name> --user-sub <sub> [--confirm] [--json]");
-  console.error("  node scripts/delete-user-data.js <environment-name> --hashed-sub <hash> [--confirm] [--json]");
-  console.error("");
-  console.error("WARNING: This is a destructive operation. Run export-user-data.js first as backup!");
-  process.exit(1);
-}
-
-process.env.ENVIRONMENT_NAME = environmentName;
-
-(async () => {
-  try {
-    let hashedSubs;
-    if (hashedSub) {
-      hashedSubs = [hashedSub];
-    } else {
-      hashedSubs = await computeAllHashedSubs(userSub);
-      if (!jsonOutput) {
-        console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
-      }
-    }
-
-    await deleteUserData({ environmentName, hashedSubs, confirm, jsonOutput });
-  } catch (error) {
-    console.error(`Deletion failed: ${error.message}`);
-    if (!jsonOutput) console.error(error.stack);
+  if (!environmentName || (!userSub && !hashedSub)) {
+    console.error("Usage:");
+    console.error("  node scripts/delete-user-data.js <environment-name> --user-sub <sub> [--confirm] [--json]");
+    console.error("  node scripts/delete-user-data.js <environment-name> --hashed-sub <hash> [--confirm] [--json]");
+    console.error("");
+    console.error("WARNING: This is a destructive operation. Run export-user-data.js first as backup!");
     process.exit(1);
   }
-})();
+
+  process.env.ENVIRONMENT_NAME = environmentName;
+
+  (async () => {
+    try {
+      let hashedSubs;
+      if (hashedSub) {
+        hashedSubs = [hashedSub];
+      } else {
+        hashedSubs = await computeAllHashedSubs(userSub);
+        if (!jsonOutput) {
+          console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
+        }
+      }
+
+      await deleteUserData({ environmentName, hashedSubs, confirm, jsonOutput, testUserPurge });
+    } catch (error) {
+      console.error(`Deletion failed: ${error.message}`);
+      if (!jsonOutput) console.error(error.stack);
+      process.exit(1);
+    }
+  })();
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCli();
+}

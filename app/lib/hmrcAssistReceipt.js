@@ -14,12 +14,13 @@ const logger = createLogger({ source: "app/lib/hmrcAssistReceipt.js" });
  * read it and put it back with acknowledgedAt.
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - The receipt the report request returned
+ * @param {boolean} synthetic - True when the request used the sandbox account
  */
-export async function acknowledgeReceipt(userSub, receiptId) {
+export async function acknowledgeReceipt(userSub, receiptId, synthetic) {
   const receipt = await getReceipt(userSub, receiptId);
   if (!receipt) {
     logger.warn({ message: "Assist report receipt not found to acknowledge", receiptId });
     return;
   }
-  await putReceipt(userSub, receiptId, { ...receipt, acknowledgedAt: new Date().toISOString() }, resolveActorClass());
+  await putReceipt(userSub, receiptId, { ...receipt, acknowledgedAt: new Date().toISOString() }, resolveActorClass(), undefined, synthetic);
 }

@@ -5,6 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
+import { figuresRetention, lastUseRetention } from "../lib/recordRetention.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbPassRepository.js" });
 
@@ -58,6 +59,32 @@ export async function getPass(code) {
   }
 }
 
+/**
+ * Give a pass with no end date a ttl when this use was its last. A failed write leaves the pass
+ * with no ttl, so the pass is kept and the redemption stands.
+ */
+async function expireAfterLastUse(tableName, pass) {
+  const retention = lastUseRetention(pass, new Date());
+  if (!retention) return;
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: pass.pk },
+          UpdateExpression: "SET #ttl = :ttl, ttl_datestamp = :ttlDatestamp",
+          ConditionExpression: "attribute_exists(pk) AND attribute_not_exists(#ttl)",
+          ExpressionAttributeNames: { "#ttl": "ttl" },
+          ExpressionAttributeValues: { ":ttl": retention.ttl, ":ttlDatestamp": retention.ttl_datestamp },
+        }),
+    );
+    pass.ttl = retention.ttl;
+    pass.ttl_datestamp = retention.ttl_datestamp;
+  } catch (error) {
+    logger.warn({ message: "Pass ttl after last use not stored", pk: pass.pk, error: error.message });
+  }
+}
+
 export async function redeemPass(code, now) {
   logger.info({ message: `redeemPass [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]` });
 
@@ -87,6 +114,7 @@ export async function redeemPass(code, now) {
     );
 
     logger.info({ message: "Pass redeemed in DynamoDB", pk: `pass#${code}` });
+    await expireAfterLastUse(tableName, result.Attributes);
     return result.Attributes;
   } catch (error) {
     if (error.name === "ConditionalCheckFailedException") {
@@ -535,11 +563,12 @@ export async function getPassFigures(codes) {
  */
 export async function putPassFigures({ code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt }) {
   const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const { ttl, ttl_datestamp } = figuresRetention(new Date(computedAt));
   await executeDynamoDbCommand(
     (module) =>
       new module.PutCommand({
         TableName: tableName,
-        Item: { pk: figuresKey(code), code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt },
+        Item: { pk: figuresKey(code), code, uses, newAccounts, filed, subscribers, paidCharges, lastUsed, computedAt, ttl, ttl_datestamp },
       }),
   );
 }

@@ -73,6 +73,12 @@ export const TTL_PRESETS = {
   THIRTY_DAYS: { days: 30 },
   // Outbound API call record: as long as the longest range on the operator dashboard.
   NINETY_DAYS: { days: 90 },
+  // Records that a test or a synthetic caller wrote.
+  TWO_DAYS: { days: 2 },
+  // An ended live subscription row: the early-cancel check and disputes read it.
+  ONE_HUNDRED_EIGHTY_DAYS: { days: 180 },
+  // The figures item of a pass: the issuer's page reads it while the pass lives.
+  THIRTEEN_MONTHS: { months: 13 },
 };
 
 /**
