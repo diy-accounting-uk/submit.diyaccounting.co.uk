@@ -83,11 +83,11 @@ describe("dashboard review code checks", () => {
     expect(run()).toEqual([]);
   });
 
-  test("a snapshot 7 hours old is stale", () => {
-    const found = run({ snapshot: snapshot({ generatedAt: "2026-11-03T03:00:00.000Z" }) });
+  test("a snapshot 8 hours old is stale", () => {
+    const found = run({ snapshot: snapshot({ generatedAt: "2026-11-03T02:00:00.000Z" }) });
     expect(found).toHaveLength(1);
     expect(found[0]).toMatchObject({ check: CODE_CHECK_NUMBERS.freshness, tag: "stale", list: "improvement", source: "code" });
-    expect(found[0].finding).toContain("7 hours");
+    expect(found[0].finding).toContain("8 hours");
   });
 
   test("a missing snapshot is a fault", () => {
