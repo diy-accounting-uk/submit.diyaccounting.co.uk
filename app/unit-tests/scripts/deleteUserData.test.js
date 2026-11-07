@@ -166,4 +166,21 @@ describe("deleteUserData", () => {
     ).rejects.toThrow("The lake query FAILED");
     expect(docClient.sent.some((c) => c instanceof DeleteCommand && c.input.TableName === "ci-env-subscriptions")).toBe(false);
   });
+  test("a test-user purge reads no subscription ids from the lake", async () => {
+    let lookups = 0;
+    const docClient = { send: async () => ({ Items: [] }) };
+    await deleteUserData({
+      environmentName: "ci",
+      hashedSubs: ["a".repeat(64)],
+      confirm: true,
+      jsonOutput: true,
+      docClient,
+      testUserPurge: true,
+      lookupSubscriptionIds: async () => {
+        lookups += 1;
+        return [];
+      },
+    });
+    expect(lookups).toBe(0);
+  });
 });

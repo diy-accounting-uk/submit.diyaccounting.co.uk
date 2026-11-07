@@ -400,7 +400,7 @@ export async function main() {
     if (!userSub) throw new Error(`No sub attribute on ${testEmail}`);
 
     console.log("Purging the user's data from the previous run...");
-    execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", userSub, "--confirm"], {
+    execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", userSub, "--confirm", "--test-user-purge"], {
       stdio: "inherit",
     });
 

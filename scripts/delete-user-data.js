@@ -26,6 +26,7 @@
  *
  * Options:
  *   --user-sub <sub>       User sub (will be hashed with all salt versions)
+ *   --test-user-purge      Skip the lake read of subscription ids; for a durable test user
  *   --hashed-sub <hash>    Pre-computed hashed sub (skip salt computation)
  *   --confirm              Execute deletion (default: dry-run)
  *   --json                 Output structured JSON summary
@@ -215,6 +216,7 @@ export async function deleteUserData({
   jsonOutput = false,
   docClient = makeDocClient(process.env.AWS_REGION || "eu-west-2"),
   lookupSubscriptionIds = lookupSubscriptionIdsInLake,
+  testUserPurge = false,
 }) {
   const summary = {
     timestamp: new Date().toISOString(),
@@ -262,7 +264,8 @@ export async function deleteUserData({
     }
   }
 
-  const subscriptionIds = await lookupSubscriptionIds({ environmentName, hashedSubs });
+  // A test user's subscription rows expire by their ttl, so a test-user purge needs no lake read.
+  const subscriptionIds = testUserPurge ? [] : await lookupSubscriptionIds({ environmentName, hashedSubs });
   summary.tables.subscriptions = { found: subscriptionIds.length, action: "delete" };
   if (!jsonOutput) {
     console.log(`  subscriptions: ${subscriptionIds.length} item(s) [delete]`);
@@ -307,6 +310,7 @@ function runCli() {
   const hashedSub = getArg("--hashed-sub");
   const confirm = args.includes("--confirm");
   const jsonOutput = args.includes("--json");
+  const testUserPurge = args.includes("--test-user-purge");
 
   if (!environmentName || (!userSub && !hashedSub)) {
     console.error("Usage:");
@@ -331,7 +335,7 @@ function runCli() {
         }
       }
 
-      await deleteUserData({ environmentName, hashedSubs, confirm, jsonOutput });
+      await deleteUserData({ environmentName, hashedSubs, confirm, jsonOutput, testUserPurge });
     } catch (error) {
       console.error(`Deletion failed: ${error.message}`);
       if (!jsonOutput) console.error(error.stack);

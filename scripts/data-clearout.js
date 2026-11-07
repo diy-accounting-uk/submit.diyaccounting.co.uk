@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-195 Clear test records out of the customer tables
+// @capability OPS-196 Clear test records out of the customer tables
 // - **Use when:** the customer tables hold old test records, and the counts must show the active users and subscribers.
 // - **Does:** data-clearout.js exports passes, subscriptions, bundles, receipts and commissions with ExportTableToPointInTime, so it sends no Scan. classifyRows gives each row a keep or a delete. A delete needs positive proof of a test record, and any keep rule wins. A plan writes nothing to a table and prints counts only. An apply deletes by key with a condition, removes the ttl from real passes with no end date, and cancels the test-mode Stripe subscriptions of the deleted rows.
 // - **Run:** `gh workflow run data-clearout.yml -f environment-name=<ci|prod> -f mode=plan`; `gh workflow run data-clearout.yml -f environment-name=<ci|prod> -f mode=apply -f plan-run-id=<run id> -f confirmation=<value the plan prints>`
