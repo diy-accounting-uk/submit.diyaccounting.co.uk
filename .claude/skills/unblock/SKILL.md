@@ -63,6 +63,10 @@ Each row then has one result:
 Read-only commands need no approval. Never write to AWS, GitHub settings or a vendor in this
 pass, and never change an issue during a `/board` render.
 
+An SSO login is never an ask on recall. Run `aws --profile diya-submit-ci sts get-caller-identity`
+and the same for `diya-submit-prod` first, and print the login only when one fails, naming the
+profile and the error.
+
 ## 3. Sort what the operator can move
 
 From the rows that stay open, make two lists, ordered by how many rows each item unblocks:
