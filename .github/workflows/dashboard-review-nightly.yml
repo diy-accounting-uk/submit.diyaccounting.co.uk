@@ -71,7 +71,14 @@ jobs:
       proceed: ${{ steps.budget.outputs.over-budget == 'false' && inputs.proof != 'leading-keys' }}
       over-budget: ${{ steps.budget.outputs.over-budget }}
       killed: ${{ steps.killed.outputs.killed }}
-      bundle: ${{ steps.review.outputs.bundle }}
+      bundle-0: ${{ steps.review.outputs.bundle-0 }}
+      bundle-1: ${{ steps.review.outputs.bundle-1 }}
+      bundle-2: ${{ steps.review.outputs.bundle-2 }}
+      bundle-3: ${{ steps.review.outputs.bundle-3 }}
+      bundle-4: ${{ steps.review.outputs.bundle-4 }}
+      bundle-5: ${{ steps.review.outputs.bundle-5 }}
+      bundle-6: ${{ steps.review.outputs.bundle-6 }}
+      bundle-7: ${{ steps.review.outputs.bundle-7 }}
       tokens-in: ${{ steps.review.outputs.tokens-in }}
       tokens-out: ${{ steps.review.outputs.tokens-out }}
     steps:
@@ -252,10 +259,17 @@ jobs:
       - name: Write the report
         env:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
-          BUNDLE: ${{ needs.review.outputs.bundle }}
+          BUNDLE_0: ${{ needs.review.outputs.bundle-0 }}
+          BUNDLE_1: ${{ needs.review.outputs.bundle-1 }}
+          BUNDLE_2: ${{ needs.review.outputs.bundle-2 }}
+          BUNDLE_3: ${{ needs.review.outputs.bundle-3 }}
+          BUNDLE_4: ${{ needs.review.outputs.bundle-4 }}
+          BUNDLE_5: ${{ needs.review.outputs.bundle-5 }}
+          BUNDLE_6: ${{ needs.review.outputs.bundle-6 }}
+          BUNDLE_7: ${{ needs.review.outputs.bundle-7 }}
         run: |
           set -euo pipefail
-          printf '%s' "$BUNDLE" > "$RUNNER_TEMP/bundle.txt"
+          printf '%s' "$BUNDLE_0" "$BUNDLE_1" "$BUNDLE_2" "$BUNDLE_3" "$BUNDLE_4" "$BUNDLE_5" "$BUNDLE_6" "$BUNDLE_7" > "$RUNNER_TEMP/bundle.txt"
           TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
           export TRANSIT_PASS
           node scripts/dashboard-review-nightly.mjs write --bundle "$RUNNER_TEMP/bundle.txt" --private private

@@ -42,6 +42,9 @@ import { answerFindings, checkTabAnswer, joinFields, replaceFields, splitFields,
 import { figuresFromSnapshot, parseFiguresBlock, renderReport } from "./dashboard-review-report.mjs";
 
 export const BUNDLE_MAX_CHARS = 900_000;
+// Linux refuses one environment value over 128 KiB, so the bundle crosses jobs in parts.
+export const BUNDLE_PART_CHARS = 120_000;
+export const BUNDLE_PART_COUNT = 8;
 export const JPEG_MAX_COUNT = 12;
 export const JPEG_MAX_BYTES = 50_000;
 const JPEG_ATTEMPTS = [
@@ -174,6 +177,15 @@ const bundleSchema = z
     tokens: z.object({ input: z.number().int().min(0), output: z.number().int().min(0) }).strict(),
   })
   .strict();
+
+/** The bundle as `bundle-<n>=` output lines, one for each part, an empty part included. */
+export function bundleOutputLines(bundle) {
+  let lines = "";
+  for (let part = 0; part < BUNDLE_PART_COUNT; part += 1) {
+    lines += `bundle-${part}=${bundle.slice(part * BUNDLE_PART_CHARS, (part + 1) * BUNDLE_PART_CHARS)}\n`;
+  }
+  return lines;
+}
 
 /** @param {object} meta the bundle's JSON part, with `jpegs` entries lacking `length` @param {{ bytes: Buffer }[]} jpegs */
 export function packBundle(meta, jpegs, pass) {
@@ -468,7 +480,7 @@ async function runReview({ options, env, deps, out }) {
     if (bundle.length <= BUNDLE_MAX_CHARS) break;
     if (keep === 0) throw new NightlyError("answer-too-large");
   }
-  fs.appendFileSync(env.GITHUB_OUTPUT, `bundle=${bundle}\ntokens-in=${tokens.input}\ntokens-out=${tokens.output}\n`);
+  fs.appendFileSync(env.GITHUB_OUTPUT, `${bundleOutputLines(bundle)}tokens-in=${tokens.input}\ntokens-out=${tokens.output}\n`);
   out("bundle ok");
 }
 
