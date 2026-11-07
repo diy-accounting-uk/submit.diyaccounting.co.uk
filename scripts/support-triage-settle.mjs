@@ -13,7 +13,7 @@
 // hold has at most 25 words and shares no run of eight words with the draft, so it holds no draft
 // text. The script prints fixed lines only: no answer text and no reason.
 //
-// usage: support-triage-settle.mjs [--keep-going] <handling-input.json> <triage-result.json> <check-result.json> <repair-note.txt>
+// usage: support-triage-settle.mjs [--keep-going] <handling-input.json> <triage-result.json> <check-result.json> <repair-note.txt> <pages-list.txt>
 //
 // Reads MODEL_ID, ISSUE_NUMBER and the optional REASONING_EFFORT from the environment. On return, <triage-result.json> holds the
 // final answer and <check-result.json> the check of it. <repair-note.txt> says whether a repair ran.
@@ -36,13 +36,6 @@ export const CHECK_SCHEMA = "prompts/support-triage-check-answer.json";
 // eslint-disable-next-line sonarjs/publicly-writable-directories
 export const REJECTED_ANSWER_FILE = "/tmp/support-rejected-answer.md";
 export const REMINDER_FILE = "prompts/support-triage-reminder.md";
-export const TRIAGE_DATA_FILES = [
-  // eslint-disable-next-line sonarjs/publicly-writable-directories
-  "/tmp/support-handling-input.json",
-  "web/public/faqs.toml",
-  "web/public/help.html",
-  "web/public/guide.html",
-];
 
 const REASON_MAX_WORDS = 25;
 const SHARED_RUN_WORDS = 8;
@@ -163,17 +156,18 @@ function runNova(options) {
 function main() {
   const args = process.argv.slice(2);
   const keepGoing = args[0] === "--keep-going";
-  const [handlingPath, triagePath, checkPath, notePath] = keepGoing ? args.slice(1) : args;
+  const [handlingPath, triagePath, checkPath, notePath, pagesListPath] = keepGoing ? args.slice(1) : args;
   const { MODEL_ID: modelId, ISSUE_NUMBER: issueNumber, REASONING_EFFORT: reasoningEffort } = process.env;
-  if (!handlingPath || !triagePath || !checkPath || !notePath || !modelId || !issueNumber) {
+  if (!handlingPath || !triagePath || !checkPath || !notePath || !pagesListPath || !modelId || !issueNumber) {
     console.error(
-      "usage: MODEL_ID=<id> ISSUE_NUMBER=<n> support-triage-settle.mjs [--keep-going] <handling-input> <triage-result> <check-result> <repair-note>",
+      "usage: MODEL_ID=<id> ISSUE_NUMBER=<n> support-triage-settle.mjs [--keep-going] <handling-input> <triage-result> <check-result> <repair-note> <pages-list>",
     );
     process.exit(2);
   }
   const handlingInput = JSON.parse(readFileSync(handlingPath, "utf8"));
   const dir = mkdtempSync(join(tmpdir(), "support-settle-"));
   rmSync(checkPath, { force: true });
+  const pagePaths = readFileSync(pagesListPath, "utf8").split("\n").filter(Boolean);
 
   const runCheck = (text) => {
     const input = join(dir, "check-input.json");
@@ -205,7 +199,7 @@ function main() {
       modelId,
       reasoningEffort,
       schema: ANSWER_SCHEMA,
-      contextFiles: [...TRIAGE_DATA_FILES, REJECTED_ANSWER_FILE, REMINDER_FILE],
+      contextFiles: [handlingPath, ...pagePaths, REJECTED_ANSWER_FILE, REMINDER_FILE],
       deadlineSeconds: 300,
     });
     const text = resultText(parsed);

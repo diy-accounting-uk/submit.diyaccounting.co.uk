@@ -116,12 +116,13 @@ describe("the reminder", () => {
   it("is the last context file in both workflows", () => {
     for (const file of [".github/workflows/support-triage.yml", ".github/workflows/support-replay.yml"]) {
       const workflow = readFileSync(file, "utf8");
-      const block = /final-schema: prompts\/support-triage-answer\.json\n\s+context-files: \|\n((?:\s+\S+\n)+)/.exec(workflow);
+      const block = /echo "context-files<<CONTEXT_FILES_END"\n((?:\s+\S.*\n)+?)\s+echo CONTEXT_FILES_END/.exec(workflow);
       const paths = block[1]
         .trim()
         .split("\n")
-        .map((line) => line.trim());
+        .map((line) => line.trim().replace(/^echo /, ""));
       expect(paths.at(-1)).toBe("prompts/support-triage-reminder.md");
+      expect(paths[0]).toBe("/tmp/support-handling-input.json");
     }
   });
 });

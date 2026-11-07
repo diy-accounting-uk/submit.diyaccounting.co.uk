@@ -979,7 +979,7 @@ jobs:
         run: |
           set -uo pipefail
           if ! aws bedrock-runtime converse --cli-input-json file:///tmp/request.json > /tmp/response.json 2>/tmp/invoke.err; then
-            echo "::error::converse failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+            echo "::error::converse failed: $(node scripts/bedrock-error-line.mjs /tmp/invoke.err)"
             exit 1
           fi
           { printf '{'; jq -j '.output.message.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt

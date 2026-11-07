@@ -62,7 +62,7 @@
       ["duration", "p95", "latency"],
       ["init", "cold start"]
     ],
-    "nextAction": [["watch", "no action"]],
+    "nextAction": [["watch", "no action", "no further action", "monitor"]],
     "remedy": "none"
   }
 }

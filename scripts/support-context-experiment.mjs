@@ -21,14 +21,13 @@
 // Reads AWS_REGION. Fixtures are synthetic. The script prints the figures, fixture names and reason codes, and never the model's text.
 
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { buildSnippets, renderSnippet, SNIPPET_SOURCES } from "./support-snippets.mjs";
+import { buildSnippets, SNIPPET_SOURCES } from "./support-snippets.mjs";
+import { cachedEmbedder, embeddingText, nearestSnippets, titanEmbedder, writeSnippetFiles } from "./support-retrieval.mjs";
 import {
   ANSWER_SCHEMA,
   CHECK_PROMPT,
@@ -46,10 +45,8 @@ import { checkVerdict, readJsonOrNull, resultText } from "./support-triage-check
 import { isSafetyFixture, loadFixtures, triageFailures, triageResultText } from "./support-replay.mjs";
 import { lastResultEntry } from "./triage-result-verdict.mjs";
 
-export const EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0";
 export const DEFAULT_SIZES = ["0", "4", "8", "16", "36", "top3", "top6", "top12"];
 export const DEFAULT_MODELS = ["amazon.nova-pro-v1:0"];
-const EMBED_MAX_CHARS = 8000;
 
 /** @returns {{kind: "kb"|"top", amount: number, label: string}} */
 export function parseSize(text) {
@@ -57,53 +54,6 @@ export function parseSize(text) {
   if (top) return { kind: "top", amount: Number(top[1]), label: text };
   if (/^\d+$/.test(text)) return { kind: "kb", amount: Number(text), label: text };
   throw new Error(`a size is a number of kilobytes or topN, not "${text}"`);
-}
-
-export function cosine(a, b) {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let index = 0; index < a.length; index++) {
-    dot += a[index] * b[index];
-    normA += a[index] ** 2;
-    normB += b[index] ** 2;
-  }
-  return normA === 0 || normB === 0 ? 0 : dot / Math.sqrt(normA * normB);
-}
-
-const hashOf = (text) => createHash("sha256").update(text).digest("hex");
-
-/**
- * Embeds each text once. The cache maps the hash of a text to its vector, so a changed snippet is
- * embedded again and an unchanged one is not.
- * @param {(text: string) => Promise<number[]>} embed
- * @param {Record<string, number[]>} cache
- */
-export function cachedEmbedder(embed, cache = {}) {
-  return async (text) => {
-    const key = hashOf(text);
-    if (!cache[key]) cache[key] = await embed(text);
-    return cache[key];
-  };
-}
-
-/** The text of a snippet that Titan embeds. */
-export const embeddingText = (snippet) =>
-  `${snippet.title}\n${snippet.summary}\n${snippet.keywords.join(", ")}\n${snippet.body}`.slice(0, EMBED_MAX_CHARS);
-
-/** The Titan call, as a function from a text to a vector. */
-export function titanEmbedder(client = new BedrockRuntimeClient({ region: process.env.AWS_REGION, maxAttempts: 5 })) {
-  return async (text) => {
-    const response = await client.send(
-      new InvokeModelCommand({
-        modelId: EMBEDDING_MODEL_ID,
-        contentType: "application/json",
-        accept: "application/json",
-        body: JSON.stringify({ inputText: text, dimensions: 256, normalize: true }),
-      }),
-    );
-    return JSON.parse(new TextDecoder().decode(response.body)).embedding;
-  };
 }
 
 /** Snippets in page order, until the next one would pass the byte budget. */
@@ -129,11 +79,7 @@ export function fillBudget(snippets, kilobytes) {
  */
 export function chooseSnippets({ size, snippets, questionVector, snippetVectors }) {
   if (size.kind === "top") {
-    return snippets
-      .map((snippet) => ({ snippet, score: cosine(questionVector, snippetVectors.get(snippet.id)) }))
-      .sort((a, b) => b.score - a.score || a.snippet.id.localeCompare(b.snippet.id))
-      .slice(0, size.amount)
-      .map((entry) => entry.snippet);
+    return nearestSnippets({ snippets, questionVector, snippetVectors, count: size.amount });
   }
   return fillBudget(snippets, size.amount);
 }
@@ -147,11 +93,7 @@ export function writeContext({ dir, handlingInput, size, chosen, root = "." }) {
   if (size.kind === "kb" && size.amount >= 36) {
     pages = SNIPPET_SOURCES.map(({ path }) => join(root, path));
   } else if (size.kind === "top" || size.amount > 0) {
-    pages = chosen.map((snippet) => {
-      const path = join(dir, `${snippet.id}.md`);
-      writeFileSync(path, renderSnippet(snippet));
-      return path;
-    });
+    pages = writeSnippetFiles(chosen, dir);
   }
   const pageBytes = pages.reduce((sum, path) => sum + Buffer.byteLength(readFileSync(path, "utf8")), 0);
   return { contextFiles: [handlingPath, ...pages, join(root, REMINDER_FILE)], pageBytes };

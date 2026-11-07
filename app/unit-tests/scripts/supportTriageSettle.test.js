@@ -6,13 +6,15 @@ import { readFileSync } from "node:fs";
 import {
   REJECTED_ANSWER_FILE,
   REMINDER_FILE,
-  TRIAGE_DATA_FILES,
   assemblerRejection,
   novaArgs,
   repairPrompt,
   safeReason,
   settle,
 } from "../../../scripts/support-triage-settle.mjs";
+
+const HANDLING_PATH = "/tmp/support-handling-input.json";
+const PAGE_PATHS = ["/tmp/support-snippets/faq-a.md", "/tmp/support-snippets/help-1-b.md", "/tmp/support-snippets/guide-2-c.md"];
 
 const answer = ({
   opening = "Sorry the charge did not work for you.",
@@ -157,12 +159,12 @@ describe("the repair call", () => {
       outputFile: "o",
       modelId: "m",
       schema: "prompts/support-triage-answer.json",
-      contextFiles: [...TRIAGE_DATA_FILES, REJECTED_ANSWER_FILE, REMINDER_FILE],
+      contextFiles: [HANDLING_PATH, ...PAGE_PATHS, REJECTED_ANSWER_FILE, REMINDER_FILE],
       deadlineSeconds: 300,
     });
     expect(args[args.indexOf("--tools") + 1]).toBe("");
     const blocks = args.flatMap((arg, index) => (arg === "--context-file" ? [args[index + 1]] : []));
-    expect(blocks).toEqual([...TRIAGE_DATA_FILES, REJECTED_ANSWER_FILE, REMINDER_FILE]);
+    expect(blocks).toEqual([HANDLING_PATH, ...PAGE_PATHS, REJECTED_ANSWER_FILE, REMINDER_FILE]);
     expect(blocks.at(-1)).toBe("prompts/support-triage-reminder.md");
   });
 
@@ -173,16 +175,16 @@ describe("the repair call", () => {
     expect(args[args.indexOf("--reasoning-effort") + 1]).toBe("low");
   });
 
-  it("reads the same pages as the first call in both workflows", () => {
+  it("gives the first call and the repair call the same three snippet files in both workflows", () => {
     for (const file of [".github/workflows/support-triage.yml", ".github/workflows/support-replay.yml"]) {
       const workflow = readFileSync(file, "utf8");
-      const block = /final-schema: prompts\/support-triage-answer\.json\n\s+context-files: \|\n((?:\s+\S+\n)+)/.exec(workflow)[1];
-      expect(
-        block
-          .trim()
-          .split("\n")
-          .map((line) => line.trim()),
-      ).toEqual([...TRIAGE_DATA_FILES, REMINDER_FILE]);
+      expect(workflow).toContain("context-files: ${{ steps.snippets.outputs.context-files }}");
+      expect(workflow).toContain("--list-file /tmp/support-snippet-paths.txt");
+      expect(workflow).toMatch(/support-triage-settle\.mjs .*\/tmp\/support-repair-note\.txt \/tmp\/support-snippet-paths\.txt\n/);
+      const pick = workflow.indexOf("name: Pick the three snippets nearest to the ticket summary");
+      expect(pick).toBeGreaterThan(0);
+      expect(pick).toBeLessThan(workflow.indexOf("name: Run triage"));
+      expect(workflow).not.toMatch(/^\s+web\/public\/(faqs\.toml|help\.html|guide\.html)\s*$/m);
     }
   });
 });

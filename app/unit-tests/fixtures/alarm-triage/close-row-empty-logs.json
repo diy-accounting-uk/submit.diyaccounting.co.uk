@@ -72,7 +72,7 @@
   "expect": {
     "stillBroken": false,
     "whatBroke": [["no log", "no events", "empty", "no matching"]],
-    "nextAction": [["close", "watch", "no action"]],
+    "nextAction": [["close", "watch", "no action", "no further action", "monitor"]],
     "remedy": "close-when-gone"
   }
 }

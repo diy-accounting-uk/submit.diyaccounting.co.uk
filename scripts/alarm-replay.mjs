@@ -52,6 +52,11 @@ const STILL_BROKEN_WORDS = [
   "has not cleared",
   "not recovered",
   "not cleared",
+  "still present",
+  "remains broken",
+  "remains in alarm",
+  "remains in the alarm",
+  "persists",
 ];
 const NOT_BROKEN_WORDS = [
   "not broken",
@@ -68,7 +73,11 @@ const NOT_BROKEN_WORDS = [
   "is gone",
   "does not exist",
   "no longer exists",
+  "not currently broken",
 ];
+
+// A cleared word under a negation says the alarm has not cleared: "no evidence that it has cleared".
+const NEGATED_CLEARED = /\bno (evidence|sign|indication)s?\b[^.;,\n]{0,80}\b(cleared|recovered|resolved)\b/gi;
 
 const CALL_VERBS = "query|read|access|reach|call|run|fetch|retrieve";
 const CALL_TARGETS = "logs?|cloudwatch|x-?ray|alarm history|aws";
@@ -181,7 +190,7 @@ const hasAny = (text, words) => words.some((word) => text.toLowerCase().includes
 /** A still-broken answer names a broken state and no cleared state; a cleared answer is the reverse. */
 export function stillBrokenMatches(text, expected) {
   const yes = hasAny(text, STILL_BROKEN_WORDS);
-  const no = hasAny(text, NOT_BROKEN_WORDS);
+  const no = hasAny(text.replace(NEGATED_CLEARED, ""), NOT_BROKEN_WORDS);
   return expected ? yes && !no : no && !yes;
 }
 

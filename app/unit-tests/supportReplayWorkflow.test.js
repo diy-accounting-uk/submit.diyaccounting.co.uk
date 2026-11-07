@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSnippets } from "../../scripts/support-snippets.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const text = readFileSync(resolve(ROOT, ".github/workflows/support-replay.yml"), "utf8");
@@ -45,9 +46,8 @@ describe("support-replay.yml", () => {
       "runner: nova",
       "tools: none",
       "final-schema: prompts/support-triage-answer.json",
-      "web/public/faqs.toml",
-      "web/public/help.html",
-      "web/public/guide.html",
+      "context-files: ${{ steps.snippets.outputs.context-files }}",
+      "node scripts/support-retrieval.mjs --handling-input /tmp/support-handling-input.json",
       "support-handling-input.json",
     ]) {
       expect(text).toContain(line);
@@ -75,8 +75,12 @@ describe("support-replay.yml", () => {
   });
 
   it("keeps the request well inside the model's input limit", () => {
-    const files = ["prompts/support-triage.md", "web/public/faqs.toml", "web/public/help.html", "web/public/guide.html"];
-    const bytes = files.reduce((sum, file) => sum + readFileSync(resolve(ROOT, file)).length, 0);
+    const largest = buildSnippets({ updatedOf: () => "" })
+      .map((snippet) => snippet.bytes)
+      .sort((a, b) => b - a)
+      .slice(0, 3);
+    const snippetBytes = largest.reduce((sum, bytes) => sum + bytes, 0);
+    const bytes = readFileSync(resolve(ROOT, "prompts/support-triage.md")).length + snippetBytes;
     // Two bytes for each token is a safe floor, and the runner's request cap is 200,000 tokens.
     expect(bytes / 2).toBeLessThan(100000);
   });

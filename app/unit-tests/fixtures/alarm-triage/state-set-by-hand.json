@@ -62,7 +62,7 @@
       ["set by", "by hand", "manually", "a person", "manual"],
       ["test the issue path", "set-alarm-state", "reason"]
     ],
-    "nextAction": [["watch", "no action"]],
+    "nextAction": [["watch", "no action", "no further action", "monitor"]],
     "remedy": "none"
   }
 }

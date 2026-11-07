@@ -68,7 +68,7 @@
       ["503", "service unavailable"],
       ["upstream", "sandbox", "hmrc"]
     ],
-    "nextAction": [["watch", "wait", "no code", "no action", "outage"]],
+    "nextAction": [["watch", "wait", "no code", "no action", "no further action", "monitor", "outage"]],
     "remedy": "none"
   }
 }

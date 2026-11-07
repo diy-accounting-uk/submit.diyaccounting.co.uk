@@ -155,6 +155,23 @@ describe("alarm answer parsing", () => {
     expect(stillBrokenMatches("It is not broken; the alarm has cleared.", false)).toBe(true);
     expect(stillBrokenMatches("Unclear.", false)).toBe(false);
   });
+
+  it("reads the wordings of a still-broken answer that say the state stays", () => {
+    expect(stillBrokenMatches("The log events show that the issue is still present.", true)).toBe(true);
+    expect(stillBrokenMatches("The alarm remains in ALARM state and the condition persists.", true)).toBe(true);
+    expect(stillBrokenMatches("The alarm remains broken.", true)).toBe(true);
+  });
+
+  it("reads a cleared answer that says not currently broken", () => {
+    expect(stillBrokenMatches("The alarm was set by hand, so it is not currently broken.", false)).toBe(true);
+  });
+
+  it("does not count a cleared word under a negation as a cleared alarm", () => {
+    const text = "The alarm is currently in ALARM state. No evidence in the data indicates the alarm has cleared.";
+    expect(stillBrokenMatches(text, true)).toBe(true);
+    expect(stillBrokenMatches(text, false)).toBe(false);
+    expect(stillBrokenMatches("No errors remain, so the alarm has cleared.", false)).toBe(true);
+  });
 });
 
 describe("alarm diff check", () => {
@@ -182,6 +199,23 @@ describe("alarm diff check", () => {
 });
 
 describe("alarm scoring", () => {
+  it("accepts a rejection as a rejected token refresh", () => {
+    const fixture = byName("pii-in-log-lines");
+    const answer =
+      "## What broke?\n\nThe function logged token refresh rejections.\n\n## Is it still broken?\n\nIt is still broken.\n\n## What is the next action?\n\nInvestigate.\n\nremedy: none";
+    expect(scoreAnswer(fixture, answer).marks.whatBroke).toBe(1);
+    expect(scoreAnswer(fixture, answer.replace("rejections", "timeouts")).marks.whatBroke).toBe(0);
+  });
+
+  it("accepts monitor and no further action as the watch next action of a cleared alarm", () => {
+    const fixture = byName("single-5xx-datapoint");
+    const withAction = (action) =>
+      `## What broke?\n\nA 5xx timeout.\n\n## Is it still broken?\n\nNo, it has cleared.\n\n## What is the next action?\n\n${action}\n\nremedy: none`;
+    expect(scoreAnswer(fixture, withAction("Monitor the function for more 5xx errors.")).marks.nextAction).toBe(1);
+    expect(scoreAnswer(fixture, withAction("Take no further action.")).marks.nextAction).toBe(1);
+    expect(scoreAnswer(fixture, withAction("Raise the timeout.")).marks.nextAction).toBe(0);
+  });
+
   it("fails a diff that does not apply on the next action mark", () => {
     const fixture = byName("draft-pr-timeout-constant");
     const bad = perfectAnswer(fixture).replace("@@ -1,3 +1,3 @@\n", "");
