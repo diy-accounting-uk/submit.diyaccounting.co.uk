@@ -1,0 +1,70 @@
+{
+  "description": "The row closes when gone, but errors continue in the last minutes and the newest state is ALARM.",
+  "alarm": {
+    "name": "ci-zz4damson-app-api-5xx",
+    "environment": "ci",
+    "deployment": "zz4damson",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9103
+  },
+  "remedyRow": {
+    "family": "ci-app-api-5xx",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms go with the set."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz4damson",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz4damson-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz4damson-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:18:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [17.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:18:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [17.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz4damson-app-api-5xx\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [17.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz4damson-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-0301 gateway timeout after 29000 ms calling the quote function\"},{\"timestamp\":1768467901000,\"message\":\"ERROR req-0302 gateway timeout after 29000 ms calling the quote function\"},{\"timestamp\":1768467902000,\"message\":\"ERROR req-0303 gateway timeout after 29000 ms calling the quote function\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["5xx", "gateway", "timeout"]],
+    "nextAction": [["quote", "investigate", "timeout", "runbook", "fix"]],
+    "remedy": "none"
+  }
+}
