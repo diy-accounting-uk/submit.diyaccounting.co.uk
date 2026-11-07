@@ -17,6 +17,11 @@ description: Refine every open row on NEXT.md in the main context before a wave 
 
 # refine
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Five passes over `NEXT.md`, in the main context and with no sub-agents, then the write-back and
 `/board`. A sub-agent reads only its brief; every fact it would otherwise have to rediscover costs
 tokens, and every fact it gets wrong costs a redeploy. The passes move that discovery into one

@@ -18,6 +18,11 @@ description: From a prod-env-hmrc-submission-failure alarm (or its [ALARM] issue
 
 # vat-submission-failure-alarm-user-lookup
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Everything here is read-only AWS through the `diya-submit-prod` SSO profile
 (`aws sso login --sso-session diyaccounting` first). The customer tables are keyed by
 `hashedSub`, and a `Scan` on any of them is exactly what the

@@ -18,6 +18,11 @@ description: Check everything the business exposes publicly for keys in the rota
 
 # exposure-check
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 This skill answers one question: does a key in the rotation set appear on a public surface? The
 inventory is section 2.1 and the formats are section 3.5 of
 `../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md`.

@@ -18,6 +18,11 @@ description: Run a full key rotation with the operator present. Rolls every key 
 
 # key-rotation
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 The authority for the order and for each key's procedure is
 `../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md` sections 3 and 4. This
 skill applies it to the current code. Where they differ, this skill holds the commands that work.

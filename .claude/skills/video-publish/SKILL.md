@@ -18,6 +18,11 @@ description: Publish the recorded product videos to the DIY Accounting Submit Yo
 
 # video-publish — from a video-capture run to the YouTube channel
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Channel: https://www.youtube.com/@DIYAccountingSubmit. Recordings come from
 `video-capture.yml` (skill `site-video-capture`); this skill takes them from there to the
 channel. The source of truth for what is published is `videos/publish.json`; the script is
