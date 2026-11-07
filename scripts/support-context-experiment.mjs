@@ -18,7 +18,7 @@
 // usage: support-context-experiment.mjs [--models a,b] [--sizes 0,4,8,16,36,top3,top6,top12] [--runs 3]
 //          [--work-dir <dir>] [--cache <file>] [--out <file>] [--reasoning-effort low|medium|high]
 //
-// Reads AWS_REGION. Fixtures are synthetic, so the script prints the figures and nothing else.
+// Reads AWS_REGION. Fixtures are synthetic. The script prints the figures, fixture names and reason codes, and never the model's text.
 
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -157,6 +157,21 @@ export function writeContext({ dir, handlingInput, size, chosen, root = "." }) {
   return { contextFiles: [handlingPath, ...pages, join(root, REMINDER_FILE)], pageBytes };
 }
 
+const REASON_CODES = [
+  [/^resolution is /, "resolution"],
+  [/^matched article is /, "matched-article"],
+  [/^no Drafted reply section/, "no-drafted-reply"],
+  [/^first sentence does not match /, "first-sentence"],
+  [/^reply lacks /, "lacks-phrase"],
+  [/^reply holds /, "holds-phrase"],
+  [/^the check held the draft/, "check-held"],
+];
+
+/** A reason code for the first failure text of triageFailures; the code carries none of the model's text. */
+export function reasonCode(reason) {
+  return REASON_CODES.find(([pattern]) => pattern.test(reason))?.[1] ?? "assembly";
+}
+
 const usageOf = (parsed) => {
   const usage = lastResultEntry(parsed)?.usage ?? {};
   return { input: Number(usage.input_tokens) || 0, output: Number(usage.output_tokens) || 0 };
@@ -231,7 +246,14 @@ export async function runFixture({ fixture, modelId, reasoningEffort, contextFil
   // settle takes synchronous callbacks, so the calls are made ahead of it in the same order.
   const outcome = await settleAsync({ handlingInput, firstText: resultText(finalParsed), runCheck, runRepair });
   const failures = triageFailures(fixture, triageResultText(finalParsed), checkVerdict(lastCheck));
-  return { name: fixture.name, passed: failures.length === 0, repaired: outcome.repaired, safety: isSafetyFixture(fixture.name), tokens };
+  return {
+    name: fixture.name,
+    passed: failures.length === 0,
+    reason: failures.length === 0 ? null : reasonCode(failures[0]),
+    repaired: outcome.repaired,
+    safety: isSafetyFixture(fixture.name),
+    tokens,
+  };
 }
 
 /**
@@ -322,6 +344,7 @@ export async function runExperiment({
         output: 0,
         bytes: 0,
         ms: 0,
+        failed: [],
       };
       for (let run = 0; run < runs; run++) {
         for (const fixture of triage) {
@@ -336,6 +359,7 @@ export async function runExperiment({
           cell.input += result.tokens.input;
           cell.output += result.tokens.output;
           if (result.passed) cell.passed += 1;
+          else cell.failed.push({ name: result.name, run: run + 1, reason: result.reason, safety: result.safety });
           if (result.safety) {
             cell.safetyTotal += 1;
             if (result.passed) cell.safetyPassed += 1;
@@ -353,6 +377,7 @@ export async function runExperiment({
         inputTokens: Math.round(cell.input / Math.max(cell.answers, 1)),
         outputTokens: Math.round(cell.output / Math.max(cell.answers, 1)),
         seconds: Number((cell.ms / 1000 / Math.max(cell.answers, 1)).toFixed(1)),
+        failed: cell.failed,
       };
       rows.push(row);
       log(`support-context-experiment: ${row.model} size ${row.size} accuracy ${row.passed}/${row.answers}`);
@@ -361,15 +386,24 @@ export async function runExperiment({
   return rows;
 }
 
+const FAILED_CELL_NAMES = 6;
+
+/** The failed fixture names for a table cell: at most six, a safety fixture marked with "!", then "+n". */
+export function failedCell(failed = []) {
+  const names = [...new Set(failed.map((entry) => `${entry.name}${entry.safety ? "!" : ""}`))];
+  const shown = names.slice(0, FAILED_CELL_NAMES).join(", ");
+  return names.length > FAILED_CELL_NAMES ? `${shown} +${names.length - FAILED_CELL_NAMES}` : shown;
+}
+
 /** The rows as a Markdown table. Tokens and seconds are the mean for one answer. */
 export function renderTable(rows) {
   const lines = [
-    "| Model | Size | Accuracy | Safety | Context bytes | Input tokens | Output tokens | Seconds |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Model | Size | Accuracy | Safety | Context bytes | Input tokens | Output tokens | Seconds | Failed |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   ];
   for (const row of rows) {
     lines.push(
-      `| ${row.model} | ${row.size} | ${(row.accuracy * 100).toFixed(1)}% (${row.passed}/${row.answers}) | ${row.safety} | ${row.contextBytes} | ${row.inputTokens} | ${row.outputTokens} | ${row.seconds} |`,
+      `| ${row.model} | ${row.size} | ${(row.accuracy * 100).toFixed(1)}% (${row.passed}/${row.answers}) | ${row.safety} | ${row.contextBytes} | ${row.inputTokens} | ${row.outputTokens} | ${row.seconds} | ${failedCell(row.failed)} |`,
     );
   }
   return lines.join("\n");
