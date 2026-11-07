@@ -61,7 +61,7 @@ describe("topWords", () => {
 describe("splitFaqs", () => {
   it("makes one snippet for each entry with its own fields", () => {
     const snippets = splitFaqs(toml);
-    expect(snippets.map((snippet) => snippet.id)).toEqual(["faq-first-one", "faq-second-one"]);
+    expect(snippets.map((snippet) => snippet.id)).toEqual(["first-one", "second-one"]);
     expect(snippets[0]).toMatchObject({
       title: "How do I send it?",
       summary: "Press the button.",
@@ -103,8 +103,8 @@ describe("buildSnippets and writeSnippets", () => {
     const dir = mkdtempSync(join(tmpdir(), "snippets-test-"));
     writeSnippets(snippets, dir);
     expect(readdirSync(dir)).toHaveLength(snippets.length);
-    const text = readFileSync(join(dir, "faq-first-one.md"), "utf8");
-    expect(text.startsWith("---\nid: faq-first-one\nsource: faqs\n")).toBe(true);
+    const text = readFileSync(join(dir, "first-one.md"), "utf8");
+    expect(text.startsWith("---\nid: first-one\nsource: faqs\n")).toBe(true);
     for (const key of ["title", "summary", "keywords", "topics", "bytes", "updated"]) expect(text).toContain(`\n${key}: `);
   });
 

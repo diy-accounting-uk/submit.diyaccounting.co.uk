@@ -82,7 +82,7 @@ export function splitFaqs(tomlText) {
       const answer = tomlString(block, "answer");
       const category = tomlString(block, "category");
       return {
-        id: `faq-${id}`,
+        id,
         title: question,
         summary: firstSentence(answer),
         keywords: tomlList(block, "keywords"),
