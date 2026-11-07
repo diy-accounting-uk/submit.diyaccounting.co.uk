@@ -14,7 +14,7 @@
 
 // scripts/nova-agent.mjs
 //
-// usage: nova-agent.mjs --prompt-file <file> --output-file <file> [--model-id <id>]
+// usage: nova-agent.mjs --prompt-file <file> --output-file <file> [--model-id <id>] [--reasoning-effort low|medium|high]
 //          [--tools a,b] [--max-turns n] [--final-schema <file>] [--input-file <file>]...
 //          [--deadline-seconds n] [--max-total-tokens n] [--context-file <file>]...
 //          [--frozen-results <file>]
@@ -54,6 +54,7 @@ export function withContextFiles(prompt, contextFiles, read = (path) => readFile
 
 export const DEFAULT_MODEL_ID = "amazon.nova-pro-v1:0";
 export const ALLOWED_MODEL_IDS = [DEFAULT_MODEL_ID, "global.amazon.nova-2-lite-v1:0"];
+export const REASONING_EFFORTS = ["low", "medium", "high"];
 export const MAX_REQUEST_INPUT_TOKENS = 200000;
 export const DEFAULT_MAX_TOTAL_TOKENS = 1000000;
 export const DEFAULT_MAX_TURNS = 60;
@@ -72,6 +73,28 @@ class AgentStop extends Error {
     this.stopReason = stopReason;
     this.subtype = subtype;
   }
+}
+
+/**
+ * The sampling and reasoning parts of a Converse request. Nova 2 Lite takes `reasoningConfig` in
+ * additionalModelRequestFields, and rejects temperature, topP and topK at effort `high`.
+ */
+export function samplingFields(reasoningEffort) {
+  if (reasoningEffort === undefined) {
+    return {
+      inferenceConfig: { maxTokens: MAX_OUTPUT_TOKENS, temperature: 0 },
+      additionalModelRequestFields: { inferenceConfig: { topK: 1 } },
+    };
+  }
+  if (!REASONING_EFFORTS.includes(reasoningEffort)) throw new Error("reasoning effort is not low, medium or high");
+  const reasoningConfig = { type: "enabled", maxReasoningEffort: reasoningEffort };
+  if (reasoningEffort === "high") {
+    return { inferenceConfig: { maxTokens: MAX_OUTPUT_TOKENS }, additionalModelRequestFields: { reasoningConfig } };
+  }
+  return {
+    inferenceConfig: { maxTokens: MAX_OUTPUT_TOKENS, temperature: 0 },
+    additionalModelRequestFields: { reasoningConfig, inferenceConfig: { topK: 1 } },
+  };
 }
 
 function resultJson({ subtype, stopReason, numTurns, result = "", usage, modelId, errorName }) {
@@ -121,6 +144,7 @@ export async function runAgent({
   prompt,
   runTool,
   modelId = DEFAULT_MODEL_ID,
+  reasoningEffort,
   toolNames = DEFAULT_TOOLS,
   finalSchema,
   maxTurns = DEFAULT_MAX_TURNS,
@@ -163,8 +187,7 @@ export async function runAgent({
           modelId,
           system: [{ text: SYSTEM_PROMPT }],
           messages,
-          inferenceConfig: { maxTokens: MAX_OUTPUT_TOKENS, temperature: 0 },
-          additionalModelRequestFields: { inferenceConfig: { topK: 1 } },
+          ...samplingFields(reasoningEffort),
           toolConfig: { tools, toolChoice },
         },
       });
@@ -243,6 +266,7 @@ async function main() {
       "prompt-file": { type: "string" },
       "output-file": { type: "string" },
       "model-id": { type: "string", default: DEFAULT_MODEL_ID },
+      "reasoning-effort": { type: "string" },
       "tools": { type: "string" },
       "max-turns": { type: "string" },
       "final-schema": { type: "string" },
@@ -271,6 +295,7 @@ async function main() {
         ...(values["frozen-results"] ? { child: createReplayChild(JSON.parse(readFileSync(values["frozen-results"], "utf8"))) } : {}),
       }),
       modelId: values["model-id"],
+      reasoningEffort: values["reasoning-effort"],
       toolNames,
       finalSchema: values["final-schema"] ? loadFinalSchema(values["final-schema"]) : undefined,
       maxTurns: positiveInteger(values["max-turns"], DEFAULT_MAX_TURNS),

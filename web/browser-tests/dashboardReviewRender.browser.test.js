@@ -14,7 +14,7 @@ import { snapshotAnswer } from "../../scripts/dashboard-review-data.mjs";
 import { fullShapeSnapshot, FIXTURE_CONSOLE_INDEX, PIXEL_PNG } from "./operatorDashboardFixtures.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
-const TABS = ["main", "adoption", "behaviour", "integrations", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TABS = ["main", "adoption", "behaviour", "integrations", "data", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function fixtureData() {
   const images = new Map();
@@ -55,7 +55,7 @@ function publicCopy(change) {
 test.describe("Dashboard review render", () => {
   test.setTimeout(120000);
 
-  test("finds the eight tabs, their panels, one image for each capture item, and no request outside localhost", async () => {
+  test("finds the nine tabs, their panels, one image for each capture item, and no request outside localhost", async () => {
     const { dom, screenshots } = await renderDashboard({ publicDir: PUBLIC_DIR, data: fixtureData() });
 
     expect(dom.tabs).toEqual(TABS);
@@ -63,7 +63,7 @@ test.describe("Dashboard review render", () => {
       expect.arrayContaining(["chartsPanel", "table-uptime", "awsLinksPanel", "heldPassesPanel"]),
     );
     expect(dom.rows.length).toBeGreaterThan(0);
-    for (const tab of TABS.slice(0, 6)) {
+    for (const tab of TABS.slice(0, 7)) {
       expect(screenshots.some((shot) => shot.tabId === tab && shot.kind === "panel")).toBe(true);
     }
 

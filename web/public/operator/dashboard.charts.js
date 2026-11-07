@@ -127,6 +127,20 @@ function lineStylesFor(seriesList) {
   return seriesList.map((series) => (series.isTotal ? lineStyleFor(series, 0) : lineStyleFor(series, componentIndex++)));
 }
 
+// The runs of consecutive days that have a figure, each a list of { value, index }.
+function lineRuns(values) {
+  const runs = [];
+  values.forEach((value, index) => {
+    if (value === null || value === undefined) {
+      runs.push(null);
+      return;
+    }
+    if (runs.length === 0 || runs[runs.length - 1] === null) runs.push([]);
+    runs[runs.length - 1].push({ value, index });
+  });
+  return runs.filter(Boolean);
+}
+
 function drawChart(state) {
   const { chart, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
@@ -146,7 +160,7 @@ function drawChart(state) {
   svg.setAttribute("height", CHART_HEIGHT);
   svg.replaceChildren();
 
-  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values)));
+  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values.filter((value) => value !== null))));
   const xAt = (index) => MARGIN.left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
   const yAt = (value) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
 
@@ -171,17 +185,27 @@ function drawChart(state) {
   seriesList.forEach((series, seriesIndex) => {
     if (state.hidden.has(series.id)) return;
     const style = styles[seriesIndex];
-    const points = series.values.map((value, index) => xAt(index).toFixed(1) + "," + yAt(value).toFixed(1)).join(" ");
-    const attributes = {
-      points,
-      "fill": "none",
-      "stroke": style.colour,
-      "stroke-width": style.width,
-      "stroke-linejoin": "round",
-      "class": "chart-line",
-    };
-    if (style.dash) attributes["stroke-dasharray"] = style.dash;
-    svg.appendChild(svgElement("polyline", attributes));
+    // A day with no figure (null) breaks the line; a lone figure is drawn as a dot, and a chart that sets `marks` dots every figure.
+    lineRuns(series.values).forEach((run) => {
+      const points = run.map(({ value, index }) => xAt(index).toFixed(1) + "," + yAt(value).toFixed(1)).join(" ");
+      const attributes = {
+        points,
+        "fill": "none",
+        "stroke": style.colour,
+        "stroke-width": style.width,
+        "stroke-linejoin": "round",
+        "class": "chart-line",
+      };
+      if (style.dash) attributes["stroke-dasharray"] = style.dash;
+      svg.appendChild(svgElement("polyline", attributes));
+      if (chart.marks || run.length === 1 || series.values.some((value) => value === null)) {
+        run.forEach(({ value, index }) =>
+          svg.appendChild(
+            svgElement("circle", { cx: xAt(index).toFixed(1), cy: yAt(value).toFixed(1), r: 3, fill: style.colour, class: "chart-point" }),
+          ),
+        );
+      }
+    });
   });
 
   const guide = svgElement("line", { y1: MARGIN.top, y2: MARGIN.top + plotHeight, class: "chart-guide", visibility: "hidden" });
@@ -199,7 +223,7 @@ function drawChart(state) {
   const describeDay = (index) => {
     const parts = visible
       .filter((series) => series.values[index] !== 0 || series.isTotal)
-      .map((series) => series.label + " " + formatReadoutValue(unit, series.values[index]));
+      .map((series) => series.label + " " + (series.values[index] === null ? "no figure" : formatReadoutValue(unit, series.values[index])));
     return formatPoint(days[index]) + ": " + (parts.length > 0 ? parts.join(", ") : "nothing");
   };
   const showIndex = (index) => {
@@ -219,7 +243,7 @@ function drawChart(state) {
   });
   readout.textContent = describeDay(days.length - 1);
 
-  const everyValueZero = visible.every((series) => series.values.every((value) => value === 0));
+  const everyValueZero = visible.every((series) => series.values.every((value) => value === 0 || value === null));
   state.empty.textContent = "No data in the last " + days.length + (hourly ? " hours." : " days.");
   state.empty.hidden = !everyValueZero;
   svg.setAttribute(
@@ -510,16 +534,23 @@ function renderDailyCharts(snapshot) {
   const daily = snapshot.dailyCharts;
   renderedCharts = [];
   grid.replaceChildren();
-  if (!daily || !daily.charts || daily.charts.length === 0) {
+  const dailyCharts = daily && daily.charts ? daily.charts : [];
+  if (dailyCharts.length === 0 && !snapshot.data) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
-  sortCharts(daily.charts).forEach((chart) => {
+  sortCharts(dailyCharts).forEach((chart) => {
     const state = renderChartCard(chart, daily.days, daily.hours || []);
     grid.appendChild(state.card);
     renderedCharts.push(state);
   });
+  // The stored-data chart holds its own days, so it is drawn beside the daily charts.
+  if (snapshot.data && snapshot.data.chart) {
+    const state = renderChartCard(snapshot.data.chart, snapshot.data.chart.days, []);
+    grid.appendChild(state.card);
+    renderedCharts.push(state);
+  }
   renderedCharts.forEach((state) => state.draw());
 }
 

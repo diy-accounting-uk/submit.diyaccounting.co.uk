@@ -167,6 +167,25 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
+.data-scroll {
+  overflow-x: auto;
+}
+
+#dataTablesTable th:nth-child(n + 2):not(:last-child),
+#dataTablesTable td:nth-child(n + 2):not(:last-child),
+#dataSplitTable th:nth-child(n + 2),
+#dataSplitTable td:nth-child(n + 2),
+#dataBucketsTable th:nth-child(n + 2),
+#dataBucketsTable td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-no-figure {
+  color: var(--c-ink-muted);
+}
+
 .integrations-table th:nth-child(3),
 .integrations-table td:nth-child(3) {
   text-align: right;

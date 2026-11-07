@@ -40,6 +40,7 @@
         <button type="button" class="dashboard-tab" data-tab-id="adoption" aria-pressed="false">Adoption</button>
         <button type="button" class="dashboard-tab" data-tab-id="behaviour" aria-pressed="false">Behaviour</button>
         <button type="button" class="dashboard-tab" data-tab-id="integrations" aria-pressed="false">Integrations</button>
+        <button type="button" class="dashboard-tab" data-tab-id="data" aria-pressed="false">Data</button>
         <button type="button" class="dashboard-tab" data-tab-id="ops" aria-pressed="false">Ops</button>
         <button type="button" class="dashboard-tab" data-tab-id="affiliates" aria-pressed="false">Affiliates</button>
         <button type="button" class="dashboard-tab" data-tab-id="aws-prod" aria-pressed="false">AWS prod</button>
@@ -272,6 +273,78 @@
             </table>
           </div>
           <p class="objective-empty" id="integrationsStripePanelEmpty" hidden>No calls recorded yet.</p>
+        </section>
+        <section id="dataTablesPanel" class="objective" hidden data-tab="data">
+          <h2>DynamoDB tables</h2>
+          <p class="subtitle">
+            Items in each table now and on earlier days, from the table's own count, which lags about six hours. Each snapshot writes the
+            day's counts to the lake, so a day before the first file shows no figure.
+          </p>
+          <div class="data-scroll">
+            <table class="observations data-table" id="dataTablesTable">
+              <thead>
+                <tr>
+                  <th>Table</th>
+                  <th>Today</th>
+                  <th>1 day ago</th>
+                  <th>7 days ago</th>
+                  <th>30 days ago</th>
+                  <th>90 days ago</th>
+                  <th title="The attribute DynamoDB deletes items by, when expiry is on">Default TTL</th>
+                </tr>
+              </thead>
+              <tbody id="dataTablesBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="dataTablesEmpty" hidden>No table counts yet. They arrive with the next snapshot.</p>
+        </section>
+        <section id="dataSplitPanel" class="objective" hidden data-tab="data">
+          <h2>Who the items belong to</h2>
+          <p class="subtitle">
+            Items that exist now, by the actor recorded on them, for the tables the lake holds. Unknown is an item with no actor recorded;
+            it is never counted as a customer. Other is an operator or the system. The lake holds the changes since it began, so an item
+            last changed before then is not in these counts. Refreshed once a day.
+          </p>
+          <div class="data-scroll">
+            <table class="observations data-table" id="dataSplitTable">
+              <thead>
+                <tr>
+                  <th>Table</th>
+                  <th>Customer</th>
+                  <th>Test</th>
+                  <th>Synthetic</th>
+                  <th>Other</th>
+                  <th>Unknown</th>
+                </tr>
+              </thead>
+              <tbody id="dataSplitBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="dataSplitEmpty" hidden>No split yet. It arrives with the next snapshot.</p>
+        </section>
+        <section id="dataBucketsPanel" class="objective" hidden data-tab="data">
+          <h2>Buckets and books</h2>
+          <p class="subtitle">
+            Objects in each bucket, from the daily S3 object count, and the books in the diya-gl store, counted from its listing. A bucket's
+            split by who owns the objects is not recorded.
+          </p>
+          <div class="data-scroll">
+            <table class="observations data-table" id="dataBucketsTable">
+              <thead>
+                <tr>
+                  <th>Bucket or type</th>
+                  <th>Today</th>
+                  <th>1 day ago</th>
+                  <th>7 days ago</th>
+                  <th>30 days ago</th>
+                  <th>90 days ago</th>
+                </tr>
+              </thead>
+              <tbody id="dataBucketsBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="dataBucketsEmpty" hidden>No bucket counts yet. They arrive with the next snapshot.</p>
+          <p class="subtitle" id="dataBooksNote" hidden>The book count stopped at the listing limit, so it is a lower bound.</p>
         </section>
         <div data-objective-slot="low-running-cost" data-tab="main"></div>
         <div data-objective-slot="uptime" data-tab="ops"></div>

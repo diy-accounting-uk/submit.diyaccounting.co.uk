@@ -668,6 +668,9 @@ export async function runRotation(context, { mode }) {
   if (registry.rotation) {
     await context.writeRegistry(clearRotation(registry));
     context.log(`Rotation complete. Current is ${registry.current}`);
+    context.log(
+      "Next: set SUBMIT_COMPANY_BOOK_OWNER_PREFIX on prod to the new owner hash and run deploy-environment.yml, because the book keys carry the hash",
+    );
     context.log("Next: run a sweep after 24 hours. Then run scripts/backup-salts.sh and print a new card");
   }
   return { before, after, report };

@@ -10,6 +10,7 @@ import {
   measureDescription,
   betterDirection,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
+import { shapeDataSection } from "@app/lib/operatorSnapshot/dataSection.js";
 
 export const FIXTURE_SNAPSHOT = {
   generatedAt: "2026-09-08T03:15:00.000Z",
@@ -576,6 +577,48 @@ export const integrationCall = (id, api, ms, status, rules = null, rulesFailed =
   rulesFailed,
 });
 
+// The Data tab's section as the publisher shapes it: a history of 30 and 7 days for some tables,
+// none yet for 90 days, and a split for the tables the lake holds.
+export const FIXTURE_DATA = shapeDataSection({
+  envName: "prod",
+  now: new Date("2026-11-07T10:00:00Z"),
+  tables: [
+    { name: "prod-env-receipts", items: 412, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-bundles", items: 1296, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-subscriptions", items: 188, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-passes", items: 2431, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-integration-calls", items: 18420, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-mcp-sessions", items: 7, ttl: { enabled: true, attribute: "expiresAt" } },
+  ],
+  actorSplit: {
+    receipts: { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
+    bundles: { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
+    subscriptions: { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
+    passes: { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
+  },
+  buckets: [
+    { name: "prod-env-analytics-lake-972912397388", objects: 48210, history: { 90: null, 30: 31200, 7: 46100, 1: 47900 } },
+    { name: "prod-env-analytics-results-972912397388", objects: 9120, history: { 90: null, 30: 6400, 7: 8800, 1: 9050 } },
+    { name: "prod-env-diya-gl-972912397388", objects: 22, history: { 90: null, 30: 14, 7: 20, 1: 22 } },
+  ],
+  books: { books: 11, versions: 11, truncated: false },
+  histories: {
+    90: null,
+    30: {
+      tables: { "receipts": 300, "bundles": 900, "subscriptions": 120, "passes": 1800, "integration-calls": 9100, "mcp-sessions": 4 },
+      books: { books: 7, versions: 7 },
+    },
+    7: {
+      tables: { "receipts": 400, "bundles": 1250, "subscriptions": 180, "passes": 2380, "integration-calls": 17800, "mcp-sessions": 6 },
+      books: { books: 10, versions: 10 },
+    },
+    1: {
+      tables: { "receipts": 410, "bundles": 1290, "subscriptions": 187, "passes": 2425, "integration-calls": 18300, "mcp-sessions": 7 },
+      books: { books: 11, versions: 11 },
+    },
+  },
+});
+
 export const FIXTURE_INTEGRATIONS = {
   table: "prod-env-integration-calls",
   region: "eu-west-2",
@@ -769,6 +812,7 @@ export function fullShapeSnapshot() {
     paidSubscribers: FIXTURE_PAID_SUBSCRIBERS,
     pageVisitors: FIXTURE_PAGE_VISITORS,
     integrations: FIXTURE_INTEGRATIONS,
+    data: FIXTURE_DATA,
     ...FIXTURE_AFFILIATE_SECTIONS,
     failedObservationCount: 0,
   };

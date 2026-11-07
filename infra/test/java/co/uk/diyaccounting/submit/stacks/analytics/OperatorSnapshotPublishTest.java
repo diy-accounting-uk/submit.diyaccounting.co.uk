@@ -56,6 +56,9 @@ class OperatorSnapshotPublishTest {
                 .resultsBucket(resultsBucket)
                 .lakeBucket(lakeBucket)
                 .passesTableName(sharedNames.data.passesTableName)
+                .dataTableNames(List.of(sharedNames.data.bundlesTableName, sharedNames.data.receiptsTableName))
+                .dataBucketNames(List.of(sharedNames.analytics.analyticsLakeBucketName))
+                .diyaGlBucketName(sharedNames.data.diyaGlBucketName)
                 .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                 .securityServicesEnabled(securityServicesEnabled)
@@ -178,7 +181,10 @@ class OperatorSnapshotPublishTest {
         assertTrue(
                 secretArns.stream().anyMatch(arn -> arn.contains("/submit/user-sub-hash-salt*")),
                 "salt not granted: " + secretArns);
-        assertEquals(java.util.List.of("dynamodb:GetItem"), dynamoActions);
+        assertEquals(
+                java.util.List.of(
+                        "dynamodb:GetItem", java.util.List.of("dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive")),
+                dynamoActions);
         template.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
@@ -186,6 +192,31 @@ class OperatorSnapshotPublishTest {
                         Match.objectLike(Map.of(
                                 "Variables",
                                 Match.objectLike(Map.of("PASSES_DYNAMODB_TABLE_NAME", "docs-env-passes")))))));
+    }
+
+    @Test
+    void lambdaDescribesOnlyTheNamedTablesAndHoldsNoWildcardOnDynamoDb() {
+        Template template = synthOperatorSnapshotPublish("prod");
+
+        var describedTables = new java.util.ArrayList<String>();
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.get("Properties");
+            @SuppressWarnings("unchecked")
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (java.util.List<Map<String, Object>>) document.get("Statement");
+            for (Map<String, Object> statement : statements) {
+                if (String.valueOf(statement.get("Action")).contains("dynamodb:DescribeTable")) {
+                    describedTables.add(String.valueOf(statement.get("Resource")));
+                }
+            }
+        }
+        assertEquals(1, describedTables.size());
+        assertTrue(describedTables.get(0).contains("table/docs-env-bundles"), describedTables.get(0));
+        assertTrue(describedTables.get(0).contains("table/docs-env-receipts"), describedTables.get(0));
+        assertTrue(!describedTables.get(0).contains("*"), "a wildcard on the described tables: " + describedTables);
     }
 
     /**

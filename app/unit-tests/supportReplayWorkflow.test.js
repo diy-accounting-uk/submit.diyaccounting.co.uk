@@ -57,10 +57,20 @@ describe("support-replay.yml", () => {
 
   it("calls Nova Pro with no read tool and installs no Claude Code", () => {
     const triage = readFileSync(resolve(ROOT, ".github/workflows/support-triage.yml"), "utf8");
+    expect(triage).toContain("MODEL_ID: 'amazon.nova-pro-v1:0'");
     for (const workflow of [text, triage]) {
-      expect(workflow).toContain("MODEL_ID: 'amazon.nova-pro-v1:0'");
       expect(workflow).not.toMatch(/claude-code|CLAUDE_CODE_VERSION|allowed-tools/);
     }
+  });
+
+  it("runs Nova Pro unless a dispatch names a model, and passes the choice to every model call", () => {
+    expect(text).toContain("MODEL_ID: ${{ inputs.model-id || 'amazon.nova-pro-v1:0' }}");
+    expect(text).toContain("READER_MODEL_ID: ${{ inputs.model-id || 'amazon.nova-pro-v1:0' }}");
+    expect(text).toMatch(/inputs:\n {6}model-id:\n(?: {8}.*\n)*? {8}default: 'amazon\.nova-pro-v1:0'/);
+    expect(text).toContain("reasoning-effort: ${{ env.REASONING_EFFORT }}");
+    expect(text).toContain('--arg effort "$REASONING_EFFORT"');
+    const settle = text.slice(text.indexOf("Judge the draft and repair it once"));
+    expect(settle.slice(0, settle.indexOf("Judge the answer against the fixture"))).toContain("support-triage-settle.mjs");
   });
 
   it("keeps the request well inside the model's input limit", () => {

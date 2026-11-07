@@ -462,6 +462,11 @@ describe("buildFacts refuses a source that cannot prove anything", () => {
     expect(() => buildFacts({ ...sources, liveSubscriptions: [] })).toThrow("live list is empty");
   });
 
+  test("an environment with no live key runs on an empty live list", () => {
+    const facts = buildFacts({ ...sources, liveSubscriptions: [], liveListRequired: false });
+    expect(facts.liveSubscriptionIds.size).toBe(0);
+  });
+
   test("an empty user list stops the run", () => {
     expect(() => buildFacts({ ...sources, users: [] })).toThrow("no users");
   });

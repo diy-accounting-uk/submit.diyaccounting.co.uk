@@ -287,14 +287,17 @@ function readPassLinks(rows, facts, canonical) {
 }
 
 /**
- * Reads every source into the sets that the rules use. An empty live list stops the run, because
- * that list is what keeps the paying customers.
+ * Reads every source into the sets that the rules use. On prod an empty live list stops the run,
+ * because that list is what keeps the paying customers. Only prod holds a live Stripe key, so ci
+ * passes liveListRequired false and has no live list.
  *
  * @param {{rows: object, registry: object, users: object[], operatorEmails: string[], liveSubscriptions: object[], testSubscriptions: object[]}} sources
  */
-export function buildFacts({ rows, registry, users, operatorEmails, liveSubscriptions, testSubscriptions }) {
+export function buildFacts({ rows, registry, users, operatorEmails, liveSubscriptions, testSubscriptions, liveListRequired = true }) {
   if (users.length === 0) throw new Error("Cognito returned no users, so no hash can be read");
-  if (liveSubscriptions.length === 0) throw new Error("The Stripe live list is empty, so no live subscription can be kept");
+  if (liveListRequired && liveSubscriptions.length === 0) {
+    throw new Error("The Stripe live list is empty, so no live subscription can be kept");
+  }
   assertStripeList(liveSubscriptions, true, "live");
   assertStripeList(testSubscriptions, false, "test");
 
@@ -532,7 +535,15 @@ export async function runClearout(context, options) {
   for (const record of exportRecords) rows[record.table] = await readExportRows(context, record);
 
   const now = plan ? plan.ranAt : context.now();
-  const facts = buildFacts({ rows, registry, users, operatorEmails, liveSubscriptions, testSubscriptions });
+  const facts = buildFacts({
+    rows,
+    registry,
+    users,
+    operatorEmails,
+    liveSubscriptions,
+    testSubscriptions,
+    liveListRequired: context.envName === "prod",
+  });
   const result = classifyRows(rows, facts, now);
   const earlierRows = countRowsUnderEarlierVersion(rows, facts.identityMap);
   printReport(context, result, earlierRows);
@@ -682,7 +693,7 @@ async function createClearoutContext(envName) {
     assertStripeKeyMode(SecretString, mode);
     return new Stripe(SecretString, { maxNetworkRetries: 5 });
   };
-  const liveStripe = await readStripeClient("secret_key", "live");
+  const liveStripe = envName === "prod" ? await readStripeClient("secret_key", "live") : null;
   const testStripe = await readStripeClient("test_secret_key", "test");
 
   return {
@@ -691,7 +702,7 @@ async function createClearoutContext(envName) {
     resultsBucket: `${envName}-env-analytics-results-${account}`,
     tableArn: (table) => `arn:aws:dynamodb:${region}:${account}:table/${envName}-env-${table}`,
     listOperatorEmails: () => loadOperators(),
-    listLiveSubscriptions: () => listSubscriptions(liveStripe),
+    listLiveSubscriptions: async () => (liveStripe ? listSubscriptions(liveStripe) : []),
     listTestSubscriptions: () => listSubscriptions(testStripe),
     cancelTestSubscription: (id) => cancelInTestMode(testStripe, id),
   };

@@ -6,8 +6,8 @@
 // - **Does:** operatorSnapshotPublish.js reads the analytics views behind the eight one-stop objectives. Its handler writes one JSON snapshot per environment, with trailing 30/90-day windows, value, trend and deep link, to s3://<lake>/snapshots/<env>/latest.json. OperatorSnapshotPublish.java provisions the Lambda and its own EventBridge rule inside AnalyticsStack.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/operatorSnapshotPublish.js:handler`
-// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
-// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs
+// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, app/lib/operatorSnapshot/dataSection.js, app/unit-tests/lib/operatorSnapshot/dataSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
+// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs, data tab, item counts
 // - **Related:** DATA-19, DATA-24
 // @end-capability
 
@@ -22,7 +22,9 @@
 // itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { DynamoDBClient, DescribeTableCommand, DescribeTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
+import { CloudWatchClient, GetMetricDataCommand } from "@aws-sdk/client-cloudwatch";
 import { createLogger } from "../../lib/logger.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { AWS_ACCOUNT_NAMES_BY_ID } from "../../lib/operatorSnapshot/awsAccounts.js";
@@ -42,6 +44,7 @@ import {
   buildIntegrationCallsSql,
   shapeIntegrationsSection,
 } from "../../lib/operatorSnapshot/integrationsSection.js";
+import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -2236,6 +2239,106 @@ export async function buildIntegrations({ workGroup, database, envName, region }
 }
 
 /**
+ * The Data tab's section: item counts, TTL, actor split and object counts, with the daily
+ * history files in the lake. See dataSection.js for where each figure comes from.
+ */
+export async function buildData({ workGroup, database, envName, lakeBucket }) {
+  const tableNames = splitList(process.env.DATA_TABLE_NAMES);
+  const bucketNames = splitList(process.env.DATA_BUCKET_NAMES);
+  const diyaGlBucketName = process.env.DIYA_GL_BUCKET_NAME;
+  const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const cloudWatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const s3Client = getS3Client();
+  return buildDataSection({
+    envName,
+    tableNames,
+    bucketNames,
+    io: {
+      describeItemCount: async (TableName) => {
+        const { Table } = await dynamo.send(new DescribeTableCommand({ TableName }));
+        return Table?.ItemCount ?? null;
+      },
+      describeTtl: async (TableName) => {
+        const { TimeToLiveDescription: ttl } = await dynamo.send(new DescribeTimeToLiveCommand({ TableName }));
+        return { enabled: ttl?.TimeToLiveStatus === "ENABLED", attribute: ttl?.AttributeName ?? null };
+      },
+      readHistory: async (Key) => {
+        try {
+          const response = await s3Client.send(new GetObjectCommand({ Bucket: lakeBucket, Key }));
+          return JSON.parse(await response.Body.transformToString());
+        } catch (error) {
+          if (error.name !== "NoSuchKey") logger.warn({ message: "Data history file not read", key: Key, error: error.message });
+          return null;
+        }
+      },
+      writeHistory: async (Key, value) => {
+        await s3Client.send(
+          new PutObjectCommand({ Bucket: lakeBucket, Key, Body: JSON.stringify(value), ContentType: "application/json" }),
+        );
+      },
+      runAthena: (sql) => runAthenaQuery({ workGroup, database, sql }),
+      bucketObjectCounts: async (names, days) => {
+        const end = new Date();
+        const response = await cloudWatch.send(
+          new GetMetricDataCommand({
+            StartTime: new Date(end.getTime() - days * 24 * 60 * 60 * 1000),
+            EndTime: end,
+            MetricDataQueries: names.map((name, index) => ({
+              Id: `b${index}`,
+              MetricStat: {
+                Metric: {
+                  Namespace: "AWS/S3",
+                  MetricName: "NumberOfObjects",
+                  Dimensions: [
+                    { Name: "BucketName", Value: name },
+                    { Name: "StorageType", Value: "AllStorageTypes" },
+                  ],
+                },
+                Period: 86400,
+                Stat: "Average",
+              },
+            })),
+          }),
+        );
+        return Object.fromEntries(
+          names.map((name, index) => {
+            const result = (response.MetricDataResults || []).find((entry) => entry.Id === `b${index}`);
+            const byDay = {};
+            (result?.Timestamps || []).forEach((timestamp, position) => {
+              byDay[timestamp.toISOString().slice(0, 10)] = Math.round(result.Values[position]);
+            });
+            return [name, byDay];
+          }),
+        );
+      },
+      countBooks: async () => (diyaGlBucketName ? countDiyaGlBooks(s3Client, diyaGlBucketName) : null),
+    },
+  });
+}
+
+const splitList = (value) => (value ? value.split(",").filter(Boolean) : []);
+
+// A book is a metadata.json under users/<user>/books/<id>/; each version is a zip beside it. The
+// listing stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so.
+const DIYA_GL_LIST_PAGE_LIMIT = 50;
+
+export async function countDiyaGlBooks(s3Client, Bucket) {
+  let books = 0;
+  let versions = 0;
+  let ContinuationToken;
+  for (let page = 0; page < DIYA_GL_LIST_PAGE_LIMIT; page += 1) {
+    const response = await s3Client.send(new ListObjectsV2Command({ Bucket, Prefix: "users/", ContinuationToken }));
+    (response.Contents || []).forEach(({ Key }) => {
+      if (Key.endsWith("/metadata.json")) books += 1;
+      else if (Key.endsWith(".zip")) versions += 1;
+    });
+    if (!response.IsTruncated) return { books, versions, truncated: false };
+    ContinuationToken = response.NextContinuationToken;
+  }
+  return { books, versions, truncated: true };
+}
+
+/**
  * The paying subscribers of the latest month with a charge, each row an acquisition
  * channel and bundle with its active subscribers, monthly recurring revenue and annualised
  * recurring revenue, and the three figures added over every row. A subscriber with no recorded
@@ -2501,6 +2604,14 @@ export async function handler() {
     failedIntegrations = 1;
     logger.warn({ message: "Integrations query failed, publishing none", error: error.message });
   }
+  let data = null;
+  let failedData = 0;
+  try {
+    data = await buildData({ workGroup, database, envName, lakeBucket });
+  } catch (error) {
+    failedData = 1;
+    logger.warn({ message: "Data section failed, publishing none", error: error.message });
+  }
   let operators = null;
   let failedOperators = 0;
   try {
@@ -2541,6 +2652,7 @@ export async function handler() {
     ...(paidSubscribers ? { paidSubscribers } : {}),
     ...(pageVisitors ? { pageVisitors } : {}),
     ...(integrations ? { integrations } : {}),
+    ...(data ? { data } : {}),
     ...(operators ? { operators } : {}),
     ...(familyAffiliates ? { familyAffiliates } : {}),
     ...(affiliateGroups ? { affiliateGroups } : {}),
@@ -2551,6 +2663,7 @@ export async function handler() {
       failedPaidSubscribers +
       failedPageVisitors +
       failedIntegrations +
+      failedData +
       failedOperators +
       failedFamilyAffiliates +
       failedAffiliateGroups,

@@ -22,6 +22,10 @@ inputs:
   model-id:
     description: "the model: ANTHROPIC_MODEL for claude, one of nova-agent.mjs's ALLOWED_MODEL_IDS for nova"
     required: true
+  reasoning-effort:
+    description: "nova only: maxReasoningEffort for a Nova 2 model (low, medium or high); empty leaves reasoning off"
+    required: false
+    default: ""
   small-fast-model-id:
     description: "value for ANTHROPIC_SMALL_FAST_MODEL (claude only)"
     required: false
@@ -85,6 +89,7 @@ runs:
       env:
         AWS_REGION: 'eu-west-2'
         MODEL_ID: ${{ inputs.model-id }}
+        REASONING_EFFORT: ${{ inputs.reasoning-effort }}
         OUTPUT_FILE: ${{ inputs.output-file }}
         PROMPT_FILE: ${{ inputs.prompt-file }}
         NOVA_TOOLS: ${{ inputs.tools }}
@@ -100,6 +105,7 @@ runs:
         EXPANDED_PROMPT=$(mktemp)
         envsubst < "$PROMPT_FILE" > "$EXPANDED_PROMPT"
         NOVA_ARGS=(--prompt-file "$EXPANDED_PROMPT" --output-file "$OUTPUT_FILE" --model-id "$MODEL_ID" --tools "$NOVA_TOOLS" --max-turns "$MAX_TURNS" --deadline-seconds "$DEADLINE_SECONDS")
+        if [ -n "$REASONING_EFFORT" ]; then NOVA_ARGS+=(--reasoning-effort "$REASONING_EFFORT"); fi
         if [ -n "$FINAL_SCHEMA" ]; then NOVA_ARGS+=(--final-schema "$FINAL_SCHEMA"); fi
         if [ -n "$FROZEN_RESULTS" ]; then NOVA_ARGS+=(--frozen-results "$FROZEN_RESULTS"); fi
         while IFS= read -r INPUT_FILE; do
