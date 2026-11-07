@@ -68,6 +68,7 @@ describe("support-replay.yml", () => {
     expect(text).toContain("READER_MODEL_ID: ${{ inputs.model-id || 'amazon.nova-pro-v1:0' }}");
     expect(text).toMatch(/inputs:\n {6}model-id:\n(?: {8}.*\n)*? {8}default: 'amazon\.nova-pro-v1:0'/);
     expect(text).toContain("reasoning-effort: ${{ env.REASONING_EFFORT }}");
+    expect(text).toContain("options: ['off', low, medium, high]");
     expect(text).toContain('--arg effort "$REASONING_EFFORT"');
     const settle = text.slice(text.indexOf("Judge the draft and repair it once"));
     expect(settle.slice(0, settle.indexOf("Judge the answer against the fixture"))).toContain("support-triage-settle.mjs");

@@ -30,7 +30,16 @@ vi.mock("@aws-sdk/client-bedrock-runtime", () => ({
 const launchMock = vi.fn();
 vi.mock("playwright", () => ({ chromium: { launchPersistentContext: (...args) => launchMock(...args) } }));
 
-import { runNightly, unpackBundle, withJpegConverter, encryptBytes, decryptBytes } from "../../../scripts/dashboard-review-nightly.mjs";
+import {
+  runNightly,
+  unpackBundle,
+  withJpegConverter,
+  encryptBytes,
+  decryptBytes,
+  bundleOutputLines,
+  BUNDLE_MAX_CHARS,
+  BUNDLE_PART_COUNT,
+} from "../../../scripts/dashboard-review-nightly.mjs";
 
 const REPO = path.resolve(import.meta.dirname, "../../..");
 const PASS = "transit-pass-for-the-test";
@@ -171,7 +180,7 @@ async function review(overrides = {}) {
 
 function bundleOf() {
   const output = fs.readFileSync(env.GITHUB_OUTPUT, "utf8");
-  return /^bundle=(.+)$/m.exec(output)[1];
+  return [...output.matchAll(/^bundle-\d=(.*)$/gm)].map((match) => match[1]).join("");
 }
 
 async function write(bundle, privateDir, pass = PASS) {
@@ -472,6 +481,16 @@ describe("dashboard review nightly, write mode", () => {
     );
     expect(report).toContain("Schema issues: answer not_one_json_object.");
     expect(report).not.toMatch(/zebra/i);
+  });
+});
+
+describe("bundleOutputLines", () => {
+  test("keeps each part under the environment value limit and loses no character", () => {
+    const bundle = "x".repeat(BUNDLE_MAX_CHARS);
+    const parts = [...bundleOutputLines(bundle).matchAll(/^bundle-(\d)=(.*)$/gm)];
+    expect(parts).toHaveLength(BUNDLE_PART_COUNT);
+    expect(Math.max(...parts.map((part) => part[2].length))).toBeLessThan(128 * 1024);
+    expect(parts.map((part) => part[2]).join("")).toBe(bundle);
   });
 });
 

@@ -133,8 +133,11 @@ describe("dashboard-review-nightly.yml", () => {
 
   it("passes the bundle to write as a file, from the job output, with no echo", () => {
     const write = jobBlock("write");
-    expect(write).toContain("BUNDLE: ${{ needs.review.outputs.bundle }}");
-    expect(write).toContain('printf \'%s\' "$BUNDLE" > "$RUNNER_TEMP/bundle.txt"');
+    for (const part of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      expect(write).toContain(`BUNDLE_${part}: \${{ needs.review.outputs.bundle-${part} }}`);
+      expect(write).toContain(`"$BUNDLE_${part}"`);
+    }
+    expect(write).toContain('> "$RUNNER_TEMP/bundle.txt"');
     expect(write).toContain('--bundle "$RUNNER_TEMP/bundle.txt"');
     expect(text).not.toMatch(/echo[^\n]*\$\{?BUNDLE/);
   });
