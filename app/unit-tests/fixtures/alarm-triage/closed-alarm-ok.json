@@ -1,0 +1,78 @@
+{
+  "description": "The alarm returned to OK ten minutes after a single breach; the row closes it when gone.",
+  "alarm": {
+    "name": "ci-zz3cherry-app-api-5xx",
+    "environment": "ci",
+    "deployment": "zz3cherry",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9102
+  },
+  "remedyRow": {
+    "family": "ci-app-api-5xx",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms go with the set."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz3cherry",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz3cherry-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz3cherry-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:15:00Z",
+          "summary": "Alarm updated from ALARM to OK",
+          "newState": {
+            "value": "OK",
+            "stateReason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching]."
+          }
+        },
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [2.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:15:00Z\",\"summary\":\"Alarm updated from ALARM to OK\",\"newState\":{\"value\":\"OK\",\"stateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}},{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [2.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz3cherry-app-api-5xx\",\"StateValue\":\"OK\",\"StateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz3cherry-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-0201 gateway timeout after 29000 ms calling the quote function\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [["5xx", "gateway", "timeout"]],
+    "nextAction": [["watch", "no action", "close"]],
+    "remedy": "close-when-gone"
+  }
+}

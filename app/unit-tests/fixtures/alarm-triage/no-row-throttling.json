@@ -1,0 +1,65 @@
+{
+  "description": "No remedy row exists; a table throttles writes and the alarm is in ALARM.",
+  "alarm": {
+    "name": "prod-zz14nectar-app-bundle-write-errors",
+    "environment": "prod",
+    "deployment": "zz14nectar",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9113
+  },
+  "remedyRow": null,
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz14nectar",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-zz14nectar-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-zz14nectar-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [9.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [9.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-zz14nectar-app-bundle-write-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [9.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-zz14nectar-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-1401 ThrottlingException: Rate of requests exceeds the allowed throughput\"},{\"timestamp\":1768467901000,\"message\":\"ERROR req-1402 ThrottlingException: Rate of requests exceeds the allowed throughput\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["bundle"], ["throttl"]],
+    "nextAction": [["capacity", "throttl", "backoff", "investigate", "retry"]],
+    "remedy": "none"
+  }
+}

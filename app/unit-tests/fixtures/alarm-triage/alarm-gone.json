@@ -1,0 +1,61 @@
+{
+  "description": "alarmFound is false because the deployment set was retired; the row closes it when gone.",
+  "alarm": {
+    "name": "ci-zz8honey-app-health-failed",
+    "environment": "ci",
+    "deployment": "zz8honey",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9107
+  },
+  "remedyRow": {
+    "family": "ci-app-health-failed",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms go with the set."
+  },
+  "evidence": {
+    "alarmFound": false,
+    "deploymentLive": false,
+    "liveDeployment": "zz0other",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz8honey-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz8honey-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": []
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz8honey-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [["gone", "no longer exists", "does not exist", "retired", "not found"]],
+    "nextAction": [["close", "no action", "watch"]],
+    "remedy": "close-when-gone"
+  }
+}

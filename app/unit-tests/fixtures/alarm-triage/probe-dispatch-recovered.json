@@ -1,0 +1,82 @@
+{
+  "description": "The probe alarm is back to OK because the next run passed; the dispatch row does not apply.",
+  "alarm": {
+    "name": "prod-env-github-probe-failed",
+    "environment": "prod",
+    "deployment": "none",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9105
+  },
+  "remedyRow": {
+    "family": "prod-env-github-probe-failed",
+    "remedy": "dispatch",
+    "workflow": "probe-test.yml",
+    "inputs": {
+      "environment-name": "prod"
+    },
+    "budgetPerDay": 2,
+    "why": "One more passing run clears it."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "none",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-env-probe-metric-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-env-probe-metric-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:12:00Z",
+          "summary": "Alarm updated from ALARM to OK",
+          "newState": {
+            "value": "OK",
+            "stateReason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching]."
+          }
+        },
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:12:00Z\",\"summary\":\"Alarm updated from ALARM to OK\",\"newState\":{\"value\":\"OK\",\"stateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}},{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-env-github-probe-failed\",\"StateValue\":\"OK\",\"StateReason\":\"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NotBreaching].\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-env-probe-metric-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"INFO probe run 7 finished with conclusion failure\"},{\"timestamp\":1768467901000,\"message\":\"INFO probe run 8 finished with conclusion success\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [["probe"], ["failed", "failure", "run 7"]],
+    "nextAction": [["watch", "no action"]],
+    "remedy": "none"
+  }
+}

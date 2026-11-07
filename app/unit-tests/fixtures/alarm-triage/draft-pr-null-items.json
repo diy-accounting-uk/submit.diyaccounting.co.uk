@@ -1,0 +1,80 @@
+{
+  "description": "A TypeError in a sync function, still in alarm, with the source in the evidence; the row allows a draft PR.",
+  "alarm": {
+    "name": "ci-zz1apple-app-ledger-sync-errors",
+    "environment": "ci",
+    "deployment": "zz1apple",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9100
+  },
+  "remedyRow": {
+    "family": "ci-app-ledger-sync-errors",
+    "remedy": "draft-pr",
+    "paths": ["src/ledger/sync.js"],
+    "budgetPerDay": 2,
+    "why": "One function, code only."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz1apple",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz1apple-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz1apple-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [6.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    },
+    "codeContext": {
+      "src/ledger/sync.js": "export function syncLedger(batch) {\n  const rows = [];\n  // Copy each entry of the batch.\n  for (let i = 0; i < batch.items.length; i++) {\n    rows.push(batch.items[i]);\n  }\n  return rows;\n}\n"
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [6.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz1apple-app-ledger-sync-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [6.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz1apple-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-0001 TypeError: Cannot read properties of undefined (reading 'length') at syncLedger (src/ledger/sync.js:4:22)\"},{\"timestamp\":1768467901000,\"message\":\"ERROR req-0002 TypeError: Cannot read properties of undefined (reading 'length') at syncLedger (src/ledger/sync.js:4:22)\"},{\"timestamp\":1768467902000,\"message\":\"ERROR req-0003 TypeError: Cannot read properties of undefined (reading 'length') at syncLedger (src/ledger/sync.js:4:22)\"}]}"
+    }
+  ],
+  "files": {
+    "src/ledger/sync.js": "export function syncLedger(batch) {\n  const rows = [];\n  // Copy each entry of the batch.\n  for (let i = 0; i < batch.items.length; i++) {\n    rows.push(batch.items[i]);\n  }\n  return rows;\n}\n"
+  },
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [
+      ["ledger-sync", "syncledger", "ledger sync"],
+      ["typeerror", "undefined"]
+    ],
+    "nextAction": [["items", "guard", "undefined", "null", "fix"]],
+    "remedy": "draft-pr"
+  }
+}

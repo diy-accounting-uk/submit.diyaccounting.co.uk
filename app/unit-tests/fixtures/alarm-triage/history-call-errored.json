@@ -1,0 +1,59 @@
+{
+  "description": "The alarmHistory call in the evidence carries an error; the answer must quote it and name the call.",
+  "alarm": {
+    "name": "prod-zz11kiwi-app-export-errors",
+    "environment": "prod",
+    "deployment": "zz11kiwi",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9110
+  },
+  "remedyRow": null,
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz11kiwi",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-zz11kiwi-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-zz11kiwi-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": {
+        "error": "An error occurred (ThrottlingException) when calling the DescribeAlarmHistory operation: Rate exceeded"
+      }
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [3.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-zz11kiwi-app-export-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [3.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-zz11kiwi-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-1101 export failed: disk quota exceeded in the scratch volume\"}]}"
+    }
+  ],
+  "expect": {
+    "realCallFailure": true,
+    "stillBroken": true,
+    "whatBroke": [["export"], ["disk quota", "quota"]],
+    "nextAction": [["scratch", "quota", "volume", "clean", "fix"]],
+    "remedy": "none"
+  }
+}

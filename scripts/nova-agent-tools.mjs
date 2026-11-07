@@ -315,6 +315,24 @@ function validateAwsArgs(command, args) {
 }
 
 /**
+ * Makes a `child` for createToolRunner that answers each `aws` call from frozen results and
+ * sends every other program to runChild. A frozen entry is `{command, contains?, result}`:
+ * `command` is the aws service and verb, such as "logs filter-log-events", `contains` is a
+ * list of strings that must all appear in the call's arguments, and `result` is the text that
+ * the call returns. The first entry that fits wins. A call that fits no entry returns no output.
+ * @param {{command: string, contains?: string[], result: string}[]} frozen
+ */
+export function createReplayChild(frozen, realChild = runChild) {
+  return async function replayChild(file, args, options) {
+    if (file !== "aws") return realChild(file, args, options);
+    const command = args.slice(0, 2).join(" ");
+    const rest = args.slice(2).join(" ");
+    const entry = frozen.find((item) => item.command === command && (item.contains ?? []).every((part) => rest.includes(part)));
+    return { code: 0, stdout: entry ? entry.result : "", stderr: "", cut: false };
+  };
+}
+
+/**
  * Makes the tool dispatcher for one run.
  * @param {{repoRoot: string, inputFiles?: string[], child?: typeof runChild}} options
  *   inputFiles are the paths outside git that read_file may open.
