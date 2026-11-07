@@ -48,9 +48,6 @@ compatible with the mode: the loop dispatches on the next board and the watch ex
 neither is running, say so in one clause; the operator asked for it once because the reply did
 not.
 
-Then tell every sibling session through its inbox that this repository is cooling down, so they
-hold new asks rather than queueing them. Their in-flight work is theirs to finish.
-
 ## The five rules while it is on
 
 ### 1. No new board rows, with one exception
