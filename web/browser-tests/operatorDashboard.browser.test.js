@@ -340,7 +340,7 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page, { loggedIn: true });
     }
 
-    test("opens on Main with the eight tabs and one pressed", async ({ page }) => {
+    test("opens on Main with the nine tabs and one pressed", async ({ page }) => {
       await loadTabs(page);
 
       await expect(page.locator(".dashboard-tab")).toHaveText([
@@ -348,6 +348,7 @@ test.describe("Operator Dashboard", () => {
         "Adoption",
         "Behaviour",
         "Integrations",
+        "Data",
         "Ops",
         "Affiliates",
         "AWS prod",
@@ -465,7 +466,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      21,
+      24,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -479,6 +480,9 @@ test.describe("Operator Dashboard", () => {
       "integrationsHmrcPanel",
       "integrationsCompaniesHousePanel",
       "integrationsStripePanel",
+      "dataTablesPanel",
+      "dataSplitPanel",
+      "dataBucketsPanel",
       "table-low-running-cost",
       "table-uptime",
       "table-compliance",
@@ -512,7 +516,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(21);
+    expect(sections).toHaveLength(24);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);
@@ -1559,7 +1563,7 @@ test.describe("Operator Dashboard", () => {
           });
           await loadDashboard(page);
 
-          await expect(page.locator(".chart-card")).toHaveCount(8);
+          await expect(page.locator(".chart-card")).toHaveCount(9);
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
           expect(overflow).toBeLessThanOrEqual(0);
           const cardRight = await page.evaluate(() =>
