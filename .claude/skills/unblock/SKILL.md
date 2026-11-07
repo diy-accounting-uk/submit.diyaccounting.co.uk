@@ -8,10 +8,10 @@ description: Check every blocked, machine-ask and human-driven row on NEXT.md fo
 <!-- @capability DEV-59 Check blockers and ask the operator what moves the board
 - **Use when:** the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
 - **Does:** unblock tests every blocked, machine-ask and human-driven row against evidence, and moves each row whose state is stale. It then asks each open decision, records the answers on NEXT.md, and prints in full each command that unblocks or part-delivers a row.
-- **Run:** `/unblock`
+- **Run:** `/unblock`, or `/unblock quick wins` for the half of the operator's items that close fastest
 - **Entry:** `.claude/skills/unblock/SKILL.md`
 - **Files:** .claude/skills/unblock/SKILL.md
-- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions
+- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions, quick wins
 - **Related:** DEV-27, DEV-29, DEV-30
 @end-capability -->
 
@@ -90,6 +90,30 @@ in an empty room holds the loop.
 it saying what it unblocks. Print only a command that can run now with no condition attached
 (`ready-means-ready-now`). An email, a console walk-through or a physical step has no command: name
 the exact action with its URL.
+
+## Quick wins: `/unblock quick wins`
+
+The operator has a short window and asks for the items they can close fastest. Steps 1 and 2 run
+as above. Then, in place of step 3's two lists, rank every item the operator can move (a decision,
+a command the session runs on their go, an action only they can take) by the time it takes them to
+close it, fastest first, in these tiers:
+
+1. A yes to what is already built or already recommended ("stay as built").
+2. One word of go for a command the session then runs.
+3. One physical or console action that takes under a minute (print a card, delete one secret).
+4. A read of one page and a number or a word back.
+5. A choice plus one short send (pick a slot and reply).
+6. A console walk-through of several steps, or an edit and a send.
+7. A block of presence (a key rotation, a journey through the product, a manual test).
+
+Inside a tier, the item that unblocks more rows comes first. Take the top half of the ranked list
+(round up), and leave the rest for a plain `/unblock`. Present the half as one numbered list, one
+line each: the row, the question or the action, and what it closes or unblocks. With the operator
+present, ask the decisions through `AskUserQuestion`, at most four to a call, in rank order; print
+each command in full with the `!` prefix, as step 4 says. Record the answers as step 5 says.
+
+Leave out what no answer can move today: a date, a third party, a machine step the session has not
+yet run. Those belong to the board, not to this list.
 
 ## 5. Record
 
