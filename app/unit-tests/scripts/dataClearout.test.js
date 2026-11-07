@@ -390,7 +390,10 @@ describe("keep rules, each on a row that has a delete proof, so keep wins", () =
 
   test("an affiliate's test pass stays", () => {
     const affiliate = factsFor({ passes: [{ pk: `affiliate#${UNKNOWN_HASH}` }] });
-    expect(classifyPass(testPass({ issuedBy: UNKNOWN_HASH }), affiliate, NOW)).toEqual({ action: "keep", rule: "commission-owner" });
+    expect(classifyPass(testPass({ issuedBy: UNKNOWN_HASH, ttl: FUTURE_TTL }), affiliate, NOW)).toEqual({
+      action: "keep",
+      rule: "commission-owner",
+    });
   });
 
   test("a subscription row links its owner to the live list", () => {
