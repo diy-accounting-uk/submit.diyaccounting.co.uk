@@ -6131,10 +6131,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
 - **Does:** unblock tests every blocked, machine-ask and human-driven row against evidence, and moves each row whose state is stale. It then asks each open decision, records the answers on NEXT.md, and prints in full each command that unblocks or part-delivers a row.
-- **Run:** `/unblock`
+- **Run:** `/unblock`, or `/unblock quick wins` for the half of the operator's items that close fastest
 - **Entry:** `.claude/skills/unblock/SKILL.md`
 - **Files:** .claude/skills/unblock/SKILL.md
-- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions
+- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions, quick wins
 - **Related:** DEV-27, DEV-29, DEV-30
 
 ## Spreadsheets and diya-gl (SS)
@@ -8753,6 +8753,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
+- quick wins: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - quote: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
