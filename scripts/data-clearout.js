@@ -193,6 +193,8 @@ export function classifyPass(row, facts, now) {
   const proof = passProof(row, facts);
   if (!proof && hasTtlThatWouldDeleteAUsablePass(row)) return { action: "remove-ttl", rule: "real-pass-no-end-date" };
   const keepRule = passKeepRule(row, code, facts);
+  // The table's TTL applies no keep rule, so a protected row with a past ttl loses that ttl first.
+  if (keepRule && row.ttl * 1000 < Date.parse(now)) return { action: "remove-ttl", rule: `protected-${keepRule}` };
   if (keepRule) return { action: "keep", rule: keepRule };
   if (!proof) return { action: "keep", rule: row.ttl * 1000 < Date.parse(now) ? "no-proof-past-ttl" : "no-proof" };
   const tooNew = ageRule(row.createdAt, TEST_RECORD_MINIMUM_AGE_DAYS, now);

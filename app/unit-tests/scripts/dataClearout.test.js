@@ -229,6 +229,19 @@ describe("delete rules name their proof", () => {
   });
 });
 
+describe("a protected pass with a past ttl", () => {
+  test("loses the ttl, so the table's TTL cannot delete it", () => {
+    expect(classifyPass(realPass({ actor: "customer", validUntil: OLD, ttl: PAST_TTL }), facts, NOW)).toEqual({
+      action: "remove-ttl",
+      rule: "protected-real-actor",
+    });
+  });
+
+  test("keeps a ttl that has not passed", () => {
+    expect(classifyPass(realPass({ actor: "customer", validUntil: OLD, ttl: FUTURE_TTL }), facts, NOW).action).toBe("keep");
+  });
+});
+
 describe("an expired bundle that no Stripe record stands behind", () => {
   test("goes, even for a real account", () => {
     expect(classifyBundle(testBundle({ hashedSub: CUSTOMER_HASH, qualifiers: undefined }), facts, NOW)).toEqual({
@@ -312,7 +325,7 @@ describe("keep rules, each on a row that has a delete proof, so keep wins", () =
     ["a filer issued it", { issuedBy: FILER_HASH }, "filed-return-owner"],
     ["a commission referrer issued it", { issuedBy: COMMISSION_HASH }, "commission-owner"],
   ])("a test pass stays when %s", (_name, overrides, rule) => {
-    expect(classifyPass(testPass(overrides), facts, NOW)).toEqual({ action: "keep", rule });
+    expect(classifyPass(testPass({ ttl: FUTURE_TTL, ...overrides }), facts, NOW)).toEqual({ action: "keep", rule });
   });
 
   test("a test pass that only a test user redeemed goes", () => {
