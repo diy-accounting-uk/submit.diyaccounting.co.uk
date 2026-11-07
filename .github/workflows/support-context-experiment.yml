@@ -6,7 +6,7 @@
 # - **Does:** support-context-experiment.yml splits faqs.toml, help.html and guide.html into snippets with front matter. For each size and model, scripts/support-context-experiment.mjs runs the 30 triage fixtures through the answer, the check and one repair call. Titan embeds each snippet once and the ticket summary, and cosine similarity picks the top snippets. The job prints one row for each size and model: accuracy, safety fixtures, tokens and seconds. It runs on dispatch only. Every fixture is synthetic.
 # - **Run:** `gh workflow run support-context-experiment.yml -f models=amazon.nova-pro-v1:0 -f sizes=0,4,8,16,36,top3,top6,top12 -f runs=3`
 # - **Entry:** `scripts/support-context-experiment.mjs:runExperiment`
-# - **Files:** .github/workflows/support-context-experiment.yml, scripts/support-context-experiment.mjs, scripts/support-snippets.mjs, app/unit-tests/scripts/supportContextExperiment.test.js, app/unit-tests/scripts/supportSnippets.test.js
+# - **Files:** .github/workflows/support-context-experiment.yml, scripts/support-context-experiment.mjs, scripts/support-snippets.mjs, scripts/support-retrieval.mjs, app/unit-tests/scripts/supportContextExperiment.test.js, app/unit-tests/scripts/supportSnippets.test.js
 # - **Keywords:** context size, retrieval, embeddings, titan, snippets, front matter, accuracy curve, nova
 # - **Related:** OPS-155, OPS-194
 # @end-capability
