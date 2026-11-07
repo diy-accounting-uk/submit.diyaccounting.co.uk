@@ -316,12 +316,6 @@ function syncWebAssets(config) {
           case "RumAppMonitorId":
             rumConfig.appMonitorId = output.OutputValue;
             break;
-          case "RumIdentityPoolId":
-            rumConfig.identityPoolId = output.OutputValue;
-            break;
-          case "RumGuestRoleArn":
-            rumConfig.guestRoleArn = output.OutputValue;
-            break;
           case "RumRegion":
             rumConfig.region = output.OutputValue;
             break;
@@ -344,11 +338,7 @@ function syncWebAssets(config) {
 
       for (const htmlFile of htmlFiles) {
         let content = fs.readFileSync(htmlFile, "utf-8");
-        content = content
-          .replace(/\$\{RUM_APP_MONITOR_ID\}/gi, rumConfig.appMonitorId)
-          .replace(/\$\{RUM_IDENTITY_POOL_ID\}/gi, rumConfig.identityPoolId)
-          .replace(/\$\{RUM_GUEST_ROLE_ARN\}/gi, rumConfig.guestRoleArn)
-          .replace(/\$\{AWS_REGION\}/gi, rumRegion);
+        content = content.replace(/\$\{RUM_APP_MONITOR_ID\}/gi, rumConfig.appMonitorId).replace(/\$\{AWS_REGION\}/gi, rumRegion);
         fs.writeFileSync(htmlFile, content);
       }
       console.log(`  Injected RUM config into ${htmlFiles.length} HTML files`);

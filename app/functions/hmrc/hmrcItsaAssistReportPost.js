@@ -53,6 +53,8 @@ async function call(params, requestContext) {
       requestedAt,
     },
     resolveActorClass(),
+    undefined,
+    requestContext.hmrcAccount === "synthetic",
   );
   await publishActivityEvent({
     event: "itsa-assist-report-requested",

@@ -34,7 +34,10 @@ vi.mock("@app/services/customerEmailSender.js", async (importOriginal) => ({
 }));
 vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({ getReceipt: mocks.getReceipt }));
 vi.mock("@app/lib/emfMetrics.js", () => ({ emitMetric: mocks.emitMetric }));
-vi.mock("@app/lib/qrCodeGenerator.js", () => ({ generatePassQrCodeBuffer: vi.fn().mockResolvedValue(Buffer.from("png")) }));
+vi.mock("@app/lib/qrCodeGenerator.js", () => ({
+  generatePassQrCodeBuffer: vi.fn().mockResolvedValue(Buffer.from("png")),
+  generatePassQrCodeSvgString: vi.fn().mockResolvedValue('<svg viewBox="0 0 29 29"><path d="M0 0"/></svg>'),
+}));
 vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
   ...(await importOriginal()),
   publishActivityEvent: mocks.publishActivityEvent,
@@ -99,10 +102,56 @@ describe("functions/email/customerEmailSend", () => {
     expect(mocks.sendCustomerEmail.mock.calls[0][0].text).toContain("FB1");
   });
 
+  test("a notice digest goes to the address in the request, with no account and no operator copy", async () => {
+    const event = {
+      Records: [
+        {
+          messageId: "m1",
+          body: JSON.stringify({
+            requestId: "r1",
+            payload: { kind: "notice-digest", to: "ops@diyaccounting.co.uk", data: { count: 2, nearestDeadline: "2026-11-12" } },
+          }),
+        },
+      ],
+    };
+    await handler(event);
+    expect(mocks.cognitoSend).not.toHaveBeenCalled();
+    expect(mocks.sendCustomerEmail).toHaveBeenCalledTimes(1);
+    expect(mocks.sendCustomerEmail.mock.calls[0][0]).toMatchObject({ to: "ops@diyaccounting.co.uk", kind: "notice-digest" });
+    expect(mocks.sendCustomerEmail.mock.calls[0][0].text).toContain("12 November 2026");
+    expect(mocks.publishActivityEvent.mock.calls[0][0]).toMatchObject({ event: "customer-email-sent" });
+  });
+
+  test("a message with no account is skipped for a kind that needs one", async () => {
+    const event = {
+      Records: [{ messageId: "m1", body: JSON.stringify({ requestId: "r1", payload: { kind: "pass-redeemed", to: "a@example.com" } }) }],
+    };
+    await handler(event);
+    expect(mocks.sendCustomerEmail).not.toHaveBeenCalled();
+  });
+
   test("a pass attaches the QR code inline", async () => {
     await handler(sqsEvent({ kind: "pass-generated", userSub: "sub-1", data: { code: "ab-cd", bundleId: "day-guest" } }));
     const attachment = mocks.sendCustomerEmail.mock.calls[0][0].attachments[0];
     expect(attachment).toMatchObject({ ContentDisposition: "INLINE", ContentId: "pass-qr", ContentType: "image/png" });
+  });
+
+  test("a physical pass attaches the QR code inline and the front and back to print", async () => {
+    await handler(
+      sqsEvent({ kind: "pass-generated", userSub: "sub-1", data: { code: "ab-cd", passTypeId: "physical-pass", bundleId: "day-guest" } }),
+    );
+    const attachments = mocks.sendCustomerEmail.mock.calls[0][0].attachments;
+    expect(attachments.map((a) => [a.FileName, a.ContentDisposition])).toEqual([
+      ["pass-ab-cd-qr.png", "INLINE"],
+      ["pass-ab-cd-front.svg", "ATTACHMENT"],
+      ["pass-ab-cd-back.svg", "ATTACHMENT"],
+      ["pass-ab-cd-back.png", "ATTACHMENT"],
+    ]);
+  });
+
+  test("a digital pass attaches the inline QR code only", async () => {
+    await handler(sqsEvent({ kind: "pass-generated", userSub: "sub-1", data: { code: "ab-cd", passTypeId: "digital-pass" } }));
+    expect(mocks.sendCustomerEmail.mock.calls[0][0].attachments).toHaveLength(1);
   });
 
   test("a test account is suppressed when no sink is set", async () => {

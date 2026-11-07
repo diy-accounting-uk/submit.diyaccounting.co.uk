@@ -25,6 +25,7 @@ export const companyAccountsObjective = {
       view: "company_accounts",
       dayColumn: "dt",
       valueExpr: "cashatbank",
+      asOfExpr: "cashasof",
       aggregation: "latest",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },

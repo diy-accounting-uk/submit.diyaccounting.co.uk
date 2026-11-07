@@ -64,6 +64,8 @@ class SqsRecordParseError extends Error {}
  *     result, where a terminal error must be recorded rather than retried forever.
  * @param {string} [options.userContextKey="userSub"] - AsyncLocalStorage key (and log field
  *   name) the extracted user id is stored under; some callers read it back as "userId"
+ * @param {(body: any) => boolean} [options.accountOptional] - true for a message whose kind has no
+ *   account; such a message needs a requestId and no userId. Default: every message needs both.
  * @param {(payload: any, ids: {userId: string, requestId: string, traceparent: string, correlationId: string}) => Promise<void>} options.processRecord
  *   - the caller's business logic for one record, including any success/failure persistence
  * @param {(error: Error, ids: {userId: string, requestId: string, traceparent: string, correlationId: string}) => Promise<void>} [options.onTerminalError]
@@ -71,7 +73,7 @@ class SqsRecordParseError extends Error {}
  */
 export async function processSqsRecords(
   event,
-  { requiredEnv, logger, errorPolicy, userContextKey = "userSub", processRecord, onTerminalError },
+  { requiredEnv, logger, errorPolicy, userContextKey = "userSub", accountOptional, processRecord, onTerminalError },
 ) {
   await initializeSalt();
   validateEnv(requiredEnv);
@@ -95,7 +97,7 @@ export async function processSqsRecords(
       traceparent = body.traceparent;
       correlationId = body.correlationId;
 
-      if (!userId || !requestId) {
+      if (!requestId || (!userId && !accountOptional?.(body))) {
         logger.error({
           message: "SQS Message missing userId or requestId",
           recordId: record.messageId,
@@ -112,7 +114,7 @@ export async function processSqsRecords(
       context.set("requestId", requestId);
       context.set("traceparent", traceparent);
       context.set("correlationId", correlationId);
-      context.set(userContextKey, userId);
+      if (userId) context.set(userContextKey, userId);
 
       logger.info({ message: "Processing SQS message", [userContextKey]: userId, requestId, messageId: record.messageId });
 

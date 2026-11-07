@@ -18,6 +18,11 @@ description: Work NEXT.md top to bottom as waves of concurrent worktree sub-agen
 
 # do-next — work `NEXT.md` with the coordinator model
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 You are the coordinator. You plan, dispatch, merge, push and answer the operator. You do not
 write the code. **Keep the main chat free for chat**: anything long-running goes to a sub-agent
 or a background task.

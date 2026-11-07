@@ -80,7 +80,12 @@
   // Each link has an id the console capture knows (app/services/consoleCaptureCatalogue.js) and
   // the capture ids whose image or table the page shows beside it.
   const analyticsQueries = [
-    ["cognito-sign-ins", "Cognito sign-ins and refreshes by client", '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"'],
+    [
+      "cognito-sign-ins",
+      "Cognito sign-ins and refreshes by client",
+      '{AWS/Cognito,UserPool,UserPoolClient} MetricName="SignInSuccesses"',
+      ["cognito-sign-ins", "cognito-sign-ins-rest"],
+    ],
     ["hmrc-authentications", "HMRC authentications", "Submit/Analytics HmrcAuthentications"],
     ["bundle-operations", "Bundle operations by activity", '{Submit/Analytics,Activity} MetricName="BundleOperations"'],
     ["bundle-grants", "Bundle grants", "Submit/Analytics BundleGrants"],
@@ -90,13 +95,12 @@
       "Submit/Analytics Ga4Purchases OR StripePaidCharges OR ActivityActivations",
     ],
     ["deploy-lead-time", "Deploy lead time in hours", '{Submit/Analytics,Environment} MetricName="DeployLeadTimeHours"'],
-    ["analytics-all", "Every Submit/Analytics metric", "Submit/Analytics"],
+    ["analytics-all", "Every Submit/Analytics metric", "Submit/Analytics", ["analytics-all", "analytics-all-middle", "analytics-all-rest"]],
   ];
 
   const operationsQueries = [
     ["lambda-errors", "Lambda errors by function", '{AWS/Lambda,FunctionName} MetricName="Errors" -app-'],
     ["lambda-throttles", "Lambda throttles by function", '{AWS/Lambda,FunctionName} MetricName="Throttles" -app-'],
-    ["lambda-duration", "Lambda duration by function", '{AWS/Lambda,FunctionName} MetricName="Duration" -app-'],
     ["bundle-allocations", "Active bundle allocations", '{Submit/BundleCapacity,bundleId} MetricName="BundleActiveAllocations"'],
   ];
 
@@ -116,8 +120,8 @@
     const result = [];
     ENVIRONMENTS.forEach((env) => {
       const analytics = { title: "Analytics on AWS " + env.id, env: env.id, links: [] };
-      analyticsQueries.forEach(([slug, label, query]) => {
-        analytics.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
+      analyticsQueries.forEach(([slug, label, query, captureSlugs]) => {
+        analytics.links.push(link(env, slug, label, metricsSearchUrl(env.region, query), captureSlugs));
       });
       result.push(analytics);
     });
@@ -127,7 +131,20 @@
         operations.links.push(link(env, slug, label, metricsSearchUrl(env.region, query)));
       });
       operations.links.push(
-        link(env, "rum", "Web vitals and JavaScript errors", rumUrl(env.region, env.id + "-env-rum"), ["rum-vitals", "rum-errors"]),
+        link(
+          env,
+          "lambda-duration",
+          "Lambda duration by function",
+          metricsSearchUrl(env.region, '{AWS/Lambda,FunctionName} MetricName="Duration" -app-'),
+          ["lambda-duration-slowest", "lambda-duration-rest", "lambda-duration-tail"],
+        ),
+      );
+      operations.links.push(
+        link(env, "rum", "Web vitals and JavaScript errors", rumUrl(env.region, env.id + "-env-rum"), [
+          "rum-vitals",
+          "rum-vitals-score",
+          "rum-errors",
+        ]),
       );
       operations.links.push(link(env, "alarms", "Alarms", alarmsUrl(env.region, env.id + "-")));
       operations.links.push(
@@ -138,7 +155,7 @@
         SIBLING_RUM.forEach((rum) => {
           operations.links.push({
             id: rum.key + "-rum",
-            captures: [rum.key + "-rum-vitals"],
+            captures: [rum.key + "-rum-vitals", rum.key + "-rum-vitals-score"],
             label: rum.label,
             account: rum.account,
             env: "prod",
@@ -193,6 +210,7 @@
     { heading: "Alarm", value: (row) => row.name },
     { heading: "State", value: (row) => row.state },
     { heading: "Since", value: (row) => (row.stateUpdatedAt ? formatCaptured(row.stateUpdatedAt) : "") },
+    { heading: "Last fired", value: (row) => (row.lastFiredAt ? formatCaptured(row.lastFiredAt) : "") },
     { heading: "Reason", value: (row) => row.reason },
   ];
 
@@ -298,6 +316,7 @@
       return { element: wrapper };
     }
     if (entry.imageKey) {
+      if (entry.hasData === false) wrapper.appendChild(textElement("p", "console-capture-empty", "No data in the range"));
       wrapper.appendChild(imageElement(captureId, entry.title));
       return { element: wrapper };
     }

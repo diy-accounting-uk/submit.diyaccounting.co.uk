@@ -2,11 +2,11 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability BILL-10 Redeem a pass
-// - **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
-// - **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
+// - **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
+// - **Does:** The passPost.js ingestHandler redeems a code via passService.redeemPass, then grants the pass's bundle through bundlePost.js's grantBundle, skipping the capacity cap. A bundle marked on-pass-on-subscription reports valid but not yet redeemed, requiring a Stripe subscription first. web/public/pass.html with web/public/pass.page.js shows what a ?pass= link gives and posts here when the person presses Redeem pass; bundles.html forwards a ?pass= link to it. web/public/widgets/pass-redeemer.js auto-redeems a ?pass= query parameter on any page that includes it.
 // - **Run:** `POST /api/v1/pass`
 // - **Entry:** `app/functions/account/passPost.js:ingestHandler`; `app/services/passService.js:redeemPass`
-// - **Files:** app/functions/account/passPost.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
+// - **Files:** app/functions/account/passPost.js, web/public/pass.html, web/public/pass.page.js, app/unit-tests/functions/passPost.test.js, app/system-tests/passRedemption.system.test.js, behaviour-tests/passRedemption.behaviour.test.js, web/browser-tests/passRedeemer.browser.test.js, web/public/widgets/pass-redeemer.js, app/services/passService.js, app/unit-tests/services/passService.test.js, app/unit-tests/services/passServiceEmailHashRotation.test.js, app/unit-tests/services/passServiceEmailHashSecret.test.js, app/lib/passphrase.js, app/unit-tests/lib/passphrase.test.js, app/lib/emailHash.js, app/unit-tests/lib/emailHash.test.js, app/data/dynamoDbPassRepository.js, infra/main/resources/analytics/views/v_pass_redemptions_daily.sql, PASSES.md, submit.passes.toml
 // - **Keywords:** pass, redeem pass, redeemPass, pass link, on-pass-on-subscription, passphrase, email hash
 // - **Related:** BILL-01, BILL-06, BILL-08
 // @end-capability
@@ -36,8 +36,10 @@ import {
   redeemPass,
   releaseReferral,
 } from "../../services/passService.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 
 const logger = createLogger({ source: "app/functions/account/passPost.js" });
 
@@ -116,6 +118,22 @@ export async function ingestHandler(event) {
           error: { reason: "already_redeemed" },
         });
       }
+    }
+
+    // An account that pays for the bundle keeps its subscription link: a grant would replace the
+    // bundle item that carries it. The refusal comes before any use or referral claim is counted.
+    const heldBundle = storedPass ? (await getUserBundles(userId)).find((bundle) => bundle?.bundleId === storedPass.bundleId) : undefined;
+    if (heldBundle?.stripeSubscriptionId) {
+      await publishRefusal({ reason: "already_held", code, passTypeId: storedPass.passTypeId, userSub: userId });
+      return http409ConflictResponse({
+        request,
+        headers: responseHeaders,
+        message: `This account already holds the bundle '${storedPass.bundleId}' with a subscription.`,
+        error: { reason: "already_held" },
+      });
+    }
+
+    if (isReferral) {
       // A pass that cannot be redeemed takes no claim, so redeemPass below gives its own refusal.
       const { valid: redeemable } = await checkPass(code, userEmail);
       if (redeemable) {
@@ -185,6 +203,12 @@ export async function ingestHandler(event) {
       userSub: userId,
       userEmail,
       detail: { bundleId: result?.bundleId, passTypeId: result.pass?.passTypeId, code },
+    });
+    await requestCustomerEmail({
+      kind: "pass-redeemed",
+      userSub: userId,
+      synthetic: Boolean(result.pass?.testPass),
+      data: { bundleId: result.bundleId, passTypeId: result.pass?.passTypeId, expiry: grantResult.expiry || null },
     });
 
     const testPass = result.pass?.testPass || false;

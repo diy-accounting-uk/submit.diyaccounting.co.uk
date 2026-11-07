@@ -220,10 +220,15 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
       ) {
         const catBundle = (catalog.bundles || []).find((b) => b.id === bundle.bundleId);
         if (catBundle?.tokenRefreshInterval) {
-          const { resetTokens } = await import("../../data/dynamoDbBundleRepository.js");
+          const { resetTokens, BUNDLE_MISSING } = await import("../../data/dynamoDbBundleRepository.js");
           const nextReset = parseIsoDurationToDate(new Date(), catBundle.tokenRefreshInterval);
           const tokensGranted = catBundle.tokensGranted ?? bundle.tokensGranted;
-          await resetTokens(userId, bundle.bundleId, tokensGranted, nextReset.toISOString());
+          const reset = await resetTokens(userId, bundle.bundleId, tokensGranted, nextReset.toISOString());
+          if (reset.reason === BUNDLE_MISSING) {
+            // The item was deleted after it was read: show the bundle as read, and write nothing.
+            logger.warn({ message: "Token refresh skipped: bundle item missing", userId, bundleId: bundle.bundleId });
+            continue;
+          }
           bundle.tokensConsumed = 0;
           bundle.tokensGranted = tokensGranted;
           bundle.tokenResetAt = nextReset.toISOString();

@@ -42,6 +42,7 @@
     "ga4BigQueryProjectId": "diyaccounting-ga4",
     "ga4BigQueryDatasetId": "analytics_523400333",
     "ga4BigQueryLocation": "europe-west2",
-    "scanDetection404PerMinute": "20"
+    "scanDetection404PerMinute": "20",
+    "companiesHouseBaseUri": "https://api.company-information.service.gov.uk"
   }
 }

@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "An HMRC error code no entry covers: it needs a person.",
+  "handlingInput": {
+    "issueNumber": 9020,
+    "category": "submission",
+    "faqId": null,
+    "ticketKind": "other",
+    "summary": "HMRC returned an error code the customer does not recognise, INVALID_FIXTURE_CODE, and the return did not go through. They ask what to do.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "requiredPhrases": ["person"],
+    "forbiddenPhrases": ["already answers", "guarantee", "Dear ", "close this ticket"]
+  }
+}

@@ -18,6 +18,11 @@ description: Spend a bounded block of time (default one hour) campaigning for on
 
 # campaign
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 `/campaign <goal> [minutes]`. One session, one goal, one review queue, one PR, one report. The
 default is 60 minutes. The goal names the outcome and the pass it counts through, for example
 "paid VAT subscribers through Matthew's pass `tiger-happy-mountain-silver`".

@@ -140,10 +140,14 @@ if (!environmentName) {
       if (confirm) {
         try {
           // Delete user data from DynamoDB via delete-user-data.js
-          execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", user.sub, "--confirm", "--json"], {
-            stdio: "pipe",
-            env: { ...process.env },
-          });
+          execFileSync(
+            "node",
+            ["scripts/delete-user-data.js", environmentName, "--user-sub", user.sub, "--confirm", "--json", "--test-user-purge"],
+            {
+              stdio: "pipe",
+              env: { ...process.env },
+            },
+          );
 
           if (user.durable) {
             summary.purged++;

@@ -30,7 +30,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
-import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
+import { recordFiledReceipt } from "../../services/filedReceipt.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -754,7 +754,15 @@ export async function ingestHandler(event) {
         if (payload.userSub && formBundleNumber) {
           const timestamp = new Date().toISOString();
           receiptId = `${timestamp}-${formBundleNumber}`;
-          await putReceipt(payload.userSub, receiptId, receipt, resolveActorClass(), payload.clientId);
+          await recordFiledReceipt({
+            userSub: payload.userSub,
+            receiptId,
+            receipt,
+            actor: resolveActorClass(),
+            clientId: payload.clientId,
+            receiptKind: "vat-return",
+            synthetic: payload.hmrcAccount === "synthetic",
+          });
           resultData.receiptId = receiptId;
         }
 
@@ -893,7 +901,15 @@ export async function workerHandler(event) {
       if (userSub && formBundleNumber) {
         const timestamp = new Date().toISOString();
         receiptId = `${timestamp}-${formBundleNumber}`;
-        await putReceipt(userSub, receiptId, receipt, resolveActorClass(), payload.clientId);
+        await recordFiledReceipt({
+          userSub,
+          receiptId,
+          receipt,
+          actor: resolveActorClass(),
+          clientId: payload.clientId,
+          receiptKind: "vat-return",
+          synthetic: payload.hmrcAccount === "synthetic",
+        });
         result.receiptId = receiptId;
       }
 

@@ -72,6 +72,50 @@ test.describe("bundles offered to a holder", () => {
   });
 });
 
+test.describe("Your current bundles says where each row comes from", () => {
+  const groupsApi = (url) => {
+    if (url.pathname === "/api/v1/bundle") {
+      return {
+        bundles: [
+          { bundleId: "operator", allocated: true, configDriven: true },
+          { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 100, tokensConsumed: 0, tokenEvents: [] },
+        ],
+        tokensRemaining: 100,
+      };
+    }
+    if (url.pathname === "/api/v1/affiliate/application") return { state: "approved", tier: "casual", configDriven: true };
+    return undefined;
+  };
+
+  for (const width of [375, 1280]) {
+    test(`groups the rows under two headings with a summary line at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveRealSite(page, { signedIn: true, apiHandler: groupsApi });
+      await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+
+      const current = page.locator("#currentBundles");
+      await expect(current.locator(".bundle-group-heading")).toHaveText(["From your plan or passes", "Set for your account"], {
+        timeout: 15000,
+      });
+      const pro = current.locator(".bundle-row").filter({ hasText: "Resident Pro" });
+      await expect(pro.locator(".bundle-summary")).toHaveText(/^[A-Z].*\.$/);
+      await expect(pro.locator(".bundle-summary")).toContainText("Submit VAT returns to HMRC");
+      await expect(current.locator(".bundle-row").filter({ hasText: "Operator" })).toContainText("Set for your account by DIY Accounting");
+      await expect(current.locator("[data-affiliate-row]")).toContainText("Set for your account by DIY Accounting");
+      await expect(current).not.toContainText("site's configuration");
+      const order = await current.locator(".bundle-group-heading, .bundle-row-name").allTextContents();
+      expect(order.indexOf("Resident Pro")).toBeLessThan(order.indexOf("Set for your account"));
+      await page.screenshot({ path: `target/screenshots/bundles-groups-${width}.png`, fullPage: true });
+    });
+  }
+
+  test("a group with no row has no heading", async ({ page }) => {
+    await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#currentBundles .bundle-group-heading")).toHaveText(["From your plan or passes"], { timeout: 15000 });
+  });
+});
+
 test.describe("bundles and usage names", () => {
   test("usage.html names bundles and activities", async ({ page }) => {
     await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });

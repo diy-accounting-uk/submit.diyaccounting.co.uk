@@ -75,6 +75,15 @@ class IdentityStackTest {
     }
 
     @Test
+    void stackWritesTheUserPoolIdToAParameterForTheEmailStack() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/user-pool-id", "Type", "String")));
+    }
+
+    @Test
     void userPoolRequiresTotpMfaAndEnablesSoftwareTokenMfa() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);

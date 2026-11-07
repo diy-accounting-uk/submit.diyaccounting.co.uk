@@ -821,6 +821,26 @@ public class AnalyticsStack extends Stack {
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
                         .passesTableName(sharedNames.data.passesTableName)
+                        .dataTableNames(List.of(
+                                sharedNames.data.receiptsTableName,
+                                sharedNames.data.bundlesTableName,
+                                sharedNames.data.subscriptionsTableName,
+                                sharedNames.data.passesTableName,
+                                sharedNames.data.commissionsTableName,
+                                sharedNames.data.integrationCallsTableName,
+                                sharedNames.data.activityChargesTableName,
+                                sharedNames.data.practiceClientsTableName,
+                                sharedNames.data.bundleCapacityTableName,
+                                sharedNames.data.hmrcApiRequestsTableName,
+                                sharedNames.data.trustedEventLedgerTableName,
+                                sharedNames.data.mcpSessionsTableName,
+                                sharedNames.data.securityStateTableName,
+                                sharedNames.data.alarmIssueLockTableName))
+                        .dataBucketNames(List.of(
+                                sharedNames.analytics.analyticsLakeBucketName,
+                                sharedNames.analytics.analyticsResultsBucketName,
+                                sharedNames.data.diyaGlBucketName))
+                        .diyaGlBucketName(sharedNames.data.diyaGlBucketName)
                         .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.analytics.athenaWorkGroupName)
                         .securityServicesEnabled(props.securityServicesEnabled())

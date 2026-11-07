@@ -1,0 +1,70 @@
+{
+  "description": "The alarm exists and is in ALARM, but deploymentLive is false and the live deployment is another one.",
+  "alarm": {
+    "name": "ci-zz9iris-app-checkout-errors",
+    "environment": "ci",
+    "deployment": "zz9iris",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9108
+  },
+  "remedyRow": {
+    "family": "ci-app-checkout-errors",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A person decides."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": false,
+    "liveDeployment": "zz0other",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz9iris-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz9iris-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [2.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [2.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz9iris-app-checkout-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [2.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz9iris-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-0901 checkout session expired before payment\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["checkout"], ["session expired", "expired"]],
+    "nextAction": [["retired", "not live", "not the live", "another deployment", "watch", "no action", "no further action", "monitor"]],
+    "remedy": "none"
+  }
+}

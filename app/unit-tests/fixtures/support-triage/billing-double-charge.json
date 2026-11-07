@@ -1,0 +1,21 @@
+{
+  "kind": "triage",
+  "description": "A billing complaint about a double charge: it needs a person, and no refund is promised.",
+  "handlingInput": {
+    "issueNumber": 9021,
+    "category": "bundles",
+    "faqId": null,
+    "ticketKind": "complaint",
+    "summary": "The customer says their card was charged twice for the Resident VAT bundle on the same day and wants it put right.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "none",
+    "firstSentencePattern": "sorry|thank",
+    "requiredPhrases": ["person", "a person will look into it"],
+    "forbiddenPhrases": ["refund has been", "we have refunded", "already answers", "Dear ", "close this ticket"]
+  }
+}

@@ -76,6 +76,37 @@ export async function generatePassQrCodeBuffer({ code, url, options = {} }) {
 }
 
 /**
+ * Generate a QR code for a pass as an SVG document string, for the back of a physical pass.
+ *
+ * @param {Object} params
+ * @param {string} params.code - The pass code
+ * @param {string} params.url - The full URL to the pass redemption page
+ * @param {Object} [params.options] - QRCode generation options
+ * @returns {Promise<string>} SVG document
+ */
+export async function generatePassQrCodeSvgString({ code, url, options = {} }) {
+  if (!code) {
+    throw new Error("Pass code is required");
+  }
+  if (!url) {
+    throw new Error("Pass URL is required");
+  }
+
+  const qrOptions = {
+    type: "svg",
+    width: options.width || 200,
+    margin: options.margin || 2,
+    errorCorrectionLevel: options.errorCorrectionLevel || "H",
+  };
+
+  try {
+    return await QRCode.toString(url, qrOptions);
+  } catch (error) {
+    throw new Error(`Failed to generate QR code SVG for pass ${code}: ${error.message}`, { cause: error });
+  }
+}
+
+/**
  * Escape a string for safe inclusion in SVG text elements.
  *
  * @param {string} str - Raw string

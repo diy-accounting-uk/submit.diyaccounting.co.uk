@@ -12,8 +12,8 @@ import { emitMetric } from "../../lib/emfMetrics.js";
 import { hashSub } from "../../services/subHasher.js";
 import { getReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
-import { buildCustomerEmail, buildOperatorCopy, PASS_QR_CONTENT_ID } from "../../lib/customerEmailTemplates.js";
-import { generatePassQrCodeBuffer } from "../../lib/qrCodeGenerator.js";
+import { buildCustomerEmail, buildOperatorCopy, buildPassAttachments } from "../../lib/customerEmailTemplates.js";
+import { kindHasAccount } from "../../lib/customerEmailRequest.js";
 import { classifyAwsError, isRecipientAllowed, sendCustomerEmail } from "../../services/customerEmailSender.js";
 
 const logger = createLogger({ source: "app/functions/email/customerEmailSend.js" });
@@ -116,18 +116,7 @@ async function processEmailRequest(payload, state) {
     catalog,
     receipt,
   });
-  const attachments = [];
-  if (message.passQr) {
-    const png = await generatePassQrCodeBuffer(message.passQr);
-    attachments.push({
-      FileName: `pass-${message.passQr.code}-qr.png`,
-      RawContent: png,
-      ContentType: "image/png",
-      ContentDisposition: "INLINE",
-      ContentId: PASS_QR_CONTENT_ID,
-      ContentTransferEncoding: "BASE64",
-    });
-  }
+  const attachments = message.passQr ? await buildPassAttachments(message.passQr) : [];
   const from = process.env.CUSTOMER_EMAIL_FROM;
   const configurationSet = process.env.CUSTOMER_EMAIL_CONFIGURATION_SET;
   await sendCustomerEmail({
@@ -183,6 +172,7 @@ export async function handler(event) {
     logger,
     errorPolicy: "classify",
     userContextKey: "userId",
+    accountOptional: (body) => !kindHasAccount(body.payload?.kind),
     processRecord: async (payload) => {
       const state = {};
       try {

@@ -5,6 +5,8 @@
 
 import { escapeRecordText, escapeRecordAttribute } from "./submissionRecord.js";
 import { maskEmail } from "./activityAlert.js";
+import { generatePassQrCodeBuffer, generatePassQrCodeSvgString } from "./qrCodeGenerator.js";
+import { generateBackSvg, generateFrontSvg } from "./passMedia.js";
 
 const SUPPORT_ADDRESS = "support@diyaccounting.co.uk";
 const COMPANY_NAME = "DIY Accounting Limited";
@@ -13,9 +15,13 @@ const SECONDARY_COLOUR = "#45505e";
 const FONT_STACK = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 export const PASS_QR_CONTENT_ID = "pass-qr";
+const PHYSICAL_PASS_TYPE_ID = "physical-pass";
 
 const VAT_RECEIPT_EXPLANATION =
   "HMRC gives this receipt when it accepts a VAT return. The form bundle number is HMRC's reference for your return. Keep it: HMRC asks for it if you ask about the return.";
+
+export const NOTICE_LIST_URL =
+  "https://github.com/diy-accounting-uk/private.diyaccounting.co.uk/issues?q=is%3Aissue+is%3Aopen+label%3Amail-notice+label%3Amaintainer-review";
 
 const PAYMENT_INDICATORS = {
   DD: "DD means Direct Debit.",
@@ -147,6 +153,21 @@ function formatDate(value) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return formatDate(value);
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return `${formatDate(value)}, ${time} UTC`;
+}
+
+function formatPeriod(value) {
+  const match = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(String(value));
+  return match ? `${formatDate(match[1])} to ${formatDate(match[2])}` : String(value);
+}
+
+const RECEIPT_FIELD_FORMATTERS = { processingDate: formatDateTime, periodId: formatPeriod };
+
 function siteUrl(baseUrl, path = "") {
   const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${base}${path}`;
@@ -156,7 +177,8 @@ function receiptRows(receipt) {
   const rows = [];
   for (const [field, label] of RECEIPT_FIELDS) {
     const value = receipt?.[field];
-    if (value !== undefined && value !== null && value !== "") rows.push({ label, value: String(value) });
+    if (value !== undefined && value !== null && value !== "")
+      rows.push({ label, value: (RECEIPT_FIELD_FORMATTERS[field] ?? String)(value) });
   }
   return rows;
 }
@@ -178,7 +200,7 @@ function receiptNotes(receipt) {
  * @param {string} params.baseUrl - DIY_SUBMIT_BASE_URL
  * @param {Object} [params.catalog] - the product catalogue, for bundle names
  * @param {Object} [params.receipt] - the stored receipt, for submission-receipt
- * @returns {{subject: string, text: string, html: string, passQr: {code: string, url: string}|null}}
+ * @returns {{subject: string, text: string, html: string, passQr: {code: string, url: string, physical: boolean}|null}}
  */
 export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt }) {
   const name = bundleName(catalog, data.bundleId);
@@ -222,7 +244,8 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       };
     }
     case "pass-generated": {
-      const passUrl = `${siteUrl(baseUrl, "bundles.html")}?pass=${encodeURIComponent(data.code)}`;
+      const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
+      const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       return {
         ...renderEmail({
           subject: `Your pass: ${name}`,
@@ -232,14 +255,36 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           rows: [
             { label: "Pass code", value: data.code },
             { label: "Bundle", value: name },
-            { label: "Valid until", value: formatDate(data.validUntil) },
+            { label: "Valid until", value: data.validUntil ? formatDate(data.validUntil) : "No end date" },
             { label: "Uses", value: data.maxUses ? String(data.maxUses) : "Unlimited" },
           ],
           actions: [{ href: passUrl, text: "Open the pass link" }],
           image: { cid: PASS_QR_CONTENT_ID, alt: "QR code for your pass" },
+          notes: physical
+            ? ["The front and back of the pass are attached as files to print: the front shows the words, the back shows the QR code."]
+            : [],
           reason,
         }),
-        passQr: { code: data.code, url: passUrl },
+        passQr: { code: data.code, url: passUrl, physical },
+      };
+    }
+    case "notice-digest": {
+      const count = Number(data.count);
+      if (!Number.isInteger(count) || count < 1) throw new Error("InvalidNoticeDigest");
+      const noun = count === 1 ? "notice waits" : "notices wait";
+      return {
+        ...renderEmail({
+          subject: `${count} ${noun} for you`,
+          preheader: `${count} ${noun} in the private repository.`,
+          heading: `${count} ${noun} for you`,
+          rows: [
+            { label: "Notices waiting", value: String(count) },
+            { label: "Nearest deadline", value: data.nearestDeadline ? formatDate(data.nearestDeadline) : "none" },
+          ],
+          actions: [{ href: NOTICE_LIST_URL, text: "Open the issue list" }],
+          reason: "You get this digest as an operator of DIY Accounting Submit. It goes out once a day while a notice waits.",
+        }),
+        passQr: null,
       };
     }
     case "pass-redeemed":
@@ -251,7 +296,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
           intro: "You redeemed your pass. You can use the bundle now.",
           rows: [
             { label: "Bundle", value: name },
-            { label: "Ends on", value: formatDate(data.expiry) },
+            { label: "Ends on", value: data.expiry ? formatDate(data.expiry) : "No end date" },
           ],
           actions: [{ href: home, text: "Open the site" }],
           reason,
@@ -261,6 +306,39 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
     default:
       throw new Error("UnknownEmailKind");
   }
+}
+
+/**
+ * The SES attachments of a pass email: the inline QR code, and for a physical pass the front and
+ * back faces to print, with the file names the generate page downloads.
+ *
+ * @param {{code: string, url: string, physical: boolean}} passQr - from buildCustomerEmail
+ * @returns {Promise<Object[]>}
+ */
+export async function buildPassAttachments({ code, url, physical }) {
+  const attachment = (FileName, content, ContentType, extra = {}) => ({
+    FileName,
+    RawContent: Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8"),
+    ContentType,
+    ContentTransferEncoding: "BASE64",
+    ...extra,
+  });
+  const attachments = [
+    attachment(`pass-${code}-qr.png`, await generatePassQrCodeBuffer({ code, url }), "image/png", {
+      ContentDisposition: "INLINE",
+      ContentId: PASS_QR_CONTENT_ID,
+    }),
+  ];
+  if (physical) {
+    const qrSvg = await generatePassQrCodeSvgString({ code, url });
+    const backPng = await generatePassQrCodeBuffer({ code, url, options: { width: 600, margin: 2, errorCorrectionLevel: "H" } });
+    attachments.push(
+      attachment(`pass-${code}-front.svg`, generateFrontSvg(code.split("-")), "image/svg+xml", { ContentDisposition: "ATTACHMENT" }),
+      attachment(`pass-${code}-back.svg`, generateBackSvg(qrSvg, code), "image/svg+xml", { ContentDisposition: "ATTACHMENT" }),
+      attachment(`pass-${code}-back.png`, backPng, "image/png", { ContentDisposition: "ATTACHMENT" }),
+    );
+  }
+  return attachments;
 }
 
 /**

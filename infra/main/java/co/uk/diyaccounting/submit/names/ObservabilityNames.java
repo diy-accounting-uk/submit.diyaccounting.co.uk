@@ -26,10 +26,16 @@ public class ObservabilityNames {
     public String alarmTriageRoleName;
     public String supportAcceptanceRoleName;
     public String quarantineReaderRoleName;
+    public String dashboardReviewRoleName;
     public String alarmTriageGuardrailName;
     public String alarmTriageGuardrailIdParameterName;
     public String alarmTriageGuardrailVersionParameterName;
     public String agentKillSwitchParameterName;
+    public String trustedEventFunctionName;
+    public String trustedEventRoleName;
+    public String trustedEventRuleName;
+    public String trustedEventForwardRuleName;
+    public String trustedDeadlineReadRuleName;
 
     public ObservabilityNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(root.envResourceNamePrefix);
@@ -54,10 +60,16 @@ public class ObservabilityNames {
         this.alarmTriageRoleName = "%s-alarm-triage-role".formatted(root.envResourceNamePrefix);
         this.supportAcceptanceRoleName = "%s-support-acceptance-role".formatted(root.envResourceNamePrefix);
         this.quarantineReaderRoleName = "%s-quarantine-reader-role".formatted(root.envResourceNamePrefix);
+        this.dashboardReviewRoleName = "%s-dashboard-review-role".formatted(root.envResourceNamePrefix);
         this.alarmTriageGuardrailName = "%s-alarm-triage-guardrail".formatted(root.envResourceNamePrefix);
         this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);
         this.alarmTriageGuardrailVersionParameterName =
                 "/submit/%s/alarm-triage/guardrail-version".formatted(props.envName);
         this.agentKillSwitchParameterName = "/submit/%s/agents/kill-switch".formatted(props.envName);
+        this.trustedEventFunctionName = "%s-trusted-event-to-github-issue".formatted(root.envResourceNamePrefix);
+        this.trustedEventRoleName = "%s-trusted-event-issue".formatted(root.envResourceNamePrefix);
+        this.trustedEventRuleName = "%s-trusted-events".formatted(root.envResourceNamePrefix);
+        this.trustedEventForwardRuleName = "%s-trusted-events-forward".formatted(root.envResourceNamePrefix);
+        this.trustedDeadlineReadRuleName = "%s-trusted-deadline-read".formatted(root.envResourceNamePrefix);
     }
 }

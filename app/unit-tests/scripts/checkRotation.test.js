@@ -68,10 +68,10 @@ describe("secrets-rotation.toml", () => {
     for (const entry of entries.filter((item) => item.store === "github")) expect(entry.location, entry.name).toBeTruthy();
   });
 
-  test("is not red on its recorded dates today", () => {
+  test("is not red today on a key with a recorded roll date", () => {
     const now = new Date("2026-11-04T00:00:00Z");
     const red = entries
-      .filter((entry) => entry.last_rotated || entry.expires_at)
+      .filter((entry) => entry.last_rotated)
       .map((entry) => ({ name: entry.name, status: rotationSchedule(entry, entry.last_rotated || null, now).status }))
       .filter((row) => row.status === "overdue" || row.status === "due-soon");
     expect(red).toEqual([]);

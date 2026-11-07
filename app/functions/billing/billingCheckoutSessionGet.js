@@ -3,7 +3,7 @@
 
 // @capability BILL-25 Retrieve a Stripe checkout session's status
 // - **Use when:** a page after checkout must know whether a session id succeeded.
-// - **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. It tries the live Stripe client, then the test-mode client. A session id is only valid in the mode that created it.
+// - **Does:** The billingCheckoutSessionGet.js ingestHandler retrieves a Checkout session by id. The id prefix picks the client: `cs_test_` reads with the test-mode client only and `cs_live_` with the live client only, so a probe's test session costs no live 404. An id with neither prefix tries the live client, then the test-mode client.
 // - **Run:** `GET /api/v1/billing/checkout/:id`
 // - **Entry:** `app/functions/billing/billingCheckoutSessionGet.js:ingestHandler`
 // - **Files:** app/functions/billing/billingCheckoutSessionGet.js, app/unit-tests/functions/billingCheckoutSessionGet.test.js
@@ -36,12 +36,19 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Retrieve a Stripe Checkout Session, trying the live client then the test-mode client.
- * A session id is only ever valid in the mode it was created in, so the wrong client
- * raises a "resource_missing" error, which is treated as not found rather than a failure.
+ * Retrieve a Stripe Checkout Session. The id prefix names the mode that created it, so
+ * `cs_test_` uses the test client only and `cs_live_` the live client only. An id with neither
+ * prefix tries the live client then the test client. A "resource_missing" error is treated as
+ * not found rather than a failure.
  */
+function clientModesFor(sessionId) {
+  if (sessionId.startsWith("cs_test_")) return [true];
+  if (sessionId.startsWith("cs_live_")) return [false];
+  return [false, true];
+}
+
 async function retrieveCheckoutSession(sessionId) {
-  for (const test of [false, true]) {
+  for (const test of clientModesFor(sessionId)) {
     const stripe = await getStripeClient({ test });
     try {
       return await stripe.checkout.sessions.retrieve(sessionId);

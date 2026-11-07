@@ -237,6 +237,7 @@ class DataStackTest {
             dataStack.commissionsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
+            dataStack.trustedEventLedgerTable.getTableName(),
             dataStack.mcpSessionsTable.getTableName(),
             dataStack.integrationCallsTable.getTableName(),
         };

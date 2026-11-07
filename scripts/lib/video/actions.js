@@ -577,6 +577,30 @@ async function doEnsureBundle(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// Creates a pass off camera and keeps its code as the value {{passCode}}, so a later type step
+// can enter it in the pass box the way a person given a pass would. The pass is not redeemed.
+async function doCreatePass(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const capturePage = withoutDebugScreenshots(page);
+  const start = Date.now();
+  const result = await ctx.waitPhase(() =>
+    steps.createPassCode(capturePage, steps.resolveBundleId(step.bundle), { testPass: step.testPass === true }),
+  );
+  if (!result.ok || !result.code) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (createPass): no pass was created for "${step.bundle}": ${JSON.stringify(result)}`,
+      {
+        sceneId: ctx.sceneId,
+        stepIndex: ctx.stepIndex,
+        target: null,
+      },
+    );
+  }
+  ctx.values.passCode = result.code;
+  return { waitMs: Date.now() - start, rect: null };
+}
+
 // The redirect to HMRC's own authorise pages, followed by cookies, continue, sign in, grant
 // permission, back to the app. Shared by doHmrcAuthorise and doSubmitReturn, which each trigger
 // their own scope's redirect with a preceding click but walk HMRC's pages the same way. Only the
@@ -777,6 +801,7 @@ const HANDLERS = {
   hostedUiLogin: doHostedUiLogin,
   consent: doConsent,
   ensureBundle: doEnsureBundle,
+  createPass: doCreatePass,
   hmrcAuthorise: doHmrcAuthorise,
   companiesHouseAuthorise: doCompaniesHouseAuthorise,
   submitReturn: doSubmitReturn,

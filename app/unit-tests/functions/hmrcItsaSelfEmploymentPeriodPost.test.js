@@ -89,6 +89,9 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import {
   ingestHandler as hmrcItsaSelfEmploymentPeriodPostHandler,
@@ -282,6 +285,13 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ model: "dated", periodId: "2024-04-06_2024-07-05" });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "submission-receipt",
+        synthetic: false,
+        data: expect.objectContaining({ receiptKind: "itsa-period-self-employment" }),
+      }),
+    );
   });
 
   test("returns 400 when taxYear is missing or malformed", async () => {
@@ -625,5 +635,13 @@ describe("hmrcItsaSelfEmploymentPeriodPost worker", () => {
       model: "dated",
       periodId: "2024-04-06_2024-07-05",
     });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "submission-receipt",
+        userSub: "user-123",
+        synthetic: false,
+        data: expect.objectContaining({ receiptKind: "itsa-period-self-employment" }),
+      }),
+    );
   });
 });

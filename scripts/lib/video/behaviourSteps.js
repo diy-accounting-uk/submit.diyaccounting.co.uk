@@ -40,7 +40,7 @@ const helpers = await import("../../../behaviour-tests/helpers/behaviour-helpers
 export const { loginWithCognitoOrMockAuth, verifyLoggedInStatus, fillInHostedUINativeAuth, submitHostedUINativeAuth, handleTotpChallenge } =
   loginSteps;
 export const { consentToDataCollection, goToHomePageUsingMainNav } = siteSteps;
-export const { ensureBundlePresent } = bundleSteps;
+export const { ensureBundlePresent, createPassCode, resolveBundleId } = bundleSteps;
 export const { acceptCookiesHmrc, goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } = hmrcSteps;
 export const { initSubmitVat, fillInVat, submitFormVat, completeVat, verifyVatSubmission } = vatSteps;
 export const {

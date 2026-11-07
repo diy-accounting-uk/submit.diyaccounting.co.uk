@@ -19,7 +19,13 @@
 // console prefix, reads no DynamoDB item, no secret and no customer object, and stores no log
 // line: the Bedrock query keeps counts only.
 
-import { CloudWatchClient, GetMetricWidgetImageCommand, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
+import {
+  CloudWatchClient,
+  GetMetricWidgetImageCommand,
+  GetMetricDataCommand,
+  DescribeAlarmsCommand,
+  DescribeAlarmHistoryCommand,
+} from "@aws-sdk/client-cloudwatch";
 import { CloudWatchLogsClient, StartQueryCommand, GetQueryResultsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { XRayClient, GetServiceGraphCommand } from "@aws-sdk/client-xray";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
@@ -30,6 +36,8 @@ import {
   BEDROCK_QUERY,
   buildMetricWidget,
   itemsForTarget,
+  metricDataQueries,
+  rangeSeconds,
   regionForTarget,
   targetsForRun,
 } from "../../services/consoleCaptureCatalogue.js";
@@ -43,7 +51,11 @@ const ERROR_TEXT_LIMIT = 300;
 const QUERY_POLL_MILLISECONDS = 2000;
 const QUERY_POLL_LIMIT = 30;
 
-const ALARM_STATE_ORDER = { ALARM: 0, INSUFFICIENT_DATA: 1, OK: 2 };
+// An alarm in ALARM now sorts first, then an alarm that fired in the range and returned to OK
+// (latest first), then the rest by state and name.
+const ALARM_HISTORY_DAYS = 3;
+const ALARM_STATE_ORDER = { ALARM: 0, INSUFFICIENT_DATA: 2, OK: 3 };
+const ALARM_FIRED_RANK = 1;
 
 function requireEnvironment(name) {
   const value = process.env[name];
@@ -102,7 +114,57 @@ async function renderMetricImage({ item, clients, region }) {
   return Buffer.from(response.MetricWidgetImage);
 }
 
-async function readAlarms({ item, clients }) {
+// CloudWatch draws a graph with no series as an empty frame with no text, so the capture reads the
+// same series and records whether any datapoint exists in the range. `null` means the read failed.
+async function graphHasData({ item, clients, now }) {
+  try {
+    const answer = await clients.cloudWatch.send(
+      new GetMetricDataCommand({
+        MetricDataQueries: metricDataQueries(item),
+        StartTime: new Date(now.getTime() - rangeSeconds(item) * 1000),
+        EndTime: now,
+        MaxDatapoints: 1000,
+      }),
+    );
+    return (answer.MetricDataResults || []).some((result) => (result.Values || []).length > 0);
+  } catch (error) {
+    logger.warn({ message: "Console capture could not check a graph for data", id: item.id, error: errorText(error) });
+    return null;
+  }
+}
+
+// The latest time each alarm entered ALARM within the range, by alarm name. DescribeAlarmHistory
+// is the only record of an alarm that fired and returned to OK before the capture.
+async function readLastFiredTimes({ clients, now }) {
+  const lastFired = new Map();
+  let nextToken;
+  do {
+    const page = await clients.cloudWatch.send(
+      new DescribeAlarmHistoryCommand({
+        AlarmTypes: ["MetricAlarm", "CompositeAlarm"],
+        HistoryItemType: "StateUpdate",
+        StartDate: new Date(now.getTime() - ALARM_HISTORY_DAYS * 86400 * 1000),
+        EndDate: now,
+        ScanBy: "TimestampDescending",
+        NextToken: nextToken,
+      }),
+    );
+    for (const entry of page.AlarmHistoryItems || []) {
+      const enteredAlarm = JSON.parse(entry.HistoryData || "{}").newState?.stateValue === "ALARM";
+      if (enteredAlarm && !lastFired.has(entry.AlarmName)) lastFired.set(entry.AlarmName, new Date(entry.Timestamp).toISOString());
+    }
+    nextToken = page.NextToken;
+  } while (nextToken);
+  return lastFired;
+}
+
+function alarmSortRank(row) {
+  if (row.state !== "ALARM" && row.lastFiredAt) return ALARM_FIRED_RANK;
+  return ALARM_STATE_ORDER[row.state] ?? 4;
+}
+
+async function readAlarms({ item, clients, now }) {
+  const lastFired = await readLastFiredTimes({ clients, now });
   const alarms = [];
   let nextToken;
   do {
@@ -122,8 +184,12 @@ async function readAlarms({ item, clients }) {
       state: alarm.StateValue,
       reason: (alarm.StateReason || "").slice(0, ALARM_REASON_LIMIT),
       stateUpdatedAt: alarm.StateUpdatedTimestamp ? new Date(alarm.StateUpdatedTimestamp).toISOString() : null,
+      lastFiredAt: lastFired.get(alarm.AlarmName) || null,
     }))
-    .sort((a, b) => (ALARM_STATE_ORDER[a.state] ?? 3) - (ALARM_STATE_ORDER[b.state] ?? 3) || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) =>
+        alarmSortRank(a) - alarmSortRank(b) || (b.lastFiredAt || "").localeCompare(a.lastFiredAt || "") || a.name.localeCompare(b.name),
+    )
     .slice(0, ALARM_ROW_LIMIT);
 }
 
@@ -208,9 +274,9 @@ async function captureItem({ item, clients, region, envName, writeImage, now, sl
       const imageKey = consoleImageKey(envName, item.target, item.id);
       await writeImage(imageKey, image);
       logger.info({ message: "Captured widget image", id: item.id, bytes: image.length });
-      return { ...entry, kind: "image", imageKey };
+      return { ...entry, kind: "image", imageKey, hasData: await graphHasData({ item, clients, now }) };
     }
-    if (item.kind === "alarms") return { ...entry, rows: await readAlarms({ item, clients }) };
+    if (item.kind === "alarms") return { ...entry, rows: await readAlarms({ item, clients, now }) };
     if (item.kind === "bedrock") return { ...entry, rows: await readBedrockCounts({ item, clients, now, sleep }) };
     if (item.kind === "service-graph") return { ...entry, rows: await readServiceGraph({ item, clients, now }) };
     throw new Error(`Unknown item kind ${item.kind}`);

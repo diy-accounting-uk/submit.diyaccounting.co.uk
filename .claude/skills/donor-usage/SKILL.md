@@ -17,6 +17,11 @@ description: List everyone who donated through Stripe or PayPal, subscribed to s
 
 # donor-usage
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Joins payment identity to usage, which is personal data. The result goes to one file at the
 workspace root, `../DONOR_USAGE_<YYYY-MM-DD>.md` (the root is not a repository and only the
 operator reads it), mode `600`. Nothing personal goes into this repository, a commit, a PR, an

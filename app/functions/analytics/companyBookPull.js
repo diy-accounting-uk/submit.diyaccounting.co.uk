@@ -82,7 +82,7 @@ export async function handler(event = {}) {
     products: PRODUCTS,
   });
 
-  const { accounts, cashAtBank } = await deriveCompanyBookFigures({ book, lines }, { requireDirectorsNote: false });
+  const { accounts, cashAtBank, cashAsOf } = await deriveCompanyBookFigures({ book, lines }, { requireDirectorsNote: false });
 
   const observation = {
     date: targetDate,
@@ -90,6 +90,7 @@ export async function handler(event = {}) {
     latestVersion: metadata.latestVersion,
     latestETag: versionResult.etag,
     cashAtBank,
+    cashAsOf,
     accounts,
   };
 

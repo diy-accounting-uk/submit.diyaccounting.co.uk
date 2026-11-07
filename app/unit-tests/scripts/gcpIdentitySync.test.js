@@ -17,6 +17,7 @@ import {
   credentialConfigPath,
   writeCredentialConfigs,
   WORKLOAD_IDENTITY_USER_ROLE,
+  TOKEN_CREATOR_ROLE,
   ORG_POLICY_ADMIN_ROLE,
   forbiddenReason,
   disabledApiName,
@@ -444,6 +445,8 @@ describe("planWhenApiDisabled", () => {
   });
 });
 
+const WORKFLOW_PREFIX = "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows";
+
 describe("gcp-identity-sync delegated service accounts", () => {
   const withAccount = `${SAMPLE_TOML}
 [[delegated_service_account]]
@@ -461,12 +464,14 @@ scopes = ["https://www.googleapis.com/auth/gmail.compose"]
         displayName: "Support reply drafts",
         mailbox: "support@diyaccounting.co.uk",
         scopes: ["https://www.googleapis.com/auth/gmail.compose"],
+        tokenCreatorPrincipalSets: [`attribute.workflow_ref/${WORKFLOW_PREFIX}/support-triage.yml@refs/heads/main`],
       },
       {
         accountId: "support-gmail-read",
         displayName: "Support mail intake",
         mailbox: "support@diyaccounting.co.uk",
         scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+        tokenCreatorPrincipalSets: [`attribute.workflow_ref/${WORKFLOW_PREFIX}/support-mail-intake.yml@refs/heads/main`],
       },
     ]);
   });
@@ -486,5 +491,73 @@ scopes = ["https://www.googleapis.com/auth/gmail.compose"]
   it("refuses a delegated account with no scopes", () => {
     const bad = withAccount.replace('scopes = ["https://www.googleapis.com/auth/gmail.compose"]', "scopes = []");
     expect(() => parseConfig(bad)).toThrow(/scopes/);
+  });
+});
+
+describe("gcp-identity-sync token creator bindings", () => {
+  const SET = "attribute.workflow_ref/diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/support-triage.yml@refs/heads/main";
+  const withBinding = `${SAMPLE_TOML}
+[[delegated_service_account]]
+account_id = "support-gmail-draft"
+display_name = "Support reply drafts"
+mailbox = "support@diyaccounting.co.uk"
+scopes = ["https://www.googleapis.com/auth/gmail.compose"]
+token_creator_principal_sets = ["${SET}"]
+`;
+  const member = principalSetMember("958354756046", "submit-federation", SET);
+  const email = "support-gmail-draft@diyaccounting-ga4.iam.gserviceaccount.com";
+
+  it("plans a token creator binding for a principal set the account policy lacks", () => {
+    const config = parseConfig(withBinding);
+    const live = {
+      ...liveMatching(config),
+      delegatedAccounts: { "support-gmail-draft": { email } },
+      delegatedPolicies: { "support-gmail-draft": { bindings: [] } },
+    };
+    expect(planIdentity(config, live)).toEqual([
+      { kind: "bind-token-creator", accountId: "support-gmail-draft", serviceAccount: email, members: [member] },
+    ]);
+  });
+
+  it("plans the binding after the account when the account does not exist", () => {
+    const config = parseConfig(withBinding);
+    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": null } };
+    expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["create-delegated-service-account", "bind-token-creator"]);
+  });
+
+  it("plans nothing once the account policy holds the member under the token creator role", () => {
+    const config = parseConfig(withBinding);
+    const live = {
+      ...liveMatching(config),
+      delegatedAccounts: { "support-gmail-draft": { email } },
+      delegatedPolicies: { "support-gmail-draft": { bindings: [{ role: TOKEN_CREATOR_ROLE, members: [member] }] } },
+    };
+    expect(planIdentity(config, live)).toEqual([]);
+  });
+
+  it("does not count a member held under a different role", () => {
+    const config = parseConfig(withBinding);
+    const live = {
+      ...liveMatching(config),
+      delegatedAccounts: { "support-gmail-draft": { email } },
+      delegatedPolicies: { "support-gmail-draft": { bindings: [{ role: WORKLOAD_IDENTITY_USER_ROLE, members: [member] }] } },
+    };
+    expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["bind-token-creator"]);
+  });
+
+  it("refuses a principal set that is not an attribute reference", () => {
+    expect(() => parseConfig(withBinding.replace(SET, "allUsers"))).toThrow(/token_creator_principal_sets/);
+  });
+
+  it("the committed github provider maps the workflow_ref claim the principal sets name", () => {
+    const config = loadConfigFromRoot();
+    const github = config.providers.find((p) => p.id === "github");
+    expect(github.attributeMapping["attribute.workflow_ref"]).toBe("assertion.workflow_ref");
+    for (const account of config.delegatedAccounts) {
+      expect(account.tokenCreatorPrincipalSets).toHaveLength(1);
+      expect(account.tokenCreatorPrincipalSets[0]).toMatch(
+        /^attribute\.workflow_ref\/diy-accounting-uk\/submit\.diyaccounting\.co\.uk\/\.github\/workflows\/[a-z-]+\.yml@refs\/heads\/main$/,
+      );
+    }
   });
 });

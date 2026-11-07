@@ -12,14 +12,15 @@ run-name: support triage
 # issues that scripts/maintainer-review-gate.mjs approves.
 #
 # The handling agent never sees the ticket. It reads the reader's checked fields and the
-# operator's later comments from one file, and it has Read, Grep and Glob only. It chains into
-# the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
+# operator's later comments from one file. It has no tool except the one that submits its answer, and its request holds the
+# three published pages. It chains into the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
 # for the Bedrock model invocation and the guardrail's SSM parameters that the shared
 # publish-filter action needs. Only the `sweep` job edits a label on the private repository or
 # closes an issue, and only for the operator's `rejected` label: it closes a `rejected` issue with
 # no comment, and puts `maintainer-review` back when the operator removes `rejected`. The gate
 # also refuses while `injection-suspected` is on an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
-# pull request in this repository from the checked fields alone.
+# pull request in this repository from the checked fields alone. Before the filter, a second Nova Pro call
+# checks the draft; a hold stops the run and a person handles the ticket.
 #
 # This repository is public, so its logs, step summaries and artifacts are public. No step prints
 # ticket-derived text, the drafted reply or the model's result, and no job uploads an artifact.
@@ -67,8 +68,7 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  CLAUDE_CODE_VERSION: '2.0.30'
-  MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+  MODEL_ID: 'amazon.nova-pro-v1:0'
   PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
   # The one place this number is written. The budget guard and its step name read it.
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
@@ -192,7 +192,7 @@ jobs:
     needs: select
     if: needs.select.outputs.proceed == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: prod
     permissions:
       id-token: write
@@ -217,7 +217,7 @@ jobs:
       - name: Set up the toolchain
         uses: ./.github/actions/setup-toolchain
         with:
-          npm-install: none
+          npm-install: scripts
           npm-cache: 'false'
 
       - name: Assume the AWS actions and deployment roles
@@ -243,15 +243,29 @@ jobs:
           printf '%s' "$HANDLING_INPUT_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-handling-input.json
           jq -e '.issueNumber' /tmp/support-handling-input.json > /dev/null
 
-      - name: Install Claude Code
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: Pick the three snippets nearest to the ticket summary
+        id: snippets
+        run: |
+          set -euo pipefail
+          node scripts/support-retrieval.mjs --handling-input /tmp/support-handling-input.json --out-dir /tmp/support-snippets --list-file /tmp/support-snippet-paths.txt
+          {
+            echo "context-files<<CONTEXT_FILES_END"
+            echo /tmp/support-handling-input.json
+            cat /tmp/support-snippet-paths.txt
+            echo prompts/support-triage-reminder.md
+            echo CONTEXT_FILES_END
+          } >> "$GITHUB_OUTPUT"
 
       - name: Run triage
         uses: ./.github/actions/run-triage-agent
         with:
+          runner: nova
           model-id: ${{ env.MODEL_ID }}
-          small-fast-model-id: ${{ env.MODEL_ID }}
-          allowed-tools: 'Read,Grep,Glob'
+          tools: none
+          max-turns: '3'
+          deadline-seconds: '300'
+          final-schema: prompts/support-triage-answer.json
+          context-files: ${{ steps.snippets.outputs.context-files }}
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'
@@ -277,6 +291,13 @@ jobs:
               exit 1
               ;;
           esac
+
+      # The assembler and the second Nova Pro call judge the draft. When either rejects it, one
+      # repair call gets the rejection text and the answer is judged again. A second rejection
+      # fails the step, so nothing is posted. The step prints fixed lines and no answer text.
+      - name: Judge the draft and repair it once
+        if: steps.triage-run.outputs.stopped == 'false'
+        run: node scripts/support-triage-settle.mjs /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt /tmp/support-snippet-paths.txt
 
       - name: Filter the triage answer before it is published
         id: publish-filter
@@ -512,8 +533,8 @@ jobs:
           printf '<!-- support-fix-pr:v1 run=%s -->\nDraft pull request for this ticket: %s\n' "$GITHUB_RUN_ID" "$PR_URL" > /tmp/support-fix-comment.md
           node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --body-file /tmp/support-fix-comment.md
 
-  # The draft goes into the support mailbox unsent; this workflow has no send step and the key's
-  # only scope is gmail.compose. The thread comes from the dispatch inputs and never from a
+  # The draft goes into the support mailbox unsent; this workflow has no send step and the delegated
+  # account's only scope is gmail.compose. The thread comes from the dispatch inputs and never from a
   # ticket. A ticket from the public form carries no address, so it has no thread and the draft
   # waits for a dispatch that names one.
   draft:
@@ -528,37 +549,43 @@ jobs:
     env:
       ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
     steps:
-      - name: Stop when no Gmail draft can be made
-        id: draft-key
-        env:
-          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
-        run: |
-          if [ -z "${SUPPORT_GMAIL_DRAFT_KEY}" ]; then
-            echo "SUPPORT_GMAIL_DRAFT_KEY is not set on the prod environment, so no Gmail draft is made"
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: steps.draft-key.outputs.configured == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Set up the toolchain
-        if: steps.draft-key.outputs.configured == 'true'
         uses: ./.github/actions/setup-toolchain
         with:
           npm-install: none
           npm-cache: 'false'
 
       - name: Install dependencies for the Gmail draft
-        if: steps.draft-key.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
+      - name: Read the GitHub federation provider from infra/google/gcp/identity.toml
+        id: google-identity
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+            console.log("project=" + c.project.id);
+          ' >> "$GITHUB_OUTPUT"
+
+      # No service_account input: direct federation. The federated principal is this workflow file
+      # on main, which holds roles/iam.serviceAccountTokenCreator on support-gmail-draft.
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          # The project id stops the Google auth library from a Resource Manager read that the
+          # federated principal has no permission for.
+          project_id: ${{ steps.google-identity.outputs.project }}
+
       - name: Decrypt the reply
-        if: steps.draft-key.outputs.configured == 'true'
         env:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
           REPLY_ENCRYPTED: ${{ needs.handle.outputs.reply }}
@@ -569,11 +596,9 @@ jobs:
           printf '%s' "$REPLY_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-reply.md
 
       - name: Put the drafted reply in the support mailbox
-        if: steps.draft-key.outputs.configured == 'true'
         id: gmail-draft
         continue-on-error: true
         env:
-          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
           GMAIL_THREAD_ID: ${{ inputs.gmail-thread-id }}
           REPLY_TO: ${{ inputs.reply-to }}
           REPLY_SUBJECT: ${{ inputs.reply-subject }}

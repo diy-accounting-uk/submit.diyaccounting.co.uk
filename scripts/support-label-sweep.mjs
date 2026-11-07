@@ -27,12 +27,29 @@ import { assertIssueNumber, assertRepo, githubGetAll } from "./github-issue-comm
 const API = "https://api.github.com";
 const RECENT_CLOSED_DAYS = 7;
 
+export const MAIL_NOTICE_LABEL = "mail-notice";
+export const MAIL_WITHHELD_LABEL = "mail-withheld";
+export const NOTICE_HANDLED_LABEL = "notice-handled";
+
 export const LABELS = {
   [INJECTION_LABEL]: {
     color: "d93f0b",
     description: "The reader suspects the ticket steers an agent or carries content to run; the operator removes it to allow handling",
   },
   [REVIEW_LABEL]: { color: "fbca04", description: "Waits for the operator to read the ticket; the operator removes it to approve" },
+  [MAIL_NOTICE_LABEL]: {
+    color: "0e8a16",
+    description: "Mail from a vendor or other automated sender; the operator reads it and removes maintainer-review to approve",
+  },
+  [MAIL_WITHHELD_LABEL]: {
+    color: "6a737d",
+    description:
+      "Login mail whose text is not copied here; the quarantine reader skips it and the operator reads the thread in the mailbox",
+  },
+  [NOTICE_HANDLED_LABEL]: {
+    color: "1d76db",
+    description: "The notice handler ran its one action on this mail notice; the operator reads the comment and closes the issue",
+  },
   [REJECTED_LABEL]: {
     color: "b60205",
     description: "The operator rejected the ticket; it closes with no reply; remove the label to bring it back for review",
@@ -101,6 +118,28 @@ export async function addLabel({ repo, issue, label, token, fetchImpl = fetch })
   // 422 means the label already exists.
   await write(`/repos/${repo}/labels`, { method: "POST", body: { name: label, ...spec }, token, fetchImpl, allow: [422] });
   await write(`/repos/${repo}/issues/${number}/labels`, { method: "POST", body: { labels: [label] }, token, fetchImpl });
+}
+
+/**
+ * Makes sure the repository holds the label, with the fixed colour and description of LABELS.
+ * With `dryRun` it only reads. @returns {Promise<boolean>} true when the label was missing
+ */
+export async function ensureLabel({ repo, label, token, fetchImpl = fetch, dryRun = false }) {
+  assertRepo(repo);
+  const spec = LABELS[label];
+  if (!spec) throw new Error("the label is not one this script writes");
+  const found = await fetchImpl(`${API}/repos/${repo}/labels/${encodeURIComponent(label)}`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "diyaccounting-issue-scripts",
+    },
+  });
+  if (found.ok) return false;
+  if (found.status !== 404) throw new Error(`GitHub answered ${found.status} for GET /repos/${repo}/labels/<name>`);
+  if (!dryRun) await write(`/repos/${repo}/labels`, { method: "POST", body: { name: label, ...spec }, token, fetchImpl, allow: [422] });
+  return true;
 }
 
 export async function closeWithoutReply({ repo, issue, token, fetchImpl = fetch }) {

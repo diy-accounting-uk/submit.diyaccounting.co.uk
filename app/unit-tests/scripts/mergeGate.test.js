@@ -12,6 +12,10 @@ import {
   MAX_FILES_CHANGED,
   MAX_CHANGED_LINES,
   MAX_MERGES_PER_ROLLING_DAY,
+  RAISED_MERGES_PER_ROLLING_DAY,
+  RAISED_MERGE_CAP_FROM,
+  RAISED_MERGE_CAP_UNTIL,
+  mergeCapAt,
   extractClosingIssueNumbers,
   checkAuthorship,
   checkLinkedIssueAuthorship,
@@ -212,6 +216,25 @@ describe("checkShapeRules", () => {
     const result = checkShapeRules({ ...baseline, recentMergeTimestamps });
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toMatch(/cap of/);
+  });
+
+  test("the raised cap holds inside its window and the standing cap holds outside it", () => {
+    const from = new Date(RAISED_MERGE_CAP_FROM);
+    const until = new Date(RAISED_MERGE_CAP_UNTIL);
+    expect(mergeCapAt(new Date(from.getTime() - 1))).toBe(MAX_MERGES_PER_ROLLING_DAY);
+    expect(mergeCapAt(from)).toBe(RAISED_MERGES_PER_ROLLING_DAY);
+    expect(mergeCapAt(new Date(until.getTime() - 1))).toBe(RAISED_MERGES_PER_ROLLING_DAY);
+    expect(mergeCapAt(until)).toBe(MAX_MERGES_PER_ROLLING_DAY);
+  });
+
+  test("a merge count under the raised cap passes inside its window", () => {
+    const now = new Date(RAISED_MERGE_CAP_FROM);
+    const timestamps = (count) => Array.from({ length: count }, (_, i) => new Date(now.getTime() - i * 60_000).toISOString());
+    const createdAt = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const under = checkShapeRules({ ...baseline, createdAt, now, recentMergeTimestamps: timestamps(RAISED_MERGES_PER_ROLLING_DAY - 1) });
+    const at = checkShapeRules({ ...baseline, createdAt, now, recentMergeTimestamps: timestamps(RAISED_MERGES_PER_ROLLING_DAY) });
+    expect(under.failures.filter((failure) => /cap of/.test(failure))).toEqual([]);
+    expect(at.failures.join(" ")).toMatch(/cap of 12/);
   });
 
   test("ignores a merge timestamp older than 24 hours", () => {

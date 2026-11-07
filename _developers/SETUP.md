@@ -14,7 +14,6 @@ This section reflects what actually happens with the current code and scripts. I
 1) Prerequisites
 - Node.js 22+
 - Java 21+ and Docker (for CDK build/synth)
-- certbot, for the one-time local TLS certificate (see step 3)
 - HMRC Developer Hub account for sandbox credentials
 
 2) Clone and install
@@ -28,39 +27,13 @@ npm run playwright:install
 3) Configure local TLS
 - `local.submit.diyaccounting.co.uk` already resolves to `127.0.0.1` in public DNS, so every
   developer's machine reaches its own loopback under that name.
-- Ask the operator for the `certbot-local` AWS profile, then issue a certificate once:
+- Log in, then fetch the certificate with the `diya-submit-ci` profile:
 ```bash
-pipx install certbot
-pipx inject certbot certbot-dns-route53
-AWS_PROFILE=certbot-local certbot certonly --dns-route53 \
-  -d local.submit.diyaccounting.co.uk \
-  --config-dir "$HOME/.local/share/diyaccounting-local-tls/config" \
-  --work-dir "$HOME/.local/share/diyaccounting-local-tls/work" \
-  --logs-dir "$HOME/.local/share/diyaccounting-local-tls/logs" \
-  --non-interactive --agree-tos -m your-email@example.com
+aws sso login --sso-session diyaccounting
+scripts/local-tls-fetch.sh
 ```
-- The server reads the certificate straight from that lineage, so no cert paths need setting.
-- Renew with the same directory flags — a plain `certbot renew` cannot find this non-default
-  lineage:
-```bash
-AWS_PROFILE=certbot-local certbot renew \
-  --config-dir "$HOME/.local/share/diyaccounting-local-tls/config" \
-  --work-dir "$HOME/.local/share/diyaccounting-local-tls/work" \
-  --logs-dir "$HOME/.local/share/diyaccounting-local-tls/logs" \
-  --non-interactive
-```
-- Register the deploy-hook once, so an actual renewal publishes the new cert to Secrets Manager
-  for CI (certbot runs every script in that directory after a real renewal; the script uses the
-  `diya-submit-ci` profile):
-```bash
-ln -s "$PWD/scripts/local-tls-publish.sh" \
-  "$HOME/.local/share/diyaccounting-local-tls/config/renewal-hooks/deploy/local-tls-publish.sh"
-```
-- A weekly launchd agent runs the renew unattended: label
-  `uk.co.diyaccounting.submit.certbot-renew`, Sundays 05:00 local, plist in
-  `~/Library/LaunchAgents`, logs in `~/Library/Logs`. Both AWS profiles it needs are SSO-backed
-  and cannot refresh unattended, so in the week the cert becomes due, run
-  `aws sso login --sso-session diyaccounting` and the renew command by hand.
+- The script writes the certificate to the directory the server reads, so no cert paths need setting.
+- The `local-tls-renew.yml` workflow renews the certificate. Run the script again after a renewal.
 
 4) Configure local environment (implied secrets)
 - Use .env.proxy as your base for local development. It already sets:

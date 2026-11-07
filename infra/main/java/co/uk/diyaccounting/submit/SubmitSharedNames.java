@@ -16,6 +16,7 @@ import co.uk.diyaccounting.submit.names.CompaniesHouseNames;
 import co.uk.diyaccounting.submit.names.DataNames;
 import co.uk.diyaccounting.submit.names.DiyaGlNames;
 import co.uk.diyaccounting.submit.names.EcrNames;
+import co.uk.diyaccounting.submit.names.EmailNames;
 import co.uk.diyaccounting.submit.names.HmrcItsaNames;
 import co.uk.diyaccounting.submit.names.HmrcItsaPropertyNames;
 import co.uk.diyaccounting.submit.names.HmrcNames;
@@ -104,6 +105,7 @@ public class SubmitSharedNames {
     public String holdingStackId;
     public String backupStackId;
     public String activityStackId;
+    public String emailStackId;
     public String billingWebhookStackId;
     public String ecrStackId;
     public String ue1EcrStackId;
@@ -151,6 +153,7 @@ public class SubmitSharedNames {
     public final EcrNames ecr;
     public final AnalyticsNames analytics;
     public final ActivityNames activity;
+    public final EmailNames email;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -225,6 +228,7 @@ public class SubmitSharedNames {
         this.holdingStackId = "%s-env-HoldingStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
+        this.emailStackId = "%s-env-EmailStack".formatted(props.envName);
         this.billingWebhookStackId = "%s-env-BillingWebhookStack".formatted(props.envName);
         this.ecrStackId = "%s-env-EcrStack".formatted(props.envName);
         this.ue1EcrStackId = "%s-env-EcrUE1Stack".formatted(props.envName);
@@ -270,5 +274,6 @@ public class SubmitSharedNames {
         this.ecr = new EcrNames(props, this);
         this.analytics = new AnalyticsNames(props, this);
         this.activity = new ActivityNames(props, this);
+        this.email = new EmailNames(props, this);
     }
 }

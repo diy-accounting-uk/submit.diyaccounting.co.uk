@@ -26,8 +26,9 @@ no `videoId`.
    its own. The section is **Google Auth Platform** in the left menu:
    - **Overview**: if there is a **Get started** button, App name `DIY Accounting Submit`, your
      support email, Audience **External**, your contact email, agree, **Create**.
-   - **Audience**: publishing status stays **Testing**; under **Test users**, **Add users**,
-     your own Google account, **Save**.
+   - **Audience**: under **Test users**, **Add users**, your own Google account, **Save**. The
+     refresh tokens here have outlived 7 days, which a Testing app's tokens do not, so read the
+     publishing status on this page and do not assume it.
    - **Data Access**: **Add or remove scopes**, filter `youtube`, tick `.../auth/youtube.upload`
      and `.../auth/youtube.force-ssl`, **Update**, **Save**.
    - **Clients**: **Create client**, Application type **Desktop app**, Name `youtube-upload`,

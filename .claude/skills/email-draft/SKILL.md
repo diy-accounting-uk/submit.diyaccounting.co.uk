@@ -7,6 +7,11 @@ description: Draft an email the operator sends in his own name (to HMRC, Compani
 
 # email-draft
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 An email from the operator speaks for the company to a person who owes it nothing. It must be
 right, short and in his voice. The operator sends every email himself; this skill only writes
 the draft.

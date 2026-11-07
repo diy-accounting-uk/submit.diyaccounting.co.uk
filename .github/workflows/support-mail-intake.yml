@@ -10,8 +10,9 @@ run-name: support mail intake
 #
 # This repository is public, so its logs, step summaries and artifacts are public. The script
 # prints counts only: no subject, address, message text or thread id. One job holds everything,
-# so no mail text passes between jobs. The job holds the Gmail read key, which can read the
-# mailbox and nothing else, and a token that can only write issues in the private repository.
+# so no mail text passes between jobs. The job holds no Gmail key. It federates to Google, signs a
+# read-only delegation assertion for the mailbox, and holds a token that can only write issues in
+# the private repository.
 
 on:
   schedule:
@@ -41,6 +42,7 @@ jobs:
     timeout-minutes: 10
     environment: prod
     permissions:
+      id-token: write
       contents: read
     steps:
       - name: Checkout
@@ -64,23 +66,40 @@ jobs:
           repositories: private.diyaccounting.co.uk
           permission-issues: write
 
+      - name: Read the GitHub federation provider from infra/google/gcp/identity.toml
+        id: google-identity
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+            console.log("project=" + c.project.id);
+          ' >> "$GITHUB_OUTPUT"
+
+      # No service_account input: direct federation. The federated principal is this workflow file
+      # on main, which holds roles/iam.serviceAccountTokenCreator on support-gmail-read.
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          # The project id stops the Google auth library from a Resource Manager read that the
+          # federated principal has no permission for.
+          project_id: ${{ steps.google-identity.outputs.project }}
+
       - name: Open an issue for each new customer thread
         env:
           GH_TOKEN: ${{ steps.private-token.outputs.token }}
-          SUPPORT_GMAIL_READ_KEY: ${{ secrets.SUPPORT_GMAIL_READ_KEY }}
           DRY_RUN: ${{ inputs.dry-run }}
         run: |
           set -euo pipefail
-          if [ -z "${SUPPORT_GMAIL_READ_KEY}" ]; then
-            echo "SUPPORT_GMAIL_READ_KEY is not set on the prod environment, so no mail is read"
-            exit 0
-          fi
           ARGS=()
           if [ "${DRY_RUN}" = "true" ]; then ARGS+=(--dry-run); fi
           node scripts/support-mail-intake.mjs "${ARGS[@]}"
 
   # The acceptance rate of the support reply drafts, once a day. The draft rows come from the lake;
-  # the mailbox is read with the same read key. The summary row goes back to the lake. The script
+  # the mailbox is read through the same federated read account. The summary row goes back to the lake. The script
   # prints counts only, as the intake does.
   acceptance:
     if: github.event_name != 'schedule' || github.event.schedule == '17 5 * * *'
@@ -122,16 +141,32 @@ jobs:
           mkdir -p /tmp/support-drafts
           aws s3 sync "s3://${LAKE_BUCKET}/curated/support-drafts/" /tmp/support-drafts --only-show-errors
 
+      - name: Read the GitHub federation provider from infra/google/gcp/identity.toml
+        id: google-identity
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log("provider=projects/" + c.project.number + "/locations/global/workloadIdentityPools/" + c.workload_identity_pool.id + "/providers/" + provider.id);
+            console.log("project=" + c.project.id);
+          ' >> "$GITHUB_OUTPUT"
+
+      # No service_account input: direct federation. The federated principal is this workflow file
+      # on main, which holds roles/iam.serviceAccountTokenCreator on support-gmail-read.
+      - name: Authenticate to Google by federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          # The project id stops the Google auth library from a Resource Manager read that the
+          # federated principal has no permission for.
+          project_id: ${{ steps.google-identity.outputs.project }}
+
       - name: Class each old draft and measure the acceptance rate
         id: acceptance
-        env:
-          SUPPORT_GMAIL_READ_KEY: ${{ secrets.SUPPORT_GMAIL_READ_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${SUPPORT_GMAIL_READ_KEY}" ]; then
-            echo "SUPPORT_GMAIL_READ_KEY is not set on the prod environment, so no mail is read"
-            exit 0
-          fi
           node scripts/support-draft-acceptance.mjs --rows-dir /tmp/support-drafts --out /tmp/support-draft-acceptance.json
           echo "row=$(cat /tmp/support-draft-acceptance.json)" >> "$GITHUB_OUTPUT"
           echo "key=curated/support-draft-acceptance/dt=$(date -u +%F)/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"

@@ -12,6 +12,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { FIXTURE_CONSOLE_INDEX, FIXTURE_DAILY_CHARTS, PIXEL_PNG, fullShapeSnapshot } from "./operatorDashboardFixtures.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -33,20 +34,42 @@ const CONTENT_TYPES = {
 
 async function serveRealSiteWithSlowData(
   page,
-  { heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }] } = {},
+  {
+    heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }],
+    apiAnswers = {},
+    storage = {},
+    cpuSlowdown = 1,
+  } = {},
 ) {
-  await page.addInitScript(() => {
+  if (cpuSlowdown > 1) {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: cpuSlowdown });
+  }
+  await page.addInitScript((extraStorage) => {
     try {
+      for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
       localStorage.setItem("cognitoIdToken", "mock-id-token");
       localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
     } catch {}
     window.__cumulativeLayoutShift = 0;
+    window.__shiftEntries = [];
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (!entry.hadRecentInput) window.__cumulativeLayoutShift += entry.value;
+        window.__shiftEntries.push({
+          at: Math.round(entry.startTime),
+          value: Number(entry.value.toFixed(4)),
+          moved: entry.sources.map((source) => ({
+            node: source.node
+              ? `${source.node.nodeName.toLowerCase()}${source.node.id ? "#" + source.node.id : ""}.${source.node.className}`
+              : "removed",
+            from: [source.previousRect.x, source.previousRect.y, source.previousRect.width, source.previousRect.height].map(Math.round),
+            to: [source.currentRect.x, source.currentRect.y, source.currentRect.width, source.currentRect.height].map(Math.round),
+          })),
+        });
       }
     }).observe({ type: "layout-shift", buffered: true });
-  });
+  }, storage);
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -56,6 +79,14 @@ async function serveRealSiteWithSlowData(
     }
     if (url.pathname.startsWith("/api/")) {
       await delay(DATA_RESPONSE_DELAY_MS);
+      if (url.pathname === "/api/v1/operator/console-image") {
+        await route.fulfill({ status: 200, contentType: "image/png", body: PIXEL_PNG });
+        return;
+      }
+      if (apiAnswers[url.pathname]) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(apiAnswers[url.pathname]) });
+        return;
+      }
       if (url.pathname === "/api/v1/bundle") {
         await route.fulfill({
           status: 200,
@@ -93,10 +124,97 @@ test.describe("Layout shift while data loads on a phone", () => {
         await delay(2000);
 
         const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
-        expect(cls).toBeLessThan(CLS_LIMIT);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
       });
     }
   }
+
+  for (const [heldBundles, label] of [
+    [[{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }], "with bundles held"],
+    [[], "with no bundles held"],
+  ]) {
+    for (const [width, height] of [
+      [375, 1000],
+      [1280, 900],
+    ]) {
+      test(`bundles.html stays under the CLS limit at ${width}x${height} ${label} on a slow processor`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, { heldBundles, cpuSlowdown: 6 });
+        await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+        await expect(page.locator(".bundles-block.bundles-settled")).toBeAttached();
+        await delay(1000);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+      });
+    }
+  }
+
+  for (const [width, height] of [
+    [375, 1000],
+    [1280, 900],
+  ]) {
+    test(`index.html keeps its header still when the subtitle changes at ${width}x${height} on a slow processor`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await serveRealSiteWithSlowData(page, { cpuSlowdown: 6 });
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "load" });
+      await expect(page.locator("#homeSubtitle")).toContainText("to HMRC and Companies House");
+      await delay(1000);
+
+      const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+      const shifts = await page.evaluate(() => window.__shiftEntries);
+      expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(0.01);
+    });
+  }
+
+  for (const [width, height] of [
+    [375, 800],
+    [1280, 900],
+  ]) {
+    for (const pagePath of ["pass.html?pass=river-cloud-stone-lamp", "bundles.html?pass=river-cloud-stone-lamp"]) {
+      test(`${pagePath.split("?")[0]} with a pass in the link stays under the CLS limit at ${width}x${height}`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, {
+          apiAnswers: { "/api/v1/pass": { valid: true, bundleId: "resident-pro" } },
+        });
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+        await expect(page.locator("#passHeading")).toHaveText("You have a pass for Resident Pro");
+        await delay(1000);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+      });
+    }
+  }
+
+  test("bundles.html starts the card with Your current bundles, with no empty band above it", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await serveRealSiteWithSlowData(page, {
+      heldBundles: [
+        { bundleId: "operator", allocated: true, configDriven: true },
+        { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 80 },
+      ],
+    });
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+    await expect(page.locator("#currentBundles .service-item").first()).toBeVisible();
+
+    const band = await page.evaluate(() => {
+      const card = document.querySelector(".form-container").getBoundingClientRect();
+      const heading = document.querySelector("#currentBundlesSection h2").getBoundingClientRect();
+      return heading.top - card.top;
+    });
+    expect(band).toBeLessThan(40);
+    await page.screenshot({ path: "target/screenshots/bundles-current-bundles-375.png" });
+  });
 
   test("bundles.html leaves no gap above Redeem a pass when no bundles are held", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
@@ -131,5 +249,117 @@ test.describe("Layout shift while data loads on a phone", () => {
       return pass.top - list.bottom;
     });
     expect(gap).toBeLessThan(80);
+  });
+
+  const CAPTURED_IMAGE_SLUGS = [
+    "cognito-sign-ins",
+    "cognito-sign-ins-rest",
+    "hmrc-authentications",
+    "bundle-operations",
+    "bundle-grants",
+    "purchases",
+    "deploy-lead-time",
+    "analytics-all",
+    "analytics-all-middle",
+    "analytics-all-rest",
+    "lambda-errors",
+    "lambda-throttles",
+    "bundle-allocations",
+    "lambda-duration-slowest",
+    "lambda-duration-rest",
+    "lambda-duration-tail",
+    "rum-vitals",
+    "rum-vitals-score",
+    "rum-errors",
+  ];
+
+  function operatorAnswers() {
+    const items = { ...FIXTURE_CONSOLE_INDEX.items };
+    for (const slug of CAPTURED_IMAGE_SLUGS) {
+      items[`prod-${slug}`] = {
+        id: `prod-${slug}`,
+        target: "prod",
+        env: "prod",
+        group: "operations",
+        title: slug,
+        kind: "image",
+        capturedAt: FIXTURE_CONSOLE_INDEX.generatedAt,
+        imageKey: `snapshots/prod/console/prod/prod-${slug}.png`,
+      };
+    }
+    return {
+      "/api/v1/operator/snapshot": {
+        ...fullShapeSnapshot(),
+        generatedAt: new Date().toISOString(),
+        dailyCharts: FIXTURE_DAILY_CHARTS,
+        console: { ...FIXTURE_CONSOLE_INDEX, items },
+      },
+      "/api/v1/pass/held": { passes: [] },
+    };
+  }
+
+  for (const [width, height] of [
+    [1440, 900],
+    [375, 800],
+    [375, 1000],
+  ]) {
+    for (const tab of ["main", "data", "aws-prod"]) {
+      test(`operator/dashboard.html stays under the CLS limit on the ${tab} tab at ${width}x${height}`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: tab } });
+        await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+        await expect(page.locator("#dashboardTabs:not(.dashboard-tabs-pending)")).toBeVisible();
+        if (tab === "aws-prod") await expect(page.locator("img.console-capture-image").first()).toHaveAttribute("src", /^data:image\/png/);
+        if (tab === "data") await expect(page.locator("#dataTablesBody .data-table-row").first()).toBeVisible();
+        await delay(1500);
+
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        const shifts = await page.evaluate(() => window.__shiftEntries);
+        expect(cls, `layout shifts (at ms, value, moved node from to as x y width height): ${JSON.stringify(shifts)}`).toBeLessThan(
+          CLS_LIMIT,
+        );
+        await page.screenshot({ path: `target/screenshots/operator-dashboard-${tab}-${width}x${height}.png`, fullPage: true });
+      });
+    }
+  }
+
+  test("operator/dashboard.html Data tab shows no figure for an absent day and never 0", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "data" } });
+    await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+    const bundles = page.locator('#dataTablesBody tr[data-table="bundles"] td');
+    await expect(bundles).toHaveText(["bundles", "1,296", "1,290", "1,250", "900", "no figure", "On, ttl"]);
+    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
+    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(5);
+    await expect(page.locator("#chart-data-totals")).toBeHidden();
+    await page.locator('.dashboard-tab[data-tab-id="main"]').click();
+    await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);
+  });
+
+  test("operator/dashboard.html draws no block over the line above it at 375 wide", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "aws-prod" } });
+    await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
+    await expect(page.locator("#dashboardTabs:not(.dashboard-tabs-pending)")).toBeVisible();
+    await expect(page.locator("#awsLinksPanel")).toBeVisible();
+
+    const overlaps = await page.evaluate(() => {
+      const blocks = [...document.querySelectorAll("#mainContent > *")].filter((el) => el.getBoundingClientRect().height > 0);
+      const found = [];
+      for (let i = 1; i < blocks.length; i++) {
+        const above = blocks[i - 1].getBoundingClientRect();
+        const below = blocks[i].getBoundingClientRect();
+        if (below.top < above.bottom - 1) found.push({ above: blocks[i - 1].id, below: blocks[i].id, by: above.bottom - below.top });
+      }
+      return found;
+    });
+    expect(overlaps).toEqual([]);
+
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll("#mainContent > *")]
+        .filter((el) => el.getBoundingClientRect().height > 0 && el.scrollHeight - el.clientHeight > 1)
+        .map((el) => ({ id: el.id, shown: el.clientHeight, content: el.scrollHeight })),
+    );
+    expect(clipped, "blocks whose content is taller than the block").toEqual([]);
   });
 });

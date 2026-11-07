@@ -15,6 +15,7 @@ import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
+import co.uk.diyaccounting.submit.stacks.EmailStack;
 import co.uk.diyaccounting.submit.stacks.HoldingStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.IngestionStack;
@@ -43,6 +44,7 @@ public class SubmitEnvironment {
     public final DataStack dataStack;
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
+    public final EmailStack emailStack;
     public final AnalyticsStack analyticsStack;
     public final ScanDetectionStack scanDetectionStack;
     public final IngestionStack ingestionStack;
@@ -94,6 +96,7 @@ public class SubmitEnvironment {
         public String telegramOpsChatId;
         public String githubAppId;
         public String githubAppInstallationId;
+        public String companiesHouseBaseUri;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -214,6 +217,8 @@ public class SubmitEnvironment {
         // diya-ops GitHub App configuration for SecurityLakeStack's GitHub alert counts pull and
         // IngestionStack's operator effort pull; same App and installation OpsStack and
         // AccountStack read (see SubmitApplication.java).
+        var companiesHouseBaseUri = envOr(
+                "COMPANIES_HOUSE_BASE_URI", appProps.companiesHouseBaseUri, "(from companiesHouseBaseUri in cdk.json)");
         var githubAppId = envOr("GITHUB_APP_ID", appProps.githubAppId, "(from githubAppId in cdk.json)");
         var githubAppInstallationId = envOr(
                 "GITHUB_APP_INSTALLATION_ID",
@@ -223,6 +228,9 @@ public class SubmitEnvironment {
         // Environment variables only, no cdk.json fallback: unset means no job and no grant.
         var companyBookId = envOr("COMPANY_BOOK_ID", "");
         var companyBookOwnerPrefix = envOr("COMPANY_BOOK_OWNER_PREFIX", "");
+        // The address that receives a copy of selected customer emails. GitHub Environment
+        // variable only: unset means no copy.
+        var operatorNotifyEmail = envOr("OPERATOR_NOTIFY_EMAIL", "");
         // PayPal credentials landed by deploy-environment.yml on the environments that have them
         // (prod). GitHub Environment variables only, no cdk.json fallback: unset means no PayPal
         // pull job and no secret grant.
@@ -266,6 +274,14 @@ public class SubmitEnvironment {
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .apexDomain(sharedNames.envDomainName)
                         .securityServicesEnabled(securityServicesEnabled)
+                        .baseImageTag(baseImageTag)
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
+                        .trustedEventRulesEnabled("prod".equals(envName))
+                        .trustedEventReadsEnabled("prod".equals(envName))
+                        .rootBudgetAlertsTopicArn(
+                                "prod".equals(envName) ? "arn:aws:sns:us-east-1:887764105431:root-budget-alerts" : "")
+                        .companiesHouseBaseUri(companiesHouseBaseUri != null ? companiesHouseBaseUri : "")
                         .build());
 
         // Create SecurityDetectionStack with scan- and data-theft-detection alarms built on the
@@ -326,6 +342,7 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .baseImageTag(baseImageTag)
+                        .trustedEventRulesEnabled("prod".equals(envName))
                         .build());
 
         // Create DataStack with shared persistence for all deployments
@@ -518,6 +535,31 @@ public class SubmitEnvironment {
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .build());
+
+        // Create EmailStack with the SES sender, the request queue and the workers. It reads the
+        // user pool id from the parameter IdentityStack writes, so it deploys after it.
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.emailStackId, deploymentName, envName);
+        this.emailStack = new EmailStack(
+                app,
+                sharedNames.emailStackId,
+                EmailStack.EmailStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .operatorNotifyEmail(operatorNotifyEmail)
+                        .build());
+        this.emailStack.addStackDependency(this.identityStack);
+        this.emailStack.addStackDependency(this.activityStack);
+        this.emailStack.addStackDependency(this.dataStack);
 
         // Create HoldingStack serving the maintenance page a failover points the live aliases at
         if (holdingCertificateArn != null

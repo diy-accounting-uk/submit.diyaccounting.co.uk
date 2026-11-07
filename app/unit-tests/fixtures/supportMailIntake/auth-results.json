@@ -1,0 +1,62 @@
+{
+  "pass": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=pass header.i=@vendor.example header.s=sel1 header.b=AAAAAAAA;       spf=pass (google.com: domain of bounce@mail.vendor.example designates 192.0.2.1 as permitted sender) smtp.mailfrom=bounce@mail.vendor.example;       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=vendor.example"
+    }
+  ],
+  "passViaMailingService": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=pass header.i=@vendor.example header.s=sel1 header.b=AAAAAAAA;       dkim=pass header.i=@mailer.example header.s=sel2 header.b=BBBBBBBB;       spf=pass smtp.mailfrom=bounce@mailer.example"
+    }
+  ],
+  "mailingServiceOnly": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=pass header.i=@mailer.example header.s=sel2 header.b=BBBBBBBB;       spf=pass smtp.mailfrom=bounce@mailer.example"
+    }
+  ],
+  "differingSigningDomain": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=pass header.i=@news.vendor.example header.s=sel3 header.b=CCCCCCCC;       dkim=pass header.i=@mailer.example header.s=sel2 header.b=BBBBBBBB"
+    }
+  ],
+  "fail": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=fail header.i=@vendor.example header.s=sel1 header.b=AAAAAAAA;       spf=pass smtp.mailfrom=bounce@vendor.example;       dmarc=fail (p=REJECT sp=REJECT dis=NONE) header.from=vendor.example"
+    }
+  ],
+  "none": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       spf=pass smtp.mailfrom=bounce@vendor.example;       dmarc=none header.from=vendor.example"
+    }
+  ],
+  "missing": [{ "name": "Subject", "value": "A subject" }],
+  "forgedLower": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com;       dkim=fail header.i=@vendor.example header.s=sel1 header.b=AAAAAAAA"
+    },
+    { "name": "Received", "value": "from forger.example by mx.google.com" },
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com; dkim=pass header.i=@vendor.example header.s=sel1 header.b=FORGED"
+    }
+  ],
+  "forgedTop": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.forger.example; dkim=pass header.i=@vendor.example header.s=sel1 header.b=FORGED"
+    }
+  ],
+  "lookalikeDomain": [
+    {
+      "name": "Authentication-Results",
+      "value": "mx.google.com; dkim=pass header.i=@notvendor.example header.s=sel1 header.b=DDDDDDDD"
+    }
+  ]
+}

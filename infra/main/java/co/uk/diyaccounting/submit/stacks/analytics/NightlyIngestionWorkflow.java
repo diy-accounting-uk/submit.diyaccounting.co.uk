@@ -69,7 +69,7 @@ import software.constructs.Construct;
  * the activity events compaction; then the operator snapshot publish; then the pass figures publish; then, in ci always and in prod on the 02:15
  * UTC run only, the console capture publish; then {@code Succeed}. The capture is an optional task: a
  * failure is recorded under {@code $.failures.consoleCapture} and does not fail the night. In prod it runs
- * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
+ * every six hours, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
  * and raw export, which is the entire reason for this phase.
@@ -99,7 +99,7 @@ public class NightlyIngestionWorkflow {
 
     /**
      * The execution start times that also run the data quality run, the metrics publish and the
-     * raw export: the 02:15 UTC run. Those three report or check whole days, so the other hourly
+     * raw export: the 02:15 UTC run. Those three report or check whole days, so the other
      * runs go from the ingestion jobs straight to the operator snapshot.
      */
     static final String NIGHTLY_START_TIME_PATTERN = "*T02:*";
@@ -349,12 +349,14 @@ public class NightlyIngestionWorkflow {
         // ============================================================================
         // Schedule
         // ============================================================================
-        // prod: at minute 15 of every hour, so each daily source lands its latest day hourly and
-        // the operator dashboard's Today column is at most an hour old. ci: 02:15 every Monday,
+        // prod: at minute 15 of every sixth hour from 02:00 UTC, so the 02:15 run stays the whole-day
+        // run and the operator dashboard's Today column is at most six hours old. Each run costs S3
+        // requests and GuardDuty events over the lake's small files. ci: 02:15 every Monday,
         // keeping the weekly cadence the third-party calls have today.
         var cronOptions = isProd
                 ? CronOptionsWithTimezone.builder()
                         .minute("15")
+                        .hour("2/6")
                         .timeZone(TimeZone.ETC_UTC)
                         .build()
                 : CronOptionsWithTimezone.builder()
@@ -398,9 +400,9 @@ public class NightlyIngestionWorkflow {
         if (isProd) {
             this.executionsMissedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsMissedAlarm")
                     .alarmName(props.stateMachineName() + "-missed")
-                    .alarmDescription("The analytics ingestion state machine has not started an execution in 3 hours")
+                    .alarmDescription("The analytics ingestion state machine has not started an execution in 7 hours")
                     .metric(this.stateMachine.metricStarted(MetricOptions.builder()
-                            .period(Duration.hours(3))
+                            .period(Duration.hours(7))
                             .statistic("Sum")
                             .build()))
                     .threshold(1)

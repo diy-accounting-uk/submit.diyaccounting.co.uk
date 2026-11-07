@@ -12,3 +12,14 @@
   localStorage.removeItem("userInfo");
   localStorage.removeItem("authState");
 })();
+
+// "Sign out and use another account" on the pass page stores its link here. The sign-out
+// returns to this fixed page, which forwards to the stored link once.
+(function () {
+  let stored = null;
+  try {
+    stored = sessionStorage.getItem("passReturnAfterSignOut");
+    sessionStorage.removeItem("passReturnAfterSignOut");
+  } catch {}
+  if (stored && window.postLoginRedirectTarget(stored) === stored) window.location.replace(stored);
+})();

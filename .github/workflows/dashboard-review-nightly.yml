@@ -1,0 +1,418 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-193 Review the operator dashboard each night
+# - **Use when:** the prod operator dashboard needs a nightly review with a report in the private repository, or the review needs a dispatched run.
+# - **Does:** dashboard-review-nightly.yml runs at 03:43 UTC, after the 02:15 prod snapshot and console capture. The `review` job reads the snapshot, the console images and the held passes under the dashboard review role, renders every tab in Chromium, runs the code checks, and has a model with no tools judge each tab. A guardrail screens each answer. The job hands one encrypted bundle on as a job output. The `write` job checks the answers again and commits one report and a few JPEGs to the private repository. The `notify` job opens or updates one private issue when a job fails, and closes it on the next committed run. The `ledger` job writes one agent-run row. The kill switch and a budget of two committed reports a day stop the run. The `proof` input `leading-keys` runs one query that the role's LeadingKeys condition must deny, and stops.
+# - **Run:** `gh workflow run dashboard-review-nightly.yml --repo diy-accounting-uk/submit.diyaccounting.co.uk`; add `-f proof=leading-keys` for the permission proof
+# - **Entry:** `.github/workflows/dashboard-review-nightly.yml`; `scripts/dashboard-review-nightly.mjs:runNightly`
+# - **Files:** .github/workflows/dashboard-review-nightly.yml, app/unit-tests/dashboardReviewNightlyWorkflow.test.js
+# - **Keywords:** nightly dashboard review, dashboard review workflow, snapshot review, bedrock judge, encrypted job output, private report, leading keys proof
+# - **Related:** DEV-55, OPS-19, OPS-20, OPS-191, OPS-192
+# @end-capability
+
+name: dashboard-review-nightly
+run-name: nightly dashboard review
+
+# Reads the prod operator dashboard each night and commits one report to private.diyaccounting.co.uk.
+#
+# This repository is public, so its logs, step summaries and artifacts are public. The review
+# script prints fixed lines only, and no step here prints a snapshot value, a screenshot or a
+# model answer. The report leaves the `review` job as one job output, encrypted with a key from
+# a secret: a step that reads an output shows the value in its own log header, so the value must
+# be useless to a reader of the log. No job uploads an artifact or writes a step summary.
+#
+# The jobs hold different powers. `review` holds AWS credentials for the dashboard review role
+# and no GitHub write access. `write` holds a token that writes contents in the private
+# repository and no AWS credentials. `notify` holds a token that writes issues in the private
+# repository and no AWS credentials. `ledger` holds AWS credentials that can put one ledger row.
+
+on:
+  schedule:
+    - cron: '43 3 * * *'
+  workflow_dispatch:
+    inputs:
+      proof:
+        description: leading-keys runs one query that the review role must be denied, prints the result and stops; none runs the review
+        required: false
+        type: choice
+        options:
+          - none
+          - leading-keys
+        default: none
+
+permissions: {}
+
+concurrency:
+  group: dashboard-review-nightly
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: 'eu-west-2'
+  # The one place the model is written.
+  REVIEW_MODEL_ID: 'amazon.nova-pro-v1:0'
+  PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
+  # The one place this number is written. The budget guard and its step name read it.
+  DASHBOARD_REVIEW_BUDGET_PER_DAY: '2'
+
+jobs:
+  # Holds the OIDC token for the actions role and then the dashboard review role. It holds no
+  # GitHub write access: the issues permission is for the open alarm titles, which are public.
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: prod
+    permissions:
+      contents: read
+      actions: read
+      issues: read
+      id-token: write
+    outputs:
+      proceed: ${{ steps.budget.outputs.over-budget == 'false' && inputs.proof != 'leading-keys' }}
+      over-budget: ${{ steps.budget.outputs.over-budget }}
+      killed: ${{ steps.killed.outputs.killed }}
+      bundle-0: ${{ steps.review.outputs.bundle-0 }}
+      bundle-1: ${{ steps.review.outputs.bundle-1 }}
+      bundle-2: ${{ steps.review.outputs.bundle-2 }}
+      bundle-3: ${{ steps.review.outputs.bundle-3 }}
+      bundle-4: ${{ steps.review.outputs.bundle-4 }}
+      bundle-5: ${{ steps.review.outputs.bundle-5 }}
+      bundle-6: ${{ steps.review.outputs.bundle-6 }}
+      bundle-7: ${{ steps.review.outputs.bundle-7 }}
+      tokens-in: ${{ steps.review.outputs.tokens-in }}
+      tokens-out: ${{ steps.review.outputs.tokens-out }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: ignore-scripts
+          npm-cache: 'false'
+
+      - name: Install Chromium
+        if: inputs.proof != 'leading-keys'
+        run: npx playwright install chromium --with-deps
+
+      - name: Stop once ${{ env.DASHBOARD_REVIEW_BUDGET_PER_DAY }} reports have already been committed today
+        if: inputs.proof != 'leading-keys'
+        id: budget
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: dashboard-review-nightly.yml
+          job-name: write
+          step-name: Commit the report
+          budget: ${{ env.DASHBOARD_REVIEW_BUDGET_PER_DAY }}
+
+      # The alarm-triage role reads the live set pointer. The review role does not.
+      - name: Assume the AWS actions and alarm-triage roles
+        if: steps.budget.outputs.over-budget == 'false' || inputs.proof == 'leading-keys'
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read the live set
+        if: steps.budget.outputs.over-budget == 'false'
+        id: live-set
+        run: |
+          set -euo pipefail
+          LIVE_SET=$(aws ssm get-parameter --name /submit/prod/last-known-good-deployment --query 'Parameter.Value' --output text)
+          echo "live-set=${LIVE_SET}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS role via GitHub OIDC
+        if: steps.budget.outputs.over-budget == 'false' || inputs.proof == 'leading-keys'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the dashboard review role
+        if: steps.budget.outputs.over-budget == 'false' || inputs.proof == 'leading-keys'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.SUBMIT_ACCOUNT_ID }}:role/prod-env-dashboard-review-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        if: steps.budget.outputs.over-budget == 'false' || inputs.proof == 'leading-keys'
+        id: kill-switch
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: prod
+
+      - name: Record that the kill switch stopped the run
+        if: always() && steps.kill-switch.outcome == 'failure'
+        id: killed
+        run: echo "killed=true" >> "$GITHUB_OUTPUT"
+
+      # The role may query the issuer index for the key "held" only. A query for any other key
+      # must be denied by the LeadingKeys condition. The step prints one fixed line.
+      - name: Prove the LeadingKeys condition denies another key
+        if: inputs.proof == 'leading-keys'
+        timeout-minutes: 5
+        run: |
+          set -uo pipefail
+          if aws dynamodb query --table-name prod-env-passes --index-name issuedBy-index \
+            --key-condition-expression 'issuedBy = :issuer' \
+            --expression-attribute-values '{":issuer":{"S":"not-held"}}' \
+            --limit 1 > /dev/null 2>"$RUNNER_TEMP/leading-keys.err"; then
+            echo "leading-keys allowed"
+            rm -f "$RUNNER_TEMP/leading-keys.err"
+            exit 1
+          fi
+          if grep -q AccessDenied "$RUNNER_TEMP/leading-keys.err"; then
+            echo "leading-keys denied"
+            rm -f "$RUNNER_TEMP/leading-keys.err"
+            exit 0
+          fi
+          echo "::error::the query failed for another reason: $(grep -oE '[A-Za-z]+Exception' "$RUNNER_TEMP/leading-keys.err" | head -1)"
+          rm -f "$RUNNER_TEMP/leading-keys.err"
+          exit 1
+
+      # Open alarm titles are public issues.
+      - name: List the open alarms
+        if: steps.budget.outputs.over-budget == 'false' && inputs.proof != 'leading-keys'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue list --state open --label alarm --json number,title > "$RUNNER_TEMP/alarms.json"
+
+      # One process reads the data, renders the page, checks it, judges it, screens the answers and
+      # encrypts the bundle. It prints fixed lines only and appends the bundle to GITHUB_OUTPUT.
+      - name: Review the dashboard
+        if: steps.budget.outputs.over-budget == 'false' && inputs.proof != 'leading-keys'
+        id: review
+        timeout-minutes: 25
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          LIVE_SET: ${{ steps.live-set.outputs.live-set }}
+          ANALYTICS_LAKE_BUCKET_NAME: prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}
+          ENVIRONMENT_NAME: prod
+          PASSES_DYNAMODB_TABLE_NAME: prod-env-passes
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/alarms.json"' EXIT
+          GUARDRAIL_ID=$(aws ssm get-parameter --name /submit/prod/alarm-triage/guardrail-id --query 'Parameter.Value' --output text)
+          GUARDRAIL_VERSION=$(aws ssm get-parameter --name /submit/prod/alarm-triage/guardrail-version --query 'Parameter.Value' --output text)
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS GUARDRAIL_ID GUARDRAIL_VERSION
+          node scripts/dashboard-review-nightly.mjs review
+
+  # Holds a token that writes contents in the private repository and no AWS credentials. It
+  # decrypts nothing itself: the script reads the bundle from a file and decrypts it in memory.
+  write:
+    needs: review
+    if: needs.review.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: ignore-scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that writes contents in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-contents: write
+
+      - name: Checkout the report folder of the private repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ env.PRIVATE_REPO }}
+          token: ${{ steps.private-token.outputs.token }}
+          path: private
+          sparse-checkout: operator/dashboard-reviews
+          sparse-checkout-cone-mode: true
+          persist-credentials: true
+
+      - name: Write the report
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          BUNDLE_0: ${{ needs.review.outputs.bundle-0 }}
+          BUNDLE_1: ${{ needs.review.outputs.bundle-1 }}
+          BUNDLE_2: ${{ needs.review.outputs.bundle-2 }}
+          BUNDLE_3: ${{ needs.review.outputs.bundle-3 }}
+          BUNDLE_4: ${{ needs.review.outputs.bundle-4 }}
+          BUNDLE_5: ${{ needs.review.outputs.bundle-5 }}
+          BUNDLE_6: ${{ needs.review.outputs.bundle-6 }}
+          BUNDLE_7: ${{ needs.review.outputs.bundle-7 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$BUNDLE_0" "$BUNDLE_1" "$BUNDLE_2" "$BUNDLE_3" "$BUNDLE_4" "$BUNDLE_5" "$BUNDLE_6" "$BUNDLE_7" > "$RUNNER_TEMP/bundle.txt"
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          node scripts/dashboard-review-nightly.mjs write --bundle "$RUNNER_TEMP/bundle.txt" --private private
+          rm -f "$RUNNER_TEMP/bundle.txt"
+
+      - name: Commit the report
+        working-directory: private
+        env:
+          APP_SLUG: ${{ steps.private-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+          git add operator/dashboard-reviews
+          git commit -m "Nightly dashboard review $(date -u +%F)"
+          git push origin HEAD:main
+
+  # Opens one private issue for a failed run, or comments on the open one, and closes the open
+  # one when a run commits again. The body is fixed text. It holds no AWS credentials.
+  notify:
+    needs: [review, write]
+    if: >-
+      always() && !cancelled() && inputs.proof != 'leading-keys' &&
+      (needs.review.result == 'failure' || needs.write.result == 'failure' || needs.write.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: prod
+    permissions:
+      contents: read
+    env:
+      REVIEW_RESULT: ${{ needs.review.result }}
+      WRITE_RESULT: ${{ needs.write.result }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ISSUE_TITLE: Nightly dashboard review failed
+    steps:
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Open, update or close the failure issue
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          TODAY=$(date -u +%F)
+          OPEN=$(gh issue list --repo "$PRIVATE_REPO" --label dashboard-review --state open --json number,title \
+            --jq "[.[] | select(.title == \"${ISSUE_TITLE}\")][0].number // empty")
+          if [ "$WRITE_RESULT" = "success" ]; then
+            if [ -n "$OPEN" ]; then
+              gh issue comment "$OPEN" --repo "$PRIVATE_REPO" --body "Committed again on ${TODAY}."
+              gh issue close "$OPEN" --repo "$PRIVATE_REPO"
+            fi
+            exit 0
+          fi
+          if [ "$REVIEW_RESULT" = "failure" ]; then JOB="review"; else JOB="write"; fi
+          BODY="Date: ${TODAY}. Failed job: ${JOB}. Run: ${RUN_URL}"
+          if [ -n "$OPEN" ]; then
+            gh issue comment "$OPEN" --repo "$PRIVATE_REPO" --body "$BODY"
+          else
+            gh label create dashboard-review --repo "$PRIVATE_REPO" --color 5319e7 --description "Nightly dashboard review" --force
+            gh issue create --repo "$PRIVATE_REPO" --title "$ISSUE_TITLE" --label dashboard-review --body "$BODY"
+          fi
+
+  ledger:
+    needs: [review, write]
+    if: always() && !cancelled() && inputs.proof != 'leading-keys'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout the ledger action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            .github/actions/dora-row
+            .github/actions/aws-role
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The row holds the outcome, the run and the token counts. It holds no snapshot or model text.
+      - name: Build the agent-run row
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_RESULT: ${{ needs.review.result }}
+          WRITE_RESULT: ${{ needs.write.result }}
+          OVER_BUDGET: ${{ needs.review.outputs.over-budget }}
+          KILLED: ${{ needs.review.outputs.killed }}
+          TOKENS_IN: ${{ needs.review.outputs.tokens-in }}
+          TOKENS_OUT: ${{ needs.review.outputs.tokens-out }}
+        run: |
+          set -euo pipefail
+          if [ "$WRITE_RESULT" = "success" ]; then OUTCOME="committed"
+          elif [ "$WRITE_RESULT" = "failure" ]; then OUTCOME="write-failed"
+          elif [ "$REVIEW_RESULT" = "failure" ] && [ "$KILLED" = "true" ]; then OUTCOME="killed"
+          elif [ "$REVIEW_RESULT" = "failure" ]; then OUTCOME="review-failed"
+          elif [ "$OVER_BUDGET" = "true" ]; then OUTCOME="over-budget"
+          else OUTCOME="no-action"
+          fi
+          STARTED_AT=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          ROW=$(jq -nc \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg model_id "$REVIEW_MODEL_ID" \
+            --arg outcome "$OUTCOME" \
+            --argjson input_tokens "${TOKENS_IN:-0}" \
+            --argjson output_tokens "${TOKENS_OUT:-0}" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "dashboard-review-nightly", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod", issue_number: null,
+              model_id: $model_id, outcome: $outcome, escalated: false,
+              redactions: null, guardrail_action: null, pr_number: null,
+              input_tokens: $input_tokens, output_tokens: $output_tokens,
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${{ github.run_id }}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}

@@ -5,35 +5,10 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 
-// Mock Stripe SDK
+// Mock the Stripe client factory so each test sees which mode's client was requested
 const mockCheckoutSessionsRetrieve = vi.fn();
-vi.mock("stripe", () => {
-  return {
-    default: class Stripe {
-      constructor() {
-        this.checkout = {
-          sessions: {
-            retrieve: mockCheckoutSessionsRetrieve,
-          },
-        };
-      }
-    },
-  };
-});
-
-// Mock Secrets Manager (stripeClient.js uses it)
-vi.mock("@aws-sdk/client-secrets-manager", () => ({
-  SecretsManagerClient: class {
-    send() {
-      return { SecretString: "sk_test_mock" };
-    }
-  },
-  GetSecretValueCommand: class {
-    constructor(input) {
-      this.input = input;
-    }
-  },
-}));
+const mockGetStripeClient = vi.fn(async () => ({ checkout: { sessions: { retrieve: mockCheckoutSessionsRetrieve } } }));
+vi.mock("@app/lib/stripeClient.js", () => ({ getStripeClient: (options) => mockGetStripeClient(options) }));
 
 import { ingestHandler } from "@app/functions/billing/billingCheckoutSessionGet.js";
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
@@ -51,6 +26,7 @@ describe("billingCheckoutSessionGet", () => {
 
   beforeEach(async () => {
     mockCheckoutSessionsRetrieve.mockReset();
+    mockGetStripeClient.mockClear();
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
     await initializeSalt();
@@ -101,14 +77,39 @@ describe("billingCheckoutSessionGet", () => {
     expect(result.statusCode).toBe(404);
   });
 
-  test("returns 404 when the session does not exist in either Stripe mode", async () => {
+  test("returns 404 when the session does not exist in either Stripe mode, for an id with no mode prefix", async () => {
     mockCheckoutSessionsRetrieve.mockRejectedValue(resourceMissingError());
 
-    const event = buildEventWithToken(validToken, {}, { pathParameters: { id: "cs_test_missing" } });
+    const event = buildEventWithToken(validToken, {}, { pathParameters: { id: "cs_unprefixed_missing" } });
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(404);
     expect(mockCheckoutSessionsRetrieve).toHaveBeenCalledTimes(2);
+  });
+
+  test("a test-mode session id is read with the test client only", async () => {
+    mockCheckoutSessionsRetrieve.mockRejectedValue(resourceMissingError());
+    const event = buildEventWithToken(validToken, {}, { pathParameters: { id: "cs_test_only" } });
+    await ingestHandler(event);
+    expect(mockGetStripeClient.mock.calls.map(([options]) => options.test)).toEqual([true]);
+    expect(mockCheckoutSessionsRetrieve).toHaveBeenCalledTimes(1);
+  });
+
+  test("a live-mode session id is read with the live client only", async () => {
+    mockCheckoutSessionsRetrieve.mockRejectedValue(resourceMissingError());
+    const event = buildEventWithToken(validToken, {}, { pathParameters: { id: "cs_live_only" } });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(404);
+    expect(mockGetStripeClient.mock.calls.map(([options]) => options.test)).toEqual([false]);
+    expect(mockCheckoutSessionsRetrieve).toHaveBeenCalledTimes(1);
+  });
+
+  test("a session id with neither prefix is tried with the live client and then the test client", async () => {
+    mockCheckoutSessionsRetrieve.mockRejectedValue(resourceMissingError());
+    const event = buildEventWithToken(validToken, {}, { pathParameters: { id: "abc123" } });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(404);
+    expect(mockGetStripeClient.mock.calls.map(([options]) => options.test)).toEqual([false, true]);
   });
 
   test("returns 500 when Stripe fails for a reason other than a missing session", async () => {

@@ -180,7 +180,9 @@ class WorkflowRunTablesTest {
                                                         Map.of("Name", "outcome", "Type", "string"),
                                                         Map.of("Name", "escalated", "Type", "boolean"),
                                                         Map.of("Name", "pr_number", "Type", "bigint"),
-                                                        Map.of("Name", "duration_seconds", "Type", "bigint"))))))))));
+                                                        Map.of("Name", "duration_seconds", "Type", "bigint"),
+                                                        Map.of("Name", "input_tokens", "Type", "bigint"),
+                                                        Map.of("Name", "output_tokens", "Type", "bigint"))))))))));
     }
 
     @Test

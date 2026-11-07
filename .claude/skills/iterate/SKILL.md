@@ -18,6 +18,11 @@ description: Run the delivery cycle unattended until the board has no machine-on
 
 # iterate
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 The cycle this repository has settled on, run under `/loop` in dynamic mode:
 
 ```
@@ -142,7 +147,7 @@ first deploy's terminal state.
 
 ### 5. Close the cycle
 
-When `main` is stable (the watch's tally with no red), `/board` again with its write-back. Print
+When `main` is stable (the watch's tally with no red), `/board` again with its write-back. That render runs `/unblock`, so each cycle ends with the board's blockers tested and the operator's questions and commands in front of them; on an unattended tick the decisions print as a list. Print
 the removal block for the wave's worktrees and branches in full with the `!` prefix; the operator
 runs it or leaves it. Close any alarm issue the wave's deploy settled, with the evidence in the
 closing comment.

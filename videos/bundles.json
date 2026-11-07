@@ -2,9 +2,9 @@
   "$schema": "./scene-script.schema.json",
   "name": "bundles",
   "title": "View and edit your bundles",
-  "description": "A signed-in walk through the bundles page: what you can add, the pass box, adding a bundle, and removing one you no longer want.",
+  "description": "A signed-in walk through the bundles page: what you can add, typing a pass into the pass box, the pass page that shows what the pass gives, redeeming it, and removing a bundle you no longer want.",
   "auth": "user",
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html"],
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/pass.html"],
   "viewport": {
     "width": 1920,
     "height": 1080
@@ -109,6 +109,18 @@
       ]
     },
     {
+      "id": "make-pass",
+      "chapter": "Make a pass",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "createPass",
+          "bundle": "Day pass",
+          "testPass": true
+        }
+      ]
+    },
+    {
       "id": "pass",
       "chapter": "Redeem a pass",
       "still": true,
@@ -118,19 +130,52 @@
           "target": "#passInput"
         },
         {
-          "action": "point",
+          "action": "type",
           "target": "#passInput",
+          "text": "{{passCode}}",
+          "secret": true,
           "caption": "A pass from someone else goes in this box.",
-          "headline": "Redeem a pass",
-          "keyWord": "pass",
-          "dwellMs": 600
+          "headline": "Enter your pass",
+          "keyWord": "pass"
+        },
+        {
+          "action": "click",
+          "target": "#redeemPassBtn",
+          "caption": "Redeem pass opens a page that shows what the pass gives you.",
+          "headline": "The pass page opens",
+          "keyWord": "opens"
+        },
+        {
+          "action": "await",
+          "until": "#passRedeemBtn",
+          "label": "Checking the pass"
         },
         {
           "action": "point",
-          "target": "#redeemPassBtn",
-          "caption": "Redeem pass adds the bundle it carries.",
-          "headline": "The bundle is added",
-          "keyWord": "added",
+          "target": "#passCard",
+          "caption": "The pass page shows the bundle, what it allows and when it ends.",
+          "headline": "What the pass gives",
+          "keyWord": "gives",
+          "dwellMs": 600
+        },
+        {
+          "action": "click",
+          "target": "#passRedeemBtn",
+          "caption": "Redeem pass adds the bundle to your account.",
+          "headline": "Redeem the pass",
+          "keyWord": "Redeem"
+        },
+        {
+          "action": "await",
+          "until": "#passHomeLink",
+          "label": "Redeeming the pass"
+        },
+        {
+          "action": "point",
+          "target": "#passCard",
+          "caption": "The page confirms that the pass is redeemed.",
+          "headline": "Pass redeemed",
+          "keyWord": "redeemed",
           "dwellMs": 600
         },
         {
@@ -141,16 +186,15 @@
     },
     {
       "id": "add",
-      "chapter": "Add a bundle",
+      "chapter": "Your current bundles",
       "still": true,
       "steps": [
         {
-          "action": "ensureBundle",
-          "bundle": "Day pass",
-          "testPass": true,
-          "caption": "Add a bundle and it joins your current bundles.",
-          "headline": "Add a bundle",
-          "keyWord": "Add"
+          "action": "click",
+          "target": "#passBundlesLink",
+          "caption": "See your bundles takes you back to the bundles page.",
+          "headline": "Back to your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "await",
@@ -164,7 +208,7 @@
         {
           "action": "point",
           "target": "#currentBundles",
-          "caption": "Your current bundles show what each one allows.",
+          "caption": "The bundle from the pass is now in your current bundles.",
           "headline": "Your current bundles",
           "keyWord": "current",
           "dwellMs": 600

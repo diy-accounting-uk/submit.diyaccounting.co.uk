@@ -736,6 +736,29 @@ jobs:
             fi
           fi
 
+          # API Gateway routes the apex's /api calls by the apex custom domain's mapping. When that
+          # mapping still names this deployment's API, the destroy would leave the apex with no API:
+          # the cleanup step below deletes the mapping and then the domain.
+          APEX_API_REASON=""
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${DEPLOYMENT}-app-ApiStack" --region eu-west-2 \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue | [0]" \
+            --output text 2>/dev/null || echo "")
+          if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+            if ! MAPPED=$(aws apigatewayv2 get-api-mappings --region eu-west-2 \
+              --domain-name "$CI_APEX_DOMAIN" \
+              --query "Items[?ApiId=='${API_ID}'].ApiMappingId | [0]" --output text 2>&1); then
+              if ! printf '%s' "$MAPPED" | grep -q "NotFoundException"; then
+                APEX_API_REASON="could not read the API mappings of [$CI_APEX_DOMAIN]: $MAPPED"
+              fi
+            elif [ -n "$MAPPED" ] && [ "$MAPPED" != "None" ]; then
+              APEX_API_REASON="the API domain [$CI_APEX_DOMAIN] still maps to its API [$API_ID]"
+            fi
+          fi
+          if [ -z "$REASON" ]; then
+            REASON="$APEX_API_REASON"
+          fi
+
           if [ -z "$REASON" ]; then
             echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
             exit 0
@@ -749,11 +772,17 @@ jobs:
 
           if [ "$FORCE_LAST_KNOWN_GOOD" = "true" ] && [ "$REASON" = "it is the last known good deployment" ]; then
             echo "[$DEPLOYMENT] is the last known good deployment; destroying it because force-last-known-good is set"
+            if [ -n "$APEX_API_REASON" ]; then
+              echo "::warning::Forced destroy of [$DEPLOYMENT]: $APEX_API_REASON. The cleanup step removes a mapping to its API, and the ci apex API answers 403 until set-origins.yml for ci runs."
+            fi
             echo "forced-last-known-good=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "Refusing to destroy [$DEPLOYMENT]: $REASON"
+          if [ -n "$APEX_API_REASON" ]; then
+            echo "Run set-origins.yml for ci first, so the apex API domain moves to the live deployment."
+          fi
           exit 1
 
       # A destroy that matches no stacks must not report success: that reads exactly like a

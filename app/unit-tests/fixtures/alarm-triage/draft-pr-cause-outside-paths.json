@@ -1,0 +1,79 @@
+{
+  "description": "The row allows only one file, but the cause is in a different file; the answer must not write a diff for it.",
+  "alarm": {
+    "name": "ci-zz17plum-app-invoice-render-errors",
+    "environment": "ci",
+    "deployment": "zz17plum",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9116
+  },
+  "remedyRow": {
+    "family": "ci-app-invoice-render-errors",
+    "remedy": "draft-pr",
+    "paths": ["src/invoice/render.js"],
+    "budgetPerDay": 2,
+    "why": "One function, code only."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz17plum",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz17plum-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz17plum-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [4.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    },
+    "codeContext": {
+      "src/invoice/render.js": "import { formatTotal } from '../shared/helpers.js';\nexport const render = (invoice) => formatTotal(invoice.total);\n",
+      "src/shared/helpers.js": "export const formatAmount = (value) => value.toFixed(2);\n"
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [4.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz17plum-app-invoice-render-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [4.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz17plum-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"ERROR req-1701 invoice render failed: template helper formatTotal is not a function at src/shared/helpers.js:12:9\"},{\"timestamp\":1768467901000,\"message\":\"ERROR req-1702 invoice render failed: template helper formatTotal is not a function at src/shared/helpers.js:12:9\"}]}"
+    }
+  ],
+  "files": {
+    "src/invoice/render.js": "import { formatTotal } from '../shared/helpers.js';\nexport const render = (invoice) => formatTotal(invoice.total);\n",
+    "src/shared/helpers.js": "export const formatAmount = (value) => value.toFixed(2);\n"
+  },
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["invoice"], ["formattotal", "helper"]],
+    "nextAction": [["helpers.js", "shared", "formattotal", "helper", "investigate"]],
+    "remedy": "none"
+  }
+}

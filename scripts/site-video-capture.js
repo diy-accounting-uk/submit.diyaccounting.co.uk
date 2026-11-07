@@ -197,6 +197,8 @@ function describeStep(step, waitMs, values, now) {
       return `selects "${step.value}" in ${describeTarget(step.target)}`;
     case "dropFile":
       return `drops ${step.name || path.basename(step.file)} onto ${describeTarget(step.target)}`;
+    case "createPass":
+      return `creates a pass for ${step.bundle}`;
     case "notePeriod":
       return "notes the period on the form";
     case "checkHidden":
@@ -247,6 +249,7 @@ const WAIT_CAPABLE_ACTIONS = new Set([
   "hostedUiLogin",
   "consent",
   "ensureBundle",
+  "createPass",
   "hmrcAuthorise",
   "companiesHouseAuthorise",
 ]);

@@ -165,6 +165,7 @@ async function main() {
       restrictedToEmail: args.email || undefined,
       createdBy: `local-script#${process.env.USER || "unknown"}`,
       notes: args.notes || undefined,
+      actor: passType.test ? "test-user" : "operator",
       ...(passType.test ? { testPass: true } : {}),
     });
     results.push(pass);
@@ -174,7 +175,7 @@ async function main() {
   console.log("=== Generated Passes ===");
   console.log("");
   for (const pass of results) {
-    const url = `https://${host}/bundles.html?pass=${pass.code}`;
+    const url = `https://${host}/pass.html?pass=${pass.code}`;
     console.log(`  Code:        ${pass.code}`);
     console.log(`  URL:         ${url}`);
     console.log(`  Bundle:      ${pass.bundleId}`);

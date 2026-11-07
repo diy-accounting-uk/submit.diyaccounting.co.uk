@@ -194,7 +194,7 @@ test.describe("affiliate status in the current bundles list", () => {
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
     const row = page.locator("[data-affiliate-row]");
     await expect(row).toContainText("Family affiliate");
-    await expect(row).toContainText("set by the site's configuration");
+    await expect(row).toContainText("Set for your account by DIY Accounting");
     await expect(row.locator("button")).toHaveCount(0);
     await page.screenshot({ path: "target/bnd1-family-row.png", fullPage: true });
   });
@@ -217,7 +217,7 @@ test.describe("affiliate status in the current bundles list", () => {
       },
     });
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
-    const row = page.locator("#currentBundles .bundle-row").filter({ hasText: "set by the site's configuration" });
+    const row = page.locator("#currentBundles .bundle-row").filter({ hasText: "Set for your account by DIY Accounting" });
     await expect(row).toHaveCount(1);
     await expect(row.locator("button[data-remove-bundle-id]")).toHaveCount(0);
     await page.screenshot({ path: "target/bnd1-operator-row.png", fullPage: true });

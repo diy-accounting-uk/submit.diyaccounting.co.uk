@@ -96,7 +96,7 @@ App and installation ids come from the GitHub App settings pages (the agent App 
 | `SUBMIT_ACCOUNT_ID` | most AWS workflows |
 | `SUBMIT_ACTIONS_ROLE_ARN` | every workflow that signs in to AWS |
 | `SUBMIT_DEPLOY_ROLE_ARN` | every workflow that then deploys or reads |
-| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml`, `security-review.yml`, `agentic-lib-*.yml`, `deploy.yml`, `test.yml` |
+| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml`, `security-review.yml`, `deploy.yml`, `test.yml` |
 | `SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN` | `support-mail-intake.yml` (the `acceptance` job); the `<env>-env-support-acceptance-role` stack output `SupportAcceptanceRoleArn` of `ObservabilityStack` |
 | `SUBMIT_CERTIFICATE_ARN` | `deploy-environment.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy.yml`, `promote-ci-apex.yml` |
@@ -122,8 +122,6 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 |---|---|---|
 | `RELEASE_PAT` | `publish.yml` | PAT, `repo` scope, to push tags and release commits |
 | `ADMIN_TOKEN` | `infra-apply.yml` | PAT with repository administration, to read settings |
-| `AGENT_TOKEN` | `agentic-lib-board.yml`, `agentic-lib-code.yml` | PAT for the agent workflows |
-| `AUTO_MERGE_TOKEN` | `agentic-lib-pr.yml` | PAT that can merge |
 | `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `security-review.yml`, `support-triage.yml` | private key of the agent GitHub App |
 | `OPS_APP_PRIVATE_KEY` | `deploy-environment.yml` (to `{env}/submit/github/ops_app_private_key`) | private key of the `diya-ops` GitHub App |
 | `OPERATOR_EMAILS` | `deploy-environment.yml` (to `{env}/submit/operator-emails`) | the operator's addresses |
@@ -164,11 +162,10 @@ Read on `ci`: `COMPANIES_HOUSE_SANDBOX_API_KEY` (also written by `deploy-environ
 Workflows apply these. Recreate with `gh label create`.
 
 - `alarm`, `ops`, `support`, `general`, `other`, `incident`: issue families opened by `alarm-triage.yml`, `support-triage.yml` and the alarm Lambda.
-- `origin:machine`, `origin:human`, `origin:attended-agent`, `origin:unattended-agent`, `origin:external`: who raised an item (the alarm and support Lambdas, `agentic-lib-code.yml`).
+- `origin:machine`, `origin:human`, `origin:attended-agent`, `origin:unattended-agent`, `origin:external`: who raised an item (the alarm and support Lambdas).
 - `remedy:close-when-gone`, `remedy:dispatch`, `remedy:draft-pr`: alarm-family remedy mode (`alarm-triage.yml`, `alarm-remedy-close.yml`).
 - `policy:question`: open operator policy question.
 - `triage`: re-runs alarm triage on an issue.
-- `agentic-lib`: hands an issue to `agentic-lib-code.yml`.
 - `security-review`: issues opened by `security-review.yml`.
 - `copilot-agent`, `in-progress`: agent and batch tracking.
 

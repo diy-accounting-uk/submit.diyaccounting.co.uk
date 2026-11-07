@@ -192,6 +192,16 @@ jobs:
 
       - run: npm run test:browser -- --shard=${{ matrix.shard }}/3
 
+      # A failed shard keeps its screenshots and traces, so an intermittent failure can be read.
+      - name: Save the browser test results of a failed shard
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: browser-test-results-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/browser-test-results
+          if-no-files-found: warn
+          retention-days: 14
+
   npm-browser-test:
     if: ${{ always() && needs.npm-browser-test-shard.result != 'skipped' }}
     name: 'npm browser test'

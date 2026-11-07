@@ -79,6 +79,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   putBundleByHashedSub: (...args) => mockPutBundleByHashedSub(...args),
   updateBundleSubscriptionFields: (...args) => mockUpdateBundleSubscriptionFields(...args),
   resetTokensByHashedSub: (...args) => mockResetTokensByHashedSub(...args),
+  BUNDLE_MISSING: "bundle-missing",
 }));
 
 // Mock DynamoDB subscription repository
@@ -100,6 +101,7 @@ vi.mock("@app/data/dynamoDbActivityChargeRepository.js", () => ({
 
 const mockLoggerInfo = vi.fn();
 const mockLoggerError = vi.fn();
+const mockLoggerWarn = vi.fn();
 vi.mock("@app/lib/logger.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -109,7 +111,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => {
       return {
         info: (obj) => mockLoggerInfo(obj),
         error: (obj) => mockLoggerError(obj),
-        warn: (...args) => child.warn(...args),
+        warn: (obj) => mockLoggerWarn(obj),
         debug: (...args) => child.debug(...args),
         trace: (...args) => child.trace(...args),
         fatal: (...args) => child.fatal(...args),
@@ -134,6 +136,11 @@ const mockReverseCommissionForCharge = vi.fn();
 vi.mock("@app/services/commissionLedger.js", () => ({
   accrueCommission: (...args) => mockAccrueCommission(...args),
   reverseCommissionForCharge: (...args) => mockReverseCommissionForCharge(...args),
+}));
+
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({
+  requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
 }));
 
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
@@ -226,6 +233,7 @@ describe("billingWebhookPost", () => {
     mockEventBridgeSend.mockClear();
     mockLoggerInfo.mockClear();
     mockLoggerError.mockClear();
+    mockLoggerWarn.mockClear();
 
     mockPutActivityChargeIfAbsent.mockResolvedValue(true);
     mockSetOwnerBooksRetention.mockResolvedValue([]);
@@ -233,8 +241,8 @@ describe("billingWebhookPost", () => {
     mockPutBundleByHashedSub.mockResolvedValue(undefined);
     mockPutSubscription.mockResolvedValue(undefined);
     mockUpdateSubscription.mockResolvedValue(undefined);
-    mockUpdateBundleSubscriptionFields.mockResolvedValue(undefined);
-    mockResetTokensByHashedSub.mockResolvedValue(undefined);
+    mockUpdateBundleSubscriptionFields.mockResolvedValue({ updated: true });
+    mockResetTokensByHashedSub.mockResolvedValue({ updated: true });
     mockGetSubscription.mockResolvedValue(null);
     mockChargesRetrieve.mockResolvedValue({ id: "ch_test", billing_details: { email: "user@example.com" }, payment_intent: "pi_test" });
     mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test", invoice: "in_test" });
@@ -938,7 +946,60 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
       status: "canceled",
       canceledAt: new Date(1_700_000_000 * 1000).toISOString(),
+      ttl: 1_700_000_000 + 180 * 86400,
+      ttl_datestamp: new Date((1_700_000_000 + 180 * 86400) * 1000).toISOString(),
     });
+  });
+
+  test("customer.subscription.deleted of a test-mode subscription sets a ttl 2 days from now", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+    const payload = { ...buildSubscriptionDeletedPayload(), livemode: false };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+    const before = Math.floor(Date.now() / 1000);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const updates = mockUpdateSubscription.mock.calls[0][1];
+    expect(updates.ttl).toBeGreaterThanOrEqual(before + 2 * 86400);
+    expect(updates.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+  });
+
+  test("a live-mode checkout writes a subscription row with livemode true and no ttl, whatever the actor", async () => {
+    const payload = { ...buildCheckoutSessionPayload({ customer_email: "someone@test.diyaccounting.co.uk" }), livemode: true };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.actor).toBe("test-user");
+    expect(subRecord.livemode).toBe(true);
+    expect(subRecord.ttl).toBeUndefined();
+    expect(subRecord.ttl_datestamp).toBeUndefined();
+  });
+
+  test("a checkout with no actor proof and no mode flag writes a row with no ttl", async () => {
+    const payload = buildCheckoutSessionPayload({ customer_email: "" });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.ttl).toBeUndefined();
+  });
+
+  test("a test-mode checkout writes a subscription row with livemode false and a ttl 2 days from now", async () => {
+    const payload = { ...buildCheckoutSessionPayload(), livemode: false };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+    const before = Math.floor(Date.now() / 1000);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const subRecord = mockPutSubscription.mock.calls[0][0];
+    expect(subRecord.livemode).toBe(false);
+    expect(subRecord.ttl).toBeGreaterThanOrEqual(before + 2 * 86400);
+    expect(subRecord.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+    expect(subRecord.ttl_datestamp).toBe(new Date(subRecord.ttl * 1000).toISOString());
   });
 
   function buildSubscriptionDeletedPayload(subscriptionId = "sub_test_456") {
@@ -1260,6 +1321,121 @@ describe("billingWebhookPost", () => {
     expect(mockGetSubscription).not.toHaveBeenCalled();
   });
 
+  describe("invoice.paid and the bundle item", () => {
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    const renewalPayload = {
+      id: "evt_renewal_item",
+      type: "invoice.paid",
+      data: { object: { id: "in_renewal", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+    };
+
+    beforeEach(() => {
+      mockGetSubscription.mockResolvedValue({
+        pk: "stripe#sub_test_456",
+        hashedSub: "hashed_sub_value",
+        bundleId: "resident-pro",
+        stripeCustomerId: "cus_test_1",
+        actor: "customer",
+      });
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        id: "sub_test_456",
+        status: "active",
+        customer: "cus_test_1",
+        cancel_at_period_end: false,
+        current_period_end: periodEnd,
+      });
+      mockWebhooksConstructEvent.mockReturnValue(renewalPayload);
+    });
+
+    test("a renewal writes the subscription link with the period, in the one update", async () => {
+      const result = await ingestHandler(buildWebhookEvent(renewalPayload));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(1);
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+        currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
+        expiry: new Date(periodEnd * 1000).toISOString(),
+        stripeSubscriptionId: "sub_test_456",
+        stripeCustomerId: "cus_test_1",
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: false,
+      });
+      expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
+      expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+    });
+
+    test("a renewal for a missing bundle item writes the whole bundle with the subscription ids and warns", async () => {
+      mockUpdateBundleSubscriptionFields.mockResolvedValue({ updated: false, reason: "bundle-missing" });
+
+      const result = await ingestHandler(buildWebhookEvent(renewalPayload));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockPutBundleByHashedSub).toHaveBeenCalledTimes(1);
+      const [hashedSub, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+      expect(hashedSub).toBe("hashed_sub_value");
+      expect(bundle).toMatchObject({
+        bundleId: "resident-pro",
+        expiry: new Date(periodEnd * 1000).toISOString(),
+        currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
+        stripeSubscriptionId: "sub_test_456",
+        stripeCustomerId: "cus_test_1",
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: false,
+        actor: "customer",
+        tokensGranted: 100,
+        tokensConsumed: 0,
+      });
+      expect(bundle.tokenResetAt).toEqual(expect.any(String));
+      expect(bundle.qualifiers).toEqual({ synthetic: false, stripeTestMode: false });
+      expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.objectContaining({ subscriptionId: "sub_test_456", hashedSub: "hashed_sub_value" }),
+      );
+    });
+
+    test("a renewal for an item that lacks the subscription ids writes them from the subscription record", async () => {
+      mockGetSubscription.mockResolvedValue({
+        pk: "stripe#sub_test_456",
+        hashedSub: "hashed_sub_value",
+        bundleId: "resident-pro",
+      });
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        id: "sub_test_456",
+        status: "active",
+        customer: { id: "cus_expanded_1" },
+        cancel_at_period_end: true,
+        current_period_end: periodEnd,
+      });
+
+      await ingestHandler(buildWebhookEvent(renewalPayload));
+
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith(
+        "hashed_sub_value",
+        "resident-pro",
+        expect.objectContaining({ stripeSubscriptionId: "sub_test_456", stripeCustomerId: "cus_expanded_1", cancelAtPeriodEnd: true }),
+      );
+      const fields = mockUpdateBundleSubscriptionFields.mock.calls[0][2];
+      expect(fields).not.toHaveProperty("createdAt");
+      expect(fields).not.toHaveProperty("tokensConsumed");
+    });
+
+    test("an update that finds no bundle item on subscription.updated writes nothing else and warns", async () => {
+      mockUpdateBundleSubscriptionFields.mockResolvedValue({ updated: false, reason: "bundle-missing" });
+      const payload = {
+        id: "evt_updated_missing",
+        type: "customer.subscription.updated",
+        data: { object: { id: "sub_test_456", status: "active", cancel_at_period_end: false } },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      const result = await ingestHandler(buildWebhookEvent(payload));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+      expect(mockLoggerWarn).toHaveBeenCalledWith(expect.objectContaining({ subscriptionId: "sub_test_456" }));
+    });
+  });
+
   test("customer.subscription.updated with cancel_at_period_end writes cancellation intent", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
@@ -1287,6 +1463,71 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
       status: "active",
       cancelAtPeriodEnd: true,
+    });
+  });
+
+  describe("a cancellation that Stripe schedules with cancel_at", () => {
+    const periodEnd = Math.floor(Date.now() / 1000) + 20 * 24 * 60 * 60;
+    const subscriptionEvent = (fields) => {
+      const payload = {
+        id: `evt_cancel_at_${Math.random()}`,
+        type: "customer.subscription.updated",
+        data: {
+          object: {
+            id: "sub_test_456",
+            status: "active",
+            cancel_at_period_end: false,
+            items: { data: [{ current_period_start: periodEnd - 30 * 24 * 60 * 60, current_period_end: periodEnd }] },
+            ...fields,
+          },
+        },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+      return buildWebhookEvent(payload);
+    };
+
+    beforeEach(() => {
+      mockGetSubscription.mockResolvedValue({
+        pk: "stripe#sub_test_456",
+        hashedSub: "hashed_sub_value",
+        bundleId: "resident-pro",
+        currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
+      });
+    });
+
+    test("cancel_at equal to the period end sets cancelAtPeriodEnd on the bundle and the record and publishes the event once", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: periodEnd }));
+
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: true,
+      });
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
+    });
+
+    test("clearing cancel_at clears cancelAtPeriodEnd and publishes nothing", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: null }));
+
+      expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+        subscriptionStatus: "active",
+        cancelAtPeriodEnd: false,
+      });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(0);
+    });
+
+    test("cancel_at after the period end is stored as no cancellation at this period end", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at: periodEnd + 40 * 24 * 60 * 60 }));
+
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: false });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(0);
+    });
+
+    test("cancel_at_period_end true still schedules the cancellation", async () => {
+      await ingestHandler(subscriptionEvent({ cancel_at_period_end: true }));
+
+      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
     });
   });
 
@@ -1782,6 +2023,85 @@ describe("billingWebhookPost", () => {
     expect(mockLoggerError).toHaveBeenCalledWith({
       message: "checkout.session.completed (payment mode) missing metadata",
       sessionId: "cs_test_activity_charge",
+    });
+  });
+
+  describe("the customer email request", () => {
+    beforeEach(() => {
+      mockRequestCustomerEmail.mockReset();
+      mockRequestCustomerEmail.mockResolvedValue({ requested: true });
+    });
+
+    test("a subscription checkout requests a subscription-started email with the webhook's address and hashed sub", async () => {
+      const payload = buildCheckoutSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+      const request = mockRequestCustomerEmail.mock.calls[0][0];
+      expect(request).toMatchObject({
+        kind: "subscription-started",
+        to: "user@example.com",
+        hashedSub: "hashed_sub_value",
+        synthetic: false,
+      });
+      expect(request.userSub).toBeUndefined();
+      expect(request.data.bundleId).toBe("resident-pro");
+      expect(request.data.currentPeriodEnd).toEqual(expect.any(String));
+    });
+
+    test("a Stripe test-mode checkout marks the request synthetic", async () => {
+      const payload = { ...buildCheckoutSessionPayload(), livemode: false };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].synthetic).toBe(true);
+    });
+
+    test("a checkout without a hashed sub requests no email", async () => {
+      const payload = buildCheckoutSessionPayload({ metadata: {}, client_reference_id: undefined });
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a payment-mode checkout requests no email", async () => {
+      const payload = buildActivityChargeSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a renewal requests no email", async () => {
+      mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+      const payload = {
+        id: "evt_test_invoice_no_email",
+        type: "invoice.paid",
+        data: { object: { id: "in_test_no_email", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("the response is unchanged when the request fails", async () => {
+      mockRequestCustomerEmail.mockResolvedValue({ requested: false });
+      const payload = buildCheckoutSessionPayload();
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      const result = await ingestHandler(buildWebhookEvent(payload));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).received).toBe(true);
+      expect(mockPutBundleByHashedSub).toHaveBeenCalledTimes(1);
     });
   });
 });

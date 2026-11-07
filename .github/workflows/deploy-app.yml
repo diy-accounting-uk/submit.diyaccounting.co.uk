@@ -480,26 +480,18 @@ jobs:
           echo "Resolving RUM outputs from $STACK_NAME in region ${{ env.AWS_REGION }}"
           JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
           RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')
-          RUM_IDENTITY_POOL_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumIdentityPoolId") | .OutputValue')
-          RUM_GUEST_ROLE_ARN=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumGuestRoleArn") | .OutputValue')
           RUM_REGION=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumRegion") | .OutputValue' 2>/dev/null || echo "${{ env.AWS_REGION }}")
           echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID" | tee -a "$GITHUB_OUTPUT"
-          echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID" | tee -a "$GITHUB_OUTPUT"
-          echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN" | tee -a "$GITHUB_OUTPUT"
           echo "RUM_REGION=$RUM_REGION" | tee -a "$GITHUB_OUTPUT"
 
       - name: Inject RUM placeholders into HTML files
         shell: bash
         env:
           RUM_APP_MONITOR_ID: ${{ steps.rum-config.outputs.RUM_APP_MONITOR_ID }}
-          RUM_IDENTITY_POOL_ID: ${{ steps.rum-config.outputs.RUM_IDENTITY_POOL_ID }}
-          RUM_GUEST_ROLE_ARN: ${{ steps.rum-config.outputs.RUM_GUEST_ROLE_ARN }}
           AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION }}
         run: |
           set -euo pipefail
           : "${RUM_APP_MONITOR_ID:?Missing RUM_APP_MONITOR_ID}"
-          : "${RUM_IDENTITY_POOL_ID:?Missing RUM_IDENTITY_POOL_ID}"
-          : "${RUM_GUEST_ROLE_ARN:?Missing RUM_GUEST_ROLE_ARN}"
           : "${AWS_REGION:?Missing AWS_REGION}"
 
           escape_sed_replacement() {
@@ -507,8 +499,6 @@ jobs:
           }
 
           RUM_APP_MONITOR_ID_ESCAPED="$(escape_sed_replacement "${RUM_APP_MONITOR_ID}")"
-          RUM_IDENTITY_POOL_ID_ESCAPED="$(escape_sed_replacement "${RUM_IDENTITY_POOL_ID}")"
-          RUM_GUEST_ROLE_ARN_ESCAPED="$(escape_sed_replacement "${RUM_GUEST_ROLE_ARN}")"
           AWS_REGION_ESCAPED="$(escape_sed_replacement "${AWS_REGION}")"
 
           find web/public -type f -name '*.html' -print0 |
@@ -516,8 +506,6 @@ jobs:
             echo "Processing ${html_file}"
             sed -i \
               -e "s|\${RUM_APP_MONITOR_ID}|${RUM_APP_MONITOR_ID_ESCAPED}|gI" \
-              -e "s|\${RUM_IDENTITY_POOL_ID}|${RUM_IDENTITY_POOL_ID_ESCAPED}|gI" \
-              -e "s|\${RUM_GUEST_ROLE_ARN}|${RUM_GUEST_ROLE_ARN_ESCAPED}|gI" \
               -e "s|\${AWS_REGION}|${AWS_REGION_ESCAPED}|gI" \
               "${html_file}"
           done

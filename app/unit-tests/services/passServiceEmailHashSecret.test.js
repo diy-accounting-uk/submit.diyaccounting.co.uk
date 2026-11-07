@@ -44,11 +44,11 @@ describe("email hash secret is fetched only for email-restricted passes", () => 
   });
 
   it("propagates a failed secret fetch when redeeming an email-restricted pass", async () => {
-    redeemPassRepo.mockResolvedValue({
+    getPass.mockResolvedValue({
       pk: "pass#code",
       bundleId: "day-guest",
       maxUses: 1,
-      useCount: 1,
+      useCount: 0,
       restrictedToEmailHash: "some-hash-value",
     });
     initializeEmailHashSecret.mockRejectedValue(new Error("access denied"));

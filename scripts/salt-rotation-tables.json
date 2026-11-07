@@ -261,5 +261,5 @@
       "reason": "Sessions, HMRC grants and codes entries expire within 24 hours. A client whose session no longer matches opens a new one."
     }
   ],
-  "noHashTables": ["bundle-capacity", "alarm-issue-locks", "integration-calls"]
+  "noHashTables": ["bundle-capacity", "alarm-issue-locks", "integration-calls", "trusted-events"]
 }

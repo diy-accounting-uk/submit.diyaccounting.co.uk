@@ -15,6 +15,11 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
   publishActivityEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({
+  requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
+}));
+
 import { ingestHandler } from "@app/functions/account/passAdminPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -101,5 +106,51 @@ describe("passAdminPost", () => {
   test("a synthetic test user's email restriction is ignored", async () => {
     await ingestHandler(buildEventWithToken(tokenFor(syntheticEmail), passBody({ restrictedToEmail: "a@b.com" })));
     expect(mockCreatePass.mock.calls[0][0].restrictedToEmail).toBeUndefined();
+  });
+
+  describe("the customer email request", () => {
+    beforeEach(() => {
+      mockRequestCustomerEmail.mockReset();
+      mockRequestCustomerEmail.mockResolvedValue({ requested: true });
+    });
+
+    test("an operator's pass requests a pass-generated email that is not synthetic", async () => {
+      await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), passBody({ testPass: false })));
+
+      expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+      expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
+        kind: "pass-generated",
+        userSub: "caller-sub",
+        synthetic: false,
+        data: {
+          code: "tiger-happy-mountain-silver",
+          passTypeId: "day-guest-test-pass",
+          bundleId: "day-guest",
+          validUntil: null,
+          maxUses: 1,
+        },
+      });
+    });
+
+    test("a test pass marks the request synthetic", async () => {
+      await ingestHandler(buildEventWithToken(tokenFor(syntheticEmail), passBody()));
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].synthetic).toBe(true);
+    });
+
+    test("a refused caller requests no email", async () => {
+      await ingestHandler(buildEventWithToken(tokenFor(customerEmail), passBody()));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("the response is unchanged when the request fails", async () => {
+      mockRequestCustomerEmail.mockResolvedValue({ requested: false });
+
+      const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), passBody()));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).code).toBe("tiger-happy-mountain-silver");
+    });
   });
 });

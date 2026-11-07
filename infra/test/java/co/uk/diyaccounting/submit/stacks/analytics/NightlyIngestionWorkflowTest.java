@@ -299,14 +299,14 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void scheduleRunsHourlyInProdAndWeeklyElsewhere() {
+    void scheduleRunsEverySixHoursInProdAndWeeklyElsewhere() {
         Template ciTemplate = synthWorkflow("docs");
         ciTemplate.hasResourceProperties(
                 "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 ? * MON *)")));
 
         Template prodTemplate = synthWorkflow("prod");
         prodTemplate.hasResourceProperties(
-                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 * * * ? *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2/6 * * ? *)")));
     }
 
     @Test
@@ -363,7 +363,7 @@ class NightlyIngestionWorkflowTest {
                         "ComparisonOperator",
                         "LessThanThreshold",
                         "Period",
-                        10800,
+                        25200,
                         "Threshold",
                         1,
                         "TreatMissingData",

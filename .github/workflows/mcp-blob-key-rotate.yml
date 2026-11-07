@@ -6,10 +6,16 @@
 # (scripts/mcp-blob-key-rotate.js; app/lib/mcpBlobKey.js reads the stored value as a registry).
 # A dispatch targets one environment (environment-name), plans by default and applies with apply=true.
 # The quarterly schedule applies to both environments.
+# prove-refresh=true (ci only) runs the refresh proof instead of the plain roll: it signs in a durable
+# test user, rolls the key between two reads of an MCP HMRC grant on the deployed Lambda, and checks the
+# Lambda's log for the forced key read (scripts/mcp-blob-key-rotate.js --prove-refresh). The job needs
+# Cognito sign-in, CloudFormation describe, DynamoDB UpdateItem and DeleteItem on the sessions table,
+# and CloudWatch Logs reads. The deployment role (submit-ci-deployment-role) holds AdministratorAccess,
+# so no grant is added.
 # Runbook section 3.4.16 covers the key this rolls.
 
 name: mcp blob key rotate
-run-name: "mcp blob key rotate (${{ (github.event_name == 'schedule' || inputs.apply) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
+run-name: "mcp blob key rotate (${{ inputs.prove-refresh && 'prove-refresh' || (github.event_name == 'schedule' || inputs.apply) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
 
 concurrency:
   group: mcp-blob-key-rotate
@@ -22,6 +28,11 @@ on:
     inputs:
       apply:
         description: "Write the new version to Secrets Manager (true) or plan only (false)"
+        required: false
+        default: false
+        type: boolean
+      prove-refresh:
+        description: "ci only: roll the key between two reads of a test grant on the deployed Lambda and check its log for the forced key read"
         required: false
         default: false
         type: boolean
@@ -51,6 +62,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    # The refresh proof rotates the ci lane user mcpBlobKeyProof, so two runs of this job queue.
+    concurrency:
+      group: behaviour-test-user-ci-mcpBlobKeyProof
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -66,10 +81,34 @@ jobs:
           deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Refuse the refresh proof outside ci
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.prove-refresh && matrix.environment != 'ci' }}
+        run: |
+          echo "prove-refresh runs on ci only" >&2
+          exit 1
+
+      - name: Ensure the refresh proof test user
+        id: proof-user
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.prove-refresh }}
+        run: node scripts/ensure-cognito-test-user.js ci mcpBlobKeyProof
+
+      - name: Prove the key refresh on the deployed Lambda
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.prove-refresh }}
+        env:
+          ENVIRONMENT_NAME: ci
+          PROOF_AUTH_PASSWORD: ${{ steps.proof-user.outputs.test-auth-password }}
+        run: |
+          set -euo pipefail
+          SUBMIT_BASE_URL=$(grep -E '^DIY_SUBMIT_BASE_URL=' .env.ci | tail -n1 | cut -d'=' -f2)
+          export SUBMIT_BASE_URL
+          node scripts/mcp-blob-key-rotate.js --prove-refresh 2>&1 | tee mcp-blob-key-rotate.log
+
       - name: Roll the MCP blob key
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.prove-refresh) }}
         env:
           ENVIRONMENT_NAME: ${{ matrix.environment }}
         run: |
+          set -euo pipefail
           if [ "$APPLY" = "true" ]; then
             node scripts/mcp-blob-key-rotate.js --apply 2>&1 | tee mcp-blob-key-rotate.log
           else

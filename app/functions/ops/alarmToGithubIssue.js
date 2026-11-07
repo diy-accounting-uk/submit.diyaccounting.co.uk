@@ -6,7 +6,7 @@
 // - **Does:** alarmToGithubIssue.js is the EventBridge target Lambda for aws.cloudwatch Alarm State Change events. It opens one [ALARM] GitHub issue per alarm family, keyed by alarmName.js with the deployment slug removed, or comments on the existing issue. dynamoDbAlarmIssueLockRepository.js claims each transition with a conditional put so two deployments never both raise an issue.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/ops/alarmToGithubIssue.js:handler`; `app/lib/alarmName.js:alarmFamilyKey`; `app/data/dynamoDbAlarmIssueLockRepository.js:claimAlarmStateChange`
-// - **Files:** app/functions/ops/alarmToGithubIssue.js, app/unit-tests/functions/alarmToGithubIssue.test.js, app/data/dynamoDbAlarmIssueLockRepository.js, app/lib/alarmName.js, app/unit-tests/lib/alarmName.test.js
+// - **Files:** app/functions/ops/alarmToGithubIssue.js, app/lib/githubIssueApi.js, app/unit-tests/lib/githubIssueApi.test.js, app/unit-tests/functions/alarmToGithubIssue.test.js, app/data/dynamoDbAlarmIssueLockRepository.js, app/lib/alarmName.js, app/unit-tests/lib/alarmName.test.js
 // - **Keywords:** cloudwatch alarm, github issue, alarm family, alarm state change, dedupe, lock, alert routing, [ALARM]
 // - **Related:** OPS-76, OPS-78, OPS-79
 // @end-capability
@@ -56,6 +56,7 @@ import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink 
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 import { withSecretRetry } from "../../lib/cachedSecret.js";
+import { createGitHubIssue, commentOnGitHubIssue } from "../../lib/githubIssueApi.js";
 
 const logger = createLogger({ source: "app/functions/ops/alarmToGithubIssue.js" });
 
@@ -363,46 +364,6 @@ export async function findOpenIssueByAlarmFamily(githubToken, githubRepo, family
 
   const issues = await response.json();
   return (issues || []).find((issue) => issue.title === title) || null;
-}
-
-export async function createGitHubIssue(githubToken, githubRepo, { title, body, labels }) {
-  const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${githubToken}`,
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ title, body, labels }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`GitHub API error creating issue: ${response.status} ${errorText}`);
-  }
-
-  return response.json();
-}
-
-export async function commentOnGitHubIssue(githubToken, githubRepo, issueNumber, body) {
-  const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues/${issueNumber}/comments`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${githubToken}`,
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ body }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`GitHub API error commenting on issue: ${response.status} ${errorText}`);
-  }
-
-  return response.json();
 }
 
 /**

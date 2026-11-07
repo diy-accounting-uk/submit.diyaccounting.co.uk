@@ -249,7 +249,8 @@ async function handleAuthCallback(code, state) {
         redirectUrl = window.postLoginRedirectTarget(postLoginRedirect);
       }
     } catch {}
-    window.location.href = redirectUrl;
+    // replace keeps this empty callback page out of the history, so Back does not return to it.
+    window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
     showStatus(`Authentication failed: ${error.message}`, "error");
