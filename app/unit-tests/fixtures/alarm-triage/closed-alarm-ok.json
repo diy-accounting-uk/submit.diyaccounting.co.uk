@@ -72,7 +72,7 @@
   "expect": {
     "stillBroken": false,
     "whatBroke": [["5xx", "gateway", "timeout"]],
-    "nextAction": [["watch", "no action", "close"]],
+    "nextAction": [["watch", "no action", "no further action", "monitor", "close"]],
     "remedy": "close-when-gone"
   }
 }

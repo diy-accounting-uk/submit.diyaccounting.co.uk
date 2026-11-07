@@ -70,7 +70,7 @@
       ["5xx", "timeout"],
       ["req-2001", "single", "one request", "one datapoint", "isolated"]
     ],
-    "nextAction": [["watch", "no action"]],
+    "nextAction": [["watch", "no action", "no further action", "monitor"]],
     "remedy": "none"
   }
 }
