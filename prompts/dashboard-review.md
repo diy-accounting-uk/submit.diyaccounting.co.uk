@@ -17,6 +17,8 @@ one tag, and each tag belongs to one list: {{TAGS}}.
 Judge each image against these criteria. Code runs the checks that need exact figures, so judge
 what a reader sees: a panel that misleads, a graph that cannot be read, a figure that looks wrong
 against its neighbours, a missing or stale caption, an empty graph, a graph for the wrong account.
+A line that starts part way across a graph is new data, not a spike: a movement needs earlier
+points of the same line to compare with.
 
 {{CRITERIA}}
 

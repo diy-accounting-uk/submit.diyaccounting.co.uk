@@ -6,7 +6,7 @@
 // The checks of the dashboard review that need no judgement: each is a comparison of numbers,
 // times or names. A check is named by its number in the review skill's list.
 
-export const STALE_SNAPSHOT_HOURS = 2;
+export const STALE_SNAPSHOT_HOURS = 7;
 export const STALE_CAPTURE_HOURS = 24;
 
 // The review skill's check numbers that this module owns.
@@ -117,9 +117,9 @@ function freshnessFindings({ snapshot, dom, now }) {
         "all",
         "snapshotMeta",
         "stale",
-        `The snapshot is ${Math.floor(ageHours)} hours old; prod publishes hourly.`,
+        `The snapshot is ${Math.floor(ageHours)} hours old; prod publishes every six hours.`,
         `generatedAt ${snapshot.generatedAt}`,
-        "Find why the hourly snapshot publish has stopped.",
+        "Find why the snapshot publish has stopped.",
       ),
     );
   }
