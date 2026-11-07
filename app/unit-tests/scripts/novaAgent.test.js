@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { load as parseYaml } from "js-yaml";
-import { DEFAULT_MODEL_ID, MAX_REQUEST_INPUT_TOKENS, runAgent, withContextFiles } from "../../../scripts/nova-agent.mjs";
+import { DEFAULT_MODEL_ID, MAX_REQUEST_INPUT_TOKENS, runAgent, samplingFields, withContextFiles } from "../../../scripts/nova-agent.mjs";
 import { loadFinalSchema } from "../../../scripts/nova-agent-tools.mjs";
 import { triageVerdict } from "../../../scripts/triage-result-verdict.mjs";
 
@@ -289,6 +289,38 @@ describe("nova agent refusals and stops", () => {
     const { client, requests } = stubClient(submit());
     await run(client, { modelId: "global.amazon.nova-2-lite-v1:0" });
     expect(requests[0].modelId).toBe("global.amazon.nova-2-lite-v1:0");
+  });
+
+  it("sends no reasoning setting unless one is given", async () => {
+    const { client, requests } = stubClient(submit());
+    await run(client, { modelId: "global.amazon.nova-2-lite-v1:0" });
+    expect(requests[0].additionalModelRequestFields).toEqual({ inferenceConfig: { topK: 1 } });
+    expect(requests[0].inferenceConfig.temperature).toBe(0);
+  });
+
+  it("sends reasoningConfig with the effort and keeps the sampling at low and medium", () => {
+    for (const effort of ["low", "medium"]) {
+      expect(samplingFields(effort)).toMatchObject({
+        inferenceConfig: { temperature: 0 },
+        additionalModelRequestFields: {
+          reasoningConfig: { type: "enabled", maxReasoningEffort: effort },
+          inferenceConfig: { topK: 1 },
+        },
+      });
+    }
+  });
+
+  it("drops temperature and topK at effort high, which the model rejects", async () => {
+    const { client, requests } = stubClient(submit());
+    await run(client, { modelId: "global.amazon.nova-2-lite-v1:0", reasoningEffort: "high" });
+    expect(requests[0].additionalModelRequestFields).toEqual({
+      reasoningConfig: { type: "enabled", maxReasoningEffort: "high" },
+    });
+    expect(requests[0].inferenceConfig).not.toHaveProperty("temperature");
+  });
+
+  it("rejects an effort off the list", () => {
+    expect(() => samplingFields("extreme")).toThrow();
   });
 
   it("prints only the fixed turn lines, whatever the tools and the model say", async () => {

@@ -38,6 +38,16 @@ on:
       - 'scripts/support-replay.mjs'
       - '.github/workflows/support-replay.yml'
   workflow_dispatch:
+    inputs:
+      model-id:
+        description: 'Bedrock model id for the triage, the check, the repair and the readers'
+        type: string
+        default: 'amazon.nova-pro-v1:0'
+      reasoning-effort:
+        description: 'Nova 2 reasoning effort (maxReasoningEffort): low, medium or high; off leaves reasoning off'
+        type: choice
+        options: [off, low, medium, high]
+        default: off
 
 permissions: {}
 
@@ -47,8 +57,9 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  MODEL_ID: 'amazon.nova-pro-v1:0'
-  READER_MODEL_ID: 'amazon.nova-pro-v1:0'
+  MODEL_ID: ${{ inputs.model-id || 'amazon.nova-pro-v1:0' }}
+  READER_MODEL_ID: ${{ inputs.model-id || 'amazon.nova-pro-v1:0' }}
+  REASONING_EFFORT: ${{ inputs.reasoning-effort != 'off' && inputs.reasoning-effort || '' }}
 
 jobs:
   plan:
@@ -126,6 +137,7 @@ jobs:
         with:
           runner: nova
           model-id: ${{ env.MODEL_ID }}
+          reasoning-effort: ${{ env.REASONING_EFFORT }}
           tools: none
           max-turns: '3'
           deadline-seconds: '300'
@@ -245,7 +257,7 @@ jobs:
           GITHUB_OUTPUT=/tmp/skeleton.out node scripts/quarantine-reader-request.mjs "$READER_KIND"
           sed -n 's/^request=//p' /tmp/skeleton.out | base64 -d > /tmp/skeleton.json
           node scripts/support-replay.mjs ticket "$FIXTURE" /tmp/ticket.json
-          jq -n --arg model_id "$READER_MODEL_ID" --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
+          jq -n --arg model_id "$READER_MODEL_ID" --arg effort "$REASONING_EFFORT" --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
             $skeleton[0] as $s | $ticket[0] as $t
             | $s
             | .modelId = $model_id
@@ -253,7 +265,11 @@ jobs:
                 { role: "user", content: [{ text: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") }] },
                 { role: "assistant", content: [{ text: $s.prefill }] }
               ]
-            | del(.prefill, .tag)' > /tmp/request.json
+            | del(.prefill, .tag)
+            | if $effort == "" then .
+              else .additionalModelRequestFields.reasoningConfig = { type: "enabled", maxReasoningEffort: $effort }
+                | if $effort == "high" then del(.inferenceConfig.temperature) else . end
+              end' > /tmp/request.json
 
       - name: Ask the model
         run: |
@@ -262,7 +278,7 @@ jobs:
             echo "::error::converse failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
             exit 1
           fi
-          { printf '{'; jq -j '.output.message.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+          { printf '{'; jq -j '[.output.message.content[] | select(.text != null) | .text][0] // ""' /tmp/response.json; } > /tmp/answer.txt
 
       - name: Judge the answer against the fixture
         env:

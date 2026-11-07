@@ -166,6 +166,13 @@ describe("the repair call", () => {
     expect(blocks.at(-1)).toBe("prompts/support-triage-reminder.md");
   });
 
+  it("passes the reasoning effort to the call only when one is set", () => {
+    const base = { promptFile: "p", outputFile: "o", modelId: "m", schema: "s", contextFiles: [], deadlineSeconds: 1 };
+    expect(novaArgs(base)).not.toContain("--reasoning-effort");
+    const args = novaArgs({ ...base, reasoningEffort: "low" });
+    expect(args[args.indexOf("--reasoning-effort") + 1]).toBe("low");
+  });
+
   it("reads the same pages as the first call in both workflows", () => {
     for (const file of [".github/workflows/support-triage.yml", ".github/workflows/support-replay.yml"]) {
       const workflow = readFileSync(file, "utf8");

@@ -15,7 +15,7 @@
 //
 // usage: support-triage-settle.mjs [--keep-going] <handling-input.json> <triage-result.json> <check-result.json> <repair-note.txt>
 //
-// Reads MODEL_ID and ISSUE_NUMBER from the environment. On return, <triage-result.json> holds the
+// Reads MODEL_ID, ISSUE_NUMBER and the optional REASONING_EFFORT from the environment. On return, <triage-result.json> holds the
 // final answer and <check-result.json> the check of it. <repair-note.txt> says whether a repair ran.
 // The exit code is 1 when the run must stop. --keep-going exits 0 then, so the replay judges
 // the final answer.
@@ -129,7 +129,7 @@ export function repairPrompt(triagePrompt, repairSection, rejection, issueNumber
 }
 
 /** The arguments of a nova-agent call with no read tool. */
-export function novaArgs({ promptFile, outputFile, modelId, schema, contextFiles, deadlineSeconds }) {
+export function novaArgs({ promptFile, outputFile, modelId, reasoningEffort, schema, contextFiles, deadlineSeconds }) {
   return [
     "scripts/nova-agent.mjs",
     "--prompt-file",
@@ -138,6 +138,7 @@ export function novaArgs({ promptFile, outputFile, modelId, schema, contextFiles
     outputFile,
     "--model-id",
     modelId,
+    ...(reasoningEffort ? ["--reasoning-effort", reasoningEffort] : []),
     "--tools",
     "",
     "--max-turns",
@@ -163,7 +164,7 @@ function main() {
   const args = process.argv.slice(2);
   const keepGoing = args[0] === "--keep-going";
   const [handlingPath, triagePath, checkPath, notePath] = keepGoing ? args.slice(1) : args;
-  const { MODEL_ID: modelId, ISSUE_NUMBER: issueNumber } = process.env;
+  const { MODEL_ID: modelId, ISSUE_NUMBER: issueNumber, REASONING_EFFORT: reasoningEffort } = process.env;
   if (!handlingPath || !triagePath || !checkPath || !notePath || !modelId || !issueNumber) {
     console.error(
       "usage: MODEL_ID=<id> ISSUE_NUMBER=<n> support-triage-settle.mjs [--keep-going] <handling-input> <triage-result> <check-result> <repair-note>",
@@ -182,6 +183,7 @@ function main() {
       promptFile: CHECK_PROMPT,
       outputFile: checkPath,
       modelId,
+      reasoningEffort,
       schema: CHECK_SCHEMA,
       contextFiles: [input, draft],
       deadlineSeconds: 120,
@@ -201,6 +203,7 @@ function main() {
       promptFile,
       outputFile,
       modelId,
+      reasoningEffort,
       schema: ANSWER_SCHEMA,
       contextFiles: [...TRIAGE_DATA_FILES, REJECTED_ANSWER_FILE, REMINDER_FILE],
       deadlineSeconds: 300,
