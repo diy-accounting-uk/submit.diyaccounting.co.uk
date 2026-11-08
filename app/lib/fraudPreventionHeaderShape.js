@@ -161,6 +161,8 @@ const SYNTHETIC_KEY_VALUES = {
   "type": "TOTP",
 };
 const SYNTHETIC_REFERENCE = "fph-check";
+// HMRC checks that each licence value is hashed; live requests send an HMAC-SHA256 hex digest.
+const SYNTHETIC_LICENSE_HASH = createHash("sha256").update(SYNTHETIC_REFERENCE).digest("hex");
 // A private address from RFC 1918, as a local address of a desktop app is.
 const SYNTHETIC_LOCAL_IP = ["10", "0", "0", "5"].join(".");
 
@@ -242,7 +244,7 @@ export function syntheticFraudPreventionHeaders(shape, { now, vendorPublicIp, cl
         headers[name] = safeKeyClass(classText) ? pairsFor(classText, () => productVersion) : encodePair(productName, productVersion);
         break;
       case "Gov-Vendor-License-IDs":
-        headers[name] = `${encodeURIComponent(productName)}=${SYNTHETIC_REFERENCE}`;
+        headers[name] = `${encodeURIComponent(productName)}=${SYNTHETIC_LICENSE_HASH}`;
         break;
       default:
         if (safeKeyClass(classText)) headers[name] = pairsFor(classText, (key) => SYNTHETIC_KEY_VALUES[key] ?? "1");

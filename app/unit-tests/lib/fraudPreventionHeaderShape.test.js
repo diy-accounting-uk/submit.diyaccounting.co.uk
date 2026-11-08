@@ -125,6 +125,14 @@ describe("syntheticFraudPreventionHeaders", () => {
     expect(fraudPreventionHeaderShape(synthetic).shapeHash).toBe(fraudPreventionHeaderShape(WEB).shapeHash);
   });
 
+  it("sends each licence value as a SHA-256 hex digest, as live requests do", () => {
+    const { shape } = fraudPreventionHeaderShape({ ...WEB, "Gov-Vendor-License-IDs": `diyaccounting=${"a1".repeat(32)}` });
+    const synthetic = syntheticFraudPreventionHeaders(shape, CONTEXT);
+    const values = synthetic["Gov-Vendor-License-IDs"].split("&").map((pair) => pair.split("=")[1]);
+    expect(values.length).toBeGreaterThan(0);
+    for (const value of values) expect(value).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   it("uses the time and the two addresses the caller gives", () => {
     const { shape } = fraudPreventionHeaderShape(WEB);
     const synthetic = syntheticFraudPreventionHeaders(shape, CONTEXT);
