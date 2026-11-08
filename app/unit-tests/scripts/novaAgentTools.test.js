@@ -294,6 +294,19 @@ describe("nova agent final schema", () => {
     writeFileSync(path, JSON.stringify({ description: "d", properties: { a: { type: "string" } }, required: [], render: [] }));
     expect(() => loadFinalSchema(path)).toThrow(/one render entry/);
   });
+
+  it("refuses a lead that names a property that is not a boolean", () => {
+    const path = join(dir, "lead.json");
+    const lead = { from: "missing", true: "Yes.", false: "No." };
+    const schema = {
+      description: "d",
+      properties: { a: { type: "string" } },
+      required: [],
+      render: [{ property: "a", heading: "## A", lead }],
+    };
+    writeFileSync(path, JSON.stringify(schema));
+    expect(() => loadFinalSchema(path)).toThrow(/not a boolean property/);
+  });
 });
 
 describe("nova agent submit_answer rendering", () => {
@@ -305,11 +318,16 @@ describe("nova agent submit_answer rendering", () => {
     alarm_cleared: false,
   };
 
+  it("opens the still-broken section with the claim of alarm_cleared", () => {
+    const cleared = renderAnswer(ALARM_SCHEMA, { ...answer, alarm_cleared: true }).text;
+    expect(cleared).toContain("## Is it still broken?\n\nNo, it has cleared. Not broken.");
+  });
+
   it("renders the headings in order and ends on the remedy line", () => {
     const { status, text } = renderAnswer(ALARM_SCHEMA, answer);
     expect(status).toBe("ok");
     expect(text).toBe(
-      "## What broke?\n\nThe function failed.\n\n## Is it still broken?\n\nNot broken.\n\n## What is the next action?\n\nWatch, no action.\n\nremedy: none",
+      "## What broke?\n\nThe function failed.\n\n## Is it still broken?\n\nYes, it is still broken. Not broken.\n\n## What is the next action?\n\nWatch, no action.\n\nremedy: none",
     );
   });
 

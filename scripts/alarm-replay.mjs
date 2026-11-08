@@ -187,8 +187,16 @@ const groupMatches = (text, groups) => groups.every((group) => group.some((phras
 
 const hasAny = (text, words) => words.some((word) => text.toLowerCase().includes(word));
 
-/** A still-broken answer names a broken state and no cleared state; a cleared answer is the reverse. */
+const PLAIN_ANSWER = /^\s*(yes|no)\b\s*[,.:;!]/i;
+
+/**
+ * An answer that opens with a plain "Yes," or "No," is judged by that opening word. Any other
+ * answer is a still-broken answer when it names a broken state and no cleared state, and a
+ * cleared answer in the reverse case.
+ */
 export function stillBrokenMatches(text, expected) {
+  const plain = PLAIN_ANSWER.exec(text);
+  if (plain) return (plain[1].toLowerCase() === "yes") === expected;
   const yes = hasAny(text, STILL_BROKEN_WORDS);
   const no = hasAny(text.replace(NEGATED_CLEARED, ""), NOT_BROKEN_WORDS);
   return expected ? yes && !no : no && !yes;

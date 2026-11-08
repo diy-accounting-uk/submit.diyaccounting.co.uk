@@ -136,7 +136,7 @@ jobs:
           private-key: ${{ secrets.OPS_APP_PRIVATE_KEY }}
           permission-administration: read
           permission-secrets: read
-          permission-variables: read
+          permission-actions-variables: read
 
       - name: Run github-sync (plan)
         if: matrix.environment == 'prod'
