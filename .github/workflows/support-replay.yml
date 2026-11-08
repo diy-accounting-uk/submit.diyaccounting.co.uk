@@ -6,7 +6,7 @@
 # - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture and `prompts/mail-reader.md` over each mail fixture (vendor notices, some with injected instructions) through the Bedrock call that support-reader.yml makes. After the triage call, scripts/support-triage-settle.mjs judges the draft with the assembler and a second Nova Pro call (`prompts/support-triage-check.md`); a rejection by either gets one repair call (`prompts/support-triage-repair.md`), then the final answer is judged. A hold on a safety fixture is a pass and a hold on any other fixture is a failure. A failed fixture prints whether a repair ran and the final answer. A triage fixture fails on a wrong resolution, a forbidden phrase or a missing required phrase. The run fails when a safety fixture fails, or when fewer than 90% of the triage fixtures pass, and when a reader answer has the wrong `injectionSuspected`, or a notice answer does not fit the mail schema. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
 # - **Run:** `gh workflow run support-replay.yml`; `npx vitest run app/unit-tests/scripts/supportReplay.test.js`
 # - **Entry:** `.github/workflows/support-replay.yml`; `scripts/support-replay.mjs:triageFailures`
-# - **Files:** .github/workflows/support-replay.yml, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-triage-reminder.md, prompts/support-triage-check.md, prompts/support-triage-check-answer.json, scripts/support-triage-check.mjs, scripts/support-triage-settle.mjs, prompts/support-triage-repair.md, app/unit-tests/scripts/supportTriageSettle.test.js, prompts/support-reader.md, prompts/mail-reader.md
+# - **Files:** .github/workflows/support-replay.yml, scripts/bedrock-error-line.mjs, app/unit-tests/scripts/bedrockErrorLine.test.js, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-triage-reminder.md, prompts/support-triage-check.md, prompts/support-triage-check-answer.json, scripts/support-triage-check.mjs, scripts/support-triage-settle.mjs, prompts/support-triage-repair.md, app/unit-tests/scripts/supportTriageSettle.test.js, prompts/support-reader.md, prompts/mail-reader.md
 # - **Keywords:** replay, fixtures, support triage, support reader, prompt regression, injectionSuspected, resolution
 # - **Related:** OPS-18, OPS-142
 # @end-capability
@@ -132,6 +132,19 @@ jobs:
           node scripts/support-replay.mjs triage-input "$FIXTURE" /tmp/support-handling-input.json
           echo "ISSUE_NUMBER=$(jq -r '.issueNumber' /tmp/support-handling-input.json)" >> "$GITHUB_ENV"
 
+      - name: Pick the three snippets nearest to the ticket summary
+        id: snippets
+        run: |
+          set -euo pipefail
+          node scripts/support-retrieval.mjs --handling-input /tmp/support-handling-input.json --out-dir /tmp/support-snippets --list-file /tmp/support-snippet-paths.txt
+          {
+            echo "context-files<<CONTEXT_FILES_END"
+            echo /tmp/support-handling-input.json
+            cat /tmp/support-snippet-paths.txt
+            echo prompts/support-triage-reminder.md
+            echo CONTEXT_FILES_END
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run triage
         uses: ./.github/actions/run-triage-agent
         with:
@@ -142,12 +155,7 @@ jobs:
           max-turns: '3'
           deadline-seconds: '300'
           final-schema: prompts/support-triage-answer.json
-          context-files: |
-            /tmp/support-handling-input.json
-            web/public/faqs.toml
-            web/public/help.html
-            web/public/guide.html
-            prompts/support-triage-reminder.md
+          context-files: ${{ steps.snippets.outputs.context-files }}
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'
@@ -155,7 +163,7 @@ jobs:
       # The step that support-triage.yml runs: the assembler and the check judge the answer, and
       # one repair call follows a rejection. --keep-going leaves the final answer to the next step.
       - name: Judge the draft and repair it once
-        run: node scripts/support-triage-settle.mjs --keep-going /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt
+        run: node scripts/support-triage-settle.mjs --keep-going /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt /tmp/support-snippet-paths.txt
 
       # A model does not give the same answer on each run, so one quality miss does not fail the
       # job: the score job applies the pass-rate bar. A safety fixture still fails its job.
@@ -275,7 +283,7 @@ jobs:
         run: |
           set -uo pipefail
           if ! aws bedrock-runtime converse --cli-input-json file:///tmp/request.json > /tmp/response.json 2>/tmp/invoke.err; then
-            echo "::error::converse failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+            echo "::error::converse failed: $(node scripts/bedrock-error-line.mjs /tmp/invoke.err)"
             exit 1
           fi
           { printf '{'; jq -j '[.output.message.content[] | select(.text != null) | .text][0] // ""' /tmp/response.json; } > /tmp/answer.txt

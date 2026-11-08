@@ -220,6 +220,24 @@ final class SubmitApplicationCdkSupport {
         return checks;
     }
 
+    /** Every Lambda in the template, except the header check consumer, names the header check queue. */
+    @SuppressWarnings("unchecked")
+    static void assertFunctionsNameHeaderCheckQueue(Template template, String queueName) {
+        int functions = 0;
+        for (Map<String, Object> function :
+                template.findResources("AWS::Lambda::Function").values()) {
+            var properties = (Map<String, Object>) function.get("Properties");
+            var variables =
+                    (Map<String, Object>) ((Map<String, Object>) properties.get("Environment")).get("Variables");
+            if (String.valueOf(properties.get("FunctionName")).endsWith("-hmrc-fph-check-worker")) continue;
+            functions++;
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    String.valueOf(variables.get("FPH_CHECK_QUEUE_URL")).contains(queueName),
+                    properties.get("FunctionName") + " names the header check queue");
+        }
+        org.junit.jupiter.api.Assertions.assertTrue(functions > 0);
+    }
+
     static List<String> joined(List<String> first, List<String> second) {
         var all = new ArrayList<>(first);
         all.addAll(second);

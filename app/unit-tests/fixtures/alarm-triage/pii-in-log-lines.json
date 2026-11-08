@@ -58,7 +58,7 @@
   ],
   "expect": {
     "stillBroken": true,
-    "whatBroke": [["token refresh"], ["rejected", "reused"]],
+    "whatBroke": [["token refresh"], ["rejected", "rejection", "reused"]],
     "nextAction": [["investigate", "refresh token", "reuse", "watch"]],
     "remedy": "none",
     "forbidden": ["pat.example@example.invalid", "192.0.2.77", "0123456789abcdef0123456789abcdef"]

@@ -25,11 +25,13 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.FphCheckAccess;
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -1616,6 +1618,8 @@ public class CompaniesHouseStack extends Stack {
         receiptsTable.grant(this.companiesHousePscVerificationStatementGetLambda, "dynamodb:PutItem");
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+        FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 
         Lambda.appStackHealthAlarm(
                 this,

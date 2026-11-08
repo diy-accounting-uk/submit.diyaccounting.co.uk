@@ -6,9 +6,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  cachedEmbedder,
   chooseSnippets,
-  cosine,
   failedCell,
   fillBudget,
   parseSize,
@@ -18,6 +16,7 @@ import {
   settleAsync,
   writeContext,
 } from "../../../scripts/support-context-experiment.mjs";
+import { cachedEmbedder, cosine } from "../../../scripts/support-retrieval.mjs";
 import { loadFixtures } from "../../../scripts/support-replay.mjs";
 
 const snippet = (id, bytes, words) => ({

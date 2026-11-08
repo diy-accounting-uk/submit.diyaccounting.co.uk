@@ -78,7 +78,7 @@ revenue = "variable"
 [[campaign]]
 name = "Search: MTD VAT"
 type = "Search"
-status = "Active"
+status = "Paused"
 budget_gbp = 1.00
 locations = ["GB"]
 location_intent = "PeopleIn"

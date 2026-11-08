@@ -243,6 +243,19 @@ jobs:
           printf '%s' "$HANDLING_INPUT_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-handling-input.json
           jq -e '.issueNumber' /tmp/support-handling-input.json > /dev/null
 
+      - name: Pick the three snippets nearest to the ticket summary
+        id: snippets
+        run: |
+          set -euo pipefail
+          node scripts/support-retrieval.mjs --handling-input /tmp/support-handling-input.json --out-dir /tmp/support-snippets --list-file /tmp/support-snippet-paths.txt
+          {
+            echo "context-files<<CONTEXT_FILES_END"
+            echo /tmp/support-handling-input.json
+            cat /tmp/support-snippet-paths.txt
+            echo prompts/support-triage-reminder.md
+            echo CONTEXT_FILES_END
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run triage
         uses: ./.github/actions/run-triage-agent
         with:
@@ -252,12 +265,7 @@ jobs:
           max-turns: '3'
           deadline-seconds: '300'
           final-schema: prompts/support-triage-answer.json
-          context-files: |
-            /tmp/support-handling-input.json
-            web/public/faqs.toml
-            web/public/help.html
-            web/public/guide.html
-            prompts/support-triage-reminder.md
+          context-files: ${{ steps.snippets.outputs.context-files }}
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
           echo-output: 'false'
@@ -289,7 +297,7 @@ jobs:
       # fails the step, so nothing is posted. The step prints fixed lines and no answer text.
       - name: Judge the draft and repair it once
         if: steps.triage-run.outputs.stopped == 'false'
-        run: node scripts/support-triage-settle.mjs /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt
+        run: node scripts/support-triage-settle.mjs /tmp/support-handling-input.json /tmp/support-triage.json /tmp/support-check.json /tmp/support-repair-note.txt /tmp/support-snippet-paths.txt
 
       - name: Filter the triage answer before it is published
         id: publish-filter

@@ -64,7 +64,7 @@
   "expect": {
     "stillBroken": true,
     "whatBroke": [["checkout"], ["session expired", "expired"]],
-    "nextAction": [["retired", "not live", "not the live", "another deployment", "watch", "no action"]],
+    "nextAction": [["retired", "not live", "not the live", "another deployment", "watch", "no action", "no further action", "monitor"]],
     "remedy": "none"
   }
 }

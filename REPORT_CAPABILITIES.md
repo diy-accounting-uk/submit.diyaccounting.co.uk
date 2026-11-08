@@ -101,6 +101,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers: use when an ITSA behaviour-test spec needs a shared init, fill, submit or verify step.
     - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout: use when the path to HMRC production approval or the ITSA phase 2 build needs a plan.
     - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email: use when the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
+    - [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it: use when the structure of an HMRC request's fraud prevention headers must leave the request path without any value in it, or a synthetic request with that structure must be built for HMRC's validator.
+    - [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator: use when a request to HMRC has a fraud prevention header structure that the validator consumer has not checked today.
+    - [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values: use when the structure of the fraud prevention headers that the service sends must be checked against HMRC's own validator, without any customer value reaching HMRC.
 - **[Companies House filing](#companies-house-filing-ch)**
   - [OAuth and identity](#oauth-and-identity-ch)
     - [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token: use when a filing journey has an authorization code and needs an access token for the session.
@@ -988,7 +991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ITSA year-end processing](#itsa-year-end-processing-hmrc): [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary · [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims · [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments) Manage ITSA tax liability adjustments · [HMRC-19](#hmrc-19-calculate-itsa-tax-liability) Calculate ITSA tax liability · [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations) Retrieve ITSA crystallisation obligations · [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration) Submit the ITSA final declaration
 - [Receipts and HMRC authentication](#receipts-and-hmrc-authentication-hmrc): [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts) Store and retrieve HMRC submission receipts · [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token) Exchange an HMRC OAuth code for a token · [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client) Verify HMRC agent authorisation for a client
 - [HMRC API plumbing](#hmrc-api-plumbing-hmrc): [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers) Build HMRC fraud-prevention headers · [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance) Monitor HMRC fraud-prevention header compliance · [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts) Validate HMRC identifiers, dates and amounts · [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations) Format and match HMRC obligations · [HMRC-29](#hmrc-29-call-the-hmrc-api) Call the HMRC API · [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state) Persist async HMRC API request state
-- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
+- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email · [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it · [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator · [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
 <!-- /generated:area HMRC -->
 
 ### VAT filing (HMRC)
@@ -1384,6 +1387,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers
 - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout
 - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
+- [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it
+- [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator
+- [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
 <!-- /generated:group hmrc-infrastructure-and-test-tooling-hmrc -->
 
 #### HMRC-31 Wire HMRC Lambda handlers into CDK stacks
@@ -1465,6 +1471,36 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/itsa-readiness/SKILL.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, ../private.diyaccounting.co.uk/hmrc/itsa/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, ../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
 - **Keywords:** itsa readiness, recognition email, production approval, sdst, minimum functionality standards, evidence, send day, 14-day window
 - **Related:** HMRC-34, HMRC-37
+
+#### HMRC-41 Describe fraud prevention headers as a shape and build a synthetic request from it
+
+- **Use when:** the structure of an HMRC request's fraud prevention headers must leave the request path without any value in it, or a synthetic request with that structure must be built for HMRC's validator.
+- **Does:** fraudPreventionHeaderShape reduces the headers of an HMRC request to a shape: the connection method, the header names, a class for each value (ipv4, uuid, timestamp, a list of key names) and the type of the multi-factor header. It holds no value from the request. The shapeHash is the SHA-256 of that shape. syntheticFraudPreventionHeaders builds a header set with the same structure from fixed test values, the addresses the caller passes and the current time, and uses no value of the request that the shape came from.
+- **Run:** `import { fraudPreventionHeaderShape, syntheticFraudPreventionHeaders } from "app/lib/fraudPreventionHeaderShape.js"`
+- **Entry:** `app/lib/fraudPreventionHeaderShape.js:fraudPreventionHeaderShape`; `app/lib/fraudPreventionHeaderShape.js:syntheticFraudPreventionHeaders`
+- **Files:** app/lib/fraudPreventionHeaderShape.js, app/unit-tests/lib/fraudPreventionHeaderShape.test.js
+- **Keywords:** fraud prevention headers, header shape, shape hash, synthetic headers, hmrc validator, no customer value
+- **Related:** HMRC-29, HMRC-42, HMRC-43
+
+#### HMRC-42 Queue a new fraud prevention header shape for HMRC's validator
+
+- **Use when:** a request to HMRC has a fraud prevention header structure that the validator consumer has not checked today.
+- **Does:** enqueueFraudPreventionHeaderCheck reduces the headers of an HMRC request to a shape, keeps the shape hashes each warm Lambda has seen today, and sends one SQS message for a shape it has not seen. The message holds the shape and the API template, with no header value. It is best effort: a failed or slow send is logged and never reaches the caller, and the caller does not wait for it.
+- **Run:** `import { enqueueFraudPreventionHeaderCheck } from "app/lib/fraudPreventionHeaderCheckQueue.js"`
+- **Entry:** `app/lib/fraudPreventionHeaderCheckQueue.js:enqueueFraudPreventionHeaderCheck`
+- **Files:** app/lib/fraudPreventionHeaderCheckQueue.js, app/unit-tests/lib/fraudPreventionHeaderCheckQueue.test.js
+- **Keywords:** fraud prevention headers, sqs, validator queue, shape sampling, best effort
+- **Related:** HMRC-41, HMRC-43
+
+#### HMRC-43 Check a header shape with HMRC's validator using synthetic values
+
+- **Use when:** the structure of the fraud prevention headers that the service sends must be checked against HMRC's own validator, without any customer value reaching HMRC.
+- **Does:** hmrcFphCheckWorker.js is the SQS consumer for the queue that HMRC-42 fills. For each shape it builds a synthetic header set with HMRC-41, sends one GET to the sandbox validate endpoint under a client credentials token, and writes one result item for the shape and day. It skips a shape that already has a result that day. A pass has code VALID_HEADERS, a warn POTENTIALLY_INVALID_HEADERS and a fail INVALID_HEADERS; a fail counts the HmrcFphCheckFailed metric. A sandbox error or timeout writes no item, so SQS retries and then the dead letter queue raises its alarm.
+- **Run:** no command; the worker runs on the hmrc-fph-check queue
+- **Entry:** `app/functions/hmrc/hmrcFphCheckWorker.js:workerHandler`; `app/functions/hmrc/hmrcFphCheckWorker.js:checkShape`
+- **Files:** app/functions/hmrc/hmrcFphCheckWorker.js, app/unit-tests/functions/hmrcFphCheckWorker.test.js, app/data/dynamoDbIntegrationCallRepository.js, infra/main/java/co/uk/diyaccounting/submit/constructs/QueueWorkerLambda.java, infra/main/java/co/uk/diyaccounting/submit/utils/FphCheckAccess.java
+- **Keywords:** fraud prevention headers, hmrc validator, test-api, client credentials, synthetic request, header check result, dead letter queue
+- **Related:** HMRC-41, HMRC-42, HMRC-29
 
 ## Companies House filing (CH)
 
@@ -2882,10 +2918,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm and support triage
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output. When the handling agent's `## Resolution` line reads `fix`, the `fix-pr` job opens a draft PR labelled `origin:support` with one `support/<n>-<category>.md` row built by scripts/support-fix-pr.mjs from the reader's checked fields and the operator's comments only, and comments the link on the private issue.
+- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the three page snippets that scripts/support-retrieval.mjs picks by Titan embedding of the reader's summary (a failed embedding call fails the job), and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output. When the handling agent's `## Resolution` line reads `fix`, the `fix-pr` job opens a draft PR labelled `origin:support` with one `support/<n>-<category>.md` row built by scripts/support-fix-pr.mjs from the reader's checked fields and the operator's comments only, and comments the link on the private issue.
 - **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
-- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js, scripts/support-fix-pr.mjs
+- **Files:** .github/actions/run-triage-agent/action.yml, scripts/support-retrieval.mjs, app/unit-tests/scripts/supportRetrieval.test.js, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js, scripts/support-fix-pr.mjs
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23, OPS-142
 
@@ -2905,7 +2941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture and `prompts/mail-reader.md` over each mail fixture (vendor notices, some with injected instructions) through the Bedrock call that support-reader.yml makes. After the triage call, scripts/support-triage-settle.mjs judges the draft with the assembler and a second Nova Pro call (`prompts/support-triage-check.md`); a rejection by either gets one repair call (`prompts/support-triage-repair.md`), then the final answer is judged. A hold on a safety fixture is a pass and a hold on any other fixture is a failure. A failed fixture prints whether a repair ran and the final answer. A triage fixture fails on a wrong resolution, a forbidden phrase or a missing required phrase. The run fails when a safety fixture fails, or when fewer than 90% of the triage fixtures pass, and when a reader answer has the wrong `injectionSuspected`, or a notice answer does not fit the mail schema. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
 - **Run:** `gh workflow run support-replay.yml`; `npx vitest run app/unit-tests/scripts/supportReplay.test.js`
 - **Entry:** `.github/workflows/support-replay.yml`; `scripts/support-replay.mjs:triageFailures`
-- **Files:** .github/workflows/support-replay.yml, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-triage-reminder.md, prompts/support-triage-check.md, prompts/support-triage-check-answer.json, scripts/support-triage-check.mjs, scripts/support-triage-settle.mjs, prompts/support-triage-repair.md, app/unit-tests/scripts/supportTriageSettle.test.js, prompts/support-reader.md, prompts/mail-reader.md
+- **Files:** .github/workflows/support-replay.yml, scripts/bedrock-error-line.mjs, app/unit-tests/scripts/bedrockErrorLine.test.js, scripts/support-replay.mjs, app/unit-tests/fixtures/support-triage/, app/unit-tests/scripts/supportReplay.test.js, app/unit-tests/supportReplayWorkflow.test.js, prompts/support-triage.md, prompts/support-triage-reminder.md, prompts/support-triage-check.md, prompts/support-triage-check-answer.json, scripts/support-triage-check.mjs, scripts/support-triage-settle.mjs, prompts/support-triage-repair.md, app/unit-tests/scripts/supportTriageSettle.test.js, prompts/support-reader.md, prompts/mail-reader.md
 - **Keywords:** replay, fixtures, support triage, support reader, prompt regression, injectionSuspected, resolution
 - **Related:** OPS-18, OPS-142
 
@@ -2915,7 +2951,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** support-context-experiment.yml splits faqs.toml, help.html and guide.html into snippets with front matter. For each size and model, scripts/support-context-experiment.mjs runs the 30 triage fixtures through the answer, the check and one repair call. Titan embeds each snippet once and the ticket summary, and cosine similarity picks the top snippets. The job prints one row for each size and model: accuracy, safety fixtures, tokens and seconds. It runs on dispatch only. Every fixture is synthetic.
 - **Run:** `gh workflow run support-context-experiment.yml -f models=amazon.nova-pro-v1:0 -f sizes=0,4,8,16,36,top3,top6,top12 -f runs=3`
 - **Entry:** `scripts/support-context-experiment.mjs:runExperiment`
-- **Files:** .github/workflows/support-context-experiment.yml, scripts/support-context-experiment.mjs, scripts/support-snippets.mjs, app/unit-tests/scripts/supportContextExperiment.test.js, app/unit-tests/scripts/supportSnippets.test.js
+- **Files:** .github/workflows/support-context-experiment.yml, scripts/support-context-experiment.mjs, scripts/support-snippets.mjs, scripts/support-retrieval.mjs, app/unit-tests/scripts/supportContextExperiment.test.js, app/unit-tests/scripts/supportSnippets.test.js
 - **Keywords:** context size, retrieval, embeddings, titan, snippets, front matter, accuracy curve, nova
 - **Related:** OPS-155, OPS-194
 
@@ -3172,7 +3208,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-194 Run a read-only Nova agent
 
 - **Use when:** a workflow needs an Amazon Nova model to read the repository or AWS evidence and write one structured answer.
-- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. The log shows only the turn number, the tool name and ok or refused.
+- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. When a run with a final schema ends a turn in text with no tool call, the runner asks once for submit_answer and forces that tool on the next request; a second text-only turn ends the run as no_answer. The log shows only the turn number, the tool name and ok or refused, and one nudge line.
 - **Run:** `node scripts/nova-agent.mjs --prompt-file <file> --output-file <file>`; or set `runner: nova` on the run-triage-agent action
 - **Entry:** `scripts/nova-agent.mjs`
 - **Files:** scripts/nova-agent.mjs, scripts/nova-agent-tools.mjs, prompts/alarm-triage-answer.json, .github/actions/run-triage-agent/action.yml, app/unit-tests/scripts/novaAgent.test.js, app/unit-tests/scripts/novaAgentTools.test.js
@@ -5524,7 +5560,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-05 Simulate HMRC Agent Authorisation and fraud-prevention headers
 
 - **Use when:** a test needs an agent-client invitation flow or must check Gov-Client/Gov-Vendor headers.
-- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID, VALID_WITH_WARNINGS or INVALID.
+- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID_HEADERS, POTENTIALLY_INVALID_HEADERS or INVALID_HEADERS, the codes HMRC returns.
 - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/agent-authorisation.js"`; `import { apiEndpoint } from "app/http-simulator/routes/fraud-headers.js"`
 - **Entry:** `app/http-simulator/routes/agent-authorisation.js:apiEndpoint`; `app/http-simulator/routes/fraud-headers.js:apiEndpoint`
 - **Files:** app/http-simulator/routes/agent-authorisation.js, app/http-simulator/routes/fraud-headers.js
@@ -6120,7 +6156,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-58 Search community threads for the campaign skill
 
 - **Use when:** /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
-- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id and secret come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a generic User-Agent. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
+- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id, secret and username come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a Reddit User-Agent that names the app and its Reddit username on Reddit calls and a site User-Agent on the forum call. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
 - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads recorded responses with no credentials
 - **Entry:** `scripts/campaign-threads.mjs:searchThreads`
 - **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/reddit-search.json, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
@@ -6131,10 +6167,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
 - **Does:** unblock tests every blocked, machine-ask and human-driven row against evidence, and moves each row whose state is stale. It then asks each open decision, records the answers on NEXT.md, and prints in full each command that unblocks or part-delivers a row.
-- **Run:** `/unblock`
+- **Run:** `/unblock`, or `/unblock quick wins` for the half of the operator's items that close fastest
 - **Entry:** `.claude/skills/unblock/SKILL.md`
 - **Files:** .claude/skills/unblock/SKILL.md
-- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions
+- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions, quick wins
 - **Related:** DEV-27, DEV-29, DEV-30
 
 ## Spreadsheets and diya-gl (SS)
@@ -7050,6 +7086,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - behaviour test master: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- best effort: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - betaanalyticsdataclient: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - bidding optimisation: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - bigquery: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -7260,6 +7297,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - clicks: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
+- client credentials: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - client fetch: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - client id: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - client relationship: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
@@ -7511,6 +7549,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - date range match: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - date utils: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - dated quarters: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- dead letter queue: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - deadline: [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator)
 - deadline read: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7858,7 +7897,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud prevention compliance: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - fraud prevention header violation: [HMRC-29](#hmrc-29-call-the-hmrc-api)
-- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
@@ -7988,10 +8027,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - head request: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - header check: [DEV-20](#dev-20-check-spdx-licence-headers)
+- header check result: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - header footer diagram: [SITE-12](#site-12-map-the-site-structure)
 - header hidden: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - header injection: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
+- header shape: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - headless: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - headless browser: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
@@ -8034,6 +8075,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc stack: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - hmrc token exchange: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token)
 - hmrc token expired: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- hmrc validator: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - hmrc vat: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - hmrc vat api: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-04](#hmrc-04-retrieve-vat-liabilities), [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - hmrc-api-requests: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
@@ -8417,6 +8459,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
 - no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- no customer value: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
@@ -8753,6 +8796,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
+- quick wins: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - quote: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
@@ -9081,6 +9125,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - setup java: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - setup node: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
+- shape hash: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
+- shape sampling: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - share posts: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - shared auth client: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
@@ -9148,7 +9194,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spreadsheetsbehaviour: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - sqale: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
-- sqs: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- sqs: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - sso profile: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - sso window: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
@@ -9273,7 +9319,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - synthetic account: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - synthetic bundle toggle: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - synthetic data: [CH-12](#ch-12-generate-synthetic-test-companies)
+- synthetic headers: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - synthetic period key: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
+- synthetic request: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - synthetic user: [OPS-12](#ops-12-clean-up-expired-test-users), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - synthetics runtime: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - system test: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -9315,6 +9363,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
+- test-api: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - test-data-link: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - test-scope: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test.yml: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
@@ -9438,6 +9487,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- validator queue: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - validity: [BILL-08](#bill-08-check-a-passs-validity)
 - value comparison: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - vat account: [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)

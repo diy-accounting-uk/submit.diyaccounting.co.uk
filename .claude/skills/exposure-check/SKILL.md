@@ -18,6 +18,11 @@ description: Check everything the business exposes publicly for keys in the rota
 
 # exposure-check
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 This skill answers one question: does a key in the rotation set appear on a public surface? The
 inventory is section 2.1 and the formats are section 3.5 of
 `../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md`.
@@ -77,7 +82,7 @@ A `canaryHits` counter above zero proves that the matcher reached the text of th
 surface with no canary hits is not proven, so read its counters before you trust a clean result.
 
 Keys with no AWS copy have a format check only: the GitHub App private key of the agent, the
-fine-grained PATs, `PRIVATE_REPO_DEPLOY_KEY`, the support Gmail keys and the
+fine-grained PAT, the support Gmail keys and the
 `TEST_COMPANIES_HOUSE_*` values. The last of these have no format, so state them as not covered.
 MCP tool output needs a signed-in client, which needs a test lane on ci. Until a lane is wired in
 here, the hosted MCP test logs in `logs:*` give the only sight of that output.

@@ -249,7 +249,17 @@ function packageImportsReachedFrom(entry, seen = new Set()) {
 }
 
 describe("support-triage.yml handle job", () => {
-  const scripts = [...new Set([...code(jobBlock("handle")).matchAll(/node (scripts\/[\w.-]+\.mjs)/g)].map((m) => m[1]))];
+  // support-retrieval.mjs calls Bedrock like nova-agent.mjs does, so it relies on the job's npm install.
+  const needsInstall = new Set(["scripts/support-retrieval.mjs"]);
+  const scripts = [...new Set([...code(jobBlock("handle")).matchAll(/node (scripts\/[\w.-]+\.mjs)/g)].map((m) => m[1]))].filter(
+    (script) => !needsInstall.has(script),
+  );
+
+  it("installs the npm packages before the step that picks the snippets", () => {
+    const block = code(jobBlock("handle"));
+    expect(block.indexOf("npm-install: scripts")).toBeGreaterThan(0);
+    expect(block.indexOf("npm-install: scripts")).toBeLessThan(block.indexOf("scripts/support-retrieval.mjs"));
+  });
 
   it("runs at least one repository script", () => {
     expect(scripts.length).toBeGreaterThan(0);

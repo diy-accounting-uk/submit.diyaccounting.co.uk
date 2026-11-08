@@ -18,6 +18,11 @@ description: Find what the workspace repositories have left behind (stale deploy
 
 # clean
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Gather every category first, show them together, ask once, act once. Nothing is removed or
 closed before the operator has answered, and nothing outside the agreed categories is touched.
 

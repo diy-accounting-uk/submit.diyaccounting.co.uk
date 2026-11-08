@@ -130,32 +130,33 @@ export function exportedTransactionWindow({ nowMs, lookbackDays, exportFirstWhol
 }
 
 /**
- * Picks the newest subscription that came from the same user pool as the current run's
- * subscription (same `hashedSub` metadata). Stripe test mode is shared by the ci and prod
+ * Picks every subscription that came from the same user pool as the current run's
+ * subscription (same `hashedSub` metadata), keeping the input order. Stripe test mode is shared by the ci and prod
  * lanes, which use the same synthetic email, but only a ci run fires a GA4 purchase, so the
  * email cannot tell them apart and the user-pool hash can.
  *
  * @param {Array<{id: string, created: number, metadata?: Record<string, string>}>} subscriptions newest first
  * @param {{hashedSub: string}} criteria
- * @returns {{id: string, createdMs: number}|null}
+ * @returns {Array<{id: string, createdMs: number}>} newest first; empty when none match
  */
-export function selectPriorPurchaseSubscription(subscriptions, { hashedSub }) {
-  const match = subscriptions.find((subscription) => subscription.metadata?.hashedSub === hashedSub);
-  return match ? { id: match.id, createdMs: match.created * 1000 } : null;
+export function selectPriorPurchaseSubscriptions(subscriptions, { hashedSub }) {
+  return subscriptions
+    .filter((subscription) => subscription.metadata?.hashedSub === hashedSub)
+    .map((subscription) => ({ id: subscription.id, createdMs: subscription.created * 1000 }));
 }
 
 /**
- * Finds a Stripe test-mode subscription created inside the window (see exportedTransactionWindow)
- * by the same user pool as `currentSubscriptionId`. Every ci run of payment.behaviour.test.js
+ * Finds the Stripe test-mode subscriptions created inside the window (see exportedTransactionWindow)
+ * by the same user pool as `currentSubscriptionId`, newest first. Every ci run of payment.behaviour.test.js
  * creates and later cancels one such subscription and fires a purchase carrying its id, so this
  * stands in for a persisted "last run's transaction id" without adding new storage. Prod probes
  * and other lanes fire no purchase, hence the user-pool match.
  *
  * @param {{createdAfterMs: number, createdBeforeMs: number, currentSubscriptionId: string}} window
- * @returns {Promise<{id: string, createdMs: number}|null>}
+ * @returns {Promise<Array<{id: string, createdMs: number}>>}
  */
-export async function findPastStripeSubscription({ createdAfterMs, createdBeforeMs, currentSubscriptionId }) {
-  if (createdBeforeMs <= createdAfterMs) return null;
+export async function findPastStripeSubscriptions({ createdAfterMs, createdBeforeMs, currentSubscriptionId }) {
+  if (createdBeforeMs <= createdAfterMs) return [];
   const stripe = await getStripeClient({ test: true });
   const current = await stripe.subscriptions.retrieve(currentSubscriptionId);
   const hashedSub = current.metadata?.hashedSub;
@@ -170,7 +171,7 @@ export async function findPastStripeSubscription({ createdAfterMs, createdBefore
     },
     limit: 100,
   });
-  return selectPriorPurchaseSubscription(subscriptions.data, { hashedSub });
+  return selectPriorPurchaseSubscriptions(subscriptions.data, { hashedSub });
 }
 
 /**
@@ -256,4 +257,30 @@ export async function pollForPurchaseEvent(args, { attempts = 3, intervalMs = 10
     if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
   return last;
+}
+
+const ga4CollectUrl = /^https?:\/\/([a-z0-9-]+\.)*(google-analytics\.com|analytics\.google\.com)\/g\/collect/;
+
+/**
+ * Whether a browser request is a GA4 collect hit that carries the transaction id, in the query
+ * string (`ep.transaction_id=<id>`) or in the POST body of a batched hit.
+ *
+ * @param {{url: string, postData?: string|null}} request
+ * @param {string} transactionId
+ * @returns {boolean}
+ */
+export function isGa4PurchaseHitFor({ url, postData }, transactionId) {
+  if (!ga4CollectUrl.test(url)) return false;
+  const carriesId = (text) => {
+    if (!text) return false;
+    const decoded = (() => {
+      try {
+        return decodeURIComponent(text.replace(/\+/g, " "));
+      } catch {
+        return text;
+      }
+    })();
+    return new RegExp(`(^|[?&\\s])(ep\\.)?transaction_id=${transactionId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[&\\s])`).test(decoded);
+  };
+  return carriesId(url.split("?")[1]) || carriesId(postData);
 }

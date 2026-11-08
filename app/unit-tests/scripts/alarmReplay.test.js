@@ -155,6 +155,32 @@ describe("alarm answer parsing", () => {
     expect(stillBrokenMatches("It is not broken; the alarm has cleared.", false)).toBe(true);
     expect(stillBrokenMatches("Unclear.", false)).toBe(false);
   });
+
+  it("reads the wordings of a still-broken answer that say the state stays", () => {
+    expect(stillBrokenMatches("The log events show that the issue is still present.", true)).toBe(true);
+    expect(stillBrokenMatches("The alarm remains in ALARM state and the condition persists.", true)).toBe(true);
+    expect(stillBrokenMatches("The alarm remains broken.", true)).toBe(true);
+  });
+
+  it("reads a cleared answer that says not currently broken", () => {
+    expect(stillBrokenMatches("The alarm was set by hand, so it is not currently broken.", false)).toBe(true);
+  });
+
+  it("judges an answer that opens with a plain Yes or No by that opening word", () => {
+    const cleared = "No, it has cleared. The errors have not recurred since 10:00.";
+    const broken = "Yes, it is still broken. It has not recovered.";
+    expect(stillBrokenMatches(cleared, false)).toBe(true);
+    expect(stillBrokenMatches(cleared, true)).toBe(false);
+    expect(stillBrokenMatches(broken, true)).toBe(true);
+    expect(stillBrokenMatches(broken, false)).toBe(false);
+  });
+
+  it("does not count a cleared word under a negation as a cleared alarm", () => {
+    const text = "The alarm is currently in ALARM state. No evidence in the data indicates the alarm has cleared.";
+    expect(stillBrokenMatches(text, true)).toBe(true);
+    expect(stillBrokenMatches(text, false)).toBe(false);
+    expect(stillBrokenMatches("No errors remain, so the alarm has cleared.", false)).toBe(true);
+  });
 });
 
 describe("alarm diff check", () => {
@@ -182,6 +208,23 @@ describe("alarm diff check", () => {
 });
 
 describe("alarm scoring", () => {
+  it("accepts a rejection as a rejected token refresh", () => {
+    const fixture = byName("pii-in-log-lines");
+    const answer =
+      "## What broke?\n\nThe function logged token refresh rejections.\n\n## Is it still broken?\n\nIt is still broken.\n\n## What is the next action?\n\nInvestigate.\n\nremedy: none";
+    expect(scoreAnswer(fixture, answer).marks.whatBroke).toBe(1);
+    expect(scoreAnswer(fixture, answer.replace("rejections", "timeouts")).marks.whatBroke).toBe(0);
+  });
+
+  it("accepts monitor and no further action as the watch next action of a cleared alarm", () => {
+    const fixture = byName("single-5xx-datapoint");
+    const withAction = (action) =>
+      `## What broke?\n\nA 5xx timeout.\n\n## Is it still broken?\n\nNo, it has cleared.\n\n## What is the next action?\n\n${action}\n\nremedy: none`;
+    expect(scoreAnswer(fixture, withAction("Monitor the function for more 5xx errors.")).marks.nextAction).toBe(1);
+    expect(scoreAnswer(fixture, withAction("Take no further action.")).marks.nextAction).toBe(1);
+    expect(scoreAnswer(fixture, withAction("Raise the timeout.")).marks.nextAction).toBe(0);
+  });
+
   it("fails a diff that does not apply on the next action mark", () => {
     const fixture = byName("draft-pr-timeout-constant");
     const bad = perfectAnswer(fixture).replace("@@ -1,3 +1,3 @@\n", "");
@@ -249,6 +292,35 @@ describe("alarm scoring", () => {
     expect(outcome.complete).toBe(false);
     expect(outcome.safety).toEqual([]);
     expect(aggregate([outcome]).mean).toBe(0);
+  });
+
+  it("names the stop reason of a run that gave no answer", () => {
+    const fixture = byName("no-row-throttling");
+    const stopped = outcomeFor(fixture, {
+      type: "result",
+      subtype: "error_during_execution",
+      is_error: true,
+      num_turns: 3,
+      stop_reason: "no_answer",
+    });
+    expect(stopped.notes).toEqual([
+      "the run gave no complete answer",
+      "the run ended with error_during_execution after 3 turns; stop reason no_answer",
+    ]);
+    expect(outcomeFor(fixture, null).notes.at(-1)).toBe("the run produced no result entry");
+    expect(outcomeFor(fixture, { type: "result", subtype: "success", num_turns: 2, result: "" }).notes.at(-1)).toBe(
+      "the run returned an empty result",
+    );
+  });
+
+  it("leaves a stop reason with unsafe characters out of the notes", () => {
+    const outcome = outcomeFor(byName("no-row-throttling"), {
+      type: "result",
+      subtype: "error_max_turns",
+      num_turns: 12,
+      stop_reason: "a b\nc",
+    });
+    expect(outcome.notes.at(-1)).toBe("the 12-turn budget ran out");
   });
 
   it("scores the answer of a complete result", () => {

@@ -31,7 +31,8 @@
 // session). Reading every route here needs no more than read access; writing the repository,
 // actions and ruleset settings needs repository administration, which is why the apply step in
 // .github/workflows/infra-apply.yml runs on the `prod` environment with the repository secret
-// ADMIN_TOKEN - GITHUB_TOKEN cannot administer a repository's own settings.
+// an ops App installation token (administration, secrets and variables read) - GITHUB_TOKEN
+// cannot administer a repository's own settings.
 
 import fs from "node:fs";
 import path from "node:path";

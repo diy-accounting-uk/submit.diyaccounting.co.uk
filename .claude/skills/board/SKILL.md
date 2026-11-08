@@ -18,6 +18,11 @@ description: Render the open-work board — one table for NEXT.md items, then on
 
 # board
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Render the current open-work board from `NEXT.md` and the `PLAN_*.md` documents (all at the repo
 root). Read every file fresh every time — never render from memory of an earlier turn.
 

@@ -17,6 +17,11 @@ description: Walk the deployed ci site as a person would, one role at a time (vi
 
 # explore
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 A test checks what its author thought of. This pass follows a link that looked promising, resizes
 the window, reads a result and asks whether it says what it should. The design is in
 `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md`: the oracle, the verdicts, the review document. Read its "Rules of a

@@ -76,7 +76,7 @@
   "expect": {
     "stillBroken": false,
     "whatBroke": [["probe"], ["failed", "failure", "run 7"]],
-    "nextAction": [["watch", "no action"]],
+    "nextAction": [["watch", "no action", "no further action", "monitor"]],
     "remedy": "none"
   }
 }

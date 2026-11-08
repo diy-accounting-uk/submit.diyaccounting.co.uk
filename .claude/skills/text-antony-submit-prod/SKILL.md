@@ -8,6 +8,11 @@ description: Send the operator a text message (SMS) from the submit-prod AWS acc
 
 # text-antony-submit-prod
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Sends one SMS to the operator's mobile from `submit-prod` (972912397388), eu-west-2, through
 AWS End User Messaging SMS from the sender ID `DIYACCT`. The number lives in the SecureString parameter `/submit/prod/operator-sms-number`,
 never in this repository, which is public.

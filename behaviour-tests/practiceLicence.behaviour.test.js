@@ -21,6 +21,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "./helpers/playwrightTestWithout.js";
+import { cancelLaneTestSubscriptions } from "./helpers/stripeTestTeardown.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
@@ -120,6 +121,7 @@ test.afterAll(async () => {
     await dynamoControl?.stop?.();
   } catch {}
   if (mcpCredentialsDir) rmSync(mcpCredentialsDir, { recursive: true, force: true });
+  await cancelLaneTestSubscriptions({ email: testAuthUsername });
 });
 
 test("A practice adds two clients and submits a VAT return for each through run_for_clients", async ({ page }) => {

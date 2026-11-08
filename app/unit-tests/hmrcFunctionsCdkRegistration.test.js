@@ -25,7 +25,9 @@ const STACKS_DIR = resolve(ROOT, "infra/main/java/co/uk/diyaccounting/submit/sta
 // `<handlerBaseName>IngestLambdaFunctionName`, so they have no construct to find by that name.
 // Add an entry only with a comment saying how the handler is actually invoked.
 const EXEMPT_HANDLERS = new Set([
-  // (none yet -- every file in app/functions/hmrc/ is a deployed API Gateway Lambda)
+  // hmrcFphCheckWorker.js is an SQS consumer. HmrcStack builds it with an SQS worker construct from
+  // hmrcFphCheckWorkerFunctionName and hmrcFphCheckQueueName, with no API Gateway route.
+  "hmrcFphCheckWorker",
 ]);
 
 // SubmitSharedNames names a handler's field after something other than its filename. Add an

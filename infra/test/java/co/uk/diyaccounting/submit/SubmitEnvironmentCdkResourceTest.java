@@ -184,10 +184,11 @@ class SubmitEnvironmentCdkResourceTest {
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
-        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm and
-        // IntegrationCallRecordFailedAlarm and CustomerEmailFailureAlarm, that's 12 alarms, and
-        // the trusted event function's two checks make 14 (its composite is the one composite).
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 14);
+        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm,
+        // IntegrationCallRecordFailedAlarm, CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm,
+        // that's 13 alarms, and the trusted event function's two checks make 15 (its composite is
+        // the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 15);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
         observability.resourceCountIs("AWS::IAM::Role", 9);
@@ -213,6 +214,17 @@ class SubmitEnvironmentCdkResourceTest {
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
                         "FunctionName", "test-env-trusted-event-to-github-issue", "ReservedConcurrentExecutions", 1)));
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-hmrc-fph-check-failed",
+                        "Namespace", "Submit/HmrcSend",
+                        "MetricName", "HmrcFphCheckFailed",
+                        "Period", 300,
+                        "EvaluationPeriods", 1,
+                        "Threshold", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

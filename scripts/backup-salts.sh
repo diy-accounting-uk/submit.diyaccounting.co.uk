@@ -45,21 +45,22 @@ if [ "$CI_SALT" = "NOT_FOUND" ] && [ "$PROD_SALT" = "NOT_FOUND" ]; then
   exit 0
 fi
 
-# Create JSON backup
-cat > "$OUTPUT_FILE" <<EOF
-{
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "region": "$REGION",
-  "salts": {
-    "ci": "$CI_SALT",
-    "prod": "$PROD_SALT"
-  },
-  "restore_instructions": {
-    "command": "aws secretsmanager update-secret --secret-id <env>/submit/user-sub-hash-salt --secret-string <value> --region $REGION",
-    "warning": "Only restore if salt was lost. Using wrong salt makes all data inaccessible."
-  }
-}
-EOF
+# Create JSON backup. A salt secret is itself JSON ({"current":"v3","versions":{...}}), so jq
+# embeds it as an object, and a plain string stays a string.
+jq -n \
+  --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg region "$REGION" \
+  --arg ci "$CI_SALT" \
+  --arg prod "$PROD_SALT" \
+  '{
+    timestamp: $timestamp,
+    region: $region,
+    salts: { ci: ($ci | fromjson? // .), prod: ($prod | fromjson? // .) },
+    restore_instructions: {
+      command: ("aws secretsmanager update-secret --secret-id <env>/submit/user-sub-hash-salt --secret-string <value> --region " + $region),
+      warning: "Only restore if the salt was lost; a wrong salt makes all data inaccessible. A versioned salt is restored as its whole JSON object, with every version, so re-keyed items still resolve."
+    }
+  }' > "$OUTPUT_FILE"
 
 echo "Backup complete: $OUTPUT_FILE"
 echo ""

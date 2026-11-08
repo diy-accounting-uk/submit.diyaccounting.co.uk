@@ -31,6 +31,7 @@ import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
 import co.uk.diyaccounting.submit.utils.FamilyAffiliateEmailsHelper;
+import co.uk.diyaccounting.submit.utils.FphCheckAccess;
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.McpHmrcGrantAccessHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
@@ -38,6 +39,7 @@ import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -2262,6 +2264,8 @@ public class AccountStack extends Stack {
         infof(
                 "Created Account Settings PUT Lambda %s",
                 this.accountSettingsPutLambda.getNode().getId());
+
+        FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 
         Lambda.appStackHealthAlarm(
                 this, props.envName(), props.resourceNamePrefix(), "account", healthCheckedFunctions);
