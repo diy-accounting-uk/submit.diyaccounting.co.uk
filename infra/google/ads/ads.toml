@@ -123,7 +123,7 @@ name = "Asset Group 1"
 [[campaign]]
 name = "Search: MTD VAT"
 type = "SEARCH"
-status = "ENABLED"
+status = "PAUSED"
 budget_gbp = 2.00
 locations = ["GB"]
 geo_target_type = "PRESENCE"
