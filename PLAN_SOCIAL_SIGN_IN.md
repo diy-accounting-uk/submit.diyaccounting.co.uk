@@ -341,6 +341,23 @@ Steps 1 to 7 are the Microsoft wave; steps 8 to 10 are the Apple wave. Steps mar
 before its push. Proof on ci means a `deploy-environment.yml` run for `ci` (IdentityStack is
 in its path filter), the branch's `deploy.yml`, and a sign-in on `ci-set1` or the ci apex.
 
+Board rows on `NEXT.md`, by step:
+
+| Step | Rows |
+| --- | --- |
+| Decisions D1 to D7 | OSGN-D |
+| 0 | OSGN0 |
+| 1 | SGN1a (build), SGN1b (live on ci and prod, with SGN2b and SGN6) |
+| 2 | SGN2a (provider parameter, test lane), SGN2b (Microsoft button, copy) |
+| 3 | OSGN3 |
+| 4 | SGN4 (build), OSGN4 (proof) |
+| 5 | SGN5 |
+| 6 | SGN6 |
+| 7 | SGN7 |
+| 8 | OSGN8 |
+| 9 | SGN9a (build), SGN9b (live on ci and prod, with SGN10) |
+| 10 | SGN10 (build), OSGN10 (proof) |
+
 ### Step 0 (operator). Entra app registration
 
 - Sign in at https://entra.microsoft.com with the company Microsoft account. Create the tenant
