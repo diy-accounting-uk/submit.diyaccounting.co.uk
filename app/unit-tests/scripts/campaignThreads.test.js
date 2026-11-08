@@ -10,6 +10,9 @@ import {
   parseArgs,
   createPoliteFetch,
   readRedditSecret,
+  redditUserAgent,
+  SITE_USER_AGENT,
+  UKBF_FEED_URL,
   MissingRedditSecretError,
   threadsFromRss,
   DEFAULT_SUBREDDITS,
@@ -91,7 +94,11 @@ describe("campaign-threads", () => {
     expect(() => parseArgs(["--days", "0"])).toThrow(/positive/);
   });
 
-  it("sends a generic User-Agent without an email address, one request at a time", async () => {
+  it("builds the Reddit User-Agent from the username", () => {
+    expect(redditUserAgent("diya_user")).toBe("server:diyaccounting-campaign:1.0 (by /u/diya_user)");
+  });
+
+  it("passes request headers through and makes one request at a time", async () => {
     const seen = [];
     const sleeps = [];
     const politeFetch = createPoliteFetch({
@@ -102,10 +109,9 @@ describe("campaign-threads", () => {
       sleepImpl: async (ms) => sleeps.push(ms),
       minGapMs: 50,
     });
-    await politeFetch("https://example.test/a");
+    await politeFetch("https://example.test/a", { headers: { "User-Agent": "x" } });
     await politeFetch("https://example.test/b");
-    expect(seen[0].headers["User-Agent"]).toMatch(/^node:campaign-thread-search/);
-    expect(seen[0].headers["User-Agent"]).not.toContain("@");
+    expect(seen[0].headers["User-Agent"]).toBe("x");
     expect(sleeps.length).toBeGreaterThan(0);
   });
 
@@ -135,8 +141,39 @@ describe("campaign-threads", () => {
     await expect(readRedditSecret("s", empty)).rejects.toThrow(MissingRedditSecretError);
   });
 
-  it("returns the credentials when the secret holds both", async () => {
-    const ok = async () => ({ SecretString: JSON.stringify({ clientId: "id", clientSecret: "sec" }) });
-    await expect(readRedditSecret("s", ok)).resolves.toEqual({ clientId: "id", clientSecret: "sec" });
+  it("raises MissingRedditSecretError when the secret has no username and names all three fields", async () => {
+    const noUsername = async () => ({ SecretString: JSON.stringify({ clientId: "id", clientSecret: "sec" }) });
+    await expect(readRedditSecret("s", noUsername)).rejects.toThrow(MissingRedditSecretError);
+    await expect(readRedditSecret("s", noUsername)).rejects.toThrow(/\{"clientId","clientSecret","username"\}/);
+  });
+
+  it("returns the credentials when the secret holds all three fields", async () => {
+    const ok = async () => ({ SecretString: JSON.stringify({ clientId: "id", clientSecret: "sec", username: "diya_user" }) });
+    await expect(readRedditSecret("s", ok)).resolves.toEqual({ clientId: "id", clientSecret: "sec", username: "diya_user" });
+  });
+
+  it("sends the Reddit User-Agent on Reddit calls and the site User-Agent on the forum call", async () => {
+    const calls = [];
+    const fetchImpl = async (url, options) => {
+      calls.push({ url: String(url), userAgent: options.headers["User-Agent"] });
+      const body = String(url).includes("access_token") ? { access_token: "t" } : redditListing;
+      return {
+        ok: true,
+        headers: new Headers(),
+        json: async () => body,
+        text: async () => forumFeed,
+      };
+    };
+    const { liveSources } = await import("../../../scripts/campaign-threads.mjs");
+    const sources = await liveSources({
+      politeFetch: createPoliteFetch({ fetchImpl, sleepImpl: async () => {}, minGapMs: 0 }),
+      secretReader: async () => ({ clientId: "id", clientSecret: "sec", username: "diya_user" }),
+    });
+    await sources.redditListing("smallbusinessuk", "vat");
+    await sources.forumFeed();
+    const redditUa = "server:diyaccounting-campaign:1.0 (by /u/diya_user)";
+    expect(calls.filter((c) => c.url.includes("reddit.com")).map((c) => c.userAgent)).toEqual([redditUa, redditUa]);
+    expect(calls.find((c) => c.url === UKBF_FEED_URL).userAgent).toBe(SITE_USER_AGENT);
+    expect(SITE_USER_AGENT).toBe("server:diyaccounting-campaign:1.0 (+https://submit.diyaccounting.co.uk)");
   });
 });
