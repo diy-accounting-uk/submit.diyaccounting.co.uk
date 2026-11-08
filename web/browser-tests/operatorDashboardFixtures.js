@@ -646,6 +646,28 @@ export const FIXTURE_INTEGRATIONS = {
     "companies-house": [integrationCall("2026-11-04T08:30:00.250Z#a7b8c9d0", "XMLGW Accounts", 2210, "200")],
     "stripe": [integrationCall("2026-11-04T10:01:12.090Z#b8c9d0e1", "POST /v1/payment_intents", 640, "402")],
   },
+  headerChecks: [
+    {
+      day: "2026-11-04",
+      api: "GET /organisations/vat/{vrn}/obligations",
+      connectionMethod: "WEB_APP_VIA_SERVER",
+      result: "pass",
+      hmrcCode: "VALID_HEADERS",
+      message: null,
+      headers: [],
+      checkedAt: "2026-11-04T09:16:48.130Z",
+    },
+    {
+      day: "2026-11-03",
+      api: "POST /organisations/vat/{vrn}/returns",
+      connectionMethod: "MOBILE_APP_VIA_SERVER",
+      result: "fail",
+      hmrcCode: "INVALID_HEADERS",
+      message: "Header is missing or its value does not match the expected format",
+      headers: ["Gov-Client-Device-ID", "Gov-Vendor-Version"],
+      checkedAt: "2026-11-03T12:01:02.000Z",
+    },
+  ],
 };
 
 export const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };

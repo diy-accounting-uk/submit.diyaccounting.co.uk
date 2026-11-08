@@ -71,6 +71,11 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getFamilyAffiliateByEmailKey: (...args) => mockGetFamilyAffiliateByEmailKey(...args),
 }));
 
+const mockListFphCheckResults = vi.fn();
+vi.mock("@app/data/dynamoDbFphCheckResultRepository.js", () => ({
+  listFphCheckResults: (...args) => mockListFphCheckResults(...args),
+}));
+
 import {
   handler,
   buildOperators,
@@ -215,6 +220,8 @@ describe("operatorSnapshotPublish", () => {
     mockAthenaSend.mockReset();
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockListFphCheckResults.mockReset();
+    mockListFphCheckResults.mockResolvedValue([]);
     mockLoadOperators.mockReset();
     mockLoadOperators.mockResolvedValue(["op@example.com"]);
     mockLoadFamilyAffiliateEmails.mockReset();
@@ -1010,7 +1017,59 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         summary: [],
         calls: { "hmrc": [], "companies-house": [], "stripe": [] },
+        headerChecks: [],
       });
+    });
+
+    test("buildIntegrations lists the header check results of the last seven days, newest first", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["org", "status"], []) });
+        }
+      });
+      const item = (pk, result, hmrcCode, checkedAt, errors = []) => ({
+        pk,
+        sk: "shape",
+        recordType: "fph-check",
+        api: "GET /organisations/vat/{vrn}/obligations",
+        connectionMethod: "WEB_APP_VIA_SERVER",
+        result,
+        hmrcCode,
+        checkedAt,
+        errors,
+        warnings: [],
+      });
+      mockListFphCheckResults.mockImplementation(async (pk) => {
+        if (pk === "fph#2026-11-08") return [item(pk, "pass", "VALID_HEADERS", "2026-11-08T12:00:00.000Z")];
+        if (pk === "fph#2026-11-07")
+          return [
+            item(pk, "fail", "INVALID_HEADERS", "2026-11-07T12:00:00.000Z", [
+              { code: "E", message: "Missing", headers: ["Gov-Vendor-Version"] },
+            ]),
+          ];
+        return [];
+      });
+
+      const result = await buildIntegrations({
+        workGroup: "wg",
+        database: "db",
+        envName: "prod",
+        region: "eu-west-2",
+        now: new Date("2026-11-08T13:00:00.000Z"),
+      });
+
+      expect(mockListFphCheckResults).toHaveBeenCalledTimes(7);
+      expect(mockListFphCheckResults.mock.calls[0][0]).toBe("fph#2026-11-08");
+      expect(mockListFphCheckResults.mock.calls[6][0]).toBe("fph#2026-11-02");
+      expect(result.headerChecks.map((row) => [row.day, row.result, row.message, row.headers])).toEqual([
+        ["2026-11-08", "pass", null, []],
+        ["2026-11-07", "fail", "Missing", ["Gov-Vendor-Version"]],
+      ]);
     });
 
     test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {
