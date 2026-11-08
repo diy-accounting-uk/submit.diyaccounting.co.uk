@@ -16,7 +16,7 @@
 
 [environment.ci]
 application_name = "DIY Accounting Submit - test"
-client_id = "e5be4a0d-cebf-4024-83a3-5497a0fec4b2"
+client_id = "eb20d4d6-68ef-4d30-bc94-3c4c256ded86"
 rest_base_uri = "https://api.company-information.service.gov.uk"
 identity_base_uri = "https://identity-sandbox.company-information.service.gov.uk"
 xmlgw_uri = "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway"
