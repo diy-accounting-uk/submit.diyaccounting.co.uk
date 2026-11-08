@@ -8,6 +8,7 @@ import {
   exportedTransactionWindow,
   dailyExportLagMs,
   dailyTableSuffixes,
+  isGa4PurchaseHitFor,
   propertyDayStartMs,
   selectPriorPurchaseSubscriptions,
 } from "../../../behaviour-tests/helpers/ga4PurchaseQuery.js";
@@ -146,5 +147,29 @@ describe("selectPriorPurchaseSubscriptions", () => {
 
   test("returns an empty list when no subscription is from the user pool", () => {
     expect(selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "other-pool" })).toEqual([]);
+  });
+});
+
+describe("isGa4PurchaseHitFor", () => {
+  const id = "sub_1UYvOBFdFHdRoTOjIU5ZVqRc";
+  const collect = "https://region1.google-analytics.com/g/collect?v=2&tid=G-X";
+
+  test("matches a query-string hit", () => {
+    expect(isGa4PurchaseHitFor({ url: `${collect}&en=purchase&ep.transaction_id=${id}`, postData: null }, id)).toBe(true);
+  });
+
+  test("matches a batched POST-body hit", () => {
+    const postData = `en=page_view&ep.x=1\nen=purchase&ep.transaction_id=${id}&epn.value=0`;
+    expect(isGa4PurchaseHitFor({ url: collect, postData }, id)).toBe(true);
+  });
+
+  test("rejects a hit for another id", () => {
+    expect(isGa4PurchaseHitFor({ url: `${collect}&ep.transaction_id=sub_other`, postData: `ep.transaction_id=sub_other2` }, id)).toBe(
+      false,
+    );
+  });
+
+  test("rejects a non-GA4 URL carrying the id", () => {
+    expect(isGa4PurchaseHitFor({ url: `https://example.com/g/collect?ep.transaction_id=${id}`, postData: null }, id)).toBe(false);
   });
 });

@@ -81,6 +81,7 @@ import {
   exportFirstWholeDayStartMs,
   exportedTransactionWindow,
   findPastStripeSubscriptions,
+  isGa4PurchaseHitFor,
   pollForPurchaseEvent,
 } from "./helpers/ga4PurchaseQuery.js";
 
@@ -427,6 +428,14 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 6a: GA4 purchase event and BigQuery verification");
     console.log("=".repeat(60));
 
+    const purchaseTransactionId = webhookActivation.stripeSubscriptionId;
+    const collectTimeoutMs = 15_000;
+    const collectRequestPromise = page
+      .waitForRequest((request) => isGa4PurchaseHitFor({ url: request.url(), postData: request.postData() }, purchaseTransactionId), {
+        timeout: collectTimeoutMs,
+      })
+      .catch(() => null);
+
     await page.evaluate((transactionId) => {
       window.gtag("event", "purchase", {
         transaction_id: transactionId,
@@ -436,6 +445,20 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       });
     }, webhookActivation.stripeSubscriptionId);
     console.log(`Dispatched GA4 purchase event: transaction_id=${webhookActivation.stripeSubscriptionId}`);
+
+    const collectRequest = await collectRequestPromise;
+    if (collectRequest) {
+      const collectUrl = new URL(collectRequest.url());
+      const collectResponse = await Promise.race([
+        collectRequest.response(),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+      ]).catch(() => null);
+      const collectStatus = collectResponse ? collectResponse.status() : "no response";
+      console.log(`GA4 collect request sent: ${collectRequest.method()} ${collectUrl.host}${collectUrl.pathname} status=${collectStatus}`);
+    } else {
+      console.log(`::warning::GA4 collect request for ${purchaseTransactionId} not seen in the browser within ${collectTimeoutMs / 1000}s`);
+    }
+    expect(collectRequest, `The browser never sent the GA4 purchase hit for ${purchaseTransactionId}`).not.toBeNull();
 
     const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
     const datasetId = process.env.GA4_BIGQUERY_DATASET_ID;

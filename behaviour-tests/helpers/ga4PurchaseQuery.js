@@ -258,3 +258,29 @@ export async function pollForPurchaseEvent(args, { attempts = 3, intervalMs = 10
   }
   return last;
 }
+
+const ga4CollectUrl = /^https?:\/\/([a-z0-9-]+\.)*(google-analytics\.com|analytics\.google\.com)\/g\/collect/;
+
+/**
+ * Whether a browser request is a GA4 collect hit that carries the transaction id, in the query
+ * string (`ep.transaction_id=<id>`) or in the POST body of a batched hit.
+ *
+ * @param {{url: string, postData?: string|null}} request
+ * @param {string} transactionId
+ * @returns {boolean}
+ */
+export function isGa4PurchaseHitFor({ url, postData }, transactionId) {
+  if (!ga4CollectUrl.test(url)) return false;
+  const carriesId = (text) => {
+    if (!text) return false;
+    const decoded = (() => {
+      try {
+        return decodeURIComponent(text.replace(/\+/g, " "));
+      } catch {
+        return text;
+      }
+    })();
+    return new RegExp(`(^|[?&\\s])(ep\\.)?transaction_id=${transactionId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[&\\s])`).test(decoded);
+  };
+  return carriesId(url.split("?")[1]) || carriesId(postData);
+}
