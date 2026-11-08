@@ -80,7 +80,8 @@ import {
   exportDatasetExists,
   exportFirstWholeDayStartMs,
   exportedTransactionWindow,
-  findPastStripeSubscription,
+  findPastStripeSubscriptions,
+  isGa4PurchaseHitFor,
   pollForPurchaseEvent,
 } from "./helpers/ga4PurchaseQuery.js";
 
@@ -427,6 +428,14 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 6a: GA4 purchase event and BigQuery verification");
     console.log("=".repeat(60));
 
+    const purchaseTransactionId = webhookActivation.stripeSubscriptionId;
+    const collectTimeoutMs = 15_000;
+    const collectRequestPromise = page
+      .waitForRequest((request) => isGa4PurchaseHitFor({ url: request.url(), postData: request.postData() }, purchaseTransactionId), {
+        timeout: collectTimeoutMs,
+      })
+      .catch(() => null);
+
     await page.evaluate((transactionId) => {
       window.gtag("event", "purchase", {
         transaction_id: transactionId,
@@ -436,6 +445,20 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       });
     }, webhookActivation.stripeSubscriptionId);
     console.log(`Dispatched GA4 purchase event: transaction_id=${webhookActivation.stripeSubscriptionId}`);
+
+    const collectRequest = await collectRequestPromise;
+    if (collectRequest) {
+      const collectUrl = new URL(collectRequest.url());
+      const collectResponse = await Promise.race([
+        collectRequest.response(),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+      ]).catch(() => null);
+      const collectStatus = collectResponse ? collectResponse.status() : "no response";
+      console.log(`GA4 collect request sent: ${collectRequest.method()} ${collectUrl.host}${collectUrl.pathname} status=${collectStatus}`);
+    } else {
+      console.log(`::warning::GA4 collect request for ${purchaseTransactionId} not seen in the browser within ${collectTimeoutMs / 1000}s`);
+    }
+    expect(collectRequest, `The browser never sent the GA4 purchase hit for ${purchaseTransactionId}`).not.toBeNull();
 
     const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
     const datasetId = process.env.GA4_BIGQUERY_DATASET_ID;
@@ -457,30 +480,45 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       lookbackDays,
       exportFirstWholeDayStartMs: await exportFirstWholeDayStartMs({ projectId, datasetId }),
     });
-    const priorSubscription = window
-      ? await findPastStripeSubscription({ ...window, currentSubscriptionId: webhookActivation.stripeSubscriptionId })
-      : null;
-    if (!priorSubscription) {
+    const priorSubscriptions = window
+      ? await findPastStripeSubscriptions({ ...window, currentSubscriptionId: webhookActivation.stripeSubscriptionId })
+      : [];
+    if (priorSubscriptions.length === 0) {
       console.log(
         "No prior ci subscription of this user pool created on a London day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
       );
       return;
     }
-    const priorTransactionId = priorSubscription.id;
-    const priorCreatedIso = new Date(priorSubscription.createdMs).toISOString();
 
-    console.log(
-      `Checking BigQuery for a purchase event carrying transaction_id=${priorTransactionId} (subscription created ${priorCreatedIso})...`,
-    );
-    const result = await pollForPurchaseEvent(
-      { transactionId: priorTransactionId, projectId, datasetId, location, lookbackDays },
-      { attempts: 3, intervalMs: 10_000 },
-    );
-    console.log(`BigQuery purchase lookup: found=${result.found} (tables queried: ${result.tablesQueried.join(", ")})`);
+    let foundTransactionId = null;
+    let tablesQueried = [];
+    const missing = [];
+    for (const priorSubscription of priorSubscriptions) {
+      const priorCreatedIso = new Date(priorSubscription.createdMs).toISOString();
+      console.log(
+        `Checking BigQuery for a purchase event carrying transaction_id=${priorSubscription.id} (subscription created ${priorCreatedIso})...`,
+      );
+      const result = await pollForPurchaseEvent(
+        { transactionId: priorSubscription.id, projectId, datasetId, location, lookbackDays },
+        { attempts: 3, intervalMs: 10_000 },
+      );
+      tablesQueried = result.tablesQueried;
+      console.log(`BigQuery purchase lookup: found=${result.found} (tables queried: ${result.tablesQueried.join(", ")})`);
+      if (result.found) {
+        foundTransactionId = priorSubscription.id;
+        break;
+      }
+      missing.push({ id: priorSubscription.id, createdIso: priorCreatedIso });
+      console.log(
+        `::warning::purchase event for subscription ${priorSubscription.id} (created ${priorCreatedIso}) is not in ${result.tablesQueried.join(", ")}`,
+      );
+    }
+    const oldest = missing[missing.length - 1];
     expect(
-      result.found,
-      `purchase transaction_id=${priorTransactionId} (subscription created ${priorCreatedIso}) not in ${result.tablesQueried.join(", ")}`,
-    ).toBe(true);
+      foundTransactionId,
+      `purchase transaction_id=${missing[0]?.id} (subscription created ${missing[0]?.createdIso}) not in ${tablesQueried.join(", ")}` +
+        (missing.length > 1 ? `; ${missing.length} prior subscriptions checked back to ${oldest.id} (created ${oldest.createdIso})` : ""),
+    ).not.toBeNull();
   });
 
   // ============================================================

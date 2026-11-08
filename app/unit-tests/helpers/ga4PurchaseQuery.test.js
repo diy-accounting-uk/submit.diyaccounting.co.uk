@@ -8,8 +8,9 @@ import {
   exportedTransactionWindow,
   dailyExportLagMs,
   dailyTableSuffixes,
+  isGa4PurchaseHitFor,
   propertyDayStartMs,
-  selectPriorPurchaseSubscription,
+  selectPriorPurchaseSubscriptions,
 } from "../../../behaviour-tests/helpers/ga4PurchaseQuery.js";
 
 const hour = 60 * 60 * 1000;
@@ -124,7 +125,7 @@ describe("property time zone days", () => {
   });
 });
 
-describe("selectPriorPurchaseSubscription", () => {
+describe("selectPriorPurchaseSubscriptions", () => {
   const subscriptions = [
     { id: "sub_prod_newest", created: 300, metadata: { hashedSub: "prod-pool" } },
     { id: "sub_ci_newer", created: 200, metadata: { hashedSub: "ci-pool" } },
@@ -132,11 +133,43 @@ describe("selectPriorPurchaseSubscription", () => {
     { id: "sub_ci_older", created: 100, metadata: { hashedSub: "ci-pool" } },
   ];
 
-  test("skips subscriptions from another user pool even when newer", () => {
-    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "ci-pool" })).toEqual({ id: "sub_ci_newer", createdMs: 200_000 });
+  test("returns every subscription of the user pool, newest first, skipping other pools", () => {
+    expect(selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "ci-pool" })).toEqual([
+      { id: "sub_ci_newer", createdMs: 200_000 },
+      { id: "sub_ci_older", createdMs: 100_000 },
+    ]);
   });
 
-  test("returns null when no subscription is from the user pool", () => {
-    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "other-pool" })).toBeNull();
+  test("skips a subscription with no metadata", () => {
+    const ids = selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "prod-pool" }).map((s) => s.id);
+    expect(ids).toEqual(["sub_prod_newest"]);
+  });
+
+  test("returns an empty list when no subscription is from the user pool", () => {
+    expect(selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "other-pool" })).toEqual([]);
+  });
+});
+
+describe("isGa4PurchaseHitFor", () => {
+  const id = "sub_1UYvOBFdFHdRoTOjIU5ZVqRc";
+  const collect = "https://region1.google-analytics.com/g/collect?v=2&tid=G-X";
+
+  test("matches a query-string hit", () => {
+    expect(isGa4PurchaseHitFor({ url: `${collect}&en=purchase&ep.transaction_id=${id}`, postData: null }, id)).toBe(true);
+  });
+
+  test("matches a batched POST-body hit", () => {
+    const postData = `en=page_view&ep.x=1\nen=purchase&ep.transaction_id=${id}&epn.value=0`;
+    expect(isGa4PurchaseHitFor({ url: collect, postData }, id)).toBe(true);
+  });
+
+  test("rejects a hit for another id", () => {
+    expect(isGa4PurchaseHitFor({ url: `${collect}&ep.transaction_id=sub_other`, postData: `ep.transaction_id=sub_other2` }, id)).toBe(
+      false,
+    );
+  });
+
+  test("rejects a non-GA4 URL carrying the id", () => {
+    expect(isGa4PurchaseHitFor({ url: `https://example.com/g/collect?ep.transaction_id=${id}`, postData: null }, id)).toBe(false);
   });
 });

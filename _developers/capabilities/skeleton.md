@@ -163,6 +163,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability HMRC-36 -->
 <!-- capability HMRC-37 -->
 <!-- capability HMRC-38 -->
+<!-- capability HMRC-41 -->
+<!-- capability HMRC-42 -->
+<!-- capability HMRC-43 -->
 ## Companies House filing (CH)
 
 <!-- generated:area CH -->

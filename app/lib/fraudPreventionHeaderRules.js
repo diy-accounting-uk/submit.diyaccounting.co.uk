@@ -11,6 +11,10 @@ import { isIP } from "node:net";
 //
 // A header that is absent is not a rule failure here: the missing-header check reports it.
 
+// The version of HMRC's header specification that these rules follow. HMRC's validator reports
+// its own in specVersion, and a difference shows that the specification has moved.
+export const FRAUD_PREVENTION_SPEC_VERSION = "3.3";
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TIMESTAMP_MILLIS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const TIMESTAMP_FORMS = [
