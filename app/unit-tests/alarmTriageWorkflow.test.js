@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// alarmTriageWorkflow.test.js -- alarm-triage.yml runs the Sonnet pass only after the operator
+// alarmTriageWorkflow.test.js -- alarm-triage.yml runs the second pass only after the operator
 // removes `maintainer-review` from an alarm issue. This test pins the shape that keeps it so:
-// the one unlabeled event that starts an agent, where Sonnet may run, the jobs that hold power,
+// the one unlabeled event that starts an agent, where the second pass may run, the jobs that hold power,
 // and the absence of any way for the first-pass result or the reader's answer to reach this
 // public repository's logs.
 
@@ -50,15 +50,16 @@ describe("alarm-triage.yml", () => {
     expect(condition).toContain("needs.gate.outputs.allowed == 'true'");
   });
 
-  it("runs the Sonnet step only in escalate mode", () => {
-    const sonnet = stepBlock(jobBlock("run-triage"), "Run triage (Sonnet)");
-    expect(sonnet).toContain("env.MODE == 'escalate'");
-    expect(sonnet).not.toContain("judge.outputs.escalate");
+  it("runs the second pass only in escalate mode, and lets it read the escalation input", () => {
+    const secondPass = stepBlock(jobBlock("run-triage"), "Run triage (second pass)");
+    expect(secondPass).toContain("env.MODE == 'escalate'");
+    expect(secondPass).not.toContain("judge.outputs.escalate");
+    expect(secondPass).toContain("/tmp/escalation-input.json");
   });
 
-  it("runs the Haiku pass and the judge only in first-pass mode", () => {
+  it("runs the first pass and the judge only in first-pass mode", () => {
     const runTriage = jobBlock("run-triage");
-    expect(stepBlock(runTriage, "Run triage (Haiku)")).toContain("env.MODE == 'first-pass'");
+    expect(stepBlock(runTriage, "Run triage (first pass)")).toContain("env.MODE == 'first-pass'");
     expect(stepBlock(runTriage, "Judge the first pass")).toContain("env.MODE == 'first-pass'");
   });
 
@@ -152,6 +153,35 @@ describe("alarm-triage.yml", () => {
     const text = readFileSync(new URL("../../.github/workflows/alarm-triage.yml", import.meta.url), "utf8");
     const steps = text.split("uses: ./.github/actions/run-triage-agent").slice(1);
     expect(steps.length).toBe(2);
-    for (const step of steps) expect(step.slice(0, 300)).toContain("echo-output: 'false'");
+    for (const step of steps) expect(step.slice(0, 600)).toContain("echo-output: 'false'");
+  });
+
+  it("runs both passes on the Nova runner with the answer schema and the evidence file", () => {
+    const runTriage = jobBlock("run-triage");
+    expect(text).toMatch(/TRIAGE_MODEL_ID: 'amazon\.nova-pro-v1:0'/);
+    for (const name of ["Run triage (first pass)", "Run triage (second pass)"]) {
+      const step = stepBlock(runTriage, name);
+      expect(step, name).toContain("runner: nova");
+      expect(step, name).toContain("model-id: ${{ env.TRIAGE_MODEL_ID }}");
+      expect(step, name).toContain("final-schema: prompts/alarm-triage-answer.json");
+      expect(step, name).toContain("/tmp/evidence.json");
+    }
+  });
+
+  it("installs and calls no Anthropic CLI and names no Anthropic model", () => {
+    expect(text).not.toMatch(/claude-code|CLAUDE_CODE_VERSION|anthropic\.claude|claude -p/);
+  });
+
+  it("puts the first log query in the evidence and keeps it out of the job summary", () => {
+    const proof = stepBlock(jobBlock("run-triage"), "Prove the triage credentials against the alarm's telemetry");
+    expect(proof).toContain("proof firstLogQuery aws logs filter-log-events");
+    expect(proof).toContain("/tmp/proof-firstLogQuery.json");
+    expect(proof).toContain("del(.firstLogQuery)");
+  });
+
+  it("holds the model's draft-PR path: the filter reads the runner's result and the draft PR step stays gated on a complete answer", () => {
+    const runTriage = jobBlock("run-triage");
+    expect(stepBlock(runTriage, "Filter the triage answer before it is published")).toContain("format: claude-json");
+    expect(stepBlock(runTriage, "Open a draft PR when triage named a change")).toContain("steps.judge.outputs.hold != 'true'");
   });
 });
