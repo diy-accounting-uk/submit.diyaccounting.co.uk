@@ -9,7 +9,7 @@ import {
   dailyExportLagMs,
   dailyTableSuffixes,
   propertyDayStartMs,
-  selectPriorPurchaseSubscription,
+  selectPriorPurchaseSubscriptions,
 } from "../../../behaviour-tests/helpers/ga4PurchaseQuery.js";
 
 const hour = 60 * 60 * 1000;
@@ -124,7 +124,7 @@ describe("property time zone days", () => {
   });
 });
 
-describe("selectPriorPurchaseSubscription", () => {
+describe("selectPriorPurchaseSubscriptions", () => {
   const subscriptions = [
     { id: "sub_prod_newest", created: 300, metadata: { hashedSub: "prod-pool" } },
     { id: "sub_ci_newer", created: 200, metadata: { hashedSub: "ci-pool" } },
@@ -132,11 +132,19 @@ describe("selectPriorPurchaseSubscription", () => {
     { id: "sub_ci_older", created: 100, metadata: { hashedSub: "ci-pool" } },
   ];
 
-  test("skips subscriptions from another user pool even when newer", () => {
-    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "ci-pool" })).toEqual({ id: "sub_ci_newer", createdMs: 200_000 });
+  test("returns every subscription of the user pool, newest first, skipping other pools", () => {
+    expect(selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "ci-pool" })).toEqual([
+      { id: "sub_ci_newer", createdMs: 200_000 },
+      { id: "sub_ci_older", createdMs: 100_000 },
+    ]);
   });
 
-  test("returns null when no subscription is from the user pool", () => {
-    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "other-pool" })).toBeNull();
+  test("skips a subscription with no metadata", () => {
+    const ids = selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "prod-pool" }).map((s) => s.id);
+    expect(ids).toEqual(["sub_prod_newest"]);
+  });
+
+  test("returns an empty list when no subscription is from the user pool", () => {
+    expect(selectPriorPurchaseSubscriptions(subscriptions, { hashedSub: "other-pool" })).toEqual([]);
   });
 });

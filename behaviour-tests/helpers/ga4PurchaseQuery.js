@@ -130,32 +130,33 @@ export function exportedTransactionWindow({ nowMs, lookbackDays, exportFirstWhol
 }
 
 /**
- * Picks the newest subscription that came from the same user pool as the current run's
- * subscription (same `hashedSub` metadata). Stripe test mode is shared by the ci and prod
+ * Picks every subscription that came from the same user pool as the current run's
+ * subscription (same `hashedSub` metadata), keeping the input order. Stripe test mode is shared by the ci and prod
  * lanes, which use the same synthetic email, but only a ci run fires a GA4 purchase, so the
  * email cannot tell them apart and the user-pool hash can.
  *
  * @param {Array<{id: string, created: number, metadata?: Record<string, string>}>} subscriptions newest first
  * @param {{hashedSub: string}} criteria
- * @returns {{id: string, createdMs: number}|null}
+ * @returns {Array<{id: string, createdMs: number}>} newest first; empty when none match
  */
-export function selectPriorPurchaseSubscription(subscriptions, { hashedSub }) {
-  const match = subscriptions.find((subscription) => subscription.metadata?.hashedSub === hashedSub);
-  return match ? { id: match.id, createdMs: match.created * 1000 } : null;
+export function selectPriorPurchaseSubscriptions(subscriptions, { hashedSub }) {
+  return subscriptions
+    .filter((subscription) => subscription.metadata?.hashedSub === hashedSub)
+    .map((subscription) => ({ id: subscription.id, createdMs: subscription.created * 1000 }));
 }
 
 /**
- * Finds a Stripe test-mode subscription created inside the window (see exportedTransactionWindow)
- * by the same user pool as `currentSubscriptionId`. Every ci run of payment.behaviour.test.js
+ * Finds the Stripe test-mode subscriptions created inside the window (see exportedTransactionWindow)
+ * by the same user pool as `currentSubscriptionId`, newest first. Every ci run of payment.behaviour.test.js
  * creates and later cancels one such subscription and fires a purchase carrying its id, so this
  * stands in for a persisted "last run's transaction id" without adding new storage. Prod probes
  * and other lanes fire no purchase, hence the user-pool match.
  *
  * @param {{createdAfterMs: number, createdBeforeMs: number, currentSubscriptionId: string}} window
- * @returns {Promise<{id: string, createdMs: number}|null>}
+ * @returns {Promise<Array<{id: string, createdMs: number}>>}
  */
-export async function findPastStripeSubscription({ createdAfterMs, createdBeforeMs, currentSubscriptionId }) {
-  if (createdBeforeMs <= createdAfterMs) return null;
+export async function findPastStripeSubscriptions({ createdAfterMs, createdBeforeMs, currentSubscriptionId }) {
+  if (createdBeforeMs <= createdAfterMs) return [];
   const stripe = await getStripeClient({ test: true });
   const current = await stripe.subscriptions.retrieve(currentSubscriptionId);
   const hashedSub = current.metadata?.hashedSub;
@@ -170,7 +171,7 @@ export async function findPastStripeSubscription({ createdAfterMs, createdBefore
     },
     limit: 100,
   });
-  return selectPriorPurchaseSubscription(subscriptions.data, { hashedSub });
+  return selectPriorPurchaseSubscriptions(subscriptions.data, { hashedSub });
 }
 
 /**
