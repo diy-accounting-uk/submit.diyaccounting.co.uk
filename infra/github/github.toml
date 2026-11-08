@@ -34,10 +34,8 @@ patterns_allowed = [
 # Repository-level Actions secrets and variables: every workflow run can read these regardless
 # of which environment it targets. Names only.
 repository_secrets = [
-  "ADMIN_TOKEN",
   "AGENT_APP_PRIVATE_KEY",
   "OPS_APP_PRIVATE_KEY",
-  "RELEASE_PAT",
 ]
 repository_variables = [
   "AGENT_APP_ID",

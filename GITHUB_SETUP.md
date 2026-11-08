@@ -120,8 +120,6 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 
 | Secret | Read by | How to obtain |
 |---|---|---|
-| `RELEASE_PAT` | `publish.yml` | PAT, `repo` scope, to push tags and release commits |
-| `ADMIN_TOKEN` | `infra-apply.yml` | PAT with repository administration, to read settings |
 | `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `security-review.yml`, `support-triage.yml` | private key of the agent GitHub App |
 | `OPS_APP_PRIVATE_KEY` | `deploy-environment.yml` (to `{env}/submit/github/ops_app_private_key`) | private key of the `diya-ops` GitHub App |
 | `OPERATOR_EMAILS` | `deploy-environment.yml` (to `{env}/submit/operator-emails`) | the operator's addresses |

@@ -1147,13 +1147,14 @@ jobs:
       ISSUE_URL: ${{ github.server_url }}/${{ github.repository }}/issues/${{ inputs.issue-number || github.event.issue.number }}
       PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
     steps:
-      - name: Stop when the private repository deploy key is not set
+      - name: Stop when the ops App credentials are not set
         id: key
         env:
-          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+          OPS_APP_ID: ${{ vars.OPS_APP_ID }}
+          OPS_APP_PRIVATE_KEY: ${{ secrets.OPS_APP_PRIVATE_KEY }}
         run: |
-          if [ -z "${PRIVATE_REPO_DEPLOY_KEY}" ]; then
-            echo "PRIVATE_REPO_DEPLOY_KEY is not set on the prod environment, so the customer lookup waits" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -z "${OPS_APP_ID}" ] || [ -z "${OPS_APP_PRIVATE_KEY}" ]; then
+            echo "OPS_APP_ID or OPS_APP_PRIVATE_KEY is not set, so the customer lookup waits" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "configured=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "configured=true" | tee -a "$GITHUB_OUTPUT"
@@ -1199,18 +1200,25 @@ jobs:
             --issue-number "$ISSUE_NUMBER" --issue-url "$ISSUE_URL" \
             --region "${ALARM_REGION:-eu-west-2}" --out "$RUNNER_TEMP/alarm-lookup.md"
 
+      - name: Generate a token that writes to the private repository
+        if: steps.key.outputs.configured == 'true'
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.OPS_APP_ID }}
+          private-key: ${{ secrets.OPS_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-contents: write
+
       - name: Commit the file to the private repository
         if: steps.key.outputs.configured == 'true'
         id: private-commit
         env:
-          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+          PRIVATE_REPO_TOKEN: ${{ steps.private-token.outputs.token }}
         run: |
           set -euo pipefail
-          KEY_FILE="$RUNNER_TEMP/private-repo-deploy-key"
-          umask 077
-          printf '%s\n' "$PRIVATE_REPO_DEPLOY_KEY" > "$KEY_FILE"
-          export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-          git clone --depth 1 "git@github.com:${PRIVATE_REPO}.git" "$RUNNER_TEMP/private"
+          git clone --depth 1 "https://x-access-token:${PRIVATE_REPO_TOKEN}@github.com/${PRIVATE_REPO}.git" "$RUNNER_TEMP/private"
           FILE_PATH="support/alarms/${ISSUE_NUMBER}-${ALARM_NAME}.md"
           mkdir -p "$RUNNER_TEMP/private/support/alarms"
           cp "$RUNNER_TEMP/alarm-lookup.md" "$RUNNER_TEMP/private/${FILE_PATH}"
@@ -1224,7 +1232,6 @@ jobs:
             if [ "$ATTEMPT" = 3 ]; then exit 1; fi
             git pull --rebase origin main
           done
-          rm -f "$KEY_FILE"
           echo "file-path=${FILE_PATH}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Tell the operator on Telegram
