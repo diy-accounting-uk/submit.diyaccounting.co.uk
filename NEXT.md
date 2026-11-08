@@ -68,8 +68,6 @@ Facts for OAFF7 (the ci design is `../private.diyaccounting.co.uk/engineering/su
 
 - [ ] **OAFF7. Name the family affiliates.** `FAMILY_AFFILIATE_EMAILS` and `OPERATOR_EMAILS` are set (two addresses each); deploy-environment run 41233381764 carried the operator list. The family list is copied (deploy-environment 41248125345) and prod-a13d46b carries AFF7. Remainder: each listed person generates one pass (writes the family marker), then a second account redeems and subscribes. **Owner**: Operator. **Model**: none.
 
-- [ ] **OFB1. Send the feedback-volunteers email.** Read the draft `../private.diyaccounting.co.uk/support/EMAIL_FEEDBACK_VOLUNTEERS_2026-11-03.md`, edit it, and send it from antony@diyaccounting.co.uk with the volunteers in Bcc (`FEEDBACK_VOLUNTEERS_2026-11-03.md` beside it). The 2026-11-01 volunteer's address is masked in the lake and is in the interest Lambda's log for 13:22:32 UTC. **Source**: operator, 2026-11-03. **Owner**: Operator. **Model**: none.
-
 - [ ] **OVAT7. The re-test's manual accessibility checks (`../private.diyaccounting.co.uk/hmrc/vat/VAT_APPROVAL_RETEST_2026-11-03.md` MN1 to MN4).** The four manual accessibility checks (TS4 passed on 2026-11-03): a screen reader through the VAT journey, the keyboard order, 400% zoom, plain language. Write each result into `../private.diyaccounting.co.uk/hmrc/vat/VAT_APPROVAL_RETEST_2026-11-03.md` (MN1 to MN4). **Source**: VAT2. **Owner**: Operator. **Model**: none.
 
 ## Blocked
