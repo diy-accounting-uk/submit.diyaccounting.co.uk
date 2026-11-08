@@ -297,7 +297,13 @@ describe("nova agent final schema", () => {
 });
 
 describe("nova agent submit_answer rendering", () => {
-  const answer = { what_broke: "The function failed.", still_broken: "Not broken.", next_action: "Watch, no action.", remedy: "none" };
+  const answer = {
+    what_broke: "The function failed.",
+    still_broken: "Not broken.",
+    next_action: "Watch, no action.",
+    remedy: "none",
+    alarm_cleared: false,
+  };
 
   it("renders the headings in order and ends on the remedy line", () => {
     const { status, text } = renderAnswer(ALARM_SCHEMA, answer);
@@ -305,6 +311,19 @@ describe("nova agent submit_answer rendering", () => {
     expect(text).toBe(
       "## What broke?\n\nThe function failed.\n\n## Is it still broken?\n\nNot broken.\n\n## What is the next action?\n\nWatch, no action.\n\nremedy: none",
     );
+  });
+
+  it("refuses close-when-gone while alarm_cleared is false", () => {
+    const { status, text } = renderAnswer(ALARM_SCHEMA, { ...answer, remedy: "close-when-gone" });
+    expect(status).toBe("refused");
+    expect(text).toContain("close-when-gone needs alarm_cleared true");
+  });
+
+  it("renders close-when-gone when alarm_cleared is true and shows no section for the boolean", () => {
+    const { status, text } = renderAnswer(ALARM_SCHEMA, { ...answer, remedy: "close-when-gone", alarm_cleared: true });
+    expect(status).toBe("ok");
+    expect(text).toMatch(/remedy: close-when-gone$/);
+    expect(text).not.toContain("alarm_cleared");
   });
 
   it("keeps a diff block in the shape that the workflow extracts", () => {

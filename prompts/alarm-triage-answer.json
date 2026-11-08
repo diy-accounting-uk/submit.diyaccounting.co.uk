@@ -17,16 +17,28 @@
       "type": "string",
       "description": "The answer to question 3 in plain sentences."
     },
+    "alarm_cleared": {
+      "type": "boolean",
+      "description": "True only when the newest evidence shows every alarm in the family is OK. False when any alarm is still ALARM or the logs in the window still show the failure."
+    },
     "diff": {
       "type": "string",
       "description": "One change in git diff format. Leave this out unless you are confident in the change."
     }
   },
-  "required": ["remedy", "what_broke", "still_broken", "next_action"],
+  "required": ["remedy", "what_broke", "still_broken", "next_action", "alarm_cleared"],
+  "rules": [
+    {
+      "when": { "remedy": "close-when-gone" },
+      "require": { "alarm_cleared": true },
+      "refusal": "The remedy close-when-gone needs alarm_cleared true. Resubmit with remedy: none, or with corrected evidence that shows every alarm in the family is OK."
+    }
+  ],
   "render": [
     { "property": "what_broke", "heading": "## What broke?" },
     { "property": "still_broken", "heading": "## Is it still broken?" },
     { "property": "next_action", "heading": "## What is the next action?" },
+    { "property": "alarm_cleared", "hidden": true },
     { "property": "diff", "fence": "diff" },
     { "property": "remedy", "prefix": "remedy: " }
   ]
