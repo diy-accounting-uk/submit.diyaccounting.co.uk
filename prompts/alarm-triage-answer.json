@@ -36,7 +36,11 @@
   ],
   "render": [
     { "property": "what_broke", "heading": "## What broke?" },
-    { "property": "still_broken", "heading": "## Is it still broken?" },
+    {
+      "property": "still_broken",
+      "heading": "## Is it still broken?",
+      "lead": { "from": "alarm_cleared", "true": "No, it has cleared.", "false": "Yes, it is still broken." }
+    },
     { "property": "next_action", "heading": "## What is the next action?" },
     { "property": "alarm_cleared", "hidden": true },
     { "property": "diff", "fence": "diff" },
