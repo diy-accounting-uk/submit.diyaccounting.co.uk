@@ -17,13 +17,13 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: () => "test-env-integration-calls",
 }));
 
-const repo = await import("@app/data/dynamoDbIntegrationCallRepository.js");
+const repo = await import("@app/data/dynamoDbFphCheckResultRepository.js");
 
 beforeEach(() => {
   mockSend.mockReset();
 });
 
-describe("data/dynamoDbIntegrationCallRepository listFphCheckResults", () => {
+describe("data/dynamoDbFphCheckResultRepository listFphCheckResults", () => {
   test("queries the day's partition key on the integration calls table", async () => {
     mockSend.mockResolvedValue({ Items: [{ pk: "fph#2026-11-08", sk: "a" }] });
     const items = await repo.listFphCheckResults("fph#2026-11-08");

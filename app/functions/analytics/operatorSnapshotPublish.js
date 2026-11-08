@@ -51,7 +51,7 @@ import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getFamilyAffiliateByEmailKey } from "../../data/dynamoDbPassRepository.js";
-import { listFphCheckResults } from "../../data/dynamoDbIntegrationCallRepository.js";
+import { listFphCheckResults } from "../../data/dynamoDbFphCheckResultRepository.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
