@@ -82,7 +82,7 @@ A `canaryHits` counter above zero proves that the matcher reached the text of th
 surface with no canary hits is not proven, so read its counters before you trust a clean result.
 
 Keys with no AWS copy have a format check only: the GitHub App private key of the agent, the
-fine-grained PATs, `PRIVATE_REPO_DEPLOY_KEY`, the support Gmail keys and the
+fine-grained PAT, the support Gmail keys and the
 `TEST_COMPANIES_HOUSE_*` values. The last of these have no format, so state them as not covered.
 MCP tool output needs a signed-in client, which needs a test lane on ci. Until a lane is wired in
 here, the hosted MCP test logs in `logs:*` give the only sight of that output.

@@ -58,17 +58,18 @@ jobs:
           npm-install: none
           npm-cache: 'false'
 
-      # The ruleset on main refuses a push from the workflow's own token; only an admin's token
-      # (RELEASE_PAT) can land the bump, so an absent secret must stop the run here.
-      - name: Require RELEASE_PAT
+      # The ruleset on main refuses a push from the workflow's own token; only the agent App is a
+      # bypass actor, so an absent App variable or key must stop the run here.
+      - name: Require the agent App credentials
         run: |
-          if [ -z "${RELEASE_PAT}" ]; then
-            echo "::error::RELEASE_PAT is not set. The version bump pushes to main as an admin through this token; create a fine-grained token (Contents: Read and write on this repository) and store it with: gh secret set RELEASE_PAT --repo diy-accounting-uk/submit.diyaccounting.co.uk"
+          if [ -z "${AGENT_APP_ID}" ] || [ -z "${AGENT_APP_PRIVATE_KEY}" ]; then
+            echo "::error::AGENT_APP_ID or AGENT_APP_PRIVATE_KEY is not set. The version bump pushes to main as the agent App, a bypass actor on the main ruleset; set the repository variable AGENT_APP_ID and the repository secret AGENT_APP_PRIVATE_KEY."
             exit 1
           fi
-          echo "RELEASE_PAT is set"
+          echo "The agent App credentials are set"
         env:
-          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
+          AGENT_APP_ID: ${{ vars.AGENT_APP_ID }}
+          AGENT_APP_PRIVATE_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
 
       - name: Calculate new version
         id: version
@@ -150,10 +151,18 @@ jobs:
     outputs:
       commit-sha: ${{ steps.commit.outputs.commit_sha }}
     steps:
+      - name: Generate a token that pushes to main
+        id: release-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
+          token: ${{ steps.release-token.outputs.token }}
 
       - name: Set up the toolchain
         uses: ./.github/actions/setup-toolchain
@@ -269,11 +278,19 @@ jobs:
       - publish-maven
     runs-on: ubuntu-latest
     steps:
+      - name: Generate a token that pushes to main
+        id: release-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.sync-versions.outputs.commit-sha }}
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
+          token: ${{ steps.release-token.outputs.token }}
 
       - name: Create and push tag
         run: |
