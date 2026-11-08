@@ -39,9 +39,13 @@ Prerequisites: `gitleaks` and `trufflehog` at `/usr/local/bin`.
    node scripts/secret-scan.mjs \
      --workspace /Users/antony/projects/diy-accounting-limited \
      --report ../private.diyaccounting.co.uk/security/SECRET_SCAN_<date>.md \
-     --scratch <scratchpad>/secret-scan
+     --scratch <scratchpad>/secret-scan \
+     --trufflehog-minutes 15
    ```
 
+
+   trufflehog stops after the minutes given and the report marks that repository partial; a large
+   history (spreadsheets, 1.4 GB) needs the limit.
 2. Read `<scratchpad>/secret-scan/findings.json`. Each entry has the rule, repository, ref, commit,
    path, line, entropy and fingerprint.
 3. Classify each finding as `real key`, `test fixture`, `example` or `false positive`. Use the path

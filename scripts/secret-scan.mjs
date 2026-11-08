@@ -11,7 +11,7 @@
 // other path.
 //
 // Usage: node scripts/secret-scan.mjs --workspace <dir> --report <path> [--classes <json>]
-//        [--repos a,b] [--skip-trufflehog] [--scratch <dir>]
+//        [--repos a,b] [--skip-trufflehog] [--trufflehog-minutes <n>] [--scratch <dir>]
 
 import { spawn, execFile } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -46,7 +46,15 @@ export const WORKSPACE_REPOSITORIES = [
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 function parseArgs(argv) {
-  const options = { workspace: null, report: null, classes: null, repos: WORKSPACE_REPOSITORIES, skipTrufflehog: false, scratch: null };
+  const options = {
+    workspace: null,
+    report: null,
+    classes: null,
+    repos: WORKSPACE_REPOSITORIES,
+    skipTrufflehog: false,
+    scratch: null,
+    trufflehogMinutes: 0,
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--workspace") options.workspace = argv[++index];
@@ -54,6 +62,7 @@ function parseArgs(argv) {
     else if (flag === "--classes") options.classes = argv[++index];
     else if (flag === "--repos") options.repos = argv[++index].split(",");
     else if (flag === "--scratch") options.scratch = argv[++index];
+    else if (flag === "--trufflehog-minutes") options.trufflehogMinutes = Number(argv[++index]);
     else if (flag === "--skip-trufflehog") options.skipTrufflehog = true;
     else throw new Error(`unknown argument ${flag}`);
   }
@@ -61,13 +70,17 @@ function parseArgs(argv) {
   return options;
 }
 
-function spawnToLines(command, args, onLine) {
+function spawnToLines(command, args, onLine, timeoutMs) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "ignore"] });
     const lines = createInterface({ input: child.stdout });
     lines.on("line", onLine);
+    const timer = timeoutMs ? setTimeout(() => child.kill("SIGTERM"), timeoutMs) : null;
     child.on("error", reject);
-    child.on("close", (code) => resolvePromise(code));
+    child.on("close", (code, signal) => {
+      if (timer) clearTimeout(timer);
+      resolvePromise(signal ? "timed out" : code);
+    });
   });
 }
 
@@ -159,7 +172,7 @@ function stageFiles(worktreePath, files, destination) {
   return staged;
 }
 
-async function scanRepository(repository, workspace, scratch, skipTrufflehog) {
+async function scanRepository(repository, workspace, scratch, skipTrufflehog, trufflehogMinutes) {
   const repoPath = join(workspace, repository);
   const ignored = existsSync(join(repoPath, ".gitleaksignore"))
     ? parseIgnoreFile(readFileSync(join(repoPath, ".gitleaksignore"), "utf8"))
@@ -197,11 +210,17 @@ async function scanRepository(repository, workspace, scratch, skipTrufflehog) {
 
   if (!skipTrufflehog) {
     const truffle = [];
-    const code = await spawnToLines("trufflehog", ["git", `file://${repoPath}`, "--no-verification", "--json", "--no-update"], (line) => {
-      const finding = shapeTrufflehogLine(line, { repository });
-      if (finding) truffle.push(finding);
-    });
-    if (code !== 0 && code !== 183) coverage.trufflehog = `exit ${code}`;
+    const code = await spawnToLines(
+      "trufflehog",
+      ["git", `file://${repoPath}`, "--no-verification", "--json", "--no-update"],
+      (line) => {
+        const finding = shapeTrufflehogLine(line, { repository });
+        if (finding) truffle.push(finding);
+      },
+      trufflehogMinutes * 60 * 1000,
+    );
+    if (code === "timed out") coverage.trufflehog = `partial: stopped after ${trufflehogMinutes} minutes`;
+    else if (code !== 0 && code !== 183) coverage.trufflehog = `exit ${code}`;
     const trufflefound = applyRefs(
       truffle,
       await refsContaining(repoPath, new Set(truffle.map((finding) => finding.commit).filter(Boolean))),
@@ -232,7 +251,7 @@ export async function main(argv) {
   const all = [];
   const coverage = [];
   for (const repository of options.repos) {
-    const result = await scanRepository(repository, workspace, scratch, options.skipTrufflehog);
+    const result = await scanRepository(repository, workspace, scratch, options.skipTrufflehog, options.trufflehogMinutes);
     all.push(...result.findings);
     coverage.push(result.coverage);
     console.log(`${repository}: ${result.findings.length} findings`);
