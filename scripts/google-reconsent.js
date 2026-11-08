@@ -238,11 +238,22 @@ export async function mintAccessToken({ fetchImpl, client, refreshToken }) {
   return { accessToken: result.body.access_token, scope: result.body.scope ?? "" };
 }
 
+// Google reports the OpenID Connect scopes profile and email as their full addresses.
+const GRANTED_SCOPE_NAMES = {
+  profile: "https://www.googleapis.com/auth/userinfo.profile",
+  email: "https://www.googleapis.com/auth/userinfo.email",
+};
+
+/** Whether a requested scope is in Google's granted list, under its short or its full name. */
+export function scopeGranted(requested, granted) {
+  return granted.includes(requested) || granted.includes(GRANTED_SCOPE_NAMES[requested]);
+}
+
 /** Mints an access token, requires every scope to be granted, then makes the token's own read. */
 export async function checkRefreshToken({ spec, fetchImpl, client, refreshToken, secrets }) {
   const { accessToken, scope } = await mintAccessToken({ fetchImpl, client, refreshToken });
   const granted = scope.split(" ");
-  const missing = spec.scopes.filter((s) => !granted.includes(s));
+  const missing = spec.scopes.filter((s) => !scopeGranted(s, granted));
   if (missing.length > 0) throw new Error(`The token lacks scopes: ${missing.join(" ")}`);
   await spec.check({ accessToken, fetchImpl, secrets });
 }

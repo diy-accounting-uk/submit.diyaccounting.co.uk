@@ -7,6 +7,7 @@ import { describe, test, expect } from "vitest";
 import crypto from "node:crypto";
 
 import {
+  scopeGranted,
   buildConsentUrl,
   makePkcePair,
   makeLogger,
@@ -296,5 +297,17 @@ describe("the client secret roll", () => {
     const other = JSON.stringify({ installed: { client_id: "other", client_secret: "GOCSPX-other-secret-ffff" } });
     await expect(w.run({ clientJsonRaw: other })).rejects.toMatchObject({ step: "compare-client-id" });
     expect(w.events).not.toContain("write");
+  });
+});
+
+describe("scopeGranted", () => {
+  test("accepts profile and email under the full addresses Google reports", () => {
+    const granted = ["openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"];
+    expect(["openid", "profile", "email"].every((s) => scopeGranted(s, granted))).toBe(true);
+  });
+
+  test("rejects a scope that is not granted under either name", () => {
+    expect(scopeGranted("email", ["openid"])).toBe(false);
+    expect(scopeGranted("https://www.googleapis.com/auth/adwords", ["openid"])).toBe(false);
   });
 });
