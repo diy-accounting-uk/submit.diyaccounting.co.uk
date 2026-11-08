@@ -159,10 +159,17 @@ export function renderReport({ date, findings, coverage, proposedIgnores }) {
       );
     }
     lines.push("");
-    const notes = rows.filter((finding) => finding.note);
-    for (const finding of notes) lines.push(`- \`${cell(finding.path)}:${finding.line}\` ${finding.rule}: ${finding.note}`);
-    if (notes.length) lines.push("");
   }
+  lines.push("## Classification basis", "");
+  const groups = new Map();
+  for (const finding of findings) {
+    if (!finding.note) continue;
+    const key = `${finding.repository} | ${finding.class} | ${finding.rule} | ${finding.note}`;
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+  if (groups.size === 0) lines.push("None.", "");
+  for (const [key, count] of [...groups].sort()) lines.push(`- ${count} x ${key}`);
+  if (groups.size) lines.push("");
   lines.push("## Proposed .gitleaksignore entries", "");
   const entries = [...(proposedIgnores ?? new Map())].filter(([, list]) => list.length);
   if (entries.length === 0) lines.push("None.", "");

@@ -11,7 +11,7 @@
 // other path.
 //
 // Usage: node scripts/secret-scan.mjs --workspace <dir> --report <path> [--classes <json>]
-//        [--repos a,b] [--skip-trufflehog] [--trufflehog-minutes <n>] [--scratch <dir>]
+//        [--repos a,b] [--skip-trufflehog] [--trufflehog-minutes <n>] [--reuse <scratch>] [--scratch <dir>]
 
 import { spawn, execFile } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -63,6 +63,7 @@ function parseArgs(argv) {
     else if (flag === "--repos") options.repos = argv[++index].split(",");
     else if (flag === "--scratch") options.scratch = argv[++index];
     else if (flag === "--trufflehog-minutes") options.trufflehogMinutes = Number(argv[++index]);
+    else if (flag === "--reuse") options.reuse = argv[++index];
     else if (flag === "--skip-trufflehog") options.skipTrufflehog = true;
     else throw new Error(`unknown argument ${flag}`);
   }
@@ -248,20 +249,24 @@ export async function main(argv) {
   const scratch = options.scratch ? resolve(options.scratch) : mkdtempSync(join(tmpdir(), "secret-scan-"));
   mkdirSync(scratch, { recursive: true });
   const classes = options.classes ? JSON.parse(readFileSync(options.classes, "utf8")) : {};
-  const all = [];
-  const coverage = [];
-  for (const repository of options.repos) {
-    const result = await scanRepository(repository, workspace, scratch, options.skipTrufflehog, options.trufflehogMinutes);
-    all.push(...result.findings);
-    coverage.push(result.coverage);
-    console.log(`${repository}: ${result.findings.length} findings`);
+  let all = [];
+  let coverage = [];
+  if (options.reuse) {
+    ({ findings: all, coverage } = JSON.parse(readFileSync(join(resolve(options.reuse), "scan.json"), "utf8")));
+  } else {
+    for (const repository of options.repos) {
+      const result = await scanRepository(repository, workspace, scratch, options.skipTrufflehog, options.trufflehogMinutes);
+      all.push(...result.findings);
+      coverage.push(result.coverage);
+      console.log(`${repository}: ${result.findings.length} findings`);
+    }
+    writeFileSync(join(scratch, "scan.json"), JSON.stringify({ findings: all, coverage }, null, 1));
   }
   const classified = applyClasses(all, classes);
   const date = new Date().toISOString().slice(0, 10);
   writeFileSync(reportPath, renderReport({ date, findings: classified, coverage, proposedIgnores: proposedIgnores(classified) }));
   writeFileSync(join(scratch, "findings.json"), JSON.stringify(classified, null, 1));
   console.log(`report: ${reportPath}`);
-  console.log(`findings json: ${join(scratch, "findings.json")}`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
