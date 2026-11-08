@@ -170,7 +170,9 @@ describe("nova agent loop", () => {
     const input = { what_broke: "a", still_broken: "b", next_action: "c", remedy: "none", alarm_cleared: false };
     const { client } = stubClient(toolUseReply("submit_answer", input));
     const { result } = await run(client, { finalSchema: loadFinalSchema("prompts/alarm-triage-answer.json") });
-    expect(result.result).toBe("## What broke?\n\na\n\n## Is it still broken?\n\nb\n\n## What is the next action?\n\nc\n\nremedy: none");
+    expect(result.result).toBe(
+      "## What broke?\n\na\n\n## Is it still broken?\n\nYes, it is still broken. b\n\n## What is the next action?\n\nc\n\nremedy: none",
+    );
   });
 
   it("returns a refused submit_answer to the model, which can try again", async () => {

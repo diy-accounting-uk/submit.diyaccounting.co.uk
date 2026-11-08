@@ -166,6 +166,15 @@ describe("alarm answer parsing", () => {
     expect(stillBrokenMatches("The alarm was set by hand, so it is not currently broken.", false)).toBe(true);
   });
 
+  it("judges an answer that opens with a plain Yes or No by that opening word", () => {
+    const cleared = "No, it has cleared. The errors have not recurred since 10:00.";
+    const broken = "Yes, it is still broken. It has not recovered.";
+    expect(stillBrokenMatches(cleared, false)).toBe(true);
+    expect(stillBrokenMatches(cleared, true)).toBe(false);
+    expect(stillBrokenMatches(broken, true)).toBe(true);
+    expect(stillBrokenMatches(broken, false)).toBe(false);
+  });
+
   it("does not count a cleared word under a negation as a cleared alarm", () => {
     const text = "The alarm is currently in ALARM state. No evidence in the data indicates the alarm has cleared.";
     expect(stillBrokenMatches(text, true)).toBe(true);

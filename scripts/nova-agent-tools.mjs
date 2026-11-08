@@ -173,10 +173,21 @@ export function toolSpecs(toolNames, finalSchema) {
  */
 export function loadFinalSchema(schemaPath) {
   const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
-  const rendered = (schema.render ?? []).map((entry) => entry.property).sort();
+  const entries = schema.render ?? [];
+  const rendered = entries.map((entry) => entry.property).sort();
   const defined = Object.keys(schema.properties ?? {}).sort();
   if (typeof schema.description !== "string" || !Array.isArray(schema.required) || rendered.join() !== defined.join()) {
     throw new Error("the final schema needs a description, required, and one render entry for each property");
+  }
+  for (const entry of entries) {
+    if (entry.lead === undefined) continue;
+    const { from, true: whenTrue, false: whenFalse } = entry.lead;
+    if (schema.properties?.[from]?.type !== "boolean") {
+      throw new Error(`the lead of the render entry ${entry.property} names ${from}, which is not a boolean property`);
+    }
+    if (typeof whenTrue !== "string" || typeof whenFalse !== "string" || !entry.heading) {
+      throw new Error(`the lead of the render entry ${entry.property} needs a heading and a true and a false sentence`);
+    }
   }
   return schema;
 }
@@ -186,7 +197,7 @@ function stripOuterFence(text) {
   return fenced ? fenced[1] : text;
 }
 
-function renderEntry(entry, value) {
+function renderEntry(entry, value, input) {
   if (entry.fence) {
     const body = stripOuterFence(value);
     if (/^```/m.test(body)) refuse(`the property ${entry.property} holds a code fence line`);
@@ -196,6 +207,7 @@ function renderEntry(entry, value) {
     if (value.includes("\n")) refuse(`the property ${entry.property} must be one line`);
     return `${entry.prefix}${value}`;
   }
+  if (entry.lead) return `${entry.heading}\n\n${input[entry.lead.from] === true ? entry.lead.true : entry.lead.false} ${value}`;
   return entry.heading ? `${entry.heading}\n\n${value}` : value;
 }
 
@@ -217,7 +229,7 @@ export function renderAnswer(finalSchema, input) {
     for (const entry of finalSchema.render) {
       if (entry.hidden === true) continue;
       const value = stripThinking(input[entry.property] ?? "");
-      if (value.length > 0) parts.push(renderEntry(entry, value));
+      if (value.length > 0) parts.push(renderEntry(entry, value, input));
       else if (finalSchema.required.includes(entry.property)) refuse(`the required property ${entry.property} is empty`);
     }
     return { status: "ok", text: parts.join("\n\n") };
