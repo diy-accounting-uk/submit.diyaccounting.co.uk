@@ -18,6 +18,7 @@ const textReply = (text, stopReason = "end_turn") => ({
   usage: { inputTokens: 100, outputTokens: 10 },
   output: { message: { role: "assistant", content: [{ text }] } },
 });
+const schemaAnswer = { what_broke: "a", still_broken: "b", next_action: "c", remedy: "none" };
 const submit = (answer = "Done.") => toolUseReply("submit_answer", { answer });
 
 function stubClient(...replies) {
@@ -128,6 +129,34 @@ describe("nova agent loop", () => {
     const { client } = stubClient(textReply("Plain answer."));
     const { result } = await run(client, { finalSchema: loadFinalSchema("prompts/alarm-triage-answer.json") });
     expect(result).toMatchObject({ subtype: "error_during_execution", is_error: true, result: "", stop_reason: "no_answer" });
+  });
+
+  it("asks once for submit_answer after a text-only turn and takes the answer", async () => {
+    const { client, requests } = stubClient(textReply("Here is my analysis."), toolUseReply("submit_answer", schemaAnswer));
+    const { result, lines } = await run(client, { finalSchema: loadFinalSchema("prompts/alarm-triage-answer.json") });
+    expect(result).toMatchObject({ subtype: "success", stop_reason: "submit_answer", num_turns: 2 });
+    expect(lines.filter((line) => line.includes("nudge"))).toEqual(["turn 1 nudge submit_answer"]);
+    expect(requests[1].messages.at(-1)).toEqual({ role: "user", content: [{ text: "Call submit_answer now with your answer." }] });
+  });
+
+  it("ends as no_answer when a second turn is text only", async () => {
+    const { client, send } = stubClient(textReply("One."), textReply("Two."), toolUseReply("submit_answer", schemaAnswer));
+    const { result, lines } = await run(client, { finalSchema: loadFinalSchema("prompts/alarm-triage-answer.json") });
+    expect(result).toMatchObject({ subtype: "error_during_execution", stop_reason: "no_answer", num_turns: 2 });
+    expect(lines.filter((line) => line.includes("nudge"))).toHaveLength(1);
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts the nudge against the turn cap", async () => {
+    const { client } = stubClient(textReply("One."), toolUseReply("submit_answer", schemaAnswer));
+    const { result } = await run(client, { finalSchema: loadFinalSchema("prompts/alarm-triage-answer.json"), maxTurns: 1 });
+    expect(result).toMatchObject({ subtype: "error_max_turns", stop_reason: "max_turns" });
+  });
+
+  it("never nudges a run with no final schema", async () => {
+    const { client } = stubClient(textReply("Plain answer."));
+    const { lines } = await run(client);
+    expect(lines.some((line) => line.includes("nudge"))).toBe(false);
   });
 
   it("stops without an answer on an empty reply", async () => {
