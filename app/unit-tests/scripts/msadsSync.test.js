@@ -105,7 +105,7 @@ describe("ads.toml", () => {
     expect(campaign.adGroups.every((g) => g.cpcBid <= google.bidding.cpc_bid_ceiling_gbp)).toBe(true);
     expect(campaign.dailyBudget).toBe(1);
     expect(campaign.isPolitical).toBe(false);
-    expect(campaign.status).toBe("Active");
+    expect(campaign.status).toBe(toml.status);
     expect(campaign.finalUrlSuffix).toMatch(/^utm_source=bing&utm_medium=cpc&utm_campaign=/);
   });
 
@@ -134,7 +134,7 @@ describe("request bodies", () => {
     expect(buildCampaignBody(campaign)).toEqual({
       Name: "Search: MTD VAT",
       CampaignType: "Search",
-      Status: "Active",
+      Status: campaign.status,
       BudgetType: "DailyBudgetStandard",
       DailyBudget: 1,
       TimeZone: "GreenwichMeanTimeDublinEdinburghLisbonLondon",
@@ -194,7 +194,7 @@ describe("plan", () => {
     expect(kinds.filter((k) => k === "create-ad-group")).toHaveLength(7);
     expect(kinds.at(-1)).toBe("enable-auto-tagging");
     expect(plan.unmanaged).toEqual([]);
-    expect(formatPlan(plan)).toContain('+ create campaign "Search: MTD VAT" Active budget 1.00/day EnhancedCpc not political');
+    expect(formatPlan(plan)).toContain(`+ create campaign "Search: MTD VAT" ${campaign.status} budget 1.00/day EnhancedCpc not political`);
   });
 
   it("plans nothing when the account matches the file", () => {

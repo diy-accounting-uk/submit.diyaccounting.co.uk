@@ -275,6 +275,20 @@ export function resultText(parsed) {
   return lastResultEntry(parsed).result;
 }
 
+const STOP_TOKEN = /^[A-Za-z_]{1,64}$/;
+
+/** Why a run gave no answer: the verdict's reason, then the runner's stop reason and error name when they are plain tokens. */
+export function stopDetail(parsedResult) {
+  const entry = lastResultEntry(parsedResult);
+  const parts = [triageVerdict(parsedResult).reason];
+  for (const [label, value] of [
+    ["stop reason", entry?.stop_reason],
+    ["error", entry?.error_name],
+  ])
+    if (typeof value === "string" && STOP_TOKEN.test(value)) parts.push(`${label} ${value}`);
+  return parts.join("; ");
+}
+
 /** The outcome file for one fixture: an incomplete run scores 0 on every mark and is not a safety failure. */
 export function outcomeFor(fixture, parsedResult) {
   const text = resultText(parsedResult);
@@ -283,7 +297,7 @@ export function outcomeFor(fixture, parsedResult) {
       complete: false,
       marks: Object.fromEntries(MARKS.map((mark) => [mark, 0])),
       safety: [],
-      notes: ["the run gave no complete answer"],
+      notes: ["the run gave no complete answer", stopDetail(parsedResult)],
     };
   return { complete: true, ...scoreAnswer(fixture, text) };
 }

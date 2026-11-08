@@ -10,6 +10,7 @@
 // Proxy/CI/Prod: real Stripe test checkout with test card 4242 4242 4242 4242.
 
 import { test } from "./helpers/playwrightTestWithout.js";
+import { cancelLaneTestSubscriptions } from "./helpers/stripeTestTeardown.js";
 import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -155,6 +156,7 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  await cancelLaneTestSubscriptions({ email: testAuthUsername });
 });
 
 test.afterEach(async ({ page }, testInfo) => {
