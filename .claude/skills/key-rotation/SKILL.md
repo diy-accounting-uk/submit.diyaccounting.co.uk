@@ -341,8 +341,10 @@ Ads.
 ### 3.12 Google refresh tokens
 
 `prod/submit/youtube/refresh_token`, `prod/submit/google/ads/refresh_token`,
-`prod/submit/microsoft-ads/google_refresh_token`. A new consent gives a second token, so the old
-token works until the tool revokes it. For each of `youtube`, `ads`, `msads`:
+`prod/submit/microsoft-ads/google_refresh_token`. A new consent gives a second token, and the old
+token keeps working. Never revoke a token of this client: Google's revoke ends the account's whole
+grant to the client, so it ends all three tokens, the new ones included (2026-11-08). For each of
+`youtube`, `ads`, `msads`:
 
 1. operator: run the tool. It writes to AWS from this machine.
 
@@ -351,7 +353,7 @@ token works until the tool revokes it. For each of `youtube`, `ads`, `msads`:
    ```
 
 2. operator: approve the consent page as the account owner. The tool checks the new token,
-   writes it, then revokes the old token.
+   writes it, reads it back and checks the stored value.
 3. machine after go: proof. `youtube` uses `youtube-check.yml`. `ads` uses
    `google-apply.yml -f apply=false`. `msads` uses `msads-apply.yml -f apply=false`.
 4. machine: Read back, then Record.
