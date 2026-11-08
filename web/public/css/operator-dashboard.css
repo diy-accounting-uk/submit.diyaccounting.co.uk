@@ -200,7 +200,7 @@ table.observations thead tr.last-updated th.last-updated-cell,
 
 .header-checks-table td:nth-child(1),
 .header-checks-table td:nth-child(2),
-.header-checks-table td:nth-child(4),
+.header-checks-table td:nth-child(3),
 .header-checks-table td:nth-child(5) {
   white-space: nowrap;
 }

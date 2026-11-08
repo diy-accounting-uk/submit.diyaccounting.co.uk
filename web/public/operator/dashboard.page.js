@@ -745,9 +745,9 @@ function renderHeaderChecks(integrations) {
     row.dataset.result = check.result;
     [
       check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day,
+      check.result,
       check.api,
       check.connectionMethod,
-      check.result,
       check.hmrcCode,
       check.message || NOT_APPLICABLE,
       check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE,

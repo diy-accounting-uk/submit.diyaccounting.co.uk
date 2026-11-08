@@ -1160,15 +1160,15 @@ test.describe("Operator Dashboard", () => {
     await expect(checks).toHaveCount(2);
     await expect(checks.nth(0).locator("td")).toHaveText([
       "4 Nov 2026, 09:16",
+      "pass",
       "GET /organisations/vat/{vrn}/obligations",
       "WEB_APP_VIA_SERVER",
-      "pass",
       "VALID_HEADERS",
       "n/a",
       "n/a",
     ]);
     await expect(checks.nth(1)).toHaveAttribute("data-result", "fail");
-    await expect(checks.nth(1).locator("td").nth(3)).toHaveText("fail");
+    await expect(checks.nth(1).locator("td").nth(1)).toHaveText("fail");
     await expect(checks.nth(1).locator("td").nth(5)).toHaveText("Header is missing or its value does not match the expected format");
     await expect(checks.nth(1).locator("td").nth(6)).toHaveText("Gov-Client-Device-ID, Gov-Vendor-Version");
     await expect(page.locator("#integrationsHeaderChecksPanelEmpty")).toBeHidden();
