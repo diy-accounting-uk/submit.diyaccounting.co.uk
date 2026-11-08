@@ -318,6 +318,7 @@ export const conversionToPaidObjective = {
       dayColumn: "month",
       valueExpr: "held_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -329,6 +330,7 @@ export const conversionToPaidObjective = {
       dayColumn: "month",
       valueExpr: "payable_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -340,6 +342,7 @@ export const conversionToPaidObjective = {
       dayColumn: "month",
       valueExpr: "paid_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -351,6 +354,7 @@ export const conversionToPaidObjective = {
       dayColumn: "month",
       valueExpr: "reversed_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -363,6 +367,7 @@ export const conversionToPaidObjective = {
       dayColumn: "day",
       valueExpr: "earned_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       where: "cost_group = 'referral-credit'",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
@@ -376,6 +381,7 @@ export const conversionToPaidObjective = {
       dayColumn: "day",
       valueExpr: "earned_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       where: "cost_group = 'affiliate-cash'",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
@@ -389,6 +395,7 @@ export const conversionToPaidObjective = {
       dayColumn: "day",
       valueExpr: "earned_pence / 100.0",
       aggregation: "sum",
+      ledger: true,
       where: "cost_group = 'family-cash'",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },

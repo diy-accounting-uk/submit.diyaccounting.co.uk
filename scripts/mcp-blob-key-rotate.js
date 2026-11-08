@@ -4,11 +4,11 @@
 
 // @capability OPS-168 Roll the MCP blob key without breaking sealed data
 // - **Use when:** the key that signs MCP OAuth blobs and seals MCP codes and HMRC grants must change, on a schedule or after exposure.
-// - **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key.
-// - **Run:** `gh workflow run mcp-blob-key-rotate.yml -f apply=<true|false>`
-// - **Entry:** `scripts/mcp-blob-key-rotate.js:main`; `app/lib/mcpBlobKey.js:parseBlobKeyRegistry`
-// - **Files:** .github/workflows/mcp-blob-key-rotate.yml, scripts/mcp-blob-key-rotate.js, app/lib/mcpBlobKey.js, app/lib/mcpOauthBlob.js, app/lib/codesSeal.js, app/unit-tests/scripts/mcpBlobKeyRotate.test.js, app/unit-tests/lib/mcpBlobKey.test.js
-// - **Keywords:** mcp blob key, key roll, key registry, key version, sealed grant, oauth blob, rotation schedule
+// - **Does:** mcp-blob-key-rotate.js reads one environment's `{env}/submit/mcp/oauth-blob-key` secret as a registry, a raw value counting as version v1. It adds a random key as the next version, makes it current and keeps every earlier version, so blobs and sealed values made before the roll still open. It plans by default and writes only with --apply. It never prints a key. With --prove-refresh, on ci only, it rolls the key between two reads of an MCP HMRC grant by one warm Lambda. It then reads that Lambda's log for the forced read of the keys.
+// - **Run:** `gh workflow run mcp-blob-key-rotate.yml -f environment-name=<ci|prod> -f apply=<true|false>`; `gh workflow run mcp-blob-key-rotate.yml -f environment-name=ci -f prove-refresh=true`
+// - **Entry:** `scripts/mcp-blob-key-rotate.js:main`; `scripts/mcp-blob-key-rotate.js:proveRefresh`; `app/lib/mcpBlobKey.js:parseBlobKeyRegistry`; `app/lib/codesSeal.js:openFor`
+// - **Files:** .github/workflows/mcp-blob-key-rotate.yml, scripts/mcp-blob-key-rotate.js, app/lib/mcpBlobKey.js, app/lib/mcpOauthBlob.js, app/lib/codesSeal.js, scripts/ensure-cognito-test-user.js, app/unit-tests/scripts/mcpBlobKeyRotate.test.js, app/unit-tests/lib/mcpBlobKey.test.js
+// - **Keywords:** mcp blob key, key roll, key registry, key version, sealed grant, oauth blob, rotation schedule, refresh proof, warm container, stale key cache
 // - **Related:** OPS-43, OPS-45, OPS-165
 // @end-capability
 
@@ -26,24 +26,52 @@
 // mcp-blob-key-rotate.yml runs this per environment: plan by default, --apply to write. Never
 // prints a key.
 //
+// --prove-refresh rolls the key (it implies --apply) between two reads of an MCP HMRC grant on a
+// deployed ci Lambda, and checks the Lambda's log for the forced key read. It refuses any
+// environment but ci. The grant is a real item in the sessions table, created through the API for
+// a test user and removed at the end; its sealed value holds no real token.
+//
 // Usage:
 //   ENVIRONMENT_NAME=ci node scripts/mcp-blob-key-rotate.js [--apply]
+//   ENVIRONMENT_NAME=ci SUBMIT_BASE_URL=https://ci-submit.diyaccounting.co.uk PROOF_AUTH_PASSWORD=... \
+//     node scripts/mcp-blob-key-rotate.js --prove-refresh
 
 import crypto from "node:crypto";
 import { parseBlobKeyRegistry } from "../app/lib/mcpBlobKey.js";
+import { sealFor, HMRC_GRANT_PURPOSE, KEY_REFRESH_LOG_MESSAGE } from "../app/lib/codesSeal.js";
+import { FORCE_REFRESH_MIN_MS, SECRET_TTL_MS } from "../app/lib/cachedSecret.js";
 
 const SECRET_NAME_SUFFIX = "submit/mcp/oauth-blob-key";
+const PROOF_LANE = "mcpBlobKeyProof";
+const GRANTS_PATH = "/api/v1/mcp/hmrc-grants";
+const GRANT_FUNCTION_NAME_PATTERN = "-app-mcp-hmrc-grant";
+const FAR_FUTURE_SECONDS = 4_000_000_000;
+const EVIDENCE_POLL_MS = 10_000;
+const EVIDENCE_TOTAL_WAIT_MS = 180_000;
+const EVIDENCE_POLLS = EVIDENCE_TOTAL_WAIT_MS / EVIDENCE_POLL_MS;
+// Equals MCP_HMRC_GRANT_RESERVED_CONCURRENCY in McpStack.java; the function has no provisioned
+// concurrency, so this many containers is the most that can run, and a larger batch is throttled.
+const GRANT_ROUTE_MAX_CONTAINERS = 5;
+const READS_PER_CONTAINER_TO_REACH_EVERY_ONE = 3;
+const READS_PER_ROUND = GRANT_ROUTE_MAX_CONTAINERS * READS_PER_CONTAINER_TO_REACH_EVERY_ONE;
 
 export function parseArgs(argv) {
-  const opts = { apply: false };
+  const opts = { apply: false, proveRefresh: false };
   for (const arg of argv) {
     if (arg === "--apply") opts.apply = true;
-    else if (arg === "--help") {
-      console.log("Usage: ENVIRONMENT_NAME=ci|prod node scripts/mcp-blob-key-rotate.js [--apply]");
+    else if (arg === "--prove-refresh") {
+      opts.proveRefresh = true;
+      opts.apply = true;
+    } else if (arg === "--help") {
+      console.log("Usage: ENVIRONMENT_NAME=ci|prod node scripts/mcp-blob-key-rotate.js [--apply | --prove-refresh]");
       process.exit(0);
     } else throw new Error(`Unknown argument "${arg}"`);
   }
   return opts;
+}
+
+export function assertProofAllowed(envName) {
+  if (envName !== "ci") throw new Error(`--prove-refresh runs on ci only, not on "${envName}"`);
 }
 
 /**
@@ -66,14 +94,230 @@ export function buildRotatedRegistry(registry, nextVersion, newKey) {
   return { current: nextVersion, versions: { ...registry.versions, [nextVersion]: newKey } };
 }
 
+async function writeRotatedRegistry(client, commands, secretName, rotated) {
+  await client.send(new commands.UpdateSecretCommand({ SecretId: secretName, SecretString: JSON.stringify(rotated) }));
+  await client.send(
+    new commands.TagResourceCommand({
+      SecretId: secretName,
+      Tags: [{ Key: "rotated-at", Value: new Date().toISOString().slice(0, 10) }],
+    }),
+  );
+}
+
+/**
+ * The refresh proof, as a sequence over injected steps. A round of parallel grant reads makes
+ * every warm container of the route load the key registry. The roll then adds a version. A value
+ * sealed under that version is read in a second round, after the forced-read floor and inside the
+ * cache life. A container that holds the old registry fails its first open, reads the keys again
+ * and logs the line; a container that never read the keys loads them fresh and logs nothing.
+ *
+ * @param {object} steps
+ * @param {() => Promise<string>} steps.createGrant - creates a grant through the API, answers its id
+ * @param {(grantId: string) => Promise<string>} steps.seal - seals a value for the grant under the current version
+ * @param {(grantId: string, sealed: string) => Promise<void>} steps.place - stores the sealed value on the grant, granted
+ * @param {(grantId: string) => Promise<{status: number}>} steps.read - reads the grant through the API
+ * @param {() => Promise<void>} steps.roll - adds and activates a key version
+ * @param {(sinceMs: number, expected: {sealedVersion: string, cachedCurrent: string}) => Promise<object|null>} steps.findEvidence
+ * @param {(grantId: string) => Promise<void>} steps.remove - deletes the grant item
+ * @param {(ms: number) => Promise<void>} steps.sleep
+ * @param {() => number} steps.now - epoch milliseconds
+ * @returns {Promise<{grantId: string, cachedCurrent: string, sealedVersion: string, evidence: object}>}
+ */
+export async function proveRefresh(steps) {
+  const grantId = await steps.createGrant();
+  try {
+    const sealedBefore = await steps.seal(grantId);
+    await steps.place(grantId, sealedBefore);
+    const answeredBefore = await readRound(steps, grantId, "before the roll");
+    const loadedAt = steps.now();
+    const cachedCurrent = sealedBefore.split(".")[0];
+
+    await steps.roll();
+
+    const floorWait = FORCE_REFRESH_MIN_MS + 2000 - (steps.now() - loadedAt);
+    if (floorWait > 0) await steps.sleep(floorWait);
+    if (steps.now() - loadedAt >= SECRET_TTL_MS - 30_000) {
+      throw new Error("The key cache would have expired before the second read; run the proof again");
+    }
+
+    const sealedAfter = await steps.seal(grantId);
+    const sealedVersion = sealedAfter.split(".")[0];
+    if (sealedVersion === cachedCurrent) throw new Error(`The roll left the current version at ${cachedCurrent}`);
+    await steps.place(grantId, sealedAfter);
+    const sinceMs = steps.now() - 5000;
+    const answeredAfter = await readRound(steps, grantId, "after the roll");
+
+    const evidence = await steps.findEvidence(sinceMs, { sealedVersion, cachedCurrent });
+    if (!evidence) {
+      throw new Error(
+        `No "${KEY_REFRESH_LOG_MESSAGE}" line for ${HMRC_GRANT_PURPOSE} (${cachedCurrent} to ${sealedVersion}) in the Lambda log. ` +
+          `${answeredBefore} reads answered 200 before the roll and ${answeredAfter} after it. ` +
+          "No warm container held the old keys when the reads came; run the proof again.",
+      );
+    }
+    return { grantId, cachedCurrent, sealedVersion, evidence, answeredBefore, answeredAfter };
+  } finally {
+    await steps.remove(grantId);
+  }
+}
+
+async function readRound(steps, grantId, when) {
+  let answered200 = 0;
+  for (let done = 0; done < READS_PER_ROUND; done += GRANT_ROUTE_MAX_CONTAINERS) {
+    const batch = await Promise.all(Array.from({ length: GRANT_ROUTE_MAX_CONTAINERS }, () => steps.read(grantId)));
+    for (const { status } of batch) {
+      if (status !== 200) throw new Error(`A grant read ${when} answered ${status}, expected 200 (${answered200} answered 200 first)`);
+      answered200 += 1;
+    }
+  }
+  return answered200;
+}
+
+/**
+ * The grant id in the answer to the create-grant request. The handler answers 201 with the grant
+ * fields at the top level of the body.
+ *
+ * @param {{status: number, body: object}} created
+ * @returns {string}
+ */
+export function grantIdFromCreated(created) {
+  if (created.status !== 201) throw new Error(`Creating the grant answered ${created.status}, expected 201`);
+  const grantId = created.body?.grantId;
+  if (typeof grantId !== "string" || grantId.length === 0) {
+    const keys = Object.keys(created.body ?? {}).join(", ") || "none";
+    throw new Error(`Creating the grant answered 201 with no grantId; the body has these top-level keys: ${keys}`);
+  }
+  return grantId;
+}
+
+async function liveProofSteps({ envName, secretName, secretsClient, commands, registryRef }) {
+  const baseUrl = (process.env.SUBMIT_BASE_URL ?? "").replace(/\/$/, "");
+  const password = process.env.PROOF_AUTH_PASSWORD;
+  if (!baseUrl || !password) throw new Error("SUBMIT_BASE_URL and PROOF_AUTH_PASSWORD are required for --prove-refresh");
+
+  const { CloudFormationClient, DescribeStacksCommand } = await import("@aws-sdk/client-cloudformation");
+  const { CognitoIdentityProviderClient } = await import("@aws-sdk/client-cognito-identity-provider");
+  const { DynamoDBClient, UpdateItemCommand, DeleteItemCommand } = await import("@aws-sdk/client-dynamodb");
+  const { CloudWatchLogsClient, DescribeLogGroupsCommand, FilterLogEventsCommand } = await import("@aws-sdk/client-cloudwatch-logs");
+  const { logInAndAnswerChallenge, durableTestUserEmail, totpSecretName } = await import("./ensure-cognito-test-user.js");
+
+  const stack = (await new CloudFormationClient({}).send(new DescribeStacksCommand({ StackName: `${envName}-env-IdentityStack` })))
+    .Stacks?.[0];
+  const userPoolClientId = stack?.Outputs?.find((output) => output.OutputKey === "UserPoolClientId")?.OutputValue;
+  if (!userPoolClientId) throw new Error(`No UserPoolClientId output on ${envName}-env-IdentityStack`);
+  const signedIn = await logInAndAnswerChallenge(new CognitoIdentityProviderClient({}), secretsClient, {
+    userPoolClientId,
+    testEmail: durableTestUserEmail(PROOF_LANE),
+    testPassword: password,
+    secretName: totpSecretName(envName, PROOF_LANE),
+  });
+  if (!signedIn.accessToken) throw new Error("The proof user did not sign in");
+
+  const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const logs = new CloudWatchLogsClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const tableName = `${envName}-env-mcp-sessions`;
+  const itemKey = (grantId) => ({ sessionId: { S: `hmrc-grant:${grantId}` } });
+  const api = async (method, path, body) => {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${signedIn.accessToken}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { status: response.status, body: await response.json().catch(() => ({})) };
+  };
+
+  return {
+    createGrant: async () => {
+      const created = await api("POST", GRANTS_PATH, { services: ["vat"], hmrcAccount: "synthetic" });
+      return grantIdFromCreated(created);
+    },
+    seal: (grantId) => {
+      process.env.MCP_OAUTH_BLOB_KEY = JSON.stringify(registryRef.current);
+      return sealFor(HMRC_GRANT_PURPOSE, { accessToken: "proof-not-a-token", refreshToken: null }, grantId);
+    },
+    place: async (grantId, sealed) => {
+      await dynamo.send(
+        new UpdateItemCommand({
+          TableName: tableName,
+          Key: itemKey(grantId),
+          UpdateExpression: "SET sealed = :sealed, accessExpiresAt = :expires, #state = :granted",
+          ExpressionAttributeNames: { "#state": "state" },
+          ExpressionAttributeValues: {
+            ":sealed": { S: sealed },
+            ":expires": { N: String(FAR_FUTURE_SECONDS) },
+            ":granted": { S: "granted" },
+          },
+          ConditionExpression: "attribute_exists(sessionId)",
+        }),
+      );
+    },
+    read: (grantId) => api("GET", `${GRANTS_PATH}/${grantId}`),
+    roll: async () => {
+      const { nextVersion, registry } = planNextVersion(JSON.stringify(registryRef.current));
+      const rotated = buildRotatedRegistry(registry, nextVersion, crypto.randomBytes(48).toString("base64url"));
+      await writeRotatedRegistry(registryRef.client, commands, secretName, rotated);
+      registryRef.current = rotated;
+      console.log(`Rolled. Current version is now ${nextVersion}.`);
+    },
+    findEvidence: async (sinceMs, expected) => {
+      const groups = [];
+      let nextToken;
+      do {
+        const page = await logs.send(new DescribeLogGroupsCommand({ logGroupNamePattern: GRANT_FUNCTION_NAME_PATTERN, nextToken }));
+        groups.push(...(page.logGroups ?? []).map((group) => group.logGroupName));
+        nextToken = page.nextToken;
+      } while (nextToken);
+      if (groups.length === 0) throw new Error(`No log group matches "${GRANT_FUNCTION_NAME_PATTERN}", so the proof has no log to search`);
+      for (let poll = 0; poll < EVIDENCE_POLLS; poll += 1) {
+        for (const logGroupName of groups) {
+          const found = await logs.send(
+            new FilterLogEventsCommand({ logGroupName, startTime: sinceMs, filterPattern: `"${KEY_REFRESH_LOG_MESSAGE}"` }),
+          );
+          for (const event of found.events ?? []) {
+            const line = parseLogLine(event.message);
+            if (isRefreshEvidence(line, expected)) return { logGroupName, ...line };
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, EVIDENCE_POLL_MS));
+      }
+      return null;
+    },
+    remove: async (grantId) => {
+      await dynamo.send(new DeleteItemCommand({ TableName: tableName, Key: itemKey(grantId) }));
+    },
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    now: () => Date.now(),
+  };
+}
+
+export function parseLogLine(message) {
+  try {
+    return JSON.parse(message);
+  } catch {
+    return null;
+  }
+}
+
+export function isRefreshEvidence(line, { sealedVersion, cachedCurrent }) {
+  return (
+    line?.message === KEY_REFRESH_LOG_MESSAGE &&
+    line.purpose === HMRC_GRANT_PURPOSE &&
+    line.sealedVersion === sealedVersion &&
+    line.cachedCurrent === cachedCurrent &&
+    line.keysChanged === true
+  );
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const envName = process.env.ENVIRONMENT_NAME;
   if (!envName) throw new Error("ENVIRONMENT_NAME is required (e.g., 'ci' or 'prod')");
+  if (opts.proveRefresh) assertProofAllowed(envName);
   const secretName = `${envName}/${SECRET_NAME_SUFFIX}`;
 
   const { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, TagResourceCommand } =
     await import("@aws-sdk/client-secrets-manager");
+  const commands = { UpdateSecretCommand, TagResourceCommand };
   const client = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
   const current = await client.send(new GetSecretValueCommand({ SecretId: secretName }));
@@ -91,16 +335,21 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
+  if (opts.proveRefresh) {
+    const registryRef = { current: registry, client };
+    const steps = await liveProofSteps({ envName, secretName, secretsClient: client, commands, registryRef });
+    const proof = await proveRefresh(steps);
+    console.log(
+      `Proved on ${proof.evidence.logGroupName}: a value sealed under ${proof.sealedVersion} opened in a container that held ${proof.cachedCurrent}.`,
+    );
+    console.log(`Log line: ${KEY_REFRESH_LOG_MESSAGE} (purpose ${HMRC_GRANT_PURPOSE}, keysChanged true).`);
+    return;
+  }
+
   const newKey = crypto.randomBytes(48).toString("base64url");
   const rotated = buildRotatedRegistry(registry, nextVersion, newKey);
 
-  await client.send(new UpdateSecretCommand({ SecretId: secretName, SecretString: JSON.stringify(rotated) }));
-  await client.send(
-    new TagResourceCommand({
-      SecretId: secretName,
-      Tags: [{ Key: "rotated-at", Value: new Date().toISOString().slice(0, 10) }],
-    }),
-  );
+  await writeRotatedRegistry(client, commands, secretName, rotated);
 
   console.log(`Rolled. Current version is now ${nextVersion}. Earlier versions stay in the registry`);
   console.log("so blobs and sealed values made under them still open.");

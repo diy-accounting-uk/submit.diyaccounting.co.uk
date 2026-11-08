@@ -553,6 +553,9 @@ function parseArgs(argv) {
  * @returns {Promise<{entries: object[], allPass: boolean}>}
  */
 export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
+  if (process.env.COMPANIES_HOUSE_GATEWAY_TEST !== "true") {
+    throw new Error('COMPANIES_HOUSE_GATEWAY_TEST must be "true": without it a filing goes to the live gateway');
+  }
   const selected = caseName ? cases.filter((caseDef) => caseDef.name === caseName) : cases;
   if (caseName && selected.length === 0) {
     throw new Error(`No case named "${caseName}" in the fixture`);
@@ -562,7 +565,7 @@ export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
   const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
 
   const { presenterId, presenterCode } = await resolvePresenterCredentials();
-  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  const gatewayTest = true;
   const context = { presenterId, presenterCode, gatewayTest, packageReference, sleepFn };
 
   // Cases run one at a time, not concurrently: allocateSubmissionNumber()'s atomic counter and

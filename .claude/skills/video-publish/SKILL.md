@@ -18,6 +18,11 @@ description: Publish the recorded product videos to the DIY Accounting Submit Yo
 
 # video-publish — from a video-capture run to the YouTube channel
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Channel: https://www.youtube.com/@DIYAccountingSubmit. Recordings come from
 `video-capture.yml` (skill `site-video-capture`); this skill takes them from there to the
 channel. The source of truth for what is published is `videos/publish.json`; the script is
@@ -72,8 +77,9 @@ account that owns the channel. The section is **Google Auth Platform** in the le
    App name `DIY Accounting Submit`, User support email: the operator's address, **Next**;
    Audience **External**, **Next**; Contact information: the operator's address, **Next**;
    agree, **Continue**, **Create**.
-2. **Audience**: publishing status stays **Testing**. Under **Test users**, **Add users**, the
-   operator's own Google account, **Save**.
+2. **Audience**: under **Test users**, **Add users**, the operator's own Google account,
+   **Save**. The stored refresh tokens have outlived 7 days, which a Testing app's tokens do not,
+   so read the publishing status on this page and do not assume it.
 3. **Data Access**: **Add or remove scopes**, filter `youtube`, tick
    `.../auth/youtube.upload` and `.../auth/youtube.force-ssl`, **Update**, then **Save**.
 4. **Clients**: **Create client**. Application type **Desktop app**, Name `youtube-upload`,
@@ -102,9 +108,9 @@ npm run video:publish -- --check
 ```
 
 With no stored refresh token this opens the consent page in the operator's browser (it also
-prints the URL); the operator approves as the channel owner. In Testing status Google shows
-an "unverified app" screen for a sensitive scope; the operator continues through it because
-they are the listed test user. The refresh token is stored as
+prints the URL); the operator approves as the channel owner. Google can show
+an "unverified app" screen for a sensitive scope; the operator continues through it as the
+listed test user. The refresh token is stored as
 `prod/submit/youtube/refresh_token` (an AWS write the script announces). `--check` then
 prints the channel title and uploads nothing. Every later run reads the stored token and
 never prompts.

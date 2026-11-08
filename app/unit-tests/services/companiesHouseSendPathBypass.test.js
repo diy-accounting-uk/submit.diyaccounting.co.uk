@@ -26,6 +26,7 @@ const COMPANIES_HOUSE_SENDS = [
   { file: "app/services/companiesHouseFilingApi.js", sends: 1 },
   { file: "app/services/companiesHouseXmlGateway.js", sends: 1 },
   { file: "app/functions/companies-house/companiesHouseTokenPost.js", sends: 1 },
+  { file: "app/lib/trustedEvents/companiesHouseProfile.js", sends: 1 },
 ];
 
 function sourceFiles(directory) {

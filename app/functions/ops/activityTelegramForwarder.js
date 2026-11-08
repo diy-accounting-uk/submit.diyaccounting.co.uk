@@ -2,8 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability OPS-70 Forward operational activity events to Telegram
-// - **Use when:** an EventBridge activity event needs routing to the right Telegram group as formatted text.
-// - **Does:** activityTelegramForwarder.js is the EventBridge target Lambda for operational activity events. It resolves chat routing per event type and formats the message. handler(event) posts it to the Telegram Bot API. It runs on the activity EventBridge trigger, not on demand.
+// - **Use when:** an EventBridge activity event needs routing to the ops or live Telegram group as formatted text, or the approved set changes.
+// - **Does:** activityTelegramForwarder.js is the EventBridge target Lambda for operational activity events. It sends only the approved set: alarm state changes, cost alerts and failed or rolled-back stack changes to the ops chat; subscription, pass redemption, support ticket, VAT submission and any failure from real customers to the live chat. Everything else reaches the lake only. handler(event) posts it to the Telegram Bot API. It runs on the activity EventBridge trigger, not on demand.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/ops/activityTelegramForwarder.js:handler`
 // - **Files:** app/functions/ops/activityTelegramForwarder.js, app/unit-tests/functions/activityTelegramForwarder.test.js
@@ -16,9 +16,9 @@
 // EventBridge target Lambda: receives ActivityEvent events and forwards them
 // to the appropriate Telegram group via the Telegram Bot API.
 //
-// Routing: EventBridge rules determine which group(s) receive each event.
-// The target chat ID is passed via the rule's input transformer or the
-// TELEGRAM_CHAT_ID environment variable set per-rule invocation.
+// Routing: resolveRoute holds the approved set. Every other event reaches the lake only.
+// The ops chat gets alarm state changes, cost alerts and failed or rolled-back stack changes.
+// The live chat gets a few customer events and any customer event that failed.
 
 import { SSMClient } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
@@ -46,11 +46,10 @@ async function resolveBotToken() {
 
 /**
  * Read Telegram chat IDs from individual env vars.
- * Returns { test, live, ops } where each is a chat ID string or empty.
+ * Returns { live, ops } where each is a chat ID string or empty.
  */
 export function resolveChatConfig() {
   return {
-    test: process.env.TELEGRAM_TEST_CHAT_ID || "",
     live: process.env.TELEGRAM_LIVE_CHAT_ID || "",
     ops: process.env.TELEGRAM_OPS_CHAT_ID || "",
   };
@@ -78,51 +77,38 @@ export function formatMessage(detail) {
   return `*[${site}/${env}]* ${summary}`;
 }
 
+const OPS_STACK_STATUSES = ["CREATE_FAILED", "UPDATE_FAILED", "DELETE_FAILED", "UPDATE_ROLLBACK_COMPLETE"];
+const OPS_EVENTS = ["alarm-state-change", "cost-alert"];
+const LIVE_CUSTOMER_EVENTS = ["subscription-activated", "pass-redeemed", "support-ticket", "vat-return-submitted"];
+
+/**
+ * Decide which chat an event belongs to. The approved set is the only way to a chat.
+ * @param {Object} detail - Event detail with actor, event, outcome and requestId fields
+ * @returns {"ops"|"live"|null} the chat name, or null when the event reaches the lake only
+ */
+export function resolveRoute(detail) {
+  if ((detail.requestId || "").startsWith("test_")) return null;
+
+  if (OPS_EVENTS.includes(detail.event)) return "ops";
+  if (detail.event === "stack-status-change") {
+    return OPS_STACK_STATUSES.includes(detail.stackStatus) ? "ops" : null;
+  }
+
+  if (detail.actor !== "customer") return null;
+  if (detail.outcome === "failure") return "live";
+  return LIVE_CUSTOMER_EVENTS.includes(detail.event) ? "live" : null;
+}
+
 /**
  * Determine which chat IDs to send to based on event attributes.
- * @param {Object} detail - Event detail with actor, flow fields
- * @param {Object} chatConfig - { test, live, ops } chat IDs
+ * @param {Object} detail - Event detail
+ * @param {Object} chatConfig - { live, ops } chat IDs
  * @returns {string[]} Array of target chat IDs
  */
 export function resolveTargetChatIds(detail, chatConfig) {
-  const actor = detail.actor || "";
-  const flow = detail.flow || "";
-  const requestId = detail.requestId || "";
-
-  // A refresh inside a live session (sessionKind "continued") reaches the lake only: it is
-  // routine, not a signal a customer or operator needs to see.
-  if (detail.event === "token-refresh" && detail.sessionKind === "continued") {
-    return [];
-  }
-
-  // A page load and an HMRC OAuth token exchange are internal steps inside a customer's own
-  // journey, not signals in their own right: they reach the lake only, whatever the actor or
-  // requestId. Sign-up, first submission, payment and failure events publish their own event
-  // names and still route below.
-  if (detail.event === "new-session" || detail.event === "hmrc-token-exchanged") {
-    return [];
-  }
-
-  // Test-prefixed requestId always routes to test channel
-  if (requestId.startsWith("test_")) {
-    return chatConfig.test ? [chatConfig.test] : [];
-  }
-
-  // Infrastructure and operational events → ops channel
-  if (flow === "infrastructure" || flow === "operational") {
-    return chatConfig.ops ? [chatConfig.ops] : [];
-  }
-
-  // User-journey events → live or test based on actor.
-  // `customer` is the live default (publishActivityEvent fills it in for non-test_
-  // requestIds when no explicit actor is set), so anonymous customer journeys reach
-  // the LIVE telegram channel instead of silently being misrouted to TEST.
-  if (actor === "customer" || actor === "visitor") {
-    return chatConfig.live ? [chatConfig.live] : [];
-  }
-
-  // test-user, probe, ci-pipeline, system, synthetic → test channel
-  return chatConfig.test ? [chatConfig.test] : [];
+  const route = resolveRoute(detail);
+  if (!route || !chatConfig[route]) return [];
+  return [chatConfig[route]];
 }
 
 /**
@@ -213,6 +199,7 @@ export function synthesizeFromCloudFormation(event) {
     env,
     event: "stack-status-change",
     site: "submit",
+    stackStatus: status,
     summary: `Stack ${stackName}: ${status}`,
   };
 }
@@ -309,21 +296,11 @@ export async function handler(event) {
   const message = formatMessage(detail);
 
   if (targets.length === 0) {
-    // Log with channel-specific prefix when no Telegram destination is configured
-    const flow = detail.flow || "";
-    const actor = detail.actor || "";
-    const requestId = detail.requestId || "";
-    let channel;
-    if (requestId.startsWith("test_")) {
-      channel = "TELEGRAM_TEST_CHAT";
-    } else if (flow === "infrastructure" || flow === "operational") {
-      channel = "TELEGRAM_OPS_CHAT";
-    } else if (actor === "customer" || actor === "visitor") {
-      channel = "TELEGRAM_LIVE_CHAT";
-    } else {
-      channel = "TELEGRAM_TEST_CHAT";
-    }
-    logger.info({ message: `[[${channel}]] ${message}`, detail });
+    const route = resolveRoute(detail);
+    logger.info({
+      message: route ? `[[TELEGRAM_${route.toUpperCase()}_CHAT]] ${message}` : "Event is outside the Telegram set, lake only",
+      detail,
+    });
     return;
   }
 

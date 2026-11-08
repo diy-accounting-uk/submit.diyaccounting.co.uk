@@ -47,6 +47,7 @@ const STEP_GROUP = {
   hostedUiLogin: 2,
   consent: 2,
   ensureBundle: 2,
+  createPass: 2,
   hmrcAuthorise: 2,
   companiesHouseAuthorise: 2,
   submitReturn: 2,

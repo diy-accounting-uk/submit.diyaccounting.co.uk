@@ -73,6 +73,15 @@ public class OperatorSnapshotPublish extends Construct {
         /** The passes table the family affiliate lookup items are read from, by key. */
         String passesTableName();
 
+        /** The DynamoDB tables the Data tab counts. Each is named in the role's policy. */
+        List<String> dataTableNames();
+
+        /** The buckets the Data tab counts with the CloudWatch object-count metric. */
+        List<String> dataBucketNames();
+
+        /** The diya-gl book bucket, whose books the Data tab counts by listing it. */
+        String diyaGlBucketName();
+
         String glueDatabaseName();
 
         String athenaWorkGroupName();
@@ -104,6 +113,9 @@ public class OperatorSnapshotPublish extends Construct {
                 .with("GLUE_DATABASE_NAME", props.glueDatabaseName())
                 .with("SECURITY_SERVICES_ENABLED", Boolean.toString(props.securityServicesEnabled()))
                 .with("PASSES_DYNAMODB_TABLE_NAME", props.passesTableName())
+                .with("DATA_TABLE_NAMES", String.join(",", props.dataTableNames()))
+                .with("DATA_BUCKET_NAMES", String.join(",", props.dataBucketNames()))
+                .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                 .with("ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName());
 
         IRepository repository = Repository.fromRepositoryAttributes(
@@ -200,6 +212,27 @@ public class OperatorSnapshotPublish extends Construct {
                 .actions(List.of("dynamodb:GetItem"))
                 .resources(
                         List.of("arn:aws:dynamodb:%s:%s:table/%s".formatted(region, account, props.passesTableName())))
+                .build());
+
+        // The Data tab: item counts and TTL state of the named tables from DescribeTable, never a
+        // Scan; book counts by listing the diya-gl bucket; object counts per bucket from the
+        // CloudWatch metric, whose read actions take no resource-level scope.
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive"))
+                .resources(props.dataTableNames().stream()
+                        .map(tableName -> "arn:aws:dynamodb:%s:%s:table/%s".formatted(region, account, tableName))
+                        .toList())
+                .build());
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of("arn:aws:s3:::" + props.diyaGlBucketName()))
+                .build());
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cloudwatch:GetMetricData"))
+                .resources(List.of("*"))
                 .build());
 
         // ============================================================================

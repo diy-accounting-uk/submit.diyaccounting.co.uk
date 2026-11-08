@@ -49,7 +49,7 @@ export function hashEmail(email, secret) {
  * @returns {object} The registry object
  * @throws {Error} If it parses as JSON with a "current" field but is otherwise malformed
  */
-function parseEmailHashSecretRegistry(raw) {
+export function parseEmailHashSecretRegistry(raw) {
   let parsed;
   try {
     parsed = JSON.parse(raw);

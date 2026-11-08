@@ -133,8 +133,48 @@ describe("passService", () => {
       });
 
       expect(pass.validUntil).toBeUndefined();
-      // TTL should still be set (1 year + 30 days from now)
-      expect(pass.ttl).toBeTypeOf("number");
+      expect(pass.ttl).toBeUndefined();
+      expect(pass.ttl_datestamp).toBeUndefined();
+    });
+
+    it("keeps the physical pass with no ttl, so it stays usable until it is used", () => {
+      const pass = buildPassRecord({
+        passTypeId: "physical-pass",
+        bundleId: "day-guest",
+        maxUses: 1,
+        issuedBy: "issuer-hash",
+        actor: "customer",
+      });
+
+      expect(pass.validUntil).toBeUndefined();
+      expect(pass.ttl).toBeUndefined();
+    });
+
+    it("sets a ttl 30 days after validUntil for a real pass with an end date", () => {
+      const pass = buildPassRecord({ passTypeId: "digital-pass", bundleId: "week-guest", validityPeriod: "P90D", actor: "customer" });
+
+      expect(pass.ttl).toBe(Math.floor(new Date(pass.validUntil).getTime() / 1000) + 30 * 86400);
+    });
+
+    it("sets a ttl 2 days after creation for a test pass, with or without an end date", () => {
+      const withEnd = buildPassRecord({ passTypeId: "day-guest-test-pass", bundleId: "day-guest", testPass: true, validityPeriod: "P90D" });
+      const withoutEnd = buildPassRecord({ passTypeId: "day-guest-test-pass", bundleId: "day-guest", testPass: true });
+
+      for (const pass of [withEnd, withoutEnd]) {
+        expect(pass.ttl).toBe(Math.floor(new Date(pass.createdAt).getTime() / 1000) + 2 * 86400);
+      }
+    });
+
+    it.each(["test-user", "probe"])("sets a ttl 2 days after creation for a %s actor", (actor) => {
+      const pass = buildPassRecord({ passTypeId: "digital-pass", bundleId: "week-guest", validityPeriod: "P90D", actor });
+
+      expect(pass.ttl).toBe(Math.floor(new Date(pass.createdAt).getTime() / 1000) + 2 * 86400);
+    });
+
+    it.each([undefined, "customer", "operator", "system"])("keeps the long ttl for a pass whose actor is %s", (actor) => {
+      const pass = buildPassRecord({ passTypeId: "digital-pass", bundleId: "week-guest", validityPeriod: "P90D", actor });
+
+      expect(pass.ttl).toBe(Math.floor(new Date(pass.validUntil).getTime() / 1000) + 30 * 86400);
     });
 
     it("should hash email for restricted passes", () => {
@@ -471,7 +511,7 @@ describe("passService", () => {
 
     it("redeemPass reports held_for_review when the atomic redeem fails at the limit", async () => {
       redeemPassRepo.mockResolvedValueOnce(null);
-      getPass.mockResolvedValueOnce(heldPass);
+      getPass.mockResolvedValueOnce(heldPass).mockResolvedValueOnce(heldPass).mockResolvedValueOnce(heldPass);
       const result = await redeemPass("code");
       expect(result).toMatchObject({ valid: false, reason: "held_for_review" });
     });
@@ -602,6 +642,50 @@ describe("passService", () => {
       getPass.mockResolvedValue(null);
       expect(await releasePass("c", { raiseBy: 1 })).toBeNull();
       expect(setReviewLimit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("redeemPass on an email-restricted pass", () => {
+    const secret = "test-email-hash-secret-for-unit-tests";
+    const restrictedPass = () => ({
+      pk: "pass#test-code",
+      code: "test-code",
+      bundleId: "invited-guest",
+      validFrom: "2020-01-01T00:00:00.000Z",
+      validUntil: "2099-12-31T23:59:59.000Z",
+      maxUses: 1,
+      useCount: 0,
+      restrictedToEmailHash: hashEmail("invited@example.com", secret),
+      emailHashSecretVersion: "test-v1",
+    });
+
+    it("counts no use and returns wrong_email for another account", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      const result = await redeemPass("test-code", "someone-else@example.com");
+      expect(result).toMatchObject({ valid: false, reason: "wrong_email" });
+      expect(redeemPassRepo).not.toHaveBeenCalled();
+    });
+
+    it("counts no use and returns email_required when no email is given", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      const result = await redeemPass("test-code");
+      expect(result).toMatchObject({ valid: false, reason: "email_required" });
+      expect(redeemPassRepo).not.toHaveBeenCalled();
+    });
+
+    it("counts one use for the invited email", async () => {
+      getPass.mockResolvedValue(restrictedPass());
+      redeemPassRepo.mockResolvedValueOnce({ ...restrictedPass(), useCount: 1 });
+      const result = await redeemPass("test-code", "invited@example.com");
+      expect(result).toMatchObject({ valid: true, bundleId: "invited-guest", usesRemaining: 0 });
+      expect(redeemPassRepo).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports an exhausted pass as exhausted for another account", async () => {
+      getPass.mockResolvedValue({ ...restrictedPass(), useCount: 1 });
+      redeemPassRepo.mockResolvedValueOnce(null);
+      const result = await redeemPass("test-code", "someone-else@example.com");
+      expect(result).toMatchObject({ valid: false, reason: "exhausted" });
     });
   });
 });

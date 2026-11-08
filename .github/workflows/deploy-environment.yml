@@ -81,6 +81,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/StaticSiteStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EmailStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
@@ -97,6 +98,15 @@ on:
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
       - 'app/functions/ops/activityTelegramForwarder.js'
+      # Trusted event Lambda source
+      - 'app/functions/ops/trustedEventToGithubIssue.js'
+      - 'app/lib/trustedEvents/**'
+      - 'app/lib/githubIssueApi.js'
+      - 'app/data/dynamoDbTrustedEventLedgerRepository.js'
+      # Customer email Lambda source
+      - 'app/functions/email/**'
+      - 'app/lib/customerEmail*.js'
+      - 'app/services/customerEmailSender.js'
       # Holding page source
       - 'web/holding/**'
       # Developer site source
@@ -232,19 +242,16 @@ jobs:
     needs:
       - names
       - create-secrets
-    uses: ./.github/workflows/deploy-cdk-stack.yml
+      - deploy-ecr
     permissions:
-      contents: read
-      packages: read
       id-token: write
-      pages: write
-      pull-requests: read
+      contents: read
+    uses: ./.github/workflows/deploy-env-image-stack.yml
+    secrets: inherit
     with:
-      stackName: ${{ needs.names.outputs.environment-name }}-env-ObservabilityStack
-      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.environment-name }}
-      cdk-application: 'environment'
+      image-name: observability
+      stack-name: ${{ needs.names.outputs.environment-name }}-env-ObservabilityStack
 
   deploy-security-detection:
     name: 'deploy security detection'
@@ -265,6 +272,9 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
+      # This stack depends on ObservabilityStack, which the job above deploys from its own image.
+      # A deploy of both from here names an image tag that no build pushed.
+      exclusively: 'true'
 
   deploy-observability-us-east-1:
     name: 'deploy observability us-east-1'
@@ -275,6 +285,9 @@ jobs:
       # Lambda in the us-east-1 environment ECR repository; deploy-ingestion pushes that
       # image (see its "push env observability ue1 image" steps below).
       - deploy-ingestion
+      # The budget action in this stack names roles that the eu-west-2 observability stack
+      # creates, so that stack deploys first.
+      - deploy-observability
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -662,6 +675,25 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       image-name: billing-webhook
       stack-name: ${{ needs.names.outputs.environment-name }}-env-BillingWebhookStack
+
+  deploy-email:
+    name: 'deploy email'
+    needs:
+      - names
+      - create-secrets
+      - deploy-ecr
+      - deploy-identity
+      - deploy-activity
+      - deploy-data
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-env-image-stack.yml
+    secrets: inherit
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      image-name: email
+      stack-name: ${{ needs.names.outputs.environment-name }}-env-EmailStack
 
   deploy-cost-export:
     name: 'deploy cost export'

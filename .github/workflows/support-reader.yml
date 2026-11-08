@@ -3,7 +3,7 @@
 
 # @capability OPS-142 Read a support ticket in quarantine
 # - **Use when:** a support ticket in the private repository needs a checked summary for the operator before any agent handles it.
-# - **Does:** support-reader.yml polls every 10 minutes for open `support` issues that carry `maintainer-review` and have no reader comment. A model with no tools reads the ticket under the quarantine reader role. Code accepts its answer only as one JSON object that fits app/lib/quarantineReaderSchema.js. The workflow posts the checked summary as a comment on the private issue and, when the answer sets `injectionSuspected`, adds the blocking label `injection-suspected` (scripts/support-label-sweep.mjs creates the label when absent). support-triage.yml closes an issue the operator labels `rejected`, with no reply. A rejected answer posts only schema issue paths and codes. No ticket or model text reaches the public logs: the answer crosses jobs encrypted.
+# - **Does:** support-reader.yml polls every 10 minutes. It reads one open `support` issue when one waits, else the oldest open `mail-notice` issue (checked against the mail schema). It looks for issues that carry `maintainer-review` and have no reader comment. A model with no tools reads the ticket under the quarantine reader role. Code accepts its answer only as one JSON object that fits app/lib/quarantineReaderSchema.js. The workflow posts the checked summary as a comment on the private issue and, when the answer sets `injectionSuspected`, adds the blocking label `injection-suspected` (scripts/support-label-sweep.mjs creates the label when absent). support-triage.yml closes an issue the operator labels `rejected`, with no reply. A rejected answer posts only schema issue paths and codes. No ticket or model text reaches the public logs: the answer crosses jobs encrypted.
 # - **Run:** `gh workflow run support-reader.yml -f issue-number=<n>`; add `-f reread=true` to read an issue that already has a reader comment
 # - **Entry:** `.github/workflows/support-reader.yml`; `scripts/quarantine-reader-check.mjs:checkReaderAnswer`
 # - **Files:** .github/workflows/support-reader.yml, app/lib/quarantineReaderSchema.js, scripts/quarantine-reader-request.mjs, scripts/quarantine-reader-check.mjs, scripts/support-reader-select.mjs, scripts/support-label-sweep.mjs, app/unit-tests/scripts/supportLabelSweep.test.js, scripts/github-issue-comment.mjs, prompts/support-reader.md, app/unit-tests/lib/quarantineReaderSchema.test.js, app/unit-tests/scripts/quarantineReaderCheck.test.js, app/unit-tests/scripts/quarantineReaderRequest.test.js, app/unit-tests/scripts/supportReaderSelect.test.js, app/unit-tests/scripts/githubIssueComment.test.js, app/unit-tests/supportReaderWorkflow.test.js
@@ -14,7 +14,7 @@
 name: support-reader
 run-name: support reader
 
-# The quarantine reader for support tickets. A ticket from the public form lands as an issue in
+# The quarantine reader for support tickets and mail notices. A ticket from the public form lands as an issue in
 # private.diyaccounting.co.uk. This workflow reads it with a model that has no tools and no
 # GitHub write access, checks the model's answer against a schema in code, and posts the checked
 # summary as a comment on the private issue. The operator then reads the ticket and the summary
@@ -41,7 +41,7 @@ on:
   workflow_dispatch:
     inputs:
       issue-number:
-        description: the private support issue to read; empty reads the oldest unread one
+        description: the private support or mail-notice issue to read; empty reads the oldest unread support issue, else the oldest unread notice
         required: false
         type: string
       reread:
@@ -58,7 +58,7 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  READER_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  READER_MODEL_ID: 'amazon.nova-pro-v1:0'
   PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
   # The one place this number is written. The budget guard and its step name read it.
   SUPPORT_READER_BUDGET_PER_DAY: '20'
@@ -73,6 +73,7 @@ jobs:
       actions: read
     outputs:
       issue-number: ${{ steps.pick.outputs.issue-number }}
+      kind: ${{ steps.pick.outputs.kind }}
       proceed: ${{ steps.pick.outputs.issue-number != '' && steps.budget-guard.outputs.over-budget == 'false' }}
       request: ${{ steps.skeleton.outputs.request }}
     steps:
@@ -97,7 +98,9 @@ jobs:
           repositories: private.diyaccounting.co.uk
           permission-issues: read
 
-      - name: Pick the oldest unread support issue
+      # A support issue comes first. A notice is read only when no support issue waits. The select
+      # script runs without GITHUB_OUTPUT so that this step writes the one pair of outputs.
+      - name: Pick the oldest unread support issue, else the oldest unread notice
         id: pick
         env:
           GH_TOKEN: ${{ steps.private-token.outputs.token }}
@@ -113,7 +116,19 @@ jobs:
             echo "::error::reread needs an issue-number"
             exit 1
           fi
-          node scripts/support-reader-select.mjs "${ARGS[@]}"
+          NUMBER=""
+          KIND=""
+          for CANDIDATE in support notice; do
+            LINE=$(env -u GITHUB_OUTPUT node scripts/support-reader-select.mjs --kind "$CANDIDATE" "${ARGS[@]}")
+            NUMBER="${LINE#issue-number=}"
+            if [ -n "$NUMBER" ]; then
+              KIND="$CANDIDATE"
+              break
+            fi
+          done
+          echo "picked a ${KIND:-no} issue: ${NUMBER:-none}"
+          echo "issue-number=${NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "kind=${KIND}" >> "$GITHUB_OUTPUT"
 
       # Counting reads the job history of every run in the last day, so it runs only when there
       # is an issue to read; most polls find none.
@@ -130,7 +145,16 @@ jobs:
       - name: Build the request skeleton
         if: steps.pick.outputs.issue-number != '' && steps.budget-guard.outputs.over-budget == 'false'
         id: skeleton
-        run: node scripts/quarantine-reader-request.mjs support
+        env:
+          READER_KIND: ${{ steps.pick.outputs.kind }}
+        run: |
+          set -euo pipefail
+          # The reader kind for a notice is named mail in the request and the check.
+          case "$READER_KIND" in
+            support) node scripts/quarantine-reader-request.mjs support ;;
+            notice) node scripts/quarantine-reader-request.mjs mail ;;
+            *) echo "::error::unknown reader kind"; exit 1 ;;
+          esac
 
   # No checkout and no write permission on anything. The only credentials are the OIDC token for
   # the quarantine reader role and a token that reads issues in the private repository.
@@ -204,19 +228,20 @@ jobs:
           gh api "repos/${PRIVATE_REPO}/issues/${ISSUE_NUMBER}" --jq '{title, body}' > /tmp/ticket.json
 
       # jq puts the ticket into a JSON string value, so nothing in it can change the request's
-      # shape. The request has no `tools` key.
+      # shape. The request has no `toolConfig` key.
       - name: Build the request
         env:
           REQUEST_SKELETON: ${{ needs.select.outputs.request }}
         run: |
           set -euo pipefail
           printf '%s' "$REQUEST_SKELETON" | base64 -d > /tmp/skeleton.json
-          jq -n --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
+          jq -n --arg model_id "$READER_MODEL_ID" --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
             $skeleton[0] as $s | $ticket[0] as $t
             | $s
+            | .modelId = $model_id
             | .messages = [
-                { role: "user", content: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") },
-                { role: "assistant", content: $s.prefill }
+                { role: "user", content: [{ text: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") }] },
+                { role: "assistant", content: [{ text: $s.prefill }] }
               ]
             | del(.prefill, .tag)' > /tmp/request.json
           rm -f /tmp/ticket.json
@@ -224,11 +249,11 @@ jobs:
       - name: Ask the model
         run: |
           set -uo pipefail
-          if ! aws bedrock-runtime invoke-model --model-id "$READER_MODEL_ID" --body fileb:///tmp/request.json /tmp/response.json > /dev/null 2>/tmp/invoke.err; then
-            echo "::error::invoke-model failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+          if ! aws bedrock-runtime converse --cli-input-json file:///tmp/request.json > /tmp/response.json 2>/tmp/invoke.err; then
+            echo "::error::converse failed: $(node scripts/bedrock-error-line.mjs /tmp/invoke.err)"
             exit 1
           fi
-          { printf '{'; jq -j '.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+          { printf '{'; jq -j '.output.message.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
           rm -f /tmp/request.json /tmp/response.json
 
       - name: Apply the guardrail to the answer
@@ -275,6 +300,7 @@ jobs:
     env:
       GUARDRAIL_ACTION: ${{ needs.read.outputs.guardrail-action }}
       ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
+      READER_KIND: ${{ needs.select.outputs.kind }}
       RUN_NUMBER: ${{ github.run_number }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     outputs:
@@ -315,7 +341,12 @@ jobs:
           ANSWER_B64=$(base64 -w0 < /tmp/answer.txt)
           rm -f /tmp/answer.txt
           export ANSWER_B64
-          node scripts/quarantine-reader-check.mjs --kind support --faqs web/public/faqs.toml --out /tmp/reader-comment.md
+          case "$READER_KIND" in
+            support) CHECK_KIND=support ;;
+            notice) CHECK_KIND=mail ;;
+            *) echo "::error::unknown reader kind"; exit 1 ;;
+          esac
+          node scripts/quarantine-reader-check.mjs --kind "$CHECK_KIND" --faqs web/public/faqs.toml --out /tmp/reader-comment.md
 
       - name: Post the reader comment
         env:

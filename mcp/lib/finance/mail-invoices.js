@@ -3,16 +3,16 @@
 
 // @capability MCP-12 Read invoices from the local mail index
 // - **Use when:** supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
-// - **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching mail-antony for each supplier within a date range. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
+// - **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching both mailboxes (mail-antony, then mail-support) for each supplier within a date range, and keeps one line when the same invoice sits in both. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`; `mcp/lib/finance/mail-invoices.js:runCorpus`
 // - **Files:** mcp/lib/finance/mail-invoices.js, mcp/test/mail-invoices.test.js
-// - **Keywords:** supplier invoices, corpus cli, mail-antony, invoice import, purchases lines, mail index search
+// - **Keywords:** supplier invoices, corpus cli, mail-antony, mail-support, invoice de-duplication, invoice import, purchases lines, mail index search
 // - **Related:** MCP-10, MCP-11
 // @end-capability
 
 // mail-invoices.js -- supplier invoices staged into diya-gl purchases lines,
-// read from the already-indexed mailbox through corpus-loom's CLI rather than
+// read from the already-indexed mailboxes through corpus-loom's CLI rather than
 // a Gmail harvester: the invoice emails and their PDF attachments already sit
 // under the mail mirror and are already searchable, so this module only
 // shells out to `corpus search` and `corpus doc` and turns what comes back
@@ -107,6 +107,10 @@ export async function runCorpus(args) {
   const { stdout } = await execFileAsync(bin, [command, "--config", config, ...rest], { maxBuffer: 32 * 1024 * 1024 });
   return JSON.parse(stdout);
 }
+
+// Searched in this order for each supplier. The order is fixed so that, when
+// one invoice sits in both mailboxes, the line from the first source is kept.
+export const INVOICE_MAIL_SOURCES = ["mail-antony", "mail-support"];
 
 const CURRENCY_SYMBOLS = { "£": "GBP", "$": "USD", "€": "EUR" };
 
@@ -288,6 +292,16 @@ function findDocumentReference(title, content) {
   return undefined;
 }
 
+// The identity of an invoice line. A total line with a document reference is
+// the same invoice whatever date a forward carries, so its key is supplier,
+// reference, total and currency. Any other line adds its date: an instalment
+// shares its schedule's reference with its siblings.
+function invoiceIdentity(line, { dateless }) {
+  const parts = [line.detailComment, line.amount, line.amountCurrency, line.documentReference ?? ""];
+  if (!dateless || line.documentReference === undefined) parts.push(line.documentDate);
+  return JSON.stringify(parts);
+}
+
 function compact(line) {
   return Object.fromEntries(Object.entries(line).filter(([, value]) => value !== undefined));
 }
@@ -295,12 +309,17 @@ function compact(line) {
 /**
  * Supplier invoices for a period, read through the mailbox index rather
  * than harvested and stored: each configured supplier is searched for by
- * name over `mail-antony` within the period, every hit's extracted text is
+ * name over every source in INVOICE_MAIL_SOURCES within the period, every hit's extracted text is
  * fetched, and every hit that carries a recognisable total becomes one
  * `purchases`/`invoice` diya-gl line. A hit whose document carries a
  * payment-schedule attachment instead yields one line per instalment
  * scheduled inside the period, and no total line -- there is no single
  * total on that document to find.
+ * Duplicate rule: two lines are the same invoice when supplier, total and
+ * currency match and either both total lines carry the same document
+ * reference, or the document date matches too (instalment lines and lines with
+ * no reference); the line from the earlier source in INVOICE_MAIL_SOURCES is
+ * kept.
  * @param {{from: string, to: string, suppliers: Array<{name: string, taxCode: string, accountMainID: string, accountMainDescription?: string}>}} period
  * @param {{runCorpus?: (args: string[]) => Promise<Object|Array>}} [deps]
  * @returns {Promise<Array<Object>>} diya-gl lines, unvalidated against any book
@@ -311,9 +330,16 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
     throw new Error("invoiceLinesForPeriod requires at least one supplier");
   }
 
-  const lines = [];
+  const lines = new Map();
+  const addLine = (line, dateless) => {
+    const identity = invoiceIdentity(line, { dateless });
+    if (!lines.has(identity)) lines.set(identity, line);
+  };
   for (const supplier of suppliers) {
-    const hits = await runCorpusFn(["search", "--source", "mail-antony", "--since", from, "--until", to, "--json", supplier.name]);
+    const hits = [];
+    for (const source of INVOICE_MAIL_SOURCES) {
+      hits.push(...(await runCorpusFn(["search", "--source", source, "--since", from, "--until", to, "--json", supplier.name])));
+    }
 
     for (const hit of hits) {
       const doc = await runCorpusFn(["doc", "--json", hit.source, hit.path]);
@@ -322,7 +348,7 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
       if (instalments) {
         for (const instalment of instalments) {
           if (instalment.date < from || instalment.date > to) continue;
-          lines.push(
+          addLine(
             compact({
               sourceJournalID: "purchases",
               documentType: "invoice",
@@ -336,6 +362,7 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
               documentReference: instalment.reference,
               detailComment: supplier.name,
             }),
+            false,
           );
         }
         continue;
@@ -345,7 +372,7 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
       if (!total) continue;
 
       const postingDate = (hit.date || doc.doc_date || "").slice(0, 10);
-      lines.push(
+      addLine(
         compact({
           sourceJournalID: "purchases",
           documentType: "invoice",
@@ -359,8 +386,9 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
           documentReference: findDocumentReference(doc.title, doc.content),
           detailComment: supplier.name,
         }),
+        true,
       );
     }
   }
-  return lines;
+  return [...lines.values()];
 }

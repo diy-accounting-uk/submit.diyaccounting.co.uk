@@ -1,0 +1,74 @@
+{
+  "description": "The probe alarm is in ALARM and the last scheduled run failed on a timeout; the row dispatches probe-test.yml.",
+  "alarm": {
+    "name": "prod-env-github-probe-failed",
+    "environment": "prod",
+    "deployment": "none",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9104
+  },
+  "remedyRow": {
+    "family": "prod-env-github-probe-failed",
+    "remedy": "dispatch",
+    "workflow": "probe-test.yml",
+    "inputs": {
+      "environment-name": "prod"
+    },
+    "budgetPerDay": 2,
+    "why": "One more passing run clears it."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "none",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-env-probe-metric-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-env-probe-metric-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-env-github-probe-failed\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [1.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-env-probe-metric-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"INFO probe run 7 finished with conclusion failure\"},{\"timestamp\":1768467901000,\"message\":\"INFO probe run 7 step wait-for-page timed out after 120 s\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [["probe"], ["timed out", "timeout", "failure", "failed"]],
+    "nextAction": [["probe-test.yml", "re-run", "rerun", "dispatch"]],
+    "remedy": "dispatch probe-test.yml"
+  }
+}

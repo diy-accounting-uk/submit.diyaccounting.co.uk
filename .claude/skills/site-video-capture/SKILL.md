@@ -18,6 +18,11 @@ description: Record a video of the real site for a human audience from a scene s
 
 # site-video-capture — record a scene script into a video
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the
 script and rerunning, never editing the mp4. `scripts/site-video-capture.js` drives a real
 browser through the script with Playwright, draws a pointer, trail and headlines with an

@@ -5,7 +5,7 @@
 # one job per environment, keeping every earlier version so a pass hashed under it still checks
 # (scripts/email-hash-rotate.js; app/lib/emailHash.js reads the version each pass recorded).
 # Scheduled quarterly (1 January, April, July and October, 06:00 UTC) and dispatchable: plan by
-# default, apply to write. A scheduled run has no inputs, so it always plans.
+# default, apply to write. A dispatch targets one environment (environment-name); a scheduled run covers both and always plans.
 # Runbook section 4 covers the salt this mirrors.
 
 name: email hash rotate
@@ -25,6 +25,14 @@ on:
         required: false
         default: false
         type: boolean
+      environment-name:
+        description: "The one environment this dispatch targets (a scheduled run covers both)"
+        required: true
+        default: ci
+        type: choice
+        options:
+          - ci
+          - prod
 
 env:
   AWS_REGION: 'eu-west-2'
@@ -38,7 +46,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        environment: [ci, prod]
+        environment: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.environment-name) || '["ci","prod"]') }}
     permissions:
       id-token: write
       contents: read
@@ -61,6 +69,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ matrix.environment }}
         run: |
+          set -o pipefail
           if [ "${{ inputs.apply }}" = "true" ]; then
             node scripts/email-hash-rotate.js --apply 2>&1 | tee email-hash-rotate.log
           else

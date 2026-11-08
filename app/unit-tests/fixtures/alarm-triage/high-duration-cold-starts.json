@@ -1,0 +1,68 @@
+{
+  "description": "A p95 duration alarm in ALARM; the logs show cold start init times and no errors.",
+  "alarm": {
+    "name": "prod-zz18quince-app-quote-high-duration-p95",
+    "environment": "prod",
+    "deployment": "zz18quince",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9117
+  },
+  "remedyRow": null,
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz18quince",
+    "logGroupNamePrefixes": ["/aws/lambda/prod-zz18quince-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/prod-zz18quince-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [4120.0 (15/01/26 09:05:00)] was greater than the threshold (3000.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [4120.0 (15/01/26 09:05:00)] was greater than the threshold (3000.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"prod-zz18quince-app-quote-high-duration-p95\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [4120.0 (15/01/26 09:05:00)] was greater than the threshold (3000.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/prod-zz18quince-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"REPORT RequestId: req-1801 Duration: 4190.12 ms Init Duration: 3950.44 ms\"},{\"timestamp\":1768467901000,\"message\":\"REPORT RequestId: req-1802 Duration: 180.02 ms\"},{\"timestamp\":1768467902000,\"message\":\"REPORT RequestId: req-1803 Duration: 175.77 ms\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [
+      ["duration", "p95", "latency"],
+      ["init", "cold start"]
+    ],
+    "nextAction": [["watch", "no action", "no further action", "monitor"]],
+    "remedy": "none"
+  }
+}

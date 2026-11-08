@@ -23,7 +23,7 @@ describe("QR Code Generation System Test", () => {
 
   it("should generate QR code for a pass code", async () => {
     // Generate QR code
-    const url = `https://submit.diyaccounting.co.uk/bundles.html?pass=${mockPass.code}`;
+    const url = `https://submit.diyaccounting.co.uk/pass.html?pass=${mockPass.code}`;
     const qrCode = await generatePassQrCode({ code: mockPass.code, url });
 
     // Verify QR code is valid data URL
@@ -33,7 +33,7 @@ describe("QR Code Generation System Test", () => {
 
   it("should generate QR code buffer and save to file", async () => {
     // Generate QR code buffer
-    const url = `https://submit.diyaccounting.co.uk/bundles.html?pass=${mockPass.code}`;
+    const url = `https://submit.diyaccounting.co.uk/pass.html?pass=${mockPass.code}`;
     const buffer = await generatePassQrCodeBuffer({ code: mockPass.code, url });
 
     // Verify buffer is valid
@@ -67,7 +67,7 @@ describe("QR Code Generation System Test", () => {
       notes: "System test pass",
     };
 
-    const url = `https://prod.submit.diyaccounting.co.uk/bundles.html?pass=${passWithDetails.code}`;
+    const url = `https://prod.submit.diyaccounting.co.uk/pass.html?pass=${passWithDetails.code}`;
     const details = buildPassDetails(passWithDetails, url, "test@example.com");
 
     // Verify all details are present

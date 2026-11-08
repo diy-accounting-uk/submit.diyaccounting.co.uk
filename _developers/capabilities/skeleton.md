@@ -40,6 +40,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-04 -->
 <!-- capability SITE-05 -->
 <!-- capability SITE-24 -->
+<!-- capability SITE-27 -->
+<!-- capability SITE-28 -->
+<!-- capability SITE-29 -->
 ### Server and API plumbing (SITE)
 
 <!-- generated:group server-and-api-plumbing-site -->
@@ -248,6 +251,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-49 -->
 <!-- capability BILL-50 -->
 <!-- capability BILL-10 -->
+<!-- capability BILL-58 -->
 <!-- capability BILL-11 -->
 ### Practice clients and HMRC authorisation (BILL)
 
@@ -341,6 +345,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-09 -->
 <!-- capability OPS-156 -->
 <!-- capability OPS-157 -->
+<!-- capability OPS-181 -->
+<!-- capability OPS-182 -->
 <!-- capability OPS-131 -->
 <!-- capability OPS-132 -->
 <!-- capability OPS-133 -->
@@ -378,6 +384,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-18 -->
 <!-- capability OPS-142 -->
 <!-- capability OPS-155 -->
+<!-- capability OPS-197 -->
 <!-- capability OPS-19 -->
 <!-- capability OPS-20 -->
 <!-- capability OPS-21 -->
@@ -394,6 +401,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-27 -->
 <!-- capability OPS-70 -->
 <!-- capability OPS-71 -->
+<!-- capability OPS-185 -->
+<!-- capability OPS-186 -->
+<!-- capability OPS-187 -->
+<!-- capability OPS-188 -->
+<!-- capability OPS-189 -->
+<!-- capability OPS-190 -->
+<!-- capability OPS-191 -->
+<!-- capability OPS-192 -->
+<!-- capability OPS-193 -->
+<!-- capability OPS-194 -->
+<!-- capability OPS-195 -->
 <!-- capability OPS-72 -->
 <!-- capability OPS-73 -->
 <!-- capability OPS-74 -->
@@ -419,6 +437,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-35 -->
 <!-- capability OPS-36 -->
 <!-- capability OPS-37 -->
+<!-- capability OPS-171 -->
 <!-- capability OPS-38 -->
 <!-- capability OPS-39 -->
 ### Data protection and privacy (OPS)
@@ -431,11 +450,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-42 -->
 <!-- capability OPS-43 -->
 <!-- capability OPS-168 -->
+<!-- capability OPS-183 -->
+<!-- capability OPS-184 -->
 <!-- capability OPS-44 -->
 <!-- capability OPS-165 -->
 <!-- capability OPS-45 -->
 <!-- capability OPS-166 -->
 <!-- capability OPS-169 -->
+<!-- capability OPS-196 -->
+<!-- capability OPS-170 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
 <!-- capability OPS-48 -->
@@ -470,7 +493,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-54 -->
 <!-- capability OPS-55 -->
 <!-- capability OPS-56 -->
-<!-- capability OPS-57 -->
 ### Environment and accounts (OPS)
 
 <!-- generated:group environment-and-accounts-ops -->
@@ -752,6 +774,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability DEV-14 -->
 <!-- capability DEV-15 -->
+<!-- capability DEV-60 -->
 <!-- capability DEV-16 -->
 ### Test fixtures, reports & DynamoDB export (DEV)
 
@@ -810,6 +833,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DEV-56 -->
 <!-- capability DEV-57 -->
 <!-- capability DEV-58 -->
+<!-- capability DEV-59 -->
 ## Spreadsheets and diya-gl (SS)
 
 <!-- generated:area SS -->

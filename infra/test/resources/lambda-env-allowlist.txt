@@ -272,3 +272,7 @@ HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/affiliateApplicatio
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/affiliateApplicationGet.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
 CONSOLE_CAPTURE_ROLE_ARNS  app/functions/analytics/consoleCapturePublish.js  truthy guard in readRoleArns(); only the prod Lambda reads other accounts, so the ci Lambda leaves it unset
 CONSOLE_CAPTURE_EXTERNAL_ID  app/functions/analytics/consoleCapturePublish.js  checked only when a target needs an assumed role; only the prod Lambda reads other accounts, so the ci Lambda leaves it unset
+
+# --- trusted event function: variables only its prod reads set ---
+COMPANIES_HOUSE_BASE_URI   app/functions/ops/trustedEventToGithubIssue.js  read only by the Companies House deadline read and its source check, which run in prod; ci leaves it unset
+TRUSTED_EVENT_ROOT_READ_ROLE_ARN   app/functions/ops/trustedEventToGithubIssue.js  read only by the management-account reads (domains, budgets, anomalies), which run in prod; ci leaves it unset

@@ -155,6 +155,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     process.env.COMPANIES_HOUSE_PRESENTER_ID = SIMULATOR_PRESENTER_ID;
     process.env.COMPANIES_HOUSE_PRESENTER_CODE = SIMULATOR_PRESENTER_CODE;
     process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE = "0012";
+    process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
   });
 
   afterAll(async () => {
@@ -163,6 +164,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     delete process.env.COMPANIES_HOUSE_PRESENTER_ID;
     delete process.env.COMPANIES_HOUSE_PRESENTER_CODE;
     delete process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
   });
 
   beforeEach(() => {
@@ -176,6 +178,18 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
   afterEach(() => {
     rmSync(outDir, { recursive: true, force: true });
     mockDynamoSend.mockReset();
+  });
+
+  test.each([undefined, "false", "TRUE", ""])("refuses to run when COMPANIES_HOUSE_GATEWAY_TEST is %j", async (value) => {
+    const saved = process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    if (value === undefined) delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    else process.env.COMPANIES_HOUSE_GATEWAY_TEST = value;
+    try {
+      await expect(runCases([], outDir, { sleepFn: fastSleep })).rejects.toThrow(/COMPANIES_HOUSE_GATEWAY_TEST must be "true"/);
+      expect(mockDynamoSend).not.toHaveBeenCalled();
+    } finally {
+      process.env.COMPANIES_HOUSE_GATEWAY_TEST = saved;
+    }
   });
 
   const baseCase = (overrides) => ({

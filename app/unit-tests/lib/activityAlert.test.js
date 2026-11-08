@@ -434,6 +434,14 @@ describe("lib/activityAlert", () => {
       });
     });
 
+    test("classifies from an email the caller holds when the context has none", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "abc-123");
+        expect(resolveActorClass(undefined, null, "synthetic-local@test.diyaccounting.co.uk")).toBe("test-user");
+        expect(resolveActorClass(undefined, null, "alice@example.com")).toBe("customer");
+      });
+    });
+
     test("classifies from the signed-in user's email over any requestId prefix", async () => {
       await context.run(new Map(), async () => {
         context.set("requestId", "abc-123");

@@ -1,0 +1,20 @@
+{
+  "kind": "triage",
+  "description": "An HMRC connection problem the authorisation-expired entry answers.",
+  "handlingInput": {
+    "issueNumber": 9019,
+    "category": "connection",
+    "faqId": "authorisation-expired",
+    "ticketKind": "other",
+    "summary": "The customer is told their HMRC authorisation has expired and asks how to connect again.",
+    "injectionSuspected": false,
+    "piiPresent": false,
+    "operatorComments": []
+  },
+  "expect": {
+    "resolution": "answer",
+    "matchedArticle": "authorisation-expired",
+    "requiredPhrases": ["authoris"],
+    "forbiddenPhrases": ["Dear ", "close this ticket"]
+  }
+}

@@ -17,6 +17,9 @@ version = "1.1.0"
 # resident-pro       → self-service, includes resident-vat and resident-ltd           → £39.99/year or £3.99/month via Stripe Checkout
 # resident-tax-agent → self-service, includes resident-pro                            → £199.99/year or £19.99/month via Stripe Checkout
 #
+# passSummary: what a bundle lets the person do, as a phrase that follows "you can". The pass page shows it
+# for each bundle that a pass can grant. It names only what the bundle's activities allow on prod today.
+#
 # See PASSES.md for full documentation and submit.passes.toml for pass type definitions.
 
 # default: Automatic bundle for all authenticated users
@@ -39,6 +42,7 @@ allocation = "automatic"
 [[bundles]]
 id = "day-guest"
 name = "Day pass"
+passSummary = "submit VAT returns to HMRC"
 levelName = "Guest"
 enable = "always"
 hidden = false
@@ -90,6 +94,7 @@ tokensGranted = 3
 [[bundles]]
 id = "week-guest"
 name = "Week pass"
+passSummary = "submit VAT returns to HMRC"
 levelName = "Guest"
 enable = "on-pass"
 hidden = true
@@ -105,6 +110,7 @@ tokensGranted = 3
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
+passSummary = "submit VAT returns to HMRC"
 levelName = "Guest"
 enable = "on-pass"
 hidden = true
@@ -130,6 +136,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-vat"
 name = "Resident VAT"
+passSummary = "submit VAT returns to HMRC and make pass links for other people"
 description = "Submit VAT returns to HMRC. £9.99/yr / £0.99/mo, cancel anytime."
 levelName = "Resident"
 enable = "always"
@@ -189,6 +196,7 @@ currency = "gbp"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
+passSummary = "submit VAT returns to HMRC, file accounts with Companies House, and make pass links for other people"
 description = "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime."
 includes = ["resident-vat", "resident-ltd"]
 levelName = "Pro"
@@ -216,6 +224,7 @@ currency = "gbp"
 [[bundles]]
 id = "resident-tax-agent"
 name = "Resident Tax Agent"
+passSummary = "do everything in Resident Pro and manage a practice's clients, with no limit on tokens"
 description = "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime."
 includes = ["resident-pro"]
 levelName = "Tax agent"
@@ -247,6 +256,7 @@ currency = "gbp"
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
+passSummary = "submit VAT returns to HMRC"
 levelName = "Guest"
 enable = "on-pass"
 hidden = true
@@ -264,6 +274,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro-comp"
 name = "Resident Tax Agent (Complimentary)"
+passSummary = "do everything in Resident Pro and manage a practice's clients, with no limit on tokens"
 includes = ["resident-tax-agent"]
 levelName = "Pro"
 enable = "on-pass"
@@ -280,6 +291,7 @@ tokensGranted = "unlimited"
 [[bundles]]
 id = "operator"
 name = "Operator"
+passSummary = "open the operator dashboard"
 levelName = "Operator"
 enable = "on-pass"
 hidden = true
@@ -294,7 +306,7 @@ metered = false
 # metered
 # =======
 # If false, this activity does not appear in the user's activity list and does not consume tokens
-paths = ["bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
+paths = ["bundles.html", "pass.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
 id = "submit-vat"

@@ -70,6 +70,9 @@ class SubmitEnvironmentUE1CdkResourceTest {
 
         Template observabilityUE1 = Template.fromStack(env.observabilityUE1Stack);
 
+        // Only prod forwards Health and ACM events, so this environment has no rule at all.
+        observabilityUE1.resourceCountIs("AWS::Events::Rule", 0);
+
         // 6) Two budgets, not one: AWS Budgets Actions reject a DAILY budget, so the deny action
         // sits on a MONTHLY budget at USD 150 (30 days of the operator's USD 5/day figure). A
         // second, DAILY budget at USD 5 carries no action, only a notification to the same topic,
@@ -132,7 +135,10 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "IamActionDefinition",
                                 Match.objectLike(Map.of(
                                         "Roles",
-                                        List.of("test-env-alarm-triage-role", "test-env-quarantine-reader-role"))))))));
+                                        List.of(
+                                                "test-env-alarm-triage-role",
+                                                "test-env-quarantine-reader-role",
+                                                "test-env-dashboard-review-role"))))))));
 
         // 8) The deny managed policy denies both Bedrock invoke actions, attached to nothing at
         // deploy time - the budget action attaches it once the account crosses the threshold.

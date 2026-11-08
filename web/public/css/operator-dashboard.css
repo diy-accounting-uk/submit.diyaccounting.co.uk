@@ -167,6 +167,25 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
+.data-scroll {
+  overflow-x: auto;
+}
+
+#dataTablesTable th:nth-child(n + 2):not(:last-child),
+#dataTablesTable td:nth-child(n + 2):not(:last-child),
+#dataSplitTable th:nth-child(n + 2),
+#dataSplitTable td:nth-child(n + 2),
+#dataBucketsTable th:nth-child(n + 2),
+#dataBucketsTable td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-no-figure {
+  color: var(--c-ink-muted);
+}
+
 .integrations-table th:nth-child(3),
 .integrations-table td:nth-child(3) {
   text-align: right;
@@ -191,42 +210,39 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
-/* The containers below are empty until the snapshot arrives. Each reserves the height
-   measured on a full snapshot so the fill does not push what sits below; a failed load
-   or a rendered snapshot releases the reservation. */
-#objectivesContainer {
-  min-height: 4400px;
+/* The page fills in after the snapshot arrives. The main area is at least one screen tall, so
+   the footer starts below the fold and the fill moves nothing the reader sees. The tab bar and
+   the two source lines keep their place before the data, so the panels do not move down when
+   they appear. The main area is a flex item with a basis of 0 in a body of fixed height, and an
+   explicit min-height replaces its content minimum. With the basis left at 0 the main area is
+   exactly one screen tall, and its blocks clip or scroll inside themselves. A basis of auto
+   and no shrink keep it as tall as its content. */
+body.page-dashboard #mainContent {
+  min-height: 100vh;
+  flex: 1 0 auto;
 }
 
-#objectivesContainer.objectives-failed,
-#objectivesContainer.objectives-settled {
-  min-height: 0;
+.dashboard-tabs-pending {
+  visibility: hidden;
 }
 
+#snapshotMeta,
+#snapshotSource {
+  min-height: 1lh;
+}
+
+/* A panel's own height is reserved where its rows arrive after the panel is drawn. */
 #visitorsPanel {
   min-height: 440px;
 }
 
 @media (max-width: 900px) {
-  #objectivesContainer {
-    min-height: 6600px;
-  }
-
   #visitorsPanel {
     min-height: 640px;
   }
 }
 
 @media (max-width: 600px) {
-  #objectivesContainer {
-    min-height: 6950px;
-  }
-
-  #objectivesContainer.objectives-failed,
-  #objectivesContainer.objectives-settled {
-    min-height: 0;
-  }
-
   #visitorsPanel {
     min-height: 670px;
   }

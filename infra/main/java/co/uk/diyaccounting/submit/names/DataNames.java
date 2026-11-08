@@ -74,6 +74,7 @@ public class DataNames {
     public String commissionsTableName;
     public String securityStateTableName;
     public String alarmIssueLockTableName;
+    public String trustedEventLedgerTableName;
     public String mcpSessionsTableName;
     public String integrationCallsTableName;
     public String diyaGlBucketName;
@@ -196,6 +197,7 @@ public class DataNames {
         this.commissionsTableName = "%s-commissions".formatted(root.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(root.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(root.envResourceNamePrefix);
+        this.trustedEventLedgerTableName = "%s-trusted-events".formatted(root.envResourceNamePrefix);
         this.mcpSessionsTableName = "%s-mcp-sessions".formatted(root.envResourceNamePrefix);
         this.integrationCallsTableName = "%s-integration-calls".formatted(root.envResourceNamePrefix);
         this.diyaGlBucketName = "%s-diya-gl-%s".formatted(root.envResourceNamePrefix, props.awsAccount);

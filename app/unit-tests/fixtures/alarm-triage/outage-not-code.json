@@ -1,0 +1,74 @@
+{
+  "description": "A draft-pr row, but the logs show the HMRC sandbox answering 503; no code change helps.",
+  "alarm": {
+    "name": "ci-zz2banana-app-hmrc-vat-return-post-errors",
+    "environment": "ci",
+    "deployment": "zz2banana",
+    "region": "eu-west-2",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9101
+  },
+  "remedyRow": {
+    "family": "ci-app-hmrc-vat-return-post-errors",
+    "remedy": "draft-pr",
+    "paths": ["src/hmrc/post.js"],
+    "budgetPerDay": 2,
+    "why": "One function."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz2banana",
+    "logGroupNamePrefixes": ["/aws/lambda/ci-zz2banana-demo-fn"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "/aws/lambda/ci-zz2banana-demo-fn",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:05:00Z",
+          "summary": "Alarm updated from OK to ALARM",
+          "newState": {
+            "value": "ALARM",
+            "stateReason": "Threshold Crossed: 1 datapoint [3.0 (15/01/26 09:05:00)] was greater than the threshold (0.0)."
+          }
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\":[{\"at\":\"2026-01-15T09:05:00Z\",\"summary\":\"Alarm updated from OK to ALARM\",\"newState\":{\"value\":\"ALARM\",\"stateReason\":\"Threshold Crossed: 1 datapoint [3.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\":[{\"AlarmName\":\"ci-zz2banana-app-hmrc-vat-return-post-errors\",\"StateValue\":\"ALARM\",\"StateReason\":\"Threshold Crossed: 1 datapoint [3.0 (15/01/26 09:05:00)] was greater than the threshold (0.0).\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\":[{\"logGroupName\":\"/aws/lambda/ci-zz2banana-demo-fn\",\"retentionInDays\":30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\":[{\"timestamp\":1768467900000,\"message\":\"WARN req-0101 upstream returned 503 Service Unavailable from the sandbox host\"},{\"timestamp\":1768467901000,\"message\":\"WARN req-0102 upstream returned 503 Service Unavailable from the sandbox host\"},{\"timestamp\":1768467902000,\"message\":\"WARN req-0103 upstream returned 503 Service Unavailable from the sandbox host\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": true,
+    "whatBroke": [
+      ["503", "service unavailable"],
+      ["upstream", "sandbox", "hmrc"]
+    ],
+    "nextAction": [["watch", "wait", "no code", "no action", "no further action", "monitor", "outage"]],
+    "remedy": "none"
+  }
+}

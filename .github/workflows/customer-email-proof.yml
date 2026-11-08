@@ -1,0 +1,173 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-181 Prove the customer email path on ci
+# - **Use when:** the EmailStack or the customer email worker has deployed to ci and the path from the activity bus to a delivered message needs a check.
+# - **Does:** customer-email-proof.yml puts fixture CustomerEmailRequest events on the ci activity bus: one for each of three kinds and one submission-receipt to the operator address, one to each SES simulator bounce and complaint address. The receipt is a synthetic VAT receipt that scripts/customer-email-proof-receipt.mjs writes to the ci receipts table before the requests and deletes after the checks, also when they fail. It waits, reads the worker's log group, and queries the ci activity events for the customer-email outcomes.
+# - **Run:** `gh workflow run customer-email-proof.yml -f operator-address=<address>`
+# - **Entry:** `.github/workflows/customer-email-proof.yml`
+# - **Files:** .github/workflows/customer-email-proof.yml, scripts/customer-email-proof-receipt.mjs, app/unit-tests/scripts/customerEmailProofReceipt.test.js
+# - **Keywords:** customer email proof, ses, dkim, spf, bounce, complaint, simulator, ci
+# - **Related:** SITE-27
+# @end-capability
+
+name: customer email proof
+run-name: "customer email proof on ci from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      operator-address:
+        description: 'Mailbox that receives the fixture emails, to read the DKIM and SPF results'
+        required: true
+        type: string
+        default: 'antony@diyaccounting.co.uk'
+
+env:
+  AWS_REGION: 'eu-west-2'
+  ENVIRONMENT_NAME: 'ci'
+  RECEIPTS_DYNAMODB_TABLE_NAME: 'ci-env-receipts'
+  # The synthetic receipt's account and id come from the run, so a delete finds what the put wrote.
+  PROOF_USER_SUB: 'proof-${{ github.run_id }}'
+  PROOF_RECEIPT_ID: 'proof-receipt-${{ github.run_id }}'
+  # The put steps send this many requests: three kinds and the receipt to the operator, two to simulators.
+  EXPECTED_REQUESTS: '6'
+
+concurrency:
+  group: customer-email-proof
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    name: 'proof'
+    runs-on: ubuntu-24.04
+    environment: ci
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Write the synthetic VAT receipt
+        run: node scripts/customer-email-proof-receipt.mjs put
+
+      - name: Put the fixture requests on the activity bus
+        env:
+          OPERATOR_ADDRESS: ${{ inputs.operator-address }}
+        run: |
+          set -euo pipefail
+          BUS="${ENVIRONMENT_NAME}-env-activity-bus"
+          RUN_TAG="proof-${GITHUB_RUN_ID}"
+          START_EPOCH_MS="$(date +%s)000"
+          echo "START_EPOCH_MS=${START_EPOCH_MS}" >> "$GITHUB_ENV"
+
+          put_request() {
+            local kind="$1" to="$2" data="$3" suffix="$4" extra="${5:-}"
+            if [ -z "$extra" ]; then extra='{}'; fi
+            local detail
+            detail="$(jq -cn --arg kind "$kind" --arg to "$to" --arg tag "$RUN_TAG-$suffix" --argjson data "$data" --argjson extra "$extra" \
+              '{userId: $tag, requestId: $tag, payload: ({kind: $kind, to: $to, hashedSub: $tag, synthetic: false, data: $data} + $extra)}')"
+            local entries
+            entries="$(jq -cn --arg bus "$BUS" --arg detail "$detail" \
+              '[{EventBusName: $bus, Source: "diy.submit", DetailType: "CustomerEmailRequest", Detail: $detail}]')"
+            local failed
+            failed="$(aws events put-events --entries "$entries" --query FailedEntryCount --output text)"
+            echo "put ${kind} ${suffix}: failed entries ${failed}"
+            test "$failed" = "0"
+          }
+
+          EXPIRY="$(date -u -d '+30 days' +%Y-%m-%dT%H:%M:%SZ)"
+          put_request subscription-started "$OPERATOR_ADDRESS" \
+            "{\"bundleId\":\"resident-vat\",\"currentPeriodEnd\":\"${EXPIRY}\"}" operator-subscription
+          put_request pass-generated "$OPERATOR_ADDRESS" \
+            "{\"bundleId\":\"day-guest\",\"passTypeId\":\"physical-pass\",\"code\":\"tiger-happy-mountain-silver\",\"validUntil\":\"${EXPIRY}\",\"maxUses\":1}" operator-pass
+          put_request pass-redeemed "$OPERATOR_ADDRESS" \
+            "{\"bundleId\":\"day-guest\",\"expiry\":\"${EXPIRY}\"}" operator-redeemed
+          put_request submission-receipt "$OPERATOR_ADDRESS" \
+            "{\"receiptId\":\"${PROOF_RECEIPT_ID}\",\"receiptKind\":\"vat-return\"}" operator-receipt \
+            "{\"userSub\":\"${PROOF_USER_SUB}\"}"
+          put_request pass-redeemed "bounce@simulator.amazonses.com" \
+            "{\"bundleId\":\"day-guest\",\"expiry\":\"${EXPIRY}\"}" simulator-bounce
+          put_request pass-redeemed "complaint@simulator.amazonses.com" \
+            "{\"bundleId\":\"day-guest\",\"expiry\":\"${EXPIRY}\"}" simulator-complaint
+
+      - name: Wait for the queue to drain
+        run: |
+          set -euo pipefail
+          QUEUE_URL="$(aws sqs get-queue-url --queue-name "${ENVIRONMENT_NAME}-env-customer-email" --query QueueUrl --output text)"
+          for _ in $(seq 1 30); do
+            COUNTS="$(aws sqs get-queue-attributes --queue-url "$QUEUE_URL" \
+              --attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible \
+              --query 'Attributes.[ApproximateNumberOfMessages,ApproximateNumberOfMessagesNotVisible]' --output text)"
+            echo "visible and in flight: ${COUNTS}"
+            if [ "$COUNTS" = "0	0" ]; then break; fi
+            sleep 10
+          done
+          DLQ_URL="$(aws sqs get-queue-url --queue-name "${ENVIRONMENT_NAME}-env-customer-email-dlq" --query QueueUrl --output text)"
+          DLQ_COUNT="$(aws sqs get-queue-attributes --queue-url "$DLQ_URL" --attribute-names ApproximateNumberOfMessages --query 'Attributes.ApproximateNumberOfMessages' --output text)"
+          echo "dead letter queue depth: ${DLQ_COUNT}"
+          test "$DLQ_COUNT" = "0"
+
+      - name: Read the worker and event outcomes from the logs
+        run: |
+          set -euo pipefail
+          sleep 30
+          for GROUP in "/aws/lambda/${ENVIRONMENT_NAME}-env-customer-email-send" "/aws/lambda/${ENVIRONMENT_NAME}-env-customer-email-event"; do
+            echo "--- ${GROUP}"
+            aws logs filter-log-events --log-group-name "$GROUP" --start-time "$START_EPOCH_MS" \
+              --filter-pattern '"Customer email"' \
+              --query 'events[].message' --output text | tee "${RUNNER_TEMP}/outcomes.log" | grep -o '"outcome":"[a-z-]*"\|"eventType":"[A-Za-z ]*"' | sort | uniq -c || true
+            case "$GROUP" in
+              *-customer-email-send)
+                SENT="$(grep -o '"outcome":"sent"' "${RUNNER_TEMP}/outcomes.log" | wc -l | tr -d ' ' || true)"
+                FAILED="$(grep -o '"outcome":"failed"\|"outcome":"no-address"' "${RUNNER_TEMP}/outcomes.log" | wc -l | tr -d ' ' || true)"
+                echo "worker outcomes: sent ${SENT} of ${EXPECTED_REQUESTS}, failed ${FAILED}"
+                test "$SENT" -ge "$EXPECTED_REQUESTS"
+                test "$FAILED" = "0"
+                ;;
+            esac
+          done
+
+      # The delivery stream to the lake writes a batch every 15 minutes, so the step reads until
+      # this run's events are there. It counts only the events at or after the first request.
+      - name: Read the customer email events from the activity lake
+        run: |
+          set -euo pipefail
+          QUERY="SELECT event, count(*) AS c FROM ci_env_analytics.activity_events_all WHERE dt >= current_date - interval '1' day AND event LIKE 'customer-email-%' AND to_unixtime(event_ts) * 1000 >= ${START_EPOCH_MS} GROUP BY 1 ORDER BY 1"
+          LAKE_SENT=0
+          LAKE_FAILED=0
+          for attempt in $(seq 1 20); do
+            QUERY_ID="$(aws athena start-query-execution --work-group ci-env-analytics --query-string "$QUERY" --query QueryExecutionId --output text)"
+            STATE=RUNNING
+            for _ in $(seq 1 60); do
+              STATE="$(aws athena get-query-execution --query-execution-id "$QUERY_ID" --query 'QueryExecution.Status.State' --output text)"
+              case "$STATE" in SUCCEEDED|FAILED|CANCELLED) break ;; esac
+              sleep 2
+            done
+            echo "athena state: ${STATE}"
+            test "$STATE" = "SUCCEEDED"
+            aws athena get-query-results --query-execution-id "$QUERY_ID" \
+              --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text | tee "${RUNNER_TEMP}/lake.log"
+            LAKE_SENT="$(awk -F'\t' '$1 == "customer-email-sent" { print $2 }' "${RUNNER_TEMP}/lake.log")"
+            LAKE_FAILED="$(awk -F'\t' '$1 == "customer-email-failed" { print $2 }' "${RUNNER_TEMP}/lake.log")"
+            echo "lake events, read ${attempt}: sent ${LAKE_SENT:-0} of ${EXPECTED_REQUESTS}, failed ${LAKE_FAILED:-0}"
+            if [ "${LAKE_SENT:-0}" -ge "$EXPECTED_REQUESTS" ] || [ "${LAKE_FAILED:-0}" != "0" ]; then break; fi
+            sleep 60
+          done
+          test "${LAKE_SENT:-0}" -ge "$EXPECTED_REQUESTS"
+          test "${LAKE_FAILED:-0}" = "0"
+
+      - name: Delete the synthetic VAT receipt
+        if: always()
+        run: node scripts/customer-email-proof-receipt.mjs delete

@@ -2,7 +2,7 @@
   "version": 1,
   "disclosure": "#ad",
   "generatePassUrl": "https://submit.diyaccounting.co.uk/passes/generate-digital.html",
-  "passUrlTemplate": "https://submit.diyaccounting.co.uk/bundles.html?pass={code}",
+  "passUrlTemplate": "https://submit.diyaccounting.co.uk/pass.html?pass={code}",
   "passHosts": [
     "submit.diyaccounting.co.uk",
     "ci-submit.diyaccounting.co.uk"

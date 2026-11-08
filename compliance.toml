@@ -45,7 +45,7 @@ status = "current"
 date = "2026-11-02"
 date_kind = "reviewed"
 owner = "Operator"
-source = "PLAN_COMPANIES_HOUSE_APPROVAL.md CS-11b"
+source = "../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md CS-11b"
 
 [[items]]
 id = "companies-house-software-authorisation"
@@ -55,7 +55,7 @@ status = "current"
 date = "2026-11-02"
 date_kind = "reviewed"
 owner = "Operator"
-source = "PLAN_COMPANIES_HOUSE_APPROVAL.md B34c, CS-11b"
+source = "../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md B34c, CS-11b"
 
 [[items]]
 id = "ico-registration"

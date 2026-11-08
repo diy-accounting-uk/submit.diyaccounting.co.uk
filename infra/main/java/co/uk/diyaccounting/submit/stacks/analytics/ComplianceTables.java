@@ -124,7 +124,7 @@ public class ComplianceTables {
         parameters.put("projection.enabled", "true");
         parameters.put("projection.dt.type", "date");
         parameters.put("projection.dt.format", "yyyy-MM-dd");
-        parameters.put("projection.dt.range", "2026-01-01,NOW");
+        parameters.put("projection.dt.range", "2026-08-01,NOW");
         parameters.put("projection.dt.interval", "1");
         parameters.put("projection.dt.interval.unit", "DAYS");
         parameters.put("storage.location.template", location + "dt=${dt}/");

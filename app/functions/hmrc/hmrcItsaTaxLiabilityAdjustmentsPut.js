@@ -31,7 +31,7 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
+import { recordFiledReceipt } from "../../services/filedReceipt.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
@@ -398,7 +398,14 @@ export async function ingestHandler(event) {
         if (payload.userSub && payload.taxYear) {
           const timestamp = new Date().toISOString();
           const receiptId = `${timestamp}-${payload.taxYear}`;
-          await putReceipt(payload.userSub, receiptId, receiptBody, resolveActorClass());
+          await recordFiledReceipt({
+            userSub: payload.userSub,
+            receiptId,
+            receipt: receiptBody,
+            actor: resolveActorClass(),
+            receiptKind: "itsa-tax-liability-adjustments",
+            synthetic: payload.hmrcAccount === "synthetic",
+          });
           resultData.receiptId = receiptId;
         }
 
@@ -540,7 +547,14 @@ export async function workerHandler(event) {
       if (userSub && payload.taxYear) {
         const timestamp = new Date().toISOString();
         const receiptId = `${timestamp}-${payload.taxYear}`;
-        await putReceipt(userSub, receiptId, receiptBody, resolveActorClass());
+        await recordFiledReceipt({
+          userSub,
+          receiptId,
+          receipt: receiptBody,
+          actor: resolveActorClass(),
+          receiptKind: "itsa-tax-liability-adjustments",
+          synthetic: payload.hmrcAccount === "synthetic",
+        });
         result.receiptId = receiptId;
       }
 

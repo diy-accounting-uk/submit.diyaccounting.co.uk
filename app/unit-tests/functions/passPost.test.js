@@ -60,6 +60,16 @@ vi.mock("@app/services/productCatalog.js", () => ({
   }),
 }));
 
+const mockGetUserBundles = vi.fn();
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: (...args) => mockGetUserBundles(...args),
+}));
+
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({
+  requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args),
+}));
+
 import { ingestHandler } from "@app/functions/account/passPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -79,6 +89,8 @@ describe("passPost", () => {
     mockGetRedemption.mockResolvedValue(null);
     mockReleaseReferral.mockReset();
     mockRecordRedemption.mockReset();
+    mockGetUserBundles.mockReset();
+    mockGetUserBundles.mockResolvedValue([]);
     mockGrantBundle.mockReset();
     mockGrantBundle.mockResolvedValue({ status: "granted", expiry: "2026-03-01T00:00:00.000Z" });
     mockEventBridgeSend.mockClear();
@@ -193,6 +205,16 @@ describe("passPost", () => {
     expect(body.reason).toBe("not_found");
   });
 
+  test.each(["wrong_email", "email_required"])("a %s refusal answers 200 and grants nothing", async (reason) => {
+    mockRedeemPass.mockResolvedValue({ valid: false, reason, pass: { passTypeId: "day-guest-pass" } });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({ redeemed: false, reason });
+    expect(mockGrantBundle).not.toHaveBeenCalled();
+  });
+
   test("publishes the pass-redeemed event with the hashed sub, never the raw sub", async () => {
     mockRedeemPass.mockResolvedValue({
       valid: true,
@@ -210,6 +232,31 @@ describe("passPost", () => {
     const detail = JSON.parse(rawDetail);
     expect(detail.event).toBe("pass-redeemed");
     expect(detail.hashedSub).toBe("hashed_test-user-sub");
+  });
+
+  describe("the pass-redeemed event carries the class of the redeeming account", () => {
+    async function redeemedActor(email) {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { testPass: false } });
+      await ingestHandler(buildEventWithToken(makeIdToken("test-user-sub", { email }), { code: "test-pass-code" }));
+      return JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).actor;
+    }
+
+    test("is customer for a customer's email", async () => {
+      expect(await redeemedActor("user@example.com")).toBe("customer");
+    });
+
+    test("is test-user for a test account's email", async () => {
+      expect(await redeemedActor("synthetic-local@test.diyaccounting.co.uk")).toBe("test-user");
+    });
+
+    test("is probe for a probe account's email", async () => {
+      expect(await redeemedActor("probe-abc@example.com")).toBe("probe");
+    });
+
+    test("never publishes the email", async () => {
+      await redeemedActor("user@example.com");
+      expect(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).not.toContain("user@example.com");
+    });
   });
 
   describe("refused redemptions are tracked", () => {
@@ -280,6 +327,58 @@ describe("passPost", () => {
 
       const events = mockEventBridgeSend.mock.calls.map((call) => JSON.parse(call[0].input.Entries[0].Detail).event);
       expect(events).toEqual(["pass-redeemed"]);
+    });
+  });
+
+  describe("an account that already holds the bundle", () => {
+    const heldPass = { code: "test-pass-code", passTypeId: "digital-pass", bundleId: "resident-pro", issuedBy: "hashed_issuer-sub" };
+
+    beforeEach(() => {
+      mockGetPassRecord.mockResolvedValue(heldPass);
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "resident-pro", pass: { ...heldPass, testPass: false } });
+    });
+
+    test("a subscriber is refused with already_held, no use is counted and no referral is claimed", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", stripeSubscriptionId: "sub_123" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(result.statusCode).toBe(409);
+      const body = JSON.parse(result.body);
+      expect(body.reason).toBe("already_held");
+      expect(body.message).toContain("resident-pro");
+      expect(mockRedeemPass).not.toHaveBeenCalled();
+      expect(mockClaimReferral).not.toHaveBeenCalled();
+      expect(mockGrantBundle).not.toHaveBeenCalled();
+    });
+
+    test("an account that holds the bundle with no subscription is topped up", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body).redeemed).toBe(true);
+      expect(mockRedeemPass).toHaveBeenCalledTimes(1);
+      expect(mockGrantBundle).toHaveBeenCalledTimes(1);
+    });
+
+    test("an account that holds another bundle with a subscription redeems as before", async () => {
+      mockGetUserBundles.mockResolvedValue([{ bundleId: "other-bundle", stripeSubscriptionId: "sub_123" }]);
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: heldPass.code }));
+
+      expect(JSON.parse(result.body).redeemed).toBe(true);
+      expect(mockClaimReferral).toHaveBeenCalledTimes(1);
+    });
+
+    test("an unknown code reads no bundles", async () => {
+      mockGetPassRecord.mockResolvedValue(null);
+      mockRedeemPass.mockResolvedValue({ valid: false, reason: "not_found" });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "nope" }));
+
+      expect(mockGetUserBundles).not.toHaveBeenCalled();
     });
   });
 
@@ -396,5 +495,62 @@ describe("passPost", () => {
     expect(mockClaimReferral).not.toHaveBeenCalled();
     expect(mockRecordRedemption).not.toHaveBeenCalled();
     expect(mockGrantBundle.mock.calls[0][1].acquisition).toBeUndefined();
+  });
+
+  describe("the customer email request", () => {
+    beforeEach(() => {
+      mockRequestCustomerEmail.mockReset();
+      mockRequestCustomerEmail.mockResolvedValue({ requested: true });
+    });
+
+    test("a redemption requests a pass-redeemed email for the account", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: false } });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+      expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+      expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
+        kind: "pass-redeemed",
+        userSub: "test-user-sub",
+        synthetic: false,
+        data: { bundleId: "day-guest", passTypeId: "day-guest-pass", expiry: "2026-03-01T00:00:00.000Z" },
+      });
+    });
+
+    test("a test pass marks the request synthetic", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: true } });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].synthetic).toBe(true);
+    });
+
+    test("an invalid pass requests no email", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: false, reason: "not_found" });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "invalid-code" }));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("a bundle that needs a subscription requests no email", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "test-subscription-bundle", pass: { testPass: false } });
+
+      await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+      expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    });
+
+    test("the response is unchanged when the request fails", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: false } });
+      mockRequestCustomerEmail.mockResolvedValue({ requested: false });
+
+      const result = await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code" }));
+
+      expect(result.statusCode).toBe(200);
+      const body = JSON.parse(result.body);
+      expect(body.redeemed).toBe(true);
+      expect(body.bundleId).toBe("day-guest");
+    });
   });
 });

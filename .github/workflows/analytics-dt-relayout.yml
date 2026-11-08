@@ -54,6 +54,7 @@ jobs:
       - name: Relayout
         id: relayout
         run: |
+          set -o pipefail
           ARGS=(--env "${{ inputs.environment }}")
           if [ "${{ inputs.dry-run }}" = "true" ]; then
             ARGS+=(--dry-run)

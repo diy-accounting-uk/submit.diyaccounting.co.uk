@@ -31,8 +31,6 @@
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
-    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
-    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
   </head>
@@ -50,20 +48,6 @@
       <div id="loadingSpinner" class="spinner" hidden></div>
 
       <div class="form-container">
-        <section id="passOffer" class="signed-out-panel" aria-labelledby="passOfferTitle" hidden>
-          <h2 id="passOfferTitle">Submit your VAT return to HMRC from your own records</h2>
-          <p>DIY Accounting Submit files VAT returns to HMRC under Making Tax Digital, straight from your spreadsheet figures.</p>
-          <p>
-            This link gives you <strong id="passOfferTokens">3</strong> VAT submissions free for <strong id="passOfferDays">7</strong> days.
-            After that, <span id="passOfferPrice">£0.99 a month or £9.99 a year</span>. Cancel any time.
-          </p>
-          <p>
-            To start you need a Google account (any Google account works, including one made with your own email address:
-            <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">make one</a>) and your HMRC Government Gateway
-            sign-in.
-          </p>
-        </section>
-
         <div
           class="bundles-block"
           data-requires-sign-in
@@ -81,13 +65,20 @@
         <div class="bundles-section">
           <h2>Have a pass?</h2>
           <p class="hint">Enter a four-word passphrase to redeem your invitation.</p>
-          <div id="passEntryForm" class="pass-entry">
+          <form id="passEntryForm" class="pass-entry" action="pass.html" method="get">
             <label for="passInput">Passphrase</label>
             <p id="passInput-hint" class="hint">Enter four words separated by hyphens, for example word-word-word-word.</p>
-            <input type="text" id="passInput" autocomplete="off" spellcheck="false" aria-describedby="passInput-hint" />
-            <button type="button" id="redeemPassBtn" class="btn" data-activity-start="bundle">Redeem pass</button>
-            <div id="passStatus" role="alert" aria-live="polite" hidden></div>
-          </div>
+            <input
+              type="text"
+              id="passInput"
+              name="pass"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              aria-describedby="passInput-hint"
+            />
+            <button type="submit" id="redeemPassBtn" class="btn">Redeem pass</button>
+          </form>
         </div>
 
         <div id="feedbackEngagementSection" class="bundles-section" hidden>

@@ -1,0 +1,293 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-195 Replay the alarm triage prompt over invented alarms
+# - **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Sonnet or Nova Pro on alarm triage.
+# - **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. The `runner` input picks Nova Pro (through the run-triage-agent action with `--frozen-results`), Sonnet (through the same action's claude path, with the frozen results in the prompt), or both in one run. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of Sonnet's, taken from the same run or from the `sonnet-baseline` input. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
+# - **Run:** `gh workflow run alarm-replay.yml -f runner=both`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
+# - **Entry:** `.github/workflows/alarm-replay.yml`; `scripts/alarm-replay.mjs:scoreAnswer`
+# - **Files:** .github/workflows/alarm-replay.yml, scripts/alarm-replay.mjs, app/unit-tests/fixtures/alarm-triage/, app/unit-tests/scripts/alarmReplay.test.js, app/unit-tests/alarmReplayWorkflow.test.js, prompts/alarm-triage.md, prompts/alarm-triage-answer.json
+# - **Keywords:** alarm replay, alarm fixtures, alarm triage score, nova pro, sonnet baseline, close-when-gone, safety gate
+# - **Related:** OPS-18, OPS-155, OPS-194
+# @end-capability
+
+name: alarm-replay
+run-name: alarm replay (${{ inputs.runner || 'nova' }})
+
+# The fixtures in the repository hold invented alarms only. The private set holds past alarms, so
+# the jobs print no fixture name, answer or log text for it: marks and counts only. The jobs run
+# in the ci environment and chain into the alarm triage role. A pull request from a fork has no
+# access to those variables, so the jobs skip it.
+
+on:
+  pull_request:
+    paths:
+      - 'prompts/alarm-triage.md'
+      - 'prompts/alarm-triage-answer.json'
+      - 'app/unit-tests/fixtures/alarm-triage/**'
+      - 'scripts/alarm-replay.mjs'
+      - 'scripts/nova-agent.mjs'
+      - 'scripts/nova-agent-tools.mjs'
+      - '.github/workflows/alarm-replay.yml'
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: nova scores Nova Pro, sonnet scores the baseline, both scores both in this run
+        required: false
+        default: nova
+        type: choice
+        options:
+          - nova
+          - sonnet
+          - both
+      set:
+        description: synthetic is the invented fixtures; private adds the past alarms from the private repository
+        required: false
+        default: synthetic
+        type: choice
+        options:
+          - synthetic
+          - private
+          - both
+      sonnet-baseline:
+        description: the Sonnet mean to compare Nova with when this run does not score Sonnet, such as 0.85
+        required: false
+        default: ''
+        type: string
+
+permissions: {}
+
+# One group for every run. A group for each ref lets two dispatches score at once on the same
+# role and the same Bedrock quota, and a group that cancels loses a run that is half scored.
+concurrency:
+  group: alarm-replay
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: 'eu-west-2'
+  NOVA_MODEL_ID: 'amazon.nova-pro-v1:0'
+  SONNET_MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+  HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  CLAUDE_CODE_VERSION: '2.0.30'
+  PRIVATE_SET_DIR: 'private-set/engineering/submit/alarm-replay'
+
+jobs:
+  plan:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      items: ${{ steps.list.outputs.items }}
+      runners: ${{ steps.list.outputs.runners }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that reads the private set
+        if: inputs.set == 'private' || inputs.set == 'both'
+        id: private-read-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-contents: read
+
+      - name: Check out the private set
+        if: inputs.set == 'private' || inputs.set == 'both'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: diy-accounting-uk/private.diyaccounting.co.uk
+          token: ${{ steps.private-read-token.outputs.token }}
+          path: private-set
+          sparse-checkout: engineering/submit/alarm-replay
+          persist-credentials: false
+
+      - name: List the fixtures and the runners
+        id: list
+        env:
+          SET_INPUT: ${{ inputs.set || 'synthetic' }}
+          RUNNER_INPUT: ${{ inputs.runner || 'nova' }}
+        run: |
+          set -euo pipefail
+          echo '[]' > /tmp/items-synthetic.json
+          echo '[]' > /tmp/items-private.json
+          if [ "$SET_INPUT" != "private" ]; then node scripts/alarm-replay.mjs list synthetic > /tmp/items-synthetic.json; fi
+          if [ "$SET_INPUT" != "synthetic" ]; then node scripts/alarm-replay.mjs list private "$PRIVATE_SET_DIR" > /tmp/items-private.json; fi
+          echo "items=$(jq -c -s 'add' /tmp/items-synthetic.json /tmp/items-private.json)" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNER_INPUT" = "both" ]; then
+            echo 'runners=["nova","sonnet"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "runners=[\"$RUNNER_INPUT\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  replay:
+    needs: plan
+    if: needs.plan.outputs.items != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: ci
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        item: ${{ fromJson(needs.plan.outputs.items) }}
+        runner: ${{ fromJson(needs.plan.outputs.runners) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that reads the private set
+        if: matrix.item.set == 'private'
+        id: private-read-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-contents: read
+
+      - name: Check out the private set
+        if: matrix.item.set == 'private'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: diy-accounting-uk/private.diyaccounting.co.uk
+          token: ${{ steps.private-read-token.outputs.token }}
+          path: private-set
+          sparse-checkout: engineering/submit/alarm-replay
+          persist-credentials: false
+
+      - name: Install Claude Code
+        if: matrix.runner == 'sonnet'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Stop when the agent kill switch is on
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
+      # Writes the evidence file, the frozen results, and the prompt variables that
+      # alarm-triage.yml sets. The variables go to $GITHUB_ENV so that envsubst in the
+      # run-triage-agent action expands them.
+      - name: Prepare the alarm
+        env:
+          SET: ${{ matrix.item.set }}
+          FIXTURE: ${{ matrix.item.fixture }}
+        run: |
+          set -euo pipefail
+          FIXTURE_DIR=""
+          if [ "$SET" = "private" ]; then FIXTURE_DIR="$PRIVATE_SET_DIR"; fi
+          node scripts/alarm-replay.mjs prepare "$SET" "$FIXTURE" /tmp/alarm-replay "$FIXTURE_DIR"
+          cp /tmp/alarm-replay/evidence.json /tmp/evidence.json
+          cat /tmp/alarm-replay/alarm.env >> "$GITHUB_ENV"
+
+      - name: Run triage (Nova Pro)
+        if: matrix.runner == 'nova'
+        uses: ./.github/actions/run-triage-agent
+        with:
+          runner: nova
+          model-id: ${{ env.NOVA_MODEL_ID }}
+          tools: read_file,grep_repo,list_files,aws_read
+          max-turns: '30'
+          deadline-seconds: '600'
+          final-schema: prompts/alarm-triage-answer.json
+          input-files: /tmp/evidence.json
+          frozen-results: /tmp/alarm-replay/frozen-results.json
+          output-file: /tmp/alarm-replay-result.json
+          prompt-file: prompts/alarm-triage.md
+          echo-output: 'false'
+
+      - name: Run triage (Sonnet)
+        if: matrix.runner == 'sonnet'
+        uses: ./.github/actions/run-triage-agent
+        with:
+          runner: claude
+          model-id: ${{ env.SONNET_MODEL_ID }}
+          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
+          allowed-tools: Read
+          max-turns: '12'
+          output-file: /tmp/alarm-replay-result.json
+          prompt-file: /tmp/alarm-replay/prompt-claude.md
+          echo-output: 'false'
+
+      # A run that stops early scores 0 on every mark. The step never fails on a low score:
+      # the score job applies the bar.
+      - name: Score the answer
+        env:
+          SET: ${{ matrix.item.set }}
+          FIXTURE: ${{ matrix.item.fixture }}
+          RUNNER: ${{ matrix.runner }}
+        run: |
+          set -euo pipefail
+          FIXTURE_DIR=""
+          if [ "$SET" = "private" ]; then FIXTURE_DIR="$PRIVATE_SET_DIR"; fi
+          node scripts/alarm-replay.mjs check "$SET" "$FIXTURE" /tmp/alarm-replay-result.json /tmp/alarm-replay-outcome.json "$FIXTURE_DIR"
+
+      - name: Upload the outcome
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: alarm-outcome-${{ matrix.runner }}-${{ matrix.item.set }}-${{ matrix.item.fixture }}
+          path: /tmp/alarm-replay-outcome.json
+          retention-days: 7
+
+  score:
+    needs: replay
+    if: ${{ !cancelled() && needs.replay.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Download the outcomes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: alarm-outcome-*
+          path: /tmp/alarm-outcomes
+
+      - name: Apply the safety gate and the bar
+        env:
+          SONNET_BASELINE: ${{ inputs.sonnet-baseline }}
+        shell: bash
+        run: node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$SONNET_BASELINE" | tee -a "$GITHUB_STEP_SUMMARY"

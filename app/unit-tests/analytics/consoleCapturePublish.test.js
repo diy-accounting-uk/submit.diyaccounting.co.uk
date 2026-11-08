@@ -25,6 +25,18 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
       this.name = "GetMetricWidgetImage";
     }
   },
+  GetMetricDataCommand: class {
+    constructor(input) {
+      this.input = input;
+      this.name = "GetMetricData";
+    }
+  },
+  DescribeAlarmHistoryCommand: class {
+    constructor(input) {
+      this.input = input;
+      this.name = "DescribeAlarmHistory";
+    }
+  },
   DescribeAlarmsCommand: class {
     constructor(input) {
       this.input = input;
@@ -91,6 +103,8 @@ function widgetAnswer() {
 
 function defaultCloudWatch(command) {
   if (command.name === "GetMetricWidgetImage") return widgetAnswer();
+  if (command.name === "GetMetricData") return { MetricDataResults: [{ Id: "e1", Values: [1] }] };
+  if (command.name === "DescribeAlarmHistory") return { AlarmHistoryItems: [] };
   return {
     MetricAlarms: [
       { AlarmName: "ci-env-b", StateValue: "OK", StateReason: "fine", StateUpdatedTimestamp: new Date("2026-11-01T00:00:00Z") },
@@ -199,11 +213,11 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 16, failed: 0 });
-    expect(Object.keys(index.items)).toHaveLength(16);
+    expect(result).toEqual({ items: 22, failed: 0 });
+    expect(Object.keys(index.items)).toHaveLength(22);
     expect(index.environment).toBe("ci");
     expect(index.items["ci-lambda-errors"]).toMatchObject({ kind: "image", imageKey: "snapshots/ci/console/ci/ci-lambda-errors.png" });
-    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(13);
+    expect(puts.filter((input) => input.Key.endsWith(".png"))).toHaveLength(19);
     expect(puts.find((input) => input.Key.endsWith("ci-lambda-errors.png")).ContentType).toBe("image/png");
   });
 
@@ -216,12 +230,92 @@ describe("consoleCapturePublish", () => {
     expect(widget.metrics[0][0].expression).toMatch(/^SORT\(SEARCH\(/);
   });
 
+  test("an image entry records whether its graph holds data in the range", async () => {
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "GetMetricData") {
+        const empty = command.input.MetricDataQueries[0].Expression?.includes("HmrcAuthentications");
+        return { MetricDataResults: [{ Id: "e1", Values: empty ? [] : [2] }] };
+      }
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    await runConsoleCapture(dependencies);
+
+    const items = indexFrom(puts).items;
+    expect(items["ci-hmrc-authentications"].hasData).toBe(false);
+    expect(items["ci-lambda-errors"].hasData).toBe(true);
+    const call = cloudWatchHandler.mock.calls.map((entry) => entry[0]).find((command) => command.name === "GetMetricData");
+    expect(call.input.EndTime).toEqual(NOW);
+    expect(call.input.StartTime).toEqual(new Date(NOW.getTime() - 30 * 86400 * 1000));
+  });
+
+  test("a failed data check keeps the image and records no answer", async () => {
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "GetMetricData") throw new Error("denied");
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    const result = await runConsoleCapture(dependencies);
+
+    expect(result.failed).toBe(0);
+    expect(indexFrom(puts).items["ci-lambda-errors"]).toMatchObject({ kind: "image", hasData: null });
+  });
+
   test("the alarms table puts ALARM rows first", async () => {
     const { puts, dependencies } = makeDependencies();
     await runConsoleCapture(dependencies);
     const rows = indexFrom(puts).items["ci-alarms"].rows;
     expect(rows.map((row) => row.name)).toEqual(["ci-env-a", "ci-env-b"]);
     expect(rows[0].state).toBe("ALARM");
+  });
+
+  test("an alarm that fired in the range and is OK again sorts after ALARM and before OK, with its last fired time", async () => {
+    const okAgain = (name) => ({
+      AlarmName: name,
+      StateValue: "OK",
+      StateReason: "ok",
+      StateUpdatedTimestamp: new Date("2026-11-02T01:30:00Z"),
+    });
+    const entered = (name, at, state) => ({
+      AlarmName: name,
+      Timestamp: new Date(at),
+      HistoryData: JSON.stringify({ newState: { stateValue: state } }),
+    });
+    cloudWatchHandler.mockImplementation(async (command) => {
+      if (command.name === "DescribeAlarmHistory") {
+        return {
+          AlarmHistoryItems: [
+            entered("ci-env-fired-late", "2026-11-02T01:00:00Z", "OK"),
+            entered("ci-env-fired-late", "2026-11-01T22:00:00Z", "ALARM"),
+            entered("ci-env-fired-early", "2026-10-31T10:00:00Z", "ALARM"),
+          ],
+        };
+      }
+      if (command.name === "DescribeAlarms") {
+        return {
+          MetricAlarms: [
+            okAgain("ci-env-a-quiet"),
+            okAgain("ci-env-fired-early"),
+            okAgain("ci-env-fired-late"),
+            { AlarmName: "ci-env-z-now", StateValue: "ALARM", StateReason: "x", StateUpdatedTimestamp: new Date("2026-11-02T02:00:00Z") },
+          ],
+        };
+      }
+      return defaultCloudWatch(command);
+    });
+    const { puts, dependencies } = makeDependencies();
+
+    await runConsoleCapture(dependencies);
+
+    const rows = indexFrom(puts).items["ci-alarms"].rows;
+    expect(rows.map((row) => row.name)).toEqual(["ci-env-z-now", "ci-env-fired-late", "ci-env-fired-early", "ci-env-a-quiet"]);
+    expect(rows[1].lastFiredAt).toBe("2026-11-01T22:00:00.000Z");
+    expect(rows[3].lastFiredAt).toBeNull();
+    const history = cloudWatchHandler.mock.calls.map((call) => call[0]).find((command) => command.name === "DescribeAlarmHistory");
+    expect(history.input).toMatchObject({ HistoryItemType: "StateUpdate", EndDate: NOW });
+    expect(history.input.StartDate).toEqual(new Date(NOW.getTime() - 3 * 86400 * 1000));
   });
 
   test("the Bedrock item stores counts from the fixed query and no log line", async () => {
@@ -257,7 +351,7 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result).toEqual({ items: 16, failed: 1 });
+    expect(result).toEqual({ items: 22, failed: 1 });
     expect(index.items["ci-lambda-throttles"].error).toBe("AccessDenied: not authorised");
     expect(index.items["ci-lambda-throttles"].imageKey).toBeUndefined();
     expect(index.items["ci-lambda-errors"].imageKey).toBeDefined();
@@ -297,7 +391,7 @@ describe("consoleCapturePublish", () => {
       "arn:aws:iam::283165661847:role/gateway-console-capture-read",
     ]);
     expect(assumed.every((input) => input.ExternalId === "submit-console-capture" && input.DurationSeconds === 900)).toBe(true);
-    expect(result).toEqual({ items: 34, failed: 0 });
+    expect(result).toEqual({ items: 48, failed: 0 });
     const index = indexFrom(puts);
     expect(index.items["spreadsheets-rum-vitals"].imageKey).toBe("snapshots/prod/console/spreadsheets/spreadsheets-rum-vitals.png");
     const siblingClient = constructed.filter((entry) => entry.config.region === "us-east-1");
@@ -331,7 +425,7 @@ describe("consoleCapturePublish", () => {
     const result = await runConsoleCapture(dependencies);
 
     const index = indexFrom(puts);
-    expect(result.failed).toBe(1);
+    expect(result.failed).toBe(2);
     expect(index.items["spreadsheets-rum-vitals"].error).toBe("AccessDenied: not authorized to assume");
     expect(index.items["gateway-rum-vitals"].imageKey).toBeDefined();
     expect(index.items["ci-alarms"].rows).toHaveLength(2);

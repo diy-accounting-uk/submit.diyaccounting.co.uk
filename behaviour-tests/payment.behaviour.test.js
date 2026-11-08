@@ -37,6 +37,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import {
   clearBundles,
+  createPassCode,
   ensureBundlePresent,
   ensureBundleViaPassApi,
   ensureBundleViaCheckout,
@@ -497,6 +498,34 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     expect(result.portalUrl).toBeTruthy();
 
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06b-manage-subscription.png`, readerView: true });
+  });
+
+  // A pass for a bundle that this account pays for is refused and keeps its use.
+  await test.step("A pass for the subscribed bundle answers already_held and keeps its use", async () => {
+    await goToBundlesPage(page, screenshotPath);
+    const created = await createPassCode(page, "resident-vat", { testPass: true });
+    expect(created.ok && created.code).toBeTruthy();
+
+    const redeemAttempt = await page.evaluate(async (code) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      const response = await fetch("/api/v1/pass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+        body: JSON.stringify({ code }),
+      });
+      return { status: response.status, body: await response.json().catch(() => ({})) };
+    }, created.code);
+    console.log(`Pass for the subscribed bundle: ${JSON.stringify(redeemAttempt)}`);
+    expect(redeemAttempt.status).toBe(409);
+    expect(redeemAttempt.body?.error?.reason ?? redeemAttempt.body?.data?.reason ?? redeemAttempt.body?.reason).toBe("already_held");
+
+    const check = await page.evaluate(async (code) => {
+      const response = await fetch(`/api/v1/pass?code=${encodeURIComponent(code)}`);
+      return await response.json();
+    }, created.code);
+    const checkData = check?.data ?? check;
+    expect(checkData.valid).toBe(true);
+    expect(checkData.usesRemaining).toBe(1);
   });
 
   // ============================================================

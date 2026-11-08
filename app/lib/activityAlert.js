@@ -48,6 +48,7 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * @param {string} [params.actor] - Actor classification
  * @param {string} [params.flow] - Flow classification
  * @param {string} [params.userSub] - Raw sub of the authenticated user; hashed before it reaches the event, never logged raw
+ * @param {string} [params.userEmail] - Email the handler already holds for this account; sets the actor class and is never published
  * @param {string} [params.clientId] - The practice's client id when the submission was client-scoped; absent otherwise
  * @param {string} [params.appClient] - The Cognito app client the sign-in or refresh happened on ("submit", "books", "mcp")
  * @param {string} [params.sessionId] - Opaque session id from the sign-in session rule; absent for non-session events
@@ -62,6 +63,7 @@ export async function publishActivityEvent({
   actor,
   flow,
   userSub,
+  userEmail,
   clientId,
   appClient,
   sessionId,
@@ -77,7 +79,7 @@ export async function publishActivityEvent({
   const effectiveUserSub = userSub || context.get("userSub") || null;
   const hashedSub = hashSubForEvent(effectiveUserSub);
   await warmOperators();
-  const effectiveActor = resolveActorClass(actor, hashedSub);
+  const effectiveActor = resolveActorClass(actor, hashedSub, userEmail);
   const effectiveFlow = flow || (effectiveUserSub ? "user-journey" : "unknown");
 
   try {
@@ -139,11 +141,12 @@ export async function publishActivityEvent({
  *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
  * @param {string|null} [hashedSub] - Hashed sub of the account the event belongs to
+ * @param {string|null} [email] - Email the caller holds for the account; read from the request context when absent
  * @returns {"customer"|"operator"|"test-user"|"probe"|"system"}
  */
-export function resolveActorClass(explicitActor, hashedSub = null) {
+export function resolveActorClass(explicitActor, hashedSub = null, callerEmail = null) {
   if (explicitActor) return explicitActor;
-  const email = context.get("userEmail") || null;
+  const email = callerEmail || context.get("userEmail") || null;
   if (email) {
     const actor = classifyActor(email);
     if (actor !== "customer") {

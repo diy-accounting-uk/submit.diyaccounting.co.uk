@@ -58,7 +58,7 @@ async function handleAuthCallback(code, state) {
     }
 
     const tokens = await tokenResponse.json();
-    console.log("Received tokens from mock " + JSON.stringify(tokens));
+    console.log("Received tokens from mock, fields: " + Object.keys(tokens).join(","));
 
     // Store tokens in localStorage
     if (tokens.access_token) {
@@ -76,7 +76,7 @@ async function handleAuthCallback(code, state) {
     const jsonPayload = base64UrlDecode(base64Payload);
     const idTokenPayload = JSON.parse(jsonPayload);
 
-    console.log("Received id_token from mock " + JSON.stringify(idTokenPayload));
+    console.log("Received id_token from mock, claims: " + Object.keys(idTokenPayload).join(","));
 
     localStorage.setItem(
       "userInfo",
@@ -149,8 +149,16 @@ async function handleAuthCallback(code, state) {
     // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Redirect to bundles page or home
-    window.location.href = "../";
+    // Redirect to the stored return URL (e.g. pass.html?pass=CODE) or home
+    let redirectUrl = "../";
+    try {
+      const postLoginRedirect = sessionStorage.getItem("postLoginRedirect");
+      if (postLoginRedirect) {
+        sessionStorage.removeItem("postLoginRedirect");
+        redirectUrl = window.postLoginRedirectTarget(postLoginRedirect);
+      }
+    } catch {}
+    window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
     showStatus(`Authentication failed: ${error.message}`, "error");

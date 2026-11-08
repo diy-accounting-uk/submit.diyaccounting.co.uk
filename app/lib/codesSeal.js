@@ -10,7 +10,11 @@
 
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 import { loadBlobKeys, blobKeyRegistriesEqual, isVersionLabel } from "./mcpBlobKey.js";
+import { createLogger } from "./logger.js";
 
+const logger = createLogger({ source: "app/lib/codesSeal.js" });
+
+export const KEY_REFRESH_LOG_MESSAGE = "Sealed value did not open under the cached keys, keys read again";
 const CODES_ENTRY_PURPOSE = "companies-house-codes-entry";
 export const HMRC_GRANT_PURPOSE = "hmrc-grant";
 
@@ -59,7 +63,16 @@ export async function openFor(purpose, sealed, boundTo) {
     // A value sealed under a version this container has not read yet fails here. One forced read
     // of the keys settles it, and the open runs again only when the keys changed.
     const refreshedKeys = await loadBlobKeys({ forceRefresh: true });
-    if (blobKeyRegistriesEqual(refreshedKeys, keys)) throw error;
+    const keysChanged = !blobKeyRegistriesEqual(refreshedKeys, keys);
+    logger.info({
+      message: KEY_REFRESH_LOG_MESSAGE,
+      purpose,
+      sealedVersion: version,
+      cachedCurrent: keys.current,
+      refreshedCurrent: refreshedKeys.current,
+      keysChanged,
+    });
+    if (!keysChanged) throw error;
     return open(refreshedKeys);
   }
 }

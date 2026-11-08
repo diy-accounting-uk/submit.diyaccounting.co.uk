@@ -74,11 +74,6 @@ public class ActivityStack extends Stack {
         }
 
         @Value.Default
-        default String telegramTestChatId() {
-            return "";
-        }
-
-        @Value.Default
         default String telegramLiveChatId() {
             return "";
         }
@@ -130,9 +125,6 @@ public class ActivityStack extends Stack {
         var telegramForwarderEnv = new PopulatedMap<String, String>().with("ENVIRONMENT_NAME", props.envName());
         if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
             telegramForwarderEnv.with("TELEGRAM_BOT_TOKEN_ARN", props.telegramBotTokenArn());
-        }
-        if (props.telegramTestChatId() != null && !props.telegramTestChatId().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_TEST_CHAT_ID", props.telegramTestChatId());
         }
         if (props.telegramLiveChatId() != null && !props.telegramLiveChatId().isBlank()) {
             telegramForwarderEnv.with("TELEGRAM_LIVE_CHAT_ID", props.telegramLiveChatId());

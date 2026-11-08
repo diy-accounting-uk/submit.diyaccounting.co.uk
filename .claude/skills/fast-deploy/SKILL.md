@@ -8,6 +8,11 @@ description: Put a candidate fix live on a ci deployment in minutes, from the lo
 
 # fast-deploy
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 A full push costs a ci deploy (35 to 45 minutes) and a redeploy for every wrong guess. Fast
 deploy puts the local tree onto a ci set directly, proves the fix there, and only then pushes,
 so the pipeline runs once on a fix already seen working.

@@ -129,6 +129,12 @@ export const SCENES = {
     waitFor: "#generatedPassesList .pass-figures",
     clip: "#myGeneratedPasses",
   },
+  "pass-link": {
+    page: "pass.html?pass=maple-river-quiet-harbour",
+    apiRoute: { url: "**/api/v1/pass?code=*", body: { valid: true, bundleId: "resident-pro" } },
+    waitFor: "#passBundle:not([hidden])",
+    clip: "#passCard",
+  },
 };
 
 function parseArgs(argv) {

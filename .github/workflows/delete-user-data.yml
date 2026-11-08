@@ -66,6 +66,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
+          set -o pipefail
           node scripts/delete-user-data.js "${{ inputs.environment-name }}" \
             --hashed-sub "${{ inputs.hashed-sub }}" \
             --json | tee deletion-summary.json
@@ -75,6 +76,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
+          set -o pipefail
           node scripts/delete-user-data.js "${{ inputs.environment-name }}" \
             --hashed-sub "${{ inputs.hashed-sub }}" \
             --confirm --json | tee deletion-summary.json

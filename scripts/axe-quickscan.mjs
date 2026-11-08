@@ -36,6 +36,7 @@ const PAGES = [
   "/accessibility.html",
   "/auth/login.html",
   "/bundles.html",
+  "/pass.html",
   "/mtd-calendar.html",
   "/rates.html",
   "/hmrc/vat/submitVat.html",

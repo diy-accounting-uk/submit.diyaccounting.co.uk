@@ -43,6 +43,29 @@ describe("support-reader.yml", () => {
     expect(select).toContain("reread needs an issue-number");
   });
 
+  it("reads a support issue first, else a notice, and carries the kind as a job output", () => {
+    const select = jobBlock("select");
+    expect(select).toContain("kind: ${{ steps.pick.outputs.kind }}");
+    expect(select).toContain("for CANDIDATE in support notice; do");
+    expect(select).toContain('--kind "$CANDIDATE"');
+    expect(select).toContain('echo "kind=${KIND}" >> "$GITHUB_OUTPUT"');
+  });
+
+  it("passes the kind to the request builder and the check, naming a notice mail", () => {
+    const select = jobBlock("select");
+    expect(select).toContain("notice) node scripts/quarantine-reader-request.mjs mail ;;");
+    expect(select).toContain("support) node scripts/quarantine-reader-request.mjs support ;;");
+    const post = jobBlock("post");
+    expect(post).toContain("READER_KIND: ${{ needs.select.outputs.kind }}");
+    expect(post).toContain("notice) CHECK_KIND=mail ;;");
+    expect(post).toContain('--kind "$CHECK_KIND"');
+  });
+
+  it("keeps one budget across both kinds", () => {
+    expect(text.match(/agent-run-budget/g)).toHaveLength(1);
+    expect(text).toContain("workflow-file: support-reader.yml");
+  });
+
   it("gives the read job no checkout and only id-token write", () => {
     const read = jobBlock("read");
     expect(read).not.toContain("actions/checkout");
@@ -52,13 +75,13 @@ describe("support-reader.yml", () => {
 
   it("sends a request with no tools", () => {
     const read = jobBlock("read");
-    expect(read).toContain("aws bedrock-runtime invoke-model");
+    expect(read).toContain("aws bedrock-runtime converse");
     const code = (block) =>
       block
         .split("\n")
         .filter((line) => !line.trim().startsWith("#"))
         .join("\n");
-    expect(code(read)).not.toMatch(/\btools\b/);
+    expect(code(read)).not.toMatch(/\btools\b|toolConfig/);
   });
 
   it("asks for issue read in select and read, and issue write in post only", () => {
@@ -109,6 +132,6 @@ describe("support-reader.yml", () => {
   it("reads the kill switch before the model is called", () => {
     const read = jobBlock("read");
     expect(read.indexOf("agents/kill-switch")).toBeGreaterThan(-1);
-    expect(read.indexOf("agents/kill-switch")).toBeLessThan(read.indexOf("invoke-model"));
+    expect(read.indexOf("agents/kill-switch")).toBeLessThan(read.indexOf("bedrock-runtime converse"));
   });
 });

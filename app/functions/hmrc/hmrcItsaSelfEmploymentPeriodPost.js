@@ -43,7 +43,7 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
+import { recordFiledReceipt } from "../../services/filedReceipt.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
@@ -474,7 +474,14 @@ export async function ingestHandler(event) {
         if (payload.userSub && receiptKey) {
           const timestamp = new Date().toISOString();
           const receiptId = `${timestamp}-${receiptKey}`;
-          await putReceipt(payload.userSub, receiptId, periodSummary, resolveActorClass());
+          await recordFiledReceipt({
+            userSub: payload.userSub,
+            receiptId,
+            receipt: periodSummary,
+            actor: resolveActorClass(),
+            receiptKind: "itsa-period-self-employment",
+            synthetic: payload.hmrcAccount === "synthetic",
+          });
           resultData.receiptId = receiptId;
         }
 
@@ -615,7 +622,14 @@ export async function workerHandler(event) {
       if (userSub && receiptKey) {
         const timestamp = new Date().toISOString();
         const receiptId = `${timestamp}-${receiptKey}`;
-        await putReceipt(userSub, receiptId, periodSummary, resolveActorClass());
+        await recordFiledReceipt({
+          userSub,
+          receiptId,
+          receipt: periodSummary,
+          actor: resolveActorClass(),
+          receiptKind: "itsa-period-self-employment",
+          synthetic: payload.hmrcAccount === "synthetic",
+        });
         result.receiptId = receiptId;
       }
 

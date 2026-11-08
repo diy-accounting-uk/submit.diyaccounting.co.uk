@@ -9,9 +9,10 @@
 // requests, gmail.compose, cannot read the mailbox, and the script has no send call.
 //
 // Authentication is a service account with domain-wide delegation, impersonating the support
-// mailbox. The service account key arrives in the SUPPORT_GMAIL_DRAFT_KEY environment variable.
+// mailbox. The job federates to Google with no key (google-github-actions/auth), and
+// google-delegated-token.mjs signs the delegation assertion through the IAM Credentials API.
 //
-//   SUPPORT_GMAIL_DRAFT_KEY=<key json> node scripts/support-gmail-draft.mjs \
+//   node scripts/support-gmail-draft.mjs \
 //     --thread-id <gmail thread id> --to <customer address> --subject <subject> \
 //     --in-reply-to <Message-ID of the customer message> --body-file /tmp/support-reply.md \
 //     --issue-number 12 --out /tmp/support-draft-row.json
@@ -22,9 +23,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { JWT } from "google-auth-library";
+import { delegatedTokenGetter } from "./google-delegated-token.mjs";
 
 export const MAILBOX = "support@diyaccounting.co.uk";
+export const DRAFT_SERVICE_ACCOUNT = "support-gmail-draft@diyaccounting-ga4.iam.gserviceaccount.com";
 export const GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose";
 export const DRAFTS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 
@@ -111,16 +113,8 @@ export function acceptanceRow({ draft, issueNumber, createdAt, body }) {
   };
 }
 
-function tokenGetterFromKey(keyJson) {
-  const key = JSON.parse(keyJson);
-  const client = new JWT({ email: key.client_email, key: key.private_key, scopes: [GMAIL_COMPOSE_SCOPE], subject: MAILBOX });
-  return async () => (await client.getAccessToken()).token;
-}
-
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const keyJson = process.env.SUPPORT_GMAIL_DRAFT_KEY;
-  if (!keyJson) throw new Error("SUPPORT_GMAIL_DRAFT_KEY is not set");
   const body = readFileSync(opts.bodyFile, "utf8");
   const draft = await createDraft({
     threadId: opts.threadId,
@@ -128,7 +122,7 @@ async function main() {
     subject: opts.subject,
     inReplyTo: opts.inReplyTo,
     body,
-    getToken: tokenGetterFromKey(keyJson),
+    getToken: delegatedTokenGetter({ serviceAccountEmail: DRAFT_SERVICE_ACCOUNT, subject: MAILBOX, scopes: [GMAIL_COMPOSE_SCOPE] }),
   });
   const row = acceptanceRow({ draft, issueNumber: opts.issueNumber, createdAt: new Date().toISOString(), body });
   if (opts.out) writeFileSync(opts.out, JSON.stringify(row));

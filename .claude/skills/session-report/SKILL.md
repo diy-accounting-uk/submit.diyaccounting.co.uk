@@ -17,6 +17,11 @@ description: Write the session's report as REPORT_SESSION_SUBMIT_<id>_<date>.md 
 
 # session-report
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 One file per session, in `../private.diyaccounting.co.uk/sessions/` (the private repository beside this one): `REPORT_SESSION_SUBMIT_<id>_<YYYY-MM-DD>.md`. It leads with the
 result and the mechanisms that produced it, then the losses, each loss tied to a suggested
 improvement and its value. Every figure in it is measured in this session; nothing is recalled.

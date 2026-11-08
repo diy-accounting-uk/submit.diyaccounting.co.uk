@@ -70,10 +70,11 @@ async function main() {
       restrictedToEmail: email || undefined,
       createdBy,
       notes: notes || undefined,
+      actor: testPass ? "test-user" : "operator",
       ...(testPass ? { testPass: true } : {}),
     });
 
-    const passUrl = `https://${passUrlHost}/bundles.html?pass=${pass.code}`;
+    const passUrl = `https://${passUrlHost}/pass.html?pass=${pass.code}`;
 
     // Generate QR code PNG
     const qrBuffer = await generatePassQrCodeBuffer({

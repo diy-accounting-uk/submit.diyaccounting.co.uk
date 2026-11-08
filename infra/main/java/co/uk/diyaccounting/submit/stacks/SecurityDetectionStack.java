@@ -172,8 +172,8 @@ public class SecurityDetectionStack extends Stack {
         dynamoDbScanAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
         // ----------------------------------------------------------------------------------
-        // PLAN_SECURITY_DETECTION_UPLIFT 2.2 acceptance criterion: "Alarm fires on > 1000 GetItem
-        // in 5 minutes" against the customer data tables.
+        // Alarm fires on more than 2000 GetItem calls in 5 minutes against the customer tables.
+        // The probes at the end of a prod deploy reach about 1,300.
         // ----------------------------------------------------------------------------------
         String getItemMetricName = "DynamoDbCustomerTableGetItem";
         MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-DynamoDbGetItemMetricFilter")
@@ -190,7 +190,7 @@ public class SecurityDetectionStack extends Stack {
         Alarm dynamoDbGetItemVolumeAlarm = Alarm.Builder.create(
                         this, props.resourceNamePrefix() + "-DynamoDbGetItemVolumeAlarm")
                 .alarmName(props.resourceNamePrefix() + "-dynamodb-customer-table-getitem-volume")
-                .alarmDescription("More than 1000 GetItem calls against a customer data table in 5 minutes, "
+                .alarmDescription("More than 2000 GetItem calls against a customer data table in 5 minutes, "
                         + "consistent with bulk read access to receipts, bundles, passes, "
                         + "subscriptions, or hmrc-api-requests.")
                 .metric(Metric.Builder.create()
@@ -199,7 +199,7 @@ public class SecurityDetectionStack extends Stack {
                         .statistic("Sum")
                         .period(Duration.minutes(5))
                         .build())
-                .threshold(1000)
+                .threshold(2000)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)

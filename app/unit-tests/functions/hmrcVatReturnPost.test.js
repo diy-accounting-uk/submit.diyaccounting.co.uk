@@ -53,6 +53,9 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
+
 import { ingestHandler as hmrcVatReturnPostHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 import { HmrcTimeoutError } from "@app/services/hmrcApi.js";
 
@@ -347,6 +350,14 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     const receiptItem = putCalls[0][0].input.Item;
     expect(receiptItem.receipt).toEqual(receipt);
     expect(receiptItem.receiptId).toContain(receipt.formBundleNumber);
+
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "submission-receipt",
+        synthetic: false,
+        data: expect.objectContaining({ receiptId: body.receiptId, receiptKind: "vat-return" }),
+      }),
+    );
   });
 
   test("returns 500 on HMRC API error", async () => {

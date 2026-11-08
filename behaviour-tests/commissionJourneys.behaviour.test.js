@@ -112,11 +112,11 @@ async function redeemerRequestsThenSubscribes(page, redeemer, code) {
   await loginAs(page, redeemer);
   await goToBundlesPage(page, screenshotPath);
   await page.locator("#passInput").fill(code);
-  await page.locator("#redeemPassBtn").click();
-  await expect(page.locator("#passStatus")).toBeVisible({ timeout: 15000 });
-  const request = page.locator('button.service-btn:has-text("Request Week pass"):not([disabled])');
-  await expect(request).toBeVisible({ timeout: 10000 });
-  await request.click();
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page.locator("#passHeading")).toHaveText("You have a pass for Week pass", { timeout: 15000 });
+  await page.getByRole("button", { name: "Redeem pass" }).click();
+  await expect(page.locator("#passHeading")).toHaveText("Pass redeemed", { timeout: 15000 });
+  await page.getByRole("link", { name: "See your bundles" }).click();
   await expect(page.locator('button[data-remove-bundle-id="week-guest"]')).toBeVisible({ timeout: 15000 });
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-redeemed.png`, readerView: true });
   await ensureBundleViaCheckout(page, "resident-vat", screenshotPath, { skipPass: true });

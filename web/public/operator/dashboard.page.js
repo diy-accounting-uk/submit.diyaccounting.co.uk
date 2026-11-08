@@ -413,7 +413,8 @@ function renderReserve(snapshot) {
 
   document.getElementById("reserveTable").hidden = false;
   const headroom = cash - RESERVE_FLOOR_GBP;
-  appendReserveRow(body, "reserve-cash-at-bank", "Cash at bank", formatValue("gbp", cash));
+  const bookDate = observation.today && observation.today.asOf ? observation.today.asOf : null;
+  appendReserveRow(body, "reserve-cash-at-bank", bookDate ? `Cash at bank, book to ${bookDate}` : "Cash at bank", formatValue("gbp", cash));
   appendReserveRow(body, "reserve-floor", "Reserve floor", formatValue("gbp", RESERVE_FLOOR_GBP));
   appendReserveRow(body, "reserve-headroom", "Headroom", formatValue("gbp", headroom));
   const below = cash < RESERVE_FLOOR_GBP;
@@ -450,6 +451,7 @@ function renderMonthlyMarketingBudget(snapshot) {
   ];
   const body = document.getElementById("monthlyMarketingBudgetBody");
   body.innerHTML = "";
+  const overBudget = typeof budget.leftToSpendGbp === "number" && budget.leftToSpendGbp < 0;
   rows.forEach(([id, label, text]) => {
     const row = document.createElement("tr");
     row.dataset.figureId = id;
@@ -457,6 +459,13 @@ function renderMonthlyMarketingBudget(snapshot) {
     labelCell.textContent = label;
     const valueCell = document.createElement("td");
     valueCell.textContent = text;
+    if (id === "left-to-spend" && overBudget) {
+      const state = document.createElement("span");
+      state.className = "status-message status-error";
+      state.dataset.state = "over-budget";
+      state.textContent = `Over budget by ${formatValue("gbp", -budget.leftToSpendGbp)}`;
+      valueCell.appendChild(state);
+    }
     row.appendChild(labelCell);
     row.appendChild(valueCell);
     body.appendChild(row);
@@ -471,7 +480,7 @@ function windowCell(observation, key, unavailableTitle) {
   const unit = (observation && observation.unit) || "count";
   if (window && window.notApplicable) {
     cell.textContent = NOT_APPLICABLE;
-    cell.title = "This figure is reported by month or quarter, so it has no daily window.";
+    cell.title = window.notApplicableReason || "This figure is reported by month or quarter, so it has no daily window.";
     return cell;
   }
   if (observation && observation.notCollected) {
@@ -733,6 +742,97 @@ function renderIntegrations(snapshot) {
   if (account)
     note.textContent =
       "Sign in to " + account + " in the AWS console before opening a raw record. The console cannot switch account from a link.";
+}
+
+// ---- Data tab ---------------------------------------------------------------------------------
+
+const DATA_WINDOW_KEYS = ["today", "d1", "d7", "d30", "d90"];
+const NO_FIGURE = "no figure";
+
+// A stored count, or "no figure" for a day the history does not hold. An absent day is never 0.
+function dataCountCell(count) {
+  const cell = document.createElement("td");
+  const known = count !== null && count !== undefined;
+  cell.textContent = known ? numberFormat.format(count) : NO_FIGURE;
+  if (!known) cell.classList.add("data-no-figure");
+  return cell;
+}
+
+function dataTextCell(text) {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  return cell;
+}
+
+function dataTtlText(ttl) {
+  if (!ttl) return NOT_MEASURED;
+  return ttl.enabled ? "On, " + ttl.attribute : "Off";
+}
+
+function renderDataTables(data) {
+  const body = document.getElementById("dataTablesBody");
+  body.innerHTML = "";
+  const rows = data ? data.tables : [];
+  document.getElementById("dataTablesPanel").hidden = false;
+  document.getElementById("dataTablesEmpty").hidden = rows.length > 0;
+  document.getElementById("dataTablesTable").hidden = rows.length === 0;
+  rows.forEach((table) => {
+    const row = document.createElement("tr");
+    row.className = "data-table-row";
+    row.dataset.table = table.name;
+    row.appendChild(dataTextCell(table.name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(table.items[key])));
+    row.appendChild(dataTextCell(dataTtlText(table.ttl)));
+    body.appendChild(row);
+  });
+}
+
+function renderDataSplit(data) {
+  const body = document.getElementById("dataSplitBody");
+  body.innerHTML = "";
+  const rows = data ? data.tables.filter((table) => table.split) : [];
+  document.getElementById("dataSplitPanel").hidden = false;
+  document.getElementById("dataSplitEmpty").hidden = rows.length > 0;
+  document.getElementById("dataSplitTable").hidden = rows.length === 0;
+  rows.forEach((table) => {
+    const row = document.createElement("tr");
+    row.className = "data-split-row";
+    row.dataset.table = table.name;
+    row.appendChild(dataTextCell(table.name));
+    ["customer", "test", "synthetic", "other", "unknown"].forEach((key) => row.appendChild(dataCountCell(table.split[key])));
+    body.appendChild(row);
+  });
+}
+
+function renderDataBuckets(data) {
+  const body = document.getElementById("dataBucketsBody");
+  body.innerHTML = "";
+  const rows = data
+    ? [
+        ...data.buckets.map((bucket) => [bucket.name, bucket.objects]),
+        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count]),
+      ]
+    : [];
+  document.getElementById("dataBucketsPanel").hidden = false;
+  document.getElementById("dataBucketsEmpty").hidden = rows.length > 0;
+  document.getElementById("dataBucketsTable").hidden = rows.length === 0;
+  document.getElementById("dataBooksNote").hidden = !(data && data.booksTruncated);
+  rows.forEach(([name, figures]) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-row";
+    row.dataset.name = name;
+    row.appendChild(dataTextCell(name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(figures[key])));
+    body.appendChild(row);
+  });
+}
+
+// A snapshot with no data section shows the empty notes.
+function renderData(snapshot) {
+  const data = snapshot.data || null;
+  renderDataTables(data);
+  renderDataSplit(data);
+  renderDataBuckets(data);
 }
 
 // The operator list. The emails come from the authenticated snapshot only.
@@ -1015,7 +1115,6 @@ async function fetchJson(path) {
 // already raised, so the reader sees it once.
 function showError(message) {
   const container = document.getElementById("objectivesContainer");
-  container.classList.add("objectives-failed");
   container.querySelectorAll("[data-objective-slot]").forEach((slot) => slot.replaceChildren());
   container.querySelectorAll(":scope > .objective").forEach((panel) => {
     panel.hidden = true;
@@ -1038,6 +1137,9 @@ const STATIC_TABLE_PANELS = [
   "integrationsHmrcPanel",
   "integrationsCompaniesHousePanel",
   "integrationsStripePanel",
+  "dataTablesPanel",
+  "dataSplitPanel",
+  "dataBucketsPanel",
   "companyAccountsPanel",
   "reservePanel",
   "monthlyMarketingBudgetPanel",
@@ -1154,7 +1256,7 @@ document.addEventListener("click", async (event) => {
 // The tabs show the sections whose data-tab names them (a section can name several, separated by
 // spaces); a section with no data-tab is always drawn. The chosen tab is a per-viewer convenience.
 const TAB_STORAGE_KEY = "operatorDashboardTab";
-const TAB_IDS = ["main", "adoption", "behaviour", "integrations", "ops", "affiliates", "aws-prod", "aws-ci"];
+const TAB_IDS = ["main", "adoption", "behaviour", "integrations", "data", "ops", "affiliates", "aws-prod", "aws-ci"];
 
 function storedTab() {
   try {
@@ -1206,7 +1308,9 @@ function armTabs() {
 // The tab bar appears with the panels, after the entitlement check has passed. Sections built
 // since the page loaded take the chosen tab.
 function showTabs() {
-  document.getElementById("dashboardTabs").hidden = false;
+  const tabs = document.getElementById("dashboardTabs");
+  tabs.hidden = false;
+  tabs.classList.remove("dashboard-tabs-pending");
   showTab(currentTab);
 }
 
@@ -1218,13 +1322,13 @@ async function initPage() {
   try {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
-    document.getElementById("objectivesContainer").classList.add("objectives-settled");
     renderMonthlyMarketingBudget(snapshot);
     renderReserve(snapshot);
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);
     renderPageVisitors(snapshot);
     renderIntegrations(snapshot);
+    renderData(snapshot);
     window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
     renderOperators(snapshot);
@@ -1235,8 +1339,10 @@ async function initPage() {
     document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-dashboard" }));
   } catch (error) {
     if (error.status === 403) {
+      document.getElementById("dashboardTabs").hidden = true;
       showError(null);
     } else if (error.status === 401) {
+      document.getElementById("dashboardTabs").hidden = true;
       showError("Sign in with an operator account to see this page.");
     } else if (error.status === 404) {
       window.renderAwsLinks();

@@ -16,7 +16,7 @@ const catalogue = loadCatalogFromRoot();
 // so a display-name change (e.g. "Day Guest" -> "Day pass") never breaks the id used for API
 // calls. Falls back to a lowercased, hyphenated form of the name for bundles the catalogue
 // doesn't define (e.g. the test-only "Test" bundle).
-function resolveBundleId(bundleName) {
+export function resolveBundleId(bundleName) {
   const catalogBundle = catalogue.bundles?.find((b) => b.name === bundleName);
   return catalogBundle ? catalogBundle.id : bundleName.toLowerCase().replace(/\s+/g, "-");
 }
@@ -301,38 +301,43 @@ export async function verifyBundleApiResponse(page, screenshotPath = defaultScre
   });
 }
 
+// Creates a pass through the admin API with the signed-in account's token and returns the result
+// with its code. The pass is not redeemed.
+export async function createPassCode(page, bundleId, { testPass = false } = {}) {
+  return page.evaluate(
+    async ({ bid, isTestPass }) => {
+      try {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
+        const passBody = {
+          passTypeId: bid,
+          bundleId: bid,
+          validityPeriod: "P1D",
+          maxUses: 1,
+          createdBy: "behaviour-test",
+        };
+        if (isTestPass) passBody.testPass = true;
+        const response = await fetch("/api/v1/pass/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+          body: JSON.stringify(passBody),
+        });
+        const body = await response.json();
+        return { ok: response.ok, code: body?.data?.code || body?.code, body };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    },
+    { bid: bundleId, isTestPass: testPass },
+  );
+}
+
 export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false } = {}) {
   return await test.step(`Ensure ${bundleId} bundle via pass API`, async () => {
     console.log(`Creating and redeeming pass for bundle ${bundleId} (testPass=${testPass})...`);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-01-creating.png`, readerView: true });
 
-    // Step 1: Create a pass via admin API (no auth required)
-    const createResult = await page.evaluate(
-      async ({ bid, isTestPass }) => {
-        try {
-          const idToken = localStorage.getItem("cognitoIdToken");
-          if (!idToken) return { ok: false, error: "No auth token" };
-          const passBody = {
-            passTypeId: bid,
-            bundleId: bid,
-            validityPeriod: "P1D",
-            maxUses: 1,
-            createdBy: "behaviour-test",
-          };
-          if (isTestPass) passBody.testPass = true;
-          const response = await fetch("/api/v1/pass/admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
-            body: JSON.stringify(passBody),
-          });
-          const body = await response.json();
-          return { ok: response.ok, code: body?.data?.code || body?.code, body };
-        } catch (err) {
-          return { ok: false, error: err.message };
-        }
-      },
-      { bid: bundleId, isTestPass: testPass },
-    );
+    const createResult = await createPassCode(page, bundleId, { testPass });
 
     console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
     if (!createResult.ok || !createResult.code) {

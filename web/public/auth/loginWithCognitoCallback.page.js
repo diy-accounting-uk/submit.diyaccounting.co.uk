@@ -84,7 +84,7 @@ async function handleAuthCallback(code, state) {
     }
 
     const tokens = await tokenResponse.json();
-    console.log("Received tokens from Cognito " + JSON.stringify(tokens));
+    console.log("Received tokens from Cognito, fields: " + Object.keys(tokens).join(","));
 
     // Store tokens in localStorage (support both snake_case and camelCase fields)
     const accessToken = tokens.accessToken || tokens.access_token;
@@ -109,7 +109,7 @@ async function handleAuthCallback(code, state) {
     const jsonPayload = base64UrlDecode(base64Payload);
     const idTokenPayload = JSON.parse(jsonPayload);
 
-    console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
+    console.log("Received id_token from Cognito, claims: " + Object.keys(idTokenPayload).join(","));
 
     // Validate nonce to prevent replay attacks
     // The nonce in the ID token must match the one we stored before the redirect
@@ -249,7 +249,8 @@ async function handleAuthCallback(code, state) {
         redirectUrl = window.postLoginRedirectTarget(postLoginRedirect);
       }
     } catch {}
-    window.location.href = redirectUrl;
+    // replace keeps this empty callback page out of the history, so Back does not return to it.
+    window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
     showStatus(`Authentication failed: ${error.message}`, "error");

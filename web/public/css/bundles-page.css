@@ -12,7 +12,7 @@
   margin: var(--space-5) 0;
 }
 
-.bundles-block:not(.holds-no-bundles):not(.bundles-settled) .bundles-list {
+.bundles-block:not(.bundles-settled) .bundles-list {
   min-height: 30rem;
 }
 
@@ -21,8 +21,8 @@
 }
 
 /* The current bundles and the catalogue arrive at different times; the block holds the room
-   of both until the bundles come back empty, so the sections below do not jump when they fill in. */
-.bundles-block:not(.holds-no-bundles):not(.bundles-settled) {
+   of both until both have arrived, so the sections below do not jump when they fill in. */
+.bundles-block:not(.bundles-settled) {
   min-height: 54.5rem;
 }
 

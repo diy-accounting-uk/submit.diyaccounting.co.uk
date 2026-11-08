@@ -64,7 +64,7 @@ class SecurityDetectionStackTest {
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "Threshold", 1)));
 
-        // GetItem volume alarm: > 1000 in 5 minutes, routed to one SNS action.
+        // GetItem volume alarm: > 2000 in 5 minutes, routed to one SNS action.
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
@@ -72,7 +72,7 @@ class SecurityDetectionStackTest {
                         "MetricName", "DynamoDbCustomerTableGetItem",
                         "Namespace", "Submit/Security",
                         "ComparisonOperator", "GreaterThanThreshold",
-                        "Threshold", 1000)));
+                        "Threshold", 2000)));
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {

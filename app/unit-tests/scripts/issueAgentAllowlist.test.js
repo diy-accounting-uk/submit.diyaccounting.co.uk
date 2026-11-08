@@ -3,11 +3,12 @@
 
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
-import { isAllowed, ALLOWED_LOGINS } from "../../../scripts/issue-agent-allowlist.mjs";
+import { isAllowed, ALLOWED_LOGINS, OPS_APP_LOGIN } from "../../../scripts/issue-agent-allowlist.mjs";
 
 describe("issue agent allow list", () => {
   it("lists the operator and the two app bots", () => {
-    expect(ALLOWED_LOGINS).toEqual(["antonycc", "diyaccounting-ops[bot]", "diyaccounting-agent[bot]"]);
+    expect(OPS_APP_LOGIN).toBe("diyaccounting-ops[bot]");
+    expect(ALLOWED_LOGINS).toEqual(["antonycc", OPS_APP_LOGIN, "diyaccounting-agent[bot]"]);
   });
 
   it("runs when the author and the sender are both on the list", () => {

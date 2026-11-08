@@ -128,7 +128,7 @@ A signed-in user with a bundle that holds the activity opens `passes/generate-di
 
 ## Pass Redemption Flow
 
-1. The user opens `https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver`. `web/public/widgets/pass-redeemer.js` redeems a `?pass=` parameter on any page that includes it.
+1. The user opens `https://submit.diyaccounting.co.uk/pass.html?pass=tiger-happy-mountain-silver`. `web/public/widgets/pass-redeemer.js` redeems a `?pass=` parameter on any page that includes it.
 2. A user who is not signed in goes to login and returns to the pass URL.
 3. `POST /api/v1/pass` validates the pass and adds one use.
 4. The service grants the bundle with its tokens and skips the capacity cap.
@@ -148,6 +148,20 @@ A signed-in user with a bundle that holds the activity opens `passes/generate-di
 | `email_required`   | The pass needs an email and none is available            |
 
 A referral pass adds two refusals on `POST /api/v1/pass`: `own_pass` (403, the issuer cannot redeem it) and `referral_already_used` (409, an account redeems one referral pass, ever).
+
+## Retention
+
+A pass row in the passes table carries a `ttl`. DynamoDB deletes the row after that time.
+
+| Pass | Row `ttl` |
+| --- | --- |
+| Made by a test or a probe | 2 days after creation |
+| Has a `validUntil` | 30 days after `validUntil` |
+| Has no end date | None until `maxUses` is reached, then 30 days after the last use |
+
+A pass whose row has gone answers `not_found`, not `expired`. The `referral#`, `redemption#`, `affiliate#` and `family#` rows have no `ttl`, because the commission ledger reads them.
+
+Erasure of an account (`scripts/delete-user-data.js`) deletes the account's subscription rows, activity charges and practice clients, and moves its receipts to an anonymised copy.
 
 ## Referrals and affiliates
 
@@ -273,7 +287,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
     "createdBy": "manual"
   }' | jq '.code' --raw-output) \
 && echo "Generated pass code: $PASS_CODE" \
-&& open "$BASE_URL/bundles.html?pass=$PASS_CODE"
+&& open "$BASE_URL/pass.html?pass=$PASS_CODE"
 ```
 
 You can also sign in first and enter the code in the pass field. The flow: enter the code, click "Redeem pass", then click "Request Day pass" to receive the bundle.
@@ -292,7 +306,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
     "createdBy": "manual"
   }' | jq '.code' --raw-output) \
 && echo "Generated pass code: $PASS_CODE" \
-&& open "$BASE_URL/bundles.html?pass=$PASS_CODE"
+&& open "$BASE_URL/pass.html?pass=$PASS_CODE"
 ```
 
 `resident-pro` is a self-service subscription, so the pass grants the bundle directly. The simulator fakes Stripe (`app/functions/non-lambda-mocks/mockBilling.js`).

@@ -17,6 +17,9 @@ vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
 const mockPutReceipt = vi.fn();
 vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({ putReceipt: (...args) => mockPutReceipt(...args) }));
 
+const mockRequestCustomerEmail = vi.fn();
+vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
+
 vi.mock("@app/lib/activityAlert.js", () => ({
   publishActivityEvent: vi.fn().mockResolvedValue(undefined),
   resolveActorClass: () => "test",
@@ -255,6 +258,14 @@ describe("receipt signature", () => {
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "valid" });
     expect(data.irmarkReceiptMismatch).toBeUndefined();
     expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid" });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "submission-receipt",
+        userSub: "u",
+        synthetic: true,
+        data: expect.objectContaining({ receiptKind: "ct-return" }),
+      }),
+    );
     expect(logged("info", "receipt signature")[0]).toMatchObject({
       correlationId: CORRELATION_ID,
       receiptIrmark: "XwHjMbO6v3X19HZ5W3M1WuioQPE=",

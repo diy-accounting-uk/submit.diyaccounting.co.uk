@@ -6,7 +6,7 @@
 import { createLogger } from "../lib/logger.js";
 import { generatePassphrase } from "../lib/passphrase.js";
 import { hashEmail, hashEmailWithEnvSecret, hashEmailWithVersion, initializeEmailHashSecret } from "../lib/emailHash.js";
-import { calculateTtl } from "../lib/dateUtils.js";
+import { passRetention } from "../lib/recordRetention.js";
 import * as passRepository from "../data/dynamoDbPassRepository.js";
 
 const logger = createLogger({ source: "app/services/passService.js" });
@@ -79,9 +79,9 @@ export function buildPassRecord({
     effectiveValidUntil = addDuration(new Date(effectiveValidFrom), validityPeriod).toISOString();
   }
 
-  // Calculate TTL: 30 days after validUntil, or 1 year + 30 days from creation if unlimited
-  const ttlBaseDate = effectiveValidUntil ? new Date(effectiveValidUntil) : addDuration(new Date(now), "P1Y");
-  const { ttl, ttl_datestamp } = calculateTtl(ttlBaseDate, { days: 30 });
+  // A test pass lives 2 days. A pass with an end date lives 30 days past it. A pass with no end date
+  // has no ttl until its last use.
+  const retention = passRetention({ testPass, actor, validUntil: effectiveValidUntil }, new Date(now));
 
   // Hash email if restricted
   let restrictedToEmailHash = null;
@@ -106,12 +106,14 @@ export function buildPassRecord({
     bundleId,
     passTypeId,
     validFrom: effectiveValidFrom,
-    ttl,
-    ttl_datestamp,
     createdAt: now,
     updatedAt: now,
     useCount: 0,
   };
+  if (retention) {
+    record.ttl = retention.ttl;
+    record.ttl_datestamp = retention.ttl_datestamp;
+  }
   if (maxUses !== null) record.maxUses = maxUses;
   if (reviewLimit) record.reviewLimit = reviewLimit;
   if (effectiveValidUntil) record.validUntil = effectiveValidUntil;
@@ -189,29 +191,26 @@ export async function checkPass(code, userEmail, emailHashSecret) {
 export async function redeemPass(code, userEmail, emailHashSecret) {
   const now = new Date().toISOString();
 
-  // Try atomic redeem first (optimistic)
+  // The email check runs before the atomic update so a wrong account spends no use. The
+  // restriction never changes on a stored pass, so the update needs no second check.
+  const stored = await passRepository.getPass(code);
+  if (stored?.restrictedToEmailHash) {
+    if (!emailHashSecret) {
+      await initializeEmailHashSecret();
+    }
+    const emailCheck = await validatePass(stored, now, userEmail, emailHashSecret);
+    if (emailCheck.valid && emailCheck.emailRestricted) {
+      return { valid: false, reason: "email_required", pass: stored };
+    }
+    if (emailCheck.reason === "wrong_email") {
+      return emailCheck;
+    }
+  }
+
   const redeemed = await passRepository.redeemPass(code, now);
 
   if (redeemed) {
     if (isHeldForReview(redeemed)) await markHeld(redeemed);
-
-    // Atomic redeem succeeded, but still need to check email restriction
-    if (redeemed.restrictedToEmailHash) {
-      if (!userEmail) {
-        return { valid: false, reason: "email_required", pass: redeemed };
-      }
-
-      if (!emailHashSecret) {
-        await initializeEmailHashSecret();
-      }
-      const emailHash = await hashEmailForComparison(userEmail, emailHashSecret, redeemed.emailHashSecretVersion);
-
-      if (redeemed.restrictedToEmailHash !== emailHash) {
-        // Email doesn't match - we already incremented useCount, but this is acceptable
-        // because the pass is email-restricted and the wrong person can't use the bundle
-        return { valid: false, reason: "wrong_email", pass: redeemed };
-      }
-    }
 
     return {
       valid: true,

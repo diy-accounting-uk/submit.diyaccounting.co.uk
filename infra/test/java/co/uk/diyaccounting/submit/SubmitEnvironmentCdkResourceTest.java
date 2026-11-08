@@ -136,8 +136,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 140);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 66);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 142);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 67);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -185,8 +185,35 @@ class SubmitEnvironmentCdkResourceTest {
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
         // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm,
-        // IntegrationCallRecordFailedAlarm and HmrcFphCheckFailedAlarm, that's 12 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 12);
+        // IntegrationCallRecordFailedAlarm, CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm,
+        // that's 13 alarms, and the trusted event function's two checks make 15 (its composite is
+        // the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 15);
+        observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
+        observability.resourceCountIs("AWS::Lambda::Function", 3);
+        observability.resourceCountIs("AWS::IAM::Role", 9);
+        observability.resourceCountIs("AWS::Cognito::IdentityPool", 0);
+        // Only prod opens issues for Health and ACM events, so this environment has the function
+        // and no rule for it: the six rules are the security rules.
+        observability.resourceCountIs("AWS::Events::Rule", 6);
+        assertEquals(
+                0,
+                observability
+                        .findResources(
+                                "AWS::Events::Rule", Map.of("Properties", Map.of("Name", "test-env-trusted-events")))
+                        .size());
+        assertEquals(
+                0,
+                observability
+                        .findResources(
+                                "AWS::Events::Rule",
+                                Map.of("Properties", Map.of("Name", "test-env-trusted-deadline-read")))
+                        .size());
+        observability.resourceCountIs("AWS::SNS::Subscription", 0);
+        observability.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName", "test-env-trusted-event-to-github-issue", "ReservedConcurrentExecutions", 1)));
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
@@ -256,6 +283,8 @@ class SubmitEnvironmentCdkResourceTest {
         // of its SSM parameters exist.
         assertAlarmTriageResources(observability);
         assertQuarantineReaderResources(observability);
+        assertDashboardReviewResources(observability);
+        assertRumResourcePolicy(observability);
 
         // 8c) No CloudWatch dashboard: the operator dashboard page shows the figures.
         observability.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
@@ -284,6 +313,15 @@ class SubmitEnvironmentCdkResourceTest {
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
         SubmitApplicationCdkSupport.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
+
+        // 8d) Email stack: the SES sender, the request queue, the worker and the event handler.
+        Template email = Template.fromStack(env.emailStack);
+        email.resourceCountIs("AWS::SES::EmailIdentity", 1);
+        email.resourceCountIs("AWS::SQS::Queue", 2);
+        email.resourceCountIs("AWS::Events::Rule", 1);
+        // Two Lambda constructs carry two checks each, plus the dead letter queue check.
+        email.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        SubmitApplicationCdkSupport.assertStackHealthAlarm(email, null, 0, envRoutedPrefixes);
 
         // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
         // mid-teardown's ALARM events are dropped instead of forwarded.
@@ -565,11 +603,15 @@ class SubmitEnvironmentCdkResourceTest {
                 .findFirst()
                 .orElseThrow();
         List<Object> invokeModelResources = (List<Object>) invokeModelStatement.get("Resource");
-        assertEquals(4, invokeModelResources.size());
+        assertEquals(8, invokeModelResources.size());
         List<String> resolvedInvokeModelResources = invokeModelResources.stream()
                 .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
                 .toList();
         assertTrue(resolvedInvokeModelResources.containsAll(List.of(
+                "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
+                "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0",
+                "arn:aws:bedrock:eu-west-2::foundation-model/amazon.titan-embed-text-v2:0",
+                "arn:aws:bedrock:*:111111111111:inference-profile/global.amazon.nova-2-lite-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -669,10 +711,7 @@ class SubmitEnvironmentCdkResourceTest {
         Map<String, Object> invoke = statementWithSid(statements, "InvokeReaderModel");
         assertEquals(List.of("bedrock:InvokeModel"), actionsOf(invoke));
         List<String> invokeResources = resourcesOf(invoke);
-        assertEquals(2, invokeResources.size());
-        assertTrue(invokeResources.containsAll(List.of(
-                "arn:aws:bedrock:eu-west-2:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
-                "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0")));
+        assertEquals(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"), invokeResources);
 
         Map<String, Object> guardrail = statementWithSid(statements, "ApplyReaderGuardrail");
         assertEquals(List.of("bedrock:ApplyGuardrail"), actionsOf(guardrail));
@@ -694,6 +733,82 @@ class SubmitEnvironmentCdkResourceTest {
                 assertFalse("*".equals(resource), "no reader statement may use a * resource");
             }
         }
+    }
+
+    /**
+     * Asserts the dashboard review role exists with six statements: five Allow statements and one
+     * Deny of table scans. Every Allow names a resource, the held passes query carries the
+     * LeadingKeys condition, and the model statement names the Sonnet 5.5 profile and its seven
+     * foundation model ARNs.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertDashboardReviewResources(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of("RoleName", "test-env-dashboard-review-role", "MaxSessionDuration", 3600)));
+
+        List<Map<String, Object>> statements =
+                findPolicyStatementsContainingSid(observability, "ReadSnapshotAndConsole");
+        assertEquals(6, statements.size());
+
+        Map<String, Object> read = statementWithSid(statements, "ReadSnapshotAndConsole");
+        assertEquals(List.of("s3:GetObject"), actionsOf(read));
+        assertTrue(read.get("Resource").toString().contains("/snapshots/test/latest.json"));
+        assertTrue(read.get("Resource").toString().contains("/snapshots/test/console/*"));
+
+        Map<String, Object> held = statementWithSid(statements, "QueryHeldPasses");
+        assertEquals(List.of("dynamodb:Query"), actionsOf(held));
+        assertTrue(held.get("Resource").toString().contains("test-env-passes/index/issuedBy-index"));
+        assertEquals(
+                Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("held"))),
+                held.get("Condition"));
+
+        Map<String, Object> model = statementWithSid(statements, "InvokeReviewModel");
+        assertEquals(List.of("bedrock:InvokeModel"), actionsOf(model));
+        List<String> modelResources = resourcesOf(model);
+        assertEquals(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"), modelResources);
+
+        assertEquals(
+                List.of("bedrock:ApplyGuardrail"), actionsOf(statementWithSid(statements, "ApplyReviewGuardrail")));
+        Map<String, Object> parameters = statementWithSid(statements, "ReadReviewParameters");
+        assertEquals(List.of("ssm:GetParameter"), actionsOf(parameters));
+        assertEquals(3, ((List<Object>) parameters.get("Resource")).size());
+
+        Map<String, Object> deny = statementWithSid(statements, "DenyScans");
+        assertEquals("Deny", deny.get("Effect"));
+        assertEquals(List.of("dynamodb:Scan"), actionsOf(deny));
+        assertEquals("*", deny.get("Resource"));
+        for (Map<String, Object> statement : statements) {
+            if ("Allow".equals(statement.get("Effect"))) {
+                assertFalse("*".equals(statement.get("Resource")), "no Allow statement may use a * resource");
+                for (Object resource : statement.get("Resource") instanceof List<?> l ? l : List.of()) {
+                    assertFalse("*".equals(resource), "no Allow statement may use a * resource");
+                }
+            }
+        }
+    }
+
+    /**
+     * Asserts the RUM app monitor carries a resource policy that allows rum:PutRumEvents on the
+     * monitor's own ARN to any principal, so a client can send events without a signature. The
+     * policy document is a Fn::Join of literals and the account and region references, so the
+     * assertion reads its rendered JSON.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertRumResourcePolicy(Template observability) {
+        Map<String, Map<String, Object>> monitors = observability.findResources("AWS::RUM::AppMonitor");
+        assertEquals(1, monitors.size());
+        Map<String, Object> properties =
+                (Map<String, Object>) monitors.values().iterator().next().get("Properties");
+        Map<String, Object> resourcePolicy = (Map<String, Object>) properties.get("ResourcePolicy");
+        String policyDocument = String.valueOf(resourcePolicy.get("PolicyDocument"));
+        assertTrue(policyDocument.contains("\"Effect\":\"Allow\""));
+        assertTrue(policyDocument.contains("\"Action\":\"rum:PutRumEvents\""));
+        assertTrue(policyDocument.contains(":appmonitor/test-env-rum\""));
+        assertTrue(policyDocument.contains("\"Principal\":\"*\""));
+        String configuration = String.valueOf(properties.get("AppMonitorConfiguration"));
+        assertFalse(configuration.contains("GuestRoleArn"));
+        assertFalse(configuration.contains("IdentityPoolId"));
     }
 
     private static Map<String, Object> statementWithSid(List<Map<String, Object>> statements, String sid) {
@@ -830,6 +945,7 @@ class SubmitEnvironmentCdkResourceTest {
                         .allMatch(a -> String.valueOf(a).startsWith("xray:")
                                 || "cloudwatch:PutMetricData".equals(String.valueOf(a))
                                 || "cloudwatch:GetMetricWidgetImage".equals(String.valueOf(a))
+                                || "cloudwatch:GetMetricData".equals(String.valueOf(a))
                                 || "logs:GetQueryResults".equals(String.valueOf(a))
                                 || "logs:StopQuery".equals(String.valueOf(a))
                                 || LOG_DELIVERY_ACTIONS.contains(String.valueOf(a)));

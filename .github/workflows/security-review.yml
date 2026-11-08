@@ -4,7 +4,7 @@
 # @capability OPS-31 Run the weekly security review and its triage
 # - **Use when:** the weekly security-review issue needs a review, or a review must run on demand.
 # - **Does:** security-review.yml opens a security-review issue every Monday, then runs a Sonnet agent over the checked-out commit, read-only, against prompts/security-review.md. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
-# - **Run:** `gh workflow run security-review.yml`; `gh workflow run security-review.yml -f issue_number=<n>` for an existing issue; read a report with `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
+# - **Run:** `gh workflow run security-review.yml`; read a report with `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
 # - **Entry:** `.github/workflows/security-review.yml`
 # - **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
 # - **Keywords:** security review, security triage, OWASP, private report, weekly review, security-review.yml
@@ -29,10 +29,6 @@ on:
         required: false
         default: true
         type: boolean
-      issue_number:
-        description: 'Label this existing issue agentic-lib instead of creating one'
-        required: false
-        type: string
   schedule:
     - cron: '0 6 * * 1' # Monday 06:00 UTC; the env block below supplies every input the schedule lacks
 
@@ -48,7 +44,6 @@ env:
 jobs:
   check-existing:
     name: 'Check for Existing Security Issues'
-    if: ${{ !inputs.issue_number }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -194,13 +189,11 @@ jobs:
 
               const issue = result.createIssue.issue;
 
-              // Labelling fires an `issues.labeled` event per label added, and
-              // agentic-lib-code.yml starts a run only on the agentic-lib event.
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                labels: ['security-review', 'agentic-lib']
+                labels: ['security-review']
               });
 
               console.log(`Created issue #${issue.number}: ${issue.url}`);
@@ -212,57 +205,14 @@ jobs:
               core.setFailed(`Failed to create issue: ${error.message}`);
             }
 
-  label-existing-issue:
-    name: 'Label Existing Issue'
-    if: inputs.issue_number != '' && inputs.issue_number != null
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-    outputs:
-      issue_number: ${{ steps.label.outputs.issue_number }}
-      issue_url: ${{ steps.label.outputs.issue_url }}
-    steps:
-      - name: Add the agentic-lib label
-        id: label
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          script: |
-            const issueNumber = Number('${{ inputs.issue_number }}');
-
-            const { data: issue } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber
-            });
-
-            // Labelling fires an `issues.labeled` event per label added, and
-            // agentic-lib-code.yml starts a run only on the agentic-lib event.
-            const existingLabels = issue.labels.map(l => (typeof l === 'string' ? l : l.name));
-            const labelsToAdd = ['agentic-lib'];
-            if (!existingLabels.includes('security-review')) {
-              labelsToAdd.push('security-review');
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              labels: labelsToAdd
-            });
-
-            console.log(`Labelled issue #${issue.number} with ${labelsToAdd.join(', ')}`);
-            core.setOutput('issue_number', issue.number.toString());
-            core.setOutput('issue_url', issue.html_url);
-
   # The triage runs in this workflow, after the issue exists, because the issue is created with
   # GITHUB_TOKEN and an event that token raises starts no workflow. Keeping it here, rather than
   # in a called workflow, also keeps the budget guard's count right: a called workflow's runs are
   # recorded under the caller, with "caller / callee" job names.
   triage-budget:
     name: 'Triage budget'
-    needs: [create-issue, label-existing-issue]
-    if: ${{ !cancelled() && (needs.create-issue.outputs.issue_number != '' || needs.label-existing-issue.outputs.issue_number != '') }}
+    needs: [create-issue]
+    if: ${{ !cancelled() && needs.create-issue.outputs.issue_number != '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -292,7 +242,7 @@ jobs:
         if: steps.budget-guard.outputs.over-budget == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
+          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number }}
           BUDGET_REASON: ${{ steps.budget-guard.outputs.reason }}
           TRIAGE_COUNT: ${{ steps.budget-guard.outputs.count }}
           TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
@@ -313,7 +263,7 @@ jobs:
   # the issue gets counts and area names that scripts/security-review-triage-output.mjs builds
   # from a fixed vocabulary, never text the model wrote.
   run-triage:
-    needs: [create-issue, label-existing-issue, triage-budget]
+    needs: [create-issue, triage-budget]
     if: ${{ !cancelled() && needs.triage-budget.outputs.proceed == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -327,7 +277,7 @@ jobs:
       issues: write
       actions: read
     env:
-      ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
+      ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number }}
       REVIEW_REF: ${{ github.ref_name }}
       MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
       SMALL_FAST_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
@@ -545,15 +495,15 @@ jobs:
 
   summary:
     name: 'Summary'
-    needs: [check-existing, create-issue, label-existing-issue]
+    needs: [check-existing, create-issue]
     if: always()
     runs-on: ubuntu-latest
     permissions: {}
     steps:
       - name: Summary
         env:
-          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
-          ISSUE_URL: ${{ needs.create-issue.outputs.issue_url || needs.label-existing-issue.outputs.issue_url }}
+          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number }}
+          ISSUE_URL: ${{ needs.create-issue.outputs.issue_url }}
         run: |
           echo "## Security Review Issue"
           echo ""
@@ -562,5 +512,4 @@ jobs:
           else
             echo "**Issue:** #${ISSUE_NUMBER}"
             echo "**URL:** ${ISSUE_URL}"
-            echo "**Label applied:** agentic-lib"
           fi

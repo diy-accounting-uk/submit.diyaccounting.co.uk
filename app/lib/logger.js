@@ -96,6 +96,9 @@ const REDACT_PATHS = [
   "*.email",
   "*.emailAddress",
   "*.userEmail",
+  "*.to",
+  "*.destination",
+  "*.address",
 
   // Request/response auth headers
   "headers.authorization",

@@ -6,14 +6,14 @@
 // - **Does:** operatorSnapshotPublish.js reads the analytics views behind the eight one-stop objectives. Its handler writes one JSON snapshot per environment, with trailing 30/90-day windows, value, trend and deep link, to s3://<lake>/snapshots/<env>/latest.json. OperatorSnapshotPublish.java provisions the Lambda and its own EventBridge rule inside AnalyticsStack.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/operatorSnapshotPublish.js:handler`
-// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
-// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs
+// - **Files:** app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, app/lib/operatorSnapshot/integrationsSection.js, app/unit-tests/lib/operatorSnapshot/integrationsSection.test.js, app/lib/operatorSnapshot/dataSection.js, app/unit-tests/lib/operatorSnapshot/dataSection.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublish.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/OperatorSnapshotPublishTest.java
+// - **Keywords:** operator snapshot, one-stop objectives, trailing window, trend, deep link, nightly publish, dashboard snapshot, integrations tab, api call graphs, data tab, item counts
 // - **Related:** DATA-19, DATA-24
 // @end-capability
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
+// Six-hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
 // reads the analytics views behind the one-stop objectives dashboard and writes one JSON
 // snapshot per environment: for each observation of the eight objectives, Today (since midnight
 // UK time), Previous day, Last 7 days, Last 30 days with its trend against the 30 days before,
@@ -22,7 +22,9 @@
 // itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { DynamoDBClient, DescribeTableCommand, DescribeTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
+import { CloudWatchClient, GetMetricDataCommand } from "@aws-sdk/client-cloudwatch";
 import { createLogger } from "../../lib/logger.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { AWS_ACCOUNT_NAMES_BY_ID } from "../../lib/operatorSnapshot/awsAccounts.js";
@@ -42,6 +44,7 @@ import {
   buildIntegrationCallsSql,
   shapeIntegrationsSection,
 } from "../../lib/operatorSnapshot/integrationsSection.js";
+import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -403,7 +406,7 @@ const FAST_WINDOW_COLUMNS = [
 ];
 
 // Views whose sources report whole days (the FOCUS cost export, Google Ads, GA4's daily export,
-// Stripe and PayPal reconciliation, the operator effort pulls, security findings, the company
+// the operator effort pulls, security findings, the company
 // book, rolling retention). Their Today is the latest reading, never a count of zero for a day
 // the source has not reported yet; the reading's own day goes in `today_as_of`.
 export const LATEST_READING_VIEWS = new Set([
@@ -412,7 +415,6 @@ export const LATEST_READING_VIEWS = new Set([
   "v_traffic_sources_daily",
   "v_visitors_by_kind_daily",
   "v_visitors_cloudfront_daily",
-  "v_revenue_daily",
   "v_paid_landings_daily",
   "v_ads_cost_daily",
   "v_ads_cost_per_paid_landing_daily",
@@ -464,20 +466,24 @@ function caseFilter(where) {
  * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
  * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
  *
+ * `asOfExpr` replaces the row day in `o<i>_today_as_of` for a latest-reading view.
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
  *
  * Each query lists every partition prefix its view's tables project and reads their objects, so
- * every run makes one query per view rather than one per observation.
+ * every run makes one query per view rather than one per observation. A "latest-total" window
+ * finds its newest day with a window function over the one scan of the view, so the query reads
+ * the view once however many windows it has.
  *
- * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
+ * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean, asOfExpr?: string}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const latestReading = LATEST_READING_VIEWS.has(view);
   const periodic = isPeriodicDayColumn(dayColumn);
-  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince }, index) => {
+  const newestDayColumns = [];
+  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince, asOfExpr }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
@@ -487,11 +493,13 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
       ([alias, condition]) => {
         const newestDay = latestReading && alias === "today";
-        if (aggregation === "latest-total") {
+        if (aggregation === "latest-total" || (newestDay && aggregation === "sum")) {
           // The open items counted on the newest day that has a row in the window: a count of
           // open items is a reading, so summing it over the days would count each item once a day.
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
-          return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = (SELECT max(${dayColumn}) FROM ${view} WHERE ${window}${filter})${filter}) AS ${prefix}${alias}`;
+          const newestDayName = `${prefix}${alias}_newest_day`;
+          newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+          return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${newestDayName}${filter}) AS ${prefix}${alias}`;
         }
         if (aggregation === "latest" || newestDay) {
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
@@ -505,7 +513,9 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
       },
     );
     if (latestReading && !periodic) {
-      windowColumns.push(`cast(max(${dayColumn}) FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
+      // asOfExpr names a date the row carries that is more exact than the day the row was written.
+      const asOf = asOfExpr ? `max_by(${asOfExpr}, ${dayColumn})` : `max(${dayColumn})`;
+      windowColumns.push(`cast(${asOf} FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
     }
     // The view's earliest day, whatever the observation's filter: a window that ends on or after
     // it was covered by the source, so an empty window there is a measured zero.
@@ -516,7 +526,8 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     }
     return windowColumns;
   });
-  return `SELECT ${columns.join(",\n       ")}\nFROM   ${view}`;
+  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM ${view})` : view;
+  return `SELECT ${columns.join(",\n       ")}\nFROM   ${source}`;
 }
 
 /**
@@ -636,9 +647,14 @@ const ukDayFormat = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London"
 // A window the source covered but that held no rows: a sum is a measured zero; an average has
 // no figure to give but is flagged noEvents so the page says "none" rather than "not measured".
 // A window that ends before the source's first day stays null.
-function readWindow(row, column, aggregation, today) {
+//
+// A ledger view (an observation with `ledger: true`) holds a row for each event, so an answered
+// query that found no rows at all means no event happened and a sum reads 0. A query that failed
+// never reaches this function: its observations publish null.
+function readWindow(row, column, aggregation, today, ledger = false) {
   const value = toNumberOrNull(row?.[column]);
-  if (value !== null || !row?.first_day) return { value };
+  if (value !== null) return { value };
+  if (!row?.first_day) return ledger && row && aggregation === "sum" ? { value: 0 } : { value };
   const windowEnd = new Date(today);
   windowEnd.setUTCDate(windowEnd.getUTCDate() - WINDOW_END_DAYS_BACK[column]);
   const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
@@ -654,17 +670,28 @@ function readLatestToday(row) {
   return value === null ? { value: null } : { value, ...(row?.today_as_of ? { asOf: row.today_as_of.slice(0, 10) } : {}) };
 }
 
-export function toObservationWindows(row, aggregation, today = new Date(), { latestReading = false, periodic = false } = {}) {
-  const current30 = readWindow(row, "last_30", aggregation, today);
-  const previous30 = readWindow(row, "prev_30", aggregation, today);
-  const current90 = readWindow(row, "last_90", aggregation, today);
-  const previous90 = readWindow(row, "prev_90", aggregation, today);
+const MONTH_TO_DATE_ONLY_WINDOW = {
+  value: null,
+  notApplicable: true,
+  notApplicableReason: "Month to date is one reading, shown under Today. It has no window of its own.",
+};
+
+export function toObservationWindows(
+  row,
+  aggregation,
+  today = new Date(),
+  { latestReading = false, periodic = false, monthToDate = false, ledger = false } = {},
+) {
+  const current30 = readWindow(row, "last_30", aggregation, today, ledger);
+  const previous30 = readWindow(row, "prev_30", aggregation, today, ledger);
+  const current90 = readWindow(row, "last_90", aggregation, today, ledger);
+  const previous90 = readWindow(row, "prev_90", aggregation, today, ledger);
   const [last30, prev30, last90, prev90] = [current30, previous30, current90, previous90].map((window) => window.value);
-  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today);
+  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today, ledger);
   const windows = {
     today: periodic ? { value: null, notApplicable: true } : dayWindow,
-    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today),
-    last7: readWindow(row, "last_7", aggregation, today),
+    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today, ledger),
+    last7: readWindow(row, "last_7", aggregation, today, ledger),
     last30: {
       value: last30,
       trend: computeTrend(last30, prev30),
@@ -679,6 +706,15 @@ export function toObservationWindows(row, aggregation, today = new Date(), { lat
     },
   };
   if (row?.data_since) windows.dataSince = row.data_since;
+  if (monthToDate) {
+    return {
+      today: dayWindow,
+      previousDay: MONTH_TO_DATE_ONLY_WINDOW,
+      last7: MONTH_TO_DATE_ONLY_WINDOW,
+      last30: MONTH_TO_DATE_ONLY_WINDOW,
+      last90: MONTH_TO_DATE_ONLY_WINDOW,
+    };
+  }
   return windows;
 }
 
@@ -915,6 +951,8 @@ export async function buildSnapshot({ workGroup, database, context }) {
         toObservationWindows(row, observation.aggregation, new Date(), {
           latestReading: LATEST_READING_VIEWS.has(observation.view),
           periodic: isPeriodicDayColumn(observation.dayColumn),
+          monthToDate: observation.monthToDate === true,
+          ledger: observation.ledger === true,
         }),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
@@ -1052,6 +1090,13 @@ const integrationRequestsMode = ({ id, label, org }) => {
     where: "target = 'live'" + orgFilter,
   };
   const orgName = (component) => INTEGRATION_ORG_LABELS[component.split(" ")[0]] ?? component;
+  const orgOrder = Object.keys(INTEGRATION_ORG_LABELS);
+  // Lines sit in organisation order and then status order, so a line keeps its colour in every range.
+  const orderOf = (component) => {
+    const [first, ...rest] = component.split(" ");
+    const position = orgOrder.indexOf(first);
+    return position < 0 ? component : `${position} ${rest.join(" ")}`;
+  };
   return {
     id,
     label,
@@ -1060,6 +1105,7 @@ const integrationRequestsMode = ({ id, label, org }) => {
       ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
       : "Live calls to every organisation added together.",
     ...(org ? {} : { maxComponents: 8 }),
+    orderOf: org ? (component) => component : orderOf,
     labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
     descriptionOf: (component) =>
       org
@@ -1078,6 +1124,7 @@ const integrationDurationMode = ({ id, label }) => {
     label,
     unit: "ms",
     total: null,
+    componentOrder: Object.keys(INTEGRATION_ORG_LABELS),
     labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
     descriptionOf: (component) =>
       `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
@@ -1306,7 +1353,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "Average API request duration",
       unit: "ms",
-      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over each day's calls. Days are UTC.",
+      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
       modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
@@ -1933,8 +1980,10 @@ export function buildChartSeries({ days, rows, mode }) {
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
   }
+  const byFixedOrder = (a, b) => mode.orderOf(a.id).localeCompare(mode.orderOf(b.id), "en", { numeric: true });
   if (mode.maxComponents && components.length > mode.maxComponents) {
     const kept = components.slice(0, mode.maxComponents);
+    if (mode.orderOf) kept.sort(byFixedOrder);
     const folded = components.slice(mode.maxComponents);
     kept.push({
       id: "other",
@@ -1943,6 +1992,8 @@ export function buildChartSeries({ days, rows, mode }) {
       values: days.map((_, index) => sum(folded.map((component) => component.values[index]))),
     });
     components = kept;
+  } else if (mode.orderOf) {
+    components.sort(byFixedOrder);
   }
 
   const series = components.map((component) => ({ ...component, values: component.values.map((value) => Math.round(value * 100) / 100) }));
@@ -2185,6 +2236,106 @@ export async function buildIntegrations({ workGroup, database, envName, region }
     region,
     toWindows: toObservationWindows,
   });
+}
+
+/**
+ * The Data tab's section: item counts, TTL, actor split and object counts, with the daily
+ * history files in the lake. See dataSection.js for where each figure comes from.
+ */
+export async function buildData({ workGroup, database, envName, lakeBucket }) {
+  const tableNames = splitList(process.env.DATA_TABLE_NAMES);
+  const bucketNames = splitList(process.env.DATA_BUCKET_NAMES);
+  const diyaGlBucketName = process.env.DIYA_GL_BUCKET_NAME;
+  const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const cloudWatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const s3Client = getS3Client();
+  return buildDataSection({
+    envName,
+    tableNames,
+    bucketNames,
+    io: {
+      describeItemCount: async (TableName) => {
+        const { Table } = await dynamo.send(new DescribeTableCommand({ TableName }));
+        return Table?.ItemCount ?? null;
+      },
+      describeTtl: async (TableName) => {
+        const { TimeToLiveDescription: ttl } = await dynamo.send(new DescribeTimeToLiveCommand({ TableName }));
+        return { enabled: ttl?.TimeToLiveStatus === "ENABLED", attribute: ttl?.AttributeName ?? null };
+      },
+      readHistory: async (Key) => {
+        try {
+          const response = await s3Client.send(new GetObjectCommand({ Bucket: lakeBucket, Key }));
+          return JSON.parse(await response.Body.transformToString());
+        } catch (error) {
+          if (error.name !== "NoSuchKey") logger.warn({ message: "Data history file not read", key: Key, error: error.message });
+          return null;
+        }
+      },
+      writeHistory: async (Key, value) => {
+        await s3Client.send(
+          new PutObjectCommand({ Bucket: lakeBucket, Key, Body: JSON.stringify(value), ContentType: "application/json" }),
+        );
+      },
+      runAthena: (sql) => runAthenaQuery({ workGroup, database, sql }),
+      bucketObjectCounts: async (names, days) => {
+        const end = new Date();
+        const response = await cloudWatch.send(
+          new GetMetricDataCommand({
+            StartTime: new Date(end.getTime() - days * 24 * 60 * 60 * 1000),
+            EndTime: end,
+            MetricDataQueries: names.map((name, index) => ({
+              Id: `b${index}`,
+              MetricStat: {
+                Metric: {
+                  Namespace: "AWS/S3",
+                  MetricName: "NumberOfObjects",
+                  Dimensions: [
+                    { Name: "BucketName", Value: name },
+                    { Name: "StorageType", Value: "AllStorageTypes" },
+                  ],
+                },
+                Period: 86400,
+                Stat: "Average",
+              },
+            })),
+          }),
+        );
+        return Object.fromEntries(
+          names.map((name, index) => {
+            const result = (response.MetricDataResults || []).find((entry) => entry.Id === `b${index}`);
+            const byDay = {};
+            (result?.Timestamps || []).forEach((timestamp, position) => {
+              byDay[timestamp.toISOString().slice(0, 10)] = Math.round(result.Values[position]);
+            });
+            return [name, byDay];
+          }),
+        );
+      },
+      countBooks: async () => (diyaGlBucketName ? countDiyaGlBooks(s3Client, diyaGlBucketName) : null),
+    },
+  });
+}
+
+const splitList = (value) => (value ? value.split(",").filter(Boolean) : []);
+
+// A book is a metadata.json under users/<user>/books/<id>/; each version is a zip beside it. The
+// listing stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so.
+const DIYA_GL_LIST_PAGE_LIMIT = 50;
+
+export async function countDiyaGlBooks(s3Client, Bucket) {
+  let books = 0;
+  let versions = 0;
+  let ContinuationToken;
+  for (let page = 0; page < DIYA_GL_LIST_PAGE_LIMIT; page += 1) {
+    const response = await s3Client.send(new ListObjectsV2Command({ Bucket, Prefix: "users/", ContinuationToken }));
+    (response.Contents || []).forEach(({ Key }) => {
+      if (Key.endsWith("/metadata.json")) books += 1;
+      else if (Key.endsWith(".zip")) versions += 1;
+    });
+    if (!response.IsTruncated) return { books, versions, truncated: false };
+    ContinuationToken = response.NextContinuationToken;
+  }
+  return { books, versions, truncated: true };
 }
 
 /**
@@ -2453,6 +2604,14 @@ export async function handler() {
     failedIntegrations = 1;
     logger.warn({ message: "Integrations query failed, publishing none", error: error.message });
   }
+  let data = null;
+  let failedData = 0;
+  try {
+    data = await buildData({ workGroup, database, envName, lakeBucket });
+  } catch (error) {
+    failedData = 1;
+    logger.warn({ message: "Data section failed, publishing none", error: error.message });
+  }
   let operators = null;
   let failedOperators = 0;
   try {
@@ -2493,6 +2652,7 @@ export async function handler() {
     ...(paidSubscribers ? { paidSubscribers } : {}),
     ...(pageVisitors ? { pageVisitors } : {}),
     ...(integrations ? { integrations } : {}),
+    ...(data ? { data } : {}),
     ...(operators ? { operators } : {}),
     ...(familyAffiliates ? { familyAffiliates } : {}),
     ...(affiliateGroups ? { affiliateGroups } : {}),
@@ -2503,6 +2663,7 @@ export async function handler() {
       failedPaidSubscribers +
       failedPageVisitors +
       failedIntegrations +
+      failedData +
       failedOperators +
       failedFamilyAffiliates +
       failedAffiliateGroups,

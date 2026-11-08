@@ -191,7 +191,7 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
    antony@diyaccounting.co.uk in the 2027-28 notifications, and is a readiness review accepted in
    advance. No attachments.
 2. Subscribe to the ITSA notices in the Developer Hub's email preferences, so the next
-   announcement arrives.
+   announcement arrives (done; the operator confirmed it on 2026-11-06).
 3. Correct the 14-day figure to 30 days in the evidence pack and the two drafts, and add the AI
    assurance row to the checklist.
 4. Decide whether the spreadsheets site points sole traders at a recognised bridging product for
@@ -209,12 +209,6 @@ must not run before recognition, because the product could not deliver what it a
 
 The rows below are this plan's open work, in board order. `NEXT.md` carries none of them; this
 section is their board.
-
-### Ready
-
-- [ ] **IA2. Developer Hub email preferences.** The operator signs in to the Developer Hub and
-  turns on the Income Tax (MTD) notices under Email preferences, so the 2027 update arrives.
-  **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ### Blocked on HMRC's early-2027 update
 
@@ -262,7 +256,7 @@ operator's approval to enable it for live users on prod.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
   `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
-  `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
+  `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4, which is live; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
   Authorisation API on Submit's production application; HMRC's approval of agent use; practice
@@ -272,12 +266,12 @@ operator's approval to enable it for live users on prod.
 ### Dependency graph
 
 ```
-IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
+HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
                                                └──► IA9
 IA3 ──► IA6
 IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
 IA11 ──► IA6 (the recordings are cited in the application)
-IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_COMPANIES_HOUSE_APPROVAL.md UH4 and PLAN_HMRC_CT_APPROVAL.md UH7)
+IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_HMRC_CT_APPROVAL.md UH7)
 ```
 
 Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it

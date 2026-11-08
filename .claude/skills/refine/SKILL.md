@@ -17,6 +17,11 @@ description: Refine every open row on NEXT.md in the main context before a wave 
 
 # refine
 
+**SSO check.** Before the first AWS call, and before any request that the operator log in, run
+`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
+get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
+one fails, and name the profile and the error. Never ask for a login from memory.
+
 Five passes over `NEXT.md`, in the main context and with no sub-agents, then the write-back and
 `/board`. A sub-agent reads only its brief; every fact it would otherwise have to rediscover costs
 tokens, and every fact it gets wrong costs a redeploy. The passes move that discovery into one
@@ -132,7 +137,7 @@ A fact one row's check turned up usually serves another row. Add it to every row
 sentence, and name the other row:
 
 - rows that share a file (`skip-deploy-check`, `IdentityStack.java`'s host lists,
-  `PLAN_COMPANIES_HOUSE_APPROVAL.md`) say so in both places, so the wave puts them in one agent or lands the
+  `PLAN_HMRC_CT_APPROVAL.md`) say so in both places, so the wave puts them in one agent or lands the
   second on the first;
 - rows that touch the same page or module run in sequence in one agent, or the later brief carries the earlier row's changes, so the dependencies land in one commit or the second agent sees the first agent's work.
 - rows over the same data name the same facts once each (the Athena database and workgroup, the
@@ -181,7 +186,7 @@ present. Test each one:
 - **Missing links.** A blocker that names a row nobody has written (a design row a plan task
   cites, a label that closed on other work) is a gap: write the row, or rewrite the blocker to
   what it stood for.
-- **Where a plan keeps the graph** (a `## Dependency graph` section, as `PLAN_COMPANIES_HOUSE_APPROVAL.md`
+- **Where a plan keeps the graph** (a `## Dependency graph` section, as `PLAN_HMRC_CT_APPROVAL.md`
   does), update it in the same commit so the plan and the board say the same thing.
 
 Record each change in the commit message: the stale blockers removed, the cycles broken, the

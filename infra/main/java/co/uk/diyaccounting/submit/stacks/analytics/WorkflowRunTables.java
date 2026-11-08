@@ -29,8 +29,7 @@ import software.constructs.Construct;
  * Glue tables over the three workflow-written sources the {@code dora-row} composite action
  * writes: {@code dora_runs} from every deploy and destroy run, {@code probe_runs} from every
  * probe suite in {@code probe-test.yml}, and {@code agent_runs} from every unattended agent
- * workflow run (alarm-triage, support-triage, alarm-remedy-close, agentic-lib-code,
- * agentic-lib-board), at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}, {@code
+ * workflow run (alarm-triage, support-triage, alarm-remedy-close), at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}, {@code
  * curated/probe/dt=<date>/<run-id>-<suite>.json} and {@code
  * curated/agent-runs/dt=<date>/<run-id>-<attempt>.json}.
  *
@@ -121,7 +120,7 @@ public class WorkflowRunTables {
         parameters.put("projection.enabled", "true");
         parameters.put("projection.dt.type", "date");
         parameters.put("projection.dt.format", "yyyy-MM-dd");
-        parameters.put("projection.dt.range", "2026-01-01,NOW");
+        parameters.put("projection.dt.range", "2026-08-01,NOW");
         parameters.put("projection.dt.interval", "1");
         parameters.put("projection.dt.interval.unit", "DAYS");
         parameters.put("storage.location.template", location + "dt=${dt}/");
@@ -220,6 +219,8 @@ public class WorkflowRunTables {
                 "guardrail_action", "string",
                 "pr_number", "bigint",
                 "duration_seconds", "bigint",
-                "finished_at", "string");
+                "finished_at", "string",
+                "input_tokens", "bigint",
+                "output_tokens", "bigint");
     }
 }

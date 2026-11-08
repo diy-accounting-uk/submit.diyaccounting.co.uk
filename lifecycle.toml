@@ -42,13 +42,13 @@ source = "aws acm describe-certificate"
 action = "Eligible for DNS renewal via AWS Certificate Manager"
 
 [[lifecycle]]
-name = "Local Development Certificate (certbot)"
+name = "Local Development Certificate"
 kind = "certificate"
 current = "local.submit.diyaccounting.co.uk"
 end_date = "2026-11-29"
 alarm_days = 21  # inside certbot's 30-day renewal window; a 90-day certificate is 60 days from its end for two thirds of each cycle
-source = "_developers/SETUP.md - renewal via certbot renew with custom directory flags"
-action = "Renewal runs weekly via launchd on Sundays 05:00. Manual refresh required in week of 2026-11-29."
+source = ".github/workflows/local-tls-renew.yml - weekly renewal into ci/submit/local-tls/certificate"
+action = "The workflow renews it weekly when under 30 days remain. Developers run scripts/local-tls-fetch.sh to read the new certificate."
 
 [[lifecycle]]
 name = "Java Compiler Target"

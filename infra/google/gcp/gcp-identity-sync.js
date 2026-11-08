@@ -4,7 +4,7 @@
 
 // @capability DATA-42 Sync GCP workload identity and org policy
 // - **Use when:** a Lambda's federated access to Google Cloud must be granted, or an org policy must match identity.toml.
-// - **Does:** gcp-identity-sync.js makes the workload identity pool, its providers, the service account's roles/iam.workloadIdentityUser bindings and every declared org policy match identity.toml. It diffs live IAM and Org Policy API state and applies the difference. --write-cred-configs writes the external-account credential configuration files googleWorkloadIdentity.js's Lambdas build at runtime.
+// - **Does:** gcp-identity-sync.js makes the workload identity pool, its providers, the service account's roles/iam.workloadIdentityUser bindings, each delegated service account's roles/iam.serviceAccountTokenCreator bindings and every declared org policy match identity.toml. It diffs live IAM and Org Policy API state and applies the difference. --write-cred-configs writes the external-account credential configuration files googleWorkloadIdentity.js's Lambdas build at runtime.
 // - **Run:** `node infra/google/gcp/gcp-identity-sync.js`; `node infra/google/gcp/gcp-identity-sync.js --apply`; `node infra/google/gcp/gcp-identity-sync.js --apply --write-cred-configs`
 // - **Entry:** `infra/google/gcp/gcp-identity-sync.js:`
 // - **Files:** infra/google/gcp/gcp-identity-sync.js, app/unit-tests/scripts/gcpIdentitySync.test.js, infra/google/gcp/identity.toml
@@ -46,6 +46,9 @@ import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } fr
 export const CONFIG_PATH = "infra/google/gcp/identity.toml";
 export const CREDENTIALS_DIR = "infra/google/gcp/credentials";
 export const WORKLOAD_IDENTITY_USER_ROLE = "roles/iam.workloadIdentityUser";
+// Holds iam.serviceAccounts.signJwt, which a job needs to sign a domain-wide-delegation assertion
+// for a delegated service account without holding a key for it.
+export const TOKEN_CREATOR_ROLE = "roles/iam.serviceAccountTokenCreator";
 // The role an organization policy admin needs. The federated service account holds project
 // roles only (infra/google/gcp/project.toml), so it cannot write an organization-level policy today.
 export const ORG_POLICY_ADMIN_ROLE = "roles/orgpolicy.policyAdmin";
@@ -79,6 +82,12 @@ function readDelegatedAccounts(parsed) {
       throw new Error(`delegated_service_account ${account.account_id}: scopes must be a non-empty array`);
     }
     assertDisplayName(`delegated_service_account ${account.account_id}`, account.display_name ? String(account.display_name) : "");
+    const sets = account.token_creator_principal_sets ?? [];
+    if (!Array.isArray(sets) || sets.some((set) => typeof set !== "string" || !set.startsWith("attribute."))) {
+      throw new Error(
+        `delegated_service_account ${account.account_id}: token_creator_principal_sets must be an array of "attribute.<name>/<value>" strings`,
+      );
+    }
   }
   return delegated;
 }
@@ -136,6 +145,7 @@ export function parseConfig(tomlString) {
       displayName: account.display_name ? String(account.display_name) : "",
       mailbox: String(account.mailbox),
       scopes: account.scopes.map(String),
+      tokenCreatorPrincipalSets: (account.token_creator_principal_sets ?? []).map(String),
     })),
     orgPolicies: orgPolicies.map((policy) => ({
       constraint: String(policy.constraint),
@@ -175,6 +185,11 @@ export function providerName(projectNumber, poolId, providerId) {
 /** The member string a provider's principal set binds on the service account. */
 export function principalSetMember(projectNumber, poolId, principalSet) {
   return `principalSet://iam.googleapis.com/${poolName(projectNumber, poolId)}/${principalSet}`;
+}
+
+/** The email of a delegated service account in the project. */
+export function delegatedAccountEmail(projectId, accountId) {
+  return `${accountId}@${projectId}.iam.gserviceaccount.com`;
 }
 
 /** The audience a federated caller presents for one provider. */
@@ -261,6 +276,21 @@ export function planIdentity(config, live) {
         accountId: account.accountId,
         body: { accountId: account.accountId, serviceAccount: { displayName: account.displayName } },
       });
+    }
+    if (account.tokenCreatorPrincipalSets.length > 0) {
+      const binding = (live.delegatedPolicies?.[account.accountId]?.bindings ?? []).find((b) => b.role === TOKEN_CREATOR_ROLE);
+      const liveMembers = new Set(binding?.members ?? []);
+      const missing = account.tokenCreatorPrincipalSets
+        .map((set) => principalSetMember(number, config.pool.id, set))
+        .filter((member) => !liveMembers.has(member));
+      if (missing.length > 0) {
+        actions.push({
+          kind: "bind-token-creator",
+          accountId: account.accountId,
+          serviceAccount: delegatedAccountEmail(config.project.id, account.accountId),
+          members: missing,
+        });
+      }
     }
   }
   return actions;
@@ -450,15 +480,24 @@ async function readLiveState(token, config) {
     {},
   );
   const delegatedAccounts = {};
+  const delegatedPolicies = {};
   for (const account of config.delegatedAccounts ?? []) {
-    const email = `${account.accountId}@${config.project.id}.iam.gserviceaccount.com`;
+    const email = delegatedAccountEmail(config.project.id, account.accountId);
     delegatedAccounts[account.accountId] = await googleRequest(
       "GET",
       `${IAM_BASE}/projects/${config.project.id}/serviceAccounts/${email}`,
       token,
     );
+    if (delegatedAccounts[account.accountId]) {
+      delegatedPolicies[account.accountId] = (await googleRequest(
+        "POST",
+        `${IAM_BASE}/projects/-/serviceAccounts/${email}:getIamPolicy`,
+        token,
+        {},
+      )) ?? { bindings: [] };
+    }
   }
-  return { pool, providers, policy: policy ?? { bindings: [] }, delegatedAccounts };
+  return { pool, providers, policy: policy ?? { bindings: [] }, delegatedAccounts, delegatedPolicies };
 }
 
 /**
@@ -497,6 +536,8 @@ function describe(action) {
       return `${action.serviceAccount}: ${WORKLOAD_IDENTITY_USER_ROLE} missing for ${action.members.join(", ")} (would bind)`;
     case "create-delegated-service-account":
       return `service account ${action.accountId}: missing (would create)`;
+    case "bind-token-creator":
+      return `${action.serviceAccount}: ${TOKEN_CREATOR_ROLE} missing for ${action.members.join(", ")} (would bind)`;
     default:
       return `${action.kind}`;
   }
@@ -555,6 +596,19 @@ async function applyAction(token, action, config, live) {
     }
     case "create-delegated-service-account":
       return googleRequest("POST", `${IAM_BASE}/projects/${config.project.id}/serviceAccounts`, token, action.body);
+    case "bind-token-creator": {
+      const policy = live.delegatedPolicies?.[action.accountId] ?? { bindings: [] };
+      const bindings = policy.bindings ?? [];
+      let binding = bindings.find((b) => b.role === TOKEN_CREATOR_ROLE);
+      if (!binding) {
+        binding = { role: TOKEN_CREATOR_ROLE, members: [] };
+        bindings.push(binding);
+      }
+      binding.members = [...new Set([...(binding.members ?? []), ...action.members])];
+      return googleRequest("POST", `${IAM_BASE}/projects/-/serviceAccounts/${action.serviceAccount}:setIamPolicy`, token, {
+        policy: { ...policy, bindings },
+      });
+    }
     default:
       throw new Error(`Unknown action ${action.kind}`);
   }

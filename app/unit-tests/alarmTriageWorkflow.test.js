@@ -90,7 +90,7 @@ describe("alarm-triage.yml", () => {
     const perms = quarantine.match(/\n {4}permissions:\n((?: {6}.+\n)+)/)[1];
     expect(perms.trim()).toBe("id-token: write");
     expect(quarantine).toContain("-env-quarantine-reader-role");
-    expect(quarantine).toContain("aws bedrock-runtime invoke-model");
+    expect(quarantine).toContain("aws bedrock-runtime converse");
   });
 
   it("gives the hold job no AWS credentials and adds the label with an App token", () => {
@@ -146,5 +146,12 @@ describe("alarm-triage.yml", () => {
     const timeoutMinutes = Number(runTriage.match(/timeout-minutes: (\d+)/)[1]);
     expect(maxWaitSeconds).toBeLessThanOrEqual(timeoutMinutes * 60 - 20 * 60);
     expect(wait).toContain(`WAIT_SECONDS=$MAX_WAIT_SECONDS`);
+  });
+
+  it("keeps each triage result out of the public job log", () => {
+    const text = readFileSync(new URL("../../.github/workflows/alarm-triage.yml", import.meta.url), "utf8");
+    const steps = text.split("uses: ./.github/actions/run-triage-agent").slice(1);
+    expect(steps.length).toBe(2);
+    for (const step of steps) expect(step.slice(0, 300)).toContain("echo-output: 'false'");
   });
 });

@@ -6,12 +6,12 @@
 // spotless:off
 // @capability OPS-117 Provision the Observability stack
 // - **Use when:** an account's CloudTrail, GuardDuty, Security Hub, security SNS topic or shared dashboards need synthesizing.
-// - **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to.
+// - **Does:** ObservabilityStack creates the account's CloudTrail with DynamoDB data events, the account-singleton GuardDuty detector and Security Hub, the SNS topic security findings route through, and the CloudWatch dashboards, alarms and log groups other stacks attach to. It also builds the trusted event function (`trustedEventToGithubIssue.js`) with its role and health alarm, and in prod the rule that sends AWS Health and ACM notices to it.
 // - **Run:** `npm run cdk:synth-environment`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ObservabilityStackTest.java, infra/test/java/co/uk/diyaccounting/submit/MetricFilterLogGroupCdkResourceTest.java
-// - **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards
-// - **Related:** OPS-118, OPS-121, OPS-122
+// - **Keywords:** observability stack, cloudtrail, guardduty, security hub, sns findings topic, dashboards, trusted event rule
+// - **Related:** OPS-118, OPS-121, OPS-122, OPS-185
 // @end-capability
 // spotless:on
 
@@ -23,11 +23,18 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourcePr
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import co.uk.diyaccounting.submit.utils.RumWebVitalsAlarm;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
+import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -43,10 +50,12 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
-import software.amazon.awscdk.services.cognito.CfnIdentityPool;
-import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.RuleTargetInput;
+import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
+import software.amazon.awscdk.services.events.targets.LambdaFunctionProps;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
@@ -64,12 +73,14 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.securityhub.CfnHub;
 import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
 
     private static final String SUPPORT_ACCEPTANCE_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
+    private static final String TRUSTED_EVENT_REPOSITORY = "diy-accounting-uk/private.diyaccounting.co.uk";
 
     // public Bucket trailBucket;
     public Trail trail;
@@ -122,6 +133,47 @@ public class ObservabilityStack extends Stack {
         @Value.Default
         default boolean securityServicesEnabled() {
             return true;
+        }
+
+        // The env image tag the trusted event function runs from.
+        String baseImageTag();
+
+        // The diya-ops GitHub App the trusted event function opens issues as. Both stay blank
+        // until the operator sets the GitHub variables; the function then fails on its first
+        // call and its health alarm reports it.
+        @Value.Default
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
+            return "";
+        }
+
+        // Whether the Health and ACM rules exist. Only prod opens issues for those events; the
+        // function, its role and the ledger exist in every environment.
+        @Value.Default
+        default boolean trustedEventRulesEnabled() {
+            return false;
+        }
+
+        // Whether the function reads the Companies House API and the management account, on a
+        // daily schedule and when the root budget topic publishes. Set for prod only.
+        @Value.Default
+        default boolean trustedEventReadsEnabled() {
+            return false;
+        }
+
+        // The management account's budget alert topic (us-east-1) the function subscribes to.
+        @Value.Default
+        default String rootBudgetAlertsTopicArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String companiesHouseBaseUri() {
+            return "";
         }
 
         static ImmutableObservabilityStackProps.Builder builder() {
@@ -391,35 +443,17 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "BedrockInvocationLogGroupArn", bedrockInvocationLogGroup.getLogGroupArn());
 
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
-        // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
-        CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
-                        this, props.resourceNamePrefix() + "-RumIdentityPool")
-                .allowUnauthenticatedIdentities(true)
-                .build();
-
-        // Role for unauthenticated identities allowing PutRumEvents
-        Role rumGuestRole = Role.Builder.create(this, props.resourceNamePrefix() + "-RumGuestRole")
-                .assumedBy(new FederatedPrincipal(
-                        "cognito-identity.amazonaws.com",
-                        Map.of(
-                                "StringEquals", Map.of("cognito-identity.amazonaws.com:aud", rumIdentityPool.getRef()),
-                                "ForAnyValue:StringLike",
-                                        Map.of("cognito-identity.amazonaws.com:amr", "unauthenticated")),
-                        "sts:AssumeRoleWithWebIdentity"))
-                .build();
-        rumGuestRole.addToPolicy(PolicyStatement.Builder.create()
-                .actions(List.of("rum:PutRumEvents"))
-                .resources(List.of("*"))
-                .build());
-
-        // Attach role to Identity Pool
-        CfnIdentityPoolRoleAttachment.Builder.create(this, props.resourceNamePrefix() + "-RumIdentityPoolRole")
-                .identityPoolId(rumIdentityPool.getRef())
-                .roles(Map.of("unauthenticated", rumGuestRole.getRoleArn()))
-                .build();
+        String rumAppName = props.resourceNamePrefix() + "-rum";
+        // Built from the name: the monitor's own resource policy names it, so a reference to the monitor would be a
+        // cycle.
+        String rumAppMonitorArn = Stack.of(this)
+                .formatArn(ArnComponents.builder()
+                        .service("rum")
+                        .resource("appmonitor")
+                        .resourceName(rumAppName)
+                        .build());
 
         // Create RUM App Monitor
-        String rumAppName = props.resourceNamePrefix() + "-rum";
         CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
                 .name(rumAppName)
                 .domainList(List.of(
@@ -431,29 +465,27 @@ public class ObservabilityStack extends Stack {
                         .sessionSampleRate(1.0)
                         .allowCookies(true)
                         .enableXRay(true)
-                        .guestRoleArn(rumGuestRole.getRoleArn())
-                        .identityPoolId(rumIdentityPool.getRef())
                         .telemetries(List.of("performance", "errors", "http"))
+                        .build())
+                .resourcePolicy(CfnAppMonitor.ResourcePolicyProperty.builder()
+                        .policyDocument(Stack.of(this)
+                                .toJsonString(Map.of(
+                                        "Version",
+                                        "2012-10-17",
+                                        "Statement",
+                                        List.of(Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "rum:PutRumEvents",
+                                                "Resource",
+                                                rumAppMonitorArn,
+                                                "Principal",
+                                                "*")))))
                         .build())
                 .build();
 
         // RUM metrics and alarms
-        Metric lcpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsLargestContentfulPaint")
-                .dimensionsMap(Map.of("application_name", rumAppName))
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric clsP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsCumulativeLayoutShift")
-                .dimensionsMap(Map.of("application_name", rumAppName))
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
         Metric jsErrors = Metric.Builder.create()
                 .namespace("AWS/RUM")
                 .metricName("JsErrorCount")
@@ -462,25 +494,23 @@ public class ObservabilityStack extends Stack {
                 .period(Duration.minutes(5))
                 .build();
 
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumLcpP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-rum-lcp-p75")
-                .metric(lcpP75)
-                .threshold(4000) // 4s
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("RUM p75 LCP > 4s")
-                .build();
+        RumWebVitalsAlarm.create(
+                this,
+                props.resourceNamePrefix() + "-RumLcpP75Alarm",
+                props.resourceNamePrefix() + "-rum-lcp-p75",
+                "WebVitalsLargestContentfulPaint",
+                rumAppName,
+                4000, // 4s
+                "RUM p75 LCP > 4s");
 
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumClsP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-rum-cls-p75")
-                .metric(clsP75)
-                .threshold(0.25) // CLS "needs improvement" boundary
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("RUM p75 CLS > 0.25")
-                .build();
+        RumWebVitalsAlarm.create(
+                this,
+                props.resourceNamePrefix() + "-RumClsP75Alarm",
+                props.resourceNamePrefix() + "-rum-cls-p75",
+                "WebVitalsCumulativeLayoutShift",
+                rumAppName,
+                0.25, // CLS "needs improvement" boundary
+                "RUM p75 CLS > 0.25");
 
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumJsErrorAlarm")
                 .alarmName(props.resourceNamePrefix() + "-rum-js-errors")
@@ -712,6 +742,26 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // Customer email failure alarm: a customer's email failed to send, bounced permanently, drew
+        // a complaint, or had no address. Built on the Submit/Business EMF metric the email worker
+        // and the SES event handler emit, scoped to Actor=customer so test traffic does not page
+        // anyone. No SnsAction: the alarm-state-change rule in OpsStack routes this to Telegram.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-CustomerEmailFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-customer-email-failure")
+                .alarmDescription("A customer email failed >= 1 time in 15 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("CustomerEmailFailure")
+                        .dimensionsMap(Map.of("Actor", "customer"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(15))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // Token charge unpaid alarm (B128). app/services/tokenEnforcement.js logs and swallows
         // "Token charge failed after HMRC success" when a token charge fails after HMRC has
         // already accepted the submission, so the customer keeps the filing but the ledger
@@ -866,8 +916,6 @@ public class ObservabilityStack extends Stack {
 
         // Outputs for RUM configuration
         cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
-        cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
-        cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
         cfnOutput(this, "RumRegion", this.getRegion());
 
         // ============================================================================
@@ -877,11 +925,6 @@ public class ObservabilityStack extends Stack {
         // role-chaining every other workflow uses), then chains into this role. That role is named
         // submit-{env}-github-actions-role in each deployment account (see GITHUB_SETUP.md), not the
         // plain "github-actions-role" a first draft of this stack assumed.
-        //
-        // The three agentic-lib workflows (board, do-next, auto-merge) chain into it the same way,
-        // for the same reason alarm-triage does: it is the only role in the account that can invoke
-        // the pinned Bedrock models, and cutting a second Bedrock-capable role per agent path would
-        // duplicate the deny list below rather than share it.
         String githubActionsRoleArn =
                 "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
 
@@ -922,6 +965,11 @@ public class ObservabilityStack extends Stack {
                 .sid("InvokeTriageModel")
                 .actions(List.of("bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"))
                 .resources(List.of(
+                        "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
+                        "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0",
+                        "arn:aws:bedrock:eu-west-2::foundation-model/amazon.titan-embed-text-v2:0",
+                        "arn:aws:bedrock:*:%s:inference-profile/global.amazon.nova-2-lite-v1:0"
+                                .formatted(this.getAccount()),
                         "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                         "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
                         "arn:aws:bedrock:*:%s:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
@@ -1140,7 +1188,7 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "AlarmTriageGuardrailId", alarmTriageGuardrail.getAttrGuardrailId());
 
         // The agent kill switch: one flag every unattended agent path reads before acting
-        // (alarm-triage.yml and the three agentic-lib workflows, through
+        // (alarm-triage.yml, through
         // .github/actions/agent-kill-switch). `on` stops them; agent-kill-switch.yml sets it
         // through the deployment role, so the operator can stop everything with one dispatch.
         // CloudFormation only rewrites the value when this resource itself changes, so a flag
@@ -1154,24 +1202,21 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         // The quarantine reader role reads untrusted text, so it can do three things and no more:
-        // invoke the one Haiku model (through its EU inference profile and the foundation model the
-        // profile routes to), screen the answer with the guardrail, and read the three parameters
+        // invoke the one Nova Pro foundation model in eu-west-2, screen the answer with the
+        // guardrail, and read the three parameters
         // the reader job needs. It has no telemetry, S3, DynamoDB or Marketplace grant.
         Role quarantineReaderRole = Role.Builder.create(this, props.resourceNamePrefix() + "-QuarantineReaderRole")
                 .roleName(props.sharedNames().observability.quarantineReaderRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Role the quarantine reader workflows chain into to summarise untrusted text"
-                        + " with Haiku and screen the answer with the guardrail")
+                        + " with Nova Pro and screen the answer with the guardrail")
                 .assumedBy(new ArnPrincipal(githubActionsRoleArn))
                 .build();
 
         quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("InvokeReaderModel")
                 .actions(List.of("bedrock:InvokeModel"))
-                .resources(List.of(
-                        "arn:aws:bedrock:eu-west-2:%s:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
-                                .formatted(this.getAccount()),
-                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"))
+                .resources(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"))
                 .build());
 
         quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
@@ -1190,5 +1235,226 @@ public class ObservabilityStack extends Stack {
                 .build());
 
         cfnOutput(this, "QuarantineReaderRoleArn", quarantineReaderRole.getRoleArn());
+
+        // The dashboard review role reads what the nightly dashboard review judges and nothing else:
+        // the operator snapshot and the console images in the lake, the held passes through the
+        // issuer index of the passes table, Nova Pro, the guardrail and four parameters.
+        // It has no ListBucket, so a missing key answers AccessDenied; the job reads both as "not
+        // published yet". The LeadingKeys condition limits the query to the partition key "held".
+        String dashboardReviewLakeArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
+        Role dashboardReviewRole = Role.Builder.create(this, props.resourceNamePrefix() + "-DashboardReviewRole")
+                .roleName(props.sharedNames().observability.dashboardReviewRoleName)
+                .maxSessionDuration(Duration.hours(1))
+                .description("Role the nightly dashboard review workflow chains into to read the snapshot and"
+                        + " the held passes, and to judge the screenshots with Nova Pro")
+                .assumedBy(new ArnPrincipal(githubActionsRoleArn))
+                .build();
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadSnapshotAndConsole")
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(
+                        dashboardReviewLakeArn + "/snapshots/" + props.envName() + "/latest.json",
+                        dashboardReviewLakeArn + "/snapshots/" + props.envName() + "/console/*"))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("QueryHeldPasses")
+                .actions(List.of("dynamodb:Query"))
+                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s/index/issuedBy-index"
+                        .formatted(this.getRegion(), this.getAccount(), props.sharedNames().data.passesTableName)))
+                .conditions(Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("held"))))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("InvokeReviewModel")
+                .actions(List.of("bedrock:InvokeModel"))
+                .resources(List.of("arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0"))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ApplyReviewGuardrail")
+                .actions(List.of("bedrock:ApplyGuardrail"))
+                .resources(List.of(alarmTriageGuardrail.getAttrGuardrailArn()))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadReviewParameters")
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        guardrailIdParameter.getParameterArn(),
+                        guardrailVersionParameter.getParameterArn(),
+                        killSwitchParameter.getParameterArn()))
+                .build());
+
+        dashboardReviewRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DenyScans")
+                .effect(Effect.DENY)
+                .actions(List.of("dynamodb:Scan"))
+                .resources(List.of("*"))
+                .build());
+
+        cfnOutput(this, "DashboardReviewRoleArn", dashboardReviewRole.getRoleArn());
+
+        // ============================================================================
+        // Trusted events: AWS Health and ACM notices as private issues
+        // ============================================================================
+        // An env-level function (one per account, not one per app deployment) that writes to the
+        // private repository as the ops App. The rule that feeds it exists only where
+        // trustedEventRulesEnabled is set (prod); ci proves the function by direct invoke.
+        String trustedEventFunctionName = props.sharedNames().observability.trustedEventFunctionName;
+        String trustedEventPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
+        var trustedEventEnvironment = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("TRUSTED_EVENT_GITHUB_REPO", TRUSTED_EVENT_REPOSITORY)
+                .with("TRUSTED_EVENT_LEDGER_DYNAMODB_TABLE_NAME", props.sharedNames().data.trustedEventLedgerTableName);
+        // The Companies House send path records each call; the Lambda construct grants PutItem on
+        // the table named here. The deployment is the environment, because this function is
+        // env-level.
+        IntegrationCallAccess.addEnv(
+                trustedEventEnvironment, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
+        String trustedEventCompaniesHouseKeyArn =
+                "arn:aws:secretsmanager:%s:%s:secret:prod/submit/companies-house/api_key"
+                        .formatted(this.getRegion(), this.getAccount());
+        String trustedEventRootReadRoleArn = "arn:aws:iam::887764105431:role/root-trusted-event-read";
+        if (props.trustedEventReadsEnabled()) {
+            trustedEventEnvironment
+                    .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                    .with("COMPANIES_HOUSE_API_KEY_ARN", trustedEventCompaniesHouseKeyArn)
+                    .with("TRUSTED_EVENT_ROOT_READ_ROLE_ARN", trustedEventRootReadRoleArn);
+        }
+        // PopulatedMap rejects a blank value, and the App ids are blank until the operator sets
+        // the GitHub variables, so they are added only once both are set.
+        if (!props.githubAppId().isBlank() && !props.githubAppInstallationId().isBlank()) {
+            trustedEventEnvironment
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", trustedEventPrivateKeySecretId);
+        }
+
+        // The role has a fixed name because the management account's read role trusts it by ARN.
+        Role trustedEventRole = Role.Builder.create(this, props.resourceNamePrefix() + "-TrustedEventRole")
+                .roleName(props.sharedNames().observability.trustedEventRoleName)
+                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+                .description("Execution role of the trusted event function")
+                .build();
+
+        var trustedEventLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(trustedEventFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(trustedEventFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler("app/functions/ops/trustedEventToGithubIssue.handler")
+                        .ingestLambdaArn("arn:aws:lambda:%s:%s:function:%s"
+                                .formatted(this.getRegion(), this.getAccount(), trustedEventFunctionName))
+                        .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:%s:%s:function:%s:%s"
+                                .formatted(
+                                        this.getRegion(),
+                                        this.getAccount(),
+                                        trustedEventFunctionName,
+                                        props.sharedNames().provisionedConcurrencyAliasName))
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.seconds(60))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(trustedEventEnvironment)
+                        .role(trustedEventRole)
+                        // One invocation at a time makes the ledger's read-then-write order safe
+                        // without a lock: two events for one fact cannot both open an issue.
+                        .ingestReservedConcurrentExecutions(Optional.of(1))
+                        .build());
+        var trustedEventLambda = trustedEventLambdaConstruct.ingestLambda;
+
+        trustedEventLambdaConstruct.logGroup.grantWrite(trustedEventRole);
+
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadOpsAppKey")
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                        .formatted(this.getRegion(), this.getAccount(), trustedEventPrivateKeySecretId)))
+                .build());
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("Ledger")
+                .actions(List.of("dynamodb:GetItem", "dynamodb:PutItem"))
+                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
+                        .formatted(
+                                this.getRegion(),
+                                this.getAccount(),
+                                props.sharedNames().data.trustedEventLedgerTableName)))
+                .build());
+        // The function reads the certificate behind every ACM event, and the source check reads
+        // it again. CloudFront certificates live in us-east-1, regional ones here.
+        trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DescribeCertificates")
+                .actions(List.of("acm:DescribeCertificate"))
+                .resources(List.of(
+                        "arn:aws:acm:eu-west-2:%s:certificate/*".formatted(this.getAccount()),
+                        "arn:aws:acm:us-east-1:%s:certificate/*".formatted(this.getAccount())))
+                .build());
+
+        if (props.trustedEventReadsEnabled()) {
+            trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                    .sid("ReadCompaniesHouseKey")
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of("%s-*".formatted(trustedEventCompaniesHouseKeyArn)))
+                    .build());
+            trustedEventRole.addToPolicy(PolicyStatement.Builder.create()
+                    .sid("AssumeRootRead")
+                    .actions(List.of("sts:AssumeRole"))
+                    .resources(List.of(trustedEventRootReadRoleArn))
+                    .build());
+        }
+
+        // A failure reaches Telegram, and in prod an [ALARM] issue, through OpsStack's rule on
+        // this composite's name.
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "obs", List.of(trustedEventLambdaConstruct));
+
+        if (props.trustedEventRulesEnabled()) {
+            // The us-east-1 rule in ObservabilityUE1Stack forwards global events onto this bus.
+            // This rule's only target is the function, so no event loops.
+            Rule.Builder.create(this, props.resourceNamePrefix() + "-TrustedEventsRule")
+                    .ruleName(props.sharedNames().observability.trustedEventRuleName)
+                    .description("AWS Health and ACM notices to the trusted event function")
+                    .eventPattern(EventPattern.builder()
+                            .source(List.of("aws.health", "aws.acm"))
+                            .detailType(List.of(
+                                    "AWS Health Event",
+                                    "AWS Health Abuse Event",
+                                    "ACM Certificate Approaching Expiration",
+                                    "ACM Certificate Expired",
+                                    "ACM Certificate Renewal Action Required",
+                                    "ACM Certificate Revoked"))
+                            .build())
+                    .targets(List.of(new LambdaFunction(trustedEventLambda)))
+                    .build();
+        }
+
+        if (props.trustedEventReadsEnabled()) {
+            Rule.Builder.create(this, props.resourceNamePrefix() + "-TrustedDeadlineReadRule")
+                    .ruleName(props.sharedNames().observability.trustedDeadlineReadRuleName)
+                    .description("Daily read of the domain and Companies House deadlines")
+                    .schedule(Schedule.expression("cron(0 7 * * ? *)"))
+                    .targets(List.of(new LambdaFunction(
+                            trustedEventLambda,
+                            LambdaFunctionProps.builder()
+                                    .event(RuleTargetInput.fromObject(Map.of("read", "deadlines")))
+                                    .build())))
+                    .build();
+
+            // The topic is in the management account in us-east-1. Its policy lets this
+            // account subscribe this function, and the subscription is created here, in the
+            // topic's region.
+            Topic.fromTopicArn(
+                            this,
+                            props.resourceNamePrefix() + "-RootBudgetAlertsTopic",
+                            props.rootBudgetAlertsTopicArn())
+                    .addSubscription(new LambdaSubscription(trustedEventLambda));
+        }
+
+        cfnOutput(this, "TrustedEventFunctionArn", trustedEventLambda.getFunctionArn());
+        cfnOutput(this, "TrustedEventRoleArn", trustedEventRole.getRoleArn());
     }
 }

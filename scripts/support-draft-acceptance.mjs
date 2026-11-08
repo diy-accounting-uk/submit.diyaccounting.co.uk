@@ -17,17 +17,17 @@
 // The rate is accepted over the drafts that are at least seven days old. It prints counts only,
 // and writes one summary row for the lake (curated/support-draft-acceptance/dt=<date>/).
 //
-// The mailbox is read with the gmail.readonly key (SUPPORT_GMAIL_READ_KEY). The script makes no
+// The mailbox is read with the gmail.readonly delegated account, through federation. The script makes no
 // send, draft, label or delete call.
 //
 // usage: support-draft-acceptance.mjs --rows-dir <folder of support-drafts rows> [--out <summary row file>]
-// env:   SUPPORT_GMAIL_READ_KEY
+// env:   GOOGLE_APPLICATION_CREDENTIALS (from google-github-actions/auth)
 
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { bodyDigest } from "./support-gmail-draft.mjs";
-import { gmailGet, messageText, tokenGetterFromKey } from "./support-mail-intake.mjs";
+import { gmailGet, messageText, readerTokenGetter } from "./support-mail-intake.mjs";
 
 export const MIN_AGE_DAYS = 7;
 export const SUMMARY_KIND = "support-draft-acceptance";
@@ -120,9 +120,7 @@ function parseArgs(argv) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const keyJson = process.env.SUPPORT_GMAIL_READ_KEY;
-  if (!keyJson) throw new Error("SUPPORT_GMAIL_READ_KEY is not set");
-  const summary = await runAcceptance({ rows: readDraftRows(opts.rowsDir), getToken: tokenGetterFromKey(keyJson) });
+  const summary = await runAcceptance({ rows: readDraftRows(opts.rowsDir), getToken: readerTokenGetter() });
   if (opts.out) writeFileSync(opts.out, JSON.stringify(summary));
   const rate = summary.acceptance_rate === null ? "n/a" : `${(summary.acceptance_rate * 100).toFixed(1)}%`;
   console.log(

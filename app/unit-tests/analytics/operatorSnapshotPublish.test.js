@@ -46,6 +46,11 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
+const mockBuildDataSection = vi.fn();
+vi.mock("@app/lib/operatorSnapshot/dataSection.js", () => ({
+  buildDataSection: (...args) => mockBuildDataSection(...args),
+}));
+
 const mockLoadOperators = vi.fn();
 vi.mock("@app/lib/operators.js", () => ({
   loadOperators: (...args) => mockLoadOperators(...args),
@@ -73,6 +78,7 @@ import {
   buildAffiliateGroups,
   FAMILY_AFFILIATE_MEASURES,
   buildWindowedBatchSql,
+  LATEST_READING_VIEWS,
   buildFastWindowBatchSql,
   computeTrend,
   betterDirection,
@@ -214,6 +220,8 @@ describe("operatorSnapshotPublish", () => {
     mockLoadFamilyAffiliateEmails.mockReset();
     mockLoadFamilyAffiliateEmails.mockResolvedValue([]);
     mockGetFamilyAffiliateByEmailKey.mockReset();
+    mockBuildDataSection.mockReset();
+    mockBuildDataSection.mockResolvedValue({ tables: [], buckets: [], books: [] });
 
     process.env.ENVIRONMENT_NAME = "test";
     process.env.ATHENA_WORK_GROUP_NAME = "test-workgroup";
@@ -253,6 +261,29 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("cast(min(CASE WHEN kind = 'a' THEN day END) AS varchar) AS o2_data_since");
     });
 
+    test("revenue's Today is the sum of today's rows, never the newest day's single row", () => {
+      expect(LATEST_READING_VIEWS.has("v_revenue_daily")).toBe(false);
+      const sql = buildWindowedBatchSql({
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "revenue_gbp", aggregation: "sum" }],
+      });
+      expect(sql).toContain(
+        "sum(CASE WHEN day >= CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date) THEN revenue_gbp END) AS o0_today",
+      );
+      expect(sql).not.toContain("max_by");
+    });
+
+    test("a sum in a whole-day view reads Today as the sum of the newest day's rows", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "billed_cost_usd", aggregation: "sum", where: "service_name LIKE '%Bedrock%'" }],
+      });
+      expect(sql).toContain("sum(billed_cost_usd) FILTER (WHERE day = o0_today_newest_day");
+      expect(sql).not.toContain("max_by(billed_cost_usd, day) FILTER (WHERE day <=");
+    });
+
     test("reads the value on the newest day in each window for a latest aggregation", () => {
       const sql = buildWindowedBatchSql({
         view: "company_accounts",
@@ -264,6 +295,16 @@ describe("operatorSnapshotPublish", () => {
         "max_by(cashatbank, dt) FILTER (WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date)) AS o0_prev_90",
       );
       expect(sql).toContain("FROM   company_accounts");
+    });
+
+    test("reports the date a row carries as the reading's day when the observation names one", () => {
+      const sql = buildWindowedBatchSql({
+        view: "company_accounts",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "cashatbank", asOfExpr: "cashasof", aggregation: "latest" }],
+      });
+      expect(sql).toContain("cast(max_by(cashasof, dt) FILTER (WHERE dt <=");
+      expect(sql).toContain("AS o0_today_as_of");
     });
 
     test("builds every window as a conditional aggregate without a filter", () => {
@@ -311,7 +352,8 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "cost_usd", aggregation: "sum", where: "sub_account_id = '1'" }],
       });
       const ukToday = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
-      expect(sql).toContain(`max_by(cost_usd, day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS o0_today`);
+      expect(sql).toContain(`sum(cost_usd) FILTER (WHERE day = o0_today_newest_day AND (sub_account_id = '1')) AS o0_today`);
+      expect(sql).toContain(`max(CASE WHEN day <= ${ukToday} AND (sub_account_id = '1') THEN day END) OVER () AS o0_today_newest_day`);
       expect(sql).toContain(`cast(max(day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS varchar) AS o0_today_as_of`);
       expect(sql).toContain(
         `sum(CASE WHEN day = date_add('day', -1, ${ukToday}) AND (sub_account_id = '1') THEN cost_usd END) AS o0_prev_1`,
@@ -349,12 +391,22 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END", aggregation: "latest-total" }],
       });
       expect(sql).toContain(
-        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -30, current_date))) AS o0_last_30",
+        "sum(CASE WHEN finding_id IS NOT NULL THEN 1 ELSE 0 END) FILTER (WHERE dt = o0_last_30_newest_day) AS o0_last_30",
       );
+      expect(sql).toContain("max(CASE WHEN dt > date_add('day', -30, current_date) THEN dt END) OVER () AS o0_last_30_newest_day");
       expect(sql).toContain(
-        "FILTER (WHERE dt = (SELECT max(dt) FROM security_hub_findings WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date))) AS o0_prev_90",
+        "max(CASE WHEN dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date) THEN dt END) OVER () AS o0_prev_90_newest_day",
       );
-      expect(sql).toMatch(/FILTER \(WHERE dt = \(SELECT max\(dt\) FROM security_hub_findings WHERE dt <= [^)]*\)\)\) AS o0_today/);
+      expect(sql).toMatch(/max\(CASE WHEN dt <= [^)]*\) THEN dt END\) OVER \(\) AS o0_today_newest_day/);
+    });
+
+    test("latest-total reads the view once however many windows it answers", () => {
+      const sql = buildWindowedBatchSql({
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "1", aggregation: "latest-total" }],
+      });
+      expect(sql.match(/security_hub_findings/g)).toHaveLength(1);
     });
 
     test("latest-total applies an observation's where to both the newest-day lookup and the rows", () => {
@@ -363,8 +415,9 @@ describe("operatorSnapshotPublish", () => {
         dayColumn: "day",
         observations: [{ valueExpr: "open_findings", aggregation: "latest-total", where: "area = 'accessibility'" }],
       });
+      expect(sql).toContain("sum(open_findings) FILTER (WHERE day = o0_last_7_newest_day AND (area = 'accessibility')) AS o0_last_7");
       expect(sql).toContain(
-        "sum(open_findings) FILTER (WHERE day = (SELECT max(day) FROM v_compliance_status WHERE day > date_add('day', -7, current_date) AND (area = 'accessibility')) AND (area = 'accessibility')) AS o0_last_7",
+        "max(CASE WHEN day > date_add('day', -7, current_date) AND (area = 'accessibility') THEN day END) OVER () AS o0_last_7_newest_day",
       );
     });
 
@@ -550,6 +603,45 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[0].sql).toContain("org AS component");
       expect(chart.modes[0].labelOf("stripe")).toBe("Stripe");
       expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
+    });
+
+    test("the duration graph orders its organisations the same way in the daily and the hourly range", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
+      const dailyRows = [
+        { day: END_DAY, component: "hmrc", value: "300" },
+        { day: END_DAY, component: "stripe", value: "100" },
+      ];
+      const hourlyRows = [
+        { day: hours.at(-1), component: "stripe", value: "500" },
+        { day: hours.at(-1), component: "hmrc", value: "50" },
+      ];
+
+      const daily = buildChartSeries({ days, rows: dailyRows, mode });
+      const hourly = buildChartSeries({ days: hours, rows: hourlyRows, mode });
+
+      expect(daily.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+      expect(hourly.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+    });
+
+    test("the requests graph orders its lines by organisation and status in every range", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
+      const lines = (day, values) => Object.entries(values).map(([component, value]) => ({ day, component, value: String(value) }));
+
+      const daily = buildChartSeries({ days, rows: lines(END_DAY, { "stripe 2xx": 90, "hmrc 4xx": 5, "hmrc 2xx": 40 }), mode });
+      const hourly = buildChartSeries({ days: hours, rows: lines(hours.at(-1), { "hmrc 2xx": 1, "stripe 2xx": 9, "hmrc 4xx": 4 }), mode });
+
+      const order = ["total", "hmrc 2xx", "hmrc 4xx", "stripe 2xx"];
+      expect(daily.map((line) => line.id)).toEqual(order);
+      expect(hourly.map((line) => line.id)).toEqual(order);
+    });
+
+    test("the duration graph note holds for the daily and the hourly range", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration");
+      expect(chart.note).toContain("averaged over the calls of each day or hour");
     });
 
     test("the activity graph has a mode with a line for each HMRC API, an all APIs line and the test calls", () => {
@@ -1525,6 +1617,44 @@ describe("operatorSnapshotPublish", () => {
       expect(silent.today).toEqual({ value: null });
     });
 
+    test("a month-to-date figure is one reading under Today and has no other window", () => {
+      const windows = toObservationWindows(
+        { today: "40.5", today_as_of: "2026-10-28", last_7: "40.5", last_30: "40.5", last_90: "40.5", first_day: "2026-09-05" },
+        "latest",
+        TODAY,
+        { latestReading: true, monthToDate: true },
+      );
+      expect(windows.today).toEqual({ value: 40.5, asOf: "2026-10-28" });
+      for (const key of ["previousDay", "last7", "last30", "last90"]) {
+        expect(windows[key].value).toBeNull();
+        expect(windows[key].notApplicable).toBe(true);
+        expect(windows[key].notApplicableReason).toContain("Month to date");
+      }
+    });
+
+    test("a ledger view with no rows reads 0 in every window, and an unanswered query stays null", () => {
+      const emptyLedger = {
+        today: null,
+        prev_1: null,
+        last_7: null,
+        last_30: null,
+        prev_30: null,
+        last_90: null,
+        prev_90: null,
+        first_day: null,
+      };
+      const windows = toObservationWindows(emptyLedger, "sum", TODAY, { ledger: true });
+      for (const key of ["today", "previousDay", "last7", "last30", "last90"]) expect(windows[key].value).toBe(0);
+      expect(toObservationWindows(emptyLedger, "sum", TODAY).last30.value).toBeNull();
+      expect(toObservationWindows(undefined, "sum", TODAY, { ledger: true }).last30.value).toBeNull();
+    });
+
+    test("every commission observation is a ledger observation", () => {
+      const commission = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations).filter((o) => o.id.includes("commission"));
+      expect(commission).toHaveLength(7);
+      expect(commission.every((o) => o.ledger === true)).toBe(true);
+    });
+
     test("a monthly figure has no Today or Previous day", () => {
       const windows = toObservationWindows({ last_30: "5", first_day: "2026-01-01" }, "avg", TODAY, { periodic: true });
       expect(windows.today).toEqual({ value: null, notApplicable: true });
@@ -1712,7 +1842,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   company_accounts",
       ];
       for (const fragment of expectedFragments) {
-        expect(sqlStatements.some((sql) => sql.includes(fragment))).toBe(true);
+        expect(sqlStatements.some((sql) => sql.replace(/FROM\s+/g, "FROM   ").includes(fragment))).toBe(true);
       }
       expect(sqlStatements.some((sql) => sql.includes("severity_label = 'CRITICAL'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
@@ -1889,7 +2019,7 @@ describe("operatorSnapshotPublish", () => {
     });
 
     test("a failing view query answers null for every observation of that view and counts each one", async () => {
-      mockQueriesWithOneFailing("FROM   v_dora_runs_daily", ["10", "5", "30", "20"]);
+      mockQueriesWithOneFailing("v_dora_runs_daily", ["10", "5", "30", "20"]);
 
       const context = {
         envName: "test",
@@ -2443,6 +2573,22 @@ describe("operatorSnapshotPublish", () => {
       await expect(handler()).rejects.toThrow(/1 observation/);
       const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
       expect(JSON.parse(putCalls[0][0].input.Body).costDrivers).toBeUndefined();
+    });
+
+    test("publishes the data section, and a failed data section leaves every other section published", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+      await handler();
+      const publishedBody = () => {
+        const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+        return JSON.parse(putCalls[0][0].input.Body);
+      };
+      expect(publishedBody().data).toEqual({ tables: [], buckets: [], books: [] });
+
+      mockS3Send.mockClear();
+      mockBuildDataSection.mockRejectedValue(new Error("DescribeTable denied"));
+      await expect(handler()).rejects.toThrow(/1 observation/);
+      expect(publishedBody().data).toBeUndefined();
+      expect(publishedBody().objectives).toHaveLength(10);
     });
 
     test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {

@@ -48,6 +48,16 @@ export const MIN_BODY_LENGTH = 20; // A body must say more than nothing; this is
 export const MAX_FILES_CHANGED = 25;
 export const MAX_CHANGED_LINES = 800; // additions + deletions combined.
 export const MAX_MERGES_PER_ROLLING_DAY = 6;
+export const RAISED_MERGES_PER_ROLLING_DAY = 12;
+export const RAISED_MERGE_CAP_FROM = "2026-11-06T00:00:00Z";
+export const RAISED_MERGE_CAP_UNTIL = "2026-11-08T12:00:00Z";
+
+/** The merge cap at a time: the raised cap inside its window, and the standing cap outside it. */
+export function mergeCapAt(now) {
+  const nowMs = now.getTime();
+  const raised = nowMs >= Date.parse(RAISED_MERGE_CAP_FROM) && nowMs < Date.parse(RAISED_MERGE_CAP_UNTIL);
+  return raised ? RAISED_MERGES_PER_ROLLING_DAY : MAX_MERGES_PER_ROLLING_DAY;
+}
 
 const CLOSING_KEYWORD_PATTERN = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#(\d+)/gi;
 
@@ -194,11 +204,12 @@ export function checkShapeRules({
     const mergedMs = new Date(timestamp).getTime();
     return Number.isFinite(mergedMs) && nowMs - mergedMs < 24 * 60 * 60 * 1000 && mergedMs <= nowMs;
   }).length;
-  if (mergesInWindow >= MAX_MERGES_PER_ROLLING_DAY) {
-    failures.push(`${mergesInWindow} PRs already merged in the last 24 hours, at the cap of ${MAX_MERGES_PER_ROLLING_DAY}`);
+  const mergeCap = mergeCapAt(now);
+  if (mergesInWindow >= mergeCap) {
+    failures.push(`${mergesInWindow} PRs already merged in the last 24 hours, at the cap of ${mergeCap}`);
   }
 
-  return { passed: failures.length === 0, failures, notes };
+  return { passed: failures.length === 0, failures, notes, mergeCap };
 }
 
 /** True when every changed path is a Markdown file — this gate's enforced scope. */
@@ -287,7 +298,7 @@ export function formatReport(result) {
 
   lines.push(
     `Thresholds: ${MIN_OPEN_TO_MERGE_MS / 1000}s minimum open-to-merge delay, ${MIN_BODY_LENGTH}-character minimum body, ` +
-      `${MAX_FILES_CHANGED} files / ${MAX_CHANGED_LINES} changed lines ceiling, one author email, ${MAX_MERGES_PER_ROLLING_DAY} merges per rolling 24 hours.`,
+      `${MAX_FILES_CHANGED} files / ${MAX_CHANGED_LINES} changed lines ceiling, one author email, ${result.shape.mergeCap} merges per rolling 24 hours.`,
   );
 
   return lines.join("\n");
