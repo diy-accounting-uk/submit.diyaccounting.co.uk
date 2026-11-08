@@ -26,7 +26,7 @@ Status: design only. The base is branch `claude/galileo-headers`, PR #684, which
 | Snapshot | One `integrations` section, 200 rows per organisation, no new endpoint |
 | Every HMRC request | In-process rule check against HMRC's published formats |
 | HMRC's validator | SQS consumer sends a synthetic request, one per header shape per day |
-| Customer production headers to the sandbox | Not sent. Question goes on OFPH1 |
+| Customer production headers to the sandbox | Not sent |
 
 ## Measured facts
 
@@ -306,7 +306,7 @@ Two checks. Each covers what the other cannot.
 | A. Rule check | In process, every HMRC API request | Real values, in memory only | A bad real value, a missing header, a broken cross-check |
 | B. HMRC validator | SQS consumer, each new shape once a day | Synthetic values | A structure HMRC rejects, a change in HMRC's spec |
 
-Neither check explains the headerless requests on FPH1. That question stays with HMRC on OFPH1.
+The headerless requests on FPH1 came from the pipeline's production probe in `infra/hmrc/hmrc-assert.js`, not from a customer call.
 
 ### A. Rule check
 
@@ -403,18 +403,12 @@ Three new alarms in `ObservabilityStack`, beside `HmrcFraudHeaderViolationAlarm`
 
 `#headerChecksPanel` has two tables. The first has the standard range columns, with rows `Rule check pass`, `Rule check fail`, `HMRC validator pass`, `warn` and `fail`. The second lists the newest 50 checks: Time checked, Connection method, Shape, Result, Codes, Spec version, Raw record.
 
-## Question for OFPH1
-
-Add to row OFPH1, because only HMRC can answer:
-
-> We use the Test Fraud Prevention Headers API in the sandbox. May software send header values taken from live production requests to `/test/fraud-prevention-headers/validate` under a sandbox application? If not, is a synthetic request with the same structure an acceptable monitoring use, at about 20 calls a day? Is there any way to read the production "Your headers" status by API?
-
 ## Operator decisions
 
 1. **What the header check sends to HMRC.**
    - A: rule check on every request and a synthetic validator request per shape. **Recommended.** No customer value leaves, and HMRC's validator still runs.
    - B: rule check only. No queue. It has no view of HMRC's own rules or spec changes.
-   - C: replay real values. Do this only after HMRC says yes on OFPH1. It needs a customer-managed key on the queue and a new line in `privacy.html`.
+   - C: replay real values. It needs a customer-managed key on the queue and a new line in `privacy.html`.
 2. **What the raw record holds, and for how long.**
    - A: masked skeleton, 90 days. **Recommended.** No erasure step, and full HMRC values stay 28 days in the audit table.
    - B: masked values with Gov-Client headers and bodies, 28 days. The link gives more, but rows go dead at 28 days and the item needs a hashed sub for erasure.
@@ -503,4 +497,4 @@ Steps 1 to 6 close INT1, INT2 and INT3. Steps 7 to 9 close FPH3. Steps 3 and 7 c
 
 ### After each step
 
-The coordinator deletes closed rows from `NEXT.md` in the same commit, adds the OFPH1 question, and runs the `capabilities` skill for each new `@capability` block. A step that changes `DataStack.java` or `ObservabilityStack.java` starts `deploy-environment.yml` by push, so `deploy.yml`'s wait job holds the app deploy until the table exists.
+The coordinator deletes closed rows from `NEXT.md` in the same commit, and runs the `capabilities` skill for each new `@capability` block. A step that changes `DataStack.java` or `ObservabilityStack.java` starts `deploy-environment.yml` by push, so `deploy.yml`'s wait job holds the app deploy until the table exists.
