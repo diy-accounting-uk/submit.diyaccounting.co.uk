@@ -730,12 +730,43 @@ function renderIntegrationDetail(integrations, org, generatedAt) {
   });
 }
 
+// One row per day and shape. A fail row carries a "fail" result, as a failed call carries its
+// status; the message cell's title holds the headers the message concerns.
+function renderHeaderChecks(integrations) {
+  const body = document.getElementById("integrationsHeaderChecksPanelBody");
+  const checks = integrations && Array.isArray(integrations.headerChecks) ? integrations.headerChecks : [];
+  body.innerHTML = "";
+  document.getElementById("integrationsHeaderChecksPanel").hidden = false;
+  document.getElementById("integrationsHeaderChecksPanelEmpty").hidden = checks.length > 0;
+  document.getElementById("integrationsHeaderChecksPanel").querySelector(".integrations-scroll").hidden = checks.length === 0;
+  checks.forEach((check) => {
+    const row = document.createElement("tr");
+    row.className = "integrations-check-row";
+    row.dataset.result = check.result;
+    [
+      check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day,
+      check.api,
+      check.connectionMethod,
+      check.result,
+      check.hmrcCode,
+      check.message || NOT_APPLICABLE,
+      check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE,
+    ].forEach((text) => {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  });
+}
+
 // A snapshot with no integrations section, or one from before the call table existed, shows
 // the empty notes.
 function renderIntegrations(snapshot) {
   const integrations = snapshot.integrations || null;
   renderIntegrationsSummary(integrations);
   Object.keys(INTEGRATION_PANEL_IDS).forEach((org) => renderIntegrationDetail(integrations, org, snapshot.generatedAt));
+  renderHeaderChecks(integrations);
   const note = document.getElementById("integrationsAccountNote");
   const account = window.awsConsoleAccount(snapshot.environment);
   note.hidden = !integrations || !account;
@@ -1135,6 +1166,7 @@ const STATIC_TABLE_PANELS = [
   "pageVisitorsPanel",
   "integrationsSummaryPanel",
   "integrationsHmrcPanel",
+  "integrationsHeaderChecksPanel",
   "integrationsCompaniesHousePanel",
   "integrationsStripePanel",
   "dataTablesPanel",

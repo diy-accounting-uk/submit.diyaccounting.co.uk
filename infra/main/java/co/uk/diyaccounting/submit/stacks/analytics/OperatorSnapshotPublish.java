@@ -73,6 +73,9 @@ public class OperatorSnapshotPublish extends Construct {
         /** The passes table the family affiliate lookup items are read from, by key. */
         String passesTableName();
 
+        /** The integration calls table, whose header check results the Integrations tab queries by partition key. */
+        String integrationCallsTableName();
+
         /** The DynamoDB tables the Data tab counts. Each is named in the role's policy. */
         List<String> dataTableNames();
 
@@ -113,6 +116,7 @@ public class OperatorSnapshotPublish extends Construct {
                 .with("GLUE_DATABASE_NAME", props.glueDatabaseName())
                 .with("SECURITY_SERVICES_ENABLED", Boolean.toString(props.securityServicesEnabled()))
                 .with("PASSES_DYNAMODB_TABLE_NAME", props.passesTableName())
+                .with("INTEGRATION_CALLS_DYNAMODB_TABLE_NAME", props.integrationCallsTableName())
                 .with("DATA_TABLE_NAMES", String.join(",", props.dataTableNames()))
                 .with("DATA_BUCKET_NAMES", String.join(",", props.dataBucketNames()))
                 .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
@@ -212,6 +216,14 @@ public class OperatorSnapshotPublish extends Construct {
                 .actions(List.of("dynamodb:GetItem"))
                 .resources(
                         List.of("arn:aws:dynamodb:%s:%s:table/%s".formatted(region, account, props.passesTableName())))
+                .build());
+
+        // The Integrations tab's header checks: one Query per day on the partition key, on this one table.
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:Query"))
+                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
+                        .formatted(region, account, props.integrationCallsTableName())))
                 .build());
 
         // The Data tab: item counts and TTL state of the named tables from DescribeTable, never a

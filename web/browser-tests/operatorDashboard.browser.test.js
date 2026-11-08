@@ -318,7 +318,13 @@ test.describe("Operator Dashboard", () => {
       ],
       "adoption": ["table-conversion-to-paid", "table-conversion-to-submission", "table-retention", "monthlyMarketingBudgetPanel"],
       "behaviour": ["activitiesPanel", "pageVisitorsPanel"],
-      "integrations": ["integrationsSummaryPanel", "integrationsHmrcPanel", "integrationsCompaniesHousePanel", "integrationsStripePanel"],
+      "integrations": [
+        "integrationsSummaryPanel",
+        "integrationsHmrcPanel",
+        "integrationsHeaderChecksPanel",
+        "integrationsCompaniesHousePanel",
+        "integrationsStripePanel",
+      ],
       "ops": ["table-uptime", "table-operator-effort"],
       "affiliates": ["heldPassesPanel", "familyAffiliatesPanel", "affiliateGroupsPanel"],
       "aws-prod": ["awsLinksPanel"],
@@ -478,6 +484,7 @@ test.describe("Operator Dashboard", () => {
       "pageVisitorsPanel",
       "integrationsSummaryPanel",
       "integrationsHmrcPanel",
+      "integrationsHeaderChecksPanel",
       "integrationsCompaniesHousePanel",
       "integrationsStripePanel",
       "dataTablesPanel",
@@ -1149,6 +1156,23 @@ test.describe("Operator Dashboard", () => {
     await expect(hmrc.nth(5).locator("td").nth(5)).toHaveText("expired");
     await expect(hmrc.nth(5).locator("td a")).toHaveCount(0);
 
+    const checks = page.locator("#integrationsHeaderChecksPanel tr.integrations-check-row");
+    await expect(checks).toHaveCount(2);
+    await expect(checks.nth(0).locator("td")).toHaveText([
+      "4 Nov 2026, 09:16",
+      "GET /organisations/vat/{vrn}/obligations",
+      "WEB_APP_VIA_SERVER",
+      "pass",
+      "VALID_HEADERS",
+      "n/a",
+      "n/a",
+    ]);
+    await expect(checks.nth(1)).toHaveAttribute("data-result", "fail");
+    await expect(checks.nth(1).locator("td").nth(3)).toHaveText("fail");
+    await expect(checks.nth(1).locator("td").nth(5)).toHaveText("Header is missing or its value does not match the expected format");
+    await expect(checks.nth(1).locator("td").nth(6)).toHaveText("Gov-Client-Device-ID, Gov-Vendor-Version");
+    await expect(page.locator("#integrationsHeaderChecksPanelEmpty")).toBeHidden();
+
     await expect(page.locator("#integrationsCompaniesHousePanel tr.integrations-call-row")).toHaveCount(1);
     await expect(page.locator("#integrationsStripePanel tr.integrations-call-row td").nth(3)).toHaveText("402");
 
@@ -1167,6 +1191,8 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#integrationsSummaryEmpty")).toBeVisible();
     await expect(page.locator("#integrationsSummaryTable")).toBeHidden();
     await expect(page.locator("#integrationsHmrcPanelEmpty")).toBeVisible();
+    await expect(page.locator("#integrationsHeaderChecksPanelEmpty")).toBeVisible();
+    await expect(page.locator("#integrationsHeaderChecksPanelTable")).toBeHidden();
     await expect(page.locator("#integrationsAccountNote")).toBeHidden();
   });
 

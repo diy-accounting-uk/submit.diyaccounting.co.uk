@@ -224,6 +224,29 @@
           </div>
           <p class="objective-empty" id="integrationsHmrcPanelEmpty" hidden>No calls recorded yet.</p>
         </section>
+        <section id="integrationsHeaderChecksPanel" class="objective integrations-detail" hidden data-tab="integrations">
+          <h2>Header checks</h2>
+          <p class="subtitle integrations-detail-note">
+            HMRC's validator's verdict on each shape of fraud prevention headers we send, per day, newest first.
+          </p>
+          <div class="integrations-scroll">
+            <table class="observations data-table integrations-table" id="integrationsHeaderChecksPanelTable">
+              <thead>
+                <tr>
+                  <th>Checked</th>
+                  <th>API</th>
+                  <th>Connection method</th>
+                  <th>Result</th>
+                  <th>HMRC code</th>
+                  <th title="The first error, or the first warning when there is no error">Message</th>
+                  <th>Headers</th>
+                </tr>
+              </thead>
+              <tbody id="integrationsHeaderChecksPanelBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="integrationsHeaderChecksPanelEmpty" hidden>No header checks recorded in the last 7 days.</p>
+        </section>
         <section
           id="integrationsCompaniesHousePanel"
           class="objective integrations-detail"
