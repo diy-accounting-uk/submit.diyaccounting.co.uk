@@ -439,7 +439,7 @@ EdgeStack read at its deploy. For ci, then prod:
 4. machine: Spread. The Lambdas read the secret every 5 minutes.
 5. machine after go: deploy the live deployment's EdgeStack, from
    `/submit/<env>/last-known-good-deployment`:
-   `gh workflow run deploy-cdk-stack.yml --ref main -f stackName=<deployment>-app-EdgeStack -f environment-name=<env> -f deployment-name=<deployment> -f force-stack-deployment=true -f lookup-cognito=true -f lookup-api-gateway=true`. Without the two lookups the synth stops with `NullPointerException: cognitoClientId` (run 42497332811, 2026-11-08), and CloudFront keeps sending the old value, so step 6's quiet metrics prove nothing until this deploy has succeeded.
+   `gh workflow run deploy-cdk-stack.yml --ref main -f stackName=<deployment>-app-EdgeStack -f environment-name=<env> -f deployment-name=<deployment> -f force-stack-deployment=true -f lookup-cognito=true -f lookup-api-gateway=true -f base-image-tag=<the live deployment's full commit>`. The deployment name's suffix is the commit's first 7 characters; `git rev-parse <suffix>` gives the full one. Without the image tag the synth uses `main`'s newest commit, whose image may not exist (a board-only commit builds none), and CloudFormation rolls the EdgeStack back (run 42512956491, 2026-11-08). Without the two lookups the synth stops with `NullPointerException: cognitoClientId` (run 42497332811, 2026-11-08), and CloudFront keeps sending the old value, so step 6's quiet metrics prove nothing until this deploy has succeeded.
 6. machine: proof. The `Submit/OriginVerify` metrics `OriginHeaderInvalid` and
    `OriginHeaderMissing` stay at 0 for 15 minutes after step 5.
 7. operator: clear the previous value:
