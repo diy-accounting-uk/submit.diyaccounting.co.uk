@@ -16,7 +16,6 @@ import {
   runClientRoll,
   StepError,
   TOKEN_ENDPOINT,
-  REVOKE_ENDPOINT,
 } from "../../../scripts/google-reconsent.js";
 
 const OLD_TOKEN = "1//old-refresh-token-aaaa";
@@ -58,10 +57,6 @@ function makeWorld({ failAt, oldStored = true, grantedScopes = SCOPES.join(" "),
     if (url === TOKEN_ENDPOINT && body.grant_type === "refresh_token") {
       events.push(`mint:${body.refresh_token === NEW_TOKEN ? "new" : "old"}`);
       return json(200, { access_token: "at-minted", scope: grantedScopes });
-    }
-    if (url === REVOKE_ENDPOINT) {
-      events.push(`revoke:${body.token === OLD_TOKEN ? "old" : "new"}`);
-      return failAt === "revoke" ? json(400, { error: "invalid_token" }) : json(200, {});
     }
     throw new Error(`unexpected url ${url}`);
   };
@@ -145,7 +140,7 @@ describe("arguments and specs", () => {
 });
 
 describe("the order of the steps for one refresh token", () => {
-  test("a clean run checks, writes, reads back, checks again, then revokes the old token", async () => {
+  test("a clean run checks, writes, reads back and checks again, and never revokes a token", async () => {
     const w = makeWorld();
     await w.run();
     const e = w.events;
@@ -153,9 +148,8 @@ describe("the order of the steps for one refresh token", () => {
     expect(e.indexOf("api-read")).toBeLessThan(e.indexOf("write"));
     const afterWrite = e.slice(e.indexOf("write"));
     expect(afterWrite.indexOf(`read:${SECRET_NAME}`)).toBeLessThan(afterWrite.indexOf("api-read"));
-    expect(e.indexOf("revoke:old")).toBeGreaterThan(e.lastIndexOf("api-read", e.indexOf("revoke:old")));
-    expect(e.filter((x) => x === "api-read").length).toBe(3);
-    expect(e.filter((x) => x === "revoke:old").length).toBe(1);
+    expect(e.filter((x) => x === "api-read").length).toBe(2);
+    // fetchImpl throws on any URL other than the token endpoint, so a revoke call fails the run.
     expect(w.store.get(SECRET_NAME)).toBe(JSON.stringify({ refresh_token: NEW_TOKEN }));
   });
 
@@ -184,13 +178,6 @@ describe("the order of the steps for one refresh token", () => {
     await expect(w.run()).rejects.toMatchObject({ step: failAt });
     expect(w.events.some((x) => x.startsWith("revoke"))).toBe(false);
     expect(w.store.get(SECRET_NAME)).toBe(JSON.stringify({ refresh_token: OLD_TOKEN }));
-  });
-
-  test("a failed revoke exits with the revoke step named", async () => {
-    const w = makeWorld({ failAt: "revoke" });
-    const error = await w.run().catch((e) => e);
-    expect(error).toBeInstanceOf(StepError);
-    expect(error.step).toBe("revoke-old");
   });
 
   test("a first consent with no stored token writes and revokes nothing old", async () => {

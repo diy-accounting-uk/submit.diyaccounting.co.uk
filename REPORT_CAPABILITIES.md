@@ -3549,11 +3549,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-183 Replace a Google refresh token or OAuth client without a gap
 
 - **Use when:** a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
-- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, checks the stored value, and only then revokes the old token. A failed step leaves the old token valid and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
+- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, and checks the stored value. It never revokes the old token, because a revoke ends the account's whole grant to the client and so every token the client holds. A failed step leaves the old token stored and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
 - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --token <youtube|ads|msads> [--dry-run]`; `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --client-json <path> [--dry-run]`
 - **Entry:** `scripts/google-reconsent.js`
 - **Files:** scripts/google-reconsent.js, app/unit-tests/scripts/googleReconsent.test.js, scripts/put-secret-with-rotation-tag.sh
-- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, revoke token, pkce, loopback consent
+- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, pkce, loopback consent
 - **Related:** OPS-93, OPS-45
 
 #### OPS-184 Run a full key rotation with the operator
@@ -8952,7 +8952,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
-- revoke token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)

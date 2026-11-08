@@ -4,11 +4,11 @@
 
 // @capability OPS-183 Replace a Google refresh token or OAuth client without a gap
 // - **Use when:** a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
-// - **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, checks the stored value, and only then revokes the old token. A failed step leaves the old token valid and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
+// - **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, and checks the stored value. It never revokes the old token, because a revoke ends the account's whole grant to the client and so every token the client holds. A failed step leaves the old token stored and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
 // - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --token <youtube|ads|msads> [--dry-run]`; `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --client-json <path> [--dry-run]`
 // - **Entry:** `scripts/google-reconsent.js`
 // - **Files:** scripts/google-reconsent.js, app/unit-tests/scripts/googleReconsent.test.js, scripts/put-secret-with-rotation-tag.sh
-// - **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, revoke token, pkce, loopback consent
+// - **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, pkce, loopback consent
 // - **Related:** OPS-93, OPS-45
 // @end-capability
 
@@ -17,9 +17,8 @@
 //   node scripts/google-reconsent.js --client-json <path> [--dry-run]
 //
 // --token replaces one refresh token. The order is fixed: consent, exchange, check the new token,
-// write, read back, check the stored value, revoke the old token. Nothing is written before the
-// new token passes its check, and the old token is revoked only after the stored value passes.
-// --dry-run stops after the check of the new token and writes and revokes nothing.
+// write, read back, check the stored value. Nothing is written before the new token passes its
+// check. --dry-run stops after the check of the new token and writes nothing.
 //
 // --client-json writes a new OAuth client JSON (the file the console downloads after Add Secret)
 // to the client secret, then reports for each of the three stored refresh tokens whether it still
@@ -46,7 +45,6 @@ import { parseConfig as parseMsadsConfig, parseDeveloperToken, callApi as callMs
 
 export const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 export const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
-export const REVOKE_ENDPOINT = "https://oauth2.googleapis.com/revoke";
 export const TOKEN_NAMES = ["youtube", "ads", "msads"];
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -240,11 +238,6 @@ export async function mintAccessToken({ fetchImpl, client, refreshToken }) {
   return { accessToken: result.body.access_token, scope: result.body.scope ?? "" };
 }
 
-export async function revokeToken({ fetchImpl, token }) {
-  const result = await postForm(fetchImpl, REVOKE_ENDPOINT, { token });
-  if (!result.ok) throw oauthError("Google refused the revoke", result);
-}
-
 /** Mints an access token, requires every scope to be granted, then makes the token's own read. */
 export async function checkRefreshToken({ spec, fetchImpl, client, refreshToken, secrets }) {
   const { accessToken, scope } = await mintAccessToken({ fetchImpl, client, refreshToken });
@@ -293,7 +286,7 @@ export async function runReconsent({ spec, clientSecretName, secrets, fetchImpl,
     remember(token);
     return token;
   });
-  if (oldToken === null) log("no old token is stored; nothing to revoke afterwards");
+  if (oldToken === null) log("no old token is stored");
 
   const { verifier, challenge } = makePkcePair();
   const state = base64Url(crypto.randomBytes(16));
@@ -325,7 +318,7 @@ export async function runReconsent({ spec, clientSecretName, secrets, fetchImpl,
   await step("check-new", log, () => checkRefreshToken({ spec, fetchImpl, client, refreshToken: newToken, secrets }));
 
   if (dryRun) {
-    log("dry run: nothing written, nothing revoked");
+    log("dry run: nothing written");
     return { replaced: false };
   }
 
@@ -354,10 +347,8 @@ export async function runReconsent({ spec, clientSecretName, secrets, fetchImpl,
     throw error;
   }
 
-  if (oldToken !== null && oldToken !== newToken) {
-    await step("revoke-old", log, () => revokeToken({ fetchImpl, token: oldToken }));
-    await step("check-after-revoke", log, () => checkRefreshToken({ spec, fetchImpl, client, refreshToken: newToken, secrets }));
-  }
+  // The old token is never revoked: Google's revoke ends the account's whole grant to this
+  // client, which ends the new token and every other token the client holds for the account.
   return { replaced: true };
 }
 
