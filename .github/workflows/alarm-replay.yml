@@ -235,7 +235,7 @@ jobs:
           model-id: ${{ env.SONNET_MODEL_ID }}
           small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
           allowed-tools: Read
-          max-turns: '12'
+          max-turns: '20'
           output-file: /tmp/alarm-replay-result.json
           prompt-file: /tmp/alarm-replay/prompt-claude.md
           echo-output: 'false'

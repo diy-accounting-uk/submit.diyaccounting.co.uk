@@ -206,6 +206,12 @@ function renderEntry(entry, value) {
 export function renderAnswer(finalSchema, input) {
   const problem = schemaProblem(finalSchema, input);
   if (problem) return { status: "refused", text: problem };
+  const broken = (finalSchema.rules ?? []).find(
+    (rule) =>
+      Object.entries(rule.when).every(([name, value]) => input[name] === value) &&
+      !Object.entries(rule.require).every(([name, value]) => input[name] === value),
+  );
+  if (broken) return { status: "refused", text: broken.refusal };
   try {
     const parts = [];
     for (const entry of finalSchema.render) {
