@@ -9,13 +9,12 @@ const repository = vi.hoisted(() => ({
   getFphCheckResult: vi.fn(),
   putFphCheckResultOnce: vi.fn(),
 }));
-const http = vi.hoisted(() => ({ fetchWithTimeout: vi.fn(), recordedFetch: vi.fn() }));
+const http = vi.hoisted(() => ({ token: vi.fn(), validate: vi.fn(), recordedFetch: vi.fn() }));
 const secret = vi.hoisted(() => ({ readSecret: vi.fn(), refreshAfterAuthFailure: vi.fn() }));
 const dnsMock = vi.hoisted(() => ({ resolve4: vi.fn() }));
 const metrics = vi.hoisted(() => ({ emitMetric: vi.fn() }));
 
 vi.mock("@app/data/dynamoDbIntegrationCallRepository.js", () => repository);
-vi.mock("@app/lib/httpFetch.js", () => ({ fetchWithTimeout: http.fetchWithTimeout }));
 vi.mock("@app/lib/integrationCalls.js", () => ({ recordedFetch: http.recordedFetch }));
 vi.mock("@app/lib/cachedSecret.js", () => secret);
 vi.mock("@app/lib/emfMetrics.js", () => metrics);
@@ -48,13 +47,11 @@ const MESSAGE = { shapeHash, api: "POST /organisations/vat/{vrn}/returns", shape
 const NOW = new Date("2026-11-05T10:00:00.000Z");
 
 function stubToken() {
-  http.fetchWithTimeout.mockResolvedValue({
-    response: { ok: true, status: 200, json: async () => ({ access_token: "token-1", expires_in: 14400 }) },
-  });
+  http.token.mockResolvedValue({ ok: true, status: 200, json: async () => ({ access_token: "token-1", expires_in: 14400 }) });
 }
 
 function stubValidate(status, body) {
-  http.recordedFetch.mockResolvedValue({ status, json: async () => body });
+  http.validate.mockResolvedValue({ status, json: async () => body });
 }
 
 beforeEach(() => {
@@ -69,6 +66,9 @@ beforeEach(() => {
   repository.getFphCheckResult.mockResolvedValue(undefined);
   repository.putFphCheckResultOnce.mockResolvedValue(true);
   dnsMock.resolve4.mockResolvedValue(["198.51.100.30"]);
+  http.recordedFetch.mockImplementation((url, init, call) =>
+    url.endsWith("/oauth/token") ? http.token(url, init, call) : http.validate(url, init, call),
+  );
   stubToken();
 });
 
@@ -140,7 +140,7 @@ describe("checkShape", () => {
   it("sends a synthetic set to the sandbox validator and none of the customer's values", async () => {
     stubValidate(200, { specVersion: "3.3", code: "VALID_HEADERS" });
     await checkShape(MESSAGE, NOW);
-    const [url, init, call] = http.recordedFetch.mock.calls[0];
+    const [url, init, call] = http.validate.mock.calls[0];
     expect(url).toBe("https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate");
     expect(init.method).toBe("GET");
     expect(init.headers.Authorization).toBe("Bearer token-1");
@@ -183,7 +183,7 @@ describe("checkShape", () => {
     repository.getFphCheckResult.mockResolvedValue({ pk: "fph#2026-11-05", sk: shapeHash });
     await expect(checkShape(MESSAGE, NOW)).resolves.toEqual({ skipped: true });
     expect(http.recordedFetch).not.toHaveBeenCalled();
-    expect(http.fetchWithTimeout).not.toHaveBeenCalled();
+    expect(http.token).not.toHaveBeenCalled();
     expect(repository.putFphCheckResultOnce).not.toHaveBeenCalled();
   });
 
@@ -194,7 +194,7 @@ describe("checkShape", () => {
   });
 
   it("writes no item and throws when the validator times out", async () => {
-    http.recordedFetch.mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    http.validate.mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
     await expect(checkShape(MESSAGE, NOW)).rejects.toThrow(/aborted/);
     expect(repository.putFphCheckResultOnce).not.toHaveBeenCalled();
   });
@@ -209,7 +209,7 @@ describe("checkShape", () => {
 
 describe("checkShape against the simulator's validator", () => {
   function answerFromSimulator() {
-    http.recordedFetch.mockImplementation(async (_url, init) => ({ status: 200, json: async () => validateFraudHeaders(init.headers) }));
+    http.validate.mockImplementation(async (_url, init) => ({ status: 200, json: async () => validateFraudHeaders(init.headers) }));
   }
 
   const WEB_SHAPE_HEADERS = {
@@ -260,8 +260,8 @@ describe("sandboxAccessToken", () => {
   it("asks for client credentials once and keeps the token while it is valid", async () => {
     await expect(sandboxAccessToken(1_000)).resolves.toBe("token-1");
     await expect(sandboxAccessToken(2_000)).resolves.toBe("token-1");
-    expect(http.fetchWithTimeout).toHaveBeenCalledTimes(1);
-    const [url, init] = http.fetchWithTimeout.mock.calls[0];
+    expect(http.token).toHaveBeenCalledTimes(1);
+    const [url, init] = http.token.mock.calls[0];
     expect(url).toBe("https://test-api.service.hmrc.gov.uk/oauth/token");
     expect(init.body.get("grant_type")).toBe("client_credentials");
   });
@@ -269,11 +269,11 @@ describe("sandboxAccessToken", () => {
   it("asks again after the token expires", async () => {
     await sandboxAccessToken(1_000);
     await sandboxAccessToken(1_000 + 14_400_000);
-    expect(http.fetchWithTimeout).toHaveBeenCalledTimes(2);
+    expect(http.token).toHaveBeenCalledTimes(2);
   });
 
   it("throws when HMRC refuses the client credentials", async () => {
-    http.fetchWithTimeout.mockResolvedValue({ response: { ok: false, status: 401, json: async () => ({ error: "invalid_client" }) } });
+    http.token.mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: "invalid_client" }) });
     await expect(sandboxAccessToken(1_000)).rejects.toThrow(/status 401/);
   });
 
@@ -282,11 +282,11 @@ describe("sandboxAccessToken", () => {
     process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN = "arn:secret";
     secret.readSecret.mockResolvedValue("old");
     secret.refreshAfterAuthFailure.mockResolvedValue("new");
-    http.fetchWithTimeout
-      .mockResolvedValueOnce({ response: { ok: false, status: 401, json: async () => ({ error: "invalid_client" }) } })
-      .mockResolvedValueOnce({ response: { ok: true, status: 200, json: async () => ({ access_token: "token-2", expires_in: 14400 }) } });
+    http.token
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: "invalid_client" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ access_token: "token-2", expires_in: 14400 }) });
     await expect(sandboxAccessToken(1_000)).resolves.toBe("token-2");
-    expect(http.fetchWithTimeout.mock.calls[1][1].body.get("client_secret")).toBe("new");
+    expect(http.token.mock.calls[1][1].body.get("client_secret")).toBe("new");
     delete process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN;
   });
 });

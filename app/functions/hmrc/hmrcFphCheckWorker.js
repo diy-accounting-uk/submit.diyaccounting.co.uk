@@ -18,7 +18,6 @@ import { createLogger } from "../../lib/logger.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
-import { fetchWithTimeout } from "../../lib/httpFetch.js";
 import { recordedFetch } from "../../lib/integrationCalls.js";
 import { calculateTtl, TTL_PRESETS } from "../../lib/dateUtils.js";
 import { detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -55,10 +54,15 @@ async function requestToken(clientSecret) {
     client_id: process.env.HMRC_SANDBOX_CLIENT_ID,
     client_secret: clientSecret,
   });
-  const { response } = await fetchWithTimeout(
+  const response = await recordedFetch(
     `${process.env.HMRC_SANDBOX_BASE_URI}/oauth/token`,
-    { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body },
-    REQUEST_LIMIT_MS,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+      signal: AbortSignal.timeout(REQUEST_LIMIT_MS),
+    },
+    { org: "hmrc", target: "test", api: "POST /oauth/token" },
   );
   const responseBody = await response.json().catch(() => ({}));
   return { response, responseBody };
