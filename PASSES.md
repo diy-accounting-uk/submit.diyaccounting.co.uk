@@ -290,7 +290,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
 && open "$BASE_URL/pass.html?pass=$PASS_CODE"
 ```
 
-You can also sign in first and enter the code in the pass field. The flow: enter the code, click "Redeem pass", then click "Request Day pass" to receive the bundle.
+You can also sign in first and enter the code in the pass field. The flow: enter the code, click "Redeem pass", then click "Request Day pass (free)" to receive the bundle.
 
 ### Resident Pro example
 
