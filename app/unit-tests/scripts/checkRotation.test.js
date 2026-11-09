@@ -78,7 +78,7 @@ describe("secrets-rotation.toml", () => {
   });
 
   test("is red on every key with an end date after the last end date", () => {
-    const now = new Date("2027-09-25T00:00:00Z");
+    const now = new Date("2028-11-09T00:00:00Z");
     const red = entries.filter((entry) => entry.expires_at).map((entry) => rotationSchedule(entry, entry.last_rotated || null, now).status);
     expect(red.length).toBeGreaterThan(0);
     expect(red.every((status) => status === "due-soon" || status === "overdue")).toBe(true);
