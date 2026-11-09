@@ -76,7 +76,8 @@ function spawnToLines(command, args, onLine, timeoutMs) {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "ignore"] });
     const lines = createInterface({ input: child.stdout });
     lines.on("line", onLine);
-    const timer = timeoutMs ? setTimeout(() => child.kill("SIGTERM"), timeoutMs) : null;
+    // trufflehog ignores SIGTERM on a large history, so a timeout stops it with SIGKILL.
+    const timer = timeoutMs ? setTimeout(() => child.kill("SIGKILL"), timeoutMs) : null;
     child.on("error", reject);
     child.on("close", (code, signal) => {
       if (timer) clearTimeout(timer);
