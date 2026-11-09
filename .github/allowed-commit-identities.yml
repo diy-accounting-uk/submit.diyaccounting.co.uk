@@ -27,6 +27,6 @@ allowed_author_emails:
   - 49699333+dependabot[bot]@users.noreply.github.com
   - 198982749+Copilot@users.noreply.github.com
 
-  # The diyaccounting-agent GitHub App, which commits alarm-triage and support-triage drafts
+  # The diyaccounting-agent GitHub App, which commits alarm-triage drafts
   # through the GitHub API.
   - 331076434+diyaccounting-agent[bot]@users.noreply.github.com

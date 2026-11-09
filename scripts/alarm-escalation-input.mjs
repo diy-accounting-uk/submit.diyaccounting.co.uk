@@ -22,7 +22,8 @@ import { alarmReaderSchema } from "../app/lib/quarantineReaderSchema.js";
 import { AGENT_APP_LOGIN, OPERATOR_LOGIN } from "./issue-agent-allowlist.mjs";
 import { READER_MARKER, extractReaderJson } from "./quarantine-reader-check.mjs";
 import { assertIssueNumber, assertRepo, githubGetAll } from "./github-issue-comment.mjs";
-import { PRIVATE_REPO } from "./support-reader-select.mjs";
+
+const PRIVATE_REPO = "diy-accounting-uk/private.diyaccounting.co.uk";
 
 const sameLogin = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLowerCase();
 

@@ -80,35 +80,6 @@ display_name = "GitHub Actions + submit Lambdas"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 
-# The service account that drafts support replies into the support mailbox. It holds no project
-# role. Domain-wide delegation lets it act as the mailbox with the scopes listed here, and the
-# Workspace admin console grants the same scopes to its client ID (Security > API controls >
-# Manage domain-wide delegation). The key goes to the prod GitHub environment secret
-# SUPPORT_GMAIL_DRAFT_KEY; scripts/support-gmail-draft.mjs reads it.
-#
-# token_creator_principal_sets lists the federated callers that may sign a delegation assertion
-# for the account (roles/iam.serviceAccountTokenCreator, which holds iam.serviceAccounts.signJwt),
-# so a job needs no key. Each entry is a principal set of the pool above.
-[[delegated_service_account]]
-account_id = "support-gmail-draft"
-display_name = "Support reply drafts"
-mailbox = "support@diyaccounting.co.uk"
-scopes = ["https://www.googleapis.com/auth/gmail.compose"]
-token_creator_principal_sets = ["attribute.workflow_ref/diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/support-triage.yml@refs/heads/main"]
-
-# The service account that reads the support mailbox so customer mail becomes private issues.
-# One account per scope: this one reads and cannot draft, support-gmail-draft drafts and cannot
-# read. It holds no project role. The Workspace admin console grants gmail.readonly to its client
-# ID (Security > API controls > Manage domain-wide delegation). No key exists for it:
-# scripts/support-mail-intake.mjs federates from the workflow and calls signJwt, as the
-# token_creator_principal_sets entry below allows.
-[[delegated_service_account]]
-account_id = "support-gmail-read"
-display_name = "Support mail intake"
-mailbox = "support@diyaccounting.co.uk"
-scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
-token_creator_principal_sets = ["attribute.workflow_ref/diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/support-mail-intake.yml@refs/heads/main"]
-
 # An exposed service-account key must be disabled automatically, not just alerted on, so a leak
 # stops working before anyone reads the alert.
 [[org_policy]]

@@ -10,19 +10,16 @@
 // the validated values, never from the model's text, and a rejection comment lists schema
 // issue paths and codes only, so no word of the model's answer survives a rejection.
 //
-// usage: quarantine-reader-check.mjs --kind support|alarm|mail --out <path> [--faqs <faqs.toml>]
+// usage: quarantine-reader-check.mjs --kind alarm --out <path>
 // env:   ANSWER_B64 (base64 of the answer), GUARDRAIL_ACTION, MODEL_ID, RUN_NUMBER, RUN_URL
 // Writes `outcome=accepted|rejected` and `injection-suspected=true|false` to $GITHUB_OUTPUT. Prints no answer text.
 
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { alarmReaderSchema, mailReaderSchema, supportReaderSchema } from "../app/lib/quarantineReaderSchema.js";
+import { alarmReaderSchema } from "../app/lib/quarantineReaderSchema.js";
 import { fenceText } from "../app/functions/support/supportTicketPost.js";
-import { faqIds } from "./support-triage-public-half.mjs";
-import { loadRegistry, registryVendors } from "./support-mail-lanes.mjs";
 
 export const READER_MARKER = "<!-- quarantine-reader:v1 -->";
-const HELP_URL = "https://submit.diyaccounting.co.uk/help.html";
 
 function safePathSegment(segment) {
   return /^[A-Za-z0-9_]+$/.test(String(segment)) ? String(segment) : "?";
@@ -78,13 +75,7 @@ function jsonBlock(value) {
 
 export function renderAcceptedComment({ kind, value, piiPresent, modelId, runNumber, runUrl }) {
   const checked = { ...value, piiPresent: Boolean(value.piiPresent || piiPresent) };
-  const heads = {
-    support: () => `category \`${checked.category}\`, FAQ ${checked.faqId ? `[${checked.faqId}](${HELP_URL}#${checked.faqId})` : "none"}`,
-    alarm: () => `still broken: ${checked.stillBroken}, remedy family ${checked.remedyFamily ? `\`${checked.remedyFamily}\`` : "none"}`,
-    mail: () =>
-      `vendor ${checked.vendor ? `\`${checked.vendor}\`` : "none"}, action required: ${yesNo(checked.actionRequired)}, deadline ${checked.deadline ?? "none"}`,
-  };
-  const head = heads[kind]();
+  const head = `still broken: ${checked.stillBroken}, remedy family ${checked.remedyFamily ? `\`${checked.remedyFamily}\`` : "none"}`;
   return [
     READER_MARKER,
     `**Quarantine reader**: ${head}, injection suspected: ${yesNo(checked.injectionSuspected)}, PII present: ${yesNo(checked.piiPresent)}`,
@@ -112,13 +103,8 @@ export function renderRejectedComment({ kind, issues, modelId, runNumber, runUrl
 /**
  * @returns {{outcome: "accepted"|"rejected", injectionSuspected: boolean, comment: string}}
  */
-export function checkReaderAnswer({ kind, answerText, guardrailAction, ids, families, vendors, modelId, runNumber, runUrl }) {
-  const schemas = {
-    support: () => supportReaderSchema(ids),
-    alarm: () => alarmReaderSchema(families),
-    mail: () => mailReaderSchema(vendors),
-  };
-  const schema = schemas[kind]();
+export function checkReaderAnswer({ kind, answerText, guardrailAction, families, modelId, runNumber, runUrl }) {
+  const schema = alarmReaderSchema(families);
   const parsed = parseReaderAnswer(answerText, schema);
   const common = { kind, modelId, runNumber, runUrl };
   if (!parsed.ok)
@@ -139,20 +125,16 @@ function main() {
   const argv = process.argv.slice(2);
   const kind = argValue(argv, "--kind");
   const out = argValue(argv, "--out");
-  if (!["support", "alarm", "mail"].includes(kind) || !out) {
-    console.error("usage: quarantine-reader-check.mjs --kind support|alarm|mail --out <path> [--faqs <faqs.toml>]");
+  if (kind !== "alarm" || !out) {
+    console.error("usage: quarantine-reader-check.mjs --kind alarm --out <path>");
     process.exit(1);
   }
-  const faqsPath = argValue(argv, "--faqs");
-  const ids = faqsPath ? faqIds(readFileSync(faqsPath, "utf8")) : new Set();
   const families = new Set(JSON.parse(readFileSync("app/data/alarm-remedies.json", "utf8")).map((row) => row.family));
   const { outcome, injectionSuspected, comment } = checkReaderAnswer({
     kind,
     answerText: Buffer.from(process.env.ANSWER_B64 ?? "", "base64").toString("utf8"),
     guardrailAction: process.env.GUARDRAIL_ACTION,
-    ids,
     families,
-    vendors: new Set(registryVendors(loadRegistry())),
     modelId: process.env.MODEL_ID,
     runNumber: process.env.RUN_NUMBER,
     runUrl: process.env.RUN_URL,

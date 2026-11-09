@@ -5,7 +5,7 @@ name: "content scan"
 
 on:
   # No paths-ignore: unlike test.yml and codeql.yml, this workflow scans a docs-only push too,
-  # because personal data can land in a Markdown file (a support triage note, a pasted email)
+  # because personal data can land in a Markdown file (a triage note, a pasted email)
   # as easily as in code. push covers every commit pushed to a branch in this repository, main
   # included; pull_request exists only so a fork's PR gets scanned too, since a fork's own
   # pushes never reach push here.

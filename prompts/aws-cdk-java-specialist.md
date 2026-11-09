@@ -3,11 +3,11 @@
 
 <!-- @capability DEV-25 Maintain the specialist agent prompt library
 - **Use when:** a Claude session needs a reusable role prompt, or a one-off analysis prompt.
-- **Does:** prompts/*.md are reusable prompt files for specialist AI agent roles and one-off analyses. They cover an AWS CDK specialist, a behaviour-test master, a clean-code guardian, an HMRC API expert and a security reviewer. Other prompts cover alarm and support triage, CI board and do-next variants, and test-coverage and FAQ-update tasks.
+- **Does:** prompts/*.md are reusable prompt files for specialist AI agent roles and one-off analyses. They cover an AWS CDK specialist, a behaviour-test master, a clean-code guardian, an HMRC API expert and a security reviewer. Other prompts cover alarm triage, CI board and do-next variants, and test-coverage and FAQ-update tasks.
 - **Run:** no command; see Does and Entry
 - **Entry:** `prompts/aws-cdk-java-specialist.md`; `prompts/behavior-test-master.md`; `prompts/alarm-triage.md`
-- **Files:** prompts/abstract-libraries.md, prompts/alarm-triage.md, prompts/auto-select.md, prompts/aws-cdk-java-specialist.md, prompts/behavior-test-master.md, prompts/clean-code-guardian.md, prompts/create-new-prompt.md, prompts/entitlement-subscription-specialist.md, prompts/expand-capabilities.md, prompts/hmrc-api-expert.md, prompts/improve-test-coverage.md, prompts/increase-consistency.md, prompts/prune-focus.md, prompts/security-review.md, prompts/support-triage.md, prompts/todo-inator.md, prompts/update-faqs-help-and-guide.md
-- **Keywords:** prompt library, specialist agent, role prompt, alarm triage, support triage, security review prompt
+- **Files:** prompts/abstract-libraries.md, prompts/alarm-triage.md, prompts/auto-select.md, prompts/aws-cdk-java-specialist.md, prompts/behavior-test-master.md, prompts/clean-code-guardian.md, prompts/create-new-prompt.md, prompts/entitlement-subscription-specialist.md, prompts/expand-capabilities.md, prompts/hmrc-api-expert.md, prompts/improve-test-coverage.md, prompts/increase-consistency.md, prompts/prune-focus.md, prompts/security-review.md, prompts/todo-inator.md, prompts/update-faqs-help-and-guide.md
+- **Keywords:** prompt library, specialist agent, role prompt, alarm triage, security review prompt
 - **Related:** DEV-32, DEV-33
 @end-capability -->
 

@@ -4,7 +4,7 @@
 
 // scripts/maintainer-review-gate.mjs
 //
-// The rule that lets an agent handle a support ticket. A ticket waits behind the
+// The rule that lets an agent handle an issue. An issue waits behind the
 // `maintainer-review` label. The operator approves it by removing the label. An agent run
 // starts only when all of these hold:
 //
@@ -15,9 +15,8 @@
 //   5. the last `injection-suspected` event, if there is one, is an `unlabeled` by the operator.
 //
 // A bot or an agent that removes a label fails check 3 or 5. An issue that never carried
-// `maintainer-review` fails check 2. `rejected` stops the issue for good until the operator
-// removes it, and removing it puts `maintainer-review` back (scripts/support-label-sweep.mjs), so
-// the issue waits for approval again. The CLI exits non-zero unless the state is `approved`.
+// `maintainer-review` fails check 2. `rejected` stops the issue until the operator
+// removes it; the issue then waits for approval again. The CLI exits non-zero unless the state is `approved`.
 //
 // usage: maintainer-review-gate.mjs --repo <owner/name> --issue <number>
 // env:   GH_TOKEN (read access to the repository's issues), GITHUB_OUTPUT

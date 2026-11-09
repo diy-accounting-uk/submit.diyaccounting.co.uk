@@ -3,7 +3,7 @@
 
 # @capability OPS-19 Kill-switch to stop unattended agent workflows
 # - **Use when:** an unattended agent path must be stopped immediately across an environment.
-# - **Does:** agent-kill-switch.yml sets the /submit/<env>/agents/kill-switch SSM parameter. The composite action reads that parameter and fails the calling job when it is set. This halts every unattended agent path, alarm-triage and support-triage, in that environment.
+# - **Does:** agent-kill-switch.yml sets the /submit/<env>/agents/kill-switch SSM parameter. The composite action reads that parameter and fails the calling job when it is set. This halts every unattended agent path, alarm-triage, in that environment.
 # - **Run:** `gh workflow run agent-kill-switch.yml -f state=<on|off> -f environment-name=<ci|prod>`
 # - **Entry:** `.github/actions/agent-kill-switch/action.yml`
 # - **Files:** .github/actions/agent-kill-switch/action.yml, .github/workflows/agent-kill-switch.yml

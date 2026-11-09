@@ -15,7 +15,7 @@ Machine mail reaches support@diyaccounting.co.uk because each sender changes its
 
 1. Each sender changes its own destination. The plan lists the senders, and the change for each one is a vendor setting, an API call, a code change or a contact.
 2. Keep every vendor login at antony@. Change only the address for notices, billing or contacts. A message from a sender that has not changed stays at antony@, so a new kind of login mail stays with the operator.
-3. Never send a login code, a password reset or a token notice to support@. A service account reads that mailbox with `gmail.readonly`, and the key is a GitHub environment secret. The intake also copies message text into private issues.
+3. Never send a login code, a password reset or a token notice to support@. A person reads that mailbox.
 4. Where a vendor has one address for login and notices, the sender stays at antony@ until the vendor offers a separate notice address.
 5. An email starts a review and never starts a change. A change comes from a trusted event, or from a check that reads the vendor's own record.
 
@@ -80,7 +80,7 @@ Who contacts the vendor: the operator sends each message from antony@. Claude Co
 
 The sender for customer mail is `support@diyaccounting.co.uk`.
 
-- The From and the Reply-To are both support@. A customer reply reaches the intake and opens a private issue.
+- The From and the Reply-To are both support@. A customer reply reaches the support mailbox, where a person reads it.
 - SES sends the mail from the submit-prod account, and a domain identity for `diyaccounting.co.uk` signs it with DKIM.
 - A custom MAIL FROM subdomain and an SES event topic take the bounces and the complaints. Bounces do not reach the support@ inbox.
 - The operator copies of subscribe and redeem go to `antony@diyaccounting.co.uk`, because the operator must be told of these events.
@@ -92,7 +92,7 @@ Alternatives for the sender address:
 | Alternative | Against | Verdict |
 |---|---|---|
 | `noreply@` sender | A customer who answers a receipt gets no one | Rejected |
-| New `receipts@` sender | Needs an alias and a rule to bring replies to the intake | Rejected: adds a step and no value |
+| New `receipts@` sender | Needs an alias and a rule to bring replies to support@ | Rejected: adds a step and no value |
 
 ## Decision for the operator
 
@@ -100,47 +100,11 @@ Alternatives for the sender address:
 |---|---|---|---|
 | D1 | Payment notices (PayPal and Stripe payment received, 342 messages a year) | (a) Stay at antony@, one message for each payment. (b) Join S5 and S6 as senders to change, with a weekly digest to antony@ that lists each donor | (a) |
 
-## The automated processing
-
-### Lanes
-
-The intake gives each new thread in support@ one lane. Code chooses the lane from a registry and the authentication result. No model takes part in this choice.
-
-| Lane | Rule | Result |
-|---|---|---|
-| customer | The sender is not in the registry and is not automated | One issue, labels `support` and `maintainer-review`, as today |
-| record | The sender and the subject are registered as a record, and DKIM passes | No issue. The mail stays in the mailbox. The run counts it |
-| notice | The sender and the subject are registered as a notice, and DKIM passes. Also any automated sender outside the registry | One issue, labels `mail-notice` and `maintainer-review` |
-| unverified | The sender is in the registry and DKIM fails or does not match | One issue, labels `mail-notice`, `maintainer-review` and `injection-suspected` |
-| withheld | The subject looks like login mail | One issue with the sender and the date, and no message text |
-
-- The registry is one file in this repository. Each entry holds a sender domain, a DKIM domain, a subject pattern and a lane. It holds no account detail.
-- The check reads the `Authentication-Results` header that Google wrote. It requires `dkim=pass` for the registered domain. Mail from the vendor keeps the vendor's own signature. Row EML4 reads the header of a real vendor message before the check goes live.
-- The intake drops automated senders today, in the Gmail search and in `isCustomerSender`. The lanes replace that skip, so a new automated sender opens a notice and does not vanish.
-- A failure shows in an issue. An unknown sender always opens an issue, in the customer lane or the notice lane.
-- The logs stay at counts only, one count for each lane, because this repository is public.
-
-### Open in private, then acknowledge
-
-The notice lane follows the support process.
-
-1. `support-mail-intake.yml` opens the issue in the private repository, with the text fenced as data.
-2. `support-reader.yml` reads the issue with a model that has no tools. Code accepts one JSON object that fits a new `mail` schema in `app/lib/quarantineReaderSchema.js`.
-3. The schema holds `vendor`, `actionRequired`, `deadline`, `summary`, `injectionSuspected` and `piiPresent`. The `vendor` value comes from the registry. The `deadline` value is a date or null. The `summary` has the same limits as support, with no URL.
-4. The operator reads the issue and removes `maintainer-review`, or closes the issue. `scripts/maintainer-review-gate.mjs` accepts only the operator's own label removal.
-5. After the gate says `approved`, the handler does one thing from a fixed list. It closes the notice, drafts a board row from the checked fields, or runs a registered read-only check.
-
-The handler takes no value from the message. It holds no write access to AWS, to a vendor or to any code.
-
-A daily digest tells the operator that notices wait. It goes to antony@ only when the count is above zero. It holds the count, the nearest deadline and the link to the issue list. It holds no message text.
-
-### Changes come from a trusted source
+## Changes come from a trusted source
 
 An alert that can start a change does not travel by email. It follows the path of `app/functions/ops/alarmToGithubIssue.js`.
 
 - A source event reaches a Lambda. The Lambda opens the issue with the ops GitHub App credentials.
-- The mail intake token writes issues in the private repository only. The alarm path runs on issues in this repository, so an issue that comes from mail does not enter the alarm path.
-- A mail issue never carries the `alarm` label.
 - Before any remedy, code reads the source's own record and fails closed, as `scripts/verify-alarm-origin.mjs` does.
 
 | Mail today | Trusted event |
@@ -152,30 +116,24 @@ An alert that can start a change does not travel by email. It follows the path o
 | Domain renewal | A scheduled read of the registrar API |
 | Companies House deadlines | A scheduled read of the Companies House company record |
 
-Vendors with no event or API stay in the notice lane. HMRC bulletins are an example.
+Vendors with no event or API send their mail to support@, where a person reads it. HMRC bulletins are an example.
 
 ## Order of the work
 
 - The company book reads supplier invoices from `mail-antony` only, in `mcp/lib/finance/mail-invoices.js`. Invoices that move at the vendor leave that mailbox. Row EML8 adds `mail-support` before S1, S5, S6 or S7 change.
-- Without the lanes, the intake skips some vendor mail and opens customer issues for the rest. Row EML4 goes live before the first sender changes.
 
 | Step | Row | Result |
 |---|---|---|
-| 1 | EML4 | The lanes run in dry-run over live support@ mail |
-| 2 | EML5 | The reader handles notices |
-| 3 | EML6 | The handler and the digest run |
-| 4 | EML8 | The book reads both mailboxes |
-| 5 | EML3 | The unsubscribes are done |
-| 6 | EML10 | The root budgets address changes (S3), and DMARC starts at `p=none` |
-| 7 | EML11 | The sender changes S1 to S15, finance first, each stage for one week |
+| 1 | EML8 | The book reads both mailboxes |
+| 2 | EML3 | The unsubscribes are done |
+| 3 | EML10 | The root budgets address changes (S3), and DMARC starts at `p=none` |
+| 4 | EML11 | The sender changes S1 to S15, finance first, each stage for one week |
 
-The trusted events (EML12) are live on prod. After step 7, re-run the count. The target is that antony@ holds only the first group.
+The trusted events (EML12) are live on prod. After step 4, re-run the count. The target is that antony@ holds only the first group.
 
 To undo a change, set the vendor's destination back to antony@.
 
 ## Proposed board rows
 
-- [ ] **EML5. Read notices in quarantine.** Add the `mail` schema to `app/lib/quarantineReaderSchema.js`, a `prompts/mail-reader.md`, and notice selection in `scripts/support-reader-select.mjs`. Add synthetic fixtures with injected instructions to `support-replay.yml`. **Depends on**: EML4. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
-- [ ] **EML6. Handle acknowledged notices, and send the digest.** After `maintainer-review-gate.mjs` says `approved`, do one action from the fixed list: close, draft a board row, or run a registered read-only check. Send the daily digest to antony@ through the EML2 sender. **Depends on**: EML5, and EML2 for the digest. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-- [ ] **EML10. Move the root budgets address, and publish DMARC.** Change `alertEmail` in the root repository's `RootEnvironment.java` to support@ (S3). Add a `_dmarc` record to `root-zone/manual-records.json` at `p=none`, with the reports to support@ and a record lane entry. Raise the policy after 30 clean days. On the board the build to an open PR is EML10, and the operator's yes to the merge and the root deploy is OEML10. **Depends on**: EML4, EML8. **Source**: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-- [ ] **EML11. Change the sender destinations S1 to S15.** Research first, from each vendor's API and documents, the setting or the contact route for each row, and confirm each label named unconfirmed. Give only confirmed labels and values (board row EML11a, which writes them into `../private.diyaccounting.co.uk/operator/EMAIL_DESTINATIONS_2026-11-05.md`). Make the API changes (S1, S2, S7 Essential Contacts) with the operator's yes for each action. Draft the contact messages with the `email-draft` skill for the operator to send. Start with finance (S1, S4, S5, S6, S7), then the rest. Run each stage for one week and read the lane counts. Leave every login at antony@. **Depends on**: EML3, EML4, EML5, EML8. **Source**: EML1. **Owner**: operator with Claude Code. **Model**: Opus. **Size**: 0 files.
+- [ ] **EML10. Move the root budgets address, and publish DMARC.** Change `alertEmail` in the root repository's `RootEnvironment.java` to support@ (S3). Add a `_dmarc` record to `root-zone/manual-records.json` at `p=none`, with the reports to support@. Raise the policy after 30 clean days. On the board the build to an open PR is EML10, and the operator's yes to the merge and the root deploy is OEML10. **Depends on**: EML8. **Source: EML1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+- [ ] **EML11. Change the sender destinations S1 to S15.** Research first, from each vendor's API and documents, the setting or the contact route for each row, and confirm each label named unconfirmed. Give only confirmed labels and values (board row EML11a, which writes them into `../private.diyaccounting.co.uk/operator/EMAIL_DESTINATIONS_2026-11-05.md`). Make the API changes (S1, S2, S7 Essential Contacts) with the operator's yes for each action. Draft the contact messages with the `email-draft` skill for the operator to send. Start with finance (S1, S4, S5, S6, S7), then the rest. Run each stage for one week and read the lane counts. Leave every login at antony@. **Depends on**: EML3, EML8. **Source**: EML1. **Owner**: operator with Claude Code. **Model**: Opus. **Size**: 0 files.

@@ -445,46 +445,28 @@ describe("planWhenApiDisabled", () => {
   });
 });
 
-const WORKFLOW_PREFIX = "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows";
-
 describe("gcp-identity-sync delegated service accounts", () => {
   const withAccount = `${SAMPLE_TOML}
 [[delegated_service_account]]
-account_id = "support-gmail-draft"
-display_name = "Support reply drafts"
-mailbox = "support@diyaccounting.co.uk"
+account_id = "example-delegate"
+display_name = "Example delegate"
+mailbox = "mailbox@example.com"
 scopes = ["https://www.googleapis.com/auth/gmail.compose"]
 `;
 
-  it("the committed file declares one delegated account per Gmail scope", () => {
-    const config = loadConfigFromRoot();
-    expect(config.delegatedAccounts).toEqual([
-      {
-        accountId: "support-gmail-draft",
-        displayName: "Support reply drafts",
-        mailbox: "support@diyaccounting.co.uk",
-        scopes: ["https://www.googleapis.com/auth/gmail.compose"],
-        tokenCreatorPrincipalSets: [`attribute.workflow_ref/${WORKFLOW_PREFIX}/support-triage.yml@refs/heads/main`],
-      },
-      {
-        accountId: "support-gmail-read",
-        displayName: "Support mail intake",
-        mailbox: "support@diyaccounting.co.uk",
-        scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
-        tokenCreatorPrincipalSets: [`attribute.workflow_ref/${WORKFLOW_PREFIX}/support-mail-intake.yml@refs/heads/main`],
-      },
-    ]);
+  it("the committed file declares no delegated account", () => {
+    expect(loadConfigFromRoot().delegatedAccounts).toEqual([]);
   });
 
   it("plans to create a delegated account that does not exist", () => {
     const config = parseConfig(withAccount);
-    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": null } };
+    const live = { ...liveMatching(config), delegatedAccounts: { "example-delegate": null } };
     expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["create-delegated-service-account"]);
   });
 
   it("plans nothing once the delegated account exists", () => {
     const config = parseConfig(withAccount);
-    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": { email: "x" } } };
+    const live = { ...liveMatching(config), delegatedAccounts: { "example-delegate": { email: "x" } } };
     expect(planIdentity(config, live)).toEqual([]);
   });
 
@@ -495,33 +477,33 @@ scopes = ["https://www.googleapis.com/auth/gmail.compose"]
 });
 
 describe("gcp-identity-sync token creator bindings", () => {
-  const SET = "attribute.workflow_ref/diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/support-triage.yml@refs/heads/main";
+  const SET = "attribute.workflow_ref/diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/example.yml@refs/heads/main";
   const withBinding = `${SAMPLE_TOML}
 [[delegated_service_account]]
-account_id = "support-gmail-draft"
-display_name = "Support reply drafts"
-mailbox = "support@diyaccounting.co.uk"
+account_id = "example-delegate"
+display_name = "Example delegate"
+mailbox = "mailbox@example.com"
 scopes = ["https://www.googleapis.com/auth/gmail.compose"]
 token_creator_principal_sets = ["${SET}"]
 `;
   const member = principalSetMember("958354756046", "submit-federation", SET);
-  const email = "support-gmail-draft@diyaccounting-ga4.iam.gserviceaccount.com";
+  const email = "example-delegate@diyaccounting-ga4.iam.gserviceaccount.com";
 
   it("plans a token creator binding for a principal set the account policy lacks", () => {
     const config = parseConfig(withBinding);
     const live = {
       ...liveMatching(config),
-      delegatedAccounts: { "support-gmail-draft": { email } },
-      delegatedPolicies: { "support-gmail-draft": { bindings: [] } },
+      delegatedAccounts: { "example-delegate": { email } },
+      delegatedPolicies: { "example-delegate": { bindings: [] } },
     };
     expect(planIdentity(config, live)).toEqual([
-      { kind: "bind-token-creator", accountId: "support-gmail-draft", serviceAccount: email, members: [member] },
+      { kind: "bind-token-creator", accountId: "example-delegate", serviceAccount: email, members: [member] },
     ]);
   });
 
   it("plans the binding after the account when the account does not exist", () => {
     const config = parseConfig(withBinding);
-    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": null } };
+    const live = { ...liveMatching(config), delegatedAccounts: { "example-delegate": null } };
     expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["create-delegated-service-account", "bind-token-creator"]);
   });
 
@@ -529,8 +511,8 @@ token_creator_principal_sets = ["${SET}"]
     const config = parseConfig(withBinding);
     const live = {
       ...liveMatching(config),
-      delegatedAccounts: { "support-gmail-draft": { email } },
-      delegatedPolicies: { "support-gmail-draft": { bindings: [{ role: TOKEN_CREATOR_ROLE, members: [member] }] } },
+      delegatedAccounts: { "example-delegate": { email } },
+      delegatedPolicies: { "example-delegate": { bindings: [{ role: TOKEN_CREATOR_ROLE, members: [member] }] } },
     };
     expect(planIdentity(config, live)).toEqual([]);
   });
@@ -539,8 +521,8 @@ token_creator_principal_sets = ["${SET}"]
     const config = parseConfig(withBinding);
     const live = {
       ...liveMatching(config),
-      delegatedAccounts: { "support-gmail-draft": { email } },
-      delegatedPolicies: { "support-gmail-draft": { bindings: [{ role: WORKLOAD_IDENTITY_USER_ROLE, members: [member] }] } },
+      delegatedAccounts: { "example-delegate": { email } },
+      delegatedPolicies: { "example-delegate": { bindings: [{ role: WORKLOAD_IDENTITY_USER_ROLE, members: [member] }] } },
     };
     expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["bind-token-creator"]);
   });

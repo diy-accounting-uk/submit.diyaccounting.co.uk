@@ -60,7 +60,6 @@ import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -79,7 +78,6 @@ import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
 
-    private static final String SUPPORT_ACCEPTANCE_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
     private static final String TRUSTED_EVENT_REPOSITORY = "diy-accounting-uk/private.diyaccounting.co.uk";
 
     // public Bucket trailBucket;
@@ -1009,17 +1007,15 @@ public class ObservabilityStack extends Stack {
                         "arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*".formatted(this.getAccount(), props.envName())))
                 .build());
 
-        // The writes this role makes to the lake: an agent-run ledger row per run, and the support
-        // triage's draft row per drafted reply, each under its own prefix. Scoped to those prefixes
-        // so it cannot touch any other curated table, and to PutObject alone - the DenyCustomerData
-        // statement below already denies this role every read of the lake, and that stays true here.
+        // The writes this role makes to the lake: an agent-run ledger row per run, under its own
+        // prefix. Scoped to that prefix so it cannot touch any other curated table, and to PutObject
+        // alone - the DenyCustomerData statement below already denies this role every read of the
+        // lake, and that stays true here.
         String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("WriteAgentRunLedgerRows")
                 .actions(List.of("s3:PutObject"))
-                .resources(List.of(
-                        analyticsLakeBucketArn + "/curated/agent-runs/*",
-                        analyticsLakeBucketArn + "/curated/support-drafts/*"))
+                .resources(List.of(analyticsLakeBucketArn + "/curated/agent-runs/*"))
                 .build());
 
         // The weekly security review's full report: file, line and exploit path for each finding.
@@ -1055,47 +1051,6 @@ public class ObservabilityStack extends Stack {
                 .build());
 
         cfnOutput(this, "AlarmTriageRoleArn", alarmTriageRole.getRoleArn());
-
-        // The support draft acceptance job (support-mail-intake.yml) signs in to this role directly,
-        // with no chaining. It reads the support draft rows from the lake and writes its summary
-        // rows back, and holds nothing else. The alarm triage role cannot do this read: its
-        // DenyCustomerData statement denies every read of the lake, and stays as it is.
-        String analyticsLakeArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
-        Role supportAcceptanceRole = Role.Builder.create(this, props.resourceNamePrefix() + "-SupportAcceptanceRole")
-                .roleName(props.sharedNames().observability.supportAcceptanceRoleName)
-                .maxSessionDuration(Duration.hours(1))
-                .description("Reads the support draft rows and writes the draft acceptance summary row"
-                        + " for the support-mail-intake workflow")
-                .assumedBy(new FederatedPrincipal(
-                        "arn:aws:iam::%s:oidc-provider/token.actions.githubusercontent.com"
-                                .formatted(this.getAccount()),
-                        Map.of(
-                                "StringEquals",
-                                Map.of(
-                                        "token.actions.githubusercontent.com:aud",
-                                        "sts.amazonaws.com",
-                                        "token.actions.githubusercontent.com:sub",
-                                        "repo:%s:environment:%s"
-                                                .formatted(SUPPORT_ACCEPTANCE_REPOSITORY, props.envName()))),
-                        "sts:AssumeRoleWithWebIdentity"))
-                .build();
-        supportAcceptanceRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ListSupportDrafts")
-                .actions(List.of("s3:ListBucket"))
-                .resources(List.of(analyticsLakeArn))
-                .conditions(Map.of("StringLike", Map.of("s3:prefix", List.of("curated/support-drafts/*"))))
-                .build());
-        supportAcceptanceRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ReadSupportDrafts")
-                .actions(List.of("s3:GetObject"))
-                .resources(List.of(analyticsLakeArn + "/curated/support-drafts/*"))
-                .build());
-        supportAcceptanceRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("WriteSupportDraftAcceptance")
-                .actions(List.of("s3:PutObject"))
-                .resources(List.of(analyticsLakeArn + "/curated/support-draft-acceptance/*"))
-                .build());
-        cfnOutput(this, "SupportAcceptanceRoleArn", supportAcceptanceRole.getRoleArn());
 
         // The guardrail screens the triage agent's output for PII the redaction script's regexes
         // might miss (a name in prose, for example). ANONYMIZE, not BLOCK: the alarm and its logs
