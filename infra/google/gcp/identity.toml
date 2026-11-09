@@ -83,8 +83,8 @@ display_name = "GitHub Actions + submit Lambdas"
 # The service account that drafts support replies into the support mailbox. It holds no project
 # role. Domain-wide delegation lets it act as the mailbox with the scopes listed here, and the
 # Workspace admin console grants the same scopes to its client ID (Security > API controls >
-# Manage domain-wide delegation). The key goes to the prod GitHub environment secret
-# SUPPORT_GMAIL_DRAFT_KEY; scripts/support-gmail-draft.mjs reads it.
+# Manage domain-wide delegation). The account holds no key: support-triage.yml federates and
+# scripts/support-gmail-draft.mjs signs its assertion through IAM Credentials.
 #
 # token_creator_principal_sets lists the federated callers that may sign a delegation assertion
 # for the account (roles/iam.serviceAccountTokenCreator, which holds iam.serviceAccounts.signJwt),

@@ -8,6 +8,7 @@ import { extractRequest, buildTokenExchangeResponse, buildValidationError, http2
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { isRegisteredCognitoRedirectUri } from "../../lib/cognitoCallbackHosts.js";
 
 const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" });
 
@@ -29,6 +30,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const code = searchParams.get("code");
   const refreshToken = searchParams.get("refresh_token");
   const codeVerifier = searchParams.get("code_verifier");
+  const redirectUri = searchParams.get("redirect_uri");
 
   if (!grantType) {
     errorMessages.push("Missing grant_type from event body");
@@ -38,7 +40,12 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (grantType === "authorization_code") {
     if (!code) errorMessages.push("Missing code from event body");
     if (!codeVerifier) errorMessages.push("Missing code_verifier from event body");
-    return { grantType, code, codeVerifier };
+    if (!redirectUri) {
+      errorMessages.push("Missing redirect_uri from event body");
+    } else if (!isRegisteredCognitoRedirectUri(redirectUri, process.env.DIY_SUBMIT_BASE_URL)) {
+      errorMessages.push("redirect_uri is not a registered callback");
+    }
+    return { grantType, code, codeVerifier, redirectUri };
   }
 
   if (grantType === "refresh_token") {
@@ -68,7 +75,7 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { grantType, code, codeVerifier, refreshToken } = extractAndValidateParameters(event, errorMessages);
+  const { grantType, code, codeVerifier, redirectUri, refreshToken } = extractAndValidateParameters(event, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, {});
@@ -78,7 +85,7 @@ export async function ingestHandler(event) {
 
   if (grantType === "authorization_code") {
     logger.info({ message: "Exchanging authorization code for Cognito access token" });
-    tokenResponse = await exchangeCodeForToken(code, codeVerifier);
+    tokenResponse = await exchangeCodeForToken(code, codeVerifier, redirectUri);
   } else if (grantType === "refresh_token") {
     logger.info({ message: "Refreshing Cognito access token" });
     tokenResponse = await exchangeRefreshTokenForToken(refreshToken);
@@ -90,10 +97,7 @@ export async function ingestHandler(event) {
 }
 
 // Service adaptor: authorization_code
-export async function exchangeCodeForToken(code, codeVerifier) {
-  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
-
+export async function exchangeCodeForToken(code, codeVerifier, redirectUri) {
   const url = `${process.env.COGNITO_BASE_URI}/oauth2/token`;
 
   return {

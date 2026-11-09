@@ -36,10 +36,14 @@
     return IDENTITY_PROVIDERS.includes(requested) ? requested : buttonProvider;
   }
 
+  function cognitoRedirectUri(env) {
+    return callbackBase(env, COGNITO_CALLBACK_HOST) + "/auth/loginWithCognitoCallback.html";
+  }
+
   async function buildCognitoAuthUrl(state, nonce, codeChallenge, { scope = "openid profile email", identityProvider } = {}) {
     const env = await window.envReady;
 
-    const redirectUri = callbackBase(env, COGNITO_CALLBACK_HOST) + "/auth/loginWithCognitoCallback.html";
+    const redirectUri = cognitoRedirectUri(env);
 
     // Build authorization URL with state (CSRF protection), nonce (replay attack protection)
     // and a PKCE S256 code challenge (authorization code interception protection)
@@ -147,6 +151,7 @@
 
   window.authUrlBuilder = {
     buildCognitoAuthUrl,
+    cognitoRedirectUri,
     resolveIdentityProvider,
     IDENTITY_PROVIDERS,
     buildHmrcAuthUrl,
