@@ -39,13 +39,9 @@ function shouldRetryAfterLink(errorDescription) {
 }
 
 async function restartSignInAfterLink() {
-  sessionStorage.setItem("cognito_link_retry", "1");
-  await restartSignIn("Linking your sign-in to your existing account...");
-}
-
-async function restartSignIn(message) {
   const identityProvider = sessionStorage.getItem("cognito_identity_provider");
-  showStatus(message, "info");
+  sessionStorage.setItem("cognito_link_retry", "1");
+  showStatus("Linking your sign-in to your existing account...", "info");
   try {
     // crypto-utils.js is a module script, so it has run only once the document has loaded.
     if (document.readyState === "loading") {
@@ -64,7 +60,7 @@ async function restartSignIn(message) {
     } catch {}
     window.location.replace(authUrl);
   } catch (err) {
-    console.error("Failed to restart sign-in:", err);
+    console.error("Failed to restart sign-in after an account link:", err);
     showStatus("Sign-in could not be completed. Please try logging in again.", "error");
   }
 }
@@ -184,17 +180,11 @@ async function handleAuthCallback(code, state) {
     if (storedNonce) {
       if (!idTokenPayload.nonce || idTokenPayload.nonce !== storedNonce) {
         console.error("OAuth nonce mismatch - possible replay attack", {
+          provider: sessionStorage.getItem("cognito_identity_provider"),
           hasTokenNonce: !!idTokenPayload.nonce,
           hasStoredNonce: !!storedNonce,
         });
         sessionStorage.removeItem("cognito_oauth_nonce");
-        // A sign-in that Cognito carried through its own chooser page can come back without the nonce
-        // this tab sent. The same provider's sign-in, started once more, carries it straight through.
-        if (!sessionStorage.getItem("cognito_nonce_retry") && sessionStorage.getItem("cognito_identity_provider")) {
-          sessionStorage.setItem("cognito_nonce_retry", "1");
-          await restartSignIn("Confirming your sign-in...");
-          return;
-        }
         showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
         hideLoading();
         return;
@@ -202,7 +192,6 @@ async function handleAuthCallback(code, state) {
       // Clear nonce after successful validation (single use)
       sessionStorage.removeItem("cognito_oauth_nonce");
     }
-    sessionStorage.removeItem("cognito_nonce_retry");
 
     // Tokens are kept only once the nonce has matched.
     if (accessToken) {

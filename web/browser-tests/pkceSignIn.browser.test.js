@@ -254,7 +254,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).not.toBeNull();
   });
 
-  test("an ID token without the sent nonce stores no tokens and restarts the same provider once", async ({ page }) => {
+  test("an ID token without the sent nonce stores no tokens, shows the error and logs the provider", async ({ page }) => {
     await serveSite(page);
     const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com" })).toString("base64url");
     await page.route("**/api/v1/cognito/token", async (route) => {
@@ -265,38 +265,26 @@ test.describe("PKCE on the Cognito sign-in", () => {
       });
     });
     await page.addInitScript(() => {
-      if (!sessionStorage.getItem("test_seeded")) {
-        sessionStorage.setItem("test_seeded", "1");
-        sessionStorage.setItem("cognito_oauth_state", "state-1");
-        sessionStorage.setItem("cognito_oauth_nonce", "nonce-sent");
-        sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
-        sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
-        sessionStorage.setItem("cognito_identity_provider", "Microsoft");
-      }
-    });
-
-    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
-    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
-    const authorizeUrl = new URL((await authorizeRequest).url());
-    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
-    const restartedNonce = authorizeUrl.searchParams.get("nonce");
-    expect(restartedNonce).toBeTruthy();
-    expect(restartedNonce).not.toBe("nonce-sent");
-    await page.waitForURL((url) => url.href.startsWith(`${COGNITO}/oauth2/authorize`));
-
-    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-2&state=state-2`, { waitUntil: "domcontentloaded" });
-    expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).toBeNull();
-    expect(await page.evaluate(() => localStorage.getItem("cognitoAccessToken"))).toBeNull();
-
-    await page.evaluate((nonce) => {
-      sessionStorage.setItem("cognito_oauth_state", "state-3");
-      sessionStorage.setItem("cognito_oauth_nonce", nonce);
-      sessionStorage.setItem("cognito_pkce_verifier", "verifier-3");
+      sessionStorage.setItem("cognito_oauth_state", "state-1");
+      sessionStorage.setItem("cognito_oauth_nonce", "nonce-sent");
+      sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
       sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
-    }, restartedNonce);
-    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-3&state=state-3`, { waitUntil: "domcontentloaded" });
+      sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+    });
+    let authorizeRequested = false;
+    page.on("request", (request) => {
+      if (request.url().startsWith(`${COGNITO}/oauth2/authorize`)) authorizeRequested = true;
+    });
+    const logged = [];
+    page.on("console", (message) => logged.push(message.text()));
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).toContainText("nonce mismatch");
     expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem("cognitoAccessToken"))).toBeNull();
+    expect(authorizeRequested).toBe(false);
+    expect(logged.some((text) => text.includes("OAuth nonce mismatch"))).toBe(true);
+    expect(logged.join("\n")).not.toContain("nonce-sent");
   });
 
   test("the stored login provider is the one chosen on the sign-in page, not the first linked", async ({ page }) => {
