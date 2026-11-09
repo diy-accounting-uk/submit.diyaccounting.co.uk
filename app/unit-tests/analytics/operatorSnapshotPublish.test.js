@@ -789,6 +789,7 @@ describe("operatorSnapshotPublish", () => {
         "sessions",
         "landing-page",
         "landing-page-sign-in",
+        "sign-in-provider",
         "country",
         "ai-agent-country",
       ]);
@@ -796,8 +797,11 @@ describe("operatorSnapshotPublish", () => {
       expect(visitors.modes[1].sql).toContain("FROM   v_ga4_landing_pages_daily");
       expect(visitors.modes[2].unit).toBe("ratio");
       expect(visitors.modes[2].sql).toContain("sum(sign_ins)");
-      expect(visitors.modes[3].sql).toContain("human_sessions");
-      expect(visitors.modes[4].sql).toContain("ai_agent_sessions");
+      expect(visitors.modes[3].sql).toContain("FROM   v_sign_ins_daily");
+      expect(visitors.modes[3].sql).toContain("event = 'login'");
+      expect(visitors.modes[3].sql).toContain("coalesce(provider, 'Native')");
+      expect(visitors.modes[4].sql).toContain("human_sessions");
+      expect(visitors.modes[5].sql).toContain("ai_agent_sessions");
       for (const mode of visitors.modes.slice(1)) {
         expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
         if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
@@ -1442,7 +1446,7 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(47);
+      expect(firstRunQueryCount).toBe(48);
       expect(queries).toHaveLength(9);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
@@ -2623,7 +2627,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 38);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 39);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {

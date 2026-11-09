@@ -1887,6 +1887,23 @@ export function buildDailyChartDefinitions() {
             `  GROUP BY 1 ORDER BY sum(sessions) DESC LIMIT 10)\nGROUP  BY 1, 2\nHAVING sum(sessions) > 0`,
         },
         {
+          id: "sign-in-provider",
+          label: "Sign-ins by provider",
+          total: "All sign-ins",
+          totalDescription: "Sign-ins of every provider added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sign-ins through ${id}, from the activity events. Native accounts carry no provider.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "coalesce(provider, 'Native')",
+            valueExpression: "sign_ins",
+            view: "v_sign_ins_daily",
+            dayColumn: "day",
+            where: "event = 'login'",
+          }),
+        },
+        {
           id: "country",
           label: "By country",
           total: "All countries",

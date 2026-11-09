@@ -269,7 +269,7 @@ public class BusinessViews extends Construct {
                     List.of("v_cost_daily")),
             new ViewDefinition(
                     "v_sign_ins_daily",
-                    "Sign-ins and refreshes each day, by app client, event and actor",
+                    "Sign-ins and refreshes each day, by app client, event, actor and sign-in provider",
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_paid_subscribers_by_channel",
