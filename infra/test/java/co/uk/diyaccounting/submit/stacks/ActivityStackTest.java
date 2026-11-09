@@ -69,8 +69,8 @@ class ActivityStackTest {
                         "PolicyDocument",
                         Map.of(
                                 "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "events:PutEvents", "Effect", "Allow"))))))));
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of("Action", "events:PutEvents", "Effect", "Allow"))))))));
     }
 
     @Test
