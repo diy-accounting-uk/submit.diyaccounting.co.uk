@@ -205,6 +205,59 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(tokenRequested).toBe(false);
   });
 
+  test("a linked-profile error restarts the same provider's sign-in once, then shows the error", async ({ page }) => {
+    await serveSite(page);
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("test_seeded")) {
+        sessionStorage.setItem("test_seeded", "1");
+        sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+      }
+    });
+    const linkError = "error=invalid_request&error_description=" + encodeURIComponent("Already found an entry for username Microsoft_abc ");
+
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?${linkError}`, { waitUntil: "domcontentloaded" });
+    const authorizeUrl = new URL((await authorizeRequest).url());
+    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
+    expect(authorizeUrl.searchParams.get("code_challenge_method")).toBe("S256");
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?${linkError}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("body")).toContainText("Already found an entry for username");
+    expect(await page.evaluate(() => sessionStorage.getItem("cognito_link_retry"))).toBeNull();
+  });
+
+  test("the stored login provider is the one chosen on the sign-in page, not the first linked", async ({ page }) => {
+    await serveSite(page);
+    const payload = Buffer.from(
+      JSON.stringify({
+        sub: "sub-1",
+        email: "person@example.com",
+        identities: [
+          { providerName: "Google", userId: "1" },
+          { providerName: "Microsoft", userId: "2" },
+        ],
+      }),
+    ).toString("base64url");
+    await page.route("**/api/v1/cognito/token", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id_token: `h.${payload}.s`, access_token: "a" }),
+      });
+    });
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("test_seeded")) {
+        sessionStorage.setItem("test_seeded", "1");
+        sessionStorage.setItem("cognito_oauth_state", "state-1");
+        sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
+        sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+      }
+    });
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("loginProvider"))).toBe("Microsoft");
+  });
+
   test("the callback makes no token request when the verifier is missing", async ({ page }) => {
     await serveSite(page);
     let tokenRequested = false;

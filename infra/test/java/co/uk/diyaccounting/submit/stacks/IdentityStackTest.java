@@ -476,19 +476,57 @@ class IdentityStackTest {
                 "expected an InvokeFunction grant on " + expectedFunctionArn);
     }
 
-    @SuppressWarnings("unchecked")
+    @Test
+    void preSignUpTriggerHasItsLogGroupAndMayOnlyListUsersAndLinkProviders() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        Match.stringLikeRegexp(".*-pre-sign-up$"),
+                        "LoggingConfig",
+                        Match.objectLike(Map.of("LogGroup", Match.stringLikeRegexp(".*-pre-sign-up$"))))));
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPool",
+                Match.objectLike(Map.of("LambdaConfig", Match.objectLike(Map.of("PreSignUp", Match.anyValue())))));
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolIdentityProvider",
+                Match.objectLike(Map.of(
+                        "ProviderName",
+                        "Google",
+                        "AttributeMapping",
+                        Match.objectLike(Map.of("email_verified", "email_verified")))));
+
+        List<Map<String, Object>> statements = policyStatementsForFunction(template, "-pre-sign-up");
+        Set<Object> actions = new HashSet<>();
+        for (Map<String, Object> statement : statements) {
+            var action = statement.get("Action");
+            if (action instanceof List<?> list) actions.addAll(list);
+            else actions.add(action);
+            assertEquals("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/*", statement.get("Resource"));
+        }
+        assertEquals(Set.of("cognito-idp:ListUsers", "cognito-idp:AdminLinkProviderForUser"), actions);
+    }
+
     private static List<Map<String, Object>> policyStatementsForPreTokenGeneration(Template template) {
+        return policyStatementsForFunction(template, "-pre-token-generation");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> policyStatementsForFunction(Template template, String functionNameSuffix) {
         String roleLogicalId = null;
         for (var entry : template.findResources("AWS::Lambda::Function").entrySet()) {
             var properties = (Map<String, Object>) entry.getValue().get("Properties");
-            if (String.valueOf(properties.get("FunctionName")).endsWith("-pre-token-generation")) {
+            if (String.valueOf(properties.get("FunctionName")).endsWith(functionNameSuffix)) {
                 var role = (Map<String, Object>) properties.get("Role");
                 var getAtt = (List<Object>) role.get("Fn::GetAtt");
                 roleLogicalId = String.valueOf(getAtt.get(0));
                 break;
             }
         }
-        if (roleLogicalId == null) throw new AssertionError("no pre-token-generation Lambda function found");
+        if (roleLogicalId == null) throw new AssertionError("no " + functionNameSuffix + " Lambda function found");
 
         List<Map<String, Object>> statements = new java.util.ArrayList<>();
         for (Map<String, Object> policy :

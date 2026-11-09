@@ -262,6 +262,39 @@ public class IdentityStack extends Stack {
                 .resources(List.of(props.sharedNames().activity.signInActivityPublishLambdaArn))
                 .build());
 
+        // Pre sign-up trigger: links a second provider's first sign-in to the existing profile that
+        // has the same provider-asserted email, so the person keeps one sub across providers.
+        var preSignUpRelativePath = "app/functions/auth/preSignUp";
+        var preSignUpAssetDir =
+                Paths.get(preSignUpRelativePath).toAbsolutePath().normalize();
+        if (!preSignUpAssetDir.toFile().isDirectory()) {
+            preSignUpAssetDir =
+                    Paths.get("../" + preSignUpRelativePath).toAbsolutePath().normalize();
+        }
+        var preSignUpFunctionName = props.resourceNamePrefix() + "-pre-sign-up";
+        var preSignUpLogGroup = ensureLogGroupWithDependency(
+                this, props.resourceNamePrefix() + "-PreSignUpLogGroup", "/aws/lambda/" + preSignUpFunctionName);
+
+        var preSignUpFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreSignUp")
+                .functionName(preSignUpFunctionName)
+                .runtime(Runtime.NODEJS_24_X)
+                .architecture(Architecture.ARM_64)
+                .handler("index.handler")
+                .code(Code.fromAsset(preSignUpAssetDir.toString()))
+                .timeout(Duration.seconds(5))
+                .memorySize(128)
+                .logGroup(preSignUpLogGroup.logGroup())
+                .build();
+        preSignUpFunction.getNode().addDependency(preSignUpLogGroup.ensureResource());
+        this.userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, preSignUpFunction);
+        // String ARN pattern, as for the Pre token grant above, to avoid the circular dependency.
+        preSignUpFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("cognito-idp:ListUsers", "cognito-idp:AdminLinkProviderForUser"))
+                .resources(List.of(String.format(
+                        "arn:aws:cognito-idp:%s:%s:userpool/*",
+                        props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .build());
+
         // Google IdP
         this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(
                         this, props.resourceNamePrefix() + "-GoogleIdentityProvider")
@@ -271,6 +304,8 @@ public class IdentityStack extends Stack {
                 .scopes(List.of("email", "openid", "profile"))
                 .attributeMapping(AttributeMapping.builder()
                         .email(ProviderAttribute.GOOGLE_EMAIL)
+                        // The Pre sign-up trigger links a Google identity only when Google verified the address.
+                        .emailVerified(ProviderAttribute.GOOGLE_EMAIL_VERIFIED)
                         .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
                         .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
                         .build())
