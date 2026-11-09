@@ -16,6 +16,9 @@ import {
   locationCriteriaOperations,
   negativeKeywordOperations,
   shapeCampaignKeywords,
+  shapeCampaignUrlAndDevice,
+  adFinalUrlUpdateOperation,
+  mobileBidCreateOperation,
 } from "../../../infra/google/ads/ads-sync.js";
 
 const VALID_TOML = `
@@ -1169,10 +1172,208 @@ describe("ads-sync ad groups on a live Search campaign", () => {
           name: "G",
           status: "ENABLED",
           keywords: [{ resourceName: "customers/1/adGroupCriteria/5~1", text: "a b", matchType: "PHRASE" }],
+          ads: [],
         },
       ],
       negativeKeywords: [{ resourceName: `${CAMPAIGN}~9`, text: "jobs", matchType: "PHRASE" }],
     });
+  });
+});
+
+describe("ads-sync final URL suffix, mobile bid and ad final URL", () => {
+  const CAMPAIGN = "customers/8142685080/campaigns/2";
+  const SUFFIX = "utm_source=google&utm_medium=cpc&utm_campaign=x&utm_term={keyword}";
+  const withDeclarations = SEARCH_CAMPAIGN_TOML.replace(
+    'status = "PAUSED"\nlocations',
+    `status = "PAUSED"\nfinal_url_suffix = "${SUFFIX}"\nmobile_bid_adjustment_percent = -100\nlocations`,
+  );
+  const liveAd = (overrides = {}) => ({
+    adResourceName: "customers/8142685080/ads/7",
+    adGroupAdResourceName: "customers/8142685080/adGroupAds/5~7",
+    status: "ENABLED",
+    type: "RESPONSIVE_SEARCH_AD",
+    finalUrls: ["https://submit.diyaccounting.co.uk/"],
+    ...overrides,
+  });
+  const liveCampaign = (overrides = {}, ads = [liveAd()]) => ({
+    resourceName: CAMPAIGN,
+    name: "Search #1",
+    status: "PAUSED",
+    advertisingChannelType: "SEARCH",
+    budgetResourceName: "customers/8142685080/campaignBudgets/2",
+    budgetAmountMicros: "5000000",
+    bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
+    targeting: {
+      locations: ["geoTargetConstants/2826"],
+      geoTargetType: "PRESENCE",
+      network: { googleSearch: true, searchNetwork: false, contentNetwork: false },
+      containsEuPoliticalAdvertising: false,
+    },
+    finalUrlSuffix: SUFFIX,
+    mobileBidModifier: 0,
+    mobileCriterionResourceName: `${CAMPAIGN}~30001`,
+    adGroups: [
+      {
+        resourceName: "customers/8142685080/adGroups/5",
+        name: "VAT software",
+        status: "ENABLED",
+        keywords: [
+          { resourceName: "k1", text: "vat filing software", matchType: "EXACT" },
+          { resourceName: "k2", text: "hmrc mtd vat", matchType: "PHRASE" },
+          { resourceName: "k3", text: "submit vat return", matchType: "BROAD" },
+        ],
+        ads,
+      },
+    ],
+    negativeKeywords: [],
+    ...overrides,
+  });
+  const planFor = (toml, campaign) => {
+    const live = baseLive();
+    live.campaigns.push(campaign);
+    return planAds(parseConfig(toml), live);
+  };
+
+  it("parses the suffix and turns -100 percent into a bid modifier of 0", () => {
+    const [, search] = parseConfig(withDeclarations).campaigns;
+    expect(search.finalUrlSuffix).toBe(SUFFIX);
+    expect(search.mobileBidModifier).toBe(0);
+  });
+
+  it("leaves both null when the campaign declares neither", () => {
+    const [, search] = parseConfig(SEARCH_CAMPAIGN_TOML).campaigns;
+    expect(search.finalUrlSuffix).toBeNull();
+    expect(search.mobileBidModifier).toBeNull();
+  });
+
+  it("refuses a mobile adjustment below -100 percent and a suffix with a leading question mark", () => {
+    expect(() => parseConfig(withDeclarations.replace("-100", "-150"))).toThrow(/mobile_bid_adjustment_percent/);
+    expect(() => parseConfig(withDeclarations.replace('"utm_source', '"?utm_source'))).toThrow(/final_url_suffix/);
+  });
+
+  it("plans nothing when the live suffix, mobile modifier and ad URL match", () => {
+    expect(planFor(withDeclarations, liveCampaign())).toEqual([]);
+  });
+
+  it("updates a differing live suffix", () => {
+    const plan = planFor(withDeclarations, liveCampaign({ finalUrlSuffix: "" }));
+    expect(plan).toEqual([
+      { kind: "update-campaign-final-url-suffix", campaignName: "Search #1", resourceName: CAMPAIGN, wanted: SUFFIX, live: "" },
+    ]);
+    expect(describeAction(plan[0])).toContain("would update");
+  });
+
+  it("creates the mobile adjustment when the campaign has none and updates a different one", () => {
+    const [created] = planFor(withDeclarations, liveCampaign({ mobileBidModifier: null, mobileCriterionResourceName: null }));
+    expect(created).toEqual({
+      kind: "create-campaign-mobile-bid",
+      campaignName: "Search #1",
+      campaignResourceName: CAMPAIGN,
+      bidModifier: 0,
+    });
+    const [updated] = planFor(withDeclarations, liveCampaign({ mobileBidModifier: 0.5 }));
+    expect(updated).toEqual({
+      kind: "update-campaign-mobile-bid",
+      campaignName: "Search #1",
+      criterionResourceName: `${CAMPAIGN}~30001`,
+      wanted: 0,
+      live: 0.5,
+    });
+  });
+
+  it("does not compare fields the toml leaves out", () => {
+    expect(planFor(SEARCH_CAMPAIGN_TOML, liveCampaign({ finalUrlSuffix: "", mobileBidModifier: null }))).toEqual([]);
+  });
+
+  it("updates a single live responsive search ad whose final URL differs, in place", () => {
+    const plan = planFor(withDeclarations, liveCampaign({}, [liveAd({ finalUrls: ["https://submit.diyaccounting.co.uk/old.html"] })]));
+    expect(plan).toEqual([
+      {
+        kind: "update-ad-final-url",
+        campaignName: "Search #1",
+        adGroupName: "VAT software",
+        adResourceName: "customers/8142685080/ads/7",
+        wanted: ["https://submit.diyaccounting.co.uk/"],
+        live: ["https://submit.diyaccounting.co.uk/old.html"],
+      },
+    ]);
+    expect(describeAction(plan[0])).toContain("in place");
+  });
+
+  it("replaces a live ad that is not a responsive search ad and says why", () => {
+    const plan = planFor(withDeclarations, liveCampaign({}, [liveAd({ type: "EXPANDED_TEXT_AD", finalUrls: ["https://x.example/"] })]));
+    expect(plan).toHaveLength(1);
+    expect(plan[0]).toMatchObject({ kind: "replace-ad-group-ad", adGroupResourceName: "customers/8142685080/adGroups/5" });
+    expect(plan[0].live[0].adGroupAdResourceName).toBe("customers/8142685080/adGroupAds/5~7");
+    expect(describeAction(plan[0])).toMatch(/cannot be updated in place.*EXPANDED_TEXT_AD/);
+  });
+
+  it("replaces an ad group with two live ads, and creates an ad for an ad group with none", () => {
+    const two = planFor(withDeclarations, liveCampaign({}, [liveAd(), liveAd({ adResourceName: "customers/8142685080/ads/8" })]));
+    expect(two[0].kind).toBe("replace-ad-group-ad");
+    const none = planFor(withDeclarations, liveCampaign({}, []));
+    expect(none[0]).toMatchObject({ kind: "create-ad-group-ad", adGroupResourceName: "customers/8142685080/adGroups/5" });
+  });
+
+  it("puts the suffix in the create body and plans the mobile adjustment for a new campaign", () => {
+    const plan = planAds(parseConfig(withDeclarations), baseLive());
+    const create = plan.find((action) => action.kind === "create-campaign");
+    expect(campaignCreateBody(create, "customers/1/campaignBudgets/1").finalUrlSuffix).toBe(SUFFIX);
+    expect(plan.find((action) => action.kind === "create-campaign-mobile-bid")).toMatchObject({ bidModifier: 0 });
+  });
+
+  it("builds the wire operations", () => {
+    expect(adFinalUrlUpdateOperation("customers/1/ads/2", ["https://a/"])).toEqual({
+      updateMask: "finalUrls",
+      update: { resourceName: "customers/1/ads/2", finalUrls: ["https://a/"] },
+    });
+    expect(mobileBidCreateOperation(0, CAMPAIGN)).toEqual({ create: { campaign: CAMPAIGN, device: { type: "MOBILE" }, bidModifier: 0 } });
+  });
+
+  it("shapes the suffix, the mobile criterion and the ads from search responses", () => {
+    const shaped = shapeCampaignUrlAndDevice(
+      { results: [{ campaign: { resourceName: CAMPAIGN, finalUrlSuffix: SUFFIX } }] },
+      {
+        results: [
+          {
+            campaign: { resourceName: CAMPAIGN },
+            campaignCriterion: { resourceName: `${CAMPAIGN}~1`, device: { type: "DESKTOP" }, bidModifier: 1.2 },
+          },
+          { campaign: { resourceName: CAMPAIGN }, campaignCriterion: { resourceName: `${CAMPAIGN}~2`, device: { type: "MOBILE" } } },
+        ],
+      },
+    );
+    expect(shaped.get(CAMPAIGN)).toEqual({ finalUrlSuffix: SUFFIX, mobileBidModifier: 1, mobileCriterionResourceName: `${CAMPAIGN}~2` });
+    const ads = shapeCampaignKeywords(
+      {
+        results: [
+          { campaign: { resourceName: CAMPAIGN }, adGroup: { resourceName: "customers/1/adGroups/5", name: "G", status: "ENABLED" } },
+        ],
+      },
+      { results: [] },
+      { results: [] },
+      {
+        results: [
+          {
+            adGroup: { resourceName: "customers/1/adGroups/5" },
+            adGroupAd: {
+              resourceName: "customers/1/adGroupAds/5~7",
+              status: "ENABLED",
+              ad: { resourceName: "customers/1/ads/7", type: "RESPONSIVE_SEARCH_AD", finalUrls: ["https://a/"] },
+            },
+          },
+        ],
+      },
+    );
+    expect(ads.get(CAMPAIGN).adGroups[0].ads).toEqual([
+      {
+        adResourceName: "customers/1/ads/7",
+        adGroupAdResourceName: "customers/1/adGroupAds/5~7",
+        status: "ENABLED",
+        type: "RESPONSIVE_SEARCH_AD",
+        finalUrls: ["https://a/"],
+      },
+    ]);
   });
 });
 
@@ -1225,6 +1426,17 @@ describe("infra/google/ads/ads.toml", () => {
     ]);
     expect(group.ad.headlines).toContain("Free Day Pass: See Due Dates");
     expect(group.ad.descriptions.join(" ")).not.toMatch(/approved|accredited|certified|endorsed/i);
+  });
+
+  it("declares the Google click suffix and takes mobile out at -100 percent", () => {
+    expect(search.finalUrlSuffix).toBe("utm_source=google&utm_medium=cpc&utm_campaign=search-mtd-vat&utm_term={keyword}");
+    expect(search.mobileBidModifier).toBe(0);
+    expect(search.status).toBe("PAUSED");
+  });
+
+  it("sends the VAT deadline ad to the calendar page", () => {
+    const group = search.adGroups.find((adGroup) => adGroup.name === "VAT deadline");
+    expect(group.ad.finalUrl).toBe("https://submit.diyaccounting.co.uk/mtd-calendar.html");
   });
 
   it("keeps template out of the negatives because three keywords contain it", () => {
