@@ -30,6 +30,7 @@ function stripeMode(suffix, environment) {
 
 export const ROTATABLE_SECRETS = {
   "google/client_secret": { githubSecret: "GOOGLE_CLIENT_SECRET", refreshCognito: true, assert: () => null },
+  "microsoft/client_secret": { githubSecret: "MICROSOFT_CLIENT_SECRET", assert: () => null },
   "hmrc/client_secret": {
     githubSecret: "HMRC_CLIENT_SECRET",
     assert: (_suffix, environment) => `node infra/hmrc/hmrc-assert.js --environment ${environment}`,

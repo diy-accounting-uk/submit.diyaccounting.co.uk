@@ -33,6 +33,9 @@ class IdentityStackTest {
     private static final String GOOGLE_CLIENT_SECRET_ARN =
             "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/google-client-secret";
 
+    private static final String MICROSOFT_CLIENT_SECRET_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/microsoft-client-secret";
+
     private static IdentityStack synthIdentityStack(String envName) {
         App app = new App();
         SubmitSharedNames.SubmitSharedNamesProps sharedNamesProps = new SubmitSharedNames.SubmitSharedNamesProps();
@@ -60,6 +63,8 @@ class IdentityStackTest {
                 .certificateArn(CERTIFICATE_ARN)
                 .googleClientId("test-google-client-id")
                 .googleClientSecretArn(GOOGLE_CLIENT_SECRET_ARN)
+                .microsoftClientId("test-microsoft-client-id")
+                .microsoftClientSecretArn(MICROSOFT_CLIENT_SECRET_ARN)
                 .build();
 
         return new IdentityStack(app, "TestIdentityStack", props);
@@ -118,7 +123,49 @@ class IdentityStackTest {
         assertEquals("ENABLED", properties.get("PreventUserExistenceErrors"));
         assertEquals(List.of("code"), properties.get("AllowedOAuthFlows"));
         assertEquals(List.of("email", "openid", "profile"), properties.get("AllowedOAuthScopes"));
-        assertEquals(List.of("Google"), properties.get("SupportedIdentityProviders"));
+        assertEquals(List.of("Google", "Microsoft"), properties.get("SupportedIdentityProviders"));
+    }
+
+    @Test
+    void microsoftProviderUsesTheConsumersIssuerAndAllClientsOfferGoogleThenMicrosoft() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        var clients = template.findResources("AWS::Cognito::UserPoolClient");
+        assertEquals(3, clients.size());
+        clients.values().forEach(resource -> {
+            @SuppressWarnings("unchecked")
+            var clientProperties = (Map<String, Object>) resource.get("Properties");
+            assertEquals(List.of("Google", "Microsoft"), clientProperties.get("SupportedIdentityProviders"));
+        });
+
+        var providers = template.findResources(
+                "AWS::Cognito::UserPoolIdentityProvider", Map.of("Properties", Map.of("ProviderName", "Microsoft")));
+        assertEquals(1, providers.size());
+        @SuppressWarnings("unchecked")
+        var providerProperties =
+                (Map<String, Object>) providers.values().iterator().next().get("Properties");
+        assertEquals("OIDC", providerProperties.get("ProviderType"));
+        @SuppressWarnings("unchecked")
+        var details = (Map<String, Object>) providerProperties.get("ProviderDetails");
+        assertEquals(
+                "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
+                details.get("oidc_issuer"));
+        assertEquals("openid profile email", details.get("authorize_scopes"));
+        assertEquals("GET", details.get("attributes_request_method"));
+        assertEquals("test-microsoft-client-id", details.get("client_id"));
+        @SuppressWarnings("unchecked")
+        var attributeMapping = (Map<String, Object>) providerProperties.get("AttributeMapping");
+        assertEquals("email", attributeMapping.get("email"));
+        assertEquals("given_name", attributeMapping.get("given_name"));
+        assertEquals("family_name", attributeMapping.get("family_name"));
+    }
+
+    @Test
+    void microsoftClientSecretIsASecretsManagerReferenceNotALiteral() {
+        IdentityStack stack = synthIdentityStack("ci");
+        var json = Template.fromStack(stack).toJSON().toString();
+        assertTrue(json.contains("{{resolve:secretsmanager:" + MICROSOFT_CLIENT_SECRET_ARN));
     }
 
     @Test
