@@ -180,7 +180,6 @@ function getValidatedAuthorisationCode() {
 async function exchangeToken(code) {
   const url = `/api/v1/hmrc/token`;
   const body = JSON.stringify({ code });
-  console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
   const requestHeaders = {
     "Content-Type": "application/json",

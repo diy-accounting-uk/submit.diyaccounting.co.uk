@@ -32,6 +32,7 @@ import { createPass } from "../../services/passService.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
 import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
 
@@ -48,7 +49,7 @@ export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

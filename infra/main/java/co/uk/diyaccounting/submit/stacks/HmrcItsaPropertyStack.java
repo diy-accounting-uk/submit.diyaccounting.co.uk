@@ -14,6 +14,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.utils.FphCheckAccess;
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
+import co.uk.diyaccounting.submit.utils.McpHmrcGrantAccessHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
@@ -79,7 +80,15 @@ public class HmrcItsaPropertyStack extends Stack {
 
         String hmrcBaseUri();
 
+        String hmrcClientId();
+
+        String hmrcClientSecretArn();
+
         String hmrcSandboxBaseUri();
+
+        String hmrcSandboxClientId();
+
+        String hmrcSandboxClientSecretArn();
 
         @Override
         SubmitSharedNames sharedNames();
@@ -129,6 +138,14 @@ public class HmrcItsaPropertyStack extends Stack {
                 "ImportedHmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().data.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName);
 
+        // The HMRC handlers open an HMRC grant in the mcp-sessions table themselves, so the token
+        // never leaves Submit: they read the sealed grant and refresh it with the HMRC client secret.
+        var grantStore = McpHmrcGrantAccessHelper.lookup(
+                this,
+                props.deploymentName(),
+                props.sharedNames().data.mcpSessionsTableName,
+                props.sharedNames().mcp.mcpOauthBlobKeySecretArnParameterName);
+
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Region and account for Secrets Manager access
@@ -158,6 +175,7 @@ public class HmrcItsaPropertyStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasForeignPropertyGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBsasForeignPropertyGetLambdaEnv, grantStore, props);
         var hmrcItsaBsasForeignPropertyGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -213,6 +231,7 @@ public class HmrcItsaPropertyStack extends Stack {
 
         this.hmrcItsaBsasForeignPropertyGetLambdaProps = hmrcItsaBsasForeignPropertyGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasForeignPropertyGetLambda = hmrcItsaBsasForeignPropertyGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBsasForeignPropertyGetLambda, grantStore, props);
         this.hmrcItsaBsasForeignPropertyGetLambdaLogGroup = hmrcItsaBsasForeignPropertyGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasForeignPropertyGetLambdaProps);
         infof(
@@ -266,6 +285,7 @@ public class HmrcItsaPropertyStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasForeignPropertyAdjustPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBsasForeignPropertyAdjustPostLambdaEnv, grantStore, props);
         var hmrcItsaBsasForeignPropertyAdjustPostLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -332,6 +352,7 @@ public class HmrcItsaPropertyStack extends Stack {
                 hmrcItsaBsasForeignPropertyAdjustPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasForeignPropertyAdjustPostLambda =
                 hmrcItsaBsasForeignPropertyAdjustPostLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBsasForeignPropertyAdjustPostLambda, grantStore, props);
         this.hmrcItsaBsasForeignPropertyAdjustPostLambdaLogGroup =
                 hmrcItsaBsasForeignPropertyAdjustPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasForeignPropertyAdjustPostLambdaProps);
@@ -381,5 +402,26 @@ public class HmrcItsaPropertyStack extends Stack {
                         hmrcItsaBsasForeignPropertyAdjustPostLambdaUrlOrigin));
 
         infof("HmrcItsaPropertyStack %s created successfully for %s", id, props.deploymentName());
+    }
+
+    // The environment and grants an HMRC handler needs to open an HMRC grant.
+    private static void withGrantEnv(
+            PopulatedMap<String, String> env,
+            McpHmrcGrantAccessHelper.GrantStore grantStore,
+            HmrcItsaPropertyStackProps props) {
+        McpHmrcGrantAccessHelper.addEnv(
+                env,
+                grantStore,
+                props.hmrcBaseUri(),
+                props.hmrcClientId(),
+                props.hmrcClientSecretArn(),
+                props.hmrcSandboxBaseUri(),
+                props.hmrcSandboxClientId(),
+                props.hmrcSandboxClientSecretArn());
+    }
+
+    private static void grantGrantAccess(
+            Function fn, McpHmrcGrantAccessHelper.GrantStore grantStore, HmrcItsaPropertyStackProps props) {
+        McpHmrcGrantAccessHelper.grant(fn, grantStore, props.hmrcClientSecretArn(), props.hmrcSandboxClientSecretArn());
     }
 }

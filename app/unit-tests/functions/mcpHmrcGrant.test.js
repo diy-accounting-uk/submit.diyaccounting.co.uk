@@ -50,6 +50,24 @@ function readGrant(grantId, sub = "user-sub-1") {
   );
 }
 
+function deleteGrant(grantId, sub = "user-sub-1") {
+  return call(
+    buildLambdaEvent({ method: "DELETE", path: `${ROUTE}/${grantId}`, pathParameters: { grantId }, authorizer: authorizerFor(sub) }),
+  );
+}
+
+function readFeedback(grantId, queryStringParameters, sub = "user-sub-1") {
+  return call(
+    buildLambdaEvent({
+      method: "GET",
+      path: `${ROUTE}/${grantId}`,
+      pathParameters: { grantId },
+      queryStringParameters,
+      authorizer: authorizerFor(sub),
+    }),
+  );
+}
+
 function tokenResponse(status, body) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
@@ -251,6 +269,76 @@ describe("mcpHmrcGrant", () => {
 
       expect(response.statusCode).toBe(404);
       expect(table.items.has(`hmrc-grant:${grantId}`)).toBe(false);
+    });
+
+    test("answers HMRC's fraud prevention feedback for a sandbox grant and no token", async () => {
+      const grantId = await grantedGrant();
+      tokenEndpoint.mockResolvedValueOnce(tokenResponse(200, { specVersion: "3.3", errors: [], warnings: [] }));
+
+      const { response, body } = await readFeedback(grantId, { validationFeedback: "vat-mtd" });
+
+      expect(response.statusCode).toBe(200);
+      expect(body).toMatchObject({ ok: true, status: 200, feedback: { specVersion: "3.3" } });
+      const [feedbackUrl, feedbackInit] = tokenEndpoint.mock.calls[1];
+      expect(feedbackUrl).toBe(`${HMRC_SANDBOX}/test/fraud-prevention-headers/vat-mtd/validation-feedback`);
+      expect(feedbackInit.headers.Authorization).toBe("Bearer hmrc-access-1");
+      expect(response.body).not.toContain("hmrc-access-1");
+    });
+
+    test("answers 404 to the feedback query for a live grant and 400 for an unknown feedback api", async () => {
+      const { body: grant } = await requestGrant({ hmrcAccount: "live" });
+      await postCallback({ code: "auth-code-1", state: stateOf(grant.url) });
+
+      expect((await readFeedback(grant.grantId, { validationFeedback: "vat-mtd" })).response.statusCode).toBe(404);
+      expect((await readFeedback(grant.grantId, { validationFeedback: "other-api" })).response.statusCode).toBe(400);
+      expect(tokenEndpoint).toHaveBeenCalledTimes(1);
+    });
+
+    test("answers 502 and keeps the grant when HMRC cannot refresh an expired token", async () => {
+      const grantId = await grantedGrant();
+      table.items.get(`hmrc-grant:${grantId}`).accessExpiresAt = Math.floor(Date.now() / 1000) - 5;
+      tokenEndpoint.mockResolvedValueOnce(tokenResponse(503, { error: "server_error" }));
+
+      const { response } = await readGrant(grantId);
+
+      expect(response.statusCode).toBe(502);
+      expect(table.items.has(`hmrc-grant:${grantId}`)).toBe(true);
+    });
+  });
+
+  describe("ending a grant", () => {
+    test("deletes the grant for its owner and answers 204 with no body", async () => {
+      const { body: grant } = await requestGrant();
+      await postCallback({ code: "auth-code-1", state: stateOf(grant.url) });
+
+      const { response } = await deleteGrant(grant.grantId);
+
+      expect(response.statusCode).toBe(204);
+      expect(response.body).toBe("");
+      expect(table.items.has(`hmrc-grant:${grant.grantId}`)).toBe(false);
+    });
+
+    test("refuses another user, leaves the grant in place, and answers 404 for an unknown grant", async () => {
+      const { body: grant } = await requestGrant();
+      await postCallback({ code: "auth-code-1", state: stateOf(grant.url) });
+
+      expect((await deleteGrant(grant.grantId, "user-sub-2")).response.statusCode).toBe(403);
+      expect(table.items.has(`hmrc-grant:${grant.grantId}`)).toBe(true);
+      expect((await deleteGrant("99999999-2222-4333-8444-555555555555")).response.statusCode).toBe(404);
+    });
+
+    test("needs a signed-in user", async () => {
+      const { body: grant } = await requestGrant();
+      const unsigned = await call(
+        buildLambdaEvent({
+          method: "DELETE",
+          path: `${ROUTE}/${grant.grantId}`,
+          pathParameters: { grantId: grant.grantId },
+          authorizer: {},
+        }),
+      );
+      expect(unsigned.response.statusCode).toBe(401);
+      expect(table.items.has(`hmrc-grant:${grant.grantId}`)).toBe(true);
     });
   });
 });

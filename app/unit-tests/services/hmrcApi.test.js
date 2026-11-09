@@ -212,7 +212,7 @@ describe("services/hmrcApi", () => {
   });
 
   it("getFraudPreventionHeadersFeedback calls HMRC feedback endpoint with correct parameters", async () => {
-    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcFraudPreventionFeedback.js");
     const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();
@@ -252,7 +252,7 @@ describe("services/hmrcApi", () => {
   });
 
   it("getFraudPreventionHeadersFeedback handles errors gracefully", async () => {
-    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcFraudPreventionFeedback.js");
     const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();

@@ -336,7 +336,8 @@ public class EdgeStack extends Stack {
                         .accessControlAllowCredentials(false)
                         .accessControlAllowHeaders(List.of("*"))
                         .accessControlAllowMethods(List.of("GET", "HEAD", "OPTIONS"))
-                        .accessControlAllowOrigins(List.of("*"))
+                        .accessControlAllowOrigins(
+                                List.of(props.sharedNames().publicBaseUrl.replaceAll("/$", "")))
                         .accessControlExposeHeaders(List.of())
                         .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
                         .originOverride(true)

@@ -8,12 +8,15 @@ package co.uk.diyaccounting.submit.stacks;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
 /**
@@ -75,5 +78,31 @@ class HmrcStackTest {
                 BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(TEMPLATE, workerFunctionName),
                 "worker Lambda " + workerFunctionName
                         + " charges a token on success and must be granted dynamodb:UpdateItem on the bundles table");
+    }
+
+    @Test
+    void ingestLambdaCanOpenAnHmrcGrant() {
+        TEMPLATE.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        SHARED_NAMES.hmrc.hmrcItsaStatusGetIngestLambdaFunctionName,
+                        "Environment",
+                        Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of("MCP_SESSIONS_DYNAMODB_TABLE_NAME", Match.anyValue()))))));
+    }
+
+    @Test
+    void tokenExchangeLambdaCanSealAnHmrcGrant() {
+        TEMPLATE.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        SHARED_NAMES.hmrc.hmrcTokenPostIngestLambdaFunctionName,
+                        "Environment",
+                        Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of("MCP_SESSIONS_DYNAMODB_TABLE_NAME", Match.anyValue()))))));
     }
 }

@@ -48,6 +48,7 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 import { withSecretRetry } from "../../lib/cachedSecret.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
 
@@ -246,7 +247,7 @@ export async function ingestHandler(event) {
 
   logger.info({ message: "Processing support ticket request", requestId });
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Get client info from headers (for logging/tracking, not authentication)
   const clientIp = event.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";

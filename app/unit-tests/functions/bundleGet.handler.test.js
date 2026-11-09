@@ -249,12 +249,13 @@ describe("bundleGet ingestHandler", () => {
     const token = makeIdToken("user-headers");
     const event = buildEventWithToken(token, {});
     event.headers["x-wait-time-ms"] = "500";
+    event.headers.Origin = "https://test";
 
     const response = await bundleGetHandler(event);
 
     expect([200, 201, 202]).toContain(response.statusCode);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
-    expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
+    expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "https://test");
   });
 
   test("generates requestId if not provided", async () => {

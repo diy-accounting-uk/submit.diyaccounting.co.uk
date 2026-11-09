@@ -30,6 +30,7 @@ import { hasPaidCharge } from "../../services/activityCharges.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
 import { loadCatalogFromRoot, getActivityPrices, isActivityListedInEnvironment } from "../../services/productCatalog.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingActivityCheckoutPost.js" });
 
@@ -63,7 +64,7 @@ function resolveActivityStripePriceId(activity, isSynthetic) {
 
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

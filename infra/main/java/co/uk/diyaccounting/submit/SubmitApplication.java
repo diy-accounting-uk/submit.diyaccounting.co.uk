@@ -470,7 +470,11 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(hmrcBaseUri)
+                        .hmrcClientId(hmrcClientId)
+                        .hmrcClientSecretArn(hmrcClientSecretArn)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
+                        .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
@@ -492,7 +496,11 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(hmrcBaseUri)
+                        .hmrcClientId(hmrcClientId)
+                        .hmrcClientSecretArn(hmrcClientSecretArn)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
+                        .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 

@@ -2031,7 +2031,7 @@ export async function fetchFraudPreventionHeadersFeedback(
   let capturedResult = null;
 
   await test.step("Fetch fraud prevention headers validation feedback from HMRC", async () => {
-    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcFraudPreventionFeedback.js");
 
     console.log("Fetching fraud prevention headers validation feedback...");
     const result = await getFraudPreventionHeadersFeedback(

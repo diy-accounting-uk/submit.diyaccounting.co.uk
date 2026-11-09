@@ -41,6 +41,7 @@ import { buildAcquisitionMap } from "../../lib/acquisition.js";
 import { hashSub, initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/passPost.js" });
 
@@ -64,7 +65,7 @@ export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

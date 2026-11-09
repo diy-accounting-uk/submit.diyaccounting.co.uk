@@ -25,12 +25,14 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { extractHmrcAccessTokenFromLambdaEvent } from "../../services/hmrcApi.js";
+import { HMRC_GRANT_NOT_USABLE } from "../../lib/mcpHmrcGrantAccess.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 import { getInvitationStatus, getRelationship, agentAuthorisationErrorResponse } from "../../lib/hmrcAgentAuthorisation.js";
 import { getClient, getPracticeArn, setClientAuthorisation } from "../../data/dynamoDbPracticeClientRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientAuthorisationGet.js" });
 
@@ -56,7 +58,7 @@ export async function ingestHandler(event) {
 
   const { request } = extractRequest(event);
   const { govClientHeaders } = buildFraudHeaders(event, {});
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {
@@ -84,6 +86,14 @@ export async function ingestHandler(event) {
   const accessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
   if (!accessToken) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Missing Authorization Bearer token", error: {} });
+  }
+  if (accessToken === HMRC_GRANT_NOT_USABLE) {
+    return http401UnauthorizedResponse({
+      request,
+      headers: responseHeaders,
+      message: "Unauthorized - the HMRC sign-in has expired or does not exist",
+      error: {},
+    });
   }
 
   try {

@@ -27,6 +27,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { expirePassAsDeleted, getPass } from "../../data/dynamoDbPassRepository.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 export const MAX_CODES_PER_DELETE = 100;
 
@@ -55,7 +56,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

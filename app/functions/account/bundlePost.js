@@ -38,6 +38,7 @@ import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { buildAcquisitionMap, isTaggedAcquisition } from "../../lib/acquisition.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
@@ -137,7 +138,7 @@ export async function ingestHandler(event) {
 
   logger.info({ message: "Processing bundle request" });
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Decode JWT token to get user ID
   let decodedToken;

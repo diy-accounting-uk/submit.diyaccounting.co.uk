@@ -221,12 +221,14 @@ class McpStackTest {
                         "PUT /api/v1/mcp/codes-entries/{entryId}",
                         "POST /api/v1/mcp/hmrc-grants",
                         "GET /api/v1/mcp/hmrc-grants/{grantId}",
+                        "DELETE /api/v1/mcp/hmrc-grants/{grantId}",
                         "POST /api/v1/mcp/hmrc-grants/callback"),
                 routes);
         var signedInRoutes = List.of(
                 "POST /api/v1/mcp/codes-entries",
                 "POST /api/v1/mcp/hmrc-grants",
-                "GET /api/v1/mcp/hmrc-grants/{grantId}");
+                "GET /api/v1/mcp/hmrc-grants/{grantId}",
+                "DELETE /api/v1/mcp/hmrc-grants/{grantId}");
         for (AbstractApiLambdaProps props : stack.lambdaFunctionProps) {
             if (signedInRoutes.contains(props.httpMethod() + " " + props.urlPath())) {
                 assertTrue(props.jwtAuthorizer(), props.urlPath() + " needs the signed-in user");

@@ -67,6 +67,16 @@ public final class McpHmrcGrantAccessHelper {
         }
     }
 
+    /** Lets the token exchange Lambda write a new grant: one PutItem and the sealing key. */
+    public static void grantCreate(Function fn, GrantStore store) {
+        fn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:PutItem"))
+                .resources(List.of(store.mcpSessionsTable().getTableArn()))
+                .build());
+        store.sealKeySecret().grantRead(fn);
+    }
+
     public static void grant(
             Function fn, GrantStore store, String hmrcClientSecretArn, String hmrcSandboxClientSecretArn) {
         fn.addToRolePolicy(PolicyStatement.Builder.create()

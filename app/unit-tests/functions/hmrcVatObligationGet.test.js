@@ -210,8 +210,34 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
       const response = await hmrcVatObligationGetHandler(grantEvent());
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(401);
       expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test("answers 401 for a grant that does not exist", async () => {
+      mockGetHmrcGrant.mockResolvedValue(null);
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const response = await hmrcVatObligationGetHandler(grantEvent());
+
+      expect(response.statusCode).toBe(401);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test("opens a grant named in the bearer slot", async () => {
+      await storeGrant("test-sub");
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const response = await hmrcVatObligationGetHandler(
+        buildHmrcEvent({
+          queryStringParameters: { vrn: "111222333" },
+          headers: { authorization: `Bearer ${GRANT_ID}`, hmrcAccount: "live" },
+        }),
+      );
+
+      expect(response.statusCode).toBe(200);
+      const hmrcCall = mockFetch.mock.calls.find(([url]) => String(url).includes("/obligations"));
+      expect(hmrcCall[1].headers.Authorization).toBe("Bearer grant-hmrc-token");
     });
   });
 

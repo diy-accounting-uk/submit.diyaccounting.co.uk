@@ -32,6 +32,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { incrementRateCounter } from "../../data/dynamoDbSecurityStateRepository.js";
 import { publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
@@ -119,7 +120,7 @@ export async function ingestHandler(event) {
   // Extract and validate parameters
   const { userId, userEmail } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   // Authentication errors - extractAndValidateParameters only adds JWT decode errors
   if (errorMessages.length > 0 || !userId) {
