@@ -91,6 +91,7 @@ describe("System: Cognito token exchange", () => {
       grant_type: "authorization_code",
       code: "auth-code-123",
       code_verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      redirect_uri: "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html",
     }).toString();
 
     event.body = Buffer.from(form).toString("base64");

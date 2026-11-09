@@ -79,7 +79,7 @@ Recreate: role ARNs with `aws --profile diya-management iam get-role --role-name
 
 | Variable | Read by |
 |---|---|
-| `AGENT_APP_ID` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `security-review.yml` |
+| `AGENT_APP_ID` | `alarm-triage.yml`, `alarm-remedy-close.yml` |
 | `OPS_APP_ID` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |
 | `OPS_APP_INSTALLATION_ID` | same two workflows |
 | `AGENT_APP_INSTALLATION_ID` | no workflow |
@@ -96,7 +96,7 @@ App and installation ids come from the GitHub App settings pages (the agent App 
 | `SUBMIT_ACCOUNT_ID` | most AWS workflows |
 | `SUBMIT_ACTIONS_ROLE_ARN` | every workflow that signs in to AWS |
 | `SUBMIT_DEPLOY_ROLE_ARN` | every workflow that then deploys or reads |
-| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `security-review.yml`, `deploy.yml`, `test.yml` |
+| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `deploy.yml`, `test.yml` |
 | `SUBMIT_CERTIFICATE_ARN` | `deploy-environment.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy.yml`, `promote-ci-apex.yml` |
 | `SUBMIT_HOLDING_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |
@@ -119,7 +119,7 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 
 | Secret | Read by | How to obtain |
 |---|---|---|
-| `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `security-review.yml` | private key of the agent GitHub App |
+| `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml` | private key of the agent GitHub App |
 | `OPS_APP_PRIVATE_KEY` | `deploy-environment.yml` (to `{env}/submit/github/ops_app_private_key`) | private key of the `diya-ops` GitHub App |
 | `OPERATOR_EMAILS` | `deploy-environment.yml` (to `{env}/submit/operator-emails`) | the operator's addresses |
 
@@ -163,7 +163,6 @@ Workflows apply these. Recreate with `gh label create`.
 - `remedy:close-when-gone`, `remedy:dispatch`, `remedy:draft-pr`: alarm-family remedy mode (`alarm-triage.yml`, `alarm-remedy-close.yml`).
 - `policy:question`: open operator policy question.
 - `triage`: re-runs alarm triage on an issue.
-- `security-review`: issues opened by `security-review.yml`.
 - `copilot-agent`, `in-progress`: agent and batch tracking.
 
 ## Sequence for a new org
