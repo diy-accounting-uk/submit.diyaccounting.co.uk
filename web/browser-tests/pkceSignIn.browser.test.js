@@ -250,6 +250,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
         sessionStorage.setItem("test_seeded", "1");
         sessionStorage.setItem("cognito_oauth_state", "state-1");
         sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
+        sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
         sessionStorage.setItem("cognito_identity_provider", "Microsoft");
       }
     });
