@@ -33,7 +33,8 @@ const RECORDED_SEND = /\brecordedFetch\s*\(/g;
 // Each file that sends to HMRC through recordedFetch, with the exact number of sends.
 // httpResponseHelper.js names no HMRC host, so the fetch check above does not see it.
 const RECORDED_HMRC_SENDS = [
-  { file: "app/services/hmrcApi.js", sends: 3 },
+  { file: "app/services/hmrcApi.js", sends: 2 },
+  { file: "app/services/hmrcFraudPreventionFeedback.js", sends: 1 },
   { file: "app/services/hmrcTransactionEngine.js", sends: 1 },
   { file: "app/lib/httpResponseHelper.js", sends: 1 },
 ];

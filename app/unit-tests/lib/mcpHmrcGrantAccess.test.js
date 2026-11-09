@@ -154,7 +154,7 @@ describe("mcpHmrcGrantAccess", () => {
       const id = "11111111-2222-4333-8444-555555555555";
       expect(grantIdFromEvent(eventFor({ "x-mcp-hmrc-grant": id }))).toBe(id);
       expect(grantIdFromEvent(eventFor({ Authorization: `Bearer ${id}` }))).toBe(id);
-      expect(grantIdFromEvent(eventFor({ Authorization: "Bearer 3f5a9c0d8e1b4a7c9d2e6f0a1b3c5d7e" }))).toBeNull();
+      expect(grantIdFromEvent(eventFor({ Authorization: "Bearer mock-hmrc-access-token-raw" }))).toBeNull();
       expect(grantIdFromEvent(eventFor({}))).toBeNull();
       expect(GRANT_ID_PATTERN.test("mock-hmrc-access-token-123")).toBe(false);
     });
