@@ -34,6 +34,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
@@ -110,7 +111,7 @@ export async function ingestHandler(event) {
   // Extract and validate parameters
   const { userId, bundleToRemove, removeAll } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Authentication errors
   if (!userId) {

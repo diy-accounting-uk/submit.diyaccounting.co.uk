@@ -19,6 +19,7 @@ import { extractRequest, http200OkResponse, http400BadRequestResponse, http500Se
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { checkPass } from "../../services/passService.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/passGet.js" });
 
@@ -32,7 +33,7 @@ export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   const code =
     event?.queryStringParameters?.code ||

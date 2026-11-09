@@ -24,6 +24,7 @@ import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/activityStartedPost.js" });
 
@@ -42,7 +43,7 @@ function isKnownActivityId(activityId) {
 
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
-  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const headers = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {

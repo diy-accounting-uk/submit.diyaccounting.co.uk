@@ -30,6 +30,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { resolveAccountSettings, validateAccountSettingsUpdate } from "../../lib/accountSettings.js";
 import { updateAccountSettings } from "../../data/dynamoDbBundleRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/accountSettingsPut.js" });
 
@@ -44,7 +45,7 @@ export async function ingestHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user?.sub) {

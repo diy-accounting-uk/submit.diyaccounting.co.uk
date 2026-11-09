@@ -32,6 +32,7 @@ import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { isValidBookId, moveBookToClient, BookNotFoundError, DestinationBookExistsError } from "../../data/s3DiyaGlRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientBookMovePost.js" });
 
@@ -50,7 +51,7 @@ export async function ingestHandler(event) {
   validateEnv(["PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {

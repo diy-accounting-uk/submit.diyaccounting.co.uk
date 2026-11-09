@@ -31,6 +31,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { loadReferralConfig } from "../../services/referralConfig.js";
 import { refreshAffiliateAccount } from "../../services/affiliateConnect.js";
 import { getAffiliate, putAffiliate } from "../../data/dynamoDbPassRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliatePost.js" });
 
@@ -47,7 +48,7 @@ export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

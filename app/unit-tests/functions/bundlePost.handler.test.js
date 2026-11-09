@@ -426,12 +426,13 @@ describe("bundlePost ingestHandler", () => {
     const token = makeIdToken("user-success");
     const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
+    event.headers.Origin = "https://test";
 
     const response = await bundlePostHandler(event);
 
     expect(response.statusCode).toBe(201);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
-    expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
+    expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "https://test");
 
     const body = parseResponseBody(response);
     expect(body.status).toBe("granted");

@@ -32,6 +32,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { collectsRequirementsInApplication, createConnectAccount, createOnboardingLink } from "../../services/affiliateConnect.js";
 import { getAffiliate, getFamilyAffiliate, putAffiliate, startAffiliateApplication } from "../../data/dynamoDbPassRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationPost.js" });
 
@@ -66,7 +67,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

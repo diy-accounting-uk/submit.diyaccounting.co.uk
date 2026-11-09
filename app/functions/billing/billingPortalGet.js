@@ -27,6 +27,7 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingPortalGet.js" });
 
@@ -38,7 +39,7 @@ export function apiEndpoint(app) {
 
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
   const returnTo = resolveAllowedReturnTo(request.searchParams.get("returnTo"));
 
   let decodedToken;

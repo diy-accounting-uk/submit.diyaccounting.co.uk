@@ -27,6 +27,7 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { needsAccountRefresh, refreshAffiliateAccount, toAffiliateView } from "../../services/affiliateConnect.js";
 import { getAffiliate, getFamilyAffiliate } from "../../data/dynamoDbPassRepository.js";
 import { loadReferralConfig, getTier, resolveTierId } from "../../services/referralConfig.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/affiliateApplicationGet.js" });
 
@@ -56,7 +57,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   let decodedToken;
   try {

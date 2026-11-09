@@ -31,6 +31,7 @@ import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 import { cancelInvitation, agentAuthorisationErrorResponse } from "../../lib/hmrcAgentAuthorisation.js";
 import { getClient, getPracticeArn, setClientAuthorisation } from "../../data/dynamoDbPracticeClientRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientAuthorisationInviteDelete.js" });
 
@@ -53,7 +54,7 @@ export async function ingestHandler(event) {
 
   const { request } = extractRequest(event);
   const { govClientHeaders } = buildFraudHeaders(event, {});
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {

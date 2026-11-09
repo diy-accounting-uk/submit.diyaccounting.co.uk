@@ -29,6 +29,7 @@ import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptReposito
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
 
@@ -81,7 +82,7 @@ export async function ingestHandler(event) {
   validateEnv(["RECEIPTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Check authentication
   const userSub = getUserSub(event || {});

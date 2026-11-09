@@ -37,6 +37,7 @@ import {
   getBundlePrices,
   getBundlePriceForInterval,
 } from "../../services/productCatalog.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
 
@@ -74,7 +75,7 @@ function resolveStripePriceId(bundle, stripeInterval, isSynthetic) {
 
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Decode JWT to get user identity
   let decodedToken;

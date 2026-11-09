@@ -443,4 +443,18 @@ class EdgeStackTest {
         assertFalse(templateJson.contains("x-diya-origin-verify"));
         assertFalse(templateJson.contains("origin/verify"));
     }
+
+    @Test
+    void webResponseHeadersPolicyAllowsOnlyTheEnvironmentsOwnOrigin() {
+        Template template = Template.fromStack(synthEdgeStack());
+        String ownOrigin = SubmitSharedNames.forDocs().publicBaseUrl.replaceAll("/$", "");
+
+        template.hasResourceProperties(
+                "AWS::CloudFront::ResponseHeadersPolicy",
+                Match.objectLike(Map.of(
+                        "ResponseHeadersPolicyConfig",
+                        Map.of(
+                                "CorsConfig",
+                                Map.of("AccessControlAllowOrigins", Map.of("Items", List.of(ownOrigin)))))));
+    }
 }

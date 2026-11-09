@@ -18,6 +18,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientGet.js" });
 
@@ -32,7 +33,7 @@ export async function ingestHandler(event) {
   validateEnv(["PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers), "Cache-Control": "no-store" };
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {

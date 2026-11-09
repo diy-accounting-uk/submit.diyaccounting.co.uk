@@ -20,6 +20,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getPassFigures, getPassesByIssuer } from "../../data/dynamoDbPassRepository.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 // A count of new accounts, filers, subscribers or charges below this could point at one person,
 // so the response withholds those counts and says so.
@@ -91,7 +92,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Authenticate
   let decodedToken;

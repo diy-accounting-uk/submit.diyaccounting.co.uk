@@ -40,6 +40,7 @@ import {
   sumTokensRemaining,
 } from "../../services/productCatalog.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/passGeneratePost.js" });
 
@@ -60,7 +61,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
 
   const { request } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
 
   // Authenticate
   let decodedToken;
