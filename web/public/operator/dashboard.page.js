@@ -744,15 +744,16 @@ function renderHeaderChecks(integrations) {
     row.className = "integrations-check-row";
     row.dataset.result = check.result;
     [
-      check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day,
-      check.result,
-      check.api,
-      check.connectionMethod,
-      check.hmrcCode,
-      check.message || NOT_APPLICABLE,
-      check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE,
-    ].forEach((text) => {
+      ["Checked", check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day],
+      ["Result", check.result],
+      ["API", check.api],
+      ["Connection method", check.connectionMethod],
+      ["HMRC code", check.hmrcCode],
+      ["Message", check.message || NOT_APPLICABLE],
+      ["Headers", check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE],
+    ].forEach(([label, text]) => {
       const cell = document.createElement("td");
+      cell.dataset.label = label;
       cell.textContent = text;
       row.appendChild(cell);
     });
