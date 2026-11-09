@@ -33,7 +33,7 @@
     "marketingCertificateArn": "",
     "marketingDocRootPath": "../web/marketing",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
-    "microsoftClientId": "REPLACE_WITH_MICROSOFT_APPLICATION_CLIENT_ID",
+    "microsoftClientId": "4de37573-a5fb-431b-b3c5-0a4563ca529d",
     "hmrcApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
     "hmrcSandboxApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
     "proxyRateLimitPerSecond": "10",
