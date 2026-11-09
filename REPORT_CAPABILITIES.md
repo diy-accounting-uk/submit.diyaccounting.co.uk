@@ -549,7 +549,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard: use when the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
     - [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt: use when the operator asks for a tech-debt audit, a repository hygiene report, or how much debt the repositories carry.
     - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session: use when the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
-    - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill: use when /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
+    - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill: use when /campaign needs the last seven days of questions from UK Business Forums.
     - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board: use when the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
@@ -6095,12 +6095,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### DEV-58 Search community threads for the campaign skill
 
-- **Use when:** /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
-- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id, secret and username come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a Reddit User-Agent that names the app and its Reddit username on Reddit calls and a site User-Agent on the forum call. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
-- **Run:** `AWS_PROFILE=diya-submit-prod node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads recorded responses with no credentials
+- **Use when:** /campaign needs the last seven days of questions from UK Business Forums.
+- **Does:** campaign-threads.mjs reads the UK Business Forums RSS feed and keeps the threads from the last days it is given. It reads only: it never posts, comments, votes or messages. It sends a site User-Agent, waits for the rate-limit headers, and reports a forum that answers with a browser challenge as skipped, with no retry.
+- **Run:** `node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads a recorded feed
 - **Entry:** `scripts/campaign-threads.mjs:searchThreads`
-- **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/reddit-search.json, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
-- **Keywords:** campaign threads, reddit search, smallbusinessuk, uk business forums, rss, thread discovery, read only, rate limit
+- **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
+- **Keywords:** campaign threads, uk business forums, rss, thread discovery, read only, rate limit
 - **Related:** DEV-57
 
 #### DEV-59 Check blockers and ask the operator what moves the board
@@ -8768,7 +8768,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - redact: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - redaction: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
-- reddit search: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - redeem pass: [BILL-10](#bill-10-redeem-a-pass), [BILL-58](#bill-58-pass-link-landing-page)
 - redeempass: [BILL-10](#bill-10-redeem-a-pass)
 - redirect: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
@@ -9081,7 +9080,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - small company accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - small files: [DATA-70](#data-70-compact-closed-days-of-activity-events)
-- smallbusinessuk: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [DEV-55](#dev-55-review-the-operator-dashboard)
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
