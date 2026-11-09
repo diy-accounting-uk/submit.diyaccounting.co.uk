@@ -17,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
 /**
@@ -49,7 +50,11 @@ class HmrcItsaStackTest {
                         .sharedNames(SHARED_NAMES)
                         .baseImageTag("latest")
                         .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
+                        .hmrcClientId("test-client-id")
+                        .hmrcClientSecretArn("")
                         .hmrcSandboxBaseUri("https://test-api.service.hmrc.gov.uk")
+                        .hmrcSandboxClientId("test-sandbox-client-id")
+                        .hmrcSandboxClientSecretArn("")
                         .build());
         TEMPLATE = Template.fromStack(stack);
     }
@@ -88,5 +93,18 @@ class HmrcItsaStackTest {
         int resourceCount = ((Map<String, Object>) TEMPLATE.toJSON().get("Resources")).size();
         assertEquals(486, resourceCount, "HmrcItsaStack resource count changed");
         assertTrue(resourceCount < 500, "HmrcItsaStack has " + resourceCount + " resources; the limit is 500");
+    }
+
+    @Test
+    void ingestLambdaCanOpenAnHmrcGrant() {
+        TEMPLATE.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        SHARED_NAMES.hmrcItsa.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName,
+                        "Environment",
+                        Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of("MCP_SESSIONS_DYNAMODB_TABLE_NAME", Match.anyValue()))))));
     }
 }

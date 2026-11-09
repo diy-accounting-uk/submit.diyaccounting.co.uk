@@ -15,11 +15,11 @@ import {
   hmrcHttpGet,
   hmrcHttpPost,
   validateFraudPreventionHeaders,
-  getFraudPreventionHeadersFeedback,
   HmrcTimeoutError,
   HmrcFraudPreventionHeadersMissingError,
   missingFraudPreventionHeaders,
 } from "@app/services/hmrcApi.js";
+import { getFraudPreventionHeadersFeedback } from "@app/services/hmrcFraudPreventionFeedback.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

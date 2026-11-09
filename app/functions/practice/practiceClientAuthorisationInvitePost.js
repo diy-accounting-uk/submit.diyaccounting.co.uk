@@ -14,7 +14,7 @@
 // app/functions/practice/practiceClientAuthorisationInvitePost.js
 
 import { validateEnv } from "../../lib/env.js";
-import { grantAccessTokenFromEvent } from "../../lib/mcpHmrcGrantAccess.js";
+import { grantAccessTokenFromEvent, resolveBodyAccessToken, HMRC_GRANT_NOT_USABLE } from "../../lib/mcpHmrcGrantAccess.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -74,8 +74,16 @@ export async function ingestHandler(event) {
 
   const body = parseRequestBody(event) || {};
   const { service, knownFact, arn: arnFromBody } = body;
-  // An MCP request names its HMRC grant in a header; a browser request carries the token in the body.
-  const accessToken = (await grantAccessTokenFromEvent(event)) ?? body.accessToken;
+  // A request names its HMRC grant in a header, or carries a grant id or a raw token in the body.
+  const accessToken = (await grantAccessTokenFromEvent(event)) ?? (await resolveBodyAccessToken(event, body.accessToken));
+  if (accessToken === HMRC_GRANT_NOT_USABLE) {
+    return http401UnauthorizedResponse({
+      request,
+      headers: responseHeaders,
+      message: "Unauthorized - the HMRC sign-in has expired or does not exist",
+      error: {},
+    });
+  }
 
   const errorMessages = [];
   if (!SERVICE_IDENTIFIER[service]) {

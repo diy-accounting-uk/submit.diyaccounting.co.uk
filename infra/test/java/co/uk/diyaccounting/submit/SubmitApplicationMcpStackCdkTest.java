@@ -85,6 +85,7 @@ class SubmitApplicationMcpStackCdkTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /mcp/oauth/{action}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/mcp/hmrc-grants"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/mcp/hmrc-grants/{grantId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/mcp/hmrc-grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/mcp/hmrc-grants/callback"));
     }
 

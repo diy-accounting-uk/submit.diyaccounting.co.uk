@@ -341,7 +341,6 @@ export async function submitVat(
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
   });
-  console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
   const response = await authorizedFetch(url, {
     method: "POST",

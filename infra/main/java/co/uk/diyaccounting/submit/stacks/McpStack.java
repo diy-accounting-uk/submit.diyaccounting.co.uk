@@ -357,6 +357,8 @@ public class McpStack extends Stack {
         this.lambdaFunctionProps.add(this.mcpHmrcGrantLambdaProps);
         this.lambdaFunctionProps.add(
                 onPublishedPath(this.mcpHmrcGrantLambdaProps, HttpMethod.GET, sharedNames.mcp.mcpHmrcGrantItemUrlPath));
+        this.lambdaFunctionProps.add(onPublishedPath(
+                this.mcpHmrcGrantLambdaProps, HttpMethod.DELETE, sharedNames.mcp.mcpHmrcGrantItemUrlPath));
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
                 .from(this.mcpHmrcGrantLambdaProps)
                 .httpMethod(HttpMethod.POST)

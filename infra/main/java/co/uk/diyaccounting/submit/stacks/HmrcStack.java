@@ -412,6 +412,7 @@ public class HmrcStack extends Stack {
         if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
         }
+        withGrantEnv(exchangeHmrcTokenLambdaEnv, grantStore, props);
 
         var exchangeHmrcTokenLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -437,6 +438,7 @@ public class HmrcStack extends Stack {
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
         this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.ingestLambda;
+        McpHmrcGrantAccessHelper.grantCreate(this.hmrcTokenPostLambda, grantStore);
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
@@ -1052,6 +1054,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBusinessDetailsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBusinessDetailsGetLambdaEnv, grantStore, props);
         var hmrcItsaBusinessDetailsGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1092,6 +1095,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaBusinessDetailsGetLambdaProps = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaBusinessDetailsGetLambda = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBusinessDetailsGetLambda, grantStore, props);
         this.hmrcItsaBusinessDetailsGetLambdaLogGroup = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBusinessDetailsGetLambdaProps);
         infof(
@@ -1143,6 +1147,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaObligationsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaObligationsGetLambdaEnv, grantStore, props);
         var hmrcItsaObligationsGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1182,6 +1187,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaObligationsGetLambdaProps = hmrcItsaObligationsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaObligationsGetLambda = hmrcItsaObligationsGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaObligationsGetLambda, grantStore, props);
         this.hmrcItsaObligationsGetLambdaLogGroup = hmrcItsaObligationsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaObligationsGetLambdaProps);
         infof(
@@ -1334,6 +1340,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaSelfEmploymentPeriodsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaSelfEmploymentPeriodsGetLambdaEnv, grantStore, props);
         var hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1377,6 +1384,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaSelfEmploymentPeriodsGetLambdaProps = hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaSelfEmploymentPeriodsGetLambda = hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaSelfEmploymentPeriodsGetLambda, grantStore, props);
         this.hmrcItsaSelfEmploymentPeriodsGetLambdaLogGroup = hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentPeriodsGetLambdaProps);
         infof(
@@ -1431,6 +1439,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaSelfEmploymentPeriodGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaSelfEmploymentPeriodGetLambdaEnv, grantStore, props);
         var hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1474,6 +1483,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaSelfEmploymentPeriodGetLambdaProps = hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaSelfEmploymentPeriodGetLambda = hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaSelfEmploymentPeriodGetLambda, grantStore, props);
         this.hmrcItsaSelfEmploymentPeriodGetLambdaLogGroup = hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentPeriodGetLambdaProps);
         infof(
@@ -1528,6 +1538,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaSelfEmploymentPeriodPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaSelfEmploymentPeriodPutLambdaEnv, grantStore, props);
         var hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1571,6 +1582,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaSelfEmploymentPeriodPutLambdaProps = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.apiProps;
         this.hmrcItsaSelfEmploymentPeriodPutLambda = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaSelfEmploymentPeriodPutLambda, grantStore, props);
         this.hmrcItsaSelfEmploymentPeriodPutLambdaLogGroup = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentPeriodPutLambdaProps);
         infof(
@@ -1625,6 +1637,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaSelfEmploymentAnnualGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaSelfEmploymentAnnualGetLambdaEnv, grantStore, props);
         var hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1668,6 +1681,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaSelfEmploymentAnnualGetLambdaProps = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaSelfEmploymentAnnualGetLambda = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaSelfEmploymentAnnualGetLambda, grantStore, props);
         this.hmrcItsaSelfEmploymentAnnualGetLambdaLogGroup = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentAnnualGetLambdaProps);
         infof(
@@ -1821,6 +1835,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaCrystallisationObligationsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaCrystallisationObligationsGetLambdaEnv, grantStore, props);
         var hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1870,6 +1885,7 @@ public class HmrcStack extends Stack {
                 hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaCrystallisationObligationsGetLambda =
                 hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaCrystallisationObligationsGetLambda, grantStore, props);
         this.hmrcItsaCrystallisationObligationsGetLambdaLogGroup =
                 hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaCrystallisationObligationsGetLambdaProps);
@@ -1923,6 +1939,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaStatusGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaStatusGetLambdaEnv, grantStore, props);
         var hmrcItsaStatusGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -1959,6 +1976,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaStatusGetLambdaProps = hmrcItsaStatusGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaStatusGetLambda = hmrcItsaStatusGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaStatusGetLambda, grantStore, props);
         this.hmrcItsaStatusGetLambdaLogGroup = hmrcItsaStatusGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaStatusGetLambdaProps);
         infof(
@@ -2010,6 +2028,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasTriggerPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBsasTriggerPostLambdaEnv, grantStore, props);
         var hmrcItsaBsasTriggerPostLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2049,6 +2068,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaBsasTriggerPostLambdaProps = hmrcItsaBsasTriggerPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasTriggerPostLambda = hmrcItsaBsasTriggerPostLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBsasTriggerPostLambda, grantStore, props);
         this.hmrcItsaBsasTriggerPostLambdaLogGroup = hmrcItsaBsasTriggerPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasTriggerPostLambdaProps);
         infof(
@@ -2101,6 +2121,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasSelfEmploymentGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBsasSelfEmploymentGetLambdaEnv, grantStore, props);
         var hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2143,6 +2164,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaBsasSelfEmploymentGetLambdaProps = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasSelfEmploymentGetLambda = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBsasSelfEmploymentGetLambda, grantStore, props);
         this.hmrcItsaBsasSelfEmploymentGetLambdaLogGroup = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasSelfEmploymentGetLambdaProps);
         infof(
@@ -2196,6 +2218,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaBsasSelfEmploymentAdjustPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaBsasSelfEmploymentAdjustPostLambdaEnv, grantStore, props);
         var hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2241,6 +2264,7 @@ public class HmrcStack extends Stack {
                 hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambda =
                 hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaBsasSelfEmploymentAdjustPostLambda, grantStore, props);
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaLogGroup =
                 hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps);
@@ -2298,6 +2322,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaCalculationTriggerPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaCalculationTriggerPostLambdaEnv, grantStore, props);
         var hmrcItsaCalculationTriggerPostLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2340,6 +2365,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaCalculationTriggerPostLambdaProps = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaCalculationTriggerPostLambda = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaCalculationTriggerPostLambda, grantStore, props);
         this.hmrcItsaCalculationTriggerPostLambdaLogGroup = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaCalculationTriggerPostLambdaProps);
         infof(
@@ -2393,6 +2419,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaCalculationGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaCalculationGetLambdaEnv, grantStore, props);
         var hmrcItsaCalculationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2432,6 +2459,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaCalculationGetLambdaProps = hmrcItsaCalculationGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaCalculationGetLambda = hmrcItsaCalculationGetLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaCalculationGetLambda, grantStore, props);
         this.hmrcItsaCalculationGetLambdaLogGroup = hmrcItsaCalculationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaCalculationGetLambdaProps);
         infof(
@@ -2484,6 +2512,7 @@ public class HmrcStack extends Stack {
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             itsaFinalDeclarationPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
         }
+        withGrantEnv(itsaFinalDeclarationPostLambdaEnv, grantStore, props);
         var hmrcItsaFinalDeclarationPostLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -2526,6 +2555,7 @@ public class HmrcStack extends Stack {
 
         this.hmrcItsaFinalDeclarationPostLambdaProps = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaFinalDeclarationPostLambda = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.ingestLambda;
+        grantGrantAccess(this.hmrcItsaFinalDeclarationPostLambda, grantStore, props);
         this.hmrcItsaFinalDeclarationPostLambdaLogGroup = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaFinalDeclarationPostLambdaProps);
         infof(

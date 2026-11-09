@@ -3,7 +3,8 @@
 
 // app/test-helpers/fakeCodesEntryTable.js
 // An in-memory stand-in for the sessions table, for tests that mock executeDynamoDbCommand. It
-// runs Put, Get, Update and Delete with the condition shapes the codes entry repository uses.
+// runs Put, Get, Update and Delete with the condition shapes the codes entry and HMRC grant
+// repositories use.
 
 export class FakeCodesEntryTable {
   constructor() {
@@ -31,14 +32,25 @@ export class FakeCodesEntryTable {
 
   holds(condition, names, values, item) {
     if (!condition) return true;
-    return condition.split(" AND ").every((clause) => {
-      const exists = clause.match(/^attribute_exists\((\w+)\)$/);
-      if (exists) return item !== undefined && item[exists[1]] !== undefined;
-      const [left, operator, right] = clause.split(" ");
-      const attribute = names[left] ?? left;
-      if (item === undefined) return false;
-      return operator === ">" ? item[attribute] > values[right] : item[attribute] === values[right];
-    });
+    return condition.split(" AND ").every((group) =>
+      group
+        .replace(/^\((.*)\)$/, "$1")
+        .split(" OR ")
+        .some((clause) => this.clauseHolds(clause, names, values, item)),
+    );
+  }
+
+  clauseHolds(clause, names, values, item) {
+    const exists = clause.match(/^attribute_exists\((\w+)\)$/);
+    if (exists) return item !== undefined && item[exists[1]] !== undefined;
+    const absent = clause.match(/^attribute_not_exists\((\w+)\)$/);
+    if (absent) return item === undefined || item[absent[1]] === undefined;
+    const [left, operator, right] = clause.split(" ");
+    const attribute = names[left] ?? left;
+    if (item === undefined) return false;
+    if (operator === ">") return item[attribute] > values[right];
+    if (operator === "<") return item[attribute] < values[right];
+    return item[attribute] === values[right];
   }
 
   execute = async (commandBuilder) => {
@@ -48,6 +60,7 @@ export class FakeCodesEntryTable {
     const names = input.ExpressionAttributeNames ?? {};
     const values = input.ExpressionAttributeValues ?? {};
     if (command.commandName === "Put") {
+      if (!this.holds(input.ConditionExpression, names, values, this.items.get(input.Item.sessionId))) throw this.failure();
       this.items.set(input.Item.sessionId, { ...input.Item });
       return {};
     }
@@ -55,10 +68,12 @@ export class FakeCodesEntryTable {
     if (command.commandName === "Get") return { Item: item && { ...item } };
     if (!this.holds(input.ConditionExpression, names, values, item)) throw this.failure();
     if (command.commandName === "Update") {
-      for (const assignment of input.UpdateExpression.replace(/^SET /, "").split(", ")) {
+      const [setPart, removePart] = input.UpdateExpression.replace(/^SET /, "").split(" REMOVE ");
+      for (const assignment of setPart.split(", ")) {
         const [left, right] = assignment.split(" = ");
         item[names[left] ?? left] = values[right];
       }
+      for (const attribute of removePart ? removePart.split(", ") : []) delete item[names[attribute] ?? attribute];
       return {};
     }
     this.items.delete(key);

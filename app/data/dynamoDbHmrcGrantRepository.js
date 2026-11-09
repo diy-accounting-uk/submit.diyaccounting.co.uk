@@ -6,8 +6,8 @@
 // HMRC grants started by an MCP tool, held in the {env}-env-mcp-sessions table under the key
 // "hmrc-grant:<grantId>". A grant is requested (pending, ten minutes), claimed by the one
 // callback that carries its state (exchanging), then granted with the HMRC tokens sealed. A
-// granted item lives for the MCP session's 24 hours; the access token inside it is refreshed as
-// it nears its own expiry.
+// granted item lives for 24 hours; the access token inside it is refreshed as it nears its own
+// expiry. A browser sign-in is written already granted, with origin "web".
 
 import { randomUUID } from "node:crypto";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
@@ -15,6 +15,7 @@ import { calculateTtl } from "../lib/dateUtils.js";
 
 const PENDING_LIFETIME = { minutes: 10 };
 const GRANTED_LIFETIME = { hours: 24 };
+const REFRESH_CLAIM_SECONDS = 30;
 
 function tableName() {
   return getResourceName("MCP_SESSIONS_DYNAMODB_TABLE_NAME", true);
@@ -114,23 +115,91 @@ export async function completeHmrcGrant(grantId, { sealed, accessExpiresAt, scop
 }
 
 /**
- * Replaces the sealed tokens of a granted grant after a refresh. The grant's ttl is unchanged.
+ * Takes the right to refresh a granted grant's tokens for 30 seconds. HMRC accepts a refresh
+ * token once, so one caller refreshes; the claim holds only while the access token expiry is the
+ * one the caller read and no earlier claim is still running.
+ * @param {string} grantId
+ * @param {number} seenAccessExpiresAt - the accessExpiresAt the caller read
+ * @returns {Promise<boolean>} true when this caller holds the refresh
+ */
+export async function claimHmrcGrantRefresh(grantId, seenAccessExpiresAt) {
+  const now = nowSeconds();
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName(),
+          Key: keyFor(grantId),
+          UpdateExpression: "SET refreshingUntil = :until",
+          ConditionExpression:
+            "attribute_exists(sessionId) AND #state = :granted AND accessExpiresAt = :seen AND (attribute_not_exists(refreshingUntil) OR refreshingUntil < :now)",
+          ExpressionAttributeNames: { "#state": "state" },
+          ExpressionAttributeValues: {
+            ":until": now + REFRESH_CLAIM_SECONDS,
+            ":granted": "granted",
+            ":seen": seenAccessExpiresAt,
+            ":now": now,
+          },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (isConditionFailure(error)) return false;
+    throw error;
+  }
+}
+
+/**
+ * Replaces the sealed tokens of a granted grant after a refresh and releases the refresh claim.
+ * The grant's ttl is unchanged. A grant deleted in the meantime answers false.
  * @param {string} grantId
  * @param {{sealed: string, accessExpiresAt: number}} refreshed
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>}
  */
 export async function refreshHmrcGrant(grantId, { sealed, accessExpiresAt }) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName(),
+          Key: keyFor(grantId),
+          UpdateExpression: "SET sealed = :sealed, accessExpiresAt = :accessExpiresAt REMOVE refreshingUntil",
+          ConditionExpression: "attribute_exists(sessionId) AND #state = :granted",
+          ExpressionAttributeNames: { "#state": "state" },
+          ExpressionAttributeValues: { ":sealed": sealed, ":accessExpiresAt": accessExpiresAt, ":granted": "granted" },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (isConditionFailure(error)) return false;
+    throw error;
+  }
+}
+
+/**
+ * Writes a grant that is already granted: a browser sign-in whose code Submit has exchanged. The
+ * seal is built from the new grant id, which authenticates it.
+ * @param {{hashedSub: string, hmrcAccount: "synthetic"|"live", scope: string, accessExpiresAt: number, seal: (grantId: string) => Promise<string>}} granted
+ * @returns {Promise<{grantId: string, ttl: number}>}
+ */
+export async function createGrantedHmrcGrant({ hashedSub, hmrcAccount, scope, accessExpiresAt, seal }) {
+  const grantId = randomUUID();
+  const ttl = calculateTtl(new Date(), GRANTED_LIFETIME).ttl;
+  const item = {
+    ...keyFor(grantId),
+    hashedSub,
+    hmrcAccount,
+    scope,
+    state: "granted",
+    origin: "web",
+    sealed: await seal(grantId),
+    accessExpiresAt,
+    ttl,
+  };
   await executeDynamoDbCommand(
-    (module) =>
-      new module.UpdateCommand({
-        TableName: tableName(),
-        Key: keyFor(grantId),
-        UpdateExpression: "SET sealed = :sealed, accessExpiresAt = :accessExpiresAt",
-        ConditionExpression: "attribute_exists(sessionId) AND #state = :granted",
-        ExpressionAttributeNames: { "#state": "state" },
-        ExpressionAttributeValues: { ":sealed": sealed, ":accessExpiresAt": accessExpiresAt, ":granted": "granted" },
-      }),
+    (module) => new module.PutCommand({ TableName: tableName(), Item: item, ConditionExpression: "attribute_not_exists(sessionId)" }),
   );
+  return { grantId, ttl };
 }
 
 /**

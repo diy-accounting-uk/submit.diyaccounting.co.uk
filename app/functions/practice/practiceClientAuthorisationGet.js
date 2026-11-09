@@ -25,6 +25,7 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { extractHmrcAccessTokenFromLambdaEvent } from "../../services/hmrcApi.js";
+import { HMRC_GRANT_NOT_USABLE } from "../../lib/mcpHmrcGrantAccess.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
@@ -85,6 +86,14 @@ export async function ingestHandler(event) {
   const accessToken = await extractHmrcAccessTokenFromLambdaEvent(event);
   if (!accessToken) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Missing Authorization Bearer token", error: {} });
+  }
+  if (accessToken === HMRC_GRANT_NOT_USABLE) {
+    return http401UnauthorizedResponse({
+      request,
+      headers: responseHeaders,
+      message: "Unauthorized - the HMRC sign-in has expired or does not exist",
+      error: {},
+    });
   }
 
   try {
