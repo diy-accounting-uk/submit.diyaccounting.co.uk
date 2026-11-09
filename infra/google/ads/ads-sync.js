@@ -1097,6 +1097,46 @@ function planCampaignKeywords(campaign, liveCampaign) {
 }
 
 /**
+ * The actions that make a live Search campaign's final URL suffix and mobile device bid modifier
+ * match the declaration. A field the toml leaves out is not compared.
+ *
+ * @param {ReturnType<parseCampaign>} campaign
+ * @param {object} liveCampaign
+ */
+function planCampaignUrlAndDevice(campaign, liveCampaign) {
+  const actions = [];
+  if (campaign.finalUrlSuffix !== null && (liveCampaign.finalUrlSuffix ?? "") !== campaign.finalUrlSuffix) {
+    actions.push({
+      kind: "update-campaign-final-url-suffix",
+      campaignName: campaign.name,
+      resourceName: liveCampaign.resourceName,
+      wanted: campaign.finalUrlSuffix,
+      live: liveCampaign.finalUrlSuffix ?? "",
+    });
+  }
+  if (campaign.mobileBidModifier !== null) {
+    const liveModifier = liveCampaign.mobileBidModifier ?? null;
+    if (liveModifier === null) {
+      actions.push({
+        kind: "create-campaign-mobile-bid",
+        campaignName: campaign.name,
+        campaignResourceName: liveCampaign.resourceName,
+        bidModifier: campaign.mobileBidModifier,
+      });
+    } else if (liveModifier !== campaign.mobileBidModifier) {
+      actions.push({
+        kind: "update-campaign-mobile-bid",
+        campaignName: campaign.name,
+        criterionResourceName: liveCampaign.mobileCriterionResourceName,
+        wanted: campaign.mobileBidModifier,
+        live: liveModifier,
+      });
+    }
+  }
+  return actions;
+}
+
+/**
  * Decide what differs between ads.toml's declared state and the live account. Pure, so it is
  * unit-tested against mocked live state.
  *
@@ -1203,34 +1243,7 @@ export function planAds(config, live) {
           live: liveCampaign.targeting ?? null,
         });
       }
-      if (campaign.finalUrlSuffix !== null && (liveCampaign.finalUrlSuffix ?? "") !== campaign.finalUrlSuffix) {
-        actions.push({
-          kind: "update-campaign-final-url-suffix",
-          campaignName: campaign.name,
-          resourceName: liveCampaign.resourceName,
-          wanted: campaign.finalUrlSuffix,
-          live: liveCampaign.finalUrlSuffix ?? "",
-        });
-      }
-      if (campaign.mobileBidModifier !== null) {
-        const liveModifier = liveCampaign.mobileBidModifier ?? null;
-        if (liveModifier === null) {
-          actions.push({
-            kind: "create-campaign-mobile-bid",
-            campaignName: campaign.name,
-            campaignResourceName: liveCampaign.resourceName,
-            bidModifier: campaign.mobileBidModifier,
-          });
-        } else if (liveModifier !== campaign.mobileBidModifier) {
-          actions.push({
-            kind: "update-campaign-mobile-bid",
-            campaignName: campaign.name,
-            criterionResourceName: liveCampaign.mobileCriterionResourceName,
-            wanted: campaign.mobileBidModifier,
-            live: liveModifier,
-          });
-        }
-      }
+      actions.push(...planCampaignUrlAndDevice(campaign, liveCampaign));
       actions.push(...planCampaignKeywords(campaign, liveCampaign));
     }
 
