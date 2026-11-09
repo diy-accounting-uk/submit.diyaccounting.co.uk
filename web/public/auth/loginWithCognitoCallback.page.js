@@ -39,9 +39,13 @@ function shouldRetryAfterLink(errorDescription) {
 }
 
 async function restartSignInAfterLink() {
-  const identityProvider = sessionStorage.getItem("cognito_identity_provider");
   sessionStorage.setItem("cognito_link_retry", "1");
-  showStatus("Linking your sign-in to your existing account...", "info");
+  await restartSignIn("Linking your sign-in to your existing account...");
+}
+
+async function restartSignIn(message) {
+  const identityProvider = sessionStorage.getItem("cognito_identity_provider");
+  showStatus(message, "info");
   try {
     // crypto-utils.js is a module script, so it has run only once the document has loaded.
     if (document.readyState === "loading") {
@@ -60,7 +64,7 @@ async function restartSignInAfterLink() {
     } catch {}
     window.location.replace(authUrl);
   } catch (err) {
-    console.error("Failed to restart sign-in after an account link:", err);
+    console.error("Failed to restart sign-in:", err);
     showStatus("Sign-in could not be completed. Please try logging in again.", "error");
   }
 }
@@ -164,16 +168,6 @@ async function handleAuthCallback(code, state) {
     const idToken = tokens.idToken || tokens.id_token;
     const refreshToken = tokens.refreshToken || tokens.refresh_token;
 
-    if (accessToken) {
-      localStorage.setItem("cognitoAccessToken", accessToken);
-    }
-    if (idToken) {
-      localStorage.setItem("cognitoIdToken", idToken);
-    }
-    if (refreshToken) {
-      localStorage.setItem("cognitoRefreshToken", refreshToken);
-    }
-
     // Decode ID token to get user info
     if (!idToken) {
       throw new Error("Missing idToken in exchange-token response");
@@ -193,13 +187,32 @@ async function handleAuthCallback(code, state) {
           hasTokenNonce: !!idTokenPayload.nonce,
           hasStoredNonce: !!storedNonce,
         });
-        showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
         sessionStorage.removeItem("cognito_oauth_nonce");
+        // A sign-in that Cognito carried through its own chooser page can come back without the nonce
+        // this tab sent. The same provider's sign-in, started once more, carries it straight through.
+        if (!sessionStorage.getItem("cognito_nonce_retry") && sessionStorage.getItem("cognito_identity_provider")) {
+          sessionStorage.setItem("cognito_nonce_retry", "1");
+          await restartSignIn("Confirming your sign-in...");
+          return;
+        }
+        showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
         hideLoading();
         return;
       }
       // Clear nonce after successful validation (single use)
       sessionStorage.removeItem("cognito_oauth_nonce");
+    }
+    sessionStorage.removeItem("cognito_nonce_retry");
+
+    // Tokens are kept only once the nonce has matched.
+    if (accessToken) {
+      localStorage.setItem("cognitoAccessToken", accessToken);
+    }
+    if (idToken) {
+      localStorage.setItem("cognitoIdToken", idToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem("cognitoRefreshToken", refreshToken);
     }
 
     // Handle optional email gracefully
