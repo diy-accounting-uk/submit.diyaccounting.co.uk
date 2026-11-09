@@ -5,7 +5,14 @@
 
 import { describe, test, expect } from "vitest";
 
-import { parseConfig, planGithub, rulesetDiff, parseCodeowners, arraySetDiff } from "../../../infra/github/github-sync.js";
+import {
+  parseConfig,
+  planGithub,
+  rulesetDiff,
+  parseCodeowners,
+  arraySetDiff,
+  unverifiableFields,
+} from "../../../infra/github/github-sync.js";
 
 const SAMPLE_TOML = `
 [repository]
@@ -171,6 +178,44 @@ describe("planGithub", () => {
     delete live.environments.prod;
     const plan = planGithub(config, live);
     expect(plan).toEqual([{ path: "environment.prod", declared: "present", live: "missing" }]);
+  });
+});
+
+describe("unverifiable fields", () => {
+  test("a merge setting the live read did not return is not drift", () => {
+    const config = parsedSample();
+    const live = matchingLive(config);
+    for (const key of Object.keys(live.repository)) live.repository[key] = undefined;
+    expect(planGithub(config, live)).toEqual([]);
+    expect(unverifiableFields(config, live)).toEqual([
+      "repository.allowAutoMerge",
+      "repository.deleteBranchOnMerge",
+      "repository.allowSquashMerge",
+      "repository.allowMergeCommit",
+      "repository.allowRebaseMerge",
+    ]);
+  });
+
+  test("a merge setting that is read and differs is still drift", () => {
+    const config = parsedSample();
+    const live = matchingLive(config);
+    live.repository.allowAutoMerge = undefined;
+    live.repository.allowSquashMerge = false;
+    expect(planGithub(config, live)).toEqual([{ path: "repository.allowSquashMerge", declared: true, live: false }]);
+    expect(unverifiableFields(config, live)).toEqual(["repository.allowAutoMerge"]);
+  });
+
+  test("bypass actors the live read did not return are not drift", () => {
+    const config = parsedSample();
+    const live = matchingLive(config);
+    live.rulesets.main.bypassActors = undefined;
+    expect(planGithub(config, live)).toEqual([]);
+    expect(unverifiableFields(config, live)).toEqual(["ruleset.main.bypass_actors"]);
+  });
+
+  test("nothing is unverifiable when every field is read", () => {
+    const config = parsedSample();
+    expect(unverifiableFields(config, matchingLive(config))).toEqual([]);
   });
 });
 

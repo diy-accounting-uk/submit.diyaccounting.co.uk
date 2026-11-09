@@ -49,6 +49,17 @@ const storeResult = (code, result) => {
 
 const SIGN_IN_PATH = "/auth/login.html";
 
+// The landing attribution analytics.js stored once the visitor accepted the banner: the click id
+// and campaign tags. The server writes it on the granted bundle row, and only when it is present.
+const readPassLandingAttribution = () => {
+  try {
+    const raw = localStorage.getItem("attribution.landing");
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 // One sentence and one next step for each refusal. The key is the reason the API answers.
 const ERROR_SENTENCES = {
   not_found: "We cannot find this pass. Check that the link is complete, or ask the sender for a new one.",
@@ -124,6 +135,7 @@ const bundleInfo = (bundleId) => {
     summary: entry.passSummary || "",
     tokensGranted: entry.tokensGranted,
     timeout: entry.timeout,
+    allocation: entry.allocation,
   };
 };
 
@@ -253,7 +265,11 @@ function showValid(check) {
   const signedIn = Boolean(getIdToken());
   const tokens = tokensWords(info.tokensGranted);
   const lasts = durationWords(info.timeout);
-  const sentences = [`This pass adds ${info.name} to your DIY Accounting Submit account.`];
+  const noCard = info.allocation !== "on-pass-on-subscription";
+  const freeFiling = noCard && lasts && typeof info.tokensGranted === "number" && /VAT/.test(info.summary);
+  const sentences = [];
+  if (freeFiling) sentences.push(`Free VAT filing for ${lasts}. No card needed.`);
+  sentences.push(`This pass adds ${info.name} to your DIY Accounting Submit account.`);
   if (info.summary) sentences.push(`With it you can ${info.summary}.`);
   if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `It comes with ${tokens}.` : "It has no limit on tokens.");
   if (typeof info.tokensGranted === "number" && /VAT/.test(info.summary)) sentences.push("A VAT return uses 1 token.");
@@ -263,7 +279,7 @@ function showValid(check) {
     const email = getSignedInEmail();
     after = email ? `You are signed in as ${email}.` : "";
   } else {
-    after = `You sign in with Google next. When you come back, ${info.name} is on your account.`;
+    after = `You sign in with a Google account next. When you come back, ${info.name} is on your account.`;
     if (check.emailRestricted) after += " Use the Google account for the email address that this pass was sent to.";
   }
   render({
@@ -313,7 +329,7 @@ async function redeem() {
     const response = await window.fetchWithIdToken("/api/v1/pass", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: currentCode }),
+      body: JSON.stringify({ code: currentCode, acquisition: readPassLandingAttribution() }),
     });
     const body = await response.json().catch(() => ({}));
 

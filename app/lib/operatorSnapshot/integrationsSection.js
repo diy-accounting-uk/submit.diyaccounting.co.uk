@@ -80,13 +80,61 @@ function compareStatus(a, b) {
   return a.localeCompare(b);
 }
 
+// The days of header check results the section lists, today included.
+export const HEADER_CHECK_DAYS = 7;
+
 /**
- * The section from the two queries' rows.
+ * The `fph#<day>` partition keys of the header check results the section lists, newest first.
  *
- * @param {{summaryRows: Array<object>, callRows: Array<object>, tableName: string, region: string, toWindows: (row: object, aggregation: string, today: Date) => object, now?: Date}} params
- * @returns {{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>}}
+ * @param {Date} now
+ * @returns {string[]}
  */
-export function shapeIntegrationsSection({ summaryRows, callRows, tableName, region, toWindows, now = new Date() }) {
+export function headerCheckPartitionKeys(now = new Date()) {
+  return Array.from({ length: HEADER_CHECK_DAYS }, (_, back) => {
+    const day = new Date(now.getTime() - back * 24 * 60 * 60 * 1000);
+    return `fph#${day.toISOString().slice(0, 10)}`;
+  });
+}
+
+/**
+ * One row per header check item: the day and shape, the verdict, and the first error (or, when
+ * there is none, the first warning) with the names of the headers it concerns. The items hold no
+ * header value, so neither does the row. Newest check first.
+ *
+ * @param {Array<object>} items - header check items from the integration calls table
+ * @returns {Array<object>}
+ */
+export function shapeHeaderChecks(items) {
+  return items
+    .filter((item) => item && item.recordType === "fph-check" && String(item.pk).startsWith("fph#"))
+    .map((item) => {
+      const first = item.errors?.[0] ?? item.warnings?.[0] ?? null;
+      return {
+        day: String(item.pk).slice("fph#".length),
+        api: item.api ?? null,
+        connectionMethod: item.connectionMethod ?? null,
+        result: item.result ?? null,
+        hmrcCode: item.hmrcCode ?? null,
+        message: first?.message ?? null,
+        headers: Array.isArray(first?.headers) ? first.headers.map(String) : [],
+        checkedAt: item.checkedAt ?? null,
+      };
+    })
+    .sort(
+      (a, b) =>
+        String(b.checkedAt ?? "").localeCompare(String(a.checkedAt ?? "")) ||
+        String(a.api).localeCompare(String(b.api)) ||
+        String(a.connectionMethod).localeCompare(String(b.connectionMethod)),
+    );
+}
+
+/**
+ * The section from the two queries' rows and the header check items.
+ *
+ * @param {{summaryRows: Array<object>, callRows: Array<object>, headerCheckItems?: Array<object>, tableName: string, region: string, toWindows: (row: object, aggregation: string, today: Date) => object, now?: Date}} params
+ * @returns {{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>, headerChecks: Array<object>}}
+ */
+export function shapeIntegrationsSection({ summaryRows, callRows, headerCheckItems = [], tableName, region, toWindows, now = new Date() }) {
   const summary = summaryRows
     .filter((row) => INTEGRATION_ORGS.includes(row.org) && row.status)
     .sort((a, b) => INTEGRATION_ORGS.indexOf(a.org) - INTEGRATION_ORGS.indexOf(b.org) || compareStatus(a.status, b.status))
@@ -107,5 +155,5 @@ export function shapeIntegrationsSection({ summaryRows, callRows, tableName, reg
         rulesFailed: failedRules,
       });
     });
-  return { table: tableName, region, summary, calls };
+  return { table: tableName, region, summary, calls, headerChecks: shapeHeaderChecks(headerCheckItems) };
 }

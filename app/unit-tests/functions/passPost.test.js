@@ -412,6 +412,12 @@ describe("passPost", () => {
       expect(mockGrantBundle.mock.calls[0][1]).toMatchObject({ acquisition: { ref: referralPass.code } });
     });
 
+    test("a referral pass keeps its ref beside the click id", async () => {
+      await ingestHandler(buildEventWithToken(validToken, { code: referralPass.code, acquisition: { gclid: "g1", ref: "other" } }));
+
+      expect(mockGrantBundle.mock.calls[0][1].acquisition).toEqual({ gclid: "g1", ref: referralPass.code });
+    });
+
     test("carries the pass type and the code on the pass-redeemed event", async () => {
       await ingestHandler(buildEventWithToken(validToken, { code: referralPass.code }));
 
@@ -495,6 +501,28 @@ describe("passPost", () => {
     expect(mockClaimReferral).not.toHaveBeenCalled();
     expect(mockRecordRedemption).not.toHaveBeenCalled();
     expect(mockGrantBundle.mock.calls[0][1].acquisition).toBeUndefined();
+  });
+
+  test("an admin-issued pass writes the click id and campaign tags the client sent on the granted bundle", async () => {
+    mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "week-guest", pass: { testPass: false } });
+    const acquisition = {
+      gclid: "Cj0KCQ-test-click",
+      utmSource: "google",
+      utmTerm: "vat return deadline",
+      landedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code", acquisition }));
+
+    expect(mockGrantBundle.mock.calls[0][1].acquisition).toEqual(acquisition);
+  });
+
+  test("an msclkid is kept and unknown fields in the acquisition are dropped", async () => {
+    mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "week-guest", pass: { testPass: false } });
+
+    await ingestHandler(buildEventWithToken(validToken, { code: "test-pass-code", acquisition: { msclkid: "ms-click", email: "a@b.c" } }));
+
+    expect(mockGrantBundle.mock.calls[0][1].acquisition).toEqual({ msclkid: "ms-click" });
   });
 
   describe("the customer email request", () => {

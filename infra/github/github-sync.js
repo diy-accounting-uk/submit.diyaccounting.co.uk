@@ -266,9 +266,11 @@ export function rulesetDiff(declared, live) {
     if (!declaredByType.has(type)) diffs.push({ path: `rules.${type}`, declared: "missing", live: "present" });
   }
 
-  const declaredActors = new Set(declared.bypassActors.map((a) => `${a.actorId}:${a.actorType}:${a.bypassMode}`));
-  const liveActors = new Set((live.bypassActors ?? []).map((a) => `${a.actorId}:${a.actorType}:${a.bypassMode}`));
-  diffs.push(...arraySetDiff("bypass_actors", [...declaredActors], [...liveActors]));
+  if (live.bypassActors !== undefined) {
+    const declaredActors = new Set(declared.bypassActors.map((a) => `${a.actorId}:${a.actorType}:${a.bypassMode}`));
+    const liveActors = new Set(live.bypassActors.map((a) => `${a.actorId}:${a.actorType}:${a.bypassMode}`));
+    diffs.push(...arraySetDiff("bypass_actors", [...declaredActors], [...liveActors]));
+  }
 
   return diffs;
 }
@@ -286,6 +288,7 @@ export function planGithub(config, live) {
   const diffs = [];
 
   for (const [key, declaredValue] of Object.entries(config.repository)) {
+    if (live.repository[key] === undefined) continue;
     diffs.push(...scalarDiff("repository", key, declaredValue, live.repository[key]));
   }
 
@@ -341,6 +344,28 @@ export function planGithub(config, live) {
   return diffs;
 }
 
+/**
+ * The declared fields the live read did not return, so the plan cannot compare them. The REST API
+ * leaves the repository merge settings and a ruleset's bypass actors out of an answer to a token
+ * that cannot administer the repository; a field absent from the answer is unverified, not drift.
+ * Pure, so it is unit-tested.
+ *
+ * @param {ReturnType<typeof parseConfig>} config
+ * @param {object} live - readLiveState's result
+ * @returns {string[]} the paths planGithub left out of its comparison
+ */
+export function unverifiableFields(config, live) {
+  const paths = [];
+  for (const key of Object.keys(config.repository)) {
+    if (live.repository[key] === undefined) paths.push(`repository.${key}`);
+  }
+  for (const declaredRuleset of config.rulesets) {
+    const liveRuleset = live.rulesets?.[declaredRuleset.name];
+    if (liveRuleset && liveRuleset.bypassActors === undefined) paths.push(`ruleset.${declaredRuleset.name}.bypass_actors`);
+  }
+  return paths;
+}
+
 // --- Network calls. Not covered by the unit tests (decision logic only, no network). ---
 
 function ghApiJson(route) {
@@ -390,7 +415,7 @@ function shapeLiveRuleset(raw) {
           }
         : { type: rule.type },
     ),
-    bypassActors: (raw.bypass_actors ?? []).map((a) => ({ actorId: a.actor_id, actorType: a.actor_type, bypassMode: a.bypass_mode })),
+    bypassActors: raw.bypass_actors?.map((a) => ({ actorId: a.actor_id, actorType: a.actor_type, bypassMode: a.bypass_mode })),
   };
 }
 
@@ -465,7 +490,7 @@ function applyRepositoryPatch(config, live) {
     allowRebaseMerge: "allow_rebase_merge",
   };
   for (const [key, field] of Object.entries(map)) {
-    if (config.repository[key] !== live.repository[key]) body[field] = config.repository[key];
+    if (live.repository[key] !== undefined && config.repository[key] !== live.repository[key]) body[field] = config.repository[key];
   }
   if (Object.keys(body).length === 0) return false;
   ghApiWrite("PATCH", `repos/${REPO}`, body);
@@ -564,7 +589,12 @@ export async function main(argv = process.argv.slice(2)) {
   const config = loadConfigFromRoot();
   const live = readLiveState(config);
   const plan = planGithub(config, live);
+  const unverifiable = unverifiableFields(config, live);
 
+  if (unverifiable.length > 0) {
+    console.log(`${unverifiable.length} field(s) the token cannot read, not compared:`);
+    for (const fieldPath of unverifiable) console.log(`  ${fieldPath}`);
+  }
   if (plan.length === 0) {
     console.log("infra/github/github.toml and live GitHub state already match.");
   } else {

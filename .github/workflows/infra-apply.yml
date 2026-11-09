@@ -126,7 +126,7 @@ jobs:
       # This repository's own GitHub settings. Reads only: GITHUB_TOKEN cannot administer a
       # repository's own settings, so a one-hour ops App installation token reads instead. Runs
       # once, on the prod leg, since the settings are not per-environment. The step only plans,
-      # so the token asks for read on administration, secrets and variables.
+      # so the token asks for read on administration, secrets, variables and environments.
       - name: Generate a token that reads the repository settings
         if: matrix.environment == 'prod'
         id: settings-token
@@ -137,6 +137,7 @@ jobs:
           permission-administration: read
           permission-secrets: read
           permission-actions-variables: read
+          permission-environments: read
 
       - name: Run github-sync (plan)
         if: matrix.environment == 'prod'

@@ -168,9 +168,19 @@ for (const width of WIDTHS) {
       await expect(heading(page)).toHaveText("You have a pass for Resident Pro");
       await expect(page.getByRole("button", { name: "Redeem pass" })).toBeVisible();
       await expect(page.locator("#passAfterAction")).toHaveText(
-        "You sign in with Google next. When you come back, Resident Pro is on your account.",
+        "You sign in with a Google account next. When you come back, Resident Pro is on your account.",
       );
       await shot(page, "valid-signed-out", width);
+    });
+
+    test("signed out, a week pass leads with the offer: free VAT filing for 7 days, no card", async ({ page }) => {
+      await serveRealSite(page, { signedIn: false, check: { valid: true, bundleId: "week-guest" } });
+      await open(page, width);
+      await expect(heading(page)).toHaveText("You have a pass for Week pass");
+      await expect(page.locator("#passMessage")).toContainText("Free VAT filing for 7 days. No card needed.");
+      await expect(page.locator("#passAfterAction")).toContainText("You sign in with a Google account next.");
+      await expectNoSideScroll(page);
+      await shot(page, "week-pass-signed-out", width);
     });
 
     test("signed out, an email-restricted pass adds the sentence about the invited address", async ({ page }) => {

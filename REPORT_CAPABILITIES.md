@@ -308,6 +308,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store: use when the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
     - [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables: use when the customer tables hold old test records, and the counts must show the active users and subscribers.
     - [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set: use when a key may be exposed on a public surface, after a key leak or a rotation, or when the operator asks for an exposure check.
+    - [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets: use when the operator asks for a secret scan, or a key may sit in the history, an unpushed branch, an uncommitted file or the private repository.
+    - [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report: use when the operator asks for the security state of the estate, an all-alerts read, or a security overview.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
@@ -2444,7 +2446,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-197](#ops-197-measure-triage-accuracy-against-the-amount-of-injected-context) Measure triage accuracy against the amount of injected context · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator) Count the mail notices that wait for the operator · [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action) Handle an approved mail notice with one fixed action · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -3489,6 +3491,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store
 - [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables
 - [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set
+- [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets
+- [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report
 - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records
 - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
@@ -3549,11 +3553,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-183 Replace a Google refresh token or OAuth client without a gap
 
 - **Use when:** a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
-- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, checks the stored value, and only then revokes the old token. A failed step leaves the old token valid and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
+- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, and checks the stored value. It never revokes the old token, because a revoke ends the account's whole grant to the client and so every token the client holds. A failed step leaves the old token stored and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
 - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --token <youtube|ads|msads> [--dry-run]`; `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --client-json <path> [--dry-run]`
 - **Entry:** `scripts/google-reconsent.js`
 - **Files:** scripts/google-reconsent.js, app/unit-tests/scripts/googleReconsent.test.js, scripts/put-secret-with-rotation-tag.sh
-- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, revoke token, pkce, loopback consent
+- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, pkce, loopback consent
 - **Related:** OPS-93, OPS-45
 
 #### OPS-184 Run a full key rotation with the operator
@@ -3635,6 +3639,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/exposure-check/SKILL.md, scripts/exposure-check.mjs, scripts/lib/exposure-matcher.mjs, scripts/content-scan.mjs, app/unit-tests/scripts/exposureMatcher.test.js, app/unit-tests/scripts/contentScan.test.js
 - **Keywords:** exposure check, leaked key, secret scan, public surfaces, key format, rotation set, actions logs, source maps, value comparison
 - **Related:** OPS-45, OPS-92
+
+#### OPS-210 Scan every repository and branch for secrets
+
+- **Use when:** the operator asks for a secret scan, or a key may sit in the history, an unpushed branch, an uncommitted file or the private repository.
+- **Does:** secret-scan.mjs runs gitleaks over the full history of all local and origin branches of the six workspace repositories, gitleaks over each worktree's uncommitted files, and trufflehog without verification as a second detector. It reduces every record to rule, place, entropy and fingerprint before anything is written, honours each repository's .gitleaksignore, and refuses a report path outside the private security folder.
+- **Run:** `/secret-scan`; `node scripts/secret-scan.mjs --workspace /Users/antony/projects/diy-accounting-limited --report ../private.diyaccounting.co.uk/security/SECRET_SCAN_<date>.md [--classes <json>]`
+- **Entry:** `.claude/skills/secret-scan/SKILL.md`; `scripts/secret-scan.mjs:main`; `scripts/lib/secret-scan-report.mjs:shapeGitleaks`
+- **Files:** .claude/skills/secret-scan/SKILL.md, scripts/secret-scan.mjs, scripts/lib/secret-scan-report.mjs, app/unit-tests/scripts/secretScan.test.js
+- **Keywords:** secret scan, gitleaks, trufflehog, history scan, branches, worktrees, uncommitted files, gitleaksignore, private repository
+- **Related:** OPS-170
+
+#### OPS-211 Report the security state of every repository in one ranked report
+
+- **Use when:** the operator asks for the security state of the estate, an all-alerts read, or a security overview.
+- **Does:** the skill reads the open Dependabot, code-scanning and secret-scanning alerts of all six repositories, runs the secret-scan skill, gathers the clean skill's state, runs security-review over each repository's open branches and runs the exposure-check skill. It ranks the findings most severe first, puts an open secret-scanning or exposure finding at the top, and proposes a NEXT.md row for each finding with no row.
+- **Run:** `/security-overview`
+- **Entry:** `.claude/skills/security-overview/SKILL.md`
+- **Files:** .claude/skills/security-overview/SKILL.md
+- **Keywords:** security overview, alerts, dependabot, code scanning, secret scanning, estate, ranked report, security state
+- **Related:** OPS-170, OPS-210
 
 #### OPS-46 Query and persist per-consumer security-state records
 
@@ -6957,7 +6981,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alert routing: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - alert thresholds: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - alert topic: [OPS-119](#ops-119-provision-the-ops-stack)
-- alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
+- alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - alias move: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - alias txt record: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - all-clients: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
@@ -7143,6 +7167,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - branch audit: [DEV-27](#dev-27-render-the-open-work-board), [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - branch hash: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - branch protection: [OPS-60](#ops-60-guide-github-repository-configuration)
+- branches: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - brand guide: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - brand shots: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
@@ -7340,7 +7365,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - cloudwatch widget image: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
-- code scanning: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- code scanning: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - codes entry: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - codes link: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -7575,7 +7600,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - demo video: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
-- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates), [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - dependabot alerts: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - dependency order: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
@@ -7785,6 +7810,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - eslint config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - eslint ratchet: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - eslint security: [SS-45](#ss-45-run-compliance-checks)
+- estate: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - etag: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - event builders: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - event export: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
@@ -7969,6 +7995,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - github issue: [SITE-05](#site-05-submit-support-tickets), [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - github settings: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - github setup: [OPS-60](#ops-60-guide-github-repository-configuration)
+- gitleaks: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
+- gitleaksignore: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - glacier: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - global service alarms: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
 - global sign-out: [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
@@ -8046,6 +8074,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - held pointer: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
+- history scan: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - hmac key rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - hmrc: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
@@ -8727,7 +8756,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - private issue: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine), [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result), [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - private issues: [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator)
 - private report: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
-- private repository: [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DATA-61](#data-61-intake-support-email-as-private-issues)
+- private repository: [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - privkey: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
@@ -8802,6 +8831,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - random hex: [SITE-17](#site-17-trace-and-secure-client-requests)
+- ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -8952,7 +8982,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
-- revoke token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
@@ -9064,7 +9093,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secret cache: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - secret origin header: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - secret rotation: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
-- secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- secret scanning: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
@@ -9081,12 +9111,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - security incident: [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - security lake: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - security lint: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- security overview: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - security policy: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - security review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security review prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - security scan: [OPS-30](#ops-30-run-codeql-security-scanning)
 - security scanning: [SS-40](#ss-40-run-codeql-scanning)
-- security state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
+- security state: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - security triage: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security-review.yml: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security.md: [OPS-65](#ops-65-document-security-policy-and-disclosure)
@@ -9423,6 +9454,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - triage agent: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - triage workflow: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - triage-generated pr: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
+- trufflehog: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - trusted event: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result)
 - trusted event proof: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - trusted event rule: [OPS-117](#ops-117-provision-the-observability-stack)
@@ -9448,6 +9480,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unattended agent workflow: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - unblock: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
+- uncommitted files: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - unit: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
@@ -9607,6 +9640,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - worktree catalogue: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - worktree removal: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches), [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - worktree sub-agents: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
+- worktrees: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - write-cred-configs: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - write-truncated table: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - write-workbook: [SS-05](#ss-05-run-the-diya-gl-cli), [SS-16](#ss-16-write-workbooks-from-diya-gl-data)

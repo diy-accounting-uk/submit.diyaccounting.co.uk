@@ -48,7 +48,7 @@ have cleared), so treat every log group in `logGroupNamePrefixes` as equally wor
 moment the evidence was built. Trust that field over any inference from the alarm's own age: never
 write that a deployment has been retired unless `deploymentLive` is `false`.
 
-If /tmp/escalation-input.json exists, this run is the Sonnet pass the operator approved, and you
+If /tmp/escalation-input.json exists, this run is the second pass the operator approved, and you
 are not given a first-pass answer. The file holds what a read-only reader extracted from the
 first pass, checked by code: `stillBroken`, `remedyFamily`, `summary`, `injectionSuspected`,
 `piiPresent`, and `operatorComments`, the operator's notes in order, each with `body` and

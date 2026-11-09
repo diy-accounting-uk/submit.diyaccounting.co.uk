@@ -16,7 +16,7 @@
 
 [environment.ci]
 application_name = "DIY Accounting Submit - test"
-client_id = "e5be4a0d-cebf-4024-83a3-5497a0fec4b2"
+client_id = "eb20d4d6-68ef-4d30-bc94-3c4c256ded86"
 rest_base_uri = "https://api.company-information.service.gov.uk"
 identity_base_uri = "https://identity-sandbox.company-information.service.gov.uk"
 xmlgw_uri = "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway"
@@ -29,12 +29,16 @@ redirect_uris = ["https://ci-submit.diyaccounting.co.uk/companies-house/filingCa
   presenter_code = "ci/submit/companies-house/presenter_code"
 
 [environment.prod]
-application_name = "DIY Accounting Submit"
-client_id = "9b4676ee-a473-4d10-aafe-33d5a14d982d"
+application_name = "DIY Accounting Submit - prod"
+client_id = "72e7755d-5b3c-4fd2-ba55-cd1c65da96f3"
 rest_base_uri = "https://api.company-information.service.gov.uk"
 identity_base_uri = "https://identity.company-information.service.gov.uk"
 xmlgw_uri = ""
-redirect_uris = ["https://submit.diyaccounting.co.uk/companies-house/filingCallback.html"]
+redirect_uris = [
+  "http://localhost:3000/companies-house/filingCallback.html",
+  "https://local.submit.diyaccounting.co.uk:3443/companies-house/filingCallback.html",
+  "https://submit.diyaccounting.co.uk/companies-house/filingCallback.html",
+]
 
   [environment.prod.secrets]
   api_key = "prod/submit/companies-house/api_key"

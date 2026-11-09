@@ -42,6 +42,7 @@ import { companyAccountsObjective } from "../../lib/operatorSnapshot/companyAcco
 import {
   buildIntegrationSummarySql,
   buildIntegrationCallsSql,
+  headerCheckPartitionKeys,
   shapeIntegrationsSection,
 } from "../../lib/operatorSnapshot/integrationsSection.js";
 import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
@@ -50,6 +51,7 @@ import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getFamilyAffiliateByEmailKey } from "../../data/dynamoDbPassRepository.js";
+import { listFphCheckResults } from "../../data/dynamoDbFphCheckResultRepository.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
@@ -1885,6 +1887,23 @@ export function buildDailyChartDefinitions() {
             `  GROUP BY 1 ORDER BY sum(sessions) DESC LIMIT 10)\nGROUP  BY 1, 2\nHAVING sum(sessions) > 0`,
         },
         {
+          id: "sign-in-provider",
+          label: "Sign-ins by provider",
+          total: "All sign-ins",
+          totalDescription: "Sign-ins of every provider added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sign-ins through ${id}, from the activity events. Native accounts carry no provider.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "coalesce(provider, 'Native')",
+            valueExpression: "sign_ins",
+            view: "v_sign_ins_daily",
+            dayColumn: "day",
+            where: "event = 'login'",
+          }),
+        },
+        {
           id: "country",
           label: "By country",
           total: "All countries",
@@ -2219,19 +2238,23 @@ export async function buildPageVisitors({ workGroup, database }) {
 
 /**
  * The live calls to HMRC, Companies House and Stripe: one summary row per organisation and
- * status over the standard windows, and each organisation's recent calls. A view with no rows
+ * status over the standard windows, each organisation's recent calls, and the last seven days of
+ * header check results, read from the table by partition key. A view with no rows
  * gives an empty section, which the page shows as its empty note.
  *
- * @returns {Promise<{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>}>}
+ * @returns {Promise<{table: string, region: string, summary: Array<object>, calls: Record<string, Array<object>>, headerChecks: Array<object>}>}
  */
-export async function buildIntegrations({ workGroup, database, envName, region }) {
-  const [summaryRows, callRows] = await Promise.all([
+export async function buildIntegrations({ workGroup, database, envName, region, now = new Date() }) {
+  const [summaryRows, callRows, headerCheckItems] = await Promise.all([
     runAthenaQuery({ workGroup, database, sql: buildIntegrationSummarySql(WINDOWED_COLUMNS) }),
     runAthenaQuery({ workGroup, database, sql: buildIntegrationCallsSql() }),
+    Promise.all(headerCheckPartitionKeys(now).map((pk) => listFphCheckResults(pk))).then((days) => days.flat()),
   ]);
   return shapeIntegrationsSection({
     summaryRows,
     callRows,
+    headerCheckItems,
+    now,
     tableName: `${envName}-env-integration-calls`,
     region,
     toWindows: toObservationWindows,

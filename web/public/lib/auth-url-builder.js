@@ -15,10 +15,31 @@
 (function () {
   "use strict";
 
-  async function buildCognitoAuthUrl(state, nonce, codeChallenge, scope = "openid profile email") {
+  // Hosts registered as callbacks, from IdentityStack.buildAuthHosts (Cognito), infra/hmrc/hmrc.toml and
+  // infra/companies-house/companies-house.toml. A sign-in must return to the address it started on,
+  // because session storage belongs to one address.
+  const COGNITO_CALLBACK_HOST = /^(?:ci-submit|prod-submit|submit|ci-set\d+\.submit)\.diyaccounting\.co\.uk$/;
+  const HMRC_CALLBACK_HOST = /^(?:ci-submit|submit)\.diyaccounting\.co\.uk$/;
+  const COMPANIES_HOUSE_CALLBACK_HOST = /^(?:ci-submit|submit)\.diyaccounting\.co\.uk$/;
+
+  // The page's own origin when it is a registered callback host, otherwise the deployment's base URL.
+  function callbackBase(env, registeredHost) {
+    return (registeredHost.test(window.location.hostname) ? window.location.origin : env.DIY_SUBMIT_BASE_URL).replace(/\/$/, "");
+  }
+
+  // Names Cognito accepts as identity_provider. COGNITO is the user pool's own email and password form.
+  const IDENTITY_PROVIDERS = ["Google", "Microsoft", "SignInWithApple", "COGNITO"];
+
+  // The provider named by a ?provider= query value when it is on the list, otherwise the button's own.
+  function resolveIdentityProvider(search, buttonProvider) {
+    const requested = new URLSearchParams(search || "").get("provider");
+    return IDENTITY_PROVIDERS.includes(requested) ? requested : buttonProvider;
+  }
+
+  async function buildCognitoAuthUrl(state, nonce, codeChallenge, { scope = "openid profile email", identityProvider } = {}) {
     const env = await window.envReady;
 
-    const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/auth/loginWithCognitoCallback.html";
+    const redirectUri = callbackBase(env, COGNITO_CALLBACK_HOST) + "/auth/loginWithCognitoCallback.html";
 
     // Build authorization URL with state (CSRF protection), nonce (replay attack protection)
     // and a PKCE S256 code challenge (authorization code interception protection)
@@ -37,6 +58,10 @@
       url += `&nonce=${encodeURIComponent(nonce)}`;
     }
 
+    if (identityProvider) {
+      url += `&identity_provider=${encodeURIComponent(identityProvider)}`;
+    }
+
     return url;
   }
 
@@ -49,7 +74,7 @@
 
     const clientId = synthetic ? env.HMRC_SANDBOX_CLIENT_ID : env.HMRC_CLIENT_ID;
 
-    const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/activities/submitVatCallback.html";
+    const redirectUri = callbackBase(env, HMRC_CALLBACK_HOST) + "/activities/submitVatCallback.html";
 
     return (
       `${base.replace(/\/$/, "")}/oauth/authorize` +
@@ -64,7 +89,7 @@
   async function buildCompaniesHouseAuthUrl(state, scope) {
     const env = await window.envReady;
 
-    const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/companies-house/filingCallback.html";
+    const redirectUri = callbackBase(env, COMPANIES_HOUSE_CALLBACK_HOST) + "/companies-house/filingCallback.html";
 
     // British spelling: Companies House's identity service uses "authorise", not "authorize".
     return (
@@ -122,6 +147,8 @@
 
   window.authUrlBuilder = {
     buildCognitoAuthUrl,
+    resolveIdentityProvider,
+    IDENTITY_PROVIDERS,
     buildHmrcAuthUrl,
     buildCompaniesHouseAuthUrl,
     readBooksFragment,

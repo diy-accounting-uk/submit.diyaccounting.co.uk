@@ -71,6 +71,11 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getFamilyAffiliateByEmailKey: (...args) => mockGetFamilyAffiliateByEmailKey(...args),
 }));
 
+const mockListFphCheckResults = vi.fn();
+vi.mock("@app/data/dynamoDbFphCheckResultRepository.js", () => ({
+  listFphCheckResults: (...args) => mockListFphCheckResults(...args),
+}));
+
 import {
   handler,
   buildOperators,
@@ -215,6 +220,8 @@ describe("operatorSnapshotPublish", () => {
     mockAthenaSend.mockReset();
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockListFphCheckResults.mockReset();
+    mockListFphCheckResults.mockResolvedValue([]);
     mockLoadOperators.mockReset();
     mockLoadOperators.mockResolvedValue(["op@example.com"]);
     mockLoadFamilyAffiliateEmails.mockReset();
@@ -782,6 +789,7 @@ describe("operatorSnapshotPublish", () => {
         "sessions",
         "landing-page",
         "landing-page-sign-in",
+        "sign-in-provider",
         "country",
         "ai-agent-country",
       ]);
@@ -789,8 +797,11 @@ describe("operatorSnapshotPublish", () => {
       expect(visitors.modes[1].sql).toContain("FROM   v_ga4_landing_pages_daily");
       expect(visitors.modes[2].unit).toBe("ratio");
       expect(visitors.modes[2].sql).toContain("sum(sign_ins)");
-      expect(visitors.modes[3].sql).toContain("human_sessions");
-      expect(visitors.modes[4].sql).toContain("ai_agent_sessions");
+      expect(visitors.modes[3].sql).toContain("FROM   v_sign_ins_daily");
+      expect(visitors.modes[3].sql).toContain("event = 'login'");
+      expect(visitors.modes[3].sql).toContain("coalesce(provider, 'Native')");
+      expect(visitors.modes[4].sql).toContain("human_sessions");
+      expect(visitors.modes[5].sql).toContain("ai_agent_sessions");
       for (const mode of visitors.modes.slice(1)) {
         expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
         if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
@@ -1010,7 +1021,59 @@ describe("operatorSnapshotPublish", () => {
         region: "eu-west-2",
         summary: [],
         calls: { "hmrc": [], "companies-house": [], "stripe": [] },
+        headerChecks: [],
       });
+    });
+
+    test("buildIntegrations lists the header check results of the last seven days, newest first", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["org", "status"], []) });
+        }
+      });
+      const item = (pk, result, hmrcCode, checkedAt, errors = []) => ({
+        pk,
+        sk: "shape",
+        recordType: "fph-check",
+        api: "GET /organisations/vat/{vrn}/obligations",
+        connectionMethod: "WEB_APP_VIA_SERVER",
+        result,
+        hmrcCode,
+        checkedAt,
+        errors,
+        warnings: [],
+      });
+      mockListFphCheckResults.mockImplementation(async (pk) => {
+        if (pk === "fph#2026-11-08") return [item(pk, "pass", "VALID_HEADERS", "2026-11-08T12:00:00.000Z")];
+        if (pk === "fph#2026-11-07")
+          return [
+            item(pk, "fail", "INVALID_HEADERS", "2026-11-07T12:00:00.000Z", [
+              { code: "E", message: "Missing", headers: ["Gov-Vendor-Version"] },
+            ]),
+          ];
+        return [];
+      });
+
+      const result = await buildIntegrations({
+        workGroup: "wg",
+        database: "db",
+        envName: "prod",
+        region: "eu-west-2",
+        now: new Date("2026-11-08T13:00:00.000Z"),
+      });
+
+      expect(mockListFphCheckResults).toHaveBeenCalledTimes(7);
+      expect(mockListFphCheckResults.mock.calls[0][0]).toBe("fph#2026-11-08");
+      expect(mockListFphCheckResults.mock.calls[6][0]).toBe("fph#2026-11-02");
+      expect(result.headerChecks.map((row) => [row.day, row.result, row.message, row.headers])).toEqual([
+        ["2026-11-08", "pass", null, []],
+        ["2026-11-07", "fail", "Missing", ["Gov-Vendor-Version"]],
+      ]);
     });
 
     test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {
@@ -1383,7 +1446,7 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(47);
+      expect(firstRunQueryCount).toBe(48);
       expect(queries).toHaveLength(9);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
@@ -2564,7 +2627,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 38);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 39);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
