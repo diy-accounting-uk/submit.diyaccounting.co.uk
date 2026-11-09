@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -19,6 +19,8 @@ import {
   shapeCampaignUrlAndDevice,
   adFinalUrlUpdateOperation,
   mobileBidCreateOperation,
+  applyAction,
+  describeApplied,
 } from "../../../infra/google/ads/ads-sync.js";
 
 const VALID_TOML = `
@@ -1320,6 +1322,41 @@ describe("ads-sync final URL suffix, mobile bid and ad final URL", () => {
     const create = plan.find((action) => action.kind === "create-campaign");
     expect(campaignCreateBody(create, "customers/1/campaignBudgets/1").finalUrlSuffix).toBe(SUFFIX);
     expect(plan.find((action) => action.kind === "create-campaign-mobile-bid")).toMatchObject({ bidModifier: 0 });
+  });
+
+  describe("applying the ad final URL update", () => {
+    afterEach(() => vi.unstubAllGlobals());
+    const action = {
+      kind: "update-ad-final-url",
+      campaignName: "Search #1",
+      adGroupName: "VAT deadline",
+      adResourceName: "customers/1/ads/7",
+      wanted: ["https://submit.diyaccounting.co.uk/mtd-calendar.html"],
+      live: ["https://submit.diyaccounting.co.uk/"],
+    };
+
+    it("posts ads:mutate with the ad, the URL and the finalUrls mask", async () => {
+      const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ results: [] }) }));
+      vi.stubGlobal("fetch", fetchMock);
+      await applyAction("tok", { customerId: "1", apiVersion: "v21" }, action, {});
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe("https://googleads.googleapis.com/v21/customers/1/ads:mutate");
+      expect(JSON.parse(init.body)).toEqual({
+        operations: [
+          {
+            updateMask: "finalUrls",
+            update: { resourceName: "customers/1/ads/7", finalUrls: ["https://submit.diyaccounting.co.uk/mtd-calendar.html"] },
+          },
+        ],
+      });
+    });
+
+    it("prints would update in place in plan mode and updated once applied", () => {
+      expect(describeAction(action)).toContain("(would update in place)");
+      expect(describeApplied(action)).toContain("(updated)");
+      expect(describeApplied(action)).not.toContain("would");
+    });
   });
 
   it("builds the wire operations", () => {

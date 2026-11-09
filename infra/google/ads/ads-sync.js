@@ -1504,7 +1504,7 @@ async function googleAdsMutate(token, customerId, apiVersion, resource, operatio
   return res.json();
 }
 
-async function applyAction(token, config, action, context) {
+export async function applyAction(token, config, action, context) {
   switch (action.kind) {
     case "update-auto-tagging":
       return googleAdsMutate(token, config.customerId, config.apiVersion, "customers", [
@@ -1664,6 +1664,15 @@ async function applyAction(token, config, action, context) {
   }
 }
 
+export function describeApplied(action) {
+  return describe(action)
+    .replace("(would update)", "(updated)")
+    .replace("(would update in place)", "(updated)")
+    .replace("(would create)", "(created)")
+    .replace("(would remove)", "(removed)")
+    .replace("(would pause)", "(paused)");
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const config = loadConfigFromRoot();
@@ -1694,13 +1703,7 @@ export async function main(argv = process.argv.slice(2)) {
       continue;
     }
     await applyAction(token, config, action, context);
-    console.log(
-      describe(action)
-        .replace("(would update)", "(updated)")
-        .replace("(would create)", "(created)")
-        .replace("(would remove)", "(removed)")
-        .replace("(would pause)", "(paused)"),
-    );
+    console.log(describeApplied(action));
   }
   return plan;
 }
