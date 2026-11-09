@@ -45,9 +45,8 @@ async function loginWithProvider(buttonProvider) {
   }
   console.log("Generated Cognito Auth URL:", authResponseUrl);
 
-  // The token exchange must send Cognito the exact redirect_uri the authorize request carried,
-  // so it is read back from the URL just built.
-  sessionStorage.setItem("cognito_redirect_uri", new URL(authResponseUrl).searchParams.get("redirect_uri"));
+  // The token exchange must send Cognito the exact redirect_uri the authorize request carried.
+  sessionStorage.setItem("cognito_redirect_uri", window.authUrlBuilder.cognitoRedirectUri(await window.envReady));
 
   console.log("Redirecting to Cognito OAuth URL");
   try {
