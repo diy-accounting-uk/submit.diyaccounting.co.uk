@@ -260,11 +260,16 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           npm-install: scripts
-        # A full npm ci: ffmpeg-static's own postinstall must run to download its ffmpeg binary.
+        # A full npm ci: ffmpeg-static is optional, and its postinstall must run to download its ffmpeg binary.
+        # The check step below fails the job when the binary is missing.
         # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD still stops @playwright/test re-downloading browsers
         # the container already has.
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Check the ffmpeg binary
+        run: |
+          node -e 'const p = require("ffmpeg-static"); if (!p || !require("fs").existsSync(p)) { console.error("ffmpeg-static has no binary: its download from GitHub releases failed during npm ci. Re-run the job."); process.exit(1); }'
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps

@@ -19,9 +19,18 @@
 
 import { spawnSync } from "child_process";
 import fs from "fs";
-// ffmpeg-static is a CommonJS module exporting the resolved binary path as module.exports;
-// Node's ESM/CJS interop maps that to the default import.
-import ffmpegStaticPath from "ffmpeg-static";
+import { createRequire } from "module";
+
+// ffmpeg-static is an optional dependency: a failed binary download leaves the package absent or
+// exporting null. It is a CommonJS module exporting the binary path as module.exports.
+const requireModule = createRequire(import.meta.url);
+function loadFfmpegStaticPath() {
+  try {
+    return requireModule("ffmpeg-static");
+  } catch {
+    return null;
+  }
+}
 
 export function frameFileName(index) {
   return `${String(index).padStart(6, "0")}.jpg`;
@@ -55,12 +64,23 @@ export function writeManifest(manifestPath, frames, finalHoldMs, framesDir) {
   fs.writeFileSync(manifestPath, buildManifest(frames, finalHoldMs, framesDir));
 }
 
-// ffmpeg-static resolves to a path at install time. Fall back to `ffmpeg` on PATH if that path
-// is missing — e.g. its postinstall was skipped — rather than fail with a confusing ENOENT deep
-// inside spawnSync.
+// Picks the ffmpeg-static binary when it exists, else `ffmpeg` on PATH, else throws a message that
+// names the fix. staticPathExists and pathHasFfmpeg are passed in so the choice is testable.
+export function chooseFfmpegBinary({ staticPath, staticPathExists, pathHasFfmpeg }) {
+  if (staticPath && staticPathExists) return staticPath;
+  if (pathHasFfmpeg) return "ffmpeg";
+  throw new Error(
+    "No ffmpeg binary: the optional ffmpeg-static package is missing or has no binary (its download failed or was skipped) and ffmpeg is not on PATH. Run npm ci again with GitHub releases reachable, or install ffmpeg.",
+  );
+}
+
 export function resolveFfmpegBinary() {
-  if (ffmpegStaticPath && fs.existsSync(ffmpegStaticPath)) return ffmpegStaticPath;
-  return "ffmpeg";
+  const staticPath = loadFfmpegStaticPath();
+  return chooseFfmpegBinary({
+    staticPath,
+    staticPathExists: Boolean(staticPath) && fs.existsSync(staticPath),
+    pathHasFfmpeg: spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0,
+  });
 }
 
 function runOrThrow(bin, args, opts = {}) {

@@ -10,6 +10,7 @@ import {
   buildEncodeArgs,
   buildNarrationMixArgs,
   muxNarrationArgs,
+  chooseFfmpegBinary,
 } from "../../../scripts/lib/video/encode.js";
 
 describe("frameFileName", () => {
@@ -166,5 +167,21 @@ describe("buildEncodeArgs", () => {
     expect(valueAfter(args, "-crf")).toBe("18");
     expect(valueAfter(args, "-preset")).toBe("slow");
     expect(valueAfter(args, "-tune")).toBe("stillimage");
+  });
+});
+
+describe("chooseFfmpegBinary", () => {
+  test("uses the ffmpeg-static binary when it exists", () => {
+    expect(chooseFfmpegBinary({ staticPath: "/x/ffmpeg", staticPathExists: true, pathHasFfmpeg: true })).toBe("/x/ffmpeg");
+  });
+
+  test("uses ffmpeg on PATH when ffmpeg-static has no binary", () => {
+    expect(chooseFfmpegBinary({ staticPath: null, staticPathExists: false, pathHasFfmpeg: true })).toBe("ffmpeg");
+  });
+
+  test("throws a message naming ffmpeg-static and the fix when no binary exists anywhere", () => {
+    expect(() => chooseFfmpegBinary({ staticPath: null, staticPathExists: false, pathHasFfmpeg: false })).toThrow(
+      /No ffmpeg binary: the optional ffmpeg-static package is missing.*npm ci/,
+    );
   });
 });
