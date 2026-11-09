@@ -187,6 +187,15 @@ describe("signInActivityPublish", () => {
       expect(detail.appClient).toBe("mcp");
     });
 
+    test("fails the invocation when the bus refuses the event", async () => {
+      mockGetSignInSession.mockResolvedValue(null);
+      mockEventBridgeSend.mockRejectedValueOnce(new Error("not authorized to perform: events:PutEvents"));
+
+      await expect(
+        handler({ triggerSource: "TokenGeneration_HostedAuth", clientId: "submit-client-id", sub: "sub-9", email: "c@example.com" }),
+      ).rejects.toThrow("not published");
+    });
+
     test("publishes session-resumed for a refresh after the session lapsed", async () => {
       mockGetSignInSession.mockResolvedValue({ lastIssuedAt: 0, sessionId: "old-session", sessionStartedAt: 0 });
 
