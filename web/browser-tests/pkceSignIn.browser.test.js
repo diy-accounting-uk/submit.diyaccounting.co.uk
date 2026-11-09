@@ -64,6 +64,15 @@ test.describe("PKCE on the Cognito sign-in", () => {
   test("the Google button names its provider and a listed ?provider= value replaces it", async ({ page }) => {
     await serveSite(page);
     const requestedProviders = [];
+    const storedProviders = [];
+    await page.exposeFunction("recordStoredProvider", (value) => storedProviders.push(value));
+    await page.addInitScript(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "cognito_identity_provider") window.recordStoredProvider(value);
+        return original.call(this, key, value);
+      };
+    });
     for (const [query, expected] of [
       ["", "Google"],
       ["?provider=COGNITO", "COGNITO"],
@@ -75,7 +84,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
       await page.click("#loginWithCognito");
       const authorizeUrl = new URL((await authorizeRequest).url());
       requestedProviders.push(authorizeUrl.searchParams.get("identity_provider"));
-      expect(await page.evaluate(() => sessionStorage.getItem("cognito_identity_provider"))).toBe(expected);
+      expect(storedProviders.at(-1)).toBe(expected);
     }
     expect(requestedProviders).toEqual(["Google", "COGNITO", "Google"]);
   });
