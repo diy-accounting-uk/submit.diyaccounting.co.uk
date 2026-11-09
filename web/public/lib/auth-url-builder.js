@@ -28,7 +28,7 @@
   }
 
   // Names Cognito accepts as identity_provider. COGNITO is the user pool's own email and password form.
-  const IDENTITY_PROVIDERS = ["Google", "Microsoft", "SignInWithApple", "COGNITO"];
+  const IDENTITY_PROVIDERS = ["Google", "Microsoft", "COGNITO"];
 
   // The provider named by a ?provider= query value when it is on the list, otherwise the button's own.
   function resolveIdentityProvider(search, buttonProvider) {

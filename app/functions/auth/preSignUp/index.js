@@ -15,10 +15,8 @@ import {
 
 const client = new CognitoIdentityProviderClient();
 
-const APPLE_RELAY_DOMAIN = "@privaterelay.appleid.com";
-
 // The provider name and the provider's own user id from a federated userName such as
-// "Google_1234" or "SignInWithApple_000123.abc". Provider names hold no underscore.
+// "Google_1234" or "Microsoft_AAAAAA". Provider names hold no underscore.
 export function parseFederatedUserName(userName) {
   const separator = (userName || "").indexOf("_");
   if (separator <= 0 || separator === userName.length - 1) return null;
@@ -26,8 +24,7 @@ export function parseFederatedUserName(userName) {
 }
 
 // True when the provider asserts that the person owns the address. Google says so per address
-// with email_verified. A Microsoft consumers account signs in with its email address. Apple
-// gives the real address unless the person chose Hide My Email.
+// with email_verified. A Microsoft consumers account signs in with its email address.
 export function isTrustedEmail(providerName, attributes) {
   const email = String(attributes?.email || "").toLowerCase();
   if (!email) return false;
@@ -36,8 +33,6 @@ export function isTrustedEmail(providerName, attributes) {
       return String(attributes.email_verified).toLowerCase() === "true";
     case "Microsoft":
       return true;
-    case "SignInWithApple":
-      return !email.endsWith(APPLE_RELAY_DOMAIN);
     default:
       return false;
   }

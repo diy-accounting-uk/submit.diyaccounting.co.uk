@@ -133,30 +133,6 @@ describe("preSignUp", () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("links an Apple identity that gives its real address", async () => {
-    mockSend.mockResolvedValueOnce({ Users: [{ Username: "Google_1234" }] }).mockResolvedValueOnce({});
-
-    const result = await handler(
-      buildEvent({ userName: "SignInWithApple_000123.abc.0456", userAttributes: { email: "person@icloud.com" } }),
-    );
-
-    expect(commandsSent("AdminLinkProviderForUser")[0].input.SourceUser).toEqual({
-      ProviderName: "SignInWithApple",
-      ProviderAttributeName: "Cognito_Subject",
-      ProviderAttributeValue: "000123.abc.0456",
-    });
-    expect(result.response.autoVerifyEmail).toBe(true);
-  });
-
-  it("neither looks up nor verifies an Apple relay address", async () => {
-    const result = await handler(
-      buildEvent({ userName: "SignInWithApple_000123.abc.0456", userAttributes: { email: "x7y8z9@privaterelay.appleid.com" } }),
-    );
-
-    expect(mockSend).not.toHaveBeenCalled();
-    expect(result.response.autoVerifyEmail).toBe(false);
-  });
-
   it("ignores a provider it does not know and a sign-up without an email", async () => {
     await handler(buildEvent({ userName: "Facebook_1", userAttributes: { email: "person@example.com" } }));
     await handler(buildEvent({ userAttributes: {} }));
@@ -192,9 +168,8 @@ describe("preSignUp", () => {
     expect(parseFederatedUserName("Google_")).toBeNull();
   });
 
-  it("trusts a Microsoft address and an Apple real address, not a relay one", () => {
+  it("trusts a Microsoft address and no provider it does not know", () => {
     expect(isTrustedEmail("Microsoft", { email: "a@outlook.com" })).toBe(true);
-    expect(isTrustedEmail("SignInWithApple", { email: "a@icloud.com" })).toBe(true);
-    expect(isTrustedEmail("SignInWithApple", { email: "A@PrivateRelay.AppleID.com" })).toBe(false);
+    expect(isTrustedEmail("SignInWithApple", { email: "a@icloud.com" })).toBe(false);
   });
 });
