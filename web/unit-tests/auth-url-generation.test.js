@@ -119,6 +119,42 @@ describe("Auth URL Generation", () => {
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/auth/loginWithCognitoCallback.html"));
   });
 
+  it("buildCognitoAuthUrl adds identity_provider when one is given and omits it otherwise", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const without = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c");
+    const withProvider = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c", { identityProvider: "Google" });
+
+    expect(without).not.toContain("identity_provider");
+    expect(withProvider).toContain("&identity_provider=Google");
+    expect(withProvider).toContain("scope=" + encodeURIComponent("openid profile email"));
+  });
+
+  it("buildCognitoAuthUrl takes the scope from the options object", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c", { scope: "openid" });
+
+    expect(url).toContain("scope=openid&");
+  });
+
+  it.each([
+    ["?provider=COGNITO", "COGNITO"],
+    ["?provider=Microsoft", "Microsoft"],
+    ["?provider=SignInWithApple", "SignInWithApple"],
+    ["?provider=Google", "Google"],
+    ["?provider=Facebook", "Google"],
+    ["?provider=google", "Google"],
+    ["?other=1", "Google"],
+    ["", "Google"],
+  ])("resolveIdentityProvider(%j) gives %s for the Google button", (search, expected) => {
+    loadScripts();
+
+    expect(mockWindow.authUrlBuilder.resolveIdentityProvider(search, "Google")).toBe(expected);
+  });
+
   it("buildCognitoAuthUrl waits for a slow /submit.env instead of failing", async () => {
     respondWithEnv({ delayMs: 500 });
     loadScripts();

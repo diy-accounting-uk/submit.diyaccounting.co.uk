@@ -27,7 +27,16 @@
     return (registeredHost.test(window.location.hostname) ? window.location.origin : env.DIY_SUBMIT_BASE_URL).replace(/\/$/, "");
   }
 
-  async function buildCognitoAuthUrl(state, nonce, codeChallenge, scope = "openid profile email") {
+  // Names Cognito accepts as identity_provider. COGNITO is the user pool's own email and password form.
+  const IDENTITY_PROVIDERS = ["Google", "Microsoft", "SignInWithApple", "COGNITO"];
+
+  // The provider named by a ?provider= query value when it is on the list, otherwise the button's own.
+  function resolveIdentityProvider(search, buttonProvider) {
+    const requested = new URLSearchParams(search || "").get("provider");
+    return IDENTITY_PROVIDERS.includes(requested) ? requested : buttonProvider;
+  }
+
+  async function buildCognitoAuthUrl(state, nonce, codeChallenge, { scope = "openid profile email", identityProvider } = {}) {
     const env = await window.envReady;
 
     const redirectUri = callbackBase(env, COGNITO_CALLBACK_HOST) + "/auth/loginWithCognitoCallback.html";
@@ -47,6 +56,10 @@
     // Include nonce for OpenID Connect - returned in ID token for validation
     if (nonce) {
       url += `&nonce=${encodeURIComponent(nonce)}`;
+    }
+
+    if (identityProvider) {
+      url += `&identity_provider=${encodeURIComponent(identityProvider)}`;
     }
 
     return url;
@@ -134,6 +147,8 @@
 
   window.authUrlBuilder = {
     buildCognitoAuthUrl,
+    resolveIdentityProvider,
+    IDENTITY_PROVIDERS,
     buildHmrcAuthUrl,
     buildCompaniesHouseAuthUrl,
     readBooksFragment,
