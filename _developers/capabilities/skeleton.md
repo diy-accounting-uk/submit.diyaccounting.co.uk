@@ -348,7 +348,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-09 -->
 <!-- capability OPS-156 -->
 <!-- capability OPS-157 -->
-<!-- capability OPS-181 -->
 <!-- capability OPS-182 -->
 <!-- capability OPS-131 -->
 <!-- capability OPS-132 -->
@@ -385,9 +384,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability OPS-17 -->
 <!-- capability OPS-18 -->
-<!-- capability OPS-142 -->
-<!-- capability OPS-155 -->
-<!-- capability OPS-197 -->
 <!-- capability OPS-19 -->
 <!-- capability OPS-20 -->
 <!-- capability OPS-21 -->
@@ -408,8 +404,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-186 -->
 <!-- capability OPS-187 -->
 <!-- capability OPS-188 -->
-<!-- capability OPS-189 -->
-<!-- capability OPS-190 -->
 <!-- capability OPS-191 -->
 <!-- capability OPS-192 -->
 <!-- capability OPS-193 -->
@@ -624,7 +618,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- /generated:group site-side-analytics-and-rum-data -->
 
 
-<!-- capability DATA-61 -->
 <!-- capability DATA-23 -->
 <!-- capability DATA-24 -->
 <!-- capability DATA-25 -->

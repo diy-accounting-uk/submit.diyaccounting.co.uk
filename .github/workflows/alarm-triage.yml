@@ -16,8 +16,7 @@ run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.numbe
 #
 # The second pass waits for the operator. When the first pass is unusable or unsure,
 # its result is untrusted text (the agent read log lines that outside traffic can write), so a
-# reader with no tools summarises it into code-checked fields (see support-reader.yml for the same
-# reader on support tickets). The `hold` job posts the checked summary on the private mirror issue
+# reader with no tools summarises it into code-checked fields. The `hold` job posts the checked summary on the private mirror issue
 # and adds `maintainer-review` to the public alarm issue. The operator removes that label to start
 # the second pass, which reads the checked fields and the operator's comments. This repository is
 # public, so no step prints the first-pass result, the reader's answer or the escalation input:

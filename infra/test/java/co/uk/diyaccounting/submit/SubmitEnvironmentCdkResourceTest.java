@@ -191,7 +191,7 @@ class SubmitEnvironmentCdkResourceTest {
         observability.resourceCountIs("AWS::CloudWatch::Alarm", 15);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
-        observability.resourceCountIs("AWS::IAM::Role", 9);
+        observability.resourceCountIs("AWS::IAM::Role", 8);
         observability.resourceCountIs("AWS::Cognito::IdentityPool", 0);
         // Only prod opens issues for Health and ACM events, so this environment has the function
         // and no rule for it: the six rules are the security rules.
@@ -555,11 +555,6 @@ class SubmitEnvironmentCdkResourceTest {
     private static void assertAlarmTriageResources(Template observability) {
         observability.hasResourceProperties(
                 "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-alarm-triage-role")));
-        observability.hasResourceProperties(
-                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-support-acceptance-role")));
-        for (String sid : List.of("ListSupportDrafts", "ReadSupportDrafts", "WriteSupportDraftAcceptance")) {
-            assertFalse(findPolicyStatementsContainingSid(observability, sid).isEmpty(), sid);
-        }
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(observability, "DenyCustomerData");
 

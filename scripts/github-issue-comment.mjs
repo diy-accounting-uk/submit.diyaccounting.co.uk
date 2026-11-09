@@ -4,7 +4,7 @@
 
 // scripts/github-issue-comment.mjs
 //
-// The one way the support and alarm reader workflows write to a GitHub issue: it creates a
+// The one way the alarm reader workflow writes to a GitHub issue: it creates a
 // comment from a file and does nothing else. It cannot set a label, close an issue or edit a
 // body, and it prints nothing from the comment or from GitHub's answer, because the workflow
 // logs of this public repository are public and the comment can hold ticket-derived text.

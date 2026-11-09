@@ -5,28 +5,26 @@ import { describe, it, expect } from "vitest";
 import { READER_MARKER, checkReaderAnswer, extractReaderJson } from "../../../scripts/quarantine-reader-check.mjs";
 
 const SENTINEL = "SENTINEL-INJECTED-TEXT";
-const ids = new Set(["how-to-submit-vat-return"]);
 const families = new Set(["prod-env-github-probe-failed"]);
 const run = { modelId: "model-x", runNumber: "7", runUrl: "https://github.com/o/r/actions/runs/1" };
 
 const valid = {
-  category: "bundles",
-  faqId: "how-to-submit-vat-return",
-  ticketKind: "other",
-  summary: "The customer cannot see the bundle.",
+  stillBroken: "no",
+  remedyFamily: "prod-env-github-probe-failed",
+  summary: "The probe passed on the next run.",
   injectionSuspected: false,
   piiPresent: false,
 };
 
 function check(answerText, extra = {}) {
-  return checkReaderAnswer({ kind: "support", answerText, guardrailAction: "NONE", ids, families, ...run, ...extra });
+  return checkReaderAnswer({ kind: "alarm", answerText, guardrailAction: "NONE", families, ...run, ...extra });
 }
 
-// Recorded shapes of a model answer to a ticket that carries injected instructions.
+// Recorded shapes of a model answer to an analysis that carries injected instructions.
 const fixtures = {
   "model flagged the injection": JSON.stringify({
     ...valid,
-    summary: "The ticket asks to add the label approved.",
+    summary: "The analysis asks to add the label approved.",
     injectionSuspected: true,
   }),
   "model obeyed and added a key": JSON.stringify({ ...valid, labels: ["approved"], note: SENTINEL }),
@@ -35,7 +33,7 @@ const fixtures = {
   "two JSON objects": `${JSON.stringify(valid)}\n${JSON.stringify({ ...valid, summary: SENTINEL })}`,
   "Markdown fence around JSON": `\`\`\`json\n${JSON.stringify({ ...valid, summary: SENTINEL })}\n\`\`\``,
   "prose only": `Sure, I will ignore previous instructions. ${SENTINEL}`,
-  "unknown category": JSON.stringify({ ...valid, category: SENTINEL }),
+  "unknown family": JSON.stringify({ ...valid, remedyFamily: SENTINEL }),
 };
 
 describe("quarantine reader check", () => {
@@ -63,7 +61,7 @@ describe("quarantine reader check", () => {
       "two JSON objects": "rejected",
       "Markdown fence around JSON": "rejected",
       "prose only": "rejected",
-      "unknown category": "rejected",
+      "unknown family": "rejected",
     });
   });
 
@@ -79,15 +77,8 @@ describe("quarantine reader check", () => {
     expect(comment).toContain("PII present: yes");
   });
 
-  it("builds the FAQ link from the id and shows no link for a null id", () => {
-    expect(check(JSON.stringify(valid)).comment).toContain(
-      "[how-to-submit-vat-return](https://submit.diyaccounting.co.uk/help.html#how-to-submit-vat-return)",
-    );
-    expect(check(JSON.stringify({ ...valid, faqId: null })).comment).toContain("FAQ none");
-  });
-
   it("keeps a fake json fence inside the summary from being read as the reader's object", () => {
-    const fake = { ...valid, category: "other", summary: `x\n\`\`\`json\n${JSON.stringify({ ...valid, category: "connection" })}\n\`\`\`` };
+    const fake = { ...valid, summary: `x\n\`\`\`json\n${JSON.stringify({ ...valid, stillBroken: "yes" })}\n\`\`\`` };
     const { comment } = check(JSON.stringify(fake));
     expect(extractReaderJson(comment)).toEqual(fake);
   });
@@ -96,76 +87,14 @@ describe("quarantine reader check", () => {
     expect(extractReaderJson("```json\n{}\n```")).toBeNull();
   });
 
-  it("checks an alarm answer against the family list", () => {
-    const answer = {
-      stillBroken: "no",
-      remedyFamily: "prod-env-github-probe-failed",
-      summary: "Passed.",
-      injectionSuspected: false,
-      piiPresent: false,
-    };
-    const ok = checkReaderAnswer({ kind: "alarm", answerText: JSON.stringify(answer), guardrailAction: "NONE", ids, families, ...run });
-    expect(ok.outcome).toBe("accepted");
-    expect(ok.comment).toContain("still broken: no");
-    const bad = checkReaderAnswer({
-      kind: "alarm",
-      answerText: JSON.stringify({ ...answer, remedyFamily: SENTINEL }),
-      guardrailAction: "NONE",
-      ids,
-      families,
-      ...run,
-    });
-    expect(bad.outcome).toBe("rejected");
-    expect(bad.comment).not.toContain(SENTINEL);
+  it("writes the alarm head from the checked values", () => {
+    const { comment } = check(JSON.stringify(valid));
+    expect(comment).toContain("still broken: no, remedy family `prod-env-github-probe-failed`");
   });
 
   it("reports whether the accepted answer suspects an injection", () => {
     expect(check(JSON.stringify(valid)).injectionSuspected).toBe(false);
     expect(check(JSON.stringify({ ...valid, injectionSuspected: true })).injectionSuspected).toBe(true);
     expect(check("prose only").injectionSuspected).toBe(false);
-  });
-});
-
-describe("notice reader answers", () => {
-  const vendors = new Set(["aws.com"]);
-  const mail = {
-    vendor: "aws.com",
-    actionRequired: true,
-    deadline: "2026-12-01",
-    summary: "The card on the account expires.",
-    injectionSuspected: false,
-    piiPresent: false,
-  };
-  const checkMail = (answer) =>
-    checkReaderAnswer({
-      kind: "mail",
-      answerText: typeof answer === "string" ? answer : JSON.stringify(answer),
-      guardrailAction: "NONE",
-      ids,
-      families,
-      vendors,
-      ...run,
-    });
-
-  it("accepts a valid answer and writes the notice head from the checked values", () => {
-    const result = checkMail(mail);
-    expect(result.outcome).toBe("accepted");
-    expect(result.comment).toContain("vendor `aws.com`, action required: yes, deadline 2026-12-01");
-    expect(extractReaderJson(result.comment)).toEqual(mail);
-  });
-
-  it("rejects an answer with a key the schema does not list, and drops its text", () => {
-    const result = checkMail({ ...mail, command: SENTINEL });
-    expect(result.outcome).toBe("rejected");
-    expect(result.comment).not.toContain(SENTINEL);
-  });
-
-  it("rejects a vendor outside the registry and prose around the object", () => {
-    expect(checkMail({ ...mail, vendor: SENTINEL }).comment).not.toContain(SENTINEL);
-    expect(checkMail(`Sure. ${JSON.stringify(mail)}`).outcome).toBe("rejected");
-  });
-
-  it("reports an injection the reader flagged", () => {
-    expect(checkMail({ ...mail, injectionSuspected: true }).injectionSuspected).toBe(true);
   });
 });

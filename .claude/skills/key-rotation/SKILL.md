@@ -144,8 +144,8 @@ Not in the run: the Drive Picker API key (runbook 3.4.18) rolls on abuse only.
 5. machine (Ops App only): Spread.
 6. machine: proof, Ops App. Read the next 03:20 UTC run of `/aws/lambda/<env>-env-security-lake-nightly`
    for no GitHub error. Retire waits for this read. Put it on the deferred list (Close, step 2).
-7. machine after go: proof, Agent App. `gh workflow run support-mail-intake.yml -f dry-run=true`
-   must be green.
+7. machine after go: proof, Agent App. Read the next `alarm-triage.yml` run for no GitHub App
+   token error.
 8. operator: delete the old key on the App's page.
 9. operator: delete the `.pem` file.
 10. machine: Read back, then Record.

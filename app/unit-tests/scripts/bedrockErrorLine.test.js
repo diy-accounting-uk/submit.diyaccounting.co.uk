@@ -34,7 +34,7 @@ describe("bedrockErrorLine", () => {
   });
 
   it("is called by every workflow that makes a converse call", () => {
-    for (const file of ["alarm-triage", "support-replay", "support-reader"]) {
+    for (const file of ["alarm-triage"]) {
       const text = readFileSync(`.github/workflows/${file}.yml`, "utf8");
       expect(text).toContain("converse failed: $(node scripts/bedrock-error-line.mjs /tmp/invoke.err)");
     }

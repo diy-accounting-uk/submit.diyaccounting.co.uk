@@ -79,7 +79,7 @@ Recreate: role ARNs with `aws --profile diya-management iam get-role --role-name
 
 | Variable | Read by |
 |---|---|
-| `AGENT_APP_ID` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml` |
+| `AGENT_APP_ID` | `alarm-triage.yml`, `alarm-remedy-close.yml` |
 | `OPS_APP_ID` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |
 | `OPS_APP_INSTALLATION_ID` | same two workflows |
 | `AGENT_APP_INSTALLATION_ID` | no workflow |
@@ -96,8 +96,7 @@ App and installation ids come from the GitHub App settings pages (the agent App 
 | `SUBMIT_ACCOUNT_ID` | most AWS workflows |
 | `SUBMIT_ACTIONS_ROLE_ARN` | every workflow that signs in to AWS |
 | `SUBMIT_DEPLOY_ROLE_ARN` | every workflow that then deploys or reads |
-| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml`, `deploy.yml`, `test.yml` |
-| `SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN` | `support-mail-intake.yml` (the `acceptance` job); the `<env>-env-support-acceptance-role` stack output `SupportAcceptanceRoleArn` of `ObservabilityStack` |
+| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `deploy.yml`, `test.yml` |
 | `SUBMIT_CERTIFICATE_ARN` | `deploy-environment.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy.yml`, `promote-ci-apex.yml` |
 | `SUBMIT_HOLDING_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |
@@ -120,7 +119,7 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 
 | Secret | Read by | How to obtain |
 |---|---|---|
-| `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml` | private key of the agent GitHub App |
+| `AGENT_APP_PRIVATE_KEY` | `alarm-triage.yml`, `alarm-remedy-close.yml` | private key of the agent GitHub App |
 | `OPS_APP_PRIVATE_KEY` | `deploy-environment.yml` (to `{env}/submit/github/ops_app_private_key`) | private key of the `diya-ops` GitHub App |
 | `OPERATOR_EMAILS` | `deploy-environment.yml` (to `{env}/submit/operator-emails`) | the operator's addresses |
 
@@ -159,8 +158,8 @@ Read on `ci`: `COMPANIES_HOUSE_SANDBOX_API_KEY` (also written by `deploy-environ
 
 Workflows apply these. Recreate with `gh label create`.
 
-- `alarm`, `ops`, `support`, `general`, `other`, `incident`: issue families opened by `alarm-triage.yml`, `support-triage.yml` and the alarm Lambda.
-- `origin:machine`, `origin:human`, `origin:attended-agent`, `origin:unattended-agent`, `origin:external`: who raised an item (the alarm and support Lambdas).
+- `alarm`, `ops`, `support`, `general`, `other`, `incident`: issue families opened by `alarm-triage.yml`, the alarm Lambda and the support form.
+- `origin:machine`, `origin:human`, `origin:attended-agent`, `origin:unattended-agent`, `origin:external`: who raised an item (the alarm Lambda and the support form).
 - `remedy:close-when-gone`, `remedy:dispatch`, `remedy:draft-pr`: alarm-family remedy mode (`alarm-triage.yml`, `alarm-remedy-close.yml`).
 - `policy:question`: open operator policy question.
 - `triage`: re-runs alarm triage on an issue.

@@ -29,7 +29,7 @@ import software.constructs.Construct;
  * Glue tables over the three workflow-written sources the {@code dora-row} composite action
  * writes: {@code dora_runs} from every deploy and destroy run, {@code probe_runs} from every
  * probe suite in {@code probe-test.yml}, and {@code agent_runs} from every unattended agent
- * workflow run (alarm-triage, support-triage, alarm-remedy-close), at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}, {@code
+ * workflow run (alarm-triage, alarm-remedy-close), at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}, {@code
  * curated/probe/dt=<date>/<run-id>-<suite>.json} and {@code
  * curated/agent-runs/dt=<date>/<run-id>-<attempt>.json}.
  *

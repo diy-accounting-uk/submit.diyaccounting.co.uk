@@ -31,7 +31,6 @@ import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, normalize } from "node:path";
 import { pathToFileURL } from "node:url";
 import { lastResultEntry, triageVerdict } from "./triage-result-verdict.mjs";
-import { readJsonOrNull } from "./support-triage-check.mjs";
 
 export const FIXTURE_DIR = "app/unit-tests/fixtures/alarm-triage";
 export const ALARM_BAR = 0.85;
@@ -92,6 +91,14 @@ const CALL_FAILURE_PATTERNS = [
 ];
 
 export const isPrivateSet = (set) => set === "private";
+
+function readJsonOrNull(path) {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
 
 export function loadFixtures(dir = FIXTURE_DIR) {
   if (!existsSync(dir)) return [];

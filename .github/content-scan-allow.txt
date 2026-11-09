@@ -39,10 +39,6 @@ antony.cartwright@westfieldhealth.com
 # not a customer's identity.
 ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com
 
-# The company's own Gmail read and draft service accounts, named in the support scripts and a command of the key-rotation skill.
-support-gmail-read@diyaccounting-ga4.iam.gserviceaccount.com
-support-gmail-draft@diyaccounting-ga4.iam.gserviceaccount.com
-
 # Stripe's own published API-documentation contact address (reference/stripe-api-*).
 dev-platform@stripe.com
 
@@ -101,16 +97,8 @@ eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9
 # (web/public/mcp-harness/*.json); the simulator answers it with fixture obligations.
 111222333
 
-# Vendor notification senders the support mail intake skips (scripts/support-mail-intake.mjs):
-# role addresses of GitHub, Stripe, PayPal and Google, not personal data.
-notifications@stripe.com
-support@stripe.com
-service@paypal.co.uk
-service@paypal.com
+# Google's own role address in the finance fixtures (mcp/test/fixtures/finance/), not personal data.
 noreply@google.com
-notifications@github.com
 
-# The public SES mailbox simulator addresses, used by the customer email proof.
-bounce@simulator.amazonses.com
-complaint@simulator.amazonses.com
+# The public SES mailbox simulator address, used by the customer email tests.
 success@simulator.amazonses.com

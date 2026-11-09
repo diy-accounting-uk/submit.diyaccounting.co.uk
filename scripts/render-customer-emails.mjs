@@ -3,7 +3,7 @@
 
 // @capability SITE-29 Render the customer emails to files for a visual check
 // - **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
-// - **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription, notice digest) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+// - **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
 // - **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
 // - **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
 // - **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
@@ -70,11 +70,6 @@ export const CASES = [
     name: "subscription",
     kind: "subscription-started",
     data: { bundleId: "resident-vat", currentPeriodEnd: "2026-12-05T00:00:00.000Z" },
-  },
-  {
-    name: "notice-digest",
-    kind: "notice-digest",
-    data: { count: 3, nearestDeadline: "2026-11-12" },
   },
 ];
 
