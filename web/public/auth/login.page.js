@@ -61,6 +61,9 @@ async function loginWithProvider(buttonProvider) {
 const loginWithCognitoButton = document.getElementById("loginWithCognito");
 loginWithCognitoButton.onclick = () => loginWithProvider("Google");
 loginWithCognitoButton.disabled = false;
+const loginWithMicrosoftButton = document.getElementById("loginWithMicrosoft");
+loginWithMicrosoftButton.onclick = () => loginWithProvider("Microsoft");
+loginWithMicrosoftButton.disabled = false;
 
 try {
   if (sessionStorage.getItem("passAddOnReturn")) document.getElementById("pendingPassNote").hidden = false;

@@ -14,7 +14,14 @@ import path from "node:path";
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
 const COGNITO = "https://auth.example.test";
-const CONTENT_TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".json": "application/json" };
+const CONTENT_TYPES = {
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+};
 const SUBMIT_ENV = `COGNITO_CLIENT_ID=client123\nCOGNITO_BASE_URI=${COGNITO}/\nDIY_SUBMIT_BASE_URL=${SITE}/\n`;
 
 async function serveSite(page) {
@@ -59,6 +66,29 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(authorizeUrl.searchParams.get("code_challenge_method")).toBe("S256");
     expect(challenge).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(authorizeUrl.searchParams.get("state")).toBeTruthy();
+  });
+
+  test("the sign-in page shows two enabled provider buttons and the Microsoft button names Microsoft", async ({ page }) => {
+    await serveSite(page);
+    for (const [width, height] of [
+      [1280, 800],
+      [375, 667],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`${SITE}/auth/login.html`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".google-btn, .microsoft-btn")).toHaveCount(2);
+      await expect(page.locator("#loginWithCognito")).toBeEnabled();
+      await expect(page.locator("#loginWithMicrosoft")).toBeEnabled();
+      await expect(page.locator("#loginWithMicrosoft img.provider-logo")).toBeVisible();
+      await expect(page.locator("#providerAccountNote")).toContainText("We receive your email address and name, and nothing else.");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: `target/screenshots/login-providers-${width}.png`, fullPage: true });
+    }
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    await page.click("#loginWithMicrosoft");
+    const authorizeUrl = new URL((await authorizeRequest).url());
+    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
   });
 
   test("the Google button names its provider and a listed ?provider= value replaces it", async ({ page }) => {
