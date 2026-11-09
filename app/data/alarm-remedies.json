@@ -309,6 +309,13 @@
     "why": "One Lambda feeds this composite, the budget alert forwarder; it serves no customer request."
   },
   {
+    "family": "prod-env-activity-events-compact-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/activityEventsCompact.js", "app/unit-tests/analytics/activityEventsCompact.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
     "family": "prod-env-operator-effort-pull-errors",
     "remedy": "draft-pr",
     "paths": ["app/functions/analytics/operatorEffortPull.js", "app/unit-tests/analytics/operatorEffortPull.test.js"],

@@ -71,7 +71,7 @@ class AnalyticsStackTest {
                                 "DataFormatConversionConfiguration",
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
-        analytics.resourceCountIs("AWS::Glue::Table", 36);
+        analytics.resourceCountIs("AWS::Glue::Table", 37);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
@@ -99,6 +99,27 @@ class AnalyticsStackTest {
                                 "PartitionKeys",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "dt", "Type", "date")))))))));
 
+        // The compacted table names dt and generation, and its objects sit outside curated/, so the
+        // Infrequent Access move in age-curated does not reach them.
+        analytics.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "activity_events_compacted",
+                                "PartitionKeys",
+                                List.of(
+                                        Map.of("Name", "dt", "Type", "date"),
+                                        Map.of("Name", "generation", "Type", "int")),
+                                "Parameters",
+                                Match.objectLike(Map.of(
+                                        "projection.generation.type",
+                                        "integer",
+                                        "storage.location.template",
+                                        Match.stringLikeRegexp(
+                                                ".*/compacted/activity-events/data/dt=.*/generation=.*/"))))))));
+
         // app_client and session_id are appended at the end of the column list, so existing
         // Parquet data stays readable.
         var expectAppClientAndSessionIdColumns = Match.arrayWith(List.of(
@@ -118,7 +139,7 @@ class AnalyticsStackTest {
         // (the custom resource below is what actually creates the view). One more named query
         // per BusinessViews view, including v_activity_started_daily and its hourly
         // counterpart, v_activity_started_hourly.
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 71);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 72);
 
         // The union view is created by the shared Athena view Provider, which polls the query to
         // a terminal state, so a failed CREATE OR REPLACE VIEW fails the stack update.
@@ -148,6 +169,8 @@ class AnalyticsStackTest {
         assertTrue(
                 dependsOn.contains("ActivityEvents"),
                 "union view must depend on the curated activity_events table: " + dependsOn);
+        assertTrue(
+                dependsOn.contains("activityeventslake"), "union view must depend on the view it reads: " + dependsOn);
 
         // AnalyticsStack packs many AwsCustomResource instances (the union view, every BusinessViews
         // query, every TableChangeDelivery stream lookup) that all reuse one singleton provider
@@ -164,6 +187,11 @@ class AnalyticsStackTest {
         LifecycleRule curatedRule = findRuleById(rules, "age-curated");
         assertEquals("curated/", curatedRule.getPrefix());
         assertEquals(800, curatedRule.getExpiration().toDays().intValue());
+
+        LifecycleRule compactedRule = findRuleById(rules, "expire-compacted-activity-events");
+        assertEquals("compacted/activity-events/data/", compactedRule.getPrefix());
+        assertEquals(800, compactedRule.getExpiration().toDays().intValue());
+        assertTrue(compactedRule.getTransitions() == null, "a compacted object stays in Standard");
 
         LifecycleRule sbomRule = findRuleById(rules, "age-sbom-archive");
         assertEquals("archive/security/sbom/", sbomRule.getPrefix());
