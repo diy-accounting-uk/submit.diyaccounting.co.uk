@@ -86,18 +86,13 @@ the current step and write the report with what was done.
   read only (the brief's "What to subscribe to" list). Note each change our audience will ask about
   this week: a VAT, MTD or Companies House rule, a deadline, a fee.
 - Threads: `npm run campaign:threads -- --days 7 --out target/campaign-threads.json` reads the
-  last seven days of questions from the subreddits (default `smallbusinessuk`; `--subreddits a,b`
-  adds more) and from the UK Business Forums feed, read only. It needs the Reddit app's client id
-  and secret in the Secrets Manager secret `prod/submit/reddit-campaign-app` (JSON
-  `{"clientId","clientSecret"}`, read through `AWS_PROFILE=diya-submit-prod`); without it the script
-  stops with a message naming the secret. Then read the output's `skipped` list: a source named
-  there was not read (the forum's feed answers a browser challenge at times and is not retried).
+  last seven days of questions from the UK Business Forums feed, read only. Read the output's
+  `skipped` list: the forum's feed answers a browser challenge at times and is not retried. For
+  Reddit, use WebSearch with `site:reddit.com/r/smallbusinessuk` and WebFetch on public pages.
   The question shape is "what cheap software sends my VAT return from a spreadsheet", and its
   relatives: bridging software, MTD for VAT without accounting software, filing accounts or a
-  confirmation statement without an accountant (the script's default queries). While the secret is
-  absent (board row OCAMP2), use WebSearch with `site:reddit.com/r/smallbusinessuk` and
-  WebFetch on public pages, and say the coverage is partial. Read `--fixture
-  scripts/fixtures/campaign-threads` to see the output shape with no credentials.
+  confirmation statement without an accountant. Read `--fixture scripts/fixtures/campaign-threads`
+  to see the output shape.
 - Skip AccountingWEB and the HMRC community forums for posting (their rules remove
   self-promotion). Read them for what owners ask.
 - Skip a thread where the asker needs advice an accountant gives, is not VAT-registered, or asks
