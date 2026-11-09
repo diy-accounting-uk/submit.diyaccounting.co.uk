@@ -6,6 +6,14 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, setupFetchMock, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import { FakeCodesEntryTable } from "@app/test-helpers/fakeCodesEntryTable.js";
+import { openFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "@app/lib/codesSeal.js";
+
+const table = new FakeCodesEntryTable();
+vi.mock("@app/lib/dynamoDbClient.js", () => ({
+  executeDynamoDbCommand: (builder) => table.execute(builder),
+  getResourceName: () => "test-mcp-sessions",
+}));
 
 // Capture the EventBridge send so activity-event tests can inspect the published
 // Detail JSON directly rather than mocking activityAlert.js's hashing away.
@@ -68,7 +76,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  test("exchanges the code and maps the response, without the refresh token", async () => {
+  test("seals the access token into a grant and answers the grant id, without the refresh token", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -82,17 +90,39 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const scope =
+      "https://identity.company-information.service.gov.uk/user/profile.read https://api.company-information.service.gov.uk/company/01234567/registered-office-address.update";
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", scope } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.accessToken).toBe("a-companies-house-access-token");
+    expect(body.accessToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(body.companiesHouseGrantId).toBe(body.accessToken);
+    expect(JSON.stringify(body)).not.toContain("a-companies-house-access-token");
+    const stored = table.items.get(`ch-grant:${body.companiesHouseGrantId}`);
+    expect(stored.companyNumber).toBe("01234567");
+    expect(stored.scope).toBe(scope);
+    expect(stored.ttl).toBe(stored.accessExpiresAt);
+    expect(stored.sealed).not.toContain("a-companies-house-access-token");
+    expect(await openFor(COMPANIES_HOUSE_GRANT_PURPOSE, stored.sealed, body.companiesHouseGrantId)).toEqual({
+      accessToken: "a-companies-house-access-token",
+    });
     expect(body.expiresIn).toBe(3600);
     expect(body.tokenType).toBe("Bearer");
     expect(body.scope).toBeUndefined();
     expect(body.refreshToken).toBeUndefined();
     expect(body.refresh_token).toBeUndefined();
+  });
+
+  test("returns 400 when the scope names no company", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      body: { code: "test-code", scope: "https://identity.company-information.service.gov.uk/user/profile.read" },
+    });
+    const response = await companiesHouseTokenPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("sends the token request as form-urlencoded with the redirect URI and client secret", async () => {

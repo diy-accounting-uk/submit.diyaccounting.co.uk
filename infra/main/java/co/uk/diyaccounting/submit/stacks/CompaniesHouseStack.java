@@ -405,6 +405,7 @@ public class CompaniesHouseStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        withCodesEntryEnv(companiesHouseTokenPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         IntegrationCallAccess.addEnv(
                 companiesHouseTokenPostLambdaEnv,
                 props.sharedNames().data.integrationCallsTableName,
@@ -460,12 +461,14 @@ public class CompaniesHouseStack extends Stack {
         // the same reason HmrcStack's own token exchange Lambda carries no bundles grant).
         grantCompaniesHouseTokenLambdaAccess(
                 this.companiesHouseTokenPostLambda, region, account, props, activityBusArn);
+        grantGrantCreate(this.companiesHouseTokenPostLambda, mcpSessionsTable, codesSealKeySecret);
 
         // The six OAuth filing Lambdas: they carry the user's Companies House access token as a
         // Bearer header (via the custom authorizer, matching the HMRC VAT routes) and call
         // COMPANIES_HOUSE_FILING_BASE_URI, blank until the operator has registered the
         // developer-hub application and, for prod, until the ci-only gate lifts.
         var companiesHouseTransactionPostLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseTransactionPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseTransactionPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -506,8 +509,10 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHouseTransactionPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantGrantRead(this.companiesHouseTransactionPostLambda, mcpSessionsTable, codesSealKeySecret);
 
         var companiesHouseTransactionGetLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseTransactionGetLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseTransactionGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -545,8 +550,10 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHouseTransactionGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionGetLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantGrantRead(this.companiesHouseTransactionGetLambda, mcpSessionsTable, codesSealKeySecret);
 
         var companiesHouseTransactionPutLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseTransactionPutLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseTransactionPutLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -584,6 +591,7 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHouseTransactionPutIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionPutLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantGrantRead(this.companiesHouseTransactionPutLambda, mcpSessionsTable, codesSealKeySecret);
 
         // Registered office address read: the API-key public register client, needing no Companies
         // House user token. The change filing runs against the filing base URI, so the read that
@@ -668,6 +676,7 @@ public class CompaniesHouseStack extends Stack {
         grantSecretRead(this.companiesHouseRegisteredOfficeAddressGetLambda, officeReadApiKeyArn);
 
         var companiesHouseRegisteredOfficeAddressPostLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseRegisteredOfficeAddressPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseRegisteredOfficeAddressPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -725,8 +734,10 @@ public class CompaniesHouseStack extends Stack {
                 props,
                 activityBusArn,
                 false);
+        grantGrantRead(this.companiesHouseRegisteredOfficeAddressPostLambda, mcpSessionsTable, codesSealKeySecret);
 
         var companiesHouseRegisteredEmailEligibilityGetLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseRegisteredEmailEligibilityGetLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseRegisteredEmailEligibilityGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -784,8 +795,10 @@ public class CompaniesHouseStack extends Stack {
                 props,
                 activityBusArn,
                 false);
+        grantGrantRead(this.companiesHouseRegisteredEmailEligibilityGetLambda, mcpSessionsTable, codesSealKeySecret);
 
         var companiesHouseRegisteredEmailAddressPostLambdaEnv = filingLambdaEnv(props);
+        withCodesEntryEnv(companiesHouseRegisteredEmailAddressPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         var companiesHouseRegisteredEmailAddressPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -843,6 +856,7 @@ public class CompaniesHouseStack extends Stack {
                 props,
                 activityBusArn,
                 false);
+        grantGrantRead(this.companiesHouseRegisteredEmailAddressPostLambda, mcpSessionsTable, codesSealKeySecret);
 
         // The accounts filing route: render produces the iXBRL only, the other two reach the XML
         // Gateway with the presenter credentials, never the OAuth filing base URI or client secret
@@ -1769,6 +1783,18 @@ public class CompaniesHouseStack extends Stack {
     // Taking an entry reads it and deletes it, in one conditional delete.
     private static void grantCodesEntryAccess(Function fn, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
         mcpSessionsTable.grant(fn, "dynamodb:DeleteItem");
+        codesSealKeySecret.grantRead(fn);
+    }
+
+    // A Companies House grant is written once by the token exchange Lambda.
+    private static void grantGrantCreate(Function fn, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
+        mcpSessionsTable.grant(fn, "dynamodb:PutItem");
+        codesSealKeySecret.grantRead(fn);
+    }
+
+    // A filing Lambda opens a grant: one read of the item and the sealing key.
+    private static void grantGrantRead(Function fn, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
+        mcpSessionsTable.grant(fn, "dynamodb:GetItem");
         codesSealKeySecret.grantRead(fn);
     }
 

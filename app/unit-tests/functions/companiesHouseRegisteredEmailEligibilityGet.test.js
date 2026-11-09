@@ -61,6 +61,16 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const grantAccess = vi.hoisted(() => ({ override: null }));
+vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    companiesHouseAccessFromEvent: (...args) =>
+      grantAccess.override ? grantAccess.override(...args) : real.companiesHouseAccessFromEvent(...args),
+  };
+});
+
 import { ingestHandler as companiesHouseRegisteredEmailEligibilityGetHandler } from "@app/functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -95,6 +105,7 @@ function buildEvent({ pathParameters = { companyNumber: "00000001" }, headers = 
 
 describe("companiesHouseRegisteredEmailEligibilityGet ingestHandler", () => {
   beforeEach(() => {
+    grantAccess.override = null;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -126,6 +137,21 @@ describe("companiesHouseRegisteredEmailEligibilityGet ingestHandler", () => {
       "https://api-sandbox.company-information.service.gov.uk/registered-email-address/company/00000001/eligibility",
     );
     expect(requestInit.headers.Authorization).toBe("Bearer test-ch-access-token");
+  });
+
+  test("refuses a grant bound to another company with 403 and calls Companies House not at all", async () => {
+    grantAccess.override = async () => ({ accessToken: "grant-token", companyNumber: "00000002" });
+    const response = await companiesHouseRegisteredEmailEligibilityGetHandler(buildEvent());
+    expect(response.statusCode).toBe(403);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("uses the access token of a grant bound to the same company", async () => {
+    grantAccess.override = async () => ({ accessToken: "grant-token", companyNumber: "00000001" });
+    mockChSuccess(mockFetch, { eligibility_status_code: "COMPANY_VALID_FOR_SERVICE" });
+    const response = await companiesHouseRegisteredEmailEligibilityGetHandler(buildEvent());
+    expect(response.statusCode).toBe(200);
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("Bearer grant-token");
   });
 
   test("passes through a non-COMPANY_VALID_FOR_SERVICE status code unchanged", async () => {

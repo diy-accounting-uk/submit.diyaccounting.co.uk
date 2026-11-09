@@ -15,8 +15,8 @@ import {
   http403ForbiddenResponse,
   http429TooManyRequestsResponse,
   http500ServerErrorResponse,
-  extractBearerTokenFromAuthHeaderInLambdaEvent,
 } from "../lib/httpResponseHelper.js";
+import { companiesHouseAccessFromEvent } from "../lib/companiesHouseGrantAccess.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" });
@@ -52,10 +52,28 @@ export async function resolveClientSecret() {
   return readSecret(secretArn);
 }
 
-// Reads the user's Companies House access token from the Authorization header. The Cognito
+// The user's Companies House access token. The request
+// names a grant in the x-companies-house-grant header (or as a bearer value shaped like a grant
+// id); any other bearer value is a raw token and passes unchanged, with no company. The Cognito
 // access token travels separately as X-Authorization, exactly like the HMRC VAT routes.
-export function extractCompaniesHouseAccessTokenFromLambdaEvent(event) {
-  return extractBearerTokenFromAuthHeaderInLambdaEvent(event);
+export async function extractCompaniesHouseAccessTokenFromLambdaEvent(event, userSub) {
+  return (await companiesHouseAccessFromEvent(event, userSub))?.accessToken ?? null;
+}
+
+/**
+ * The 403 for a request that names one company on a grant bound to another.
+ * @param {Object} request
+ * @param {string} companyNumber - the company the request names
+ * @param {Object} responseHeaders
+ */
+export function http403ForbiddenForGrantCompany(request, companyNumber, responseHeaders = {}) {
+  logger.warn({ message: "Companies House grant is bound to another company", companyNumber });
+  return http403ForbiddenResponse({
+    request,
+    headers: { ...responseHeaders },
+    message: "The Companies House sign-in does not cover this company",
+    error: { code: "COMPANIES_HOUSE_GRANT_COMPANY_MISMATCH", companyNumber },
+  });
 }
 
 export async function companiesHouseFilingRequest(method, path, { accessToken, body, timeoutMs = FILING_REQUEST_TIMEOUT_MS } = {}) {
