@@ -61,6 +61,34 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(authorizeUrl.searchParams.get("state")).toBeTruthy();
   });
 
+  test("the Google button names its provider and a listed ?provider= value replaces it", async ({ page }) => {
+    await serveSite(page);
+    const requestedProviders = [];
+    const storedProviders = [];
+    await page.exposeFunction("recordStoredProvider", (value) => storedProviders.push(value));
+    await page.addInitScript(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "cognito_identity_provider") window.recordStoredProvider(value);
+        return original.call(this, key, value);
+      };
+    });
+    for (const [query, expected] of [
+      ["", "Google"],
+      ["?provider=COGNITO", "COGNITO"],
+      ["?provider=Facebook", "Google"],
+    ]) {
+      await page.goto(`${SITE}/auth/login.html${query}`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("#loginWithCognito")).toBeEnabled();
+      const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+      await page.click("#loginWithCognito");
+      const authorizeUrl = new URL((await authorizeRequest).url());
+      requestedProviders.push(authorizeUrl.searchParams.get("identity_provider"));
+      expect(storedProviders.at(-1)).toBe(expected);
+    }
+    expect(requestedProviders).toEqual(["Google", "COGNITO", "Google"]);
+  });
+
   test("the challenge in the authorize URL is the SHA-256 of the stored verifier", async ({ page }) => {
     await serveSite(page);
     await page.goto(`${SITE}/auth/login.html`, { waitUntil: "domcontentloaded" });

@@ -41,6 +41,10 @@ describe("Auth URL Generation", () => {
     );
   }
 
+  function startOn(origin) {
+    mockWindow.location = { origin, hostname: new URL(origin).hostname };
+  }
+
   function loadScripts() {
     evaluateScript(envLoaderPath, mockWindow);
     evaluateScript(authUrlBuilderPath, mockWindow);
@@ -49,7 +53,8 @@ describe("Auth URL Generation", () => {
   beforeEach(() => {
     mockWindow = {
       location: {
-        origin: "https://submit.diyaccounting.co.uk",
+        origin: "https://submit.example.com",
+        hostname: "submit.example.com",
       },
       console: {
         log: vi.fn(),
@@ -114,6 +119,42 @@ describe("Auth URL Generation", () => {
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/auth/loginWithCognitoCallback.html"));
   });
 
+  it("buildCognitoAuthUrl adds identity_provider when one is given and omits it otherwise", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const without = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c");
+    const withProvider = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c", { identityProvider: "Google" });
+
+    expect(without).not.toContain("identity_provider");
+    expect(withProvider).toContain("&identity_provider=Google");
+    expect(withProvider).toContain("scope=" + encodeURIComponent("openid profile email"));
+  });
+
+  it("buildCognitoAuthUrl takes the scope from the options object", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c", { scope: "openid" });
+
+    expect(url).toContain("scope=openid&");
+  });
+
+  it.each([
+    ["?provider=COGNITO", "COGNITO"],
+    ["?provider=Microsoft", "Microsoft"],
+    ["?provider=SignInWithApple", "SignInWithApple"],
+    ["?provider=Google", "Google"],
+    ["?provider=Facebook", "Google"],
+    ["?provider=google", "Google"],
+    ["?other=1", "Google"],
+    ["", "Google"],
+  ])("resolveIdentityProvider(%j) gives %s for the Google button", (search, expected) => {
+    loadScripts();
+
+    expect(mockWindow.authUrlBuilder.resolveIdentityProvider(search, "Google")).toBe(expected);
+  });
+
   it("buildCognitoAuthUrl waits for a slow /submit.env instead of failing", async () => {
     respondWithEnv({ delayMs: 500 });
     loadScripts();
@@ -168,5 +209,83 @@ describe("Auth URL Generation", () => {
     const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("ghi789", "read:vat read:self-assessment", "synthetic");
 
     expect(url).toContain("scope=" + encodeURIComponent("read:vat read:self-assessment"));
+  });
+  describe("redirect address", () => {
+    const cognitoRedirect = (url) => decodeURIComponent(new URL(url).searchParams.get("redirect_uri"));
+
+    it.each([
+      ["the ci apex", "https://ci-submit.diyaccounting.co.uk"],
+      ["a ci slot host", "https://ci-set1.submit.diyaccounting.co.uk"],
+      ["the other ci slot host", "https://ci-set2.submit.diyaccounting.co.uk"],
+      ["prod", "https://submit.diyaccounting.co.uk"],
+      ["the prod environment host", "https://prod-submit.diyaccounting.co.uk"],
+    ])("buildCognitoAuthUrl returns to %s when sign-in starts there", async (_name, origin) => {
+      respondWithEnv();
+      startOn(origin);
+      loadScripts();
+
+      const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c");
+
+      expect(cognitoRedirect(url)).toBe(`${origin}/auth/loginWithCognitoCallback.html`);
+    });
+
+    it("buildCognitoAuthUrl keeps the base URL on an unregistered origin", async () => {
+      respondWithEnv();
+      startOn("https://ci-feature.submit.diyaccounting.co.uk");
+      loadScripts();
+
+      const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c");
+
+      expect(cognitoRedirect(url)).toBe("https://submit.example.com/auth/loginWithCognitoCallback.html");
+    });
+
+    it("buildCognitoAuthUrl does not accept a look-alike host", async () => {
+      respondWithEnv();
+      startOn("https://ci-set1.submit.diyaccounting.co.uk.evil.example");
+      loadScripts();
+
+      const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("s", "n", "c");
+
+      expect(cognitoRedirect(url)).toBe("https://submit.example.com/auth/loginWithCognitoCallback.html");
+    });
+
+    it("buildHmrcAuthUrl follows the ci apex", async () => {
+      respondWithEnv();
+      startOn("https://ci-submit.diyaccounting.co.uk");
+      loadScripts();
+
+      const hmrc = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("s", "read:vat", "synthetic");
+      expect(cognitoRedirect(hmrc)).toBe("https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html");
+    });
+
+    it("buildHmrcAuthUrl keeps the base URL on a ci slot host that HMRC does not register", async () => {
+      respondWithEnv();
+      startOn("https://ci-set1.submit.diyaccounting.co.uk");
+      loadScripts();
+
+      const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("s", "read:vat", "synthetic");
+
+      expect(cognitoRedirect(url)).toBe("https://submit.example.com/activities/submitVatCallback.html");
+    });
+
+    it("buildCompaniesHouseAuthUrl follows the ci apex and keeps the base URL on a slot host", async () => {
+      respondWithEnv();
+      loadScripts();
+      mockWindow.envReady = Promise.resolve({
+        COMPANIES_HOUSE_IDENTITY_BASE_URI: "https://identity.example.com/",
+        COMPANIES_HOUSE_CLIENT_ID: "ch-client",
+        DIY_SUBMIT_BASE_URL: "https://submit.example.com/",
+      });
+
+      startOn("https://ci-submit.diyaccounting.co.uk");
+      expect(cognitoRedirect(await mockWindow.authUrlBuilder.buildCompaniesHouseAuthUrl("s", "scope"))).toBe(
+        "https://ci-submit.diyaccounting.co.uk/companies-house/filingCallback.html",
+      );
+
+      startOn("https://ci-set2.submit.diyaccounting.co.uk");
+      expect(cognitoRedirect(await mockWindow.authUrlBuilder.buildCompaniesHouseAuthUrl("s", "scope"))).toBe(
+        "https://submit.example.com/companies-house/filingCallback.html",
+      );
+    });
   });
 });

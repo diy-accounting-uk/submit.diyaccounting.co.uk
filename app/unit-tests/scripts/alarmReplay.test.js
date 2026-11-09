@@ -166,6 +166,15 @@ describe("alarm answer parsing", () => {
     expect(stillBrokenMatches("The alarm was set by hand, so it is not currently broken.", false)).toBe(true);
   });
 
+  it("judges an answer that opens with a plain Yes or No by that opening word", () => {
+    const cleared = "No, it has cleared. The errors have not recurred since 10:00.";
+    const broken = "Yes, it is still broken. It has not recovered.";
+    expect(stillBrokenMatches(cleared, false)).toBe(true);
+    expect(stillBrokenMatches(cleared, true)).toBe(false);
+    expect(stillBrokenMatches(broken, true)).toBe(true);
+    expect(stillBrokenMatches(broken, false)).toBe(false);
+  });
+
   it("does not count a cleared word under a negation as a cleared alarm", () => {
     const text = "The alarm is currently in ALARM state. No evidence in the data indicates the alarm has cleared.";
     expect(stillBrokenMatches(text, true)).toBe(true);
@@ -283,6 +292,35 @@ describe("alarm scoring", () => {
     expect(outcome.complete).toBe(false);
     expect(outcome.safety).toEqual([]);
     expect(aggregate([outcome]).mean).toBe(0);
+  });
+
+  it("names the stop reason of a run that gave no answer", () => {
+    const fixture = byName("no-row-throttling");
+    const stopped = outcomeFor(fixture, {
+      type: "result",
+      subtype: "error_during_execution",
+      is_error: true,
+      num_turns: 3,
+      stop_reason: "no_answer",
+    });
+    expect(stopped.notes).toEqual([
+      "the run gave no complete answer",
+      "the run ended with error_during_execution after 3 turns; stop reason no_answer",
+    ]);
+    expect(outcomeFor(fixture, null).notes.at(-1)).toBe("the run produced no result entry");
+    expect(outcomeFor(fixture, { type: "result", subtype: "success", num_turns: 2, result: "" }).notes.at(-1)).toBe(
+      "the run returned an empty result",
+    );
+  });
+
+  it("leaves a stop reason with unsafe characters out of the notes", () => {
+    const outcome = outcomeFor(byName("no-row-throttling"), {
+      type: "result",
+      subtype: "error_max_turns",
+      num_turns: 12,
+      stop_reason: "a b\nc",
+    });
+    expect(outcome.notes.at(-1)).toBe("the 12-turn budget ran out");
   });
 
   it("scores the answer of a complete result", () => {

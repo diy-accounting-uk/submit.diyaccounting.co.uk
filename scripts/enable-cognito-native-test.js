@@ -20,6 +20,7 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
+import os from "os";
 import path from "path";
 
 const execFileAsync = promisify(execFile);
@@ -61,12 +62,29 @@ async function main() {
   let password = null;
   let totpSecret = null;
   try {
-    const { stdout, stderr } = await execFileAsync("node", ["scripts/ensure-cognito-test-user.js", environmentName, "local"]);
+    // In GitHub Actions the child writes the credentials to its GITHUB_OUTPUT file, masked in the
+    // log, and prints no credential lines; give it a file of its own and read them from there.
+    const childOutputPath = process.env.GITHUB_OUTPUT
+      ? path.join(fs.mkdtempSync(path.join(process.env.RUNNER_TEMP || os.tmpdir(), "cognito-native-")), "output")
+      : null;
+    const childEnv = childOutputPath ? { ...process.env, GITHUB_OUTPUT: childOutputPath } : process.env;
+    const { stdout, stderr } = await execFileAsync("node", ["scripts/ensure-cognito-test-user.js", environmentName, "local"], {
+      env: childEnv,
+    });
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
 
-    // Parse credentials from stdout (format: TEST_AUTH_USERNAME=..., TEST_AUTH_PASSWORD=..., TOTP_SECRET=...)
-    for (const line of stdout.split("\n")) {
+    const credentialLines = childOutputPath
+      ? fs
+          .readFileSync(childOutputPath, "utf-8")
+          .replace(/^test-auth-username=/m, "TEST_AUTH_USERNAME=")
+          .replace(/^test-auth-password=/m, "TEST_AUTH_PASSWORD=")
+          .replace(/^test-auth-totp-secret=/m, "TOTP_SECRET=")
+      : stdout;
+    if (childOutputPath) fs.rmSync(path.dirname(childOutputPath), { recursive: true, force: true });
+
+    // Parse credentials (format: TEST_AUTH_USERNAME=..., TEST_AUTH_PASSWORD=..., TOTP_SECRET=...)
+    for (const line of credentialLines.split("\n")) {
       const usernameMatch = line.match(/^TEST_AUTH_USERNAME=(.+)$/);
       if (usernameMatch) username = usernameMatch[1];
       const passwordMatch = line.match(/^TEST_AUTH_PASSWORD=(.+)$/);

@@ -88,6 +88,22 @@
 //   phrase = ["login", "jobs"]
 //   exact = ["vat online account"]
 //
+// A Search campaign may declare final_url_suffix (appended to every ad's final URL, ValueTrack
+// parameters such as {keyword} allowed; sent as Campaign.final_url_suffix) and
+// mobile_bid_adjustment_percent (a CampaignCriterion of type DEVICE for MOBILE, bid_modifier
+// 1 + percent / 100, so -100 sends 0 and stops mobile serving). A field the toml leaves out is
+// not compared. A live campaign's differing suffix or mobile adjustment is updated.
+//
+//   final_url_suffix = "utm_source=google&utm_medium=cpc&utm_campaign=search-mtd-vat&utm_term={keyword}"
+//   mobile_bid_adjustment_percent = -100
+//
+// A declared ad group the campaign has is also compared on its ad's final URL. A live responsive
+// search ad whose final URL differs is updated in place through adService:mutate (final_urls is
+// one of the fields it accepts on a responsive search ad; headlines and descriptions are not, and
+// are never compared). A live ad of any other type, or an ad group with several live ads, cannot
+// be updated that way: the plan says so and replaces the ad (create the declared one, remove the
+// live one). An ad group with no live ad gets the declared ad created.
+//
 // Every [[campaign]] also needs a [campaign.bidding] table, mapped one to one onto the API's
 // campaign bidding fields: manual_cpc (enhanced_cpc), maximize_clicks (the API's target_spend,
 // optional cpc_bid_ceiling_gbp), maximize_conversions (optional target_cpa_gbp),
@@ -162,6 +178,16 @@ const CAMPAIGN_NEGATIVE_KEYWORD_QUERY =
   "SELECT campaign.resource_name, campaign_criterion.resource_name, campaign_criterion.keyword.text, " +
   "campaign_criterion.keyword.match_type FROM campaign_criterion " +
   "WHERE campaign_criterion.type = 'KEYWORD' AND campaign_criterion.negative = TRUE";
+
+const CAMPAIGN_FINAL_URL_SUFFIX_QUERY = "SELECT campaign.resource_name, campaign.final_url_suffix FROM campaign";
+
+const CAMPAIGN_DEVICE_QUERY =
+  "SELECT campaign.resource_name, campaign_criterion.resource_name, campaign_criterion.device.type, campaign_criterion.bid_modifier " +
+  "FROM campaign_criterion WHERE campaign_criterion.type = 'DEVICE'";
+
+const AD_GROUP_AD_QUERY =
+  "SELECT ad_group.resource_name, ad_group_ad.resource_name, ad_group_ad.status, ad_group_ad.ad.resource_name, " +
+  "ad_group_ad.ad.type, ad_group_ad.ad.final_urls FROM ad_group_ad WHERE ad_group_ad.status != 'REMOVED'";
 
 const AD_GROUP_QUERY =
   "SELECT campaign.resource_name, ad_group.resource_name, ad_group.name, ad_group.status FROM ad_group " +
@@ -445,6 +471,30 @@ function parseRemovedAdGroups(names, adGroups, campaignName) {
   return names.map(String);
 }
 
+function parseFinalUrlSuffix(entry) {
+  if (entry.final_url_suffix === undefined) return null;
+  if (typeof entry.final_url_suffix !== "string" || entry.final_url_suffix === "" || entry.final_url_suffix.startsWith("?")) {
+    throw new Error(`campaign "${entry.name}" final_url_suffix must be a non-empty string without a leading "?"`);
+  }
+  return entry.final_url_suffix;
+}
+
+/**
+ * The mobile bid modifier from mobile_bid_adjustment_percent (-100 to 900), as the API's
+ * multiplier: -100 gives 0, 0 gives 1. Null when the campaign does not declare it.
+ *
+ * @param {object} entry
+ * @returns {number|null}
+ */
+function parseMobileBidModifier(entry) {
+  const percent = entry.mobile_bid_adjustment_percent;
+  if (percent === undefined) return null;
+  if (typeof percent !== "number" || percent < -100 || percent > 900) {
+    throw new Error(`campaign "${entry.name}" mobile_bid_adjustment_percent must be a number from -100 to 900`);
+  }
+  return Math.round((1 + percent / 100) * 1e6) / 1e6;
+}
+
 function parseCampaign(entry) {
   if (!entry.name) throw new Error(`[[campaign]] entry is missing name: ${JSON.stringify(entry)}`);
   if (entry.type !== "PERFORMANCE_MAX" && entry.type !== "SEARCH") {
@@ -481,6 +531,8 @@ function parseCampaign(entry) {
     name: String(entry.name),
     type: entry.type,
     status: entry.status ? String(entry.status) : "PAUSED",
+    finalUrlSuffix: parseFinalUrlSuffix(entry),
+    mobileBidModifier: parseMobileBidModifier(entry),
     budgetMicros: poundsToMicros(entry.budget_gbp),
     assetGroups: [],
     adGroups,
@@ -663,9 +715,10 @@ export function shapeCampaignTargeting(targetingBody, locationBody) {
  * @param {object} adGroupBody googleAds:search response for AD_GROUP_QUERY
  * @param {object} adGroupKeywordBody googleAds:search response for AD_GROUP_KEYWORD_QUERY
  * @param {object} negativeKeywordBody googleAds:search response for CAMPAIGN_NEGATIVE_KEYWORD_QUERY
+ * @param {object} adGroupAdBody googleAds:search response for AD_GROUP_AD_QUERY
  * @returns {Map<string, {adGroups: object[], negativeKeywords: object[]}>}
  */
-export function shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody) {
+export function shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody, adGroupAdBody = { results: [] }) {
   const byCampaign = new Map();
   const entryFor = (campaignResourceName) => {
     if (!byCampaign.has(campaignResourceName)) byCampaign.set(campaignResourceName, { adGroups: [], negativeKeywords: [] });
@@ -673,7 +726,7 @@ export function shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeK
   };
   const adGroupByResourceName = new Map();
   for (const row of adGroupBody.results ?? []) {
-    const adGroup = { resourceName: row.adGroup.resourceName, name: row.adGroup.name, status: row.adGroup.status, keywords: [] };
+    const adGroup = { resourceName: row.adGroup.resourceName, name: row.adGroup.name, status: row.adGroup.status, keywords: [], ads: [] };
     adGroupByResourceName.set(adGroup.resourceName, adGroup);
     entryFor(row.campaign.resourceName).adGroups.push(adGroup);
   }
@@ -686,12 +739,50 @@ export function shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeK
       matchType: row.adGroupCriterion.keyword.matchType,
     });
   }
+  for (const row of adGroupAdBody.results ?? []) {
+    const adGroup = adGroupByResourceName.get(row.adGroup.resourceName);
+    if (!adGroup) continue;
+    adGroup.ads.push({
+      adResourceName: row.adGroupAd.ad.resourceName,
+      adGroupAdResourceName: row.adGroupAd.resourceName,
+      status: row.adGroupAd.status,
+      type: row.adGroupAd.ad.type,
+      finalUrls: row.adGroupAd.ad.finalUrls ?? [],
+    });
+  }
   for (const row of negativeKeywordBody.results ?? []) {
     entryFor(row.campaign.resourceName).negativeKeywords.push({
       resourceName: row.campaignCriterion.resourceName,
       text: row.campaignCriterion.keyword.text,
       matchType: row.campaignCriterion.keyword.matchType,
     });
+  }
+  return byCampaign;
+}
+
+/**
+ * Shape each campaign's final URL suffix and mobile device bid modifier, keyed by the campaign's
+ * resource name. A campaign with no DEVICE criterion for MOBILE has mobileBidModifier null.
+ *
+ * @param {object} suffixBody googleAds:search response for CAMPAIGN_FINAL_URL_SUFFIX_QUERY
+ * @param {object} deviceBody googleAds:search response for CAMPAIGN_DEVICE_QUERY
+ * @returns {Map<string, {finalUrlSuffix: string, mobileBidModifier: number|null, mobileCriterionResourceName: string|null}>}
+ */
+export function shapeCampaignUrlAndDevice(suffixBody, deviceBody) {
+  const byCampaign = new Map();
+  for (const row of suffixBody.results ?? []) {
+    byCampaign.set(row.campaign.resourceName, {
+      finalUrlSuffix: row.campaign.finalUrlSuffix ?? "",
+      mobileBidModifier: null,
+      mobileCriterionResourceName: null,
+    });
+  }
+  for (const row of deviceBody.results ?? []) {
+    if (row.campaignCriterion.device?.type !== "MOBILE") continue;
+    const entry = byCampaign.get(row.campaign.resourceName);
+    if (!entry) continue;
+    entry.mobileBidModifier = row.campaignCriterion.bidModifier ?? 1;
+    entry.mobileCriterionResourceName = row.campaignCriterion.resourceName;
   }
   return byCampaign;
 }
@@ -715,6 +806,9 @@ export async function readLiveState(token, config) {
     adGroupBody,
     adGroupKeywordBody,
     negativeKeywordBody,
+    suffixBody,
+    deviceBody,
+    adGroupAdBody,
   ] = await Promise.all([
     googleAdsSearch(token, config.customerId, config.apiVersion, CUSTOMER_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CONVERSION_ACTION_QUERY),
@@ -726,15 +820,23 @@ export async function readLiveState(token, config) {
     googleAdsSearch(token, config.customerId, config.apiVersion, AD_GROUP_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, AD_GROUP_KEYWORD_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_NEGATIVE_KEYWORD_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_FINAL_URL_SUFFIX_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_DEVICE_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, AD_GROUP_AD_QUERY),
   ]);
   const shapedConversions = shapeConversionActions(conversionActionsBody, conversionGoalsBody);
   const campaigns = shapeCampaigns(campaignsBody);
   const biddingByResourceName = shapeCampaignBidding(campaignBiddingBody);
   const targetingByResourceName = shapeCampaignTargeting(campaignTargetingBody, locationBody);
-  const keywordsByResourceName = shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody);
+  const keywordsByResourceName = shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody, adGroupAdBody);
+  const urlAndDeviceByResourceName = shapeCampaignUrlAndDevice(suffixBody, deviceBody);
   for (const campaign of campaigns) {
     campaign.bidding = biddingByResourceName.get(campaign.resourceName) ?? null;
     campaign.targeting = targetingByResourceName.get(campaign.resourceName) ?? null;
+    const urlAndDevice = urlAndDeviceByResourceName.get(campaign.resourceName);
+    campaign.finalUrlSuffix = urlAndDevice?.finalUrlSuffix ?? "";
+    campaign.mobileBidModifier = urlAndDevice?.mobileBidModifier ?? null;
+    campaign.mobileCriterionResourceName = urlAndDevice?.mobileCriterionResourceName ?? null;
     const keywords = keywordsByResourceName.get(campaign.resourceName);
     campaign.adGroups = keywords?.adGroups ?? [];
     campaign.negativeKeywords = keywords?.negativeKeywords ?? [];
@@ -816,9 +918,13 @@ function planCampaignCreation(campaign) {
       geoTargetType: campaign.geoTargetType,
       network: campaign.network,
       containsEuPoliticalAdvertising: campaign.containsEuPoliticalAdvertising,
+      ...(campaign.finalUrlSuffix === null ? {} : { finalUrlSuffix: campaign.finalUrlSuffix }),
     },
     { kind: "create-campaign-locations", campaignName: campaign.name, locations: campaign.locations },
   ];
+  if (campaign.mobileBidModifier !== null) {
+    actions.push({ kind: "create-campaign-mobile-bid", campaignName: campaign.name, bidModifier: campaign.mobileBidModifier });
+  }
   if (campaign.negativeKeywords.length > 0) {
     actions.push({ kind: "add-campaign-negative-keywords", campaignName: campaign.name, keywords: campaign.negativeKeywords });
   }
@@ -828,6 +934,63 @@ function planCampaignCreation(campaign) {
     actions.push({ kind: "create-ad-group-ad", campaignName: campaign.name, adGroupName: adGroup.name, ad: adGroup.ad });
   }
   return actions;
+}
+
+/**
+ * The actions that make a live ad group's ad carry the declared final URL. A live ad group that
+ * lists no ads (a fixture without them) is not compared. One live responsive search ad with a
+ * different URL is updated in place. Any other live ad shape cannot be updated in place, so the
+ * declared ad replaces it, and the plan line says why.
+ *
+ * @param {ReturnType<parseCampaign>} campaign
+ * @param {{name: string, ad: {finalUrl: string}}} declared
+ * @param {object} liveAdGroup
+ */
+function planAdFinalUrl(campaign, declared, liveAdGroup) {
+  if (!Array.isArray(liveAdGroup.ads)) return [];
+  const liveAds = liveAdGroup.ads.filter((ad) => ad.status !== "REMOVED");
+  const wanted = declared.ad.finalUrl;
+  if (liveAds.length === 0) {
+    return [
+      {
+        kind: "create-ad-group-ad",
+        campaignName: campaign.name,
+        adGroupName: declared.name,
+        adGroupResourceName: liveAdGroup.resourceName,
+        ad: declared.ad,
+      },
+    ];
+  }
+  if (liveAds.length === 1 && liveAds[0].type === "RESPONSIVE_SEARCH_AD") {
+    const [liveAd] = liveAds;
+    if (liveAd.finalUrls.length === 1 && liveAd.finalUrls[0] === wanted) return [];
+    return [
+      {
+        kind: "update-ad-final-url",
+        campaignName: campaign.name,
+        adGroupName: declared.name,
+        adResourceName: liveAd.adResourceName,
+        wanted: [wanted],
+        live: liveAd.finalUrls,
+      },
+    ];
+  }
+  const matching = liveAds.length === 1 && liveAds[0].finalUrls.length === 1 && liveAds[0].finalUrls[0] === wanted;
+  if (matching) return [];
+  return [
+    {
+      kind: "replace-ad-group-ad",
+      campaignName: campaign.name,
+      adGroupName: declared.name,
+      adGroupResourceName: liveAdGroup.resourceName,
+      ad: declared.ad,
+      live: liveAds.map((ad) => ({ type: ad.type, finalUrls: ad.finalUrls, adGroupAdResourceName: ad.adGroupAdResourceName })),
+      reason:
+        liveAds.length > 1
+          ? `ad group has ${liveAds.length} live ads, final_urls is updated in place only on a single responsive search ad`
+          : `live ad is ${liveAds[0].type}, final_urls is updated in place only on a responsive search ad`,
+    },
+  ];
 }
 
 /**
@@ -862,6 +1025,7 @@ function planCampaignKeywords(campaign, liveCampaign) {
       actions.push({ kind: "create-ad-group-ad", campaignName: campaign.name, adGroupName: declared.name, ad: declared.ad });
       continue;
     }
+    actions.push(...planAdFinalUrl(campaign, declared, liveAdGroup));
     if (liveAdGroup.status !== "ENABLED") {
       actions.push({
         kind: "update-ad-group-status",
@@ -928,6 +1092,46 @@ function planCampaignKeywords(campaign, liveCampaign) {
   }
   if (negativesToRemove.length > 0) {
     actions.push({ kind: "remove-campaign-negative-keywords", campaignName: campaign.name, keywords: negativesToRemove });
+  }
+  return actions;
+}
+
+/**
+ * The actions that make a live Search campaign's final URL suffix and mobile device bid modifier
+ * match the declaration. A field the toml leaves out is not compared.
+ *
+ * @param {ReturnType<parseCampaign>} campaign
+ * @param {object} liveCampaign
+ */
+function planCampaignUrlAndDevice(campaign, liveCampaign) {
+  const actions = [];
+  if (campaign.finalUrlSuffix !== null && (liveCampaign.finalUrlSuffix ?? "") !== campaign.finalUrlSuffix) {
+    actions.push({
+      kind: "update-campaign-final-url-suffix",
+      campaignName: campaign.name,
+      resourceName: liveCampaign.resourceName,
+      wanted: campaign.finalUrlSuffix,
+      live: liveCampaign.finalUrlSuffix ?? "",
+    });
+  }
+  if (campaign.mobileBidModifier !== null) {
+    const liveModifier = liveCampaign.mobileBidModifier ?? null;
+    if (liveModifier === null) {
+      actions.push({
+        kind: "create-campaign-mobile-bid",
+        campaignName: campaign.name,
+        campaignResourceName: liveCampaign.resourceName,
+        bidModifier: campaign.mobileBidModifier,
+      });
+    } else if (liveModifier !== campaign.mobileBidModifier) {
+      actions.push({
+        kind: "update-campaign-mobile-bid",
+        campaignName: campaign.name,
+        criterionResourceName: liveCampaign.mobileCriterionResourceName,
+        wanted: campaign.mobileBidModifier,
+        live: liveModifier,
+      });
+    }
   }
   return actions;
 }
@@ -1039,6 +1243,7 @@ export function planAds(config, live) {
           live: liveCampaign.targeting ?? null,
         });
       }
+      actions.push(...planCampaignUrlAndDevice(campaign, liveCampaign));
       actions.push(...planCampaignKeywords(campaign, liveCampaign));
     }
 
@@ -1119,6 +1324,16 @@ export function describe(action) {
       return `campaign "${action.campaignName}": ${action.keywords.length} negative keyword(s) ${describeKeywords(action.keywords)} (would remove)`;
     case "create-ad-group-ad":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}": responsive search ad to ${action.ad.finalUrl}, headlines ${JSON.stringify(action.ad.headlines)}, descriptions ${JSON.stringify(action.ad.descriptions)} (would create)`;
+    case "update-campaign-final-url-suffix":
+      return `campaign "${action.campaignName}": final URL suffix ${JSON.stringify(action.live)} (declared ${JSON.stringify(action.wanted)}) (would update)`;
+    case "create-campaign-mobile-bid":
+      return `campaign "${action.campaignName}": mobile bid modifier ${action.bidModifier} (would create)`;
+    case "update-campaign-mobile-bid":
+      return `campaign "${action.campaignName}": mobile bid modifier ${action.live} (declared ${action.wanted}) (would update)`;
+    case "update-ad-final-url":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ad final URL ${JSON.stringify(action.live)} (declared ${JSON.stringify(action.wanted)}) (would update in place)`;
+    case "replace-ad-group-ad":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ad cannot be updated in place — ${action.reason}; would create the ad to ${action.ad.finalUrl} and remove ${action.live.length} live ad(s) (would replace)`;
     default:
       return `${action.kind}`;
   }
@@ -1211,7 +1426,44 @@ export function campaignCreateBody(action, budgetResourceName) {
       targetContentNetwork: action.network.contentNetwork,
     },
     containsEuPoliticalAdvertising: EU_POLITICAL_ADVERTISING_STATUS[action.containsEuPoliticalAdvertising],
+    ...(action.finalUrlSuffix ? { finalUrlSuffix: action.finalUrlSuffix } : {}),
     ...biddingFields,
+  };
+}
+
+/**
+ * The campaignCriteria create operation for a campaign's mobile device bid adjustment.
+ *
+ * @param {number} bidModifier
+ * @param {string} campaignResourceName
+ */
+export function mobileBidCreateOperation(bidModifier, campaignResourceName) {
+  return { create: { campaign: campaignResourceName, device: { type: "MOBILE" }, bidModifier } };
+}
+
+/**
+ * The adService:mutate operation that sets a responsive search ad's final URLs in place.
+ *
+ * @param {string} adResourceName
+ * @param {string[]} finalUrls
+ */
+export function adFinalUrlUpdateOperation(adResourceName, finalUrls) {
+  return { updateMask: "finalUrls", update: { resourceName: adResourceName, finalUrls } };
+}
+
+export function adGroupAdCreateOperation(adGroupResourceName, ad) {
+  return {
+    create: {
+      adGroup: adGroupResourceName,
+      status: "ENABLED",
+      ad: {
+        finalUrls: [ad.finalUrl],
+        responsiveSearchAd: {
+          headlines: ad.headlines.map((text) => ({ text })),
+          descriptions: ad.descriptions.map((text) => ({ text })),
+        },
+      },
+    },
   };
 }
 
@@ -1370,22 +1622,42 @@ async function applyAction(token, config, action, context) {
         action.keywords.map((keyword) => ({ remove: keyword.resourceName })),
       );
     case "create-ad-group-ad": {
-      const adGroupResourceName = context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
+      const adGroupResourceName =
+        action.adGroupResourceName ?? context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
       return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupAds", [
-        {
-          create: {
-            adGroup: adGroupResourceName,
-            status: "ENABLED",
-            ad: {
-              finalUrls: [action.ad.finalUrl],
-              responsiveSearchAd: {
-                headlines: action.ad.headlines.map((text) => ({ text })),
-                descriptions: action.ad.descriptions.map((text) => ({ text })),
-              },
-            },
-          },
-        },
+        adGroupAdCreateOperation(adGroupResourceName, action.ad),
       ]);
+    }
+    case "update-campaign-final-url-suffix":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "campaigns", [
+        { updateMask: "finalUrlSuffix", update: { resourceName: action.resourceName, finalUrlSuffix: action.wanted } },
+      ]);
+    case "create-campaign-mobile-bid":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "campaignCriteria", [
+        mobileBidCreateOperation(
+          action.bidModifier,
+          action.campaignResourceName ?? context.campaignResourceNameByCampaign[action.campaignName],
+        ),
+      ]);
+    case "update-campaign-mobile-bid":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "campaignCriteria", [
+        { updateMask: "bidModifier", update: { resourceName: action.criterionResourceName, bidModifier: action.wanted } },
+      ]);
+    case "update-ad-final-url":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "ads", [
+        adFinalUrlUpdateOperation(action.adResourceName, action.wanted),
+      ]);
+    case "replace-ad-group-ad": {
+      await googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupAds", [
+        adGroupAdCreateOperation(action.adGroupResourceName, action.ad),
+      ]);
+      return googleAdsMutate(
+        token,
+        config.customerId,
+        config.apiVersion,
+        "adGroupAds",
+        action.live.map((ad) => ({ remove: ad.adGroupAdResourceName })),
+      );
     }
     default:
       throw new Error(`Unknown action ${action.kind}`);

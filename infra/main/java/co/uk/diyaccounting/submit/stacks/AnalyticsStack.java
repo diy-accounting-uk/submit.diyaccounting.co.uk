@@ -821,6 +821,7 @@ public class AnalyticsStack extends Stack {
                         .resultsBucket(this.resultsBucket)
                         .lakeBucket(this.lakeBucket)
                         .passesTableName(sharedNames.data.passesTableName)
+                        .integrationCallsTableName(sharedNames.data.integrationCallsTableName)
                         .dataTableNames(List.of(
                                 sharedNames.data.receiptsTableName,
                                 sharedNames.data.bundlesTableName,

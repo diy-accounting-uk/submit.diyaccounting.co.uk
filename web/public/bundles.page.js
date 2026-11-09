@@ -128,10 +128,15 @@ const hasBundle = (bundles, id) =>
     return b?.bundleId === id;
   });
 
+// The suffix after "Request <name>": a free bundle says "free", the others state their token count.
+const requestLabelSuffix = (free, tokens) => {
+  if (free) return " (free)";
+  return tokens ? ` (${tokens} token${String(tokens) !== "1" ? "s" : ""})` : "";
+};
+
 const markToRequest = (btn, message = "Request bundle") => {
-  const tg = btn.getAttribute("data-tokens-granted");
-  const tokenLabel = tg ? ` (${tg} token${tg !== "1" ? "s" : ""})` : "";
-  btn.textContent = message + tokenLabel;
+  const free = btn.getAttribute("data-free") === "true";
+  btn.textContent = message + requestLabelSuffix(free, btn.getAttribute("data-tokens-granted"));
   btn.disabled = false;
   btn.classList.remove("btn-ok");
 };
@@ -233,7 +238,6 @@ const serviceItemEl = (...children) => domEl("div", { class: "service-item" }, .
 const cardEl = (b) => {
   const name = String((b && (b.name || b.id)) || "");
   const tg = b.tokensGranted;
-  const tokenLabel = tg !== undefined ? ` (${tg} token${tg !== 1 ? "s" : ""})` : "";
   const enable = b.enable || "never";
 
   const bundleButton = (cls, extra, label, withTokens = false) =>
@@ -377,7 +381,11 @@ const cardEl = (b) => {
   }
 
   // enable = "always": normal enabled button
-  return serviceItemEl(bundleButton("btn service-btn", {}, `Request ${name}${tokenLabel}`, true));
+  const isFree = allocation === "on-request" && !(Array.isArray(b.prices) && b.prices.length > 0);
+  return serviceItemEl(
+    bundleButton("btn service-btn", isFree ? { "data-free": "true" } : {}, `Request ${name}${requestLabelSuffix(isFree, tg)}`, true),
+    isFree ? noteEl("plain", "One day, no card. To keep filing after today, choose a plan above.") : null,
+  );
 };
 
 // --- click handler for all request buttons
@@ -541,6 +549,7 @@ function renderCatalogueBundles() {
       return false;
     })
     .filter(isListedInCurrentEnvironment)
+    .sort((a, b) => (a.allocation === "on-request") - (b.allocation === "on-request"))
     .map(cardEl);
   container.replaceChildren(...(cards.length > 0 ? cards : [messageEl("No bundles available.")]));
   updateBundleStatus();

@@ -101,6 +101,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers: use when an ITSA behaviour-test spec needs a shared init, fill, submit or verify step.
     - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout: use when the path to HMRC production approval or the ITSA phase 2 build needs a plan.
     - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email: use when the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
+    - [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it: use when the structure of an HMRC request's fraud prevention headers must leave the request path without any value in it, or a synthetic request with that structure must be built for HMRC's validator.
+    - [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator: use when a request to HMRC has a fraud prevention header structure that the validator consumer has not checked today.
+    - [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values: use when the structure of the fraud prevention headers that the service sends must be checked against HMRC's own validator, without any customer value reaching HMRC.
 - **[Companies House filing](#companies-house-filing-ch)**
   - [OAuth and identity](#oauth-and-identity-ch)
     - [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token: use when a filing journey has an authorization code and needs an access token for the session.
@@ -305,6 +308,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store: use when the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
     - [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables: use when the customer tables hold old test records, and the counts must show the active users and subscribers.
     - [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set: use when a key may be exposed on a public surface, after a key leak or a rotation, or when the operator asks for an exposure check.
+    - [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets: use when the operator asks for a secret scan, or a key may sit in the history, an unpushed branch, an uncommitted file or the private repository.
+    - [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report: use when the operator asks for the security state of the estate, an all-alerts read, or a security overview.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
@@ -989,7 +994,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ITSA year-end processing](#itsa-year-end-processing-hmrc): [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary · [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims · [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments) Manage ITSA tax liability adjustments · [HMRC-19](#hmrc-19-calculate-itsa-tax-liability) Calculate ITSA tax liability · [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations) Retrieve ITSA crystallisation obligations · [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration) Submit the ITSA final declaration
 - [Receipts and HMRC authentication](#receipts-and-hmrc-authentication-hmrc): [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts) Store and retrieve HMRC submission receipts · [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token) Exchange an HMRC OAuth code for a token · [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client) Verify HMRC agent authorisation for a client
 - [HMRC API plumbing](#hmrc-api-plumbing-hmrc): [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers) Build HMRC fraud-prevention headers · [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance) Monitor HMRC fraud-prevention header compliance · [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts) Validate HMRC identifiers, dates and amounts · [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations) Format and match HMRC obligations · [HMRC-29](#hmrc-29-call-the-hmrc-api) Call the HMRC API · [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state) Persist async HMRC API request state
-- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
+- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email · [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it · [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator · [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
 <!-- /generated:area HMRC -->
 
 ### VAT filing (HMRC)
@@ -1385,6 +1390,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers
 - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout
 - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
+- [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it
+- [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator
+- [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
 <!-- /generated:group hmrc-infrastructure-and-test-tooling-hmrc -->
 
 #### HMRC-31 Wire HMRC Lambda handlers into CDK stacks
@@ -1466,6 +1474,36 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/itsa-readiness/SKILL.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, ../private.diyaccounting.co.uk/hmrc/itsa/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, ../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md, ../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
 - **Keywords:** itsa readiness, recognition email, production approval, sdst, minimum functionality standards, evidence, send day, 14-day window
 - **Related:** HMRC-34, HMRC-37
+
+#### HMRC-41 Describe fraud prevention headers as a shape and build a synthetic request from it
+
+- **Use when:** the structure of an HMRC request's fraud prevention headers must leave the request path without any value in it, or a synthetic request with that structure must be built for HMRC's validator.
+- **Does:** fraudPreventionHeaderShape reduces the headers of an HMRC request to a shape: the connection method, the header names, a class for each value (ipv4, uuid, timestamp, a list of key names) and the type of the multi-factor header. It holds no value from the request. The shapeHash is the SHA-256 of that shape. syntheticFraudPreventionHeaders builds a header set with the same structure from fixed test values, the addresses the caller passes and the current time, and uses no value of the request that the shape came from.
+- **Run:** `import { fraudPreventionHeaderShape, syntheticFraudPreventionHeaders } from "app/lib/fraudPreventionHeaderShape.js"`
+- **Entry:** `app/lib/fraudPreventionHeaderShape.js:fraudPreventionHeaderShape`; `app/lib/fraudPreventionHeaderShape.js:syntheticFraudPreventionHeaders`
+- **Files:** app/lib/fraudPreventionHeaderShape.js, app/unit-tests/lib/fraudPreventionHeaderShape.test.js
+- **Keywords:** fraud prevention headers, header shape, shape hash, synthetic headers, hmrc validator, no customer value
+- **Related:** HMRC-29, HMRC-42, HMRC-43
+
+#### HMRC-42 Queue a new fraud prevention header shape for HMRC's validator
+
+- **Use when:** a request to HMRC has a fraud prevention header structure that the validator consumer has not checked today.
+- **Does:** enqueueFraudPreventionHeaderCheck reduces the headers of an HMRC request to a shape, keeps the shape hashes each warm Lambda has seen today, and sends one SQS message for a shape it has not seen. The message holds the shape and the API template, with no header value. It is best effort: a failed or slow send is logged and never reaches the caller, and the caller does not wait for it.
+- **Run:** `import { enqueueFraudPreventionHeaderCheck } from "app/lib/fraudPreventionHeaderCheckQueue.js"`
+- **Entry:** `app/lib/fraudPreventionHeaderCheckQueue.js:enqueueFraudPreventionHeaderCheck`
+- **Files:** app/lib/fraudPreventionHeaderCheckQueue.js, app/unit-tests/lib/fraudPreventionHeaderCheckQueue.test.js
+- **Keywords:** fraud prevention headers, sqs, validator queue, shape sampling, best effort
+- **Related:** HMRC-41, HMRC-43
+
+#### HMRC-43 Check a header shape with HMRC's validator using synthetic values
+
+- **Use when:** the structure of the fraud prevention headers that the service sends must be checked against HMRC's own validator, without any customer value reaching HMRC.
+- **Does:** hmrcFphCheckWorker.js is the SQS consumer for the queue that HMRC-42 fills. For each shape it builds a synthetic header set with HMRC-41, sends one GET to the sandbox validate endpoint under a client credentials token, and writes one result item for the shape and day. It skips a shape that already has a result that day. A pass has code VALID_HEADERS, a warn POTENTIALLY_INVALID_HEADERS and a fail INVALID_HEADERS; a fail counts the HmrcFphCheckFailed metric. A sandbox error or timeout writes no item, so SQS retries and then the dead letter queue raises its alarm.
+- **Run:** no command; the worker runs on the hmrc-fph-check queue
+- **Entry:** `app/functions/hmrc/hmrcFphCheckWorker.js:workerHandler`; `app/functions/hmrc/hmrcFphCheckWorker.js:checkShape`
+- **Files:** app/functions/hmrc/hmrcFphCheckWorker.js, app/unit-tests/functions/hmrcFphCheckWorker.test.js, app/data/dynamoDbIntegrationCallRepository.js, infra/main/java/co/uk/diyaccounting/submit/constructs/QueueWorkerLambda.java, infra/main/java/co/uk/diyaccounting/submit/utils/FphCheckAccess.java
+- **Keywords:** fraud prevention headers, hmrc validator, test-api, client credentials, synthetic request, header check result, dead letter queue
+- **Related:** HMRC-41, HMRC-42, HMRC-29
 
 ## Companies House filing (CH)
 
@@ -2409,7 +2447,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-155](#ops-155-replay-the-support-prompts-over-synthetic-tickets) Replay the support prompts over synthetic tickets · [OPS-197](#ops-197-measure-triage-accuracy-against-the-amount-of-injected-context) Measure triage accuracy against the amount of injected context · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator) Count the mail notices that wait for the operator · [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action) Handle an approved mail notice with one fixed action · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -3173,7 +3211,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-194 Run a read-only Nova agent
 
 - **Use when:** a workflow needs an Amazon Nova model to read the repository or AWS evidence and write one structured answer.
-- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. The log shows only the turn number, the tool name and ok or refused.
+- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. When a run with a final schema ends a turn in text with no tool call, the runner asks once for submit_answer and forces that tool on the next request; a second text-only turn ends the run as no_answer. The log shows only the turn number, the tool name and ok or refused, and one nudge line.
 - **Run:** `node scripts/nova-agent.mjs --prompt-file <file> --output-file <file>`; or set `runner: nova` on the run-triage-agent action
 - **Entry:** `scripts/nova-agent.mjs`
 - **Files:** scripts/nova-agent.mjs, scripts/nova-agent-tools.mjs, prompts/alarm-triage-answer.json, .github/actions/run-triage-agent/action.yml, app/unit-tests/scripts/novaAgent.test.js, app/unit-tests/scripts/novaAgentTools.test.js
@@ -3454,6 +3492,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store
 - [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables
 - [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set
+- [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets
+- [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report
 - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records
 - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
@@ -3514,11 +3554,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-183 Replace a Google refresh token or OAuth client without a gap
 
 - **Use when:** a Google refresh token (YouTube, Google Ads, Microsoft Ads sign-in) or the Desktop OAuth client secret needs replacing, and the old value must keep working until the new one is proven.
-- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, checks the stored value, and only then revokes the old token. A failed step leaves the old token valid and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
+- **Does:** google-reconsent.js runs the loopback consent with PKCE, checks the new refresh token with the read its real reader makes, writes it to its secret with the rotated-at tag, reads it back, and checks the stored value. It never revokes the old token, because a revoke ends the account's whole grant to the client and so every token the client holds. A failed step leaves the old token stored and exits non-zero. With --client-json it writes a new OAuth client JSON the same way and reports whether each stored refresh token still mints an access token. It prints step names and outcomes, never a token, a secret or a code.
 - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --token <youtube|ads|msads> [--dry-run]`; `AWS_PROFILE=diya-submit-prod node scripts/google-reconsent.js --client-json <path> [--dry-run]`
 - **Entry:** `scripts/google-reconsent.js`
 - **Files:** scripts/google-reconsent.js, app/unit-tests/scripts/googleReconsent.test.js, scripts/put-secret-with-rotation-tag.sh
-- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, revoke token, pkce, loopback consent
+- **Keywords:** google refresh token, reconsent, rotate refresh token, oauth client secret roll, pkce, loopback consent
 - **Related:** OPS-93, OPS-45
 
 #### OPS-184 Run a full key rotation with the operator
@@ -3600,6 +3640,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/exposure-check/SKILL.md, scripts/exposure-check.mjs, scripts/lib/exposure-matcher.mjs, scripts/content-scan.mjs, app/unit-tests/scripts/exposureMatcher.test.js, app/unit-tests/scripts/contentScan.test.js
 - **Keywords:** exposure check, leaked key, secret scan, public surfaces, key format, rotation set, actions logs, source maps, value comparison
 - **Related:** OPS-45, OPS-92
+
+#### OPS-210 Scan every repository and branch for secrets
+
+- **Use when:** the operator asks for a secret scan, or a key may sit in the history, an unpushed branch, an uncommitted file or the private repository.
+- **Does:** secret-scan.mjs runs gitleaks over the full history of all local and origin branches of the six workspace repositories, gitleaks over each worktree's uncommitted files, and trufflehog without verification as a second detector. It reduces every record to rule, place, entropy and fingerprint before anything is written, honours each repository's .gitleaksignore, and refuses a report path outside the private security folder.
+- **Run:** `/secret-scan`; `node scripts/secret-scan.mjs --workspace /Users/antony/projects/diy-accounting-limited --report ../private.diyaccounting.co.uk/security/SECRET_SCAN_<date>.md [--classes <json>]`
+- **Entry:** `.claude/skills/secret-scan/SKILL.md`; `scripts/secret-scan.mjs:main`; `scripts/lib/secret-scan-report.mjs:shapeGitleaks`
+- **Files:** .claude/skills/secret-scan/SKILL.md, scripts/secret-scan.mjs, scripts/lib/secret-scan-report.mjs, app/unit-tests/scripts/secretScan.test.js
+- **Keywords:** secret scan, gitleaks, trufflehog, history scan, branches, worktrees, uncommitted files, gitleaksignore, private repository
+- **Related:** OPS-170
+
+#### OPS-211 Report the security state of every repository in one ranked report
+
+- **Use when:** the operator asks for the security state of the estate, an all-alerts read, or a security overview.
+- **Does:** the skill reads the open Dependabot, code-scanning and secret-scanning alerts of all six repositories, runs the secret-scan skill, gathers the clean skill's state, runs security-review over each repository's open branches and runs the exposure-check skill. It ranks the findings most severe first, puts an open secret-scanning or exposure finding at the top, and proposes a NEXT.md row for each finding with no row.
+- **Run:** `/security-overview`
+- **Entry:** `.claude/skills/security-overview/SKILL.md`
+- **Files:** .claude/skills/security-overview/SKILL.md
+- **Keywords:** security overview, alerts, dependabot, code scanning, secret scanning, estate, ranked report, security state
+- **Related:** OPS-170, OPS-210
 
 #### OPS-46 Query and persist per-consumer security-state records
 
@@ -5536,7 +5596,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-05 Simulate HMRC Agent Authorisation and fraud-prevention headers
 
 - **Use when:** a test needs an agent-client invitation flow or must check Gov-Client/Gov-Vendor headers.
-- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID, VALID_WITH_WARNINGS or INVALID.
+- **Does:** apiEndpoint in agent-authorisation.js implements POST /agents/{arn}/invitations, GET and DELETE .../invitations/{id}, and GET /agents/{arn}/relationships, tracking invitation status in memory. apiEndpoint in fraud-headers.js answers GET /test/fraud-prevention-headers/validate, returning VALID_HEADERS, POTENTIALLY_INVALID_HEADERS or INVALID_HEADERS, the codes HMRC returns.
 - **Run:** `import { apiEndpoint } from "app/http-simulator/routes/agent-authorisation.js"`; `import { apiEndpoint } from "app/http-simulator/routes/fraud-headers.js"`
 - **Entry:** `app/http-simulator/routes/agent-authorisation.js:apiEndpoint`; `app/http-simulator/routes/fraud-headers.js:apiEndpoint`
 - **Files:** app/http-simulator/routes/agent-authorisation.js, app/http-simulator/routes/fraud-headers.js
@@ -6132,7 +6192,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-58 Search community threads for the campaign skill
 
 - **Use when:** /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
-- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id and secret come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a generic User-Agent. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
+- **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id, secret and username come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a Reddit User-Agent that names the app and its Reddit username on Reddit calls and a site User-Agent on the forum call. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
 - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads recorded responses with no credentials
 - **Entry:** `scripts/campaign-threads.mjs:searchThreads`
 - **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/reddit-search.json, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
@@ -6143,10 +6203,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
 - **Does:** unblock tests every blocked, machine-ask and human-driven row against evidence, and moves each row whose state is stale. It then asks each open decision, records the answers on NEXT.md, and prints in full each command that unblocks or part-delivers a row.
-- **Run:** `/unblock`
+- **Run:** `/unblock`, or `/unblock quick wins` for the half of the operator's items that close fastest
 - **Entry:** `.claude/skills/unblock/SKILL.md`
 - **Files:** .claude/skills/unblock/SKILL.md
-- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions
+- **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions, quick wins
 - **Related:** DEV-27, DEV-29, DEV-30
 
 ## Spreadsheets and diya-gl (SS)
@@ -6935,7 +6995,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alert routing: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - alert thresholds: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - alert topic: [OPS-119](#ops-119-provision-the-ops-stack)
-- alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
+- alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - alias move: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - alias txt record: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - all-clients: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
@@ -7064,6 +7124,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - behaviour test master: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- best effort: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - betaanalyticsdataclient: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - bidding optimisation: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - bigquery: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -7120,6 +7181,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - branch audit: [DEV-27](#dev-27-render-the-open-work-board), [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - branch hash: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - branch protection: [OPS-60](#ops-60-guide-github-repository-configuration)
+- branches: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - brand guide: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - brand shots: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
@@ -7274,6 +7336,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - clicks: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
+- client credentials: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - client fetch: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - client id: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - client relationship: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
@@ -7316,7 +7379,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - cloudwatch widget image: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
-- code scanning: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- code scanning: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - codes entry: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - codes link: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -7526,6 +7589,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - date range match: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - date utils: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - dated quarters: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- dead letter queue: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - deadline: [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator)
 - deadline read: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7551,7 +7615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - demo video: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
-- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates), [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - dependabot alerts: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - dependency order: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
@@ -7761,6 +7825,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - eslint config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - eslint ratchet: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - eslint security: [SS-45](#ss-45-run-compliance-checks)
+- estate: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - etag: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - event builders: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - event export: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
@@ -7873,7 +7938,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud prevention compliance: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - fraud prevention header violation: [HMRC-29](#hmrc-29-call-the-hmrc-api)
-- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
@@ -7946,6 +8011,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - github issue: [SITE-05](#site-05-submit-support-tickets), [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - github settings: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - github setup: [OPS-60](#ops-60-guide-github-repository-configuration)
+- gitleaks: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
+- gitleaksignore: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - glacier: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - global service alarms: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
 - global sign-out: [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
@@ -8005,10 +8072,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - head request: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - header check: [DEV-20](#dev-20-check-spdx-licence-headers)
+- header check result: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - header footer diagram: [SITE-12](#site-12-map-the-site-structure)
 - header hidden: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - header injection: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
+- header shape: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - headless: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - headless browser: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
@@ -8022,6 +8091,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - held pointer: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
+- history scan: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - hmac key rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - hmrc: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
@@ -8051,6 +8121,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc stack: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - hmrc token exchange: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token)
 - hmrc token expired: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- hmrc validator: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - hmrc vat: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - hmrc vat api: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-04](#hmrc-04-retrieve-vat-liabilities), [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - hmrc-api-requests: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
@@ -8434,6 +8505,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
 - no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- no customer value: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
@@ -8701,7 +8773,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - private issue: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine), [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result), [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - private issues: [OPS-189](#ops-189-count-the-mail-notices-that-wait-for-the-operator)
 - private report: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
-- private repository: [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DATA-61](#data-61-intake-support-email-as-private-issues)
+- private repository: [OPS-190](#ops-190-handle-an-approved-mail-notice-with-one-fixed-action), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - privkey: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
@@ -8770,11 +8842,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
+- quick wins: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - quote: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - random hex: [SITE-17](#site-17-trace-and-secure-client-requests)
+- ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -8925,7 +8999,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
-- revoke token: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
@@ -9038,7 +9111,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secret cache: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - secret origin header: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - secret rotation: [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule)
-- secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- secret scanning: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
@@ -9055,12 +9129,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - security incident: [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - security lake: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - security lint: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- security overview: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - security policy: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - security review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security review prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - security scan: [OPS-30](#ops-30-run-codeql-security-scanning)
 - security scanning: [SS-40](#ss-40-run-codeql-scanning)
-- security state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
+- security state: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report), [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - security triage: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security-review.yml: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security.md: [OPS-65](#ops-65-document-security-policy-and-disclosure)
@@ -9099,6 +9174,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - setup java: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - setup node: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
+- shape hash: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
+- shape sampling: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - share posts: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - shared auth client: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
@@ -9167,7 +9244,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spreadsheetsbehaviour: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - sqale: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
-- sqs: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- sqs: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - sso profile: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - sso window: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
@@ -9292,7 +9369,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - synthetic account: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - synthetic bundle toggle: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - synthetic data: [CH-12](#ch-12-generate-synthetic-test-companies)
+- synthetic headers: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - synthetic period key: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
+- synthetic request: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - synthetic user: [OPS-12](#ops-12-clean-up-expired-test-users), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - synthetics runtime: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - system test: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -9334,6 +9413,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
+- test-api: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - test-data-link: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - test-scope: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test.yml: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
@@ -9393,6 +9473,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - triage agent: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - triage workflow: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - triage-generated pr: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
+- trufflehog: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - trusted event: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result)
 - trusted event proof: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - trusted event rule: [OPS-117](#ops-117-provision-the-observability-stack)
@@ -9418,6 +9499,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unattended agent workflow: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - unblock: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
+- uncommitted files: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - unit: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
@@ -9458,6 +9540,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- validator queue: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator)
 - validity: [BILL-08](#bill-08-check-a-passs-validity)
 - value comparison: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - vat account: [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
@@ -9577,6 +9660,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - worktree catalogue: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - worktree removal: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches), [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - worktree sub-agents: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
+- worktrees: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - write-cred-configs: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - write-truncated table: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - write-workbook: [SS-05](#ss-05-run-the-diya-gl-cli), [SS-16](#ss-16-write-workbooks-from-diya-gl-data)

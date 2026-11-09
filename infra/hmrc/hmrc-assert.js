@@ -97,6 +97,19 @@ export function applicationsForEnvironment(environmentName) {
 }
 
 /**
+ * The subscriptions a run probes. A probe call carries no fraud prevention headers, and HMRC
+ * records each headerless call against a production application, so the production application
+ * is proved by its token exchange alone and its subscriptions are never called.
+ *
+ * @param {string} applicationName
+ * @param {{subscriptions: object[]}} application
+ * @returns {object[]}
+ */
+export function subscriptionsToProbe(applicationName, application) {
+  return applicationName === "production" ? [] : application.subscriptions;
+}
+
+/**
  * Build the request a subscription probe sends, without sending it - the client-credentials
  * token request scripts/create-hmrc-test-user.js already makes, then one call per declared
  * subscription with the Accept header naming its version.
@@ -179,7 +192,14 @@ async function assertApplication(applicationName, application, environmentName, 
     return;
   }
 
-  for (const subscription of application.subscriptions) {
+  console.log("  token exchange: ok");
+  const probed = subscriptionsToProbe(applicationName, application);
+  if (probed.length < application.subscriptions.length) {
+    console.log(
+      `  ${application.subscriptions.length - probed.length} subscription(s) not probed: a probe sends no fraud prevention headers`,
+    );
+  }
+  for (const subscription of probed) {
     const request = probeRequest({ host: application.host, subscription, accessToken });
     try {
       const response = await fetch(request.url, { method: request.method, headers: request.headers });

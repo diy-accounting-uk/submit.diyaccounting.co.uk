@@ -34,8 +34,9 @@ patterns_allowed = [
 # Repository-level Actions secrets and variables: every workflow run can read these regardless
 # of which environment it targets. Names only.
 repository_secrets = [
-  "ADMIN_TOKEN",
   "AGENT_APP_PRIVATE_KEY",
+  "FAMILY_AFFILIATE_EMAILS",
+  "OPERATOR_EMAILS",
   "OPS_APP_PRIVATE_KEY",
   "RELEASE_PAT",
 ]
@@ -44,6 +45,7 @@ repository_variables = [
   "AGENT_APP_INSTALLATION_ID",
   "AWS_CERTIFICATE_ARN",
   "AWS_HOSTED_ZONE_NAME",
+  "GOOGLE_DRIVE_PICKER_API_KEY",
   "OPS_APP_ID",
   "OPS_APP_INSTALLATION_ID",
   "SUBMIT_GOOGLE_AUTH_MODE",
@@ -72,13 +74,22 @@ enforcement = "active"
   type = "required_status_checks"
   strict_required_status_checks_policy = false
   do_not_enforce_on_create = false
-  required_status_checks = ["Check commit signatures", "npm test", "maven test", "eslint", "CodeQL"]
+  required_status_checks = ["Check commit signatures", "npm test", "maven test", "eslint", "CodeQL", "content scan", "merge gate"]
+
+  [[ruleset.rule]]
+  type = "required_signatures"
 
   # RepositoryRole id 5 is Admin; the operator's own role, which the branch protection UI always
   # lets bypass so an admin is never locked out of their own repository.
   [[ruleset.bypass_actor]]
   actor_id = 5
   actor_type = "RepositoryRole"
+  bypass_mode = "always"
+
+  # Integration 4995481 is the GitHub App that may push to the default branch.
+  [[ruleset.bypass_actor]]
+  actor_id = 4995481
+  actor_type = "Integration"
   bypass_mode = "always"
 
 [[environment]]
@@ -92,7 +103,50 @@ variables = [
   "SUBMIT_DEPLOY_ROLE_ARN",
   "SUBMIT_DEVELOPER_CERTIFICATE_ARN",
   "SUBMIT_MARKETING_CERTIFICATE_ARN",
+  "SUBMIT_OPERATOR_NOTIFY_EMAIL",
   "SUBMIT_GA4_MEASUREMENT_ID",
+  "SUBMIT_HOLDING_CERTIFICATE_ARN",
+  "SUBMIT_REGIONAL_CERTIFICATE_ARN",
+  "SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN",
+  "SYNTHETIC_FAMILY_AFFILIATE_EMAILS",
+  "SYNTHETIC_OPERATOR_EMAILS",
+  "TEST_COMPANIES_HOUSE_USER_ID",
+]
+secrets = [
+  "COMPANIES_HOUSE_API_KEY",
+  "COMPANIES_HOUSE_CLIENT_SECRET",
+  "COMPANIES_HOUSE_PRESENTER_CODE",
+  "COMPANIES_HOUSE_PRESENTER_ID",
+  "COMPANIES_HOUSE_SANDBOX_API_KEY",
+  "GOOGLE_CLIENT_SECRET",
+  "HMRC_CLIENT_SECRET",
+  "HMRC_SANDBOX_CLIENT_SECRET",
+  "ORIGIN_VERIFY_SECRET",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_TEST_SECRET_KEY",
+  "STRIPE_TEST_WEBHOOK_SECRET",
+  "STRIPE_WEBHOOK_SECRET",
+  "TELEGRAM_BOT_TOKEN",
+  "TEST_COMPANIES_HOUSE_PASSWORD",
+  "TEST_COMPANIES_HOUSE_TOTP_SECRET",
+]
+
+[[environment]]
+name = "prod"
+variables = [
+  "COMPANIES_HOUSE_CLIENT_ID",
+  "PAYPAL_CLIENT_ID",
+  "SUBMIT_ACCOUNT_ID",
+  "SUBMIT_ACTIONS_ROLE_ARN",
+  "SUBMIT_ALARM_TRIAGE_ROLE_ARN",
+  "SUBMIT_CERTIFICATE_ARN",
+  "SUBMIT_COMPANY_BOOK_ID",
+  "SUBMIT_COMPANY_BOOK_OWNER_PREFIX",
+  "SUBMIT_DEPLOY_ROLE_ARN",
+  "SUBMIT_GOOGLE_AUTH_MODE",
+  "SUBMIT_DEVELOPER_CERTIFICATE_ARN",
+  "SUBMIT_MARKETING_CERTIFICATE_ARN",
+  "SUBMIT_OPERATOR_NOTIFY_EMAIL",
   "SUBMIT_HOLDING_CERTIFICATE_ARN",
   "SUBMIT_REGIONAL_CERTIFICATE_ARN",
   "SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN",
@@ -105,39 +159,14 @@ secrets = [
   "GOOGLE_CLIENT_SECRET",
   "HMRC_CLIENT_SECRET",
   "HMRC_SANDBOX_CLIENT_SECRET",
+  "ORIGIN_VERIFY_SECRET",
+  "PAYPAL_CLIENT_SECRET",
+  "PRIVATE_REPO_DEPLOY_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_TEST_SECRET_KEY",
   "STRIPE_TEST_WEBHOOK_SECRET",
   "STRIPE_WEBHOOK_SECRET",
-  "TELEGRAM_BOT_TOKEN",
-]
-
-[[environment]]
-name = "prod"
-variables = [
-  "COMPANIES_HOUSE_CLIENT_ID",
-  "SUBMIT_ACCOUNT_ID",
-  "SUBMIT_ACTIONS_ROLE_ARN",
-  "SUBMIT_ALARM_TRIAGE_ROLE_ARN",
-  "SUBMIT_CERTIFICATE_ARN",
-  "SUBMIT_DEPLOY_ROLE_ARN",
-  "SUBMIT_GOOGLE_AUTH_MODE",
-  "SUBMIT_DEVELOPER_CERTIFICATE_ARN",
-  "SUBMIT_MARKETING_CERTIFICATE_ARN",
-  "SUBMIT_HOLDING_CERTIFICATE_ARN",
-  "SUBMIT_REGIONAL_CERTIFICATE_ARN",
-  "SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN",
-]
-secrets = [
-  "COMPANIES_HOUSE_API_KEY",
-  "COMPANIES_HOUSE_CLIENT_SECRET",
-  "GOOGLE_CLIENT_SECRET",
-  "HMRC_CLIENT_SECRET",
-  "HMRC_SANDBOX_CLIENT_SECRET",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_TEST_SECRET_KEY",
-  "STRIPE_TEST_WEBHOOK_SECRET",
-  "STRIPE_WEBHOOK_SECRET",
+  "SUPPORT_GMAIL_DRAFT_KEY",
   "TELEGRAM_BOT_TOKEN",
 ]
 

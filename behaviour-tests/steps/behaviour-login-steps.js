@@ -116,6 +116,8 @@ async function readHostedUiErrorText(page) {
   }
 }
 
+const nativeLaneLoginPath = "/auth/login.html?provider=COGNITO";
+
 export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Google account", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png`, readerView: true });
@@ -124,6 +126,7 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
     const appOrigin = new URL(page.url()).origin;
 
     for (let attempt = 1; attempt <= hostedUiRedirectAttempts; attempt++) {
+      await page.goto(new URL(nativeLaneLoginPath, appOrigin).toString(), { waitUntil: "domcontentloaded" });
       // The sign-in button is static HTML, but the login page attaches its click handler
       // from an inline script that only runs once the parser-blocking scripts above it
       // have loaded. A click before then lands on a button with no handler, does nothing,

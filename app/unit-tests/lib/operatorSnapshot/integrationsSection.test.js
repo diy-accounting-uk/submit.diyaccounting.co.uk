@@ -6,6 +6,8 @@ import {
   buildIntegrationSummarySql,
   buildIntegrationCallsSql,
   shapeIntegrationsSection,
+  shapeHeaderChecks,
+  headerCheckPartitionKeys,
   INTEGRATION_ORGS,
 } from "@app/lib/operatorSnapshot/integrationsSection.js";
 
@@ -119,5 +121,96 @@ describe("integrationsSection", () => {
     expect(text).not.toMatch(/\b[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]\b/);
     expect(text).not.toMatch(/\bcus_\w+/);
     expect(text).not.toMatch(/\b\d{1,3}(\.\d{1,3}){3}\b/);
+  });
+
+  describe("header checks", () => {
+    const item = (over) => ({
+      pk: "fph#2026-11-08",
+      sk: "2b7ff70b",
+      recordType: "fph-check",
+      result: "pass",
+      hmrcCode: "VALID_HEADERS",
+      api: "GET /organisations/vat/{vrn}/obligations",
+      connectionMethod: "WEB_APP_VIA_SERVER",
+      checkedAt: "2026-11-08T12:16:48.130Z",
+      errors: [],
+      warnings: [],
+      ...over,
+    });
+
+    test("a pass has no message and no headers", () => {
+      expect(shapeHeaderChecks([item({})])).toEqual([
+        {
+          day: "2026-11-08",
+          api: "GET /organisations/vat/{vrn}/obligations",
+          connectionMethod: "WEB_APP_VIA_SERVER",
+          result: "pass",
+          hmrcCode: "VALID_HEADERS",
+          message: null,
+          headers: [],
+          checkedAt: "2026-11-08T12:16:48.130Z",
+        },
+      ]);
+    });
+
+    test("a warn shows its first warning and a fail its first error, the error first when both exist", () => {
+      const warn = item({
+        result: "warn",
+        hmrcCode: "POTENTIALLY_INVALID_HEADERS",
+        warnings: [{ code: "W1", message: "Value looks unusual", headers: ["Gov-Client-User-Agent"] }],
+      });
+      const fail = item({
+        result: "fail",
+        hmrcCode: "INVALID_HEADERS",
+        errors: [{ code: "E1", message: "Header missing", headers: ["Gov-Client-Device-ID", "Gov-Vendor-Version"] }],
+        warnings: [{ code: "W1", message: "Ignored beside an error", headers: ["Gov-Client-User-Agent"] }],
+      });
+      const [shapedFail, shapedWarn] = shapeHeaderChecks(
+        [warn, fail].map((row, index) => ({ ...row, checkedAt: `2026-11-08T1${index}:00:00.000Z` })),
+      );
+      expect(shapedWarn).toMatchObject({ result: "warn", message: "Value looks unusual", headers: ["Gov-Client-User-Agent"] });
+      expect(shapedFail).toMatchObject({
+        result: "fail",
+        message: "Header missing",
+        headers: ["Gov-Client-Device-ID", "Gov-Vendor-Version"],
+      });
+    });
+
+    test("rows run newest first across days, and items of other record types are left out", () => {
+      const rows = shapeHeaderChecks([
+        item({ pk: "fph#2026-11-06", checkedAt: "2026-11-06T09:00:00.000Z" }),
+        item({ pk: "fph#2026-11-08", checkedAt: "2026-11-08T09:00:00.000Z" }),
+        item({ pk: "call#hmrc#2026-11-08", recordType: "call" }),
+        item({ pk: "fph#2026-11-07", checkedAt: "2026-11-07T09:00:00.000Z" }),
+      ]);
+      expect(rows.map((row) => row.day)).toEqual(["2026-11-08", "2026-11-07", "2026-11-06"]);
+    });
+
+    test("no items give an empty list, and the section carries the list", () => {
+      expect(shapeHeaderChecks([])).toEqual([]);
+      const section = shapeIntegrationsSection({ summaryRows: [], callRows: [], tableName: "t", region: "r", toWindows });
+      expect(section.headerChecks).toEqual([]);
+      const withItems = shapeIntegrationsSection({
+        summaryRows: [],
+        callRows: [],
+        headerCheckItems: [item({})],
+        tableName: "t",
+        region: "r",
+        toWindows,
+      });
+      expect(withItems.headerChecks).toHaveLength(1);
+    });
+
+    test("the partition keys are today and the six days before, newest first", () => {
+      expect(headerCheckPartitionKeys(new Date("2026-11-08T00:30:00.000Z"))).toEqual([
+        "fph#2026-11-08",
+        "fph#2026-11-07",
+        "fph#2026-11-06",
+        "fph#2026-11-05",
+        "fph#2026-11-04",
+        "fph#2026-11-03",
+        "fph#2026-11-02",
+      ]);
+    });
   });
 });

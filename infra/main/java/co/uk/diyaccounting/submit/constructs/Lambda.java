@@ -349,6 +349,17 @@ public class Lambda {
             String resourceNamePrefix,
             String stackShortName,
             List<Lambda> functions) {
+        return appStackHealthAlarm(scope, envName, resourceNamePrefix, stackShortName, functions, List.of());
+    }
+
+    /** As above, with the queue checks of queue consumers that have no ingest function. */
+    public static Optional<CompositeAlarm> appStackHealthAlarm(
+            final Construct scope,
+            String envName,
+            String resourceNamePrefix,
+            String stackShortName,
+            List<Lambda> functions,
+            List<QueueWorkerLambda> queueWorkers) {
         if (CI_ENV_NAME.equals(envName)) {
             return Optional.empty();
         }
@@ -398,6 +409,9 @@ public class Lambda {
         }
         if (!groupedAsync.isEmpty()) {
             checks.addAll(AsyncApiLambda.groupedQueueChecks(scope, resourceNamePrefix, stackShortName, groupedAsync));
+        }
+        for (QueueWorkerLambda queueWorker : queueWorkers) {
+            checks.addAll(queueWorker.addQueueChecks());
         }
         return Optional.of(compositeHealthAlarm(scope, resourceNamePrefix, stackShortName, checks));
     }

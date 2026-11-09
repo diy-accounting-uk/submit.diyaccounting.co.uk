@@ -32,6 +32,13 @@ public class HmrcNames {
     public String hmrcVatReturnPostWorkerLambdaArn;
     public String hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatReturnPostLambdaQueueName;
+
+    /** The validator consumer: a queue of new header shapes, its dead letter queue and its worker. */
+    public String hmrcFphCheckWorkerFunctionName;
+
+    public String hmrcFphCheckWorkerHandler;
+    public String hmrcFphCheckQueueName;
+    public String hmrcFphCheckDeadLetterQueueName;
     public String hmrcVatReturnPostLambdaDeadLetterQueueName;
     public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
     public String hmrcVatReturnPostLambdaUrlPath;
@@ -413,6 +420,11 @@ public class HmrcNames {
         this.hmrcVatReturnPostLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostLambdaDeadLetterQueueName =
                 "%s-dlq".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
+        this.hmrcFphCheckWorkerFunctionName = "%s-hmrc-fph-check-worker".formatted(root.appResourceNamePrefix);
+        this.hmrcFphCheckWorkerHandler =
+                "%s/hmrc/hmrcFphCheckWorker.workerHandler".formatted(root.appLambdaHandlerPrefix);
+        this.hmrcFphCheckQueueName = "%s-hmrc-fph-check-queue".formatted(root.appResourceNamePrefix);
+        this.hmrcFphCheckDeadLetterQueueName = "%s-hmrc-fph-check-dlq".formatted(root.appResourceNamePrefix);
         root.publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcVatReturnPostLambdaHttpMethod,
                 this.hmrcVatReturnPostLambdaUrlPath,

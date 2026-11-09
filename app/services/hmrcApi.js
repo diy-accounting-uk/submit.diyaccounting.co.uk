@@ -30,6 +30,7 @@ import { emitMetric } from "../lib/emfMetrics.js";
 import { integrationPathTemplate } from "../lib/dataMasking.js";
 import { HMRC_PRODUCTION_HOST, HMRC_SANDBOX_HOST, hmrcCallTarget } from "../lib/hmrcHosts.js";
 import { integrationApi, recordedFetch, recordIntegrationCall } from "../lib/integrationCalls.js";
+import { enqueueFraudPreventionHeaderCheck } from "../lib/fraudPreventionHeaderCheckQueue.js";
 
 /**
  * Get a header value case-insensitively from a headers object.
@@ -189,6 +190,9 @@ export async function sendToHmrc(url, init = {}) {
       });
       throw new HmrcFraudPreventionHeadersMissingError();
     }
+    // Best effort, and not awaited: the send runs while the HMRC call is in flight, so a slow or
+    // failed queue never delays or fails the customer's request.
+    void enqueueFraudPreventionHeaderCheck({ api: call.api, headers: init.headers });
   }
   return recordedFetch(url, init, call);
 }

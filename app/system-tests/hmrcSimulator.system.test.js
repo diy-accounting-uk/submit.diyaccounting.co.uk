@@ -1463,7 +1463,7 @@ describe("HTTP Simulator", () => {
       expect(Array.isArray(data.errors)).toBe(true);
     });
 
-    it("should return VALID when all required headers present", async () => {
+    it("should return VALID_HEADERS when all required headers present", async () => {
       const response = await fetch(`${baseUrl}/test/fraud-prevention-headers/validate`, {
         headers: {
           "Authorization": "Bearer test-token",
@@ -1489,7 +1489,7 @@ describe("HTTP Simulator", () => {
       expect(response.status).toBe(200);
       const data = await response.json();
 
-      expect(data.code).toBe("VALID");
+      expect(data.code).toBe("VALID_HEADERS");
       expect(data.errors).toHaveLength(0);
       expect(data.warnings).toHaveLength(0);
     });

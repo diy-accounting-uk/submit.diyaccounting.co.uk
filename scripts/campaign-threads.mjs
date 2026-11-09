@@ -4,7 +4,7 @@
 
 // @capability DEV-58 Search community threads for the campaign skill
 // - **Use when:** /campaign needs the last seven days of questions from the subreddits it names and from UK Business Forums.
-// - **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id and secret come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a generic User-Agent. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
+// - **Does:** campaign-threads.mjs reads Reddit search results for each subreddit and query through the Reddit API with an app-only token, and the UK Business Forums RSS feed. It reads only: it never posts, comments, votes or messages. The Reddit client id, secret and username come from the Secrets Manager secret prod/submit/reddit-campaign-app and the script stops with a clear message when it is absent. Requests run one at a time, wait for the rate-limit headers, and send a Reddit User-Agent that names the app and its Reddit username on Reddit calls and a site User-Agent on the forum call. A forum that answers with a browser challenge instead of the feed is reported as skipped and is not retried.
 // - **Run:** `AWS_PROFILE=diya-submit-prod node scripts/campaign-threads.mjs --days 7`; `--fixture scripts/fixtures/campaign-threads` reads recorded responses with no credentials
 // - **Entry:** `scripts/campaign-threads.mjs:searchThreads`
 // - **Files:** scripts/campaign-threads.mjs, scripts/fixtures/campaign-threads/reddit-search.json, scripts/fixtures/campaign-threads/ukbf-forum.rss, app/unit-tests/scripts/campaignThreads.test.js, .claude/skills/campaign/SKILL.md
@@ -32,13 +32,13 @@ export const DEFAULT_QUERIES = [
 ];
 export const UKBF_FEED_URL = "https://www.ukbusinessforums.co.uk/forums/index.rss";
 
-const USER_AGENT = "node:campaign-thread-search:1.0 (read-only)";
+export const SITE_USER_AGENT = "server:diyaccounting-campaign:1.0 (+https://submit.diyaccounting.co.uk)";
 const MIN_GAP_MS = 1100;
 
 export class MissingRedditSecretError extends Error {
   constructor(secretId, cause) {
     super(
-      `Reddit app credentials not found in Secrets Manager secret "${secretId}". Register the Reddit script app, then store {"clientId","clientSecret"} in that secret.`,
+      `Reddit app credentials not found in Secrets Manager secret "${secretId}". Register the Reddit script app, then store {"clientId","clientSecret","username"} in that secret.`,
     );
     this.name = "MissingRedditSecretError";
     this.cause = cause;
@@ -70,7 +70,12 @@ export function parseArgs(argv) {
   return args;
 }
 
-/** Reads {clientId, clientSecret} from Secrets Manager; a missing secret raises MissingRedditSecretError. */
+/** The Reddit User-Agent: platform:app ID:version (by /u/username). */
+export function redditUserAgent(username) {
+  return `server:diyaccounting-campaign:1.0 (by /u/${username})`;
+}
+
+/** Reads {clientId, clientSecret, username} from Secrets Manager; a missing secret raises MissingRedditSecretError. */
 export async function readRedditSecret(secretId = REDDIT_SECRET_ID, send = sendToSecretsManager) {
   let response;
   try {
@@ -80,7 +85,7 @@ export async function readRedditSecret(secretId = REDDIT_SECRET_ID, send = sendT
     throw error;
   }
   const parsed = JSON.parse(response.SecretString || "{}");
-  if (!parsed.clientId || !parsed.clientSecret) throw new MissingRedditSecretError(secretId);
+  if (!parsed.clientId || !parsed.clientSecret || !parsed.username) throw new MissingRedditSecretError(secretId);
   return parsed;
 }
 
@@ -100,7 +105,7 @@ export function createPoliteFetch({ fetchImpl = fetch, sleepImpl = sleep, minGap
   return async function politeFetch(url, options = {}) {
     const wait = last + minGapMs - Date.now();
     if (wait > 0) await sleepImpl(wait);
-    const response = await fetchImpl(url, { ...options, headers: { "User-Agent": USER_AGENT, ...options.headers } });
+    const response = await fetchImpl(url, { ...options, headers: options.headers });
     last = Date.now();
     const remaining = Number(response.headers.get("x-ratelimit-remaining"));
     const reset = Number(response.headers.get("x-ratelimit-reset"));
@@ -111,10 +116,11 @@ export function createPoliteFetch({ fetchImpl = fetch, sleepImpl = sleep, minGap
   };
 }
 
-async function redditToken(politeFetch, { clientId, clientSecret }) {
+async function redditToken(politeFetch, { clientId, clientSecret, username }) {
   const response = await politeFetch("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
     headers: {
+      "User-Agent": redditUserAgent(username),
       "Authorization": `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
@@ -214,19 +220,21 @@ function fixtureSources(dir) {
   };
 }
 
-async function liveSources({ politeFetch = createPoliteFetch(), secretReader = readRedditSecret } = {}) {
-  const token = await redditToken(politeFetch, await secretReader());
+export async function liveSources({ politeFetch = createPoliteFetch(), secretReader = readRedditSecret } = {}) {
+  const credentials = await secretReader();
+  const userAgent = redditUserAgent(credentials.username);
+  const token = await redditToken(politeFetch, credentials);
   return {
     redditListing: async (subreddit, query) => {
       const params = new URLSearchParams({ q: query, restrict_sr: "1", sort: "new", t: "week", limit: "25", raw_json: "1" });
       const response = await politeFetch(`https://oauth.reddit.com/r/${encodeURIComponent(subreddit)}/search?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { "User-Agent": userAgent, "Authorization": `Bearer ${token}` },
       });
       if (!response.ok) throw new Error(`Reddit search r/${subreddit} answered ${response.status}`);
       return response.json();
     },
     forumFeed: async () => {
-      const response = await politeFetch(UKBF_FEED_URL, { headers: { Accept: "application/rss+xml" } });
+      const response = await politeFetch(UKBF_FEED_URL, { headers: { "User-Agent": SITE_USER_AGENT, "Accept": "application/rss+xml" } });
       return response.ok ? response.text() : null;
     },
   };

@@ -163,6 +163,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability HMRC-36 -->
 <!-- capability HMRC-37 -->
 <!-- capability HMRC-38 -->
+<!-- capability HMRC-41 -->
+<!-- capability HMRC-42 -->
+<!-- capability HMRC-43 -->
 ## Companies House filing (CH)
 
 <!-- generated:area CH -->
@@ -459,6 +462,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-169 -->
 <!-- capability OPS-196 -->
 <!-- capability OPS-170 -->
+<!-- capability OPS-210 -->
+<!-- capability OPS-211 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
 <!-- capability OPS-48 -->

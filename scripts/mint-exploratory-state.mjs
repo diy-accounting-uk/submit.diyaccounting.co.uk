@@ -116,7 +116,7 @@ async function answerTotpChallenge(page, totpSecret) {
 }
 
 export async function signIn(page, baseUrl, credentials) {
-  await page.goto(new URL("auth/login.html", baseUrl).toString(), { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("auth/login.html?provider=COGNITO", baseUrl).toString(), { waitUntil: "domcontentloaded" });
   const appOrigin = new URL(page.url()).origin;
   await page.waitForFunction(() => typeof document.getElementById("loginWithCognito")?.onclick === "function", null, { timeout: 30000 });
   await page.locator("button:has-text('Google account')").click();

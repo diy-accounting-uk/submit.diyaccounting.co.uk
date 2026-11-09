@@ -13,6 +13,7 @@
 
 import crypto from "node:crypto";
 import { test } from "./helpers/playwrightTestWithout.js";
+import { cancelLaneTestSubscriptions } from "./helpers/stripeTestTeardown.js";
 import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -95,6 +96,7 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  await cancelLaneTestSubscriptions({ email: testAuthUsername });
 });
 
 test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ page }) => {

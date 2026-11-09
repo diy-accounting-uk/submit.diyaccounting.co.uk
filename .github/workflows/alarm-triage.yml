@@ -14,12 +14,12 @@ run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.numbe
 # comment. The alarm reason string CloudWatch composes and whatever the agent reads from logs
 # and traces are treated as data throughout, never as instructions.
 #
-# The Sonnet escalation waits for the operator. When the Haiku first pass is unusable or unsure,
+# The second pass waits for the operator. When the first pass is unusable or unsure,
 # its result is untrusted text (the agent read log lines that outside traffic can write), so a
 # reader with no tools summarises it into code-checked fields (see support-reader.yml for the same
 # reader on support tickets). The `hold` job posts the checked summary on the private mirror issue
 # and adds `maintainer-review` to the public alarm issue. The operator removes that label to start
-# the Sonnet pass, which reads the checked fields and the operator's comments. This repository is
+# the second pass, which reads the checked fields and the operator's comments. This repository is
 # public, so no step prints the first-pass result, the reader's answer or the escalation input:
 # they cross jobs only as job outputs encrypted with a key from a secret.
 
@@ -33,7 +33,7 @@ on:
         required: true
         type: string
       mode:
-        description: first-pass runs the Haiku pass; escalate runs the Sonnet pass when the issue has no maintainer-review label
+        description: first-pass runs the first pass; escalate runs the second pass when the issue has no maintainer-review label
         required: false
         default: first-pass
         type: choice
@@ -52,7 +52,6 @@ concurrency:
 
 env:
   AWS_REGION: 'eu-west-2'
-  CLAUDE_CODE_VERSION: '2.0.30'
   # The one place this number is written. The budget guard, its step name and its skip
   # comment all read it, so the three cannot drift apart the way -gt 3 and "budget of 3" did.
   TRIAGE_BUDGET_PER_DAY: '8'
@@ -98,8 +97,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # first-pass: the Haiku pass, held for the operator when it needs Sonnet. escalate: the
-      # operator approved the hold, so the Sonnet pass runs. blocked: a dispatch on an issue that
+      # first-pass: the first pass, held for the operator when it needs a second look. escalate: the
+      # operator approved the hold, so the second pass runs. blocked: a dispatch on an issue that
       # is still waiting for the operator starts nothing. A dispatch asks for escalate with its
       # mode input; the label check below still applies and the escalate job's gate runs again.
       - name: Decide the mode
@@ -117,7 +116,7 @@ jobs:
             if gh issue view "$ISSUE_NUMBER" --repo "${{ github.repository }}" --json labels -q '.labels[].name' | grep -qx 'maintainer-review'; then
               MODE=blocked
               gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
-                --body "Escalation to Sonnet already waits for the operator: remove \`maintainer-review\` to run it. No triage ran."
+                --body "The second pass already waits for the operator: remove \`maintainer-review\` to run it. No triage ran."
             elif [ "$REQUESTED_MODE" = "escalate" ]; then
               MODE=escalate
             fi
@@ -206,9 +205,9 @@ jobs:
     needs: triage
     if: needs.triage.outputs.proceed == 'true'
     runs-on: ubuntu-24.04
-    # Two agent passes can run in this job: the Haiku first pass, and the Sonnet escalation
-    # when Haiku's answer is unusable or unsure. The longest single pass observed is 155s, so
-    # 20 minutes covers two worst-case passes plus the AWS/npm setup steps that run once. The
+    # One agent pass runs in each run of this job: the first pass, or the second pass after the
+    # operator approved the hold. The longest single pass observed is 155s, so
+    # 20 minutes covers a worst-case pass plus the AWS/npm setup steps that run once. The
     # wait for the alarm window and CloudTrail's delivery lag adds up to 16 minutes.
     timeout-minutes: 36
     environment: ${{ needs.triage.outputs.environment-name }}
@@ -220,8 +219,7 @@ jobs:
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
       MODE: ${{ needs.triage.outputs.mode }}
-      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
-      HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      TRIAGE_MODEL_ID: 'amazon.nova-pro-v1:0'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
     outputs:
       hold: ${{ steps.judge.outputs.hold }}
@@ -304,8 +302,8 @@ jobs:
         if: steps.role.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
-      # The Sonnet pass reads the reader's checked fields from the private mirror issue and the
-      # operator's comments after them, never the Haiku result. The script prints no text.
+      # The second pass reads the reader's checked fields from the private mirror issue and the
+      # operator's comments after them, never the first-pass result. The script prints no text.
       - name: Write the escalation input from the reader's checked summary
         if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
         env:
@@ -394,11 +392,28 @@ jobs:
               /tmp/proof-alarmHistory.json > /tmp/proof-alarmHistory.flat.json
             mv /tmp/proof-alarmHistory.flat.json /tmp/proof-alarmHistory.json
           fi
-          jq -s '.[0] + {credentialProof: (.[1] + .[2] + .[3] + {provedAt: (now | todate)})}' \
-            /tmp/evidence.json /tmp/proof-identity.json /tmp/proof-logGroups.json /tmp/proof-alarmHistory.json \
+          # The first log query: the newest error lines of the first log group, so the agent
+          # starts with log evidence. The messages are cut to 400 characters, stay data for the
+          # model, and stay out of the job summary because this repository's logs are public.
+          FIRST_LOG_GROUP=$(jq -r '(.logGroups | arrays | .[0].name) // empty' /tmp/proof-logGroups.json 2>/dev/null || true)
+          if [ -n "$FIRST_LOG_GROUP" ] && START_MS=$(date -u -d "$WINDOW_START" +%s000 2>/dev/null) && END_MS=$(date -u -d "$WINDOW_END" +%s000 2>/dev/null); then
+            proof firstLogQuery aws logs filter-log-events --region "$ALARM_REGION" \
+              --log-group-name "$FIRST_LOG_GROUP" --start-time "$START_MS" --end-time "$END_MS" \
+              --filter-pattern '?ERROR ?Error ?error ?Exception' --limit 20 \
+              --query 'events[].{at:timestamp,message:message}' --output json
+          else
+            jq -nc '{firstLogQuery: {error: "no log group or window to query"}}' > /tmp/proof-firstLogQuery.json
+          fi
+          if jq -e '.firstLogQuery | type == "array"' /tmp/proof-firstLogQuery.json > /dev/null 2>&1; then
+            jq -c '{firstLogQuery: [.firstLogQuery[] | {at, message: (.message | .[0:400])}]}' \
+              /tmp/proof-firstLogQuery.json > /tmp/proof-firstLogQuery.cut.json
+            mv /tmp/proof-firstLogQuery.cut.json /tmp/proof-firstLogQuery.json
+          fi
+          jq -s '.[0] + {credentialProof: (.[1] + .[2] + .[3] + .[4] + {provedAt: (now | todate)})}' \
+            /tmp/evidence.json /tmp/proof-identity.json /tmp/proof-logGroups.json /tmp/proof-alarmHistory.json /tmp/proof-firstLogQuery.json \
             > /tmp/evidence.proved.json
           mv /tmp/evidence.proved.json /tmp/evidence.json
-          jq '.credentialProof' /tmp/evidence.json | tee -a "$GITHUB_STEP_SUMMARY"
+          jq '.credentialProof | del(.firstLogQuery)' /tmp/evidence.json | tee -a "$GITHUB_STEP_SUMMARY"
 
       # Written to $GITHUB_ENV, not a step output, so envsubst in run-triage-agent's prompt
       # substitution sees it without the composite action needing a new input of its own.
@@ -423,22 +438,23 @@ jobs:
             echo "REMEDY_ROW=${REMEDY_ROW}"
           } | tee -a "$GITHUB_ENV"
 
-      - name: Install Claude Code
-        if: steps.role.outputs.configured == 'true'
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
-      - name: Run triage (Haiku)
+      - name: Run triage (first pass)
         if: steps.role.outputs.configured == 'true' && env.MODE == 'first-pass'
         uses: ./.github/actions/run-triage-agent
         with:
-          model-id: ${{ env.HAIKU_MODEL_ID }}
-          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
-          output-file: /tmp/triage.haiku.json
+          runner: nova
+          model-id: ${{ env.TRIAGE_MODEL_ID }}
+          tools: read_file,grep_repo,list_files,aws_read
+          max-turns: '30'
+          deadline-seconds: '600'
+          final-schema: prompts/alarm-triage-answer.json
+          input-files: /tmp/evidence.json
+          output-file: /tmp/triage.first-pass.json
           echo-output: 'false'
 
-      # Escalates to Sonnet when Haiku's pass is unusable (no result, an error, the turn budget
+      # Holds for the operator when the first pass is unusable (no result, an error, the turn budget
       # spent) or unsure (it answered "Is it still broken?" with an admission it could not tell).
-      # Every other case accepts Haiku's answer as final.
+      # Every other case accepts the first pass's answer as final.
       - name: Judge the first pass
         if: steps.role.outputs.configured == 'true' && env.MODE == 'first-pass'
         id: judge
@@ -446,26 +462,26 @@ jobs:
           set -euo pipefail
           ESCALATE=false
           REASON=""
-          if [ ! -s /tmp/triage.haiku.json ]; then
+          if [ ! -s /tmp/triage.first-pass.json ]; then
             ESCALATE=true
-            REASON="the Haiku pass produced no result file"
-          elif jq -e '.is_error == true' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            REASON="the first pass produced no result file"
+          elif jq -e '.is_error == true' /tmp/triage.first-pass.json > /dev/null 2>&1; then
             ESCALATE=true
-            REASON="the Haiku pass reported is_error"
-          elif jq -e '.subtype == "error_max_turns"' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            REASON="the first pass reported is_error"
+          elif jq -e '.subtype == "error_max_turns"' /tmp/triage.first-pass.json > /dev/null 2>&1; then
             ESCALATE=true
-            REASON="the Haiku pass used its turn budget before finishing"
-          elif ! jq -e '.result | length > 0' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            REASON="the first pass used its turn budget before finishing"
+          elif ! jq -e '.result | length > 0' /tmp/triage.first-pass.json > /dev/null 2>&1; then
             ESCALATE=true
-            REASON="the Haiku pass returned an empty result"
-          elif ! node scripts/triage-result-verdict.mjs /tmp/triage.haiku.json | grep -qx 'verdict=complete'; then
+            REASON="the first pass returned an empty result"
+          elif ! node scripts/triage-result-verdict.mjs /tmp/triage.first-pass.json | grep -qx 'verdict=complete'; then
             ESCALATE=true
-            REASON="the Haiku pass ended mid-step without an answer"
+            REASON="the first pass ended mid-step without an answer"
           else
-            RESULT_TEXT=$(jq -r '.result' /tmp/triage.haiku.json)
+            RESULT_TEXT=$(jq -r '.result' /tmp/triage.first-pass.json)
             if printf '%s' "$RESULT_TEXT" | grep -qiE 'unable to determine|cannot determine|could not determine|insufficient evidence|without querying'; then
               ESCALATE=true
-              REASON="the Haiku pass could not say whether the alarm is still broken"
+              REASON="the first pass could not say whether the alarm is still broken"
             fi
           fi
           echo "escalate=${ESCALATE}" | tee -a "$GITHUB_OUTPUT"
@@ -476,15 +492,22 @@ jobs:
             if [ -n "${REASON}" ]; then echo "reason: ${REASON}"; fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # Sonnet runs only after the operator approved the hold. A first pass that needs Sonnet is
+      # The second pass runs only after the operator approved the hold. A first pass that needs one is
       # held instead (the steps after this one that publish skip when the run is held).
-      - name: Run triage (Sonnet)
+      - name: Run triage (second pass)
         if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
         uses: ./.github/actions/run-triage-agent
         with:
-          model-id: ${{ env.MODEL_ID }}
-          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
-          output-file: /tmp/triage.sonnet.json
+          runner: nova
+          model-id: ${{ env.TRIAGE_MODEL_ID }}
+          tools: read_file,grep_repo,list_files,aws_read
+          max-turns: '30'
+          deadline-seconds: '600'
+          final-schema: prompts/alarm-triage-answer.json
+          input-files: |
+            /tmp/evidence.json
+            /tmp/escalation-input.json
+          output-file: /tmp/triage.second-pass.json
           echo-output: 'false'
 
       # A held run hands the first-pass result to the quarantine reader, encrypted. A step that
@@ -502,32 +525,30 @@ jobs:
           TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          if [ -s /tmp/triage.haiku.json ]; then jq -j '.result // ""' /tmp/triage.haiku.json > /tmp/first-pass-result.txt; else : > /tmp/first-pass-result.txt; fi
+          if [ -s /tmp/triage.first-pass.json ]; then jq -j '.result // ""' /tmp/triage.first-pass.json > /tmp/first-pass-result.txt; else : > /tmp/first-pass-result.txt; fi
           if [ ! -s /tmp/first-pass-result.txt ]; then printf 'The first pass produced no result.' > /tmp/first-pass-result.txt; fi
           TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
           export TRANSIT_PASS
           echo "first-pass-result=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/first-pass-result.txt)" >> "$GITHUB_OUTPUT"
 
-      # Sonnet's answer stands when it ran; otherwise Haiku's does. Every step below this one
+      # The second pass's answer stands when it ran; otherwise the first pass's does. Every step below this one
       # (the usable-result gate, redaction, guardrail, comment, draft PR) reads /tmp/triage.json
       # and does not know or care which model produced it.
       - name: Select the triage result
         if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: select-result
         env:
-          SONNET_MODEL_ID: ${{ env.MODEL_ID }}
-          HAIKU_MODEL_ID: ${{ env.HAIKU_MODEL_ID }}
+          ANSWERING_MODEL_ID: ${{ env.TRIAGE_MODEL_ID }}
         run: |
           set -euo pipefail
-          if [ -s /tmp/triage.sonnet.json ]; then
-            cp /tmp/triage.sonnet.json /tmp/triage.json
-            echo "model=sonnet" | tee -a "$GITHUB_OUTPUT"
-            echo "model-id=${SONNET_MODEL_ID}" | tee -a "$GITHUB_OUTPUT"
+          if [ -s /tmp/triage.second-pass.json ]; then
+            cp /tmp/triage.second-pass.json /tmp/triage.json
+            echo "pass=second" | tee -a "$GITHUB_OUTPUT"
           else
-            cp /tmp/triage.haiku.json /tmp/triage.json
-            echo "model=haiku" | tee -a "$GITHUB_OUTPUT"
-            echo "model-id=${HAIKU_MODEL_ID}" | tee -a "$GITHUB_OUTPUT"
+            cp /tmp/triage.first-pass.json /tmp/triage.json
+            echo "pass=first" | tee -a "$GITHUB_OUTPUT"
           fi
+          echo "model-id=${ANSWERING_MODEL_ID}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Require a usable result
         if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
@@ -1016,7 +1037,7 @@ jobs:
 
   # Checks the reader's answer in code, posts the checked summary on the private mirror issue and
   # adds `maintainer-review` to the public alarm issue. The operator removes that label to run
-  # Sonnet. This job holds no AWS credentials. It runs when the reader failed too, so the issue
+  # the second pass. This job holds no AWS credentials. It runs when the reader failed too, so the issue
   # still waits for the operator.
   hold:
     needs: [triage, run-triage, quarantine]
@@ -1031,7 +1052,6 @@ jobs:
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
       ALARM_NAME: ${{ needs.triage.outputs.alarm-name }}
       PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
-      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       RUN_NUMBER: ${{ github.run_number }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
@@ -1116,7 +1136,7 @@ jobs:
           set -euo pipefail
           gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/labels" -f "labels[]=maintainer-review" > /dev/null
           GH_TOKEN="${{ github.token }}" gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
-            --body "Escalation to Sonnet waits for the operator: remove \`maintainer-review\` to run it. Reader: ${MIRROR_URL}"
+            --body "The second pass waits for the operator: remove \`maintainer-review\` to run it. Reader: ${MIRROR_URL}"
 
   # Looks up the customer behind a failed submission and writes the result to a file in the
   # private repository, then pings the operator on Telegram with the alarm name, the issue link
@@ -1147,13 +1167,14 @@ jobs:
       ISSUE_URL: ${{ github.server_url }}/${{ github.repository }}/issues/${{ inputs.issue-number || github.event.issue.number }}
       PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
     steps:
-      - name: Stop when the private repository deploy key is not set
+      - name: Stop when the ops App credentials are not set
         id: key
         env:
-          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+          OPS_APP_ID: ${{ vars.OPS_APP_ID }}
+          OPS_APP_PRIVATE_KEY: ${{ secrets.OPS_APP_PRIVATE_KEY }}
         run: |
-          if [ -z "${PRIVATE_REPO_DEPLOY_KEY}" ]; then
-            echo "PRIVATE_REPO_DEPLOY_KEY is not set on the prod environment, so the customer lookup waits" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -z "${OPS_APP_ID}" ] || [ -z "${OPS_APP_PRIVATE_KEY}" ]; then
+            echo "OPS_APP_ID or OPS_APP_PRIVATE_KEY is not set, so the customer lookup waits" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "configured=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "configured=true" | tee -a "$GITHUB_OUTPUT"
@@ -1199,18 +1220,25 @@ jobs:
             --issue-number "$ISSUE_NUMBER" --issue-url "$ISSUE_URL" \
             --region "${ALARM_REGION:-eu-west-2}" --out "$RUNNER_TEMP/alarm-lookup.md"
 
+      - name: Generate a token that writes to the private repository
+        if: steps.key.outputs.configured == 'true'
+        id: private-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.OPS_APP_ID }}
+          private-key: ${{ secrets.OPS_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-contents: write
+
       - name: Commit the file to the private repository
         if: steps.key.outputs.configured == 'true'
         id: private-commit
         env:
-          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+          PRIVATE_REPO_TOKEN: ${{ steps.private-token.outputs.token }}
         run: |
           set -euo pipefail
-          KEY_FILE="$RUNNER_TEMP/private-repo-deploy-key"
-          umask 077
-          printf '%s\n' "$PRIVATE_REPO_DEPLOY_KEY" > "$KEY_FILE"
-          export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-          git clone --depth 1 "git@github.com:${PRIVATE_REPO}.git" "$RUNNER_TEMP/private"
+          git clone --depth 1 "https://x-access-token:${PRIVATE_REPO_TOKEN}@github.com/${PRIVATE_REPO}.git" "$RUNNER_TEMP/private"
           FILE_PATH="support/alarms/${ISSUE_NUMBER}-${ALARM_NAME}.md"
           mkdir -p "$RUNNER_TEMP/private/support/alarms"
           cp "$RUNNER_TEMP/alarm-lookup.md" "$RUNNER_TEMP/private/${FILE_PATH}"
@@ -1224,7 +1252,6 @@ jobs:
             if [ "$ATTEMPT" = 3 ]; then exit 1; fi
             git pull --rebase origin main
           done
-          rm -f "$KEY_FILE"
           echo "file-path=${FILE_PATH}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Tell the operator on Telegram

@@ -27,12 +27,15 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.QueueWorkerLambda;
+import co.uk.diyaccounting.submit.utils.FphCheckAccess;
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.McpHmrcGrantAccessHelper;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -2628,6 +2631,57 @@ public class HmrcStack extends Stack {
                 .resources(List.of(activityBusArn))
                 .build());
 
+        // Header shape checks: new fraud prevention header shapes reach HMRC's validator under the
+        // sandbox application, with synthetic values (app/functions/hmrc/hmrcFphCheckWorker.js).
+        var fphCheckWorkerEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
+                .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                fphCheckWorkerEnv, props.sharedNames().data.integrationCallsTableName, props.deploymentName());
+        if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
+            fphCheckWorkerEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
+        }
+        var fphCheckWorker = new QueueWorkerLambda(
+                this,
+                props.sharedNames().hmrc.hmrcFphCheckWorkerFunctionName,
+                props.sharedNames().hmrc.hmrcFphCheckWorkerFunctionName,
+                props.sharedNames().hmrc.hmrcFphCheckWorkerHandler,
+                props.sharedNames().hmrc.hmrcFphCheckQueueName,
+                props.sharedNames().hmrc.hmrcFphCheckDeadLetterQueueName,
+                props.baseImageTag(),
+                props.sharedNames().ecr.ecrRepositoryName,
+                props.sharedNames().ecr.ecrRepositoryArn,
+                Duration.seconds(60),
+                Duration.seconds(120),
+                Duration.days(1),
+                Duration.days(4),
+                2,
+                fphCheckWorkerEnv);
+        // The consumer reads the result of the shape and day before it calls the validator.
+        fphCheckWorker.workerLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:GetItem"))
+                .resources(List.of(String.format(
+                        "arn:aws:dynamodb:%s:%s:table/%s",
+                        region, account, props.sharedNames().data.integrationCallsTableName)))
+                .build());
+        if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
+            fphCheckWorker.workerLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(
+                            props.hmrcSandboxClientSecretArn().endsWith("-*")
+                                    ? props.hmrcSandboxClientSecretArn()
+                                    : props.hmrcSandboxClientSecretArn() + "-*"))
+                    .build());
+        }
+        SubHashSaltHelper.grantSaltAccess(fphCheckWorker.workerLambda, region, account, props.envName());
+        // Every other function in this stack sends new shapes to the queue.
+        FphCheckAccess.wireSenders(
+                this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of(fphCheckWorker.workerLambda));
+
         Lambda.appStackHealthAlarm(
                 this,
                 props.envName(),
@@ -2657,7 +2711,8 @@ public class HmrcStack extends Stack {
                         hmrcItsaCalculationTriggerPostLambdaUrlOrigin,
                         hmrcItsaCalculationGetLambdaUrlOrigin,
                         hmrcItsaFinalDeclarationPostLambdaUrlOrigin,
-                        myReceiptsLambdaUrlOrigin));
+                        myReceiptsLambdaUrlOrigin),
+                List.of(fphCheckWorker));
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());

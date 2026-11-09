@@ -78,13 +78,13 @@ revenue = "variable"
 [[campaign]]
 name = "Search: MTD VAT"
 type = "Search"
-status = "Active"
+status = "Paused"
 budget_gbp = 1.00
 locations = ["GB"]
 location_intent = "PeopleIn"
 languages = ["English"]
 is_political = false
-final_url_suffix = "utm_source=bing&utm_medium=cpc&utm_campaign=search-mtd-vat"
+final_url_suffix = "utm_source=bing&utm_medium=cpc&utm_campaign=search-mtd-vat&utm_term={keyword}"
 
 [campaign.network]
 partner_syndication = false
@@ -445,4 +445,4 @@ descriptions = [
   "Then file the return from your spreadsheet. 3 free, then 99p a month. Cancel any time.",
   "Never guess the deadline. See your open VAT periods and due dates from HMRC. No card.",
 ]
-final_url = "https://submit.diyaccounting.co.uk/"
+final_url = "https://submit.diyaccounting.co.uk/mtd-calendar.html"

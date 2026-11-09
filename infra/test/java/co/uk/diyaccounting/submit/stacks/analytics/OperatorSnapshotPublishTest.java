@@ -56,6 +56,7 @@ class OperatorSnapshotPublishTest {
                 .resultsBucket(resultsBucket)
                 .lakeBucket(lakeBucket)
                 .passesTableName(sharedNames.data.passesTableName)
+                .integrationCallsTableName(sharedNames.data.integrationCallsTableName)
                 .dataTableNames(List.of(sharedNames.data.bundlesTableName, sharedNames.data.receiptsTableName))
                 .dataBucketNames(List.of(sharedNames.analytics.analyticsLakeBucketName))
                 .diyaGlBucketName(sharedNames.data.diyaGlBucketName)
@@ -183,7 +184,9 @@ class OperatorSnapshotPublishTest {
                 "salt not granted: " + secretArns);
         assertEquals(
                 java.util.List.of(
-                        "dynamodb:GetItem", java.util.List.of("dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive")),
+                        "dynamodb:GetItem",
+                        "dynamodb:Query",
+                        java.util.List.of("dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive")),
                 dynamoActions);
         template.hasResourceProperties(
                 "AWS::Lambda::Function",
