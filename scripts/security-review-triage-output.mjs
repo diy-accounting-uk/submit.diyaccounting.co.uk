@@ -4,7 +4,8 @@
 
 // scripts/security-review-triage-output.mjs
 //
-// Splits a security-review triage run's Claude Code JSON result into two files. The private
+// Merges the per-area results of a security-review triage run (one Nova runner result file per
+// area id, each from a fresh context) into one report, then splits it into two files. The private
 // report is the agent's whole answer, for the operator alone. The public summary is built here
 // from the answer's machine-readable summary block and a fixed vocabulary: counts by severity,
 // the names of the areas checked, and a pass or "held privately" line. No text the model wrote
@@ -13,7 +14,8 @@
 //
 // Prints `close=true|false` and `above-low=<n>` on stdout for the workflow's step outputs.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 export const SEVERITIES = ["Critical", "High", "Medium", "Low"];
 
@@ -72,9 +74,91 @@ export function countBySeverity(findings) {
   return counts;
 }
 
+const REACH_LINE = /^reach: (checked|not reached)$/m;
+const SEVERITIES_LINE = /^severities: (.*)$/m;
+const FINDINGS_HEADING = "## Findings\n\n";
+
+/**
+ * Reads one area's rendered answer (prompts/security-review-answer.json): the reach line, the
+ * severities line and the findings text. Returns null when the area was not reached or its answer
+ * does not fit, so nothing is claimed about that area.
+ */
+export function parseAreaAnswer(text) {
+  const reach = text.match(REACH_LINE);
+  const severities = text.match(SEVERITIES_LINE);
+  const headingAt = text.indexOf(FINDINGS_HEADING);
+  if (!reach || !severities || headingAt < 0 || reach[1] !== "checked") return null;
+  const listed = severities[1].trim() === "none" ? [] : severities[1].split(",").map((entry) => entry.trim());
+  if (!listed.every((severity) => SEVERITIES.includes(severity))) return null;
+  return { severities: listed, findings: text.slice(headingAt + FINDINGS_HEADING.length).trim() };
+}
+
+/**
+ * Merges the per-area Nova results into one result of the single-answer shape whose text carries the
+ * report and the security-summary block, so triageOutput judges it as it judged one answer.
+ * `areaResults` maps an area id to its parsed result, or to null/undefined when none was written.
+ * An area whose run stopped, failed or answered out of vocabulary is left out of areasChecked.
+ */
+export function mergeAreaResults(areaResults) {
+  const checked = [];
+  const findings = [];
+  const sections = [];
+  const areaLines = [];
+  let turns = 0;
+  let firstStop = null;
+  for (const id of Object.keys(AREAS)) {
+    const entry = areaResults[id] ? resultEntry(areaResults[id]) : null;
+    turns += Number.isInteger(entry?.num_turns) ? entry.num_turns : 0;
+    const usable = entry && entry.is_error !== true && entry.subtype === "success" && typeof entry.result === "string";
+    const answer = usable ? parseAreaAnswer(entry.result) : null;
+    if (!answer) {
+      firstStop ??= entry?.subtype && entry.subtype !== "success" ? entry.subtype : "no_answer";
+      areaLines.push(`- ${id}: not reached`);
+      continue;
+    }
+    checked.push(id);
+    areaLines.push(`- ${id}: checked, ${answer.severities.length} finding${answer.severities.length === 1 ? "" : "s"}`);
+    for (const severity of answer.severities) findings.push({ id: `F${findings.length + 1}`, severity, area: id });
+    if (answer.severities.length > 0) sections.push(`### ${AREAS[id]}\n\n${answer.findings}`);
+  }
+  if (checked.length === 0) {
+    return { type: "result", subtype: firstStop ?? "no_answer", is_error: false, num_turns: turns, result: "" };
+  }
+  const text = [
+    "## Findings",
+    "",
+    sections.length > 0 ? sections.join("\n\n") : "No findings.",
+    "",
+    "## Areas",
+    "",
+    areaLines.join("\n"),
+    "",
+    "## Summary data",
+    "",
+    "```security-summary",
+    JSON.stringify({ areasChecked: checked, findings }),
+    "```",
+  ].join("\n");
+  return { type: "result", subtype: "success", is_error: false, num_turns: turns, result: text };
+}
+
+/** Reads `<ID>.json` for each area id from a directory; a missing or unreadable file is null. */
+export function readAreaResults(directory) {
+  const results = {};
+  for (const id of Object.keys(AREAS)) {
+    const path = join(directory, `${id}.json`);
+    try {
+      results[id] = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
+    } catch {
+      results[id] = null;
+    }
+  }
+  return results;
+}
+
 /**
  * The public comment, from counts and area ids alone. `stopped` names why a run ended before it
- * finished (a Claude Code result subtype), in which case nothing is claimed about findings.
+ * finished (a result subtype), in which case nothing is claimed about findings.
  */
 export function buildPublicSummary({ summary, stopped, commitSha, targetBranch, reportLocation }) {
   const lines = ["## Security review triage", ""];
@@ -110,15 +194,15 @@ export function buildPublicSummary({ summary, stopped, commitSha, targetBranch, 
 }
 
 /**
- * The last `result` entry of a Claude Code `--output-format json` output: the single object that
- * mode prints, or the last result in a transcript array.
+ * The last `result` entry of an agent output: the single object, or the last result in a
+ * transcript array.
  */
 export function resultEntry(parsed) {
   return Array.isArray(parsed) ? [...parsed].reverse().find((entry) => entry && entry.type === "result") : parsed;
 }
 
 /**
- * Judges a parsed Claude Code result and returns the two documents and the close verdict.
+ * Judges a parsed result and returns the two documents and the close verdict.
  * The issue closes only on a finished run with nothing above Low.
  */
 export function triageOutput(parsed, { commitSha, targetBranch, reportLocation }) {
@@ -153,7 +237,7 @@ function main() {
     if (index < 0 || index + 1 >= args.length) throw new Error(`missing --${name}`);
     return args[index + 1];
   };
-  const inputPath = option("input");
+  const areasDirectory = option("areas-dir");
   const publicPath = option("public");
   const privatePath = option("private");
   const context = {
@@ -162,7 +246,7 @@ function main() {
     reportLocation: option("report-location"),
   };
 
-  const parsed = JSON.parse(readFileSync(inputPath, "utf8"));
+  const parsed = mergeAreaResults(readAreaResults(areasDirectory));
   const result = resultEntry(parsed);
   // The private report is written before the summary is judged, so a malformed summary block
   // still leaves the operator the agent's full answer to read.

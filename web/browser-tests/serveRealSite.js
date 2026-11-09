@@ -82,7 +82,7 @@ export async function screenshotAll(page, label, pageName) {
   ]) {
     for (const theme of ["light", "dark"]) {
       await page.setViewportSize({ width, height });
-      await page.emulateMedia({ colorScheme: theme });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
       await declineConsent(page);
       await page.screenshot({ path: path.join(dir, `${pageName}-${width}-${theme}.png`), fullPage: true });
     }

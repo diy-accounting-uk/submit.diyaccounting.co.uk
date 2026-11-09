@@ -60,6 +60,20 @@ class ActivityStackTest {
     }
 
     @Test
+    void signInActivityPublishRoleMayPutEventsOnTheActivityBus() {
+        Template template = Template.fromStack(synthActivityStack());
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of("Action", "events:PutEvents", "Effect", "Allow"))))))));
+    }
+
+    @Test
     void stackCreatesOneFeedbackEngagementTopicWithOneEmailSubscription() {
         Template template = Template.fromStack(synthActivityStack());
 

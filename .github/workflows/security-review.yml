@@ -3,10 +3,10 @@
 
 # @capability OPS-31 Run the weekly security review and its triage
 # - **Use when:** the weekly security-review issue needs a review, or a review must run on demand.
-# - **Does:** security-review.yml opens a security-review issue every Monday, then runs a Sonnet agent over the checked-out commit, read-only, against prompts/security-review.md. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
+# - **Does:** security-review.yml opens a security-review issue every Monday, then runs a Nova Pro agent once for each of 13 areas over the checked-out commit, read-only, against prompts/security-review.md, and merges the 13 answers in code. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
 # - **Run:** `gh workflow run security-review.yml`; read a report with `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
 # - **Entry:** `.github/workflows/security-review.yml`
-# - **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
+# - **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, prompts/security-review-answer.json, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
 # - **Keywords:** security review, security triage, OWASP, private report, weekly review, security-review.yml
 # - **Related:** OPS-17, OPS-18, OPS-20
 # @end-capability
@@ -36,7 +36,6 @@ env:
   TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
   SKIP_IF_OPEN: ${{ inputs.skip_if_open_security_issues == null && 'true' || inputs.skip_if_open_security_issues }}
   AWS_REGION: 'eu-west-2'
-  CLAUDE_CODE_VERSION: '2.0.30'
   # The one place this number is written. The budget guard, its step name and its skip comment
   # all read it, so the three cannot drift apart.
   SECURITY_REVIEW_TRIAGE_BUDGET_PER_DAY: '2'
@@ -257,7 +256,8 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "$MESSAGE"
 
   # Reviews the commit this run is on (main, on the schedule) read-only against
-  # prompts/security-review.md, so the scripts and actions it runs are the reviewed ones. The repository is
+  # prompts/security-review.md, one Nova Pro run for each of the 13 areas in scripts/security-review-triage-output.mjs,
+  # each with a fresh context and read-only tools, so the scripts and actions it runs are the reviewed ones. The repository is
   # public, and so are this job's log and step summary: the agent's answer never reaches either.
   # The full report goes to the prod account's analytics lake under private/security-review/;
   # the issue gets counts and area names that scripts/security-review-triage-output.mjs builds
@@ -266,7 +266,7 @@ jobs:
     needs: [create-issue, triage-budget]
     if: ${{ !cancelled() && needs.triage-budget.outputs.proceed == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: prod
     concurrency:
       group: security-review-triage
@@ -279,8 +279,7 @@ jobs:
     env:
       ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number }}
       REVIEW_REF: ${{ github.ref_name }}
-      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
-      SMALL_FAST_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      MODEL_ID: 'amazon.nova-pro-v1:0'
       REPORT_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
     steps:
@@ -321,30 +320,55 @@ jobs:
         with:
           environment-name: prod
 
-      - name: Install Claude Code
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: Install the dependencies the Nova runner needs
+        run: timeout 120 npm ci --prefer-offline --ignore-scripts || { sleep 30; timeout 180 npm ci --ignore-scripts; }
 
-      - name: Run triage
-        uses: ./.github/actions/run-triage-agent
-        with:
-          model-id: ${{ env.MODEL_ID }}
-          small-fast-model-id: ${{ env.SMALL_FAST_MODEL_ID }}
-          output-file: /tmp/security-review-triage.json
-          prompt-file: prompts/security-review-triage.md
-          allowed-tools: 'Read,Grep,Glob'
-          max-turns: '120'
-          echo-output: 'false'
+      # One run for each area, 13 in a row in this job so the budget guard still counts this
+      # job's "Comment the triage summary" step. Each run writes /tmp/security-review-areas/<ID>.json
+      # and never fails the step: the merge step leaves out an area whose file is missing, stopped
+      # or unusable. The area ids come from the script that merges them, so the two cannot differ.
+      - name: Run triage for each area
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AREA_DEADLINE_SECONDS: '200'
+          AREA_MAX_TURNS: '14'
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/security-review-areas
+          AREA_IDS=$(node --input-type=module -e 'import { AREAS } from "./scripts/security-review-triage-output.mjs"; console.log(Object.keys(AREAS).join(" "))')
+          for AREA_ID in ${AREA_IDS}; do
+            export AREA_ID
+            AREA_TITLE=$(AREA_ID="$AREA_ID" node --input-type=module -e 'import { AREAS } from "./scripts/security-review-triage-output.mjs"; console.log(AREAS[process.env.AREA_ID])')
+            export AREA_TITLE
+            EXPANDED_PROMPT=$(mktemp)
+            envsubst < prompts/security-review-triage.md > "$EXPANDED_PROMPT"
+            node scripts/nova-agent.mjs \
+              --prompt-file "$EXPANDED_PROMPT" \
+              --output-file "/tmp/security-review-areas/${AREA_ID}.json" \
+              --model-id "$MODEL_ID" \
+              --tools read_file,grep_repo,list_files \
+              --max-turns "$AREA_MAX_TURNS" \
+              --deadline-seconds "$AREA_DEADLINE_SECONDS" \
+              --final-schema prompts/security-review-answer.json \
+              --input-file /tmp/npm-audit.json || true
+            rm -f "$EXPANDED_PROMPT"
+          done
 
-      # Prints the run's shape only (subtype, turns); the answer itself stays off the log.
+      # Prints the run's shape only (the count of area results with a result entry); the answers
+      # stay off the log.
       - name: Require a usable result
         id: triage-run
         run: |
           set -o pipefail
-          if ! jq -e -r 'if type == "array" then map(select(.type == "result")) | last else . end | .subtype' /tmp/security-review-triage.json > /tmp/security-review-subtype.txt 2>/dev/null; then
-            echo "::error::the triage produced no Claude Code result; the output is not shown because it may hold findings"
+          COUNT=0
+          for FILE in /tmp/security-review-areas/*.json; do
+            if [ -e "$FILE" ] && jq -e '.type == "result"' "$FILE" > /dev/null 2>&1; then COUNT=$((COUNT + 1)); fi
+          done
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::the triage produced no Nova result; the output is not shown because it may hold findings"
             exit 1
           fi
-          echo "triage result subtype: $(cat /tmp/security-review-subtype.txt)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "triage area results: ${COUNT} of 13" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Name the private report
         id: report
@@ -361,7 +385,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/security-review-triage-output.mjs \
-            --input /tmp/security-review-triage.json \
+            --areas-dir /tmp/security-review-areas \
             --public /tmp/security-review-public.md \
             --private /tmp/security-review-private.md \
             --commit "$(git rev-parse HEAD)" \

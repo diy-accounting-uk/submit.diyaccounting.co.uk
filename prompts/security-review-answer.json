@@ -1,0 +1,24 @@
+{
+  "description": "Submit the review of your one area. This ends the run.",
+  "properties": {
+    "reach": {
+      "type": "string",
+      "enum": ["checked", "not reached"],
+      "description": "checked when you read the code paths for your area. not reached when you ran out of turns first."
+    },
+    "severities": {
+      "type": "string",
+      "description": "One line: the severity of each finding, comma separated, from Critical, High, Medium, Low. Write none when there are no findings."
+    },
+    "findings": {
+      "type": "string",
+      "description": "One block per finding, most severe first, or the words No findings. Each block starts with a line '### <title> (<severity>)', then the bullets Where, Exploit path, Fix and Board row."
+    }
+  },
+  "required": ["reach", "severities", "findings"],
+  "render": [
+    { "property": "reach", "prefix": "reach: " },
+    { "property": "severities", "prefix": "severities: " },
+    { "property": "findings", "heading": "## Findings" }
+  ]
+}

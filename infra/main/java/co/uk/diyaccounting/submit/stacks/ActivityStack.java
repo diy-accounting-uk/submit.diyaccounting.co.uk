@@ -228,6 +228,9 @@ public class ActivityStack extends Stack {
                         .errorsAlarmDatapointsToAlarm(2)
                         .build());
 
+        // Publish to this stack's own bus. A function role has no events:PutEvents unless granted.
+        this.activityBus.grantPutEventsTo(this.signInActivityPublishLambda.ingestLambda);
+
         // Read the three app-client-id parameters IdentityStack writes, to map a Cognito
         // client id to "submit", "books" or "mcp".
         this.signInActivityPublishLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()

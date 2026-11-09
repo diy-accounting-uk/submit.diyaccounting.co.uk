@@ -10,9 +10,12 @@
 
 import crypto from "crypto";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { createLogger } from "../../lib/logger.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { initializeSalt, hashSub, isSaltInitialized } from "../../services/subHasher.js";
 import { getSignInSession, putSignInSession } from "../../data/dynamoDbSecurityStateRepository.js";
+
+const logger = createLogger({ source: "app/functions/auth/signInActivityPublish.js" });
 
 // A refresh starts a new session when the previous token issue is older than the access-token
 // lifetime (60 minutes, the Cognito default) plus 5 minutes' grace: the old tokens lapsed and
@@ -103,7 +106,7 @@ export async function handler(payload) {
   }
 
   const providerLabel = provider ? ` via ${provider}` : "";
-  await publishActivityEvent({
+  const result = await publishActivityEvent({
     event,
     summary: `${EVENT_LABELS[event]}${providerLabel}: ${maskEmail(email)}`,
     actor,
@@ -117,4 +120,11 @@ export async function handler(payload) {
       ...(provider ? { provider } : {}),
     },
   });
+
+  if (!result.published) {
+    // Throwing fails the invocation, so the Errors metric and the stack alarm see a lost event.
+    logger.error({ message: "Sign-in activity event not published", event, triggerSource, error: result.error });
+    throw new Error(`Sign-in activity event not published: ${result.error}`);
+  }
+  logger.info({ message: "Sign-in activity event published", event, triggerSource, appClient, sessionKind });
 }
