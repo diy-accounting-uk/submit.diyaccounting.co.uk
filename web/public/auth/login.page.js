@@ -55,6 +55,10 @@ const loginWithCognitoButton = document.getElementById("loginWithCognito");
 loginWithCognitoButton.onclick = loginWithCognito;
 loginWithCognitoButton.disabled = false;
 
+try {
+  if (sessionStorage.getItem("passAddOnReturn")) document.getElementById("pendingPassNote").hidden = false;
+} catch {}
+
 sessionStorage.removeItem("currentActivity");
 console.log("Current activity cleared");
 

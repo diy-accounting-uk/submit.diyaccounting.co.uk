@@ -239,27 +239,52 @@ async function signInWithGovUkOneLogin(page, { userId, password, totpSecret }, s
 }
 
 const passkeySkipSelector = 'button[name="createPasskeyOption"]:has-text("Skip for now")';
+const companyAuthCodeSelector = "#auth_code";
+const permissionSelector = "#is_auth_confirmed";
 
 // GOV.UK One Login offers a passkey after the authenticator code. The page is skipped, not set up.
-async function skipPasskeyOfferIfShown(page, screenshotPath) {
-  const reached = page.locator(`#auth_code, #is_auth_confirmed, ${passkeySkipSelector}`).first();
-  await reached.waitFor({ state: "visible", timeout: 30000 });
-  if (await page.locator(passkeySkipSelector).count()) {
-    await loggedClick(page, passkeySkipSelector, "Skip setting up a passkey", { screenshotPath });
-  }
+async function skipPasskeyOffer(page, screenshotPath) {
+  await loggedClick(page, passkeySkipSelector, "Skip setting up a passkey", { screenshotPath });
 }
 
 // A scope that names a company adds this page between One Login and the permission page.
-async function enterCompanyAuthCodeIfAsked(page, companyAuthCode, screenshotPath) {
-  await page.locator("#auth_code, #is_auth_confirmed").first().waitFor({ state: "visible", timeout: 30000 });
-  if ((await page.locator("#auth_code").count()) === 0) {
-    return;
-  }
+async function enterCompanyAuthCode(page, companyAuthCode, screenshotPath) {
   if (!companyAuthCode) {
     throw new Error("Companies House asked for the company authentication code and none was supplied.");
   }
-  await loggedFill(page, "#auth_code", companyAuthCode, "Company authentication code", { screenshotPath });
+  await loggedFill(page, companyAuthCodeSelector, companyAuthCode, "Company authentication code", { screenshotPath });
   await loggedClick(page, "#submit", "Continue after the company authentication code", { screenshotPath });
+}
+
+const companiesHousePages = [
+  { name: "oneLoginLink", selector: oneLoginLinkSelector },
+  { name: "passkeyOffer", selector: passkeySkipSelector },
+  { name: "companyAuthCode", selector: companyAuthCodeSelector },
+  { name: "permission", selector: permissionSelector },
+];
+
+// Waits for the next page the real sandbox shows and names it. A repeat sign-in can find the One Login
+// link, the company code page or the permission page, or return straight to the callback. Companies
+// House's own error page is named at once and any other page times out.
+async function waitForCompaniesHousePage(page, timeout = 30000) {
+  const waits = [
+    ...companiesHousePages.map(({ name, selector }) =>
+      page
+        .locator(selector)
+        .first()
+        .waitFor({ state: "visible", timeout })
+        .then(() => name),
+    ),
+    page
+      .waitForURL((url) => url.pathname.endsWith("/companies-house/filingCallback.html"), { timeout, waitUntil: "commit" })
+      .then(() => "callback"),
+    page.waitForURL((url) => url.pathname.endsWith("/there-is-a-problem"), { timeout, waitUntil: "commit" }).then(() => "problem"),
+  ];
+  try {
+    return await Promise.any(waits);
+  } catch (error) {
+    throw error.errors?.[0] ?? error;
+  }
 }
 
 // Names the page a timeout stopped on: the path and main heading only, because the query string carries codes.
@@ -273,13 +298,31 @@ async function describeCurrentPage(page) {
   return `${origin}${pathname} heading "${heading.replace(/\s+/g, " ").trim().slice(0, 120)}"`;
 }
 
+const maxCompaniesHousePages = 8;
+
 async function authoriseOnRealSandbox(page, credentials, screenshotPath) {
   try {
-    await signInWithGovUkOneLogin(page, credentials, screenshotPath);
-    await skipPasskeyOfferIfShown(page, screenshotPath);
-    await enterCompanyAuthCodeIfAsked(page, credentials.companyAuthCode, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png`, readerView: true });
-    await loggedClick(page, "#is_auth_confirmed", "Allow access", { screenshotPath });
+    for (let pageNumber = 0; pageNumber < maxCompaniesHousePages; pageNumber += 1) {
+      const landed = await waitForCompaniesHousePage(page);
+      if (landed === "callback") {
+        return;
+      }
+      if (landed === "problem") {
+        throw new Error("Companies House showed its technical difficulties page instead of the next sign-in page.");
+      }
+      if (landed === "oneLoginLink") {
+        await signInWithGovUkOneLogin(page, credentials, screenshotPath);
+      } else if (landed === "passkeyOffer") {
+        await skipPasskeyOffer(page, screenshotPath);
+      } else if (landed === "companyAuthCode") {
+        await enterCompanyAuthCode(page, credentials.companyAuthCode, screenshotPath);
+      } else {
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png`, readerView: true });
+        await loggedClick(page, permissionSelector, "Allow access", { screenshotPath });
+        return;
+      }
+    }
+    throw new Error(`Companies House sign-in did not reach the permission page within ${maxCompaniesHousePages} pages.`);
   } catch (error) {
     console.error(`Companies House sign-in stopped on ${await describeCurrentPage(page)}: ${error.message.split("\n")[0]}`);
     throw error;
@@ -297,7 +340,10 @@ export async function authoriseWithCompaniesHouse(page, credentials, screenshotP
   await test.step("The user signs in to Companies House and grants permission", async () => {
     await page.waitForLoadState("networkidle");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authorise-with-companies-house.png`, readerView: true });
-    await page.locator(`${oneLoginLinkSelector}, #userId`).first().waitFor({ state: "visible", timeout: 15000 });
+    await page
+      .locator(`${oneLoginLinkSelector}, #userId, ${companyAuthCodeSelector}, ${permissionSelector}`)
+      .first()
+      .waitFor({ state: "visible", timeout: 15000 });
     const startUrl = page.url();
     if (await page.locator("#userId").count()) {
       await authoriseOnSimulator(page, credentials, screenshotPath);

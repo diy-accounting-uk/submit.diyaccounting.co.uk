@@ -5,7 +5,13 @@
 
 import { describe, test, expect } from "vitest";
 
-import { parseConfig, applicationsForEnvironment, probeRequest, classifySubscriptionResponse } from "../../../infra/hmrc/hmrc-assert.js";
+import {
+  parseConfig,
+  applicationsForEnvironment,
+  probeRequest,
+  classifySubscriptionResponse,
+  subscriptionsToProbe,
+} from "../../../infra/hmrc/hmrc-assert.js";
 
 const SAMPLE_TOML = `
 [application.sandbox]
@@ -131,5 +137,17 @@ describe("classifySubscriptionResponse", () => {
 
   test("an unexpected status is unknown", () => {
     expect(classifySubscriptionResponse(500, undefined)).toBe("unknown");
+  });
+});
+
+describe("subscriptionsToProbe", () => {
+  const application = { subscriptions: [{ api: "vat-mtd", version: "1.0", probe: "/organisations/vat/1/obligations" }] };
+
+  test("probes every sandbox subscription", () => {
+    expect(subscriptionsToProbe("sandbox", application)).toEqual(application.subscriptions);
+  });
+
+  test("probes no production subscription, because a probe carries no fraud prevention headers", () => {
+    expect(subscriptionsToProbe("production", application)).toEqual([]);
   });
 });
