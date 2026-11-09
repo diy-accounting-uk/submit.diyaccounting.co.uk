@@ -220,6 +220,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
     const authorizeUrl = new URL((await authorizeRequest).url());
     expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
     expect(authorizeUrl.searchParams.get("code_challenge_method")).toBe("S256");
+    await page.waitForURL((url) => url.href.startsWith(`${COGNITO}/oauth2/authorize`));
 
     await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?${linkError}`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).toContainText("Already found an entry for username");
