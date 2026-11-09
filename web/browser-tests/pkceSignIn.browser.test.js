@@ -122,6 +122,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
     await page.addInitScript(() => {
       sessionStorage.setItem("cognito_oauth_state", "state-1");
       sessionStorage.setItem("cognito_pkce_verifier", "verifier-from-sign-in");
+      sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
     });
 
     await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
@@ -131,6 +132,47 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(sent.get("grant_type")).toBe("authorization_code");
     expect(sent.get("code")).toBe("code-1");
     expect(sent.get("code_verifier")).toBe("verifier-from-sign-in");
+    expect(sent.get("redirect_uri")).toBe("https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
+  });
+
+  test("the redirect URI stored at sign-in is the one in the authorize URL", async ({ page }) => {
+    await serveSite(page);
+    await page.goto(`${SITE}/auth/login.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#loginWithCognito")).toBeEnabled();
+
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    const storedAtRedirect = page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const original = Storage.prototype.setItem;
+          Storage.prototype.setItem = function (key, value) {
+            if (key === "cognito_redirect_uri") resolve(value);
+            return original.call(this, key, value);
+          };
+        }),
+    );
+    await page.click("#loginWithCognito");
+    const stored = await storedAtRedirect;
+    const authorized = new URL((await authorizeRequest).url()).searchParams.get("redirect_uri");
+
+    expect(stored).toBe(authorized);
+  });
+
+  test("the callback makes no token request when the redirect URI is missing", async ({ page }) => {
+    await serveSite(page);
+    let tokenRequested = false;
+    await page.route("**/api/v1/cognito/token", async (route) => {
+      tokenRequested = true;
+      await route.fulfill({ status: 400, contentType: "application/json", body: "{}" });
+    });
+    await page.addInitScript(() => {
+      sessionStorage.setItem("cognito_oauth_state", "state-1");
+      sessionStorage.setItem("cognito_pkce_verifier", "v");
+    });
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("body")).toContainText("Security validation failed");
+    expect(tokenRequested).toBe(false);
   });
 
   test("the callback makes no token request when the verifier is missing", async ({ page }) => {

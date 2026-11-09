@@ -15,6 +15,7 @@ async function loginWithProvider(buttonProvider) {
   sessionStorage.removeItem("cognito_oauth_state");
   sessionStorage.removeItem("cognito_oauth_nonce");
   sessionStorage.removeItem("cognito_pkce_verifier");
+  sessionStorage.removeItem("cognito_redirect_uri");
   sessionStorage.setItem("cognito_identity_provider", identityProvider);
 
   // Generate cryptographically secure state parameter for CSRF protection
@@ -43,6 +44,9 @@ async function loginWithProvider(buttonProvider) {
     return;
   }
   console.log("Generated Cognito Auth URL:", authResponseUrl);
+
+  // The token exchange must send Cognito the exact redirect_uri the authorize request carried.
+  sessionStorage.setItem("cognito_redirect_uri", window.authUrlBuilder.cognitoRedirectUri(await window.envReady));
 
   console.log("Redirecting to Cognito OAuth URL");
   try {

@@ -61,6 +61,16 @@ async function handleAuthCallback(code, state) {
       return;
     }
 
+    // The redirect_uri the sign-in started with; Cognito requires the exchange to repeat it exactly
+    const redirectUri = sessionStorage.getItem("cognito_redirect_uri");
+    sessionStorage.removeItem("cognito_redirect_uri");
+    if (!redirectUri) {
+      console.error("Redirect URI missing from sessionStorage");
+      showStatus("Security validation failed. Please try logging in again.", "error");
+      hideLoading();
+      return;
+    }
+
     showStatus("Exchanging authorization code for access token...", "info");
 
     const url = `/api/v1/cognito/token`;
@@ -68,6 +78,7 @@ async function handleAuthCallback(code, state) {
       grant_type: "authorization_code",
       code: code,
       code_verifier: codeVerifier,
+      redirect_uri: redirectUri,
     };
     console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
