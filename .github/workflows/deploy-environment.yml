@@ -53,7 +53,7 @@ on:
         default: '(auto)'
       force-identity-refresh:
         type: boolean
-        description: 'Force refresh of Cognito Identity Provider (use after rotating GOOGLE_CLIENT_SECRET)'
+        description: 'Force refresh of Cognito Identity Provider (use after rotating GOOGLE_CLIENT_SECRET or MICROSOFT_CLIENT_SECRET)'
         required: false
         default: false
 
@@ -652,13 +652,13 @@ jobs:
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Force refresh Google Identity Provider (after secret rotation)
+      - name: Force refresh every Identity Provider (after secret rotation)
         if: ${{ needs.params.outputs.force-identity-refresh == 'true' }}
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
         run: |
           COGNITO_USER_POOL_ID=$(jq -r --arg stack "${ENVIRONMENT_NAME}-env-IdentityStack" '.[$stack].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
-          scripts/refresh-google-identity-provider.sh "$ENVIRONMENT_NAME" "$COGNITO_USER_POOL_ID"
+          scripts/refresh-identity-provider.sh "$ENVIRONMENT_NAME" all "$COGNITO_USER_POOL_ID"
 
   deploy-billing-webhook:
     name: 'deploy billing webhook'

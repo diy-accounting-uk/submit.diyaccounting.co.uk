@@ -3,89 +3,65 @@
 
 # @capability OPS-18 Run alarm triage
 # - **Use when:** an [ALARM] issue needs an automated first-pass triage.
-# - **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. A gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the label last. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output.
+# - **Does:** run-triage-agent executes scripts/nova-agent.mjs against Bedrock on Nova Pro. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. A gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the first pass is unusable or unsure, the run holds instead of running a second pass: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the label last. The operator removes the label to run the second pass on scripts/alarm-escalation-input.mjs's output.
 # - **Run:** `gh workflow run alarm-triage.yml`
 # - **Entry:** `.github/actions/run-triage-agent/action.yml`
 # - **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js
-# - **Keywords:** triage agent, alarm triage, claude -p, bedrock, haiku, sonnet escalation
+# - **Keywords:** triage agent, alarm triage, nova, bedrock, second pass
 # - **Related:** OPS-17, OPS-19, OPS-20, OPS-23, OPS-142
 # @end-capability
 
 name: "Run the alarm-triage agent"
-description: "Runs an agent against a prompt file (prompts/alarm-triage.md by default) with the given model and writes its result JSON to a file: claude -p by default, or scripts/nova-agent.mjs with runner nova. Shared by alarm-triage.yml's Haiku first pass and Sonnet escalation, so those invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
+description: "Runs scripts/nova-agent.mjs against a prompt file (prompts/alarm-triage.md by default) with the given model and writes its result JSON to a file. Shared by alarm-triage.yml's first and second pass, so those invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
 
 inputs:
-  runner:
-    description: "'claude' runs claude -p; 'nova' runs scripts/nova-agent.mjs, which needs the npm dependencies installed"
-    required: false
-    default: "claude"
   model-id:
-    description: "the model: ANTHROPIC_MODEL for claude, one of nova-agent.mjs's ALLOWED_MODEL_IDS for nova"
+    description: "the model: one of nova-agent.mjs's ALLOWED_MODEL_IDS"
     required: true
   reasoning-effort:
-    description: "nova only: maxReasoningEffort for a Nova 2 model (low, medium or high); empty leaves reasoning off"
+    description: "maxReasoningEffort for a Nova 2 model (low, medium or high); empty leaves reasoning off"
     required: false
     default: ""
-  small-fast-model-id:
-    description: "value for ANTHROPIC_SMALL_FAST_MODEL (claude only)"
-    required: false
   output-file:
-    description: "path to write claude's --output-format json result to"
+    description: "path to write the result JSON to"
     required: true
   prompt-file:
-    description: "path to the prompt template, expanded with envsubst before it is passed to claude -p"
+    description: "path to the prompt template, expanded with envsubst before it is passed to the runner"
     required: false
     default: "prompts/alarm-triage.md"
-  allowed-tools:
-    description: "value for claude's --allowedTools (claude only)"
-    required: false
-    default: "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)"
   max-turns:
-    description: "the turn cap: claude's --max-turns, or nova-agent.mjs's --max-turns"
+    description: "the turn cap, nova-agent.mjs's --max-turns"
     required: false
     default: "60"
-  echo-output:
-    description: "'false' writes the result to output-file only, keeping it out of the job log (a public repository's logs are public). claude only: nova always writes to output-file only"
-    required: false
-    default: "true"
   tools:
-    description: "comma-separated read tools for nova, from the fixed list in scripts/nova-agent-tools.mjs; the word none offers only submit_answer"
+    description: "comma-separated read tools, from the fixed list in scripts/nova-agent-tools.mjs; the word none offers only submit_answer"
     required: false
     default: "read_file,grep_repo,list_files,aws_read"
   final-schema:
-    description: "path to the final schema file that defines submit_answer's sections for nova (see prompts/alarm-triage-answer.json); empty takes one free answer"
+    description: "path to the final schema file that defines submit_answer's sections (see prompts/alarm-triage-answer.json); empty takes one free answer"
     required: false
     default: ""
   input-files:
-    description: "newline-separated paths outside git that nova's read_file may open"
+    description: "newline-separated paths outside git that read_file may open"
     required: false
     default: ""
   context-files:
-    description: "newline-separated paths that nova puts into the request after the prompt, unexpanded"
+    description: "newline-separated paths that the runner puts into the request after the prompt, unexpanded"
     required: false
     default: ""
   frozen-results:
-    description: "path to a JSON file of recorded aws results for nova's aws_read, so a replay makes no live aws call; empty makes live calls"
+    description: "path to a JSON file of recorded aws results for aws_read, so a replay makes no live aws call; empty makes live calls"
     required: false
     default: ""
   deadline-seconds:
-    description: "nova's deadline for the whole run; keep it below the job's timeout"
+    description: "the deadline for the whole run; keep it below the job's timeout"
     required: false
     default: "900"
 
 runs:
   using: "composite"
   steps:
-    - if: inputs.runner != 'claude' && inputs.runner != 'nova'
-      shell: bash
-      env:
-        RUNNER_NAME: ${{ inputs.runner }}
-      run: |
-        echo "::error::run-triage-agent has no runner named ${RUNNER_NAME}"
-        exit 1
-
-    - if: inputs.runner == 'nova'
-      shell: bash
+    - shell: bash
       env:
         AWS_REGION: 'eu-west-2'
         MODEL_ID: ${{ inputs.model-id }}
@@ -116,33 +92,3 @@ runs:
         done <<< "$CONTEXT_FILES"
         node scripts/nova-agent.mjs "${NOVA_ARGS[@]}" || true
         rm -f "$EXPANDED_PROMPT"
-
-    - if: inputs.runner == 'claude'
-      shell: bash
-      env:
-        CLAUDE_CODE_USE_BEDROCK: '1'
-        AWS_REGION: 'eu-west-2'
-        ANTHROPIC_MODEL: ${{ inputs.model-id }}
-        ANTHROPIC_SMALL_FAST_MODEL: ${{ inputs.small-fast-model-id }}
-        CLAUDE_CODE_MAX_OUTPUT_TOKENS: '8192'
-        DISABLE_TELEMETRY: '1'
-        DISABLE_ERROR_REPORTING: '1'
-        DISABLE_AUTOUPDATER: '1'
-        OUTPUT_FILE: ${{ inputs.output-file }}
-        PROMPT_FILE: ${{ inputs.prompt-file }}
-        ALLOWED_TOOLS: ${{ inputs.allowed-tools }}
-        MAX_TURNS: ${{ inputs.max-turns }}
-        ECHO_OUTPUT: ${{ inputs.echo-output }}
-      run: |
-        set -o pipefail
-        PROMPT=$(envsubst < "$PROMPT_FILE")
-        CLAUDE_ARGS=(-p "$PROMPT" --max-turns "$MAX_TURNS" --output-format json --permission-mode default --allowedTools "$ALLOWED_TOOLS")
-        if [ "$ECHO_OUTPUT" = "false" ]; then
-          claude "${CLAUDE_ARGS[@]}" > "$OUTPUT_FILE" 2>&1 || true
-        else
-          claude "${CLAUDE_ARGS[@]}" 2>&1 | tee "$OUTPUT_FILE" || true
-        fi
-        # The caller (alarm-triage.yml's "Judge the first pass" and "Require a usable result"
-        # steps) reads $OUTPUT_FILE's content to decide success, escalation and failure, so a
-        # crash here must not also fail this step - that would stop the job before the other
-        # pass or the escalation judgement ever runs.

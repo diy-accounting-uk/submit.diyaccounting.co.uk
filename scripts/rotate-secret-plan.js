@@ -3,10 +3,10 @@
 
 // @capability OPS-166 Roll one secret without an environment deploy
 // - **Use when:** one GitHub environment secret has a new value and only its AWS copy and its vendor check need to follow.
-// - **Does:** rotate-secret.yml writes one GitHub environment secret to Secrets Manager through put-secret-with-rotation-tag.sh, then runs that vendor's assert. For the Google client secret it also refreshes the Cognito identity provider. rotate-secret-plan.js holds the table of secrets, their GitHub names and their asserts.
+// - **Does:** rotate-secret.yml writes one GitHub environment secret to Secrets Manager through put-secret-with-rotation-tag.sh, then runs that vendor's assert. For the Google and Microsoft client secrets it also refreshes the matching Cognito identity provider. rotate-secret-plan.js holds the table of secrets, their GitHub names and their asserts.
 // - **Run:** `gh workflow run rotate-secret.yml -f secret=<aws-suffix> -f environment-name=<ci|prod>`
 // - **Entry:** `scripts/rotate-secret-plan.js:planRotation`; `.github/workflows/rotate-secret.yml`
-// - **Files:** scripts/rotate-secret-plan.js, .github/workflows/rotate-secret.yml, scripts/refresh-google-identity-provider.sh, app/unit-tests/scripts/rotateSecretPlan.test.js, app/unit-tests/rotateSecretWorkflow.test.js
+// - **Files:** scripts/rotate-secret-plan.js, .github/workflows/rotate-secret.yml, scripts/refresh-identity-provider.sh, app/unit-tests/scripts/rotateSecretPlan.test.js, app/unit-tests/rotateSecretWorkflow.test.js
 // - **Keywords:** rotate secret, key roll, single secret, rotated-at, vendor assert, cognito refresh, store step
 // - **Related:** OPS-157, OPS-45, OPS-165
 // @end-capability
@@ -16,7 +16,7 @@
 // The table of secrets that rotate-secret.yml can write. Each key is the Secrets Manager name
 // under `<environment>/submit/`. `githubSecret` is the GitHub environment secret that holds the
 // new value. `assert` builds the command that proves the vendor accepts it; null means the
-// vendor has no assert. `refreshCognito` marks the secret that Cognito also holds.
+// vendor has no assert. `refreshProvider` names the Cognito identity provider that also holds the secret.
 
 import { appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -29,8 +29,8 @@ function stripeMode(suffix, environment) {
 }
 
 export const ROTATABLE_SECRETS = {
-  "google/client_secret": { githubSecret: "GOOGLE_CLIENT_SECRET", refreshCognito: true, assert: () => null },
-  "microsoft/client_secret": { githubSecret: "MICROSOFT_CLIENT_SECRET", assert: () => null },
+  "google/client_secret": { githubSecret: "GOOGLE_CLIENT_SECRET", refreshProvider: "Google", assert: () => null },
+  "microsoft/client_secret": { githubSecret: "MICROSOFT_CLIENT_SECRET", refreshProvider: "Microsoft", assert: () => null },
   "hmrc/client_secret": {
     githubSecret: "HMRC_CLIENT_SECRET",
     assert: (_suffix, environment) => `node infra/hmrc/hmrc-assert.js --environment ${environment}`,
@@ -91,7 +91,7 @@ export function planRotation(suffix, environment) {
     awsSecretName: `${environment}/submit/${suffix}`,
     githubSecret: entry.githubSecret,
     assertCommand: entry.assert(suffix, environment) ?? "",
-    refreshCognito: entry.refreshCognito === true,
+    refreshProvider: entry.refreshProvider ?? "",
   };
 }
 
@@ -102,7 +102,7 @@ function main() {
     `aws-secret-name=${plan.awsSecretName}`,
     `github-secret=${plan.githubSecret}`,
     `assert-command=${plan.assertCommand}`,
-    `refresh-cognito=${plan.refreshCognito}`,
+    `refresh-provider=${plan.refreshProvider}`,
   ];
   for (const line of lines) console.log(line);
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join("\n")}\n`);

@@ -366,7 +366,7 @@ public class ObservabilityStack extends Stack {
         // ------------------ Bedrock model invocation logging ------------------
         // The setting is account-and-region wide and CloudFormation has no resource for it, so an
         // AwsCustomResource calls PutModelInvocationLoggingConfiguration. Every Bedrock call runs
-        // in this region through the eu.anthropic.* inference profiles. Text, image and embedding
+        // in this region on Amazon Nova models. Text, image and embedding
         // bodies stay off because prompts carry support ticket summaries and alarm data; each log
         // record keeps the caller's identity ARN, the model, the token counts and the request id.
         String bedrockLogGroupName = "/%s/bedrock/invocations".formatted(props.envName());
@@ -961,41 +961,19 @@ public class ObservabilityStack extends Stack {
 
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("InvokeTriageModel")
-                .actions(List.of("bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"))
+                .actions(List.of("bedrock:InvokeModel"))
                 .resources(List.of(
                         "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
                         "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0",
                         "arn:aws:bedrock:eu-west-2::foundation-model/amazon.titan-embed-text-v2:0",
                         "arn:aws:bedrock:*:%s:inference-profile/global.amazon.nova-2-lite-v1:0"
-                                .formatted(this.getAccount()),
-                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
-                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
-                        "arn:aws:bedrock:*:%s:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
-                                .formatted(this.getAccount()),
-                        "arn:aws:bedrock:*:%s:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
                                 .formatted(this.getAccount())))
-                .build());
-
-        // ListInferenceProfiles is how the triage agent resolves the model it then invokes above,
-        // and Bedrock gives it no ARN to scope to (it takes no resource identifier at all) — the
-        // wildcard resource here is that action's only form, not an oversight.
-        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ListTriageModelProfiles")
-                .actions(List.of("bedrock:ListInferenceProfiles"))
-                .resources(List.of("*"))
                 .build());
 
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ApplyOutputGuardrail")
                 .actions(List.of("bedrock:ApplyGuardrail"))
                 .resources(List.of("arn:aws:bedrock:eu-west-2:%s:guardrail/*".formatted(this.getAccount())))
-                .build());
-
-        // AWS Marketplace has no resource-level permissions for these two actions.
-        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("SubscribeMarketplaceModel")
-                .actions(List.of("aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"))
-                .resources(List.of("*"))
                 .build());
 
         // The /submit/{env}/* wildcard already covers last-known-good-deployment, the one

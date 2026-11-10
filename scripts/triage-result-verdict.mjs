@@ -4,7 +4,7 @@
 
 // scripts/triage-result-verdict.mjs
 //
-// Decides whether the result of a headless Claude Code triage run is a complete answer. A result
+// Decides whether the result of a headless triage agent run is a complete answer. A result
 // is complete only when its subtype is "success", it is not an error, and its final text is not
 // a mid-step narration (text that ends with a colon, or whose last line starts with "Let me ...").
 // Anything else is a stop: the caller posts stopLine(...) instead of the model's text.

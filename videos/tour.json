@@ -180,9 +180,8 @@
           "headline": "Choose your bundle",
           "keyWord": "bundle"
         },
-        { "action": "await", "until": "#catalogBundles .service-item", "label": "Loading bundles" },
-        { "action": "scroll", "target": "#catalogBundles" },
-        { "action": "point", "target": "#catalogBundles .service-item:first-of-type" },
+        { "action": "await", "until": "#passEntryForm", "label": "Loading bundles" },
+        { "action": "point", "target": { "text": "Log in to add bundles" } },
         { "action": "hold", "ms": 800 },
         {
           "action": "scroll",

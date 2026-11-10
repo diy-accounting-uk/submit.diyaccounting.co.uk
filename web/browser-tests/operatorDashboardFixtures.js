@@ -907,21 +907,21 @@ export const FIXTURE_CONSOLE_INDEX = {
       rows: [
         {
           bin: "2026-10-31 09:00:00.000",
-          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.amazon.nova-pro-v1:0",
           invocations: 4,
           inputTokens: 4000,
           outputTokens: 900,
         },
         {
           bin: "2026-11-01 09:00:00.000",
-          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.amazon.nova-pro-v1:0",
           invocations: 6,
           inputTokens: 6200,
           outputTokens: 1100,
         },
         {
           bin: "2026-11-02 01:00:00.000",
-          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+          modelId: "arn:aws:bedrock:eu-west-2:972912397388:inference-profile/eu.amazon.nova-pro-v1:0",
           invocations: 2,
           inputTokens: 2100,
           outputTokens: 400,

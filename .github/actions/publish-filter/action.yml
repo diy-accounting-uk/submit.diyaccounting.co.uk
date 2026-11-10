@@ -5,8 +5,7 @@ name: "Filter agent output before it is published"
 description: >-
   Runs scripts/redact-triage-output.mjs, the Bedrock output guardrail and a provenance byline
   over text an unattended agent wrote, before that text reaches a public GitHub surface (an
-  issue comment or a pull request body). Used by alarm-triage.yml (a Claude Code
-  --output-format json result). This is a composite action: it runs with the caller's own
+  issue comment or a pull request body). Used by alarm-triage.yml (an agent result JSON). This is a composite action: it runs with the caller's own
   github.event_name, so it carries no schedule guard of its own. It runs `aws ssm get-parameter`
   and `aws bedrock-runtime apply-guardrail` under whatever AWS credentials the caller already
   holds - it configures none itself - so every caller's job must already be chained into a role
@@ -17,10 +16,10 @@ description: >-
 
 inputs:
   input-file:
-    description: "path to the file to filter: a claude -p --output-format json result (format: claude-json), or a plain Markdown file (format: markdown)"
+    description: "path to the file to filter: an agent result JSON (format: json), or a plain Markdown file (format: markdown)"
     required: true
   format:
-    description: "shape of input-file: claude-json or markdown"
+    description: "shape of input-file: json or markdown"
     required: true
   environment-name:
     description: "submit environment (ci or prod) whose guardrail SSM parameters to read"

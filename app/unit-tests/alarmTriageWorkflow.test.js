@@ -151,9 +151,10 @@ describe("alarm-triage.yml", () => {
 
   it("keeps each triage result out of the public job log", () => {
     const text = readFileSync(new URL("../../.github/workflows/alarm-triage.yml", import.meta.url), "utf8");
-    const steps = text.split("uses: ./.github/actions/run-triage-agent").slice(1);
-    expect(steps.length).toBe(2);
-    for (const step of steps) expect(step.slice(0, 600)).toContain("echo-output: 'false'");
+    const action = readFileSync(new URL("../../.github/actions/run-triage-agent/action.yml", import.meta.url), "utf8");
+    expect(text.split("uses: ./.github/actions/run-triage-agent").length - 1).toBe(2);
+    expect(action).not.toMatch(/\btee\b|echo-output/);
+    expect(action).toContain('--output-file "$OUTPUT_FILE"');
   });
 
   it("runs both passes on the Nova runner with the answer schema and the evidence file", () => {
@@ -161,7 +162,7 @@ describe("alarm-triage.yml", () => {
     expect(text).toMatch(/TRIAGE_MODEL_ID: 'amazon\.nova-pro-v1:0'/);
     for (const name of ["Run triage (first pass)", "Run triage (second pass)"]) {
       const step = stepBlock(runTriage, name);
-      expect(step, name).toContain("runner: nova");
+      expect(step, name).not.toContain("runner:");
       expect(step, name).toContain("model-id: ${{ env.TRIAGE_MODEL_ID }}");
       expect(step, name).toContain("final-schema: prompts/alarm-triage-answer.json");
       expect(step, name).toContain("/tmp/evidence.json");
@@ -169,7 +170,7 @@ describe("alarm-triage.yml", () => {
   });
 
   it("installs and calls no Anthropic CLI and names no Anthropic model", () => {
-    expect(text).not.toMatch(/claude-code|CLAUDE_CODE_VERSION|anthropic\.claude|claude -p/);
+    for (const word of ["claude", "anthropic"]) expect(text.replaceAll("claude/triage", "").toLowerCase()).not.toContain(word);
   });
 
   it("puts the first log query in the evidence and keeps it out of the job summary", () => {
@@ -181,7 +182,7 @@ describe("alarm-triage.yml", () => {
 
   it("holds the model's draft-PR path: the filter reads the runner's result and the draft PR step stays gated on a complete answer", () => {
     const runTriage = jobBlock("run-triage");
-    expect(stepBlock(runTriage, "Filter the triage answer before it is published")).toContain("format: claude-json");
+    expect(stepBlock(runTriage, "Filter the triage answer before it is published")).toContain("format: json");
     expect(stepBlock(runTriage, "Open a draft PR when triage named a change")).toContain("steps.judge.outputs.hold != 'true'");
   });
 });

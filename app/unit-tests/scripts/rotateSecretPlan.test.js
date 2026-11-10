@@ -23,13 +23,16 @@ describe("planRotation", () => {
       awsSecretName: "ci/submit/hmrc/sandbox_client_secret",
       githubSecret: "HMRC_SANDBOX_CLIENT_SECRET",
       assertCommand: "node infra/hmrc/hmrc-assert.js --environment ci",
-      refreshCognito: false,
+      refreshProvider: "",
     });
   });
 
-  test("marks the Google client secret for the Cognito refresh", () => {
-    expect(planRotation("google/client_secret", "prod")).toEqual(expect.objectContaining({ refreshCognito: true, assertCommand: "" }));
-    expect(Object.entries(ROTATABLE_SECRETS).filter(([, entry]) => entry.refreshCognito)).toHaveLength(1);
+  test("names the Cognito provider to refresh for the Google and Microsoft client secrets", () => {
+    expect(planRotation("google/client_secret", "prod")).toEqual(expect.objectContaining({ refreshProvider: "Google", assertCommand: "" }));
+    expect(planRotation("microsoft/client_secret", "ci")).toEqual(
+      expect.objectContaining({ refreshProvider: "Microsoft", assertCommand: "" }),
+    );
+    expect(Object.entries(ROTATABLE_SECRETS).filter(([, entry]) => entry.refreshProvider)).toHaveLength(2);
   });
 
   test("runs stripe-sync in test mode for a test key and for ci, and live for a live key in prod", () => {

@@ -49,8 +49,8 @@ describe("rotate-secret.yml", () => {
   });
 
   it("refreshes Cognito only when the plan says so", () => {
-    const refresh = steps.find((step) => step.run?.includes("refresh-google-identity-provider.sh"));
-    expect(refresh.if).toBe("steps.plan.outputs.refresh-cognito == 'true'");
+    const refresh = steps.find((step) => step.run?.includes("refresh-identity-provider.sh"));
+    expect(refresh.if).toBe("steps.plan.outputs.refresh-provider != ''");
   });
 
   it("runs the vendor assert only when the plan names one", () => {
