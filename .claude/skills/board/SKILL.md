@@ -254,6 +254,7 @@ the end) gets a note in `Action`: rename before its next push.
 
 ## Rules
 
+- **Every render is complete.** Print all five parts in full, every time, from a fresh read: every row, every plan list, every alarm family, every deployment set and every branch. Never replace a part with "no change since the last render", "as before", a pointer to an earlier render, or a summary such as "all boarded". The operator reads each render on its own and an earlier one may be off screen or compacted away (operator, 2026-11-10).
 - Open and in-flight work only. Nothing done, decided-against, or removed.
 - Never annotate an item "deferred", "later", or similar. Status words describe state (open, in flight, blocked on X, operator-owned,
   date-gated), not priority.
