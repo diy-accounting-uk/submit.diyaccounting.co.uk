@@ -4055,18 +4055,13 @@
                     "type" : "number",
                     "format" : "float",
                     "example" : 2400.0
-                  },
-                  "accessToken" : {
-                    "type" : "string",
-                    "example" : "HMRC_ACCESS_TOKEN"
                   }
                 }
               },
               "example" : {
                 "vatNumber" : "983238295",
                 "periodKey" : "24A1",
-                "vatDue" : 2400.0,
-                "accessToken" : "HMRC_ACCESS_TOKEN"
+                "vatDue" : 2400.0
               }
             }
           }
@@ -4360,14 +4355,6 @@
           "in" : "body",
           "required" : true,
           "description" : "The VAT registration date, or the client's postcode",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "accessToken",
-          "in" : "body",
-          "required" : true,
-          "description" : "The practice's HMRC access token",
           "schema" : {
             "type" : "string"
           }

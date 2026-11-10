@@ -7,7 +7,8 @@ import path from "node:path";
 
 const publicDir = path.join(process.cwd(), "web/public");
 const testsDir = path.join(publicDir, "tests");
-const retiredKey = ["hmrc", "Access", "Token"].join("");
+const retiredKey = "hmrcAccessToken";
+const retiredKeyRemoval = `sessionStorage.removeItem("${retiredKey}");`;
 
 function listFiles(dir) {
   const files = [];
@@ -25,7 +26,9 @@ describe("web/public holds the HMRC grant under hmrcGrantId only", () => {
     const hits = listFiles(publicDir)
       .filter((file) => {
         try {
-          return fs.readFileSync(file, "utf-8").includes(retiredKey);
+          const text = fs.readFileSync(file, "utf-8");
+          const rest = path.relative(process.cwd(), file) === "web/public/submit.js" ? text.replace(retiredKeyRemoval, "") : text;
+          return rest.includes(retiredKey);
         } catch {
           return false;
         }
