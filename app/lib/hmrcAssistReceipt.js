@@ -23,5 +23,12 @@ export async function acknowledgeReceipt(userSub, receiptId, synthetic, presente
     logger.warn({ message: "Assist report receipt not found to acknowledge", receiptId });
     return;
   }
-  await putReceipt(userSub, receiptId, { ...receipt, acknowledgedAt: new Date().toISOString(), ...(presentedLanguage ? { presentedLanguage } : {}) }, resolveActorClass(), undefined, synthetic);
+  await putReceipt(
+    userSub,
+    receiptId,
+    { ...receipt, acknowledgedAt: new Date().toISOString(), ...(presentedLanguage ? { presentedLanguage } : {}) },
+    resolveActorClass(),
+    undefined,
+    synthetic,
+  );
 }
