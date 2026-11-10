@@ -24,17 +24,17 @@ async function handleOAuthCallback() {
         throw new Error("No pending Companies House authorisation scope was found. Please start the filing again.");
       }
 
-      const tokenResponse = await exchangeToken(code);
+      const tokenResponse = await exchangeToken(code, requestedScope);
 
       showStatus("Obtained access token from Companies House...", "info");
 
-      // Companies House's token response names no scope, so the token is recorded against
+      // Companies House's token response names no scope, so the grant is recorded against
       // the scope the filing page requested: the filing page compares that exact string
-      // before reusing the token, and a token that turns out not to cover the company is
+      // before reusing the grant, and a grant that turns out not to cover the company is
       // rejected by the API with a 401, which starts a fresh authorise round trip.
       sessionStorage.removeItem("ch_oauth_state");
       sessionStorage.removeItem("ch_oauth_scope");
-      sessionStorage.setItem("companiesHouseAccessToken", tokenResponse.accessToken);
+      sessionStorage.setItem("companiesHouseGrantId", tokenResponse.companiesHouseGrantId);
       sessionStorage.setItem("companiesHouseTokenExpiresAt", String(Date.now() + tokenResponse.expiresIn * 1000));
       sessionStorage.setItem("companiesHouseTokenScope", requestedScope);
       succeeded = true;
@@ -102,9 +102,9 @@ function getValidatedAuthorisationCode() {
   }
 }
 
-async function exchangeToken(code) {
+async function exchangeToken(code, scope) {
   const url = `/api/v1/companies-house/token`;
-  const body = JSON.stringify({ code });
+  const body = JSON.stringify({ code, scope });
   console.log(`Exchanging Companies House token. Remote call initiated: POST ${url}`);
 
   // Cognito idToken identifies the authenticated web user for the token exchange audit,
@@ -121,9 +121,8 @@ async function exchangeToken(code) {
   }
 
   const responseJson = await response.json();
-  const accessToken = responseJson.accessToken;
-  if (!accessToken) {
-    const message = `Failed to exchange Companies House token. Remote call response did not include accessToken: POST ${url} - Status: ${response.status} ${response.statusText}`;
+  if (!responseJson.companiesHouseGrantId) {
+    const message = `Failed to exchange Companies House token. Remote call response did not include companiesHouseGrantId: POST ${url} - Status: ${response.status} ${response.statusText}`;
     console.error(message);
     throw new Error(message);
   }
