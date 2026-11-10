@@ -20,10 +20,9 @@ describe("alarm-replay.yml", () => {
     }
   });
 
-  it("takes a runner input that scores Nova, Sonnet or both in one run", () => {
-    const on = text.slice(text.indexOf("\non:\n"), text.indexOf("\npermissions:"));
-    expect(on).toMatch(/runner:[\s\S]*?options:\n\s+- nova\n\s+- sonnet\n\s+- both/);
-    expect(text).toContain('runners=["nova","sonnet"]');
+  it("scores Nova Pro only", () => {
+    expect(text).toContain('runners=["nova"]');
+    expect(text).not.toMatch(/sonnet\n|ANTHROPIC|claude/i);
   });
 
   it("runs one job at a time in one concurrency group that never cancels", () => {
@@ -37,7 +36,7 @@ describe("alarm-replay.yml", () => {
   });
 
   it("keeps the answers out of the job log and reads no live aws", () => {
-    expect(text.match(/echo-output: 'false'/g)).toHaveLength(2);
+    expect(text).not.toContain("echo-output");
     expect(text).toContain("frozen-results: /tmp/alarm-replay/frozen-results.json");
     expect(action).toContain("--frozen-results");
   });
@@ -46,8 +45,6 @@ describe("alarm-replay.yml", () => {
     expect(text).toContain("uses: ./.github/actions/run-triage-agent");
     expect(text).toContain("final-schema: prompts/alarm-triage-answer.json");
     expect(text).toContain("prompt-file: prompts/alarm-triage.md");
-    expect(text).toContain("runner: nova");
-    expect(text).toContain("runner: claude");
     expect(text).toContain("deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}");
   });
 

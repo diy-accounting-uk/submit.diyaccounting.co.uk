@@ -313,7 +313,7 @@ describe("nova agent refusals and stops", () => {
 
   it("refuses a model off the list and calls nothing", async () => {
     const { client, send } = stubClient(submit());
-    const { result } = await run(client, { modelId: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0" });
+    const { result } = await run(client, { modelId: "amazon.titan-text-premier-v1:0" });
     expect(send).not.toHaveBeenCalled();
     expect(result).toMatchObject({ subtype: "error_during_execution", stop_reason: "model_not_allowed" });
   });
@@ -384,20 +384,14 @@ describe("nova agent result against triage-result-verdict", () => {
 describe("run-triage-agent action", () => {
   const action = parseYaml(readFileSync(".github/actions/run-triage-agent/action.yml", "utf8"));
 
-  it("keeps claude as the default so that callers move one at a time", () => {
-    expect(action.inputs.runner.default).toBe("claude");
-  });
-
-  it("runs exactly one step for each runner and fails on any other value", () => {
-    expect(action.runs.steps.map((step) => step.if)).toEqual([
-      "inputs.runner != 'claude' && inputs.runner != 'nova'",
-      "inputs.runner == 'nova'",
-      "inputs.runner == 'claude'",
-    ]);
+  it("has no runner input and runs one step that calls the Nova runner", () => {
+    expect(action.inputs.runner).toBeUndefined();
+    expect(action.runs.steps).toHaveLength(1);
+    expect(action.runs.steps[0].if).toBeUndefined();
   });
 
   it("passes no model text to the nova step's log", () => {
-    const novaStep = action.runs.steps[1];
+    const novaStep = action.runs.steps[0];
     expect(novaStep.run).toContain("node scripts/nova-agent.mjs");
     expect(novaStep.run).not.toContain("tee");
     expect(novaStep.run).not.toContain("cat ");

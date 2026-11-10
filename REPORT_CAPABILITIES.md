@@ -262,7 +262,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report: use when the nightly dashboard review must read the page as a person would, judge it with a model that has no tools, and hand a checked report to the private repository.
     - [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night: use when the prod operator dashboard needs a nightly review with a report in the private repository, or the review needs a dispatched run.
     - [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent: use when a workflow needs an Amazon Nova model to read the repository or AWS evidence and write one structured answer.
-    - [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms: use when `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Sonnet or Nova Pro on alarm triage.
+    - [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms: use when `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Nova Pro on alarm triage.
     - [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts: use when an AWS Bedrock cost or token-limit alert must reach the operations channel.
     - [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks: use when a single client IP is probing many paths and the 404 rate against one distribution needs watching.
     - [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks: use when requests the SensitivePathScan WAF rule blocked need to become an ops alert, or a block needs a false-positive check.
@@ -2897,11 +2897,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm triage
 
 - **Use when:** an [ALARM] issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. A gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the label last. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output.
+- **Does:** run-triage-agent executes scripts/nova-agent.mjs against Bedrock on Nova Pro. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. A gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the first pass is unusable or unsure, the run holds instead of running a second pass: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the label last. The operator removes the label to run the second pass on scripts/alarm-escalation-input.mjs's output.
 - **Run:** `gh workflow run alarm-triage.yml`
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
 - **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js
-- **Keywords:** triage agent, alarm triage, claude -p, bedrock, haiku, sonnet escalation
+- **Keywords:** triage agent, alarm triage, nova, bedrock, second pass
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23, OPS-142
 
 #### OPS-19 Kill-switch to stop unattended agent workflows
@@ -3137,7 +3137,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-194 Run a read-only Nova agent
 
 - **Use when:** a workflow needs an Amazon Nova model to read the repository or AWS evidence and write one structured answer.
-- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the same result JSON as claude -p and exits 0, so the caller judges the file. When a run with a final schema ends a turn in text with no tool call, the runner asks once for submit_answer and forces that tool on the next request; a second text-only turn ends the run as no_answer. The log shows only the turn number, the tool name and ok or refused, and one nudge line.
+- **Does:** nova-agent.mjs runs a tool loop on the Bedrock Converse API. The model gets the read tools named in --tools from the fixed list in nova-agent-tools.mjs (read_file, grep_repo, list_files, aws_read), plus submit_answer. It has no write tool and no shell. The runner validates each tool call, runs each child with execFile and an allow-listed environment, cuts each tool result at 30,000 characters, and stops at the turn cap, the token caps or the deadline. --context-file puts a file into the request after the prompt, so a run with no read tool still sees its pages. --frozen-results answers each `aws` call from a file of recorded results, so a replay needs no live AWS read. submit_answer takes one property for each section of a final schema file, and the runner renders the exact headings, the fenced diff block and the remedy line. It writes the result JSON and exits 0, so the caller judges the file. When a run with a final schema ends a turn in text with no tool call, the runner asks once for submit_answer and forces that tool on the next request; a second text-only turn ends the run as no_answer. The log shows only the turn number, the tool name and ok or refused, and one nudge line.
 - **Run:** `node scripts/nova-agent.mjs --prompt-file <file> --output-file <file>`; or set `runner: nova` on the run-triage-agent action
 - **Entry:** `scripts/nova-agent.mjs`
 - **Files:** scripts/nova-agent.mjs, scripts/nova-agent-tools.mjs, prompts/alarm-triage-answer.json, .github/actions/run-triage-agent/action.yml, app/unit-tests/scripts/novaAgent.test.js, app/unit-tests/scripts/novaAgentTools.test.js
@@ -3146,12 +3146,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-195 Replay the alarm triage prompt over invented alarms
 
-- **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Sonnet or Nova Pro on alarm triage.
-- **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. The `runner` input picks Nova Pro (through the run-triage-agent action with `--frozen-results`), Sonnet (through the same action's claude path, with the frozen results in the prompt), or both in one run. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of Sonnet's, taken from the same run or from the `sonnet-baseline` input. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
-- **Run:** `gh workflow run alarm-replay.yml -f runner=both`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
+- **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Nova Pro on alarm triage.
+- **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. It runs Nova Pro through the run-triage-agent action with `--frozen-results`. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of the `sonnet-baseline` input when one is given. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
+- **Run:** `gh workflow run alarm-replay.yml -f set=synthetic`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
 - **Entry:** `.github/workflows/alarm-replay.yml`; `scripts/alarm-replay.mjs:scoreAnswer`
 - **Files:** .github/workflows/alarm-replay.yml, scripts/alarm-replay.mjs, app/unit-tests/fixtures/alarm-triage/, app/unit-tests/scripts/alarmReplay.test.js, app/unit-tests/alarmReplayWorkflow.test.js, prompts/alarm-triage.md, prompts/alarm-triage-answer.json
-- **Keywords:** alarm replay, alarm fixtures, alarm triage score, nova pro, sonnet baseline, close-when-gone, safety gate
+- **Keywords:** alarm replay, alarm fixtures, alarm triage score, nova pro, baseline, close-when-gone, safety gate
 - **Related:** OPS-18, OPS-155, OPS-194
 
 #### OPS-72 Forward Bedrock budget alerts
@@ -7011,6 +7011,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - bankcode: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - banners: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- baseline: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms)
 - batch branch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - batch check: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -7229,7 +7230,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claim check: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
-- claude -p: [OPS-18](#ops-18-run-alarm-triage)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -7957,7 +7957,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - guide screenshots: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
-- haiku: [OPS-18](#ops-18-run-alarm-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
@@ -8414,6 +8413,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - not measured: [DEV-55](#dev-55-review-the-operator-dashboard)
+- nova: [OPS-18](#ops-18-run-alarm-triage)
 - nova agent: [OPS-194](#ops-194-run-a-read-only-nova-agent)
 - nova lite: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - nova pro: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
@@ -8984,6 +8984,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - search console sitemaps: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - searchconsole-sitemaps.yml: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- second pass: [OPS-18](#ops-18-run-alarm-triage)
 - second store: [SS-28](#ss-28-store-books-in-google-drive)
 - secret cache: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - secret origin header: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
@@ -9091,8 +9092,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - soft delete: [BILL-56](#bill-56-delete-generated-passes)
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- sonnet baseline: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms)
-- sonnet escalation: [OPS-18](#ops-18-run-alarm-triage)
 - source check: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record)
 - source data: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - source maps: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
