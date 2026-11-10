@@ -1519,7 +1519,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-01 Exchange a Companies House OAuth token
 
 - **Use when:** a filing journey has an authorization code and needs an access token for the session.
-- **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It returns the token, its expiry and its type. It does not store the token server side.
+- **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseTokenPost.js:ingestHandler`; `web/public/companies-house/filingCallback.html`
 - **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js

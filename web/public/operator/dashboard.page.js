@@ -647,6 +647,25 @@ const INTEGRATION_PANEL_IDS = {
 };
 const RAW_RECORD_DAYS = 90;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// The column headers of each table on the tab, in cell order. A phone-width card shows each name
+// as the label of its cell.
+const SUMMARY_COLUMN_LABELS = [
+  "Organisation",
+  "Status",
+  "Today",
+  "Previous day",
+  "Last 7 days",
+  "Last 30 days",
+  "30 day trend",
+  "Last 90 days",
+];
+const CALL_COLUMN_LABELS = ["Time called", "API", "Duration", "Status", "Headers checked", "Raw record"];
+
+function labelCells(row, labels) {
+  Array.from(row.cells).forEach((cell, index) => {
+    cell.dataset.label = labels[index];
+  });
+}
 
 function formatCallDuration(ms) {
   if (ms === null || ms === undefined) return NOT_MEASURED;
@@ -699,6 +718,7 @@ function renderIntegrationsSummary(integrations) {
     ["today", "previousDay", "last7", "last30"].forEach((key) => row.appendChild(windowCell(observation, key)));
     row.appendChild(activityTrendCell(observation));
     row.appendChild(windowCell(observation, "last90"));
+    labelCells(row, SUMMARY_COLUMN_LABELS);
     body.appendChild(row);
   });
 }
@@ -726,6 +746,7 @@ function renderIntegrationDetail(integrations, org, generatedAt) {
       },
     );
     row.appendChild(rawRecordCell(integrations, org, call, generatedAt));
+    labelCells(row, CALL_COLUMN_LABELS);
     body.appendChild(row);
   });
 }
@@ -744,15 +765,16 @@ function renderHeaderChecks(integrations) {
     row.className = "integrations-check-row";
     row.dataset.result = check.result;
     [
-      check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day,
-      check.result,
-      check.api,
-      check.connectionMethod,
-      check.hmrcCode,
-      check.message || NOT_APPLICABLE,
-      check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE,
-    ].forEach((text) => {
+      ["Checked", check.checkedAt ? timestampFormat.format(new Date(check.checkedAt)) : check.day],
+      ["Result", check.result],
+      ["API", check.api],
+      ["Connection method", check.connectionMethod],
+      ["HMRC code", check.hmrcCode],
+      ["Message", check.message || NOT_APPLICABLE],
+      ["Headers", check.headers.length > 0 ? check.headers.join(", ") : NOT_APPLICABLE],
+    ].forEach(([label, text]) => {
       const cell = document.createElement("td");
+      cell.dataset.label = label;
       cell.textContent = text;
       row.appendChild(cell);
     });

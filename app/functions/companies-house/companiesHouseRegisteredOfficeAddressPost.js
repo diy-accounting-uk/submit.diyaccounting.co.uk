@@ -119,7 +119,7 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  const accessToken = extractCompaniesHouseAccessTokenFromLambdaEvent(event);
+  const accessToken = await extractCompaniesHouseAccessTokenFromLambdaEvent(event, userSub);
   if (!accessToken) {
     return http401UnauthorizedResponse({
       request,

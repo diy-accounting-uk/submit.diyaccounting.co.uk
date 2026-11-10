@@ -720,6 +720,54 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void tokenLambdaCanWriteAGrantAndEachFilingLambdaCanReadOne() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        var tokenEnv = environmentVariablesOf(template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of("FunctionName", stack.companiesHouseTokenPostLambdaProps.ingestFunctionName()))));
+        assertTrue(tokenEnv.containsKey("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
+        assertTrue(tokenEnv.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
+
+        for (var props : List.of(
+                stack.companiesHouseTransactionPostLambdaProps,
+                stack.companiesHouseTransactionGetLambdaProps,
+                stack.companiesHouseTransactionPutLambdaProps,
+                stack.companiesHouseRegisteredOfficeAddressPostLambdaProps,
+                stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps,
+                stack.companiesHouseRegisteredEmailAddressPostLambdaProps)) {
+            var env = environmentVariablesOf(template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", props.ingestFunctionName()))));
+            assertTrue(
+                    env.containsKey("MCP_SESSIONS_DYNAMODB_TABLE_NAME"),
+                    props.urlPath() + " must name the sessions table to open a grant");
+            assertTrue(
+                    env.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"),
+                    props.urlPath() + " must name the sealing key to open a grant");
+        }
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of("Action", "dynamodb:PutItem", "Effect", "Allow"))))))));
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of("Action", "dynamodb:GetItem", "Effect", "Allow"))))))));
+    }
+
+    @Test
     void stackHealthAlarmCoversTheCompaniesHouseLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);

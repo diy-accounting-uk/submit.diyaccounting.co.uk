@@ -18,10 +18,11 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber } from "../../services/companiesHouseApi.js";
 import {
   companiesHouseFilingRequest,
-  extractCompaniesHouseAccessTokenFromLambdaEvent,
+  http403ForbiddenForGrantCompany,
   httpResponseFromFilingResponse,
   http403ForbiddenFromBundleEnforcement,
 } from "../../services/companiesHouseFilingApi.js";
+import { companiesHouseAccessFromEvent } from "../../lib/companiesHouseGrantAccess.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -86,7 +87,8 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  const accessToken = extractCompaniesHouseAccessTokenFromLambdaEvent(event);
+  const access = await companiesHouseAccessFromEvent(event, userSub);
+  const accessToken = access?.accessToken;
   if (!accessToken) {
     return http401UnauthorizedResponse({
       request,
@@ -94,6 +96,9 @@ export async function ingestHandler(event) {
       message: "Missing Companies House access token",
       error: { code: "COMPANIES_HOUSE_UNAUTHORIZED" },
     });
+  }
+  if (access.companyNumber && access.companyNumber !== companyNumber) {
+    return http403ForbiddenForGrantCompany(request, companyNumber, responseHeaders);
   }
 
   const { chResponse, transaction } = await openTransaction(accessToken, companyNumber, description, reference);
