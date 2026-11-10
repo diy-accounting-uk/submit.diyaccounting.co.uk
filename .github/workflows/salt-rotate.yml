@@ -28,7 +28,7 @@ on:
           - 'ci'
           - 'prod'
       mode:
-        description: 'plan writes nothing; rotate adds a salt version and re-keys; sweep re-keys late items'
+        description: 'plan writes nothing; rotate adds a salt version and re-keys; sweep re-keys late items; retire drops one earlier version named in version'
         type: choice
         required: true
         default: 'plan'
@@ -36,6 +36,12 @@ on:
           - 'plan'
           - 'rotate'
           - 'sweep'
+          - 'retire'
+      version:
+        description: 'The earlier version to drop, for retire only (for example v2)'
+        type: string
+        required: false
+        default: ''
 
 env:
   AWS_REGION: 'eu-west-2'
@@ -75,9 +81,14 @@ jobs:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
           COGNITO_USER_POOL_ID: ${{ steps.lookup-resources.outputs.cognito-user-pool-id }}
           MODE: ${{ inputs.mode }}
+          VERSION: ${{ inputs.version }}
         run: |
           set -o pipefail
-          node scripts/salt-rotate.js --mode "$MODE" 2>&1 | tee salt-rotate.log
+          if [ "$MODE" = "retire" ]; then
+            node scripts/salt-rotate.js --mode "$MODE" --version "$VERSION" 2>&1 | tee salt-rotate.log
+          else
+            node scripts/salt-rotate.js --mode "$MODE" 2>&1 | tee salt-rotate.log
+          fi
 
       - name: Generate step summary
         if: always()
