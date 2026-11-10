@@ -1,6 +1,6 @@
 # PLAN_LANGUAGES
 
-Status: LANG1 and LANG2 in flight (2026-11-10). No task is on main yet.
+Status: LANG1 in flight on `claude/wren-welsh`. LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3 to LANG8 and OLANG5 are on `NEXT.md`.
 
 ## User assertions (verbatim)
 
@@ -17,8 +17,14 @@ The DIY Accounting sites in the languages of UK small businesses: submit (`web/p
 | Label | Task | State | Board |
 |---|---|---|---|
 | LANG1 | HMRC Assist feedback shown in Welsh and English, with a switch, before 2026-11-19 | in flight, `claude/wren-welsh` | NEXT.md |
-| LANG2 | Research: languages ranked by reach, scope tiers ranked by cost, marketing per language, into `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` | in flight | NEXT.md |
-| LANG3+ | The first tier LANG2 recommends, one row per change | blocked on LANG2 | not yet |
+| LANG2 | Research into `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` | done, private 7af3f84 | — |
+| LANG3 | Language scaffold: catalogue, build script, `hreflang`, switch | ready | NEXT.md |
+| LANG4 | Tier A copy in cy, pl, ro, pa, ur, bn | blocked on LANG3 | NEXT.md |
+| OLANG5 | Panjabi script; Urdu or Bengali first | operator decision | NEXT.md |
+| LANG5 | Right-to-left layout and script fonts | blocked on LANG3, OLANG5 | NEXT.md |
+| LANG6 | Compliance wording block and test | blocked on LANG3 | NEXT.md |
+| LANG7 | Caption tracks in six languages | blocked on LANG4 | NEXT.md |
+| LANG8 | In-language keyword research | ready | NEXT.md |
 
 ## Verification
 
