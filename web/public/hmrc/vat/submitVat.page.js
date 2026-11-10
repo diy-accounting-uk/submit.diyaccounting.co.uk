@@ -303,8 +303,8 @@ async function handleFormSubmission(event) {
   sessionStorage.setItem("submission_data", requestData);
 
   // Check if we already have an HMRC access token with sufficient scope
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (scopeSufficient) {
     // Token available with correct scope - submit directly without OAuth redirect
@@ -312,7 +312,7 @@ async function handleFormSubmission(event) {
     continueVatSubmission();
   } else {
     // No token or insufficient scope - redirect to HMRC OAuth
-    if (accessToken) {
+    if (hmrcGrantId) {
       console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
@@ -383,7 +383,7 @@ function showForm() {
 function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("submission_data");
-  sessionStorage.removeItem("hmrcAccessToken");
+  sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
@@ -397,8 +397,8 @@ function cancelRequest() {
 
 // OAuth callback handling
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
+  if (hmrcGrantId) {
     console.log("OAuth callback handler (code present, auto-continue)");
     continueVatSubmission();
   } else {
@@ -408,12 +408,12 @@ function handleOAuthCallback() {
 
 async function continueVatSubmission() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
     const submissionData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
 
     if (!submissionData) {
       console.log("No pending submission data found");
-      // Don't clear hmrcAccessToken - it may be needed for future submissions
+      // Don't clear hmrcGrantId - it may be needed for future submissions
       // (e.g., in simulator mode the token is pre-injected on every page load)
       sessionStorage.removeItem("oauth_state");
       return;
@@ -428,7 +428,7 @@ async function continueVatSubmission() {
     showStatus("Submitting VAT return to HMRC...", "info");
 
     // Submit VAT return with 9-box data
-    const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, accessToken);
+    const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, hmrcGrantId);
 
     // Display success: the earlier "Submitting" and "Still processing" messages are finished, so only the outcome stays
     hideStatus();
@@ -445,7 +445,7 @@ async function continueVatSubmission() {
     if (window.clearFormDraft) {
       window.clearFormDraft();
     }
-    // Keep hmrcAccessToken and hmrcAccount for subsequent operations (view return, obligations)
+    // Keep hmrcGrantId and hmrcAccount for subsequent operations (view return, obligations)
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
@@ -457,7 +457,7 @@ async function continueVatSubmission() {
     // Clear submission data to prevent auto-retry loop on next page load
     // User will need to manually retry by filling the form again
     sessionStorage.removeItem("submission_data");
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
@@ -468,7 +468,7 @@ async function continueVatSubmission() {
   }
 }
 
-async function submitVatWithCalculatedHeaders(vatNumber, vatData, accessToken) {
+async function submitVatWithCalculatedHeaders(vatNumber, vatData, hmrcGrantId) {
   const storedData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
   const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
   const runFraudPreventionHeaderValidation =
@@ -483,7 +483,7 @@ async function submitVatWithCalculatedHeaders(vatNumber, vatData, accessToken) {
   }
 
   // submitVat is the hmrc-service module's export (exposed on window by web/public/lib/services/hmrc-service.js)
-  return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSyntheticObligations);
+  return await submitVat(vatNumber, vatData, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, allowSyntheticObligations);
 }
 
 function setReceiptReference(elementId, value) {
@@ -633,9 +633,9 @@ async function loadOpenObligations() {
   obligationsLoadedForVrn = vrn;
 
   const connectBtn = document.getElementById("connectHmrcBtn");
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   const canReadObligations =
-    accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient("/hmrc/vat/vatObligations.html") : !!accessToken;
+    hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient("/hmrc/vat/vatObligations.html") : !!hmrcGrantId;
   if (!canReadObligations) {
     obligationsLoadedForVrn = null;
     connectBtn.style.display = "";
@@ -648,7 +648,7 @@ async function loadOpenObligations() {
     const { from, to } = window.vatPeriodChoice.obligationSearchWindow(Date.now());
     const params = new URLSearchParams({ vrn, from, to, status: "O" });
     const requestHeaders = {
-      "Authorization": `Bearer ${accessToken}`,
+      "x-mcp-hmrc-grant": hmrcGrantId,
       "Content-Type": "application/json",
       ...(await getGovClientHeaders()),
       "x-wait-time-ms": "0",

@@ -217,7 +217,7 @@ test("Click through: change registered office address re-authorises with Compani
   await fillInNewAddress(page, newAddress, screenshotPath);
   await acceptOfficeAddressStatement(page, screenshotPath);
 
-  await page.evaluate(() => sessionStorage.removeItem("companiesHouseAccessToken"));
+  await page.evaluate(() => sessionStorage.removeItem("companiesHouseGrantId"));
 
   await submitFiling(page, screenshotPath);
   await authoriseWithCompaniesHouse(page, companiesHouseCredentials, screenshotPath);

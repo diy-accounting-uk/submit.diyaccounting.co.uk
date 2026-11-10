@@ -13,7 +13,7 @@
 
 // app/functions/hmrcVatReturnPost.js
 
-import { grantAccessTokenFromEvent, resolveBodyAccessToken } from "../../lib/mcpHmrcGrantAccess.js";
+import { grantAccessTokenFromEvent } from "../../lib/mcpHmrcGrantAccess.js";
 import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -152,7 +152,6 @@ export function extractAndValidateParameters(event, errorMessages) {
     // Period dates for server-side resolution via obligations API
     periodStart,
     periodEnd,
-    accessToken,
     runFraudPreventionHeaderValidation,
     // Synthetic-only option: allow using any available open obligation if dates don't match
     allowSyntheticObligations,
@@ -169,9 +168,6 @@ export function extractAndValidateParameters(event, errorMessages) {
     // Optional: declaration confirmation (required for new format in Phase 4)
     declarationConfirmed,
   } = parsedBody || {};
-
-  // Use 'hmrcAccessToken' internally for clarity when interacting with HMRC APIs
-  const hmrcAccessToken = accessToken;
 
   // Detect request format (9-box or legacy)
   const requestFormat = detectRequestFormat(parsedBody);
@@ -242,7 +238,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     }
 
     // Build VAT return data if no errors
-    if (errorMessages.length === 0 || (errorMessages.length === 1 && !hmrcAccessToken)) {
+    if (errorMessages.length === 0) {
       vatReturnData = buildVatReturnBody({
         periodKey: null, // Will be resolved from obligations
         vatDueSales: Number(vatDueSales),
@@ -264,7 +260,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     }
 
     // Build VAT return data from legacy format
-    if (errorMessages.length === 0 || (errorMessages.length === 1 && !hmrcAccessToken)) {
+    if (errorMessages.length === 0) {
       vatReturnData = buildVatReturnBodyFromLegacy({ periodKey: null, vatDue: numVatDue });
     }
   }
@@ -296,7 +292,6 @@ export function extractAndValidateParameters(event, errorMessages) {
     clientId,
     periodStart,
     periodEnd,
-    hmrcAccessToken,
     vatReturnData,
     requestFormat,
     hmrcAccount,
@@ -511,15 +506,14 @@ export async function ingestHandler(event) {
     vatNumber,
     periodStart,
     periodEnd,
-    hmrcAccessToken: hmrcAccessTokenFromBody,
     vatReturnData,
     requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
   } = extractAndValidateParameters(event, errorMessages);
-  // A request names its HMRC grant in a header, or carries a grant id or a raw token in the body.
-  const hmrcAccessToken = (await grantAccessTokenFromEvent(event)) ?? (await resolveBodyAccessToken(event, hmrcAccessTokenFromBody));
+  // A request names its HMRC grant in the x-mcp-hmrc-grant header, or as a grant id bearer.
+  const hmrcAccessToken = await grantAccessTokenFromEvent(event);
 
   // A client-scoped request resolves its VRN from the client row, never from the request body.
   const resolvedVatNumber = clientId ? client.identifiers?.vrn : vatNumber;
@@ -536,7 +530,7 @@ export async function ingestHandler(event) {
 
   // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
-    if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
+    if (!hmrcAccessToken) errorMessages.push("Missing Authorization Bearer token");
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 

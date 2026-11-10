@@ -105,7 +105,7 @@ test.describe("viewVatReturn - stale status banners", () => {
     // A pre-existing access token routes handleFormSubmission straight to the direct-fetch
     // branch instead of an HMRC OAuth redirect.
     await page.addInitScript(() => {
-      sessionStorage.setItem("hmrcAccessToken", "test-access-token");
+      sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
       localStorage.setItem("cognitoIdToken", "test-id-token");
     });
 

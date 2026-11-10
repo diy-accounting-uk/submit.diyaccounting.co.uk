@@ -14,7 +14,7 @@
 // app/functions/practice/practiceClientAuthorisationInvitePost.js
 
 import { validateEnv } from "../../lib/env.js";
-import { grantAccessTokenFromEvent, resolveBodyAccessToken, HMRC_GRANT_NOT_USABLE } from "../../lib/mcpHmrcGrantAccess.js";
+import { grantAccessTokenFromEvent, HMRC_GRANT_NOT_USABLE } from "../../lib/mcpHmrcGrantAccess.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -74,8 +74,8 @@ export async function ingestHandler(event) {
 
   const body = parseRequestBody(event) || {};
   const { service, knownFact, arn: arnFromBody } = body;
-  // A request names its HMRC grant in a header, or carries a grant id or a raw token in the body.
-  const accessToken = (await grantAccessTokenFromEvent(event)) ?? (await resolveBodyAccessToken(event, body.accessToken));
+  // A request names its HMRC grant in the x-mcp-hmrc-grant header, or as a grant id bearer.
+  const accessToken = await grantAccessTokenFromEvent(event);
   if (accessToken === HMRC_GRANT_NOT_USABLE) {
     return http401UnauthorizedResponse({
       request,
@@ -93,7 +93,7 @@ export async function ingestHandler(event) {
     errorMessages.push("knownFact is required (the VAT registration date, or the client's postcode)");
   }
   if (!accessToken || typeof accessToken !== "string") {
-    errorMessages.push("accessToken is required");
+    errorMessages.push("Missing Authorization Bearer token");
   }
   if (errorMessages.length > 0) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Invalid request", error: { errorMessages } });

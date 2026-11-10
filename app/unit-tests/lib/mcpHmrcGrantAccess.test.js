@@ -21,7 +21,7 @@ vi.mock("@app/data/dynamoDbHmrcApiRequestRepository.js", () => ({ putHmrcApiRequ
 vi.mock("@app/services/subHasher.js", async (importOriginal) => ({ ...(await importOriginal()), initializeSalt: async () => {} }));
 
 const { createGrantedHmrcGrant } = await import("@app/data/dynamoDbHmrcGrantRepository.js");
-const { openGrantFor, grantAccessTokenFromEvent, grantIdFromEvent, resolveBodyAccessToken, HMRC_GRANT_NOT_USABLE, GRANT_ID_PATTERN } =
+const { openGrantFor, grantAccessTokenFromEvent, grantIdFromEvent, HMRC_GRANT_NOT_USABLE, GRANT_ID_PATTERN } =
   await import("@app/lib/mcpHmrcGrantAccess.js");
 const { extractHmrcAccessTokenFromLambdaEvent, validateHmrcAccessToken, UnauthorizedTokenError } = await import("@app/services/hmrcApi.js");
 
@@ -166,10 +166,8 @@ describe("mcpHmrcGrantAccess", () => {
       );
     });
 
-    test("passes a raw bearer token through unchanged", async () => {
-      expect(await extractHmrcAccessTokenFromLambdaEvent(eventFor({ Authorization: "Bearer raw-hmrc-token-123" }))).toBe(
-        "raw-hmrc-token-123",
-      );
+    test("refuses a bearer value that is not a grant id", async () => {
+      expect(await extractHmrcAccessTokenFromLambdaEvent(eventFor({ Authorization: "Bearer raw-hmrc-token-123" }))).toBeNull();
       expect(await extractHmrcAccessTokenFromLambdaEvent(eventFor({}))).toBeNull();
     });
 
@@ -203,15 +201,6 @@ describe("mcpHmrcGrantAccess", () => {
       const grantId = await storeGrant({ hmrcAccount: "synthetic" });
       delete table.items.get(`hmrc-grant:${grantId}`).origin;
       expect(await grantAccessTokenFromEvent(eventFor({ "x-mcp-hmrc-grant": grantId }))).toBe("access-1");
-    });
-
-    test("resolves a body value shaped like a grant id and returns any other value unchanged", async () => {
-      const grantId = await storeGrant();
-      const event = eventFor({});
-      expect(await resolveBodyAccessToken(event, grantId)).toBe("access-1");
-      expect(await resolveBodyAccessToken(event, "raw-hmrc-token-123")).toBe("raw-hmrc-token-123");
-      expect(await resolveBodyAccessToken(event, undefined)).toBeUndefined();
-      expect(await resolveBodyAccessToken(event, "99999999-2222-4333-8444-555555555555")).toBe(HMRC_GRANT_NOT_USABLE);
     });
   });
 });

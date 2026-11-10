@@ -162,7 +162,6 @@ export async function ingestHandler(event) {
     request,
     headers: { ...responseHeaders },
     data: {
-      accessToken: grantId,
       companiesHouseGrantId: grantId,
       expiresIn: chResponse.data.expires_in,
       tokenType: chResponse.data.token_type,

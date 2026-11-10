@@ -8,6 +8,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
@@ -172,7 +177,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
   test("returns 400 when vrn is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -183,7 +188,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
   test("returns 400 when periodStart is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -194,7 +199,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
   test("returns 400 when periodEnd is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -205,7 +210,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
   test("returns 400 when periodStart has invalid format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: "invalid-date", periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -217,7 +222,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
   test("returns 400 when periodEnd has invalid format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: "invalid-date" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -231,7 +236,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     // so the user has only the automatic "default" bundle, which view-vat-return does not accept.
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/vat/return";
     const response = await hmrcVatReturnGetHandler(event);
@@ -254,7 +259,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/vat/return";
     const response = await hmrcVatReturnGetHandler(event);
@@ -266,7 +271,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -279,7 +284,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -300,7 +305,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(200);
@@ -320,7 +325,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcVatReturnGetHandler(event);
 
@@ -341,7 +346,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "0",
         "x-initial-request": "true",
       },
@@ -361,7 +366,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -394,7 +399,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
@@ -431,7 +436,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
@@ -469,7 +474,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
@@ -501,7 +506,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
@@ -536,7 +541,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
@@ -558,7 +563,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -599,7 +604,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-initial-request": "false",
         "x-request-id": "poll-get-after-success",
       },

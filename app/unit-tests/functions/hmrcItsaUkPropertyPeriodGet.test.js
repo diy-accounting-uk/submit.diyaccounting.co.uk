@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -111,7 +116,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
   test("returns 400 when submissionId is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -122,7 +127,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
   test("returns 400 when submissionId is not a UUID", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR, submissionId: "../.." },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -137,7 +142,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
         taxYear: "not-a-year",
         submissionId: VALID_SUBMISSION_ID,
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -158,7 +163,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
         taxYear: VALID_TAX_YEAR,
         submissionId: VALID_SUBMISSION_ID,
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     expect(response.statusCode).toBe(200);
@@ -175,7 +180,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
         taxYear: VALID_TAX_YEAR,
         submissionId: VALID_SUBMISSION_ID,
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodGetHandler(event);
 
@@ -195,7 +200,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
         taxYear: VALID_TAX_YEAR,
         submissionId: VALID_SUBMISSION_ID,
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodGetHandler(event);
 
@@ -220,7 +225,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
         taxYear: VALID_TAX_YEAR,
         submissionId: VALID_SUBMISSION_ID,
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     // Every HMRC "not found" maps to a real 404, the way every other read handler in this
@@ -249,7 +254,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler - cumulative tax year", () =
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_CUMULATIVE_TAX_YEAR },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
     expect(response.statusCode).toBe(200);
@@ -260,7 +265,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler - cumulative tax year", () =
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_CUMULATIVE_TAX_YEAR },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodGetHandler(event);
 

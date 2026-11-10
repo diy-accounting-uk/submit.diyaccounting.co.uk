@@ -2,7 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
+import { hmrcGrantHeader } from "../../test-helpers/hmrcGrantTestDouble.js";
 import { buildJwtAuthorizerContext, buildLambdaEvent } from "../../test-helpers/eventBuilders.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 vi.mock("@app/services/bundleManagement.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -26,13 +31,14 @@ const { createInvitation, agentAuthorisationErrorResponse } = await import("@app
 const { ingestHandler } = await import("../../functions/practice/practiceClientAuthorisationInvitePost.js");
 const { _setTestSalt } = await import("../../services/subHasher.js");
 
-function buildAuthenticatedEvent({ sub = "practice-sub", clientId = "c1", body } = {}) {
+function buildAuthenticatedEvent({ sub = "practice-sub", clientId = "c1", body, accessToken = "hmrc-token" } = {}) {
   return buildLambdaEvent({
     method: "POST",
     path: `/api/v1/practice/clients/${clientId}/authorisation/invitations`,
     authorizer: buildJwtAuthorizerContext(sub),
     pathParameters: { clientId },
     body,
+    headers: accessToken ? hmrcGrantHeader(accessToken) : {},
   });
 }
 
@@ -58,9 +64,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
       authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1" } },
     });
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toMatchObject({ invitationId: "inv-1", status: "pending" });
@@ -88,7 +92,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
 
     await ingestHandler(
       buildAuthenticatedEvent({
-        body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token", arn: "TARN0000002" },
+        body: { service: "MTD-VAT", knownFact: "2020-01-01", arn: "TARN0000002" },
       }),
     );
 
@@ -98,23 +102,23 @@ describe("practiceClientAuthorisationInvitePost", () => {
   });
 
   test("rejects an unsupported service", async () => {
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-CT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-CT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(400);
     expect(createInvitation).not.toHaveBeenCalled();
   });
 
   test("rejects a missing knownFact", async () => {
-    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", accessToken: "hmrc-token" } }));
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT" } }));
 
     expect(result.statusCode).toBe(400);
     expect(createInvitation).not.toHaveBeenCalled();
   });
 
-  test("rejects a missing accessToken", async () => {
-    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
+  test("rejects a request that names no HMRC grant, and ignores a token in the body", async () => {
+    const result = await ingestHandler(
+      buildAuthenticatedEvent({ accessToken: null, body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
+    );
 
     expect(result.statusCode).toBe(400);
     expect(createInvitation).not.toHaveBeenCalled();
@@ -123,9 +127,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
   test("answers 404 for a client that does not belong to this practice", async () => {
     getClient.mockResolvedValue(null);
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(404);
     expect(createInvitation).not.toHaveBeenCalled();
@@ -134,9 +136,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
   test("answers 404 for an archived client", async () => {
     getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: "2026-01-01T00:00:00.000Z" });
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(404);
     expect(createInvitation).not.toHaveBeenCalled();
@@ -146,9 +146,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
     getClient.mockResolvedValue({ clientId: "c1", identifiers: {}, archivedAt: null });
     getPracticeArn.mockResolvedValue("TARN0000001");
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(400);
     expect(createInvitation).not.toHaveBeenCalled();
@@ -158,9 +156,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
     getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: null });
     getPracticeArn.mockResolvedValue(null);
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(result.statusCode).toBe(400);
     expect(createInvitation).not.toHaveBeenCalled();
@@ -171,9 +167,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
     getPracticeArn.mockResolvedValue("TARN0000001");
     createInvitation.mockResolvedValue({ ok: false, status: 403, data: {} });
 
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01" } }));
 
     expect(agentAuthorisationErrorResponse).toHaveBeenCalled();
     expect(result.statusCode).toBe(500);
@@ -186,7 +180,7 @@ describe("practiceClientAuthorisationInvitePost", () => {
       path: "/api/v1/practice/clients/c1/authorisation/invitations",
       authorizer: {},
       pathParameters: { clientId: "c1" },
-      body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" },
+      body: { service: "MTD-VAT", knownFact: "2020-01-01" },
     });
 
     const result = await ingestHandler(event);

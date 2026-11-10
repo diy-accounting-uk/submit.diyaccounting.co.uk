@@ -172,17 +172,17 @@ function displayBusinessPicker(businesses) {
   document.getElementById("businessPickerResults").style.display = "block";
 }
 
-async function runFindBusinesses(nino, accessToken) {
+async function runFindBusinesses(nino, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await getBusinessDetails(nino, accessToken, govClientHeaders, false, null);
+  return await getBusinessDetails(nino, hmrcGrantId, govClientHeaders, false, null);
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -198,7 +198,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleFindBusinessesSubmission(event) {
@@ -207,12 +207,12 @@ async function handleFindBusinessesSubmission(event) {
 
   if (!window.formErrors.requireFields(["nino"])) return;
 
-  await ensureAuthorizedThen("pendingDashboardBusinessPickerRequest", { nino }, async (accessToken) => {
+  await ensureAuthorizedThen("pendingDashboardBusinessPickerRequest", { nino }, async (hmrcGrantId) => {
     try {
       showLoading();
       hideStatus();
       showStatus("Finding your businesses...", "info");
-      const result = await runFindBusinesses(nino, accessToken);
+      const result = await runFindBusinesses(nino, hmrcGrantId);
       displayBusinessPicker(result.listOfBusinesses || []);
       hideStatus();
     } catch (error) {
@@ -225,14 +225,14 @@ async function handleFindBusinessesSubmission(event) {
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pending = JSON.parse(sessionStorage.getItem("pendingDashboardBusinessPickerRequest") || "null");
     if (!pending) return;
 
     document.getElementById("nino").value = pending.nino;
     showLoading();
     showStatus("Finding your businesses...", "info");
-    const result = await runFindBusinesses(pending.nino, accessToken);
+    const result = await runFindBusinesses(pending.nino, hmrcGrantId);
     displayBusinessPicker(result.listOfBusinesses || []);
     hideStatus();
     sessionStorage.removeItem("pendingDashboardBusinessPickerRequest");
@@ -241,7 +241,7 @@ async function continueAfterOAuth() {
   } catch (error) {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingDashboardBusinessPickerRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -251,8 +251,8 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 document.getElementById("businessPickerForm").addEventListener("submit", handleFindBusinessesSubmission);

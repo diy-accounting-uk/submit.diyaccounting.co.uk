@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -244,7 +249,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   test("returns 400 when nino is missing", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -255,7 +260,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   test("returns 400 when businessId is missing", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ businessId: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -264,13 +269,13 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   test("returns 400 when taxYear is missing or malformed", async () => {
     const missing = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaUkPropertyPeriodPostHandler(missing)).statusCode).toBe(400);
 
     const malformed = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: "not-a-year" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaUkPropertyPeriodPostHandler(malformed)).statusCode).toBe(400);
   });
@@ -278,13 +283,13 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   test("returns 400 when fromDate or toDate are missing or malformed", async () => {
     const missingFrom = buildHmrcEvent({
       body: buildPeriodBody({ fromDate: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaUkPropertyPeriodPostHandler(missingFrom)).statusCode).toBe(400);
 
     const badTo = buildHmrcEvent({
       body: buildPeriodBody({ toDate: "not-a-date" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaUkPropertyPeriodPostHandler(badTo)).statusCode).toBe(400);
   });
@@ -294,7 +299,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
@@ -306,7 +311,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodPostHandler(event);
 
@@ -322,7 +327,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodPostHandler(event);
 
@@ -342,7 +347,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
@@ -352,7 +357,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   test("returns 403 JSON when the authenticated user holds no bundle entitled to file a quarterly update", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/uk-property/period";
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
@@ -377,7 +382,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "0",
         "x-initial-request": "true",
       },
@@ -418,7 +423,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler - cumulative tax year", () 
         income: { periodAmount: 0 },
         expenses: { repairsAndMaintenance: 100 },
       }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
 
@@ -445,7 +450,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler - cumulative tax year", () 
         income: { periodAmount: 0 },
         expenses: {},
       }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyPeriodPostHandler(event);
 
@@ -463,7 +468,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler - cumulative tax year", () 
         ukNonFhlProperty: undefined,
         income: { periodAmount: 500 },
       }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);

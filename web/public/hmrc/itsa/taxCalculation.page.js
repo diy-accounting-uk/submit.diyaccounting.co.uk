@@ -45,9 +45,9 @@ function initializePage() {
   window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
 }
 
-async function runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await triggerCalculation(calculationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await triggerCalculation(calculationDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 function el(tag, className, text) {
@@ -143,11 +143,11 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
 window.displayCalculation = displayCalculation;
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -163,14 +163,14 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
-async function runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
   showStatus("Calculating... this can take a few seconds.", "info");
-  const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+  const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
   displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear, calculationDetails.calculationType);
   document.getElementById("triggerForm").style.display = "none";
   document.getElementById("calculationResults").style.display = "block";
@@ -192,9 +192,9 @@ async function handleTriggerFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingCalculationTriggerRequest",
     { calculationDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
-        await runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
         showStatus(`Failed to calculate: ${error.message}`, "error");
       } finally {
@@ -206,7 +206,7 @@ async function handleTriggerFormSubmission(event) {
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pending = JSON.parse(sessionStorage.getItem("pendingCalculationTriggerRequest") || "null");
     if (!pending) return;
 
@@ -214,14 +214,14 @@ async function continueAfterOAuth() {
     document.getElementById("taxYear").value = pending.calculationDetails.taxYear;
     document.getElementById("calculationType").value = pending.calculationDetails.calculationType;
 
-    await runTrigger(pending.calculationDetails, pending.testScenario, pending.runFraudPreventionHeaderValidation, accessToken);
+    await runTrigger(pending.calculationDetails, pending.testScenario, pending.runFraudPreventionHeaderValidation, hmrcGrantId);
     sessionStorage.removeItem("pendingCalculationTriggerRequest");
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingCalculationTriggerRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -231,8 +231,8 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 document.getElementById("itsaCalculationTriggerForm").addEventListener("submit", handleTriggerFormSubmission);

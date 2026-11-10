@@ -17,6 +17,11 @@ import {
   MockGetCommand,
   MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 vi.mock("@aws-sdk/lib-dynamodb", () => mockLibDynamoDb);
 vi.mock("@aws-sdk/client-dynamodb", () => mockClientDynamoDb);
@@ -86,7 +91,7 @@ function buildPeriodBody(overrides = {}) {
 function buildInitialSubmissionEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildPeriodBody(body),
-    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { ...hmrcGrantHeader(), "x-initial-request": "true", ...headers },
   });
 }
 

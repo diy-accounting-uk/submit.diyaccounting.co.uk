@@ -4,6 +4,7 @@
 // app/unit-tests/functions/companiesHouseTransactionGet.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { companiesHouseGrantHeader } from "@app/test-helpers/companiesHouseGrantTestDouble.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock } from "@app/test-helpers/mockHelpers.js";
 
@@ -61,6 +62,10 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/companiesHouseGrantTestDouble.js")).companiesHouseGrantAccessDouble(await importOriginal()),
+);
+
 import { ingestHandler as companiesHouseTransactionGetHandler } from "@app/functions/companies-house/companiesHouseTransactionGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -107,7 +112,7 @@ function buildEvent({ pathParameters = { transactionId: "017100005912" }, header
     method,
     path: "/api/v1/companies-house/transaction/017100005912",
     pathParameters,
-    headers: { Authorization: "Bearer test-ch-access-token", ...headers },
+    headers: { ...companiesHouseGrantHeader("test-ch-access-token"), ...headers },
   });
 }
 
@@ -165,7 +170,9 @@ describe("companiesHouseTransactionGet ingestHandler", () => {
   });
 
   test("returns 401 when no Companies House access token is present", async () => {
-    const response = await companiesHouseTransactionGetHandler(buildEvent({ headers: { Authorization: "" } }));
+    const response = await companiesHouseTransactionGetHandler(
+      buildEvent({ headers: { "x-companies-house-grant": "", "Authorization": "" } }),
+    );
     expect(response.statusCode).toBe(401);
     expect(mockFetch).not.toHaveBeenCalled();
   });

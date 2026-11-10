@@ -48,9 +48,9 @@ function initializePage() {
 // The trigger is refused while any quarterly obligation for the business is still open -
 // HMRC would reject it with RULE_OBLIGATIONS_NOT_MET, so this is checked and explained
 // before the call is made rather than after HMRC says no.
-async function checkOpenObligations(nino, businessId, accessToken) {
+async function checkOpenObligations(nino, businessId, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  const result = await getObligations(nino, accessToken, govClientHeaders, false, null, {
+  const result = await getObligations(nino, hmrcGrantId, govClientHeaders, false, null, {
     typeOfBusiness: "self-employment",
     businessId,
     status: "open",
@@ -59,16 +59,16 @@ async function checkOpenObligations(nino, businessId, accessToken) {
   return openObligations;
 }
 
-async function triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await triggerBsas(triggerDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await triggerBsas(triggerDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 async function retrieveSummary(
   nino,
   calculationId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   testScenario,
   minWaitMs = BSAS_RETRIEVE_MIN_WAIT_MS,
   retryDelayMs = BSAS_RETRIEVE_RETRY_DELAY_MS,
@@ -84,7 +84,7 @@ async function retrieveSummary(
   await sleep(minWaitMs);
   for (let attempt = 1; attempt <= BSAS_RETRIEVE_MAX_ATTEMPTS; attempt += 1) {
     try {
-      return await getBsasSelfEmployment(nino, calculationId, taxYear, accessToken, govClientHeaders, false, retrieveTestScenario);
+      return await getBsasSelfEmployment(nino, calculationId, taxYear, hmrcGrantId, govClientHeaders, false, retrieveTestScenario);
     } catch (error) {
       const notReadyYet = error.status === 404 && attempt < BSAS_RETRIEVE_MAX_ATTEMPTS;
       if (!notReadyYet) throw error;
@@ -93,9 +93,9 @@ async function retrieveSummary(
   }
 }
 
-async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await adjustBsasSelfEmployment(adjustDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await adjustBsasSelfEmployment(adjustDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 function displaySummary(bsas) {
@@ -107,11 +107,11 @@ function displaySummary(bsas) {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -127,20 +127,20 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
-async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
   showStatus("Requesting the year-end summary...", "info");
-  const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+  const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
   triggeredNino = triggerDetails.nino;
   triggeredTaxYear = document.getElementById("taxYear").value.trim();
   triggeredCalculationId = triggerResult.calculationId;
 
   showStatus("Retrieving year-end summary...", "info");
-  const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, accessToken, testScenario);
+  const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, hmrcGrantId, testScenario);
   displaySummary(bsas);
   document.getElementById("triggerForm").style.display = "none";
   document.getElementById("summaryContainer").style.display = "block";
@@ -168,9 +168,9 @@ async function handleTriggerFormSubmission(event) {
   };
 
   try {
-    const accessTokenForCheck = sessionStorage.getItem("hmrcAccessToken");
-    if (accessTokenForCheck) {
-      const openObligations = await checkOpenObligations(nino, businessId, accessTokenForCheck);
+    const hmrcGrantIdForCheck = window.hmrcScopeCheck.storedGrantId();
+    if (hmrcGrantIdForCheck) {
+      const openObligations = await checkOpenObligations(nino, businessId, hmrcGrantIdForCheck);
       const warning = document.getElementById("obligationsWarning");
       if (openObligations.length > 0) {
         warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.`;
@@ -186,9 +186,9 @@ async function handleTriggerFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingBsasTriggerRequest",
     { triggerDetails, taxYear, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
-        await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
         showStatus(`Failed to request the year-end summary: ${error.message}`, "error");
       } finally {
@@ -200,7 +200,7 @@ async function handleTriggerFormSubmission(event) {
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingTrigger = JSON.parse(sessionStorage.getItem("pendingBsasTriggerRequest") || "null");
     const pendingAdjust = JSON.parse(sessionStorage.getItem("pendingBsasAdjustRequest") || "null");
 
@@ -210,7 +210,7 @@ async function continueAfterOAuth() {
         pendingTrigger.triggerDetails,
         pendingTrigger.testScenario,
         pendingTrigger.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       sessionStorage.removeItem("pendingBsasTriggerRequest");
     } else if (pendingAdjust) {
@@ -220,7 +220,7 @@ async function continueAfterOAuth() {
         pendingAdjust.adjustDetails,
         pendingAdjust.testScenario,
         pendingAdjust.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       document.getElementById("summaryContainer").style.display = "none";
       document.getElementById("adjustmentResults").style.display = "block";
@@ -235,8 +235,7 @@ async function continueAfterOAuth() {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingBsasTriggerRequest");
     sessionStorage.removeItem("pendingBsasAdjustRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -245,8 +244,8 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 async function handleAdjustmentSubmit(zeroAdjustments) {
@@ -272,12 +271,12 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
   await ensureAuthorizedThen(
     "pendingBsasAdjustRequest",
     { adjustDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Submitting adjustment...", "info");
-        await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         document.getElementById("summaryContainer").style.display = "none";
         document.getElementById("adjustmentResults").style.display = "block";
         hideStatus();

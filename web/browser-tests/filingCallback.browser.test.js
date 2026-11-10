@@ -13,11 +13,11 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const BASE = "http://localhost:3000";
 const COMPANY_NUMBER = "00000001";
-const LIVE_ACCESS_TOKEN = "live-access-token";
+const GRANT_ID = "3f2b8c1e-5d4a-4e7b-9c6d-1a2b3c4d5e6f";
 
 // The documented Companies House token response carries no scope field, so this is what the
 // browser receives from /api/v1/companies-house/token after a real sign-in.
-const TOKEN_RESPONSE_WITHOUT_SCOPE = { accessToken: LIVE_ACCESS_TOKEN, expiresIn: 3600, tokenType: "Bearer" };
+const TOKEN_RESPONSE_WITHOUT_SCOPE = { accessToken: GRANT_ID, companiesHouseGrantId: GRANT_ID, expiresIn: 3600, tokenType: "Bearer" };
 
 function readPublic(relativePath) {
   return fs.readFileSync(path.join(process.cwd(), "web/public", relativePath), "utf-8");
@@ -124,12 +124,20 @@ test.describe("Companies House filing OAuth callback", () => {
     });
 
     await page.route("**/api/v1/companies-house/token", async (route) => {
-      apiCalls.push({ path: "/api/v1/companies-house/token", authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: "/api/v1/companies-house/token",
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       await route.fulfill({ status: tokenResponseStatus, contentType: "application/json", body: JSON.stringify(tokenResponseBody) });
     });
 
     await page.route(`**/api/v1/companies-house/company/${COMPANY_NUMBER}/registered-email-address/eligibility`, async (route) => {
-      apiCalls.push({ path: "eligibility", authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: "eligibility",
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -138,7 +146,11 @@ test.describe("Companies House filing OAuth callback", () => {
     });
 
     await page.route(`**/api/v1/companies-house/company/${COMPANY_NUMBER}/registered-office-address`, async (route) => {
-      apiCalls.push({ path: "registered-office-address", authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: "registered-office-address",
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -156,7 +168,11 @@ test.describe("Companies House filing OAuth callback", () => {
     });
 
     await page.route("**/api/v1/companies-house/transaction", async (route) => {
-      apiCalls.push({ path: "transaction", authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: "transaction",
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       await route.fulfill({
         status: 201,
         contentType: "application/json",
@@ -164,12 +180,20 @@ test.describe("Companies House filing OAuth callback", () => {
       });
     });
     await page.route("**/api/v1/companies-house/transaction/txn-1/registered-office-address", async (route) => {
-      apiCalls.push({ path: "transaction/registered-office-address", authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: "transaction/registered-office-address",
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ links: {} }) });
     });
     await page.route("**/api/v1/companies-house/transaction/txn-1", async (route) => {
       const method = route.request().method();
-      apiCalls.push({ path: `transaction/txn-1 ${method}`, authorization: route.request().headers()["authorization"] });
+      apiCalls.push({
+        path: `transaction/txn-1 ${method}`,
+        authorization: route.request().headers()["authorization"],
+        grant: route.request().headers()["x-companies-house-grant"],
+      });
       const body =
         method === "PUT"
           ? { transactionId: "txn-1", status: "closed" }
@@ -207,7 +231,8 @@ test.describe("Companies House filing OAuth callback", () => {
     const eligibilityCalls = apiCalls.filter((call) => call.path === "eligibility");
     expect(tokenCalls).toHaveLength(1);
     expect(eligibilityCalls).toHaveLength(1);
-    expect(eligibilityCalls[0].authorization).toBe(`Bearer ${LIVE_ACCESS_TOKEN}`);
+    expect(eligibilityCalls[0].grant).toBe(GRANT_ID);
+    expect(eligibilityCalls[0].authorization).toBeUndefined();
 
     // The pending filing is consumed and the token is held against the scope the page asked for.
     const stored = await page.evaluate(() => ({
@@ -248,11 +273,12 @@ test.describe("Companies House filing OAuth callback", () => {
 
     const transactionCalls = apiCalls.filter((call) => call.path === "transaction");
     expect(transactionCalls).toHaveLength(1);
-    expect(transactionCalls[0].authorization).toBe(`Bearer ${LIVE_ACCESS_TOKEN}`);
+    expect(transactionCalls[0].grant).toBe(GRANT_ID);
+    expect(transactionCalls[0].authorization).toBeUndefined();
   });
 
   test("a token response without an expiry is an exchange failure shown on the callback page, not a silent loop", async ({ page }) => {
-    await setupRoutes(page, { tokenResponseBody: { accessToken: LIVE_ACCESS_TOKEN, tokenType: "Bearer" } });
+    await setupRoutes(page, { tokenResponseBody: { accessToken: GRANT_ID, companiesHouseGrantId: GRANT_ID, tokenType: "Bearer" } });
 
     await page.goto(`${BASE}/companies-house/changeRegisteredEmail.html`, { waitUntil: "domcontentloaded" });
     await page.fill("#companyNumber", COMPANY_NUMBER);
@@ -265,7 +291,7 @@ test.describe("Companies House filing OAuth callback", () => {
     expect(page.url()).toContain("filingCallback.html");
     await expect(page.locator("#navigationBtn")).toHaveText("Back to Companies House filing");
 
-    const token = await page.evaluate(() => sessionStorage.getItem("companiesHouseAccessToken"));
-    expect(token).toBeNull();
+    const grantId = await page.evaluate(() => sessionStorage.getItem("companiesHouseGrantId"));
+    expect(grantId).toBeNull();
   });
 });

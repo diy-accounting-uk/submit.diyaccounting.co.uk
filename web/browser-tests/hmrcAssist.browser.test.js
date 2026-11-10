@@ -72,6 +72,7 @@ function obligation(status) {
 async function openForm(page, { obligations = [obligation("O")], report, acknowledge, environmentName = "ci" } = {}) {
   const reportRequests = [];
   const acknowledgeRequests = [];
+  const reportHeaders = [];
 
   await page.route("**/submit.environment-name.txt", async (route) => {
     if (environmentName === null) return route.abort();
@@ -93,7 +94,8 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, getOAuthScopeString: async () => "read:vat",
+      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        grantHeaders: () => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }), getOAuthScopeString: async () => "read:vat",
         getActivityById: async (id) => window.TOML.parse(await (await fetch("/submit.catalogue.toml")).text()).activities.find((activity) => activity.id === id) };`,
     });
   });
@@ -103,6 +105,7 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
   await page.route("**/api/v1/hmrc/vat/assist/report", async (route) => {
     const request = route.request().postDataJSON();
     reportRequests.push(request);
+    reportHeaders.push(route.request().headers());
     const answer = report
       ? await report(request, reportRequests.length)
       : {
@@ -131,13 +134,13 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
   });
 
   await page.addInitScript(() => {
-    sessionStorage.setItem("hmrcAccessToken", "test-access-token");
+    sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
     localStorage.setItem("cognitoIdToken", "test-id-token");
   });
   await page.goto(`${baseUrl}/hmrc/vat/submitVat.html`, { waitUntil: "domcontentloaded" });
   await page.locator("#vatNumber").fill(VRN);
   await expect(page.locator("#obligationStatus")).toBeAttached();
-  return { reportRequests, acknowledgeRequests };
+  return { reportRequests, acknowledgeRequests, reportHeaders };
 }
 
 // A negative assertion has no event to wait for: give a stray request time to arrive.
@@ -190,12 +193,14 @@ test.describe("HMRC Assist check on the VAT return", () => {
   });
 
   test("sends the report request with the chosen period and the nine boxes", async ({ page }) => {
-    const { reportRequests } = await openForm(page);
+    const { reportRequests, reportHeaders } = await openForm(page);
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistMessages")).toBeVisible();
 
     expect(reportRequests).toHaveLength(1);
+    expect(reportHeaders[0]["x-mcp-hmrc-grant"]).toBe("00000000-0000-4000-8000-000000000001");
+    expect(reportHeaders[0].authorization).toBeUndefined();
     const [request] = reportRequests;
     expect(request.vrn).toBe(VRN);
     expect(request.periodKey).toBeTruthy();

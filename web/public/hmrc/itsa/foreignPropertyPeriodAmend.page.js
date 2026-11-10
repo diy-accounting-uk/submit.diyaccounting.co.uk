@@ -61,7 +61,7 @@ function showSearchCriteria() {
 
 function clearSession() {
   sessionStorage.removeItem(PENDING_KEY);
-  sessionStorage.removeItem("hmrcAccessToken");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
@@ -92,13 +92,13 @@ function readCriteria() {
   };
 }
 
-async function loadProperties(criteria, accessToken) {
+async function loadProperties(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const result = await window.getForeignPropertyDetails(
     criteria.nino,
     criteria.businessId,
     criteria.taxYear,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
@@ -109,8 +109,8 @@ async function loadProperties(criteria, accessToken) {
 // HMRC's retrieve is not stateful in the sandbox: with no Gov-Test-Scenario it answers not-found.
 // A synthetic account without a chosen scenario sends the named one for the tax year's model.
 // In a property year the property list comes first, because the entries are the properties.
-async function loadFromHmrc(criteria, accessToken) {
-  if (isPropertyYear(criteria.taxYear) && !figures.hasEntries()) await loadProperties(criteria, accessToken);
+async function loadFromHmrc(criteria, hmrcGrantId) {
+  if (isPropertyYear(criteria.taxYear) && !figures.hasEntries()) await loadProperties(criteria, hmrcGrantId);
   const govClientHeaders = await getGovClientHeaders();
   const scenario = window.resolveSyntheticTestScenario(
     criteria.testScenario,
@@ -119,7 +119,7 @@ async function loadFromHmrc(criteria, accessToken) {
   );
   const summary = await window.getForeignPropertyPeriod(
     criteria,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     criteria.runFraudPreventionHeaderValidation,
     scenario,
@@ -127,25 +127,25 @@ async function loadFromHmrc(criteria, accessToken) {
   return figures.apply(summary);
 }
 
-async function sendPeriod(request, accessToken) {
+async function sendPeriod(request, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const { criteria, period } = request;
   return window.putForeignPropertyPeriod(
     period,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
   );
 }
 
-async function runRequest(request, accessToken) {
+async function runRequest(request, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     if (request.action === "load") {
       showStatus("Loading the period summary...", "info");
-      const unknown = await loadFromHmrc(request.criteria, accessToken);
+      const unknown = await loadFromHmrc(request.criteria, hmrcGrantId);
       showStatus(
         unknown.length > 0
           ? "Loaded the period. HMRC holds figures for a property that is not in your list; check the foreign property details page."
@@ -155,7 +155,7 @@ async function runRequest(request, accessToken) {
     } else {
       hideSearchCriteria();
       showStatus("Amending period summary...", "info");
-      await sendPeriod(request, accessToken);
+      await sendPeriod(request, hmrcGrantId);
       document.getElementById("periodAmendResults").style.display = "block";
       hideRequestForm();
       hideStatus();
@@ -163,7 +163,7 @@ async function runRequest(request, accessToken) {
     }
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
+      window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus("Access token expired. Please try again.", "error");
     } else if (error.status === 404 && request.action === "load") {
@@ -181,11 +181,11 @@ async function runRequest(request, accessToken) {
 }
 
 async function ensureAuthorizedThen(request) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
       showStatus("Initiating HMRC authentication...", "info");
@@ -209,17 +209,17 @@ async function ensureAuthorizedThen(request) {
     }
     return;
   }
-  await runRequest(request, accessToken);
+  await runRequest(request, hmrcGrantId);
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 function requiredFields() {

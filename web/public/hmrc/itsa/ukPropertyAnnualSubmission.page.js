@@ -163,30 +163,30 @@ function populateEditForm(annualSubmission) {
   updateAllowanceFieldsEnabled();
 }
 
-async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   return await getUkPropertyAnnual(
     nino,
     businessId,
     taxYear,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     runFraudPreventionHeaderValidation,
     testScenario,
   );
 }
 
-async function saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, accessToken) {
+async function saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   // The scenario above exists for the retrieve, whose sandbox default is not-found. Create
   // and amend does not accept those values and answers "The supplied Gov-Test-Scenario is
   // not valid", so a save that forwarded it could never succeed.
-  return await putUkPropertyAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation);
+  return await putUkPropertyAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation);
 }
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualSaveRequest") || "null");
 
@@ -199,7 +199,7 @@ async function continueAfterOAuth() {
         pendingLoad.taxYear,
         pendingLoad.testScenario,
         pendingLoad.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       loadedNino = pendingLoad.nino;
       loadedBusinessId = pendingLoad.businessId;
@@ -212,7 +212,7 @@ async function continueAfterOAuth() {
     } else if (pendingSave) {
       showLoading();
       showStatus("Saving annual submission...", "info");
-      const saved = await saveAnnualSubmission(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, accessToken);
+      const saved = await saveAnnualSubmission(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, hmrcGrantId);
       await showSavedRecord("uk-property", pendingSave.annualDetails, saved?.correlationId);
       hideStatus();
       sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
@@ -225,7 +225,7 @@ async function continueAfterOAuth() {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
     sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -235,16 +235,16 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -260,7 +260,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleLoadFormSubmission(event) {
@@ -276,12 +276,12 @@ async function handleLoadFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingUkPropertyAnnualLoadRequest",
     { nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Loading annual submission...", "info");
-        const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedBusinessId = businessId;
         loadedTaxYear = taxYear;
@@ -318,12 +318,12 @@ async function handleSaveClick() {
   await ensureAuthorizedThen(
     "pendingUkPropertyAnnualSaveRequest",
     { annualDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Saving annual submission...", "info");
-        const saved = await saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, accessToken);
+        const saved = await saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord("uk-property", annualDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {

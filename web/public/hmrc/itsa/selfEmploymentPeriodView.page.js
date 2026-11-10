@@ -45,8 +45,7 @@ function showSearchCriteria() {
 
 function cancelRequest() {
   sessionStorage.removeItem("pendingSelfEmploymentPeriodViewRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
-  sessionStorage.removeItem("hmrcTokenScope");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
@@ -80,13 +79,13 @@ function initializePage() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) {
     continuePeriodViewRetrieval();
   }
 }
 
-async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const params = new URLSearchParams({ nino, businessId, taxYear });
   if (periodId) params.append("periodId", periodId);
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
@@ -95,7 +94,7 @@ async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, ru
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -127,7 +126,7 @@ async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, ru
 
 async function continuePeriodViewRetrieval() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingSelfEmploymentPeriodViewRequest") || "null");
 
     if (!pendingRequest) return;
@@ -144,7 +143,7 @@ async function continuePeriodViewRetrieval() {
       pendingRequest.periodId,
       pendingRequest.testScenario,
       pendingRequest.runFraudPreventionHeaderValidation,
-      accessToken,
+      hmrcGrantId,
     );
 
     await displayPeriod(result, pendingRequest);
@@ -156,16 +155,14 @@ async function continuePeriodViewRetrieval() {
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please re-authenticate.", "error");
     } else {
       showStatus(`Failed to retrieve the period summary: ${error.message}`, "error");
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodViewRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
@@ -192,11 +189,11 @@ async function handleFormSubmission(event) {
 
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"].concat(isCumulative ? [] : ["periodId"]))) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
     try {
@@ -233,15 +230,14 @@ async function handleFormSubmission(event) {
       hideStatus();
       showStatus("Retrieving period summary...", "info");
 
-      const result = await fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, accessToken);
+      const result = await fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
       await displayPeriod(result, { nino, businessId, taxYear, periodId });
       document.getElementById("periodViewResults").style.display = "block";
       hideStatus();
     } catch (error) {
       if (error.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+        window.hmrcScopeCheck.clearHmrcToken();
         showStatus("Access token expired. Please try again.", "error");
       } else {
         showStatus(`Failed to retrieve the period summary: ${error.message}`, "error");

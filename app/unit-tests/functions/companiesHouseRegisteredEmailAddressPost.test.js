@@ -4,6 +4,7 @@
 // app/unit-tests/functions/companiesHouseRegisteredEmailAddressPost.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { companiesHouseGrantHeader } from "@app/test-helpers/companiesHouseGrantTestDouble.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock } from "@app/test-helpers/mockHelpers.js";
 
@@ -61,6 +62,10 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/companiesHouseGrantTestDouble.js")).companiesHouseGrantAccessDouble(await importOriginal()),
+);
+
 import { ingestHandler as companiesHouseRegisteredEmailAddressPostHandler } from "@app/functions/companies-house/companiesHouseRegisteredEmailAddressPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -102,7 +107,7 @@ function buildEvent({ pathParameters = { transactionId: "017100005912" }, body =
     path: "/api/v1/companies-house/transaction/017100005912/registered-email-address",
     pathParameters,
     body,
-    headers: { Authorization: "Bearer test-ch-access-token", ...headers },
+    headers: { ...companiesHouseGrantHeader("test-ch-access-token"), ...headers },
   });
 }
 
@@ -187,7 +192,9 @@ describe("companiesHouseRegisteredEmailAddressPost ingestHandler", () => {
   });
 
   test("returns 401 when no Companies House access token is present", async () => {
-    const response = await companiesHouseRegisteredEmailAddressPostHandler(buildEvent({ headers: { Authorization: "" } }));
+    const response = await companiesHouseRegisteredEmailAddressPostHandler(
+      buildEvent({ headers: { "x-companies-house-grant": "", "Authorization": "" } }),
+    );
     expect(response.statusCode).toBe(401);
     expect(mockFetch).not.toHaveBeenCalled();
   });

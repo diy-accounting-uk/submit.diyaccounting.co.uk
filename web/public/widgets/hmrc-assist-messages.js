@@ -57,7 +57,7 @@
   async function buildHeaders() {
     const govClientHeaders = typeof window.getGovClientHeaders === "function" ? await window.getGovClientHeaders() : {};
     const headers = {
-      "Authorization": `Bearer ${sessionStorage.getItem("hmrcAccessToken")}`,
+      ...(window.hmrcScopeCheck ? window.hmrcScopeCheck.grantHeaders() : {}),
       "Content-Type": "application/json",
       ...govClientHeaders,
       "x-wait-time-ms": "0",

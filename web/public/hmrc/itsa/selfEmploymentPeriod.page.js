@@ -88,8 +88,7 @@ function showSearchCriteria() {
 
 function cancelRequest() {
   sessionStorage.removeItem("pendingSelfEmploymentPeriodRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
-  sessionStorage.removeItem("hmrcTokenScope");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
@@ -128,28 +127,28 @@ function initializePage() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (!accessToken) {
-    console.log("OAuth callback handler (no accessToken found)");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (!hmrcGrantId) {
+    console.log("OAuth callback handler (no hmrcGrantId found)");
     return;
   }
   if (sessionStorage.getItem("pendingSelfEmploymentLoadTotalRequest")) {
     console.log("OAuth callback handler (resuming load current total)");
     continueLoadCurrentTotal();
   } else {
-    console.log("OAuth callback handler (accessToken found)");
+    console.log("OAuth callback handler (hmrcGrantId found)");
     continuePeriodSubmission();
   }
 }
 
 // Fetches the cumulative model's single running total for the tax year, the starting
 // point a customer edits to reach the new total, rather than a blank quarter's form.
-async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
+async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
   const params = new URLSearchParams({ nino, businessId, taxYear });
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -199,14 +198,14 @@ function applyCurrentTotal(periodSummary) {
 
 async function continueLoadCurrentTotal() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingSelfEmploymentLoadTotalRequest") || "null");
     if (!pendingRequest) return;
 
     showLoading();
     hideStatus();
 
-    const result = await fetchCurrentTotal(pendingRequest.nino, pendingRequest.businessId, pendingRequest.taxYear, accessToken);
+    const result = await fetchCurrentTotal(pendingRequest.nino, pendingRequest.businessId, pendingRequest.taxYear, hmrcGrantId);
     applyCurrentTotal(result);
 
     sessionStorage.removeItem("currentActivity");
@@ -216,8 +215,7 @@ async function continueLoadCurrentTotal() {
     if (error.status === 404) {
       showStatus("HMRC has no total on file yet for this tax year. Enter the figures for the year so far.", "info");
     } else if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please try loading the total again.", "error");
     } else {
       showStatus(`Failed to load the current total: ${error.message}`, "error");
@@ -236,11 +234,11 @@ async function handleLoadCurrentTotal() {
 
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
       showStatus("Initiating HMRC authentication...", "info");
@@ -267,7 +265,7 @@ async function handleLoadCurrentTotal() {
     try {
       showLoading();
       hideStatus();
-      const result = await fetchCurrentTotal(nino, businessId, taxYear, accessToken);
+      const result = await fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId);
       applyCurrentTotal(result);
     } catch (error) {
       if (error.status === 404) {
@@ -301,11 +299,11 @@ function readPeriodData(source) {
   };
 }
 
-async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -342,7 +340,7 @@ async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderVa
 
 async function continuePeriodSubmission() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingSelfEmploymentPeriodRequest") || "null");
 
     if (!pendingRequest) {
@@ -359,7 +357,7 @@ async function continuePeriodSubmission() {
       pendingRequest.periodData,
       pendingRequest.testScenario,
       pendingRequest.runFraudPreventionHeaderValidation,
-      accessToken,
+      hmrcGrantId,
     );
 
     displayResult(result);
@@ -375,8 +373,7 @@ async function continuePeriodSubmission() {
   } catch (error) {
     console.error("Error filing quarterly update:", error);
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please re-authenticate.", "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
@@ -386,8 +383,7 @@ async function continuePeriodSubmission() {
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
@@ -436,11 +432,11 @@ async function handleFormSubmission(event) {
 
   if (!window.formErrors.requireFields(isCumulative ? ["turnover"] : ["periodStartDate", "periodEndDate", "turnover"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
@@ -479,7 +475,7 @@ async function handleFormSubmission(event) {
       hideStatus();
       showStatus("Filing quarterly update...", "info");
 
-      const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, accessToken);
+      const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
       displayResult(result);
       document.getElementById("selfEmploymentPeriodResults").style.display = "block";
@@ -489,8 +485,7 @@ async function handleFormSubmission(event) {
     } catch (error) {
       console.error("Error filing quarterly update:", error);
       if (error.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+        window.hmrcScopeCheck.clearHmrcToken();
         showStatus("Access token expired. Please try again.", "error");
       } else if (error.status === 403 && error.reason === "tokens_exhausted") {
         hideStatus();

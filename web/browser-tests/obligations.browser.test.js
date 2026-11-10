@@ -42,6 +42,7 @@ test.describe("ITSA Obligations - Form", () => {
       window.hmrcScopeCheck = window.hmrcScopeCheck || {
         isTokenSufficient: () => Promise.resolve(true),
         getOAuthScopeString: () => Promise.resolve("read:self-assessment"),
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
         clearHmrcToken: () => {},
       };
     });
@@ -102,7 +103,7 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
 
   test("leaves a pending VAT request alone and makes no API call", async ({ page }) => {
     await page.addInitScript(() => {
-      sessionStorage.setItem("hmrcAccessToken", "stale-token");
+      sessionStorage.setItem("hmrcGrantId", "stale-token");
       sessionStorage.setItem("pendingObligationsRequest", JSON.stringify({ vrn: "123456789" }));
       sessionStorage.setItem("currentActivity", "/hmrc/vat/vatObligations.html");
     });

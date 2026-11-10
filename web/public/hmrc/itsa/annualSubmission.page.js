@@ -173,27 +173,27 @@ function populateEditForm(annualSubmission) {
   document.getElementById("class4NicsExemptionReason").value = nonFinancials.class4NicsExemptionReason || "";
 }
 
-async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   return await getSelfEmploymentAnnual(
     nino,
     businessId,
     taxYear,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     runFraudPreventionHeaderValidation,
     testScenario,
   );
 }
 
-async function saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await putSelfEmploymentAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await putSelfEmploymentAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingAnnualLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingAnnualSaveRequest") || "null");
 
@@ -206,7 +206,7 @@ async function continueAfterOAuth() {
         pendingLoad.taxYear,
         pendingLoad.testScenario,
         pendingLoad.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       loadedNino = pendingLoad.nino;
       loadedBusinessId = pendingLoad.businessId;
@@ -224,7 +224,7 @@ async function continueAfterOAuth() {
         pendingSave.annualDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       await showSavedRecord("self-employment", pendingSave.annualDetails, saved?.correlationId);
       hideStatus();
@@ -238,7 +238,7 @@ async function continueAfterOAuth() {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingAnnualLoadRequest");
     sessionStorage.removeItem("pendingAnnualSaveRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -248,16 +248,16 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -273,7 +273,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleLoadFormSubmission(event) {
@@ -289,12 +289,12 @@ async function handleLoadFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingAnnualLoadRequest",
     { nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Loading annual submission...", "info");
-        const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedBusinessId = businessId;
         loadedTaxYear = taxYear;
@@ -333,12 +333,12 @@ async function handleSaveClick() {
   await ensureAuthorizedThen(
     "pendingAnnualSaveRequest",
     { annualDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Saving annual submission...", "info");
-        const saved = await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const saved = await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord("self-employment", annualDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {

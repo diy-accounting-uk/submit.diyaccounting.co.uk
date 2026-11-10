@@ -171,7 +171,7 @@ test.afterEach(async ({ page }, testInfo) => {
 async function sendCumulativeUpdate(page, period, testScenario = null) {
   return await page.evaluate(
     async ({ period, testScenario }) => {
-      const accessToken = sessionStorage.getItem("hmrcAccessToken");
+      const accessToken = sessionStorage.getItem("hmrcGrantId");
       const govClientHeaders = await window.getGovClientHeaders();
       try {
         await window.putForeignPropertyPeriod(period, accessToken, govClientHeaders, false, testScenario);
@@ -187,7 +187,7 @@ async function sendCumulativeUpdate(page, period, testScenario = null) {
 async function readCumulativeTotal(page, query, testScenario = null) {
   return await page.evaluate(
     async ({ query, testScenario }) => {
-      const accessToken = sessionStorage.getItem("hmrcAccessToken");
+      const accessToken = sessionStorage.getItem("hmrcGrantId");
       const govClientHeaders = await window.getGovClientHeaders();
       try {
         return { ok: true, summary: await window.getForeignPropertyPeriod(query, accessToken, govClientHeaders, false, testScenario) };

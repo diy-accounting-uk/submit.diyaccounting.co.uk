@@ -213,6 +213,27 @@
     }
   }
 
+  // End the HMRC grant the page holds, so the server drops the HMRC tokens it keeps for it. The
+  // keepalive request is started here and carries through the sign-out redirect; a failure leaves the
+  // grant to expire on its own.
+  async function deleteHmrcGrant() {
+    let grantId;
+    try {
+      grantId = window.hmrcScopeCheck ? window.hmrcScopeCheck.storedGrantId() : sessionStorage.getItem("hmrcGrantId");
+    } catch {
+      grantId = null;
+    }
+    const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
+    if (!grantId || !cognitoAccessToken) return;
+    fetch("/api/v1/mcp/hmrc-grants/" + encodeURIComponent(grantId), {
+      method: "DELETE",
+      headers: { "X-Authorization": "Bearer " + cognitoAccessToken },
+      keepalive: true,
+    }).catch(() => {
+      // delete failures are expected (offline, ad blockers) -- local sign-out still proceeds
+    });
+  }
+
   // End the session server-side: revoke the refresh token (Cognito's /oauth2/revoke, so a
   // copied refresh token stops working) and tell the authenticated sign-out route to publish
   // "logout" and delete the session item. Both are keepalive fetches, not navigator.sendBeacon,
@@ -268,6 +289,7 @@
 
     console.log("Logging out user");
 
+    await deleteHmrcGrant();
     await revokeAndSignOut();
 
     // Clear Cognito tokens and user info from localStorage
@@ -278,7 +300,7 @@
     localStorage.removeItem("authState");
 
     // Clear HMRC-related data from sessionStorage
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("submission_data");
     sessionStorage.removeItem("pendingObligationsRequest");

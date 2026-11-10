@@ -51,8 +51,7 @@ function showSearchCriteria() {
 
 function cancelRequest() {
   sessionStorage.removeItem("pendingUkPropertyPeriodsRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
-  sessionStorage.removeItem("hmrcTokenScope");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
@@ -86,13 +85,13 @@ function initializePage() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) {
     continuePeriodsRetrieval();
   }
 }
 
-async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const params = new URLSearchParams({ nino, businessId, taxYear });
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
@@ -100,7 +99,7 @@ async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPre
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -137,7 +136,7 @@ async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPre
 // Gov-Test-Scenario header) is "no data found", the same trap the BSAS retrieve carries
 // (see ukPropertyAdjustments.html's retrieveSummary). A synthetic run with no explicit
 // test scenario needs a named success scenario; a live account must never carry one.
-async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
   const effectiveTestScenario = window.resolveSyntheticTestScenario(testScenario, hmrcAccount, "UK_PROPERTY_FULL_EXPENSES");
   const params = new URLSearchParams({ nino, businessId, taxYear });
@@ -147,7 +146,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFra
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -177,7 +176,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFra
 
 async function continuePeriodsRetrieval() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyPeriodsRequest") || "null");
 
     if (!pendingRequest) return;
@@ -194,7 +193,7 @@ async function continuePeriodsRetrieval() {
         pendingRequest.taxYear,
         pendingRequest.testScenario,
         pendingRequest.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       displayCurrentTotal(result);
     } else {
@@ -204,7 +203,7 @@ async function continuePeriodsRetrieval() {
         pendingRequest.taxYear,
         pendingRequest.testScenario,
         pendingRequest.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       displayPeriods(result.periods || []);
     }
@@ -216,16 +215,14 @@ async function continuePeriodsRetrieval() {
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please re-authenticate.", "error");
     } else {
       showStatus(`Failed to retrieve period summaries: ${error.message}`, "error");
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingUkPropertyPeriodsRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
@@ -246,11 +243,11 @@ async function handleFormSubmission(event) {
 
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
     try {
@@ -288,18 +285,17 @@ async function handleFormSubmission(event) {
       showStatus("Retrieving period summaries...", "info");
 
       if (isCumulativeTaxYear(taxYear)) {
-        const result = await fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         displayCurrentTotal(result);
       } else {
-        const result = await fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         displayPeriods(result.periods || []);
       }
       document.getElementById("periodsResults").style.display = "block";
       hideStatus();
     } catch (error) {
       if (error.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+        window.hmrcScopeCheck.clearHmrcToken();
         showStatus("Access token expired. Please try again.", "error");
       } else if (error.status === 404 && isCumulativeTaxYear(taxYear)) {
         displayCurrentTotal(null);

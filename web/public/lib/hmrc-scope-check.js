@@ -107,17 +107,33 @@
    * @returns {Promise<boolean>}
    */
   async function isTokenSufficient(pagePath) {
-    const token = sessionStorage.getItem("hmrcAccessToken");
-    if (!token) return false;
+    if (!storedGrantId()) return false;
     const required = await getRequiredScopes(pagePath);
     return hasRequiredScopes(required);
+  }
+
+  /**
+   * The id of the HMRC grant the page holds, or null when there is none.
+   * @returns {string|null}
+   */
+  function storedGrantId() {
+    return sessionStorage.getItem("hmrcGrantId") || null;
+  }
+
+  /**
+   * The request headers that name the HMRC grant the page holds.
+   * @returns {Object<string,string>} {"x-mcp-hmrc-grant": id}, or an empty object when there is no grant
+   */
+  function grantHeaders() {
+    const grantId = storedGrantId();
+    return grantId ? { "x-mcp-hmrc-grant": grantId } : {};
   }
 
   /**
    * Clear the stored HMRC token and scope (e.g. when re-authorization is needed).
    */
   function clearHmrcToken() {
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
   }
 
@@ -127,6 +143,8 @@
     hasRequiredScopes,
     getOAuthScopeString,
     isTokenSufficient,
+    storedGrantId,
+    grantHeaders,
     clearHmrcToken,
   };
 })();

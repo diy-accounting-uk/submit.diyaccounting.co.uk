@@ -103,9 +103,9 @@ describe("companiesHouseFilingApi", () => {
   });
 
   describe("extractCompaniesHouseAccessTokenFromLambdaEvent", () => {
-    test("passes a raw bearer token unchanged", async () => {
+    test("returns null for a bearer value that is not a grant id", async () => {
       const event = { headers: { Authorization: "Bearer a-companies-house-access-token" } };
-      expect(await extractCompaniesHouseAccessTokenFromLambdaEvent(event, "user-sub-1")).toBe("a-companies-house-access-token");
+      expect(await extractCompaniesHouseAccessTokenFromLambdaEvent(event, "user-sub-1")).toBeNull();
     });
 
     test("returns null when there is no Authorization header", async () => {

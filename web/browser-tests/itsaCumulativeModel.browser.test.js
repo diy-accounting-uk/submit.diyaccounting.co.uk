@@ -70,7 +70,7 @@ async function stubSignedInFetch(page, responseBody) {
       window.__sentRequests.push({ url, method: init?.method, body: init?.body ? JSON.parse(init.body) : undefined });
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
     };
-    const store = new Map([["hmrcAccessToken", "test-token"]]);
+    const store = new Map([["hmrcGrantId", "test-token"]]);
     Object.defineProperty(window, "sessionStorage", {
       configurable: true,
       value: {

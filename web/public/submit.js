@@ -568,6 +568,7 @@ if (typeof window !== "undefined") {
 (function migrateStorageKeys() {
   try {
     if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+    sessionStorage.removeItem("hmrcAccessToken");
     const keysToMigrate = ["submission_data", "currentActivity", "hmrcAccount", "pendingObligationsRequest", "pendingReturnRequest"];
     keysToMigrate.forEach((key) => {
       try {

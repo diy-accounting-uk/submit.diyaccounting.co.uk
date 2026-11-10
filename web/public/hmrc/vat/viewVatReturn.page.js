@@ -94,7 +94,7 @@ function hideRequestControls() {
 function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("pendingReturnRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
+  sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
@@ -109,8 +109,8 @@ function cancelRequest() {
 
 // OAuth callback handling
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
+  if (hmrcGrantId) {
     console.log("OAuth callback handler (accessToken found)");
     // If we have an access token, retrieve stored parameters and execute the call
     continueReturnRetrieval();
@@ -121,7 +121,7 @@ function handleOAuthCallback() {
 
 async function continueReturnRetrieval() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingReturnRequest") || "null");
 
     if (!pendingRequest) {
@@ -160,7 +160,7 @@ async function continueReturnRetrieval() {
     const govClientHeaders = await getGovClientHeaders();
 
     const requestHeaders = {
-      "Authorization": `Bearer ${accessToken}`,
+      "x-mcp-hmrc-grant": hmrcGrantId,
       "Content-Type": "application/json",
       ...govClientHeaders,
     };
@@ -187,7 +187,7 @@ async function continueReturnRetrieval() {
     if (!response.ok) {
       // Handle 401 specifically to trigger re-authentication
       if (response.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
         showFailure({ status: 401 }, "Could not retrieve the VAT return");
         return;
@@ -207,7 +207,7 @@ async function continueReturnRetrieval() {
     // Clean up session storage - keep token for subsequent HMRC operations
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("pendingReturnRequest");
-    // Keep hmrcAccessToken for subsequent operations (obligations, submit return)
+    // Keep hmrcGrantId for subsequent operations (obligations, submit return)
     sessionStorage.removeItem("oauth_state");
     // Keep hmrcAccount for subsequent operations
     console.log("Return retrieval completed successfully");
@@ -218,7 +218,7 @@ async function continueReturnRetrieval() {
     showForm();
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingReturnRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
@@ -243,15 +243,15 @@ async function handleFormSubmission(event) {
   if (!window.formErrors.requireVatNumberAnd("vrn", ["periodStart", "periodEnd"])) return;
 
   // Check if we have an access token with sufficient scope
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   // Check hmrcAccount for synthetic mode (set by bundle qualifiers via sessionStorage)
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
   const allowSyntheticObligations = hmrcAccount === "synthetic";
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
@@ -313,7 +313,7 @@ async function handleFormSubmission(event) {
       const govClientHeaders = await getGovClientHeaders();
 
       const requestHeaders = {
-        "Authorization": `Bearer ${accessToken}`,
+        "x-mcp-hmrc-grant": hmrcGrantId,
         "Content-Type": "application/json",
         ...govClientHeaders,
       };
@@ -339,7 +339,7 @@ async function handleFormSubmission(event) {
       if (!response.ok) {
         // Handle 401 specifically to trigger re-authentication
         if (response.status === 401) {
-          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
           showFailure({ status: 401 }, "Could not retrieve the VAT return");
           return;

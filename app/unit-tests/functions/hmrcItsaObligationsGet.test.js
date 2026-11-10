@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
@@ -133,7 +138,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
   test("returns 400 when NINO is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: {},
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -142,7 +147,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
   test("returns 400 for invalid NINO format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: "12345678" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -153,7 +158,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
   test("returns 400 for an invalid typeOfBusiness value", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, typeOfBusiness: "not-a-business-type" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -164,7 +169,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
   test("returns 400 when businessId is supplied without typeOfBusiness", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO, businessId: "XAIS12345678901" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -191,7 +196,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(200);
@@ -209,7 +214,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaObligationsGetHandler(event);
 
@@ -223,7 +228,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaObligationsGetHandler(event);
 
@@ -241,7 +246,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
         businessId: "XAIS12345678901",
         status: "open",
       },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaObligationsGetHandler(event);
 
@@ -256,7 +261,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaObligationsGetHandler(event);
 
@@ -276,7 +281,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect([400, 500]).toContain(response.statusCode);
@@ -287,7 +292,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaObligationsGetHandler(event);
     expect(response.statusCode).toBe(404);
@@ -298,7 +303,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
     // so the user has only the automatic "default" bundle, which self-employed does not accept.
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/obligations";
     const response = await hmrcItsaObligationsGetHandler(event);
@@ -320,7 +325,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/obligations";
     const response = await hmrcItsaObligationsGetHandler(event);
@@ -331,7 +336,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "0",
         "x-initial-request": "true",
       },
@@ -349,7 +354,7 @@ describe("hmrcItsaObligationsGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { nino: VALID_NINO },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },

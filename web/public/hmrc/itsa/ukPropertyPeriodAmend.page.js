@@ -73,8 +73,7 @@ function showSearchCriteria() {
 
 function cancelRequest() {
   sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
-  sessionStorage.removeItem("hmrcTokenScope");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
@@ -108,8 +107,8 @@ function initializePage() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (!accessToken) return;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (!hmrcGrantId) return;
   if (sessionStorage.getItem("pendingUkPropertyLoadTotalRequest")) {
     continueLoadCurrentTotal();
   } else {
@@ -125,7 +124,7 @@ function handleOAuthCallback() {
 // (see ukPropertyAdjustments.html's retrieveSummary). A synthetic run with no explicit
 // test scenario needs a named success scenario; a live account must never carry one. This
 // button only shows for a cumulative tax year, so no isCumulative check is needed here.
-async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
+async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
   const testScenario = window.resolveSyntheticTestScenario(null, hmrcAccount, "UK_PROPERTY_FULL_EXPENSES");
   const params = new URLSearchParams({ nino, businessId, taxYear });
@@ -133,7 +132,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -169,14 +168,14 @@ function applyCurrentTotal(periodSummary) {
 
 async function continueLoadCurrentTotal() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyLoadTotalRequest") || "null");
     if (!pendingRequest) return;
 
     showLoading();
     hideStatus();
 
-    const result = await fetchCurrentTotal(pendingRequest.nino, pendingRequest.businessId, pendingRequest.taxYear, accessToken);
+    const result = await fetchCurrentTotal(pendingRequest.nino, pendingRequest.businessId, pendingRequest.taxYear, hmrcGrantId);
     applyCurrentTotal(result);
 
     sessionStorage.removeItem("currentActivity");
@@ -186,8 +185,7 @@ async function continueLoadCurrentTotal() {
     if (error.status === 404) {
       showStatus("HMRC has no total on file yet for this tax year.", "info");
     } else if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please try loading the total again.", "error");
     } else {
       showStatus(`Failed to load the current total: ${error.message}`, "error");
@@ -206,11 +204,11 @@ async function handleLoadCurrentTotal() {
 
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
       showStatus("Initiating HMRC authentication...", "info");
@@ -237,7 +235,7 @@ async function handleLoadCurrentTotal() {
     try {
       showLoading();
       hideStatus();
-      const result = await fetchCurrentTotal(nino, businessId, taxYear, accessToken);
+      const result = await fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId);
       applyCurrentTotal(result);
     } catch (error) {
       if (error.status === 404) {
@@ -279,11 +277,11 @@ function readAmendData(source) {
   return amendData;
 }
 
-async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
@@ -318,7 +316,7 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
 
 async function continuePeriodAmend() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyPeriodAmendRequest") || "null");
 
     if (!pendingRequest) return;
@@ -332,7 +330,7 @@ async function continuePeriodAmend() {
       pendingRequest.amendData,
       pendingRequest.testScenario,
       pendingRequest.runFraudPreventionHeaderValidation,
-      accessToken,
+      hmrcGrantId,
     );
 
     document.getElementById("periodAmendResults").style.display = "block";
@@ -344,8 +342,7 @@ async function continuePeriodAmend() {
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
-      sessionStorage.removeItem("hmrcTokenScope");
+      window.hmrcScopeCheck.clearHmrcToken();
       showStatus("Access token expired. Please re-authenticate.", "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
@@ -355,8 +352,7 @@ async function continuePeriodAmend() {
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
@@ -390,11 +386,11 @@ async function handleFormSubmission(event) {
 
   if (!isCumulative && !window.formErrors.requireFields(["submissionId"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
     try {
@@ -431,15 +427,14 @@ async function handleFormSubmission(event) {
       hideStatus();
       showStatus("Amending period summary...", "info");
 
-      await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, accessToken);
+      await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
       document.getElementById("periodAmendResults").style.display = "block";
       hideStatus();
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     } catch (error) {
       if (error.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+        window.hmrcScopeCheck.clearHmrcToken();
         showStatus("Access token expired. Please try again.", "error");
       } else if (error.status === 403 && error.reason === "tokens_exhausted") {
         hideStatus();

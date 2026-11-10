@@ -95,9 +95,9 @@ function adjustableEntriesOf(bsas, taxYear) {
 
 // A trigger is refused while any quarterly obligation for the business is still open: HMRC would
 // reject it with RULE_OBLIGATIONS_NOT_MET, so the page checks and explains before it calls.
-async function checkOpenObligations(nino, businessId, accessToken) {
+async function checkOpenObligations(nino, businessId, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  const result = await getObligations(nino, accessToken, govClientHeaders, false, null, {
+  const result = await getObligations(nino, hmrcGrantId, govClientHeaders, false, null, {
     typeOfBusiness: "foreign-property",
     businessId,
     status: "open",
@@ -108,14 +108,14 @@ async function checkOpenObligations(nino, businessId, accessToken) {
 // HMRC's retrieve is not stateful in the sandbox: with no Gov-Test-Scenario it answers no data
 // found. A synthetic account without a chosen scenario sends a named one; a live account never
 // carries a sandbox-only header.
-async function retrieveSummary(criteria, calculationId, accessToken) {
+async function retrieveSummary(criteria, calculationId, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const scenario = window.resolveSyntheticTestScenario(
     criteria.testScenario,
     sessionStorage.getItem("hmrcAccount"),
     "FOREIGN_PROPERTY_PROFIT",
   );
-  return window.getBsasForeignProperty(criteria.nino, calculationId, criteria.taxYear, accessToken, govClientHeaders, false, scenario);
+  return window.getBsasForeignProperty(criteria.nino, calculationId, criteria.taxYear, hmrcGrantId, govClientHeaders, false, scenario);
 }
 
 function moneyGroup(prefix, field) {
@@ -201,7 +201,7 @@ function displaySummary(bsas, taxYear) {
   mountFhlFields(taxYear);
 }
 
-async function runTriggerAndRetrieve(criteria, accessToken) {
+async function runTriggerAndRetrieve(criteria, hmrcGrantId) {
   showStatus("Requesting the year-end summary...", "info");
   const govClientHeaders = await getGovClientHeaders();
   const triggerResult = await triggerBsas(
@@ -212,14 +212,14 @@ async function runTriggerAndRetrieve(criteria, accessToken) {
       accountingPeriodEndDate: criteria.accountingPeriodEndDate,
       typeOfBusiness: "foreign-property",
     },
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
   );
   triggered = { nino: criteria.nino, taxYear: criteria.taxYear, calculationId: triggerResult.calculationId };
   showStatus("Retrieving year-end summary...", "info");
-  const bsas = await retrieveSummary(criteria, triggered.calculationId, accessToken);
+  const bsas = await retrieveSummary(criteria, triggered.calculationId, hmrcGrantId);
   displaySummary(bsas, criteria.taxYear);
   document.getElementById("triggerForm").style.display = "none";
   document.getElementById("summaryContainer").style.display = "block";
@@ -299,29 +299,29 @@ function showAdjustmentResult(adjustDetails) {
   container.replaceChildren(...parts);
 }
 
-async function sendAdjustment(request, accessToken) {
+async function sendAdjustment(request, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const { adjustDetails, testScenario, runFraudPreventionHeaderValidation } = request;
-  await window.adjustBsasForeignProperty(adjustDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  await window.adjustBsasForeignProperty(adjustDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
   showAdjustmentResult(adjustDetails);
   document.getElementById("summaryContainer").style.display = "none";
   document.getElementById("adjustmentResults").style.display = "block";
 }
 
-async function runRequest(request, accessToken) {
+async function runRequest(request, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     if (request.action === "trigger") {
-      await runTriggerAndRetrieve(request.criteria, accessToken);
+      await runTriggerAndRetrieve(request.criteria, hmrcGrantId);
     } else {
       showStatus("Submitting adjustment...", "info");
-      await sendAdjustment(request, accessToken);
+      await sendAdjustment(request, hmrcGrantId);
       hideStatus();
     }
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
+      window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus("Access token expired. Please try again.", "error");
     } else {
@@ -336,11 +336,11 @@ async function runRequest(request, accessToken) {
 }
 
 async function ensureAuthorizedThen(request) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
       showStatus("Initiating HMRC authentication...", "info");
@@ -364,18 +364,18 @@ async function ensureAuthorizedThen(request) {
     }
     return;
   }
-  await runRequest(request, accessToken);
+  await runRequest(request, hmrcGrantId);
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
   if (pending.action === "trigger") document.getElementById("taxYear").value = pending.criteria.taxYear;
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 async function handleTriggerFormSubmission(event) {
@@ -385,9 +385,9 @@ async function handleTriggerFormSubmission(event) {
   const criteria = readCriteria();
 
   try {
-    const accessTokenForCheck = sessionStorage.getItem("hmrcAccessToken");
-    if (accessTokenForCheck) {
-      const openObligations = await checkOpenObligations(criteria.nino, criteria.businessId, accessTokenForCheck);
+    const hmrcGrantIdForCheck = window.hmrcScopeCheck.storedGrantId();
+    if (hmrcGrantIdForCheck) {
+      const openObligations = await checkOpenObligations(criteria.nino, criteria.businessId, hmrcGrantIdForCheck);
       const warning = document.getElementById("obligationsWarning");
       if (openObligations.length > 0) {
         warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.`;

@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -204,7 +209,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
   test("returns 400 for an empty body", async () => {
     const event = buildHmrcEvent({
       body: buildAnnualBody({ adjustments: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);
     expect(response.statusCode).toBe(400);
@@ -215,7 +220,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAnnualBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaUkPropertyAnnualPutHandler(event);
 
@@ -246,7 +251,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAnnualBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);
     expect(response.statusCode).toBe(200);
@@ -265,7 +270,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAnnualBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);
     expect(response.statusCode).toBe(200);
@@ -276,7 +281,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAnnualBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
@@ -285,7 +290,7 @@ describe("hmrcItsaUkPropertyAnnualPut ingestHandler", () => {
   test("returns 403 JSON when the authenticated user holds no bundle entitled to file the annual submission", async () => {
     const event = buildHmrcEvent({
       body: buildAnnualBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/uk-property/annual";
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);

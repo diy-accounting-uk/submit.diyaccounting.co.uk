@@ -97,8 +97,8 @@ describe("companiesHouseTokenPost ingestHandler", () => {
 
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.accessToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-    expect(body.companiesHouseGrantId).toBe(body.accessToken);
+    expect(body.companiesHouseGrantId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(body.accessToken).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain("a-companies-house-access-token");
     const stored = table.items.get(`ch-grant:${body.companiesHouseGrantId}`);
     expect(stored.companyNumber).toBe("01234567");

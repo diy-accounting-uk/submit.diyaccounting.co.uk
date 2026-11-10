@@ -41,28 +41,29 @@ function filingErrorFromResponse(response, body) {
   return error;
 }
 
-function bearerHeaders() {
-  const token = sessionStorage.getItem("companiesHouseAccessToken");
-  return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+function grantHeaders() {
+  const grantId = sessionStorage.getItem("companiesHouseGrantId");
+  return { "x-companies-house-grant": grantId, "Content-Type": "application/json" };
 }
 
 /**
- * True when a usable Companies House access token is held for the given scope: present, not
- * expired, and granted for exactly this scope string. A token granted for a different company or
- * a different resource is not reusable - the check is a plain string comparison.
+ * True when a usable Companies House grant id is held for the given scope: present, not
+ * expired, and granted for exactly this scope string. A grant for a different company or
+ * a different resource is not reusable - the check is a plain string comparison. The access
+ * token itself stays on the server.
  * @param {string} scopeString
  * @returns {boolean}
  */
 export function hasUsableToken(scopeString) {
-  const token = sessionStorage.getItem("companiesHouseAccessToken");
+  const grantId = sessionStorage.getItem("companiesHouseGrantId");
   const expiresAt = Number(sessionStorage.getItem("companiesHouseTokenExpiresAt") || 0);
   const grantedScope = sessionStorage.getItem("companiesHouseTokenScope");
-  return Boolean(token) && Date.now() < expiresAt && grantedScope === scopeString;
+  return Boolean(grantId) && Date.now() < expiresAt && grantedScope === scopeString;
 }
 
-/** Clears the three token keys, so the next filing attempt starts a fresh authorise redirect. */
+/** Clears the three grant keys, so the next filing attempt starts a fresh authorise redirect. */
 export function clearToken() {
-  sessionStorage.removeItem("companiesHouseAccessToken");
+  sessionStorage.removeItem("companiesHouseGrantId");
   sessionStorage.removeItem("companiesHouseTokenExpiresAt");
   sessionStorage.removeItem("companiesHouseTokenScope");
 }
@@ -93,7 +94,7 @@ export async function getRegisteredOfficeAddress(companyNumber) {
 export async function getRegisteredEmailEligibility(companyNumber) {
   const response = await authorizedFetch(`/api/v1/companies-house/company/${companyNumber}/registered-email-address/eligibility`, {
     method: "GET",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
   });
   const body = await response.json();
   if (!response.ok) {
@@ -111,7 +112,7 @@ export async function getRegisteredEmailEligibility(companyNumber) {
 export async function openTransaction(companyNumber, description) {
   const response = await authorizedFetch("/api/v1/companies-house/transaction", {
     method: "POST",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
     body: JSON.stringify({ companyNumber, description }),
   });
   const body = await response.json();
@@ -131,7 +132,7 @@ export async function openTransaction(companyNumber, description) {
 export async function putRegisteredOfficeAddress(transactionId, address) {
   const response = await authorizedFetch(`/api/v1/companies-house/transaction/${transactionId}/registered-office-address`, {
     method: "POST",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
     body: JSON.stringify(address),
   });
   const body = await response.json();
@@ -150,7 +151,7 @@ export async function putRegisteredOfficeAddress(transactionId, address) {
 export async function putRegisteredEmailAddress(transactionId, email) {
   const response = await authorizedFetch(`/api/v1/companies-house/transaction/${transactionId}/registered-email-address`, {
     method: "POST",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
     body: JSON.stringify(email),
   });
   const body = await response.json();
@@ -168,7 +169,7 @@ export async function putRegisteredEmailAddress(transactionId, email) {
 export async function closeTransaction(transactionId) {
   const response = await authorizedFetch(`/api/v1/companies-house/transaction/${transactionId}`, {
     method: "PUT",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
     body: JSON.stringify({ status: "closed" }),
   });
   const body = await response.json();
@@ -186,7 +187,7 @@ export async function closeTransaction(transactionId) {
 export async function getTransaction(transactionId) {
   const response = await authorizedFetch(`/api/v1/companies-house/transaction/${transactionId}`, {
     method: "GET",
-    headers: bearerHeaders(),
+    headers: grantHeaders(),
   });
   const body = await response.json();
   if (!response.ok) {
