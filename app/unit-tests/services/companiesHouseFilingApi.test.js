@@ -103,13 +103,13 @@ describe("companiesHouseFilingApi", () => {
   });
 
   describe("extractCompaniesHouseAccessTokenFromLambdaEvent", () => {
-    test("reads the bearer token from the Authorization header", () => {
+    test("passes a raw bearer token unchanged", async () => {
       const event = { headers: { Authorization: "Bearer a-companies-house-access-token" } };
-      expect(extractCompaniesHouseAccessTokenFromLambdaEvent(event)).toBe("a-companies-house-access-token");
+      expect(await extractCompaniesHouseAccessTokenFromLambdaEvent(event, "user-sub-1")).toBe("a-companies-house-access-token");
     });
 
-    test("returns null when there is no Authorization header", () => {
-      expect(extractCompaniesHouseAccessTokenFromLambdaEvent({ headers: {} })).toBeNull();
+    test("returns null when there is no Authorization header", async () => {
+      expect(await extractCompaniesHouseAccessTokenFromLambdaEvent({ headers: {} }, "user-sub-1")).toBeNull();
     });
   });
 

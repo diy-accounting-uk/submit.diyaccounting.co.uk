@@ -61,6 +61,16 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const grantAccess = vi.hoisted(() => ({ override: null }));
+vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    companiesHouseAccessFromEvent: (...args) =>
+      grantAccess.override ? grantAccess.override(...args) : real.companiesHouseAccessFromEvent(...args),
+  };
+});
+
 import { ingestHandler as companiesHouseTransactionPostHandler } from "@app/functions/companies-house/companiesHouseTransactionPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -115,6 +125,7 @@ function buildEvent({ body = {}, headers = {}, authorizer, method = "POST" } = {
 
 describe("companiesHouseTransactionPost ingestHandler", () => {
   beforeEach(() => {
+    grantAccess.override = null;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -155,6 +166,34 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
       company_number: "00000001",
       description: "Change of registered office address",
     });
+  });
+
+  test("refuses a grant bound to another company with 403 and calls Companies House not at all", async () => {
+    grantAccess.override = async () => ({ accessToken: "grant-token", companyNumber: "00000002" });
+    const response = await companiesHouseTransactionPostHandler(
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
+    );
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response).code).toBe("COMPANIES_HOUSE_GRANT_COMPANY_MISMATCH");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("answers 401 when the named grant does not open", async () => {
+    grantAccess.override = async () => null;
+    const response = await companiesHouseTransactionPostHandler(
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
+    );
+    expect(response.statusCode).toBe(401);
+  });
+
+  test("uses the access token of a grant bound to the same company", async () => {
+    grantAccess.override = async () => ({ accessToken: "grant-token", companyNumber: "00000001" });
+    mockChSuccess(mockFetch, 201, OPEN_TRANSACTION_RESPONSE);
+    const response = await companiesHouseTransactionPostHandler(
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
+    );
+    expect(response.statusCode).toBe(201);
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("Bearer grant-token");
   });
 
   test("passes an optional reference through to Companies House", async () => {

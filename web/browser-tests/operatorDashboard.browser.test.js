@@ -1180,6 +1180,15 @@ test.describe("Operator Dashboard", () => {
     expect(scrollsSideways).toBe(false);
     await page.screenshot({ path: "target/int2-screens/integrations-1280.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
+    const tablesScrollSideways = await page.evaluate(
+      () =>
+        Array.from(
+          document.querySelectorAll(
+            "#integrationsSummaryTable, #integrationsHmrcPanelTable, #integrationsHeaderChecksPanelTable, #integrationsCompaniesHousePanelTable, #integrationsStripePanelTable",
+          ),
+        ).filter((table) => table.scrollWidth > table.clientWidth + 1).length,
+    );
+    expect(tablesScrollSideways).toBe(0);
     await page.screenshot({ path: "target/int2-screens/integrations-390.png", fullPage: true });
   });
 

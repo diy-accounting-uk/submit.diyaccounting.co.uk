@@ -3,7 +3,7 @@
 
 // @capability CH-01 Exchange a Companies House OAuth token
 // - **Use when:** a filing journey has an authorization code and needs an access token for the session.
-// - **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It returns the token, its expiry and its type. It does not store the token server side.
+// - **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/companies-house/companiesHouseTokenPost.js:ingestHandler`; `web/public/companies-house/filingCallback.html`
 // - **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
@@ -27,12 +27,15 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { initializeSalt } from "../../services/subHasher.js";
+import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 import { DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
 import { sendJsonToCompaniesHouse } from "../../services/companiesHouseSend.js";
 import { getIdentityBaseUrl, resolveClientSecret } from "../../services/companiesHouseFilingApi.js";
 import { refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
+import { createCompaniesHouseGrant } from "../../data/dynamoDbCompaniesHouseGrantRepository.js";
+import { sealFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "../../lib/codesSeal.js";
+import { companyNumberFromScope } from "../../lib/companiesHouseGrantAccess.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTokenPost.js" });
 
@@ -48,17 +51,25 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { code } = parsedBody || {};
+  const { code, scope } = parsedBody || {};
 
   if (!code) errorMessages.push("Missing code from event body");
+  if (scope !== undefined && (typeof scope !== "string" || !companyNumberFromScope(scope))) {
+    errorMessages.push("The scope must name a company as /company/<number>/");
+  }
 
-  return { code };
+  return { code, scope };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["COMPANIES_HOUSE_IDENTITY_BASE_URI", "COMPANIES_HOUSE_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
+  validateEnv([
+    "COMPANIES_HOUSE_IDENTITY_BASE_URI",
+    "COMPANIES_HOUSE_CLIENT_ID",
+    "DIY_SUBMIT_BASE_URL",
+    "MCP_SESSIONS_DYNAMODB_TABLE_NAME",
+  ]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
@@ -78,7 +89,7 @@ export async function ingestHandler(event) {
   }
 
   const errorMessages = [];
-  const { code } = extractAndValidateParameters(event, errorMessages);
+  const { code, scope } = extractAndValidateParameters(event, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -136,14 +147,23 @@ export async function ingestHandler(event) {
     userSub,
   });
 
-  // Never return the refresh token: nothing in the browser consumes it, and holding it there
-  // would put a long-lived credential where none is needed. The Companies House token response
-  // has no scope field; the browser records the scope it requested.
+  // The access token stays on the server, sealed against the grant id. The refresh token is
+  // dropped: a filing takes minutes and the access token lasts an hour. The Companies House
+  // token response has no scope field, so the grant records the scope the page requested.
+  const expiresIn = Number(chResponse.data.expires_in ?? 0);
+  const { grantId } = await createCompaniesHouseGrant({
+    hashedSub: hashSub(userSub),
+    scope: scope ?? null,
+    companyNumber: companyNumberFromScope(scope),
+    accessExpiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+    seal: (id) => sealFor(COMPANIES_HOUSE_GRANT_PURPOSE, { accessToken: chResponse.data.access_token }, id),
+  });
   return http200OkResponse({
     request,
     headers: { ...responseHeaders },
     data: {
-      accessToken: chResponse.data.access_token,
+      accessToken: grantId,
+      companiesHouseGrantId: grantId,
       expiresIn: chResponse.data.expires_in,
       tokenType: chResponse.data.token_type,
     },

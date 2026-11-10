@@ -59,6 +59,48 @@ table.observations th {
   font-size: var(--step--1);
 }
 
+/* Phone width: each row of the Integrations tables stacks as a card. Each cell names its column from
+   data-label, so the header row is hidden and every value reads in full. */
+@media (max-width: 600px) {
+  :is(.header-checks-table, .integrations-table, #integrationsSummaryTable),
+  :is(.header-checks-table, .integrations-table, #integrationsSummaryTable) tbody {
+    display: block;
+    width: 100%;
+  }
+
+  :is(.header-checks-table, .integrations-table, #integrationsSummaryTable) thead {
+    display: none;
+  }
+
+  :is(.integrations-check-row, .integrations-call-row, .integrations-summary-row) {
+    display: block;
+    margin: 0 0 var(--space-3) 0;
+    padding: var(--space-3);
+    border: 1px solid var(--c-rule-subtle);
+    border-radius: var(--radius-card);
+  }
+
+  :is(.integrations-check-row, .integrations-call-row, .integrations-summary-row) td {
+    display: block;
+    padding: 0.25em 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  :is(.header-checks-table, .integrations-table) :is(.integrations-check-row, .integrations-call-row) td:is(:nth-child(n)) {
+    white-space: normal;
+  }
+
+  :is(.integrations-check-row, .integrations-call-row, .integrations-summary-row) td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--c-ink-muted);
+    font-size: var(--step--1);
+  }
+}
+
 .objective-guidance {
   margin: 0 0 var(--space-4) 0;
   display: grid;

@@ -3,7 +3,7 @@
 
 // app/lib/codesSeal.js
 // AES-256-GCM sealing of the secrets the MCP keeps server side: the Companies House codes a user
-// types on the codes page, and the HMRC tokens of an MCP grant. Each purpose has its own key,
+// types on the codes page, and the HMRC tokens of an MCP grant, and the Companies House access token of a filing grant. Each purpose has its own key,
 // derived from the MCP blob key; the item id is the authenticated data, so a sealed value opens
 // only under the item it was sealed for. A sealed value starts with the version of the blob key that
 // sealed it (v1, v2, ...). Sealing uses the current version and opening uses the version named.
@@ -17,6 +17,7 @@ const logger = createLogger({ source: "app/lib/codesSeal.js" });
 export const KEY_REFRESH_LOG_MESSAGE = "Sealed value did not open under the cached keys, keys read again";
 const CODES_ENTRY_PURPOSE = "companies-house-codes-entry";
 export const HMRC_GRANT_PURPOSE = "hmrc-grant";
+export const COMPANIES_HOUSE_GRANT_PURPOSE = "companies-house-grant";
 
 function derivedKey(blobKey, purpose) {
   return Buffer.from(hkdfSync("sha256", blobKey, "", purpose, 32));

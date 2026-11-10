@@ -77,10 +77,13 @@ describe("secrets-rotation.toml", () => {
     expect(red).toEqual([]);
   });
 
-  test("is red on every key with an end date after the last end date", () => {
-    const now = new Date("2028-11-09T00:00:00Z");
-    const red = entries.filter((entry) => entry.expires_at).map((entry) => rotationSchedule(entry, entry.last_rotated || null, now).status);
-    expect(red.length).toBeGreaterThan(0);
-    expect(red.every((status) => status === "due-soon" || status === "overdue")).toBe(true);
+  test("is red on every key with an end date in the ten days before that date", () => {
+    const withEnd = entries.filter((entry) => entry.expires_at);
+    expect(withEnd.length).toBeGreaterThan(0);
+    const statuses = withEnd.map((entry) => {
+      const now = new Date(Date.parse(`${entry.expires_at}T00:00:00Z`) - 10 * 86400000);
+      return rotationSchedule(entry, entry.last_rotated || null, now).status;
+    });
+    expect(statuses.every((status) => status === "due-soon" || status === "overdue")).toBe(true);
   });
 });
