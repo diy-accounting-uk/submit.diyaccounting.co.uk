@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -215,7 +220,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
   test("returns 400 for an empty body", async () => {
     const event = buildHmrcEvent({
       body: buildAdjustBody({ foreignProperty: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -226,7 +231,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAdjustBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
 
@@ -241,7 +246,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAdjustBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
 
@@ -254,7 +259,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
   test("returns 400 for zeroAdjustments beside figures", async () => {
     const event = buildHmrcEvent({
       body: buildAdjustBody({ zeroAdjustments: true }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -266,7 +271,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAdjustBody({ foreignProperty: undefined, zeroAdjustments: true }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
 
@@ -279,7 +284,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAdjustBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
     expect(response.statusCode).toBe(200);
@@ -290,7 +295,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildAdjustBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
@@ -299,7 +304,7 @@ describe("hmrcItsaBsasForeignPropertyAdjustPost ingestHandler", () => {
   test("returns 403 JSON when the authenticated user holds no bundle entitled to adjust a summary", async () => {
     const event = buildHmrcEvent({
       body: buildAdjustBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/bsas/foreign-property/adjust";
     const response = await hmrcItsaBsasForeignPropertyAdjustPostHandler(event);

@@ -12,6 +12,11 @@ import * as hmrcHelper from "../services/hmrcApi.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
+import { hmrcGrantHeader } from "../test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("../lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("../test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -173,7 +178,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": "Bearer test-hmrc-access-token",
+        ...hmrcGrantHeader("test-hmrc-access-token"),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -238,7 +243,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": "Bearer test-hmrc-access-token",
+        ...hmrcGrantHeader("test-hmrc-access-token"),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -285,7 +290,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": "Bearer test-hmrc-access-token",
+        ...hmrcGrantHeader("test-hmrc-access-token"),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -342,7 +347,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": "Bearer test-hmrc-access-token",
+        ...hmrcGrantHeader("test-hmrc-access-token"),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -390,7 +395,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": "Bearer test-hmrc-access-token",
+        ...hmrcGrantHeader("test-hmrc-access-token"),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },

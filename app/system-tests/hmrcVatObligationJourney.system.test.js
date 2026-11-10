@@ -14,6 +14,11 @@ import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBu
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
 import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
+import { hmrcGrantHeader } from "../test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("../lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("../test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -215,7 +220,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": `Bearer ${hmrcAccessToken}`,
+        ...hmrcGrantHeader(hmrcAccessToken),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -316,7 +321,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": `Bearer ${hmrcAccessToken}`,
+        ...hmrcGrantHeader(hmrcAccessToken),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -384,7 +389,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": `Bearer ${hmrcAccessToken}`,
+        ...hmrcGrantHeader(hmrcAccessToken),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -438,7 +443,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        "authorization": `Bearer ${hmrcAccessToken}`,
+        ...hmrcGrantHeader(hmrcAccessToken),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },

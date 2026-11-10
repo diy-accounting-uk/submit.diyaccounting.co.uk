@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -111,7 +116,7 @@ function buildLossesBody(overrides = {}) {
 function buildLossesEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildLossesBody(body),
-    headers: { authorization: "Bearer test-token", ...headers },
+    headers: { ...hmrcGrantHeader(), ...headers },
   });
 }
 
@@ -268,7 +273,7 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
     test("returns 400 when taxYear is missing", async () => {
       const event = buildHmrcEvent({
         queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcItsaLossesAndClaimsGetHandler(event);
       expect(response.statusCode).toBe(400);
@@ -280,7 +285,7 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
       mockHmrcSuccess(mockFetch, { losses: { broughtForwardLosses: 0 } });
       const event = buildHmrcEvent({
         queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcItsaLossesAndClaimsGetHandler(event);
       expect(response.statusCode).toBe(200);
@@ -296,7 +301,7 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
       mockHmrcError(mockFetch, 404, { code: "MATCHING_RESOURCE_NOT_FOUND" });
       const event = buildHmrcEvent({
         queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcItsaLossesAndClaimsGetHandler(event);
       // Every HMRC "not found" maps to a real 404, the way every other read handler in this
@@ -308,7 +313,7 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
       mockHmrcError(mockFetch, 400, { code: "RULE_TAX_YEAR_NOT_SUPPORTED" });
       const event = buildHmrcEvent({
         queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcItsaLossesAndClaimsGetHandler(event);
       // HMRC's own 400 (a rejected request) is a client error, the way VAT's GET handlers

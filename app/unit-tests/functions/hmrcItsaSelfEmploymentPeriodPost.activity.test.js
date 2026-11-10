@@ -17,6 +17,11 @@ import {
   MockGetCommand,
   MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 vi.mock("@aws-sdk/lib-dynamodb", () => mockLibDynamoDb);
 vi.mock("@aws-sdk/client-dynamodb", () => mockClientDynamoDb);
@@ -87,7 +92,7 @@ function buildPeriodBody(overrides = {}) {
 function buildInitialSubmissionEvent(headers = {}) {
   return buildHmrcEvent({
     body: buildPeriodBody(),
-    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { ...hmrcGrantHeader(), "x-initial-request": "true", ...headers },
   });
 }
 
@@ -144,7 +149,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost token charge, receipt and failure rep
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ nino: undefined }),
-      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
+      headers: { ...hmrcGrantHeader(), "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);

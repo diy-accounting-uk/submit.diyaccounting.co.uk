@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
@@ -224,7 +229,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 when nino is missing", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -235,7 +240,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 for invalid nino format", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ nino: "12345678" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -244,7 +249,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 when businessId is missing", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ businessId: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -255,7 +260,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 for invalid businessId format", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ businessId: "not-a-business-id" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -264,13 +269,13 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 when periodStartDate or periodEndDate are missing or malformed", async () => {
     const missingStart = buildHmrcEvent({
       body: buildPeriodBody({ periodStartDate: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaSelfEmploymentPeriodPostHandler(missingStart)).statusCode).toBe(400);
 
     const badEnd = buildHmrcEvent({
       body: buildPeriodBody({ periodEndDate: "not-a-date" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaSelfEmploymentPeriodPostHandler(badEnd)).statusCode).toBe(400);
   });
@@ -280,7 +285,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
@@ -297,13 +302,13 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 400 when taxYear is missing or malformed", async () => {
     const missing = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaSelfEmploymentPeriodPostHandler(missing)).statusCode).toBe(400);
 
     const malformed = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: "2024" }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     expect((await hmrcItsaSelfEmploymentPeriodPostHandler(malformed)).statusCode).toBe(400);
   });
@@ -313,7 +318,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -339,7 +344,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
         periodIncome: { turnover: 5000, other: 0, taxTakenOffTradingIncome: 250.5 },
         periodExpenses: {},
       }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -358,7 +363,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
         periodIncome: { turnover: 0 },
         periodExpenses: {},
       }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -372,7 +377,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("cumulative year: rejects a periodStartDate sent without a periodEndDate", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR, periodEndDate: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -386,7 +391,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR, periodStartDate: undefined, periodEndDate: undefined }),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
@@ -399,7 +404,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -413,7 +418,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -426,7 +431,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -447,7 +452,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -460,7 +465,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcItsaSelfEmploymentPeriodPostHandler(event);
 
@@ -480,7 +485,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
@@ -492,7 +497,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     // Every HMRC "not found" maps to a real 404, the way every other write handler in
@@ -505,7 +510,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     // so the user has only the automatic "default" bundle, which self-employed does not accept.
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/self-employment/period";
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
@@ -527,7 +532,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/itsa/self-employment/period";
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
@@ -549,7 +554,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "0",
         "x-initial-request": "true",
       },
@@ -576,7 +581,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },

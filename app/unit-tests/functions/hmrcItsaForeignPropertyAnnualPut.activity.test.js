@@ -17,6 +17,11 @@ import {
   MockGetCommand,
   MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 vi.mock("@aws-sdk/lib-dynamodb", () => mockLibDynamoDb);
 vi.mock("@aws-sdk/client-dynamodb", () => mockClientDynamoDb);
@@ -84,7 +89,7 @@ function buildAnnualBody(overrides = {}) {
 function buildInitialAnnualEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildAnnualBody(body),
-    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { ...hmrcGrantHeader(), "x-initial-request": "true", ...headers },
   });
 }
 
@@ -134,7 +139,7 @@ describe("hmrcItsaForeignPropertyAnnualPut token charge", () => {
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildAnnualBody({ nino: undefined }),
-      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
+      headers: { ...hmrcGrantHeader(), "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaForeignPropertyAnnualPutHandler(event);

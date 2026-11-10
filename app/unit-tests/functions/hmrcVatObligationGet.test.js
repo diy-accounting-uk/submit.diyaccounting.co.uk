@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
@@ -143,7 +148,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
   test("returns 400 when VAT registration number is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: {},
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -165,7 +170,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(200);
@@ -247,7 +252,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     await hmrcVatObligationGetHandler(event);
 
@@ -267,7 +272,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "invalid" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect([400, 500]).toContain(response.statusCode);
@@ -278,7 +283,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(403);
@@ -289,7 +294,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
   test("returns 400 for invalid VAT registration number format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "12345678" }, // 8 digits instead of 9
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -300,7 +305,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
   test("returns 400 for invalid date format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333", from: "2024/01/01" }, // wrong format
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(400);
@@ -313,7 +318,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     // so the user has only the automatic "default" bundle, which vat-obligations does not accept.
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/vat/obligation";
     const response = await hmrcVatObligationGetHandler(event);
@@ -335,7 +340,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-token" },
+      headers: { ...hmrcGrantHeader() },
     });
     event.requestContext.http.path = "/api/v1/hmrc/vat/obligation";
     const response = await hmrcVatObligationGetHandler(event);
@@ -346,7 +351,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "0",
         "x-initial-request": "true",
       },
@@ -364,7 +369,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },
       headers: {
-        "authorization": "Bearer test-token",
+        ...hmrcGrantHeader(),
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -408,7 +413,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
       const event = buildHmrcEvent({
         queryStringParameters: { clientId: "c1" },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcVatObligationGetHandler(event);
 
@@ -427,7 +432,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
       const event = buildHmrcEvent({
         queryStringParameters: { clientId: "c1" },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcVatObligationGetHandler(event);
 
@@ -442,7 +447,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
       const event = buildHmrcEvent({
         queryStringParameters: { clientId: "not-mine" },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcVatObligationGetHandler(event);
 
@@ -462,7 +467,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
 
       const event = buildHmrcEvent({
         queryStringParameters: { vrn: "111222333" },
-        headers: { authorization: "Bearer test-token" },
+        headers: { ...hmrcGrantHeader() },
       });
       const response = await hmrcVatObligationGetHandler(event);
 

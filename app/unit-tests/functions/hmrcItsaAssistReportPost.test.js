@@ -6,6 +6,11 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -138,7 +143,7 @@ const CALCULATION_ID = "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c";
 function buildEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: { nino: NINO, taxYear: TAX_YEAR, calculationId: CALCULATION_ID, ...body },
-    headers: { authorization: "Bearer test-token", ...headers },
+    headers: { ...hmrcGrantHeader(), ...headers },
   });
 }
 
