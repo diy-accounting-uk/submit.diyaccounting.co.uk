@@ -195,6 +195,14 @@ describe("isActivityShown", () => {
     expect(isActivityShown(hidden, "prod", { ...viewer, preview: true })).toBe(true);
   });
 
+  it("limits preview features to the environments an activity names in previewEnvironments", () => {
+    const assist = { id: "vat-assist-check", bundles: ["default"], environments: ["ci"], previewEnvironments: ["ci"] };
+    expect(isActivityShown(assist, "prod", { ...viewer, preview: true })).toBe(false);
+    expect(isActivityShown(assist, "prod", viewer)).toBe(false);
+    expect(isActivityShown(assist, "ci", { ...viewer, preview: true })).toBe(true);
+    expect(isActivityShown(assist, "ci", viewer)).toBe(true);
+  });
+
   it("hides an activity that names an account setting the person turned off", () => {
     const pass = { id: "generate-pass-digital", bundles: ["resident"], accountSetting: "passGeneration" };
     expect(isActivityShown(pass, "prod", viewer)).toBe(true);

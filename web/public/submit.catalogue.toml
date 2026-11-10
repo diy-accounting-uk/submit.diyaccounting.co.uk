@@ -334,6 +334,7 @@ metered = true
 paths = ["^/api/v1/hmrc/vat/assist.*"]
 hmrcScopesRequired = ["write:vat", "read:vat"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
+previewEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "mcp-harness"
