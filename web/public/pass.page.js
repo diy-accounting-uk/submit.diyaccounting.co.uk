@@ -68,7 +68,7 @@ const ERROR_SENTENCES = {
   revoked: "This pass has been cancelled. Ask the sender for a new one.",
   not_yet_valid: "This pass does not start yet. Open the link again later.",
   held_for_review: "This pass is paused while we check it. Open the link again tomorrow.",
-  email_required: "This pass is for one email address. Sign in with the Google account for that address.",
+  email_required: "This pass is for one email address. Sign in with the Google or Microsoft account for that address.",
   own_pass: "You made this pass. Send the link to someone else to use.",
   referral_already_used: "Your account has already used a pass link from someone. An account uses one.",
   already_redeemed: "Your account has already used this pass.",
@@ -279,8 +279,8 @@ function showValid(check) {
     const email = getSignedInEmail();
     after = email ? `You are signed in as ${email}.` : "";
   } else {
-    after = `You sign in with a Google account next. When you come back, ${info.name} is on your account.`;
-    if (check.emailRestricted) after += " Use the Google account for the email address that this pass was sent to.";
+    after = `You sign in with a Google or Microsoft account next. When you come back, ${info.name} is on your account.`;
+    if (check.emailRestricted) after += " Use the Google or Microsoft account for the email address that this pass was sent to.";
   }
   render({
     heading: `You have a pass for ${info.name}`,

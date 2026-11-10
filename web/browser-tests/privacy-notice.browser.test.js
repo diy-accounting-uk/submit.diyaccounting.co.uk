@@ -75,4 +75,13 @@ test.describe("Privacy Notice", () => {
     expect(tableContent).toContain("Filing VAT and tax data on behalf of a practice's clients");
     expect(tableContent).toContain("Contract performance");
   });
+
+  test("names Google and Microsoft as the sign-in providers in the account data list", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/privacy.html", { waitUntil: "domcontentloaded" });
+
+    const accountProfile = page.locator("li").filter({ hasText: "Cognito user profile" });
+
+    await expect(accountProfile).toContainText("from the sign-in provider you choose (Google or Microsoft)");
+  });
 });

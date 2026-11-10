@@ -12,7 +12,7 @@ question = "How do I submit my VAT return?"
 answer = """
 To submit your VAT return:
 
-1. **Log in** using your Google account
+1. **Log in** using your Google or Microsoft account
 2. **Check your obligations** to see which VAT periods need returns
 3. **Click Submit VAT Return** from the home page
 4. **Enter your figures** in Boxes 1-9 (Boxes 3 and 5 calculate automatically)
@@ -125,7 +125,7 @@ First-time Making Tax Digital setup:
 
 1. **Sign up for Making Tax Digital** - Register at [gov.uk/vat-record-keeping](https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat) if you haven't already
 2. **Wait 24-48 hours** - HMRC needs time to activate your Making Tax Digital access
-3. **Log in** to DIY Accounting Submit using your Google account
+3. **Log in** to DIY Accounting Submit using your Google or Microsoft account
 4. **Add a bundle** - Enter your 9-digit VAT registration number
 5. **Check obligations** - See which VAT periods HMRC expects returns for
 6. **Submit** - Enter your figures and submit your return
@@ -531,26 +531,26 @@ keywords = ["period key", "period code", "26af", "format", "meaning", "what does
 priority = 28
 
 [[faq]]
-id = "lost-google-account"
+id = "lost-sign-in-account"
 category = "connection"
-question = "What if I can't access my Google account?"
+question = "What if I can't access my Google or Microsoft account?"
 answer = """
-If you lose access to your Google account:
+If you lose access to the account you sign in with:
 
 **Your data is still safe:**
-- Receipts are stored in your browser (not tied to your Google account)
-- Your HMRC authorisation is tied to your Government Gateway, not Google
-- Your VAT returns are recorded at HMRC regardless of your Google account status
+- Receipts are stored in your browser (not tied to your sign-in account)
+- Your HMRC authorisation is tied to your Government Gateway, not to your sign-in provider
+- Your VAT returns are recorded at HMRC regardless of your sign-in account status
 
 **To continue using DIY Accounting Submit:**
-1. Recover your Google account through Google's account recovery process
-2. Or create a new Google account and log in with that
+1. Recover your account with its provider: Google's account recovery process for a Google account, or Microsoft's account recovery process for a Microsoft account
+2. Or create a new Google or Microsoft account and log in with that
 3. Re-add your bundle (VAT registration number)
 4. The next time you submit, you'll re-authorise with HMRC
 
 **Note:** Previous receipts stored in your browser will still be visible as they're stored locally, not with your account.
 """
-keywords = ["google account", "locked out", "can't login", "forgot", "account access", "lost access"]
+keywords = ["google account", "microsoft account", "microsoft", "locked out", "can't login", "forgot", "account access", "lost access"]
 priority = 29
 
 [[faq]]
