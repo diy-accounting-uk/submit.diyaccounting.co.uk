@@ -7,6 +7,7 @@ import path from "node:path";
 
 const publicDir = path.join(process.cwd(), "web/public");
 const testsDir = path.join(publicDir, "tests");
+const bundleOutput = path.join(publicDir, "submit.bundle.js");
 const retiredKey = "hmrcAccessToken";
 const retiredKeyRemoval = `sessionStorage.removeItem("${retiredKey}");`;
 
@@ -14,7 +15,7 @@ function listFiles(dir) {
   const files = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (full === testsDir) continue;
+    if (full === testsDir || full === bundleOutput) continue;
     if (entry.isDirectory()) files.push(...listFiles(full));
     else if (/\.(js|mjs|html)$/.test(entry.name)) files.push(full);
   }

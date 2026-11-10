@@ -118,7 +118,8 @@ export async function serveItsaPageScripts(page) {
         getOAuthScopeString: () => Promise.resolve("read:self-assessment"),
         clearHmrcToken: () => {},
       };
-      window.hmrcScopeCheck.storedGrantId = window.hmrcScopeCheck.storedGrantId || (() => sessionStorage.getItem("hmrcGrantId"));`,
+      window.hmrcScopeCheck.storedGrantId = window.hmrcScopeCheck.storedGrantId || (() => sessionStorage.getItem("hmrcGrantId"));
+      window.hmrcScopeCheck.grantHeaders = window.hmrcScopeCheck.grantHeaders || (() => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }));`,
     });
   });
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
