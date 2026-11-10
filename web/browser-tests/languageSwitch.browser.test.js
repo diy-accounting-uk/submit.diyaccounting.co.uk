@@ -50,11 +50,12 @@ test("a page without alternates shows no language switch", async ({ page }) => {
   await expect(page.locator("nav.language-switch")).toHaveCount(0);
 });
 
-test("the Welsh home keeps its own subtitle and its activity links reach the site root", async ({ page }) => {
+test("the Welsh home keeps its Welsh subtitle and its activity links reach the site root", async ({ page }) => {
   await serveRealSite(page);
   await page.goto(`${SITE_ORIGIN}/cy/index.html`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("h1")).toHaveText("Gweithgareddau");
   await expect(page.locator(".activity-item button").first()).toBeVisible();
-  await expect(page.locator("#homeSubtitle")).toHaveText("Submit to HMRC and Companies House");
+  await expect(page.locator("#homeSubtitle")).toHaveText("Cyflwyno i CThEF ac i Dŷ’r Cwmnïau");
   await page.locator(".activity-item button:not([disabled])").first().click();
   await expect(page).not.toHaveURL(/\/cy\/(?!index\.html)/);
 });
