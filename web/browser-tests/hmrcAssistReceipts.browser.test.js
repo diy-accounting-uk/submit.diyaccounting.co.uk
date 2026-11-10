@@ -99,6 +99,29 @@ test.describe("Receipts page - HMRC Assist reports", () => {
     await expect(page.locator("#assistMessages .assist-acknowledgement")).toContainText("Acknowledged to HMRC");
   });
 
+  test("shows the Welsh messages when the receipt records Welsh as the language presented", async ({ page }) => {
+    await showAssistReceipt(page, "assist-cy", {
+      ...VAT_ASSIST_REPORT,
+      welshMessages: [{ title: "Adolygwch y TAW", body: "Corff cyntaf", links: [] }],
+      presentedLanguage: "cy",
+    });
+    const messages = page.locator("#assistMessages .assist-message");
+    await expect(messages).toHaveCount(1);
+    await expect(messages.first()).toContainText("Adolygwch y TAW");
+    await expect(page.locator("#assistMessages .assist-messages-list")).toHaveAttribute("lang", "cy");
+    await expect(page.locator("#receiptContent")).not.toContainText("Welsh messages");
+  });
+
+  test("shows the English messages when the receipt records no language", async ({ page }) => {
+    await showAssistReceipt(page, "assist-en", {
+      ...VAT_ASSIST_REPORT,
+      welshMessages: [{ title: "Adolygwch y TAW", body: "Corff cyntaf", links: [] }],
+    });
+    await expect(page.locator("#assistMessages .assist-message")).toHaveCount(2);
+    await expect(page.locator("#assistMessages")).not.toContainText("Adolygwch y TAW");
+    await expect(page.locator("#assistMessages .assist-messages-list")).toHaveAttribute("lang", "en");
+  });
+
   test("shows an unacknowledged report as not acknowledged", async ({ page }) => {
     await showAssistReceipt(page, "assist-2", VAT_ASSIST_REPORT);
     await expect(page.locator("#assistMessages .assist-acknowledgement")).toHaveText("Not acknowledged to HMRC");

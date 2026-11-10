@@ -58,6 +58,7 @@ async function call(params, requestContext) {
   if (vatAssist.isNoFeedback(hmrcResponseBody)) return { hmrcResponse, hmrcResponseBody, data: { statusCode: 204 } };
 
   const report = vatAssist.normaliseReport(hmrcResponseBody);
+  const welshMessages = vatAssist.normaliseWelshMessages(hmrcResponseBody);
   const requestedAt = new Date().toISOString();
   const receiptId = `${requestedAt}-${report.reportId}`;
   await putReceipt(
@@ -68,7 +69,7 @@ async function call(params, requestContext) {
       reportId: report.reportId,
       correlationId: report.correlationId,
       messages: report.messages,
-      welshMessages: vatAssist.normaliseWelshMessages(hmrcResponseBody),
+      welshMessages,
       figures,
       periodKey,
       vrn,
@@ -84,7 +85,7 @@ async function call(params, requestContext) {
     userSub: requestContext.userSub,
     detail: { messageCount: report.messages.length },
   });
-  return { hmrcResponse, hmrcResponseBody, data: { ...report, vrn, periodKey, receiptId } };
+  return { hmrcResponse, hmrcResponseBody, data: { ...report, welshMessages, vrn, periodKey, receiptId } };
 }
 
 export const { apiEndpoint, extractAndValidateParameters, ingestHandler, workerHandler } = createAssistHandlers({

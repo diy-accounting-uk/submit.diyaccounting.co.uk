@@ -239,6 +239,26 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     expect(puts[0].input.Item.receipt.messages).toEqual(HMRC_REPORT.messages);
   });
 
+  test.each(["en", "cy"])("records presentedLanguage %s on the stored receipt", async (presentedLanguage) => {
+    mockHmrcNoContent();
+    const response = await ingestHandler(buildEvent({ body: { presentedLanguage } }));
+
+    expect(response.statusCode).toBe(204);
+    expect(receiptPuts()[0].input.Item.receipt.presentedLanguage).toBe(presentedLanguage);
+  });
+
+  test("leaves presentedLanguage off the receipt when the body carries none", async () => {
+    mockHmrcNoContent();
+    await ingestHandler(buildEvent());
+    expect(receiptPuts()[0].input.Item.receipt).not.toHaveProperty("presentedLanguage");
+  });
+
+  test.each(["fr", "", 1, "CY"])("returns 400 when presentedLanguage is %j", async (presentedLanguage) => {
+    const response = await ingestHandler(buildEvent({ body: { presentedLanguage } }));
+    expect(response.statusCode).toBe(400);
+    expect(hmrcCalls()).toHaveLength(0);
+  });
+
   test.each([
     [400, "FORMAT_DATETIME"],
     [403, "CORRELATION_ID"],

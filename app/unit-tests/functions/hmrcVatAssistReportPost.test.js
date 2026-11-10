@@ -231,6 +231,9 @@ describe("hmrcVatAssistReportPost ingestHandler", () => {
     expect(body.correlationId).toBe(CORRELATION_ID);
     expect(body.messages.map((message) => message.title)).toEqual(["First", "Second"]);
     expect(body.receiptId).toContain(REPORT_ID);
+    expect(body.welshMessages).toEqual(vatAssist.normaliseWelshMessages(HMRC_REPORT));
+    expect(body.welshMessages.map((message) => message.title)).toEqual(["Cyntaf", "Ail"]);
+    expect(body.welshMessages.map((message) => message.path)).toEqual(["vatDueSales", "totalValuePurchasesExVAT"]);
 
     const puts = receiptPuts();
     expect(puts).toHaveLength(1);

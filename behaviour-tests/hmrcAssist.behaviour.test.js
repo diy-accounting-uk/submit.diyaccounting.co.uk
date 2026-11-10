@@ -45,6 +45,7 @@ import {
   fillInVatBoxesForOpenPeriod,
   recordAssistTraffic,
   requestHmrcAssistFeedback,
+  stopWaitingForHmrcAssist,
   sendTestScenarioOn,
   verifyAssistMessagesInOrder,
 } from "./steps/behaviour-hmrc-assist-steps.js";
@@ -167,6 +168,7 @@ test.describe("HMRC Assist on the VAT return", () => {
     expect(traffic.acknowledgements[0].body.reportId).toBeTruthy();
     expect(traffic.acknowledgements[0].body.receiptId).toBeTruthy();
 
+    await stopWaitingForHmrcAssist(page, screenshotPath);
     await expect(page.locator("#submitBtn")).toBeEnabled();
     if (isSyntheticMode()) await allowSyntheticObligationsOnForm(page);
     await page.locator("#submitBtn").click();

@@ -160,6 +160,32 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
     await expect(page.locator("#continueToFinalDeclarationLink")).toBeVisible();
   });
 
+  test("shows the countdown after the check is pressed and removes it at 0 or when stopped", async ({ page }) => {
+    await page.clock.install();
+    await openCalculationPage(page);
+    await showCalculation(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistHoldSeconds")).toHaveText("30s");
+    await expect(page.locator("#hmrcAssistHoldStop")).toHaveAccessibleName("Stop waiting and continue");
+    await expect(page.locator("#hmrcAssistMessages > li").first()).toBeVisible();
+    await page.clock.runFor(30000);
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+
+    await showCalculation(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistHold")).toBeVisible();
+    await page.locator("#hmrcAssistHoldStop").click();
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+  });
+
+  test("shows no language switch when the report carries no Welsh messages", async ({ page }) => {
+    await openCalculationPage(page);
+    await showCalculation(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistMessages > li").first()).toBeVisible();
+    await expect(page.locator("#hmrcAssistLanguageSwitch")).toHaveCount(0);
+  });
+
   test("acknowledges the report once, with the receipt id, and clears the unacknowledged mark", async ({ page }) => {
     const { acknowledgeRequests } = await openCalculationPage(page);
     await showCalculation(page);
@@ -174,6 +200,7 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
       correlationId: "correlation-1",
       receiptId: "receipt-1",
       presentedDateTime: expect.any(String),
+      presentedLanguage: "en",
     });
     await expect
       .poll(() => page.evaluate(() => window.hmrcAssistMessages.unacknowledgedFor("itsa", "f2fb30e5-4ab6-4a29-b3c1-c7efc90fc66a")))

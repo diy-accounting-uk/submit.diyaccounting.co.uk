@@ -3,14 +3,26 @@
 
 // web/public/widgets/hmrc-assist-messages.js
 // The HMRC Assist check: a control that asks HMRC for feedback on a draft return, shows HMRC's
-// messages verbatim and in order, and tells HMRC they were displayed. Advisory only: the submit
-// control is held only while the request is in flight, and a failed request leaves the form as it was.
+// messages verbatim and in order, and tells HMRC they were displayed. Advisory only: pressing the
+// check holds the submit control for a visible countdown so the customer can read the messages, the
+// customer can end the hold at any time, and a failed request leaves the form as it was.
 
 (function () {
   "use strict";
 
   const MAX_MESSAGES = 5;
   const UNACKNOWLEDGED_KEY = "hmrcAssistUnacknowledged";
+  const LANGUAGE_KEY = "hmrcAssistLanguage";
+  const LANGUAGES = [
+    { code: "en", label: "English" },
+    { code: "cy", label: "Cymraeg" },
+  ];
+  const HOLD_SECONDS = 30;
+  const HOLD_ANNOUNCE_EVERY_SECONDS = 5;
+  const STOP_LABELS = {
+    withSubmit: { en: "Stop waiting and enable submit", cy: "Rhoi'r gorau i aros a galluogi cyflwyno" },
+    withoutSubmit: { en: "Stop waiting and continue", cy: "Rhoi'r gorau i aros a pharhau" },
+  };
   const DEFAULT_ACK_RETRY_BASE_MS = 1000;
   const MAX_ACK_RETRY_DELAY_MS = 30000;
   const RETRYABLE_STATUSES = [408, 425, 429];
@@ -33,6 +45,22 @@
       sessionStorage.setItem(UNACKNOWLEDGED_KEY, JSON.stringify(entries));
     } catch {
       // Session storage unavailable: the note on a later page is the only thing lost.
+    }
+  }
+
+  function readLanguage() {
+    try {
+      return sessionStorage.getItem(LANGUAGE_KEY) === "cy" ? "cy" : "en";
+    } catch {
+      return "en";
+    }
+  }
+
+  function writeLanguage(language) {
+    try {
+      sessionStorage.setItem(LANGUAGE_KEY, language);
+    } catch {
+      // Session storage unavailable: the choice is lost on the next page.
     }
   }
 
@@ -143,7 +171,7 @@
    * @param {() => {applicable: boolean, ready: boolean, key?: string, requestBody?: Object, acknowledgeIdentity?: Object}} options.describeDraft -
    *   applicable: show the control at all; ready: the draft is complete enough to check
    * @param {HTMLElement[]} [options.watch] - Elements whose input or change event is an edit to the draft
-   * @param {HTMLButtonElement} [options.submitButton] - Held disabled only while the report request is in flight
+   * @param {HTMLButtonElement} [options.submitButton] - Held disabled for the countdown that starts when the check is pressed
    * @param {string[]} [options.highlightIds] - Ids of the inputs a message path fragment may name
    * @param {string} options.unavailableText - The one line shown when HMRC Assist cannot be reached
    * @param {number} [options.ackRetryBaseMs] - First retry delay for the acknowledgement
@@ -175,13 +203,114 @@
     feedback.hidden = true;
     feedback.setAttribute("aria-labelledby", "hmrcAssistFeedbackHeading");
 
-    container.append(control, status, feedback);
+    const hold = doc.createElement("div");
+    hold.id = "hmrcAssistHold";
+    hold.className = "hmrc-assist-hold";
+    hold.hidden = true;
+
+    const holdSeconds = doc.createElement("span");
+    holdSeconds.id = "hmrcAssistHoldSeconds";
+    holdSeconds.className = "hmrc-assist-hold-seconds";
+    holdSeconds.setAttribute("aria-hidden", "true");
+
+    const holdBar = doc.createElement("div");
+    holdBar.id = "hmrcAssistHoldBar";
+    holdBar.className = "hmrc-assist-hold-bar";
+    holdBar.setAttribute("role", "progressbar");
+    holdBar.setAttribute("aria-label", "Time left before the pause on submit ends");
+    holdBar.setAttribute("aria-valuemin", "0");
+    holdBar.setAttribute("aria-valuemax", String(HOLD_SECONDS));
+    const holdFill = doc.createElement("div");
+    holdFill.className = "hmrc-assist-hold-fill";
+    holdBar.appendChild(holdFill);
+
+    const holdStop = doc.createElement("button");
+    holdStop.type = "button";
+    holdStop.id = "hmrcAssistHoldStop";
+    holdStop.className = "secondary-button hmrc-assist-hold-stop";
+    holdStop.textContent = "X";
+
+    const holdAnnouncement = doc.createElement("span");
+    holdAnnouncement.id = "hmrcAssistHoldAnnouncement";
+    holdAnnouncement.className = "hmrc-assist-hold-announcement";
+    holdAnnouncement.setAttribute("aria-live", "polite");
+
+    hold.append(holdSeconds, holdBar, holdStop, holdAnnouncement);
+
+    container.append(control, status, feedback, hold);
 
     let generation = 0;
     let requestInFlight = false;
     let reportShown = false;
     let observer = null;
     let highlighted = [];
+    let requestOwner = null;
+    let holdTimer = null;
+    let holdDeadline = 0;
+    let submitWasDisabled = false;
+    let lastAnnouncedSecond = null;
+
+    function setStopLabel() {
+      const label = STOP_LABELS[submitButton ? "withSubmit" : "withoutSubmit"][readLanguage()];
+      holdStop.setAttribute("aria-label", label);
+      holdStop.title = label;
+      holdStop.lang = readLanguage();
+    }
+
+    function showHoldSeconds(secondsLeft) {
+      holdSeconds.textContent = `${secondsLeft}s`;
+      holdBar.setAttribute("aria-valuenow", String(secondsLeft));
+      holdBar.setAttribute("aria-valuetext", `${secondsLeft} seconds left`);
+      holdFill.style.width = `${(secondsLeft / HOLD_SECONDS) * 100}%`;
+      if (secondsLeft % HOLD_ANNOUNCE_EVERY_SECONDS === 0 && secondsLeft !== lastAnnouncedSecond) {
+        lastAnnouncedSecond = secondsLeft;
+        holdAnnouncement.textContent = `${secondsLeft} seconds left`;
+      }
+    }
+
+    function endHold() {
+      if (holdTimer === null) return;
+      clearInterval(holdTimer);
+      holdTimer = null;
+      hold.hidden = true;
+      holdAnnouncement.textContent = "";
+      lastAnnouncedSecond = null;
+      if (submitButton) submitButton.disabled = submitWasDisabled;
+    }
+
+    function holdExpired() {
+      const waitingForHmrc = requestInFlight;
+      endHold();
+      if (!waitingForHmrc) return;
+      generation += 1;
+      requestOwner = null;
+      requestInFlight = false;
+      setStatus(unavailableText);
+      refresh();
+    }
+
+    function startHold() {
+      endHold();
+      holdDeadline = Date.now() + HOLD_SECONDS * 1000;
+      submitWasDisabled = submitButton ? submitButton.disabled : false;
+      if (submitButton) submitButton.disabled = true;
+      setStopLabel();
+      showHoldSeconds(HOLD_SECONDS);
+      hold.hidden = false;
+      holdTimer = setInterval(() => {
+        const secondsLeft = Math.max(0, Math.ceil((holdDeadline - Date.now()) / 1000));
+        if (secondsLeft === 0) {
+          holdExpired();
+          return;
+        }
+        showHoldSeconds(secondsLeft);
+      }, 1000);
+    }
+
+    holdStop.addEventListener("click", () => {
+      endHold();
+      submitButton?.focus();
+    });
 
     function setStatus(text) {
       status.textContent = text;
@@ -210,6 +339,7 @@
 
     function reset() {
       generation += 1;
+      endHold();
       clearFeedback();
       refresh();
     }
@@ -225,13 +355,14 @@
       }
     }
 
-    async function acknowledge(report, draft, presentedDateTime, attempt = 0) {
+    async function acknowledge(report, draft, presentedDateTime, presentedLanguage, attempt = 0) {
       const body = {
         ...draft.acknowledgeIdentity,
         reportId: report.reportId,
         correlationId: report.correlationId,
         receiptId: report.receiptId,
         presentedDateTime,
+        presentedLanguage,
       };
       let retry = true;
       try {
@@ -246,11 +377,16 @@
       }
       if (!retry) return;
       const delay = Math.min(ackRetryBaseMs * 2 ** attempt, MAX_ACK_RETRY_DELAY_MS);
-      setTimeout(() => acknowledge(report, draft, presentedDateTime, attempt + 1), delay);
+      setTimeout(() => acknowledge(report, draft, presentedDateTime, presentedLanguage, attempt + 1), delay);
     }
 
     function showReport(report, draft) {
-      const messages = (report.messages || []).slice(0, MAX_MESSAGES);
+      const welshMessages = Array.isArray(report.welshMessages) ? report.welshMessages : [];
+      const hasWelsh = welshMessages.length > 0;
+      const messagesByLanguage = { en: report.messages || [], cy: welshMessages };
+      let language = hasWelsh ? readLanguage() : "en";
+      let acknowledgementSent = false;
+      const presentedDateTime = new Date().toISOString();
       feedback.replaceChildren();
 
       const heading = doc.createElement("h3");
@@ -258,18 +394,61 @@
       heading.textContent = "HMRC feedback";
       feedback.appendChild(heading);
 
+      const switchButtons = new Map();
+      if (hasWelsh) {
+        const languageSwitch = doc.createElement("div");
+        languageSwitch.id = "hmrcAssistLanguageSwitch";
+        languageSwitch.className = "hmrc-assist-language-switch";
+        languageSwitch.setAttribute("role", "group");
+        languageSwitch.setAttribute("aria-label", "Language of HMRC feedback");
+        for (const { code, label } of LANGUAGES) {
+          const button = doc.createElement("button");
+          button.type = "button";
+          button.className = "secondary-button hmrc-assist-language-button";
+          button.id = `hmrcAssistLanguage-${code}`;
+          button.lang = code;
+          button.textContent = label;
+          button.addEventListener("click", () => selectLanguage(code));
+          switchButtons.set(code, button);
+          languageSwitch.appendChild(button);
+        }
+        feedback.appendChild(languageSwitch);
+      }
+
       const list = doc.createElement("ol");
       list.id = "hmrcAssistMessages";
-      const items = messages.map((message) => renderMessage(doc, message));
-      list.append(...items);
       feedback.appendChild(list);
       feedback.hidden = false;
 
-      const presentedDateTime = new Date().toISOString();
-      highlightFields(messages);
-      markUnacknowledged(kind, draft.key, report.reportId);
+      function renderLanguage() {
+        const messages = messagesByLanguage[language].slice(0, MAX_MESSAGES);
+        const items = messages.map((message) => renderMessage(doc, message));
+        list.lang = language;
+        setStopLabel();
+        list.replaceChildren(...items);
+        for (const [code, button] of switchButtons) button.setAttribute("aria-pressed", String(code === language));
+        clearHighlights();
+        highlightFields(messages);
+        observer?.disconnect();
+        observer = null;
+        if (!acknowledgementSent) {
+          observer = onceInView(items[items.length - 1], () => {
+            if (acknowledgementSent) return;
+            acknowledgementSent = true;
+            acknowledge(report, draft, presentedDateTime, language);
+          });
+        }
+      }
 
-      observer = onceInView(items[items.length - 1], () => acknowledge(report, draft, presentedDateTime));
+      function selectLanguage(code) {
+        if (code === language) return;
+        language = code;
+        writeLanguage(code);
+        renderLanguage();
+      }
+
+      markUnacknowledged(kind, draft.key, report.reportId);
+      renderLanguage();
     }
 
     async function check() {
@@ -278,8 +457,8 @@
       const thisGeneration = ++generation;
       clearFeedback();
       requestInFlight = true;
-      const submitWasDisabled = submitButton ? submitButton.disabled : false;
-      if (submitButton) submitButton.disabled = true;
+      requestOwner = thisGeneration;
+      startHold();
       setStatus("Asking HMRC Assist for feedback. This takes a few seconds.");
       refresh();
 
@@ -299,16 +478,20 @@
         failed = true;
       }
 
-      requestInFlight = false;
-      if (submitButton) submitButton.disabled = submitWasDisabled;
+      if (requestOwner === thisGeneration) {
+        requestInFlight = false;
+        requestOwner = null;
+      }
       if (thisGeneration !== generation) {
         refresh();
         return;
       }
 
       if (failed) {
+        endHold();
         setStatus(unavailableText);
       } else if (outcome.noFeedback) {
+        endHold();
         setStatus("HMRC Assist has no feedback on this return");
         reportShown = true;
       } else {
