@@ -149,7 +149,7 @@ test.describe("VAT submission OAuth callback error persistence", () => {
 
     await page.waitForURL("**/hmrc/vat/submitVat.html", { timeout: 5000 });
     expect(page.url()).toContain("submitVat.html");
-    const stored = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    const stored = await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"));
     expect(stored).toBe(GRANT_ID);
     expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });

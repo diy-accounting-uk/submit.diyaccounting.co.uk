@@ -356,7 +356,7 @@ test.describe("Practice page", () => {
     await expect(page.locator("#hmrcConnectionLine")).toHaveText("Connected to HMRC as an agent.");
     await expect(page.locator("#connectHmrcBtn")).toBeHidden();
     await expect(page.locator(".invite-toggle-btn").first()).toBeEnabled();
-    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"))).toBeNull();
   });
 
   test("sends the grant id, and no token, with an invitation", async ({ page }) => {

@@ -303,7 +303,7 @@ async function handleFormSubmission(event) {
   sessionStorage.setItem("submission_data", requestData);
 
   // Check if we already have an HMRC access token with sufficient scope
-  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (scopeSufficient) {
@@ -383,7 +383,7 @@ function showForm() {
 function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("submission_data");
-  sessionStorage.removeItem("hmrcAccessToken");
+  sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
@@ -397,7 +397,7 @@ function cancelRequest() {
 
 // OAuth callback handling
 function handleOAuthCallback() {
-  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   if (hmrcGrantId) {
     console.log("OAuth callback handler (code present, auto-continue)");
     continueVatSubmission();
@@ -408,12 +408,12 @@ function handleOAuthCallback() {
 
 async function continueVatSubmission() {
   try {
-    const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
     const submissionData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
 
     if (!submissionData) {
       console.log("No pending submission data found");
-      // Don't clear hmrcAccessToken - it may be needed for future submissions
+      // Don't clear hmrcGrantId - it may be needed for future submissions
       // (e.g., in simulator mode the token is pre-injected on every page load)
       sessionStorage.removeItem("oauth_state");
       return;
@@ -445,7 +445,7 @@ async function continueVatSubmission() {
     if (window.clearFormDraft) {
       window.clearFormDraft();
     }
-    // Keep hmrcAccessToken and hmrcAccount for subsequent operations (view return, obligations)
+    // Keep hmrcGrantId and hmrcAccount for subsequent operations (view return, obligations)
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
@@ -457,7 +457,7 @@ async function continueVatSubmission() {
     // Clear submission data to prevent auto-retry loop on next page load
     // User will need to manually retry by filling the form again
     sessionStorage.removeItem("submission_data");
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
@@ -633,7 +633,7 @@ async function loadOpenObligations() {
   obligationsLoadedForVrn = vrn;
 
   const connectBtn = document.getElementById("connectHmrcBtn");
-  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   const canReadObligations =
     hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient("/hmrc/vat/vatObligations.html") : !!hmrcGrantId;
   if (!canReadObligations) {

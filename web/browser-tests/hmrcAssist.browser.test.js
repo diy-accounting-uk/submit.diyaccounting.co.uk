@@ -94,8 +94,8 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
-        grantHeaders: () => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcAccessToken") }), getOAuthScopeString: async () => "read:vat",
+      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        grantHeaders: () => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }), getOAuthScopeString: async () => "read:vat",
         getActivityById: async (id) => window.TOML.parse(await (await fetch("/submit.catalogue.toml")).text()).activities.find((activity) => activity.id === id) };`,
     });
   });
@@ -134,7 +134,7 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
   });
 
   await page.addInitScript(() => {
-    sessionStorage.setItem("hmrcAccessToken", "00000000-0000-4000-8000-000000000001");
+    sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
     localStorage.setItem("cognitoIdToken", "test-id-token");
   });
   await page.goto(`${baseUrl}/hmrc/vat/submitVat.html`, { waitUntil: "domcontentloaded" });

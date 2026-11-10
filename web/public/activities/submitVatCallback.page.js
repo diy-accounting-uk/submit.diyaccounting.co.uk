@@ -79,13 +79,13 @@ async function handleOAuthCallback() {
       showStatus("Exchanging authorisation code for access token...", "info");
 
       // Exchange code for access token
-      const accessToken = await exchangeToken(code);
+      const grantId = await exchangeToken(code);
 
-      showStatus("Obtained Access Token from HMRC...", "info");
+      showStatus("HMRC sign-in complete...", "info");
 
       // Clean up session storage
       sessionStorage.removeItem("oauth_state");
-      sessionStorage.setItem("hmrcAccessToken", accessToken);
+      sessionStorage.setItem("hmrcGrantId", grantId);
       succeeded = true;
     } catch (error) {
       console.error("Submission error:", error);
@@ -213,9 +213,9 @@ async function exchangeToken(code) {
   }
 
   const responseJson = await response.json();
-  const accessToken = responseJson.accessToken;
-  if (!accessToken) {
-    const message = `Failed to exchange token. Remote call response did not include accessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+  const grantId = responseJson.hmrcGrantId;
+  if (!grantId) {
+    const message = `Failed to exchange token. Remote call response did not include hmrcGrantId: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
     throw new Error(message);
   }
@@ -227,7 +227,7 @@ async function exchangeToken(code) {
   }
 
   console.log(`Exchanged token. Remote call completed successfully: POST ${url}`);
-  return accessToken;
+  return grantId;
 }
 
 function checkCurrentActivityAndRedirect() {

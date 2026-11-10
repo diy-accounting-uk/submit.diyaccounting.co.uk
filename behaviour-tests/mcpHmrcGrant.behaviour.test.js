@@ -122,7 +122,7 @@ test("the MCP starts an HMRC grant, the user consents in the browser, and the VA
   });
 
   await test.step("Submit's callback page stores the grant and sends the user back to the chat", async () => {
-    const stored = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    const stored = await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"));
     expect(stored).toBeNull();
     await page.screenshot({ path: `${screenshotPath}/callback-granted.png` });
   });

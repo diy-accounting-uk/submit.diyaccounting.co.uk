@@ -38,7 +38,7 @@ function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("pendingObligationsRequest");
   sessionStorage.removeItem("pendingReturnRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
+  sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
@@ -87,7 +87,7 @@ function initializePage() {
 
 // OAuth callback handling
 function handleOAuthCallback() {
-  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   if (hmrcGrantId) {
     console.log("OAuth callback handler (accessToken found)");
     // If we have an access token, retrieve stored parameters and execute the call
@@ -99,7 +99,7 @@ function handleOAuthCallback() {
 
 async function continueObligationsRetrieval() {
   try {
-    const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
     const pendingRequest = window.PendingRequest.read("pendingObligationsRequest", ["vrn"]);
 
     if (!pendingRequest) {
@@ -163,7 +163,7 @@ async function continueObligationsRetrieval() {
     if (!response.ok) {
       // Handle 401 specifically to trigger re-authentication
       if (response.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
         showFailure({ status: 401 }, "Could not retrieve VAT obligations");
         showSearchCriteria(); // Show form on error
@@ -182,7 +182,7 @@ async function continueObligationsRetrieval() {
     // Clean up session storage - keep token for subsequent HMRC operations
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("pendingObligationsRequest");
-    // Keep hmrcAccessToken for subsequent operations (view return, submit return)
+    // Keep hmrcGrantId for subsequent operations (view return, submit return)
     sessionStorage.removeItem("oauth_state");
     // Keep hmrcAccount for subsequent operations
     console.log("Obligations retrieval completed successfully");
@@ -192,7 +192,7 @@ async function continueObligationsRetrieval() {
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingObligationsRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
@@ -218,7 +218,7 @@ async function handleFormSubmission(event) {
   if (!window.formErrors.requireVatNumberAnd("vrn")) return;
 
   // Check if we have an access token with sufficient scope
-  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = sessionStorage.getItem("hmrcGrantId");
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
@@ -316,7 +316,7 @@ async function handleFormSubmission(event) {
       if (!response.ok) {
         // Handle 401 specifically to trigger re-authentication
         if (response.status === 401) {
-          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
           showFailure({ status: 401 }, "Could not retrieve VAT obligations");
           return;

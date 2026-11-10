@@ -36,7 +36,7 @@ describe("logout revoke and sign-out", () => {
       },
     };
     const sessionStorageStub = {
-      getItem: (key) => (key === "hmrcAccessToken" ? sessionGrantId : null),
+      getItem: (key) => (key === "hmrcGrantId" ? sessionGrantId : null),
       setItem: () => {},
       removeItem: () => {},
     };

@@ -219,7 +219,7 @@
   async function deleteHmrcGrant() {
     let grantId;
     try {
-      grantId = window.hmrcScopeCheck ? window.hmrcScopeCheck.storedGrantId() : sessionStorage.getItem("hmrcAccessToken");
+      grantId = window.hmrcScopeCheck ? window.hmrcScopeCheck.storedGrantId() : sessionStorage.getItem("hmrcGrantId");
     } catch {
       grantId = null;
     }
@@ -300,7 +300,7 @@
     localStorage.removeItem("authState");
 
     // Clear HMRC-related data from sessionStorage
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("submission_data");
     sessionStorage.removeItem("pendingObligationsRequest");

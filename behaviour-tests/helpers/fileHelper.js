@@ -136,7 +136,7 @@ export async function extractUserSubFromLocalStorage(page, testInfo) {
 
 export async function extractHmrcGrantIdFromSessionStorage(page, testInfo) {
   try {
-    const grantId = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    const grantId = await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"));
     if (grantId) {
       console.log(`[test body] Found the HMRC grant id in sessionStorage for test "${testInfo.title}"`);
       return grantId;

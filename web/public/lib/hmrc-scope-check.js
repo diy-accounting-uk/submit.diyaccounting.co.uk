@@ -107,8 +107,7 @@
    * @returns {Promise<boolean>}
    */
   async function isTokenSufficient(pagePath) {
-    const token = sessionStorage.getItem("hmrcAccessToken");
-    if (!token) return false;
+    if (!storedGrantId()) return false;
     const required = await getRequiredScopes(pagePath);
     return hasRequiredScopes(required);
   }
@@ -118,7 +117,7 @@
    * @returns {string|null}
    */
   function storedGrantId() {
-    return sessionStorage.getItem("hmrcAccessToken") || null;
+    return sessionStorage.getItem("hmrcGrantId") || null;
   }
 
   /**
@@ -134,7 +133,7 @@
    * Clear the stored HMRC token and scope (e.g. when re-authorization is needed).
    */
   function clearHmrcToken() {
-    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
   }
 
