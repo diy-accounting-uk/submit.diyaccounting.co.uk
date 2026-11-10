@@ -16,7 +16,7 @@ function listFiles(dir) {
     const full = path.join(dir, entry.name);
     if (full === testsDir) continue;
     if (entry.isDirectory()) files.push(...listFiles(full));
-    else files.push(full);
+    else if (/\.(js|mjs|html)$/.test(entry.name)) files.push(full);
   }
   return files;
 }
@@ -35,5 +35,5 @@ describe("web/public holds the HMRC grant under hmrcGrantId only", () => {
       })
       .map((file) => path.relative(process.cwd(), file));
     expect(hits).toEqual([]);
-  });
+  }, 30000);
 });

@@ -413,11 +413,11 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
   test("sends the calculation test scenario to the retrieve and the declaration test scenario to the submit", async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem("showDeveloperOptions", "true");
-      sessionStorage.setItem("hmrcAccessToken", "test-token");
+      sessionStorage.setItem("hmrcGrantId", "test-token");
       window.hmrcScopeCheck = {
         isTokenSufficient: async () => true,
-        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
-        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcGrantId"),
       };
     });
     await loadPage(page);

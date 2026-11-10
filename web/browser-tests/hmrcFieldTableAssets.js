@@ -114,11 +114,11 @@ export async function serveItsaPageScripts(page) {
       status: 200,
       contentType: "application/javascript",
       body: `window.hmrcScopeCheck = window.hmrcScopeCheck || {
-        isTokenSufficient: () => Promise.resolve(!!sessionStorage.getItem("hmrcAccessToken")),
+        isTokenSufficient: () => Promise.resolve(!!sessionStorage.getItem("hmrcGrantId")),
         getOAuthScopeString: () => Promise.resolve("read:self-assessment"),
         clearHmrcToken: () => {},
       };
-      window.hmrcScopeCheck.storedGrantId = window.hmrcScopeCheck.storedGrantId || (() => sessionStorage.getItem("hmrcAccessToken"));`,
+      window.hmrcScopeCheck.storedGrantId = window.hmrcScopeCheck.storedGrantId || (() => sessionStorage.getItem("hmrcGrantId"));`,
     });
   });
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");

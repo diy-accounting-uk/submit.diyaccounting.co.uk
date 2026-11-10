@@ -61,11 +61,11 @@ async function openPage(page, { annual = null, synthetic = false } = {}) {
   const url = `http://localhost:3000/hmrc/itsa/${fileName}`;
   await page.addInitScript(
     ({ annual, synthetic }) => {
-      sessionStorage.setItem("hmrcAccessToken", "token");
+      sessionStorage.setItem("hmrcGrantId", "token");
       window.hmrcScopeCheck = {
         isTokenSufficient: async () => true,
-        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
-        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcGrantId"),
       };
       if (synthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
       window.__initialAnnual = annual;

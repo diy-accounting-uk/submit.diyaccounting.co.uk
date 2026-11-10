@@ -46,7 +46,7 @@ test.describe("ITSA Self-Employment Period - Form", () => {
       window.hmrcScopeCheck = window.hmrcScopeCheck || {
         isTokenSufficient: () => Promise.resolve(true),
         getOAuthScopeString: () => Promise.resolve("write:self-assessment"),
-        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
         clearHmrcToken: () => {},
       };
     });

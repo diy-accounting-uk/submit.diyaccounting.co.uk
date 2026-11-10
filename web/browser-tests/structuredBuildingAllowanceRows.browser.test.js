@@ -24,11 +24,11 @@ const SCREENSHOT_DIR = path.join(process.cwd(), "target/browser-test-results/str
 async function openAnnualPage(page, fileName, stubs) {
   const url = `http://localhost:3000/hmrc/itsa/${fileName}`;
   await page.addInitScript(() => {
-    sessionStorage.setItem("hmrcAccessToken", "token");
+    sessionStorage.setItem("hmrcGrantId", "token");
     window.hmrcScopeCheck = {
       isTokenSufficient: async () => true,
-      storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
-      clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+      storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+      clearHmrcToken: () => sessionStorage.removeItem("hmrcGrantId"),
     };
     window.__sent = [];
   });

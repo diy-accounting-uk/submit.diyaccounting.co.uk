@@ -42,7 +42,7 @@ test.describe("ITSA Business Details - Form", () => {
       window.hmrcScopeCheck = window.hmrcScopeCheck || {
         isTokenSufficient: () => Promise.resolve(true),
         getOAuthScopeString: () => Promise.resolve("read:self-assessment"),
-        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
         clearHmrcToken: () => {},
       };
     });

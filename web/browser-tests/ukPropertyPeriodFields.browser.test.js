@@ -67,7 +67,7 @@ const ITEMISED_BODY = {
 async function openPage(page, fileName) {
   const url = `http://localhost:3000/hmrc/itsa/${fileName}`;
   await page.addInitScript(() => {
-    sessionStorage.setItem("hmrcAccessToken", "token");
+    sessionStorage.setItem("hmrcGrantId", "token");
     window.__sent = [];
   });
   await page.route("**/*.js", async (route) => {
