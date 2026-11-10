@@ -3519,10 +3519,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-166 Roll one secret without an environment deploy
 
 - **Use when:** one GitHub environment secret has a new value and only its AWS copy and its vendor check need to follow.
-- **Does:** rotate-secret.yml writes one GitHub environment secret to Secrets Manager through put-secret-with-rotation-tag.sh, then runs that vendor's assert. For the Google client secret it also refreshes the Cognito identity provider. rotate-secret-plan.js holds the table of secrets, their GitHub names and their asserts.
+- **Does:** rotate-secret.yml writes one GitHub environment secret to Secrets Manager through put-secret-with-rotation-tag.sh, then runs that vendor's assert. For the Google and Microsoft client secrets it also refreshes the matching Cognito identity provider. rotate-secret-plan.js holds the table of secrets, their GitHub names and their asserts.
 - **Run:** `gh workflow run rotate-secret.yml -f secret=<aws-suffix> -f environment-name=<ci|prod>`
 - **Entry:** `scripts/rotate-secret-plan.js:planRotation`; `.github/workflows/rotate-secret.yml`
-- **Files:** scripts/rotate-secret-plan.js, .github/workflows/rotate-secret.yml, scripts/refresh-google-identity-provider.sh, app/unit-tests/scripts/rotateSecretPlan.test.js, app/unit-tests/rotateSecretWorkflow.test.js
+- **Files:** scripts/rotate-secret-plan.js, .github/workflows/rotate-secret.yml, scripts/refresh-identity-provider.sh, app/unit-tests/scripts/rotateSecretPlan.test.js, app/unit-tests/rotateSecretWorkflow.test.js
 - **Keywords:** rotate secret, key roll, single secret, rotated-at, vendor assert, cognito refresh, store step
 - **Related:** OPS-157, OPS-45, OPS-165
 
