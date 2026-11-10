@@ -88,6 +88,7 @@ The server already has everything the request needs: the bearer token from the H
 10. **The early adopter email goes after the Income Tax sandbox run.** HMRC reads sandbox logs, so HA4's sandbox step runs on the proxy lane first and the draft gains one sentence with the run date; nothing else in the build changes what HMRC can answer. Operator decision, 2026-10-03.
 11. **The acknowledgement never holds the submission.** The guide asks for the confirmation once the messages are displayed and sets no order against the return, so the widget sends it on display, retries it, and leaves the submit button enabled. Operator decision, 2026-11-02.
 12. **An agent's request is a business's request.** The published API keys both on the VRN and defines `CLIENT_OR_AGENT_NOT_AUTHORISED`, so an agent uses the same path and headers with the agent's token; the practice journey's sandbox run (`PLAN_ITSA_APPROVAL.md` UH1) is where a 403 would show otherwise. Operator decision, 2026-11-02.
+13. **Preview does not bring the Assist check to prod.** Prod has no Assist backend and HMRC opens the live VAT Assist API in January 2027, so `vat-assist-check` carries `previewEnvironments` without prod: the control and the page's Assist note show only where the activity runs. Guests and the demo use the ci site. Operator decision, 2026-11-10.
 
 ## The contract module
 
