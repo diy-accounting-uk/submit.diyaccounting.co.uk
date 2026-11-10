@@ -171,7 +171,6 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
     await page.clock.runFor(30000);
     await expect(page.locator("#hmrcAssistHold")).toBeHidden();
 
-    await page.locator("#hmrcAssistCheckBtn").click({ trial: true }).catch(() => {});
     await showCalculation(page);
     await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistHold")).toBeVisible();

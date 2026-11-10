@@ -106,6 +106,14 @@ export async function requestHmrcAssistFeedback(page, screenshotPath = defaultSc
   });
 }
 
+export async function stopWaitingForHmrcAssist(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user has read the messages and ends the pause on submit", async () => {
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+    await loggedClick(page, "#hmrcAssistHoldStop", "Stop waiting and enable submit", { screenshotPath });
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+  });
+}
+
 /**
  * Expect HMRC's messages on screen in the order given, each with its title, body and link text.
  * @param {import("@playwright/test").Page} page

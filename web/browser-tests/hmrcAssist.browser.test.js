@@ -299,7 +299,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     await expect(page.locator("#vatDueSales")).toHaveClass(/hmrc-assist-highlight/);
     await expect(page.locator("#totalValuePurchasesExVAT")).toHaveClass(/hmrc-assist-highlight/);
     await expect(page.locator("#vatDueAcquisitions")).not.toHaveClass(/hmrc-assist-highlight/);
-    await expect(page.locator("#submitBtn")).toBeEnabled();
+    await expect(page.locator("#submitBtn")).toBeDisabled();
   });
 
   test("sends the report request with the chosen period and the nine boxes", async ({ page }) => {
