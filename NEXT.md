@@ -52,8 +52,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **KSK1. Finish the key rotation run with the operator.** Started 2026-11-07. The record is `../private.diyaccounting.co.uk/security/ROTATION_2026-11-08.md`. The exposure check (`../private.diyaccounting.co.uk/security/EXPOSURE_CHECK_2026-11-09.md`) found no Critical finding; EC-2 and EC-4 are unit-test fixtures (`sk_test_unitTestK…` in `app/unit-tests/lib/stripeRecordingHttpClient.test.js`, `1//old-refr…` and `1//new-refr…` in `app/unit-tests/scripts/googleReconsent.test.js`). EC-3 is dependency files in the `diya-submit-mcp` image (libgnutls, happy-dom, jose). EC-8: prod `v2` is retired from the user-sub-hash-salt registry by `salt-rotate.yml` run 42856677931 (2026-11-10, after PR #785, 57bbfc1f7); every table held 0 items under `v2`; the registry is now `[v1, v3]` with `v3` current. Left: the operator runs `AWS_PROFILE=diya-submit-prod ./scripts/backup-salts.sh`, stores the file off-line, deletes the local copy and prints a new card; then this row closes. **Source**: operator, 2026-11-04. **Owner**: Claude Code, with the operator present. **Model**: none. **Size**: 0 files.
-
 - [ ] **OHA9. Give the HMRC Assist for VAT design demo, Thursday 2026-11-19, 15:00 to 16:00 UK.** Join the Teams meeting in the invite of 2026-11-09 (thread "HMRC Assist for VAT- design demo DIY Accounting"), using HA9's material. The material is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/DEMO_2026-11.md`, with 4 screenshots in `demo-2026-11/` (private commit 68c7f77). **Source**: operator, 2026-11-09. **Owner**: Operator. **Model**: none.
 
 ## Blocked
