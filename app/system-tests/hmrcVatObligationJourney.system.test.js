@@ -25,14 +25,20 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
   const testUserSub = "test-obligation-journey-user";
 
   beforeAll(async () => {
-    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists, ensureAsyncRequestsTableExists } =
-      await import("../bin/dynamodb.js");
+    const {
+      ensureBundleTableExists,
+      ensureHmrcApiRequestsTableExists,
+      ensureReceiptsTableExists,
+      ensureAsyncRequestsTableExists,
+      ensureMcpSessionsTableExists,
+    } = await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
     const bundleTableName = "test-bundle-table";
     const hmrcApiRequestsTableName = "test-hmrc-requests-table";
     const receiptsTableName = "test-receipts-table";
+    const mcpSessionsTableName = "test-mcp-sessions-table";
 
     const server = dynalite({ createTableMs: 0 });
     const address = await new Promise((resolve, reject) => {
@@ -56,6 +62,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcApiRequestsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
+    process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME = mcpSessionsTableName;
     process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
     process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME = asyncReturnGetTable;
     process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME = asyncObligationGetTable;
@@ -67,6 +74,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     await ensureBundleTableExists(bundleTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    await ensureMcpSessionsTableExists(mcpSessionsTableName, endpoint);
     await ensureAsyncRequestsTableExists(asyncReturnPostTable, endpoint);
     await ensureAsyncRequestsTableExists(asyncReturnGetTable, endpoint);
     await ensureAsyncRequestsTableExists(asyncObligationGetTable, endpoint);
@@ -166,6 +174,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       method: "POST",
       path: "/api/v1/hmrc/token",
       body: { code: "obligation-auth-code" },
+      authorizer: { authorizer: { lambda: { "sub": testUserSub, "cognito:username": "obligationuser" } } },
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);

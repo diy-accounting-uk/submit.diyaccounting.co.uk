@@ -28,6 +28,7 @@ let importedBundleManagement;
 const bundlesTableName = "system-test-vat-journey-bundles";
 const hmrcReqsTableName = "system-test-vat-journey-requests";
 const receiptsTableName = "system-test-vat-journey-receipts";
+const mcpSessionsTableName = "system-test-vat-journey-mcp-sessions";
 
 function makeDocClient() {
   const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
@@ -92,7 +93,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   const testToken = makeIdToken(testUserSub);
 
   beforeAll(async () => {
-    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureAsyncRequestsTableExists } =
+    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureAsyncRequestsTableExists, ensureMcpSessionsTableExists } =
       await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
@@ -119,6 +120,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
+    process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME = mcpSessionsTableName;
     process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
 
     // Initialize the salt for hashing user subs (already set in .env.test)
@@ -129,6 +131,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     await ensureBundleTableExists(bundlesTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    await ensureMcpSessionsTableExists(mcpSessionsTableName, endpoint);
     await ensureAsyncRequestsTableExists(asyncReturnPostTable, endpoint);
     await ensureAsyncRequestsTableExists(asyncReturnGetTable, endpoint);
     await ensureAsyncRequestsTableExists(asyncObligationGetTable, endpoint);
@@ -166,6 +169,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         BUNDLE_DYNAMODB_TABLE_NAME: bundlesTableName,
         HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: hmrcReqsTableName,
         RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
+        MCP_SESSIONS_DYNAMODB_TABLE_NAME: mcpSessionsTableName,
       }),
     );
 
@@ -231,6 +235,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       method: "POST",
       path: "/api/v1/hmrc/token",
       body: { code: "auth-code-from-callback" },
+      authorizer: { authorizer: { lambda: { "sub": testUserSub, "cognito:username": "vatuser" } } },
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);

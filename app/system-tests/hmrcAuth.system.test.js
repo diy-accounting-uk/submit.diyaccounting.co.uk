@@ -8,6 +8,7 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { ingestHandler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { buildLambdaEvent } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { GRANT_ID_PATTERN } from "../lib/mcpHmrcGrantAccess.js";
 import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -45,11 +46,10 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);
-      expect(tokenBody).toHaveProperty("url");
-      expect(tokenBody).toHaveProperty("body");
-      expect(tokenBody.url).toContain("oauth/token");
-      expect(tokenBody.body).toHaveProperty("grant_type", "authorization_code");
-      expect(tokenBody.body).toHaveProperty("code", "test-authorization-code-123");
+      expect(tokenBody.hmrcGrantId).toMatch(GRANT_ID_PATTERN);
+      expect(tokenBody.accessToken).toBe(tokenBody.hmrcGrantId);
+      expect(tokenBody).not.toHaveProperty("refreshToken");
+      expect(tokenBody).not.toHaveProperty("hmrcAccessToken");
     }
   }, 30000);
 
@@ -68,7 +68,8 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);
-      expect(tokenBody.body).toHaveProperty("client_id", process.env.HMRC_SANDBOX_CLIENT_ID);
+      expect(tokenBody.hmrcAccount).toBe("synthetic");
+      expect(tokenBody.hmrcGrantId).toMatch(GRANT_ID_PATTERN);
     }
   }, 30000);
 

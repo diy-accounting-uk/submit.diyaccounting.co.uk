@@ -317,7 +317,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********************************** */
 
   // For synthetic tests, fetch fraud prevention headers validation feedback
-  // Note: This request is made directly from test executor to HMRC, not through Lambda
+  // Note: the page asks the grant route, which calls HMRC from the server with the sealed token
   // We capture the result to include in the test report even without DynamoDB access
   const requestId = "request-123";
   const traceparent = observedTraceparent;
@@ -326,7 +326,6 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     page,
     testInfo,
     screenshotPath,
-    userSub,
     requestId,
     traceparent,
     correlationId,

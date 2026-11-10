@@ -134,14 +134,14 @@ export async function extractUserSubFromLocalStorage(page, testInfo) {
   return null;
 }
 
-export async function extractHmrcAccessTokenFromSessionStorage(page, testInfo) {
+export async function extractHmrcGrantIdFromSessionStorage(page, testInfo) {
   try {
-    const token = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
-    if (token) {
-      console.log(`[test body] Found hmrcAccessToken in sessionStorage for test "${testInfo.title}"`);
-      return token;
+    const grantId = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    if (grantId) {
+      console.log(`[test body] Found the HMRC grant id in sessionStorage for test "${testInfo.title}"`);
+      return grantId;
     } else {
-      console.log(`[test body] No hmrcAccessToken found in sessionStorage for test "${testInfo.title}"`);
+      console.log(`[test body] No HMRC grant id found in sessionStorage for test "${testInfo.title}"`);
     }
   } catch (e) {
     console.log(`[test body] Error accessing sessionStorage: ${e.message}`);

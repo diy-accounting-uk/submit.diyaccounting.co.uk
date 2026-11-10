@@ -3,12 +3,12 @@
 
 // @capability HMRC-23 Exchange an HMRC OAuth code for a token
 // - **Use when:** an OAuth authorisation code from HMRC must become an access token.
-// - **Does:** hmrcTokenPost.js's ingestHandler calls prepareTokenExchangeRequest to build the token request, then buildTokenExchangeResponse executes it. It reads the application's client secret from Secrets Manager.
+// - **Does:** hmrcTokenPost.js's ingestHandler calls prepareTokenExchangeRequest to build the token request, then exchangeOrFail executes it and the handler seals HMRC's tokens into a web grant in the mcp-sessions table (createGrantedHmrcGrant). It answers the grant id as `accessToken` and `hmrcGrantId` with the expiry and scope, and never a token. It reads the application's client secret from Secrets Manager.
 // - **Run:** `POST /api/v1/hmrc/token`
 // - **Entry:** `app/functions/hmrc/hmrcTokenPost.js:ingestHandler`; `app/functions/hmrc/hmrcTokenPost.js:prepareTokenExchangeRequest`
-// - **Files:** app/functions/hmrc/hmrcTokenPost.js, app/unit-tests/functions/hmrcTokenPost.test.js, app/system-tests/hmrcAuth.system.test.js, web/public/activities/submitVatCallback.html, web/browser-tests/submitVatCallback.browser.test.js, web/public/lib/hmrc-scope-check.js, behaviour-tests/steps/behaviour-hmrc-steps.js
+// - **Files:** app/functions/hmrc/hmrcTokenPost.js, app/unit-tests/functions/hmrcTokenPost.test.js, app/system-tests/hmrcAuth.system.test.js, web/public/activities/submitVatCallback.html, web/browser-tests/submitVatCallback.browser.test.js, web/public/lib/hmrc-scope-check.js, behaviour-tests/steps/behaviour-hmrc-steps.js, app/data/dynamoDbHmrcGrantRepository.js
 // - **Keywords:** oauth, authorisation code, access token, hmrc token exchange, client secret, secrets manager
-// - **Related:** HMRC-33
+// - **Related:** HMRC-33, MCP-21
 // @end-capability
 
 // app/functions/hmrc/hmrcTokenPost.js
@@ -17,18 +17,22 @@ import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
-  buildTokenExchangeResponse,
   performTokenExchange,
   buildValidationError,
+  buildUpstreamRejectionResponse,
   http200OkResponse,
   http401UnauthorizedResponse,
+  http502BadGatewayResponse,
   extractUserFromAuthorizerContext,
   getHeader,
+  safeHostname,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { readSecret, refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { initializeSalt } from "../../services/subHasher.js";
+import { initializeSalt, hashSub } from "../../services/subHasher.js";
+import { createGrantedHmrcGrant } from "../../data/dynamoDbHmrcGrantRepository.js";
+import { sealFor, HMRC_GRANT_PURPOSE } from "../../lib/codesSeal.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
@@ -72,6 +76,7 @@ export async function ingestHandler(event) {
     "DIY_SUBMIT_BASE_URL",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+    "MCP_SESSIONS_DYNAMODB_TABLE_NAME",
   ];
   // if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
   // if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
@@ -110,39 +115,87 @@ export async function ingestHandler(event) {
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
-  let exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub, { org: "hmrc" });
-  if (exchangeResponse.statusCode === 401) {
-    const refreshedSecret = await refreshedHmrcClientSecret(hmrcAccount, tokenResponse.body.client_secret);
-    if (refreshedSecret) {
-      exchangeResponse = await buildTokenExchangeResponse(
-        request,
-        tokenResponse.url,
-        { ...tokenResponse.body, client_secret: refreshedSecret },
-        userSub,
-        { org: "hmrc" },
-      );
-    }
-  }
+  const exchanged = await exchangeOrFail(request, responseHeaders, tokenResponse, userSub, hmrcAccount);
 
-  // Publish after HMRC's reply, not before, so the event records what actually happened.
-  if (exchangeResponse.statusCode === 200) {
-    await publishActivityEvent({
-      event: "hmrc-token-exchanged",
-      summary: "HMRC token exchanged",
-      userSub,
-    });
-  } else {
-    const responseBody = JSON.parse(exchangeResponse.body);
+  if (exchanged.failure) {
+    const responseBody = JSON.parse(exchanged.failure.body);
     await publishActivityFailureEvent({
       event: "hmrc-token-exchange-failed",
       summary: "HMRC token exchange failed",
       failure: responseBody.error || "hmrc-upstream-error",
       userSub,
-      detail: { hmrcStatus: responseBody.responseCode ?? exchangeResponse.statusCode },
+      detail: { hmrcStatus: responseBody.responseCode ?? exchanged.failure.statusCode },
     });
+    return exchanged.failure;
   }
 
-  return exchangeResponse;
+  // Publish after HMRC's reply, not before, so the event records what actually happened.
+  await publishActivityEvent({
+    event: "hmrc-token-exchanged",
+    summary: "HMRC token exchanged",
+    userSub,
+  });
+
+  const { accessToken, responseBody } = exchanged;
+  const grantAccount = hmrcAccount === "synthetic" ? "synthetic" : "live";
+  const expiresIn = Number(responseBody.expires_in ?? 0);
+  const { grantId } = await createGrantedHmrcGrant({
+    hashedSub: hashSub(userSub),
+    hmrcAccount: grantAccount,
+    scope: responseBody.scope ?? "",
+    accessExpiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+    seal: (id) => sealFor(HMRC_GRANT_PURPOSE, { accessToken, refreshToken: responseBody.refresh_token ?? null }, id),
+  });
+  logger.info({ message: "HMRC token exchanged and sealed into a grant", grantId, hmrcAccount: grantAccount, scope: responseBody.scope });
+  return http200OkResponse({
+    request,
+    data: {
+      accessToken: grantId,
+      hmrcGrantId: grantId,
+      expiresIn: responseBody.expires_in,
+      tokenType: responseBody.token_type,
+      scope: responseBody.scope,
+      hmrcAccount: grantAccount,
+    },
+  });
+}
+
+/**
+ * Runs HMRC's token request for a grant. Answers HMRC's reply with the access token, or a
+ * `failure` response when HMRC is unreachable or rejects the request.
+ * @param {object} request
+ * @param {object} responseHeaders
+ * @param {{url: string, body: object}} exchangeRequest
+ * @param {string} auditFor - the audit key the request is recorded under
+ * @param {string} hmrcAccount - "synthetic" or "live"
+ */
+export async function exchangeOrFail(request, responseHeaders, { url, body }, auditFor, hmrcAccount) {
+  let result;
+  try {
+    result = await performHmrcTokenExchange(url, body, auditFor, hmrcAccount);
+  } catch (error) {
+    logger.error({ message: "HMRC token request failed", error: error.message });
+    return {
+      failure: http502BadGatewayResponse({
+        request,
+        headers: responseHeaders,
+        message: "Unable to reach the upstream token endpoint",
+        error: { upstream: safeHostname(url) },
+      }),
+    };
+  }
+  if (!result.response.ok || !result.accessToken) {
+    return {
+      failure: buildUpstreamRejectionResponse({
+        request,
+        upstreamHost: safeHostname(url),
+        responseStatus: result.response.ok ? 502 : result.response.status,
+        responseBody: result.responseBody,
+        headers: responseHeaders,
+      }),
+    };
+  }
+  return result;
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

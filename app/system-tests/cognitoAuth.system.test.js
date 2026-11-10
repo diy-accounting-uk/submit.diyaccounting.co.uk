@@ -103,7 +103,6 @@ describe("System: Cognito token exchange", () => {
     const body = parseResponseBody(res);
     expect(body).toMatchObject({
       accessToken: "access-123",
-      hmrcAccessToken: "access-123",
       tokenType: "Bearer",
       expiresIn: 3600,
     });
@@ -137,7 +136,6 @@ describe("System: Cognito token exchange", () => {
     const body = parseResponseBody(res);
     expect(body).toMatchObject({
       accessToken: "access-456",
-      hmrcAccessToken: "access-456",
       tokenType: "Bearer",
       expiresIn: 3600,
     });

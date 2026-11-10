@@ -6,6 +6,14 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import { FakeCodesEntryTable } from "@app/test-helpers/fakeCodesEntryTable.js";
+
+const table = new FakeCodesEntryTable();
+vi.mock("@app/lib/dynamoDbClient.js", () => ({
+  executeDynamoDbCommand: (builder) => table.execute(builder),
+  getResourceName: () => "test-mcp-sessions",
+}));
+vi.mock("@app/data/dynamoDbHmrcApiRequestRepository.js", () => ({ putHmrcApiRequest: vi.fn() }));
 
 // Capture the EventBridge send so activity-event tests can inspect the published
 // Detail JSON directly rather than mocking activityAlert.js's hashing away.
@@ -25,13 +33,110 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 
 const { ingestHandler: hmrcTokenPostHandler } = await import("@app/functions/hmrc/hmrcTokenPost.js");
 const { hashSub } = await import("@app/services/subHasher.js");
+const { openGrantFor, GRANT_ID_PATTERN } = await import("@app/lib/mcpHmrcGrantAccess.js");
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("hmrcTokenPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
+    process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
+    table.items.clear();
     mockSend.mockClear();
+  });
+
+  function stubHmrcExchange(body) {
+    const originalFetch = global.fetch;
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } }));
+    return () => {
+      global.fetch = originalFetch;
+    };
+  }
+
+  test("answers a grant id and withholds every HMRC token", async () => {
+    const restore = stubHmrcExchange({
+      access_token: "hmrc-access-secret",
+      refresh_token: "hmrc-refresh-secret",
+      id_token: "hmrc-id-secret",
+      token_type: "bearer",
+      expires_in: 14400,
+      scope: "read:vat write:vat",
+    });
+    try {
+      const response = await hmrcTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code" } }));
+
+      expect(response.statusCode).toBe(200);
+      const body = parseResponseBody(response);
+      expect(body).not.toHaveProperty("refreshToken");
+      expect(body).not.toHaveProperty("hmrcAccessToken");
+      expect(body).not.toHaveProperty("idToken");
+      expect(response.body).not.toContain("hmrc-access-secret");
+      expect(response.body).not.toContain("hmrc-refresh-secret");
+      expect(body.accessToken).toMatch(GRANT_ID_PATTERN);
+      expect(body).toMatchObject({
+        accessToken: body.hmrcGrantId,
+        expiresIn: 14400,
+        tokenType: "bearer",
+        scope: "read:vat write:vat",
+        hmrcAccount: "live",
+      });
+      expect(Object.keys(body).sort()).toEqual(
+        expect.arrayContaining(["accessToken", "expiresIn", "hmrcAccount", "hmrcGrantId", "scope", "tokenType"]),
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  test("seals the tokens in a web grant for the caller that only the same user opens", async () => {
+    const restore = stubHmrcExchange({
+      access_token: "hmrc-access-secret",
+      refresh_token: "hmrc-refresh-secret",
+      expires_in: 14400,
+      scope: "read:vat",
+    });
+    try {
+      const response = await hmrcTokenPostHandler(
+        buildLambdaEvent({ method: "POST", body: { code: "test-code" }, headers: { hmrcaccount: "synthetic" } }),
+      );
+      const { hmrcGrantId } = parseResponseBody(response);
+
+      const stored = table.items.get(`hmrc-grant:${hmrcGrantId}`);
+      expect(stored).toMatchObject({
+        hashedSub: hashSub("test-sub"),
+        hmrcAccount: "synthetic",
+        scope: "read:vat",
+        state: "granted",
+        origin: "web",
+      });
+      expect(JSON.stringify(stored)).not.toContain("hmrc-access-secret");
+      expect(JSON.stringify(stored)).not.toContain("hmrc-refresh-secret");
+      expect(JSON.stringify(stored)).not.toContain('test-sub"');
+
+      const opened = await openGrantFor(hmrcGrantId, "test-sub");
+      expect(opened).toMatchObject({ status: "granted", accessToken: "hmrc-access-secret", hmrcAccount: "synthetic" });
+      expect((await openGrantFor(hmrcGrantId, "another-sub")).status).toBe("forbidden");
+    } finally {
+      restore();
+    }
+  });
+
+  test("writes no grant when HMRC rejects the code", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400, headers: { "Content-Type": "application/json" } }),
+      );
+    try {
+      const response = await hmrcTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code" } }));
+      expect(response.statusCode).toBe(400);
+      expect([...table.items.keys()].filter((key) => String(key).startsWith("hmrc-grant:"))).toEqual([]);
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   test("HEAD request returns expected status", async () => {

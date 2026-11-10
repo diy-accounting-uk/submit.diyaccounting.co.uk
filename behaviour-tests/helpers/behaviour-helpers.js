@@ -1097,23 +1097,21 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
  * This is a shared helper used by multiple behavior tests.
  * Returns the validation feedback result for inclusion in test reports.
  *
- * Note: This request is made directly from the test executor to HMRC, not through Lambda.
- * In CI environments without DynamoDB access, this is the only way to capture the feedback.
+ * The page asks the grant route for the feedback, so the HMRC token stays on the server and the
+ * server writes the audit row of the call.
  *
  * @param {Object} page - Playwright page object
  * @param {Object} testInfo - Playwright test info object
  * @param {string} screenshotPath - Path for screenshots
- * @param {string} auditForUserSub - User sub for auditing to DynamoDB
- * @param {string} requestId - Optional request ID for auditing to DynamoDB
- * @param {string} traceparent - Optional traceparent for auditing to DynamoDB
- * @param {string} correlationId - Optional correlation ID for auditing to DynamoDB
- * @returns {Object|null} The validation feedback result, or null if not in synthetic mode or no token
+ * @param {string} requestId - Optional request ID for the audit row
+ * @param {string} traceparent - Optional traceparent for the audit row
+ * @param {string} correlationId - Optional correlation ID for the audit row
+ * @returns {Object|null} The validation feedback result, or null if not in synthetic mode or no grant
  */
 export async function checkFraudPreventionHeadersFeedback(
   page,
   testInfo,
   screenshotPath,
-  auditForUserSub,
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
@@ -1121,35 +1119,17 @@ export async function checkFraudPreventionHeadersFeedback(
   if (!isSyntheticMode()) {
     console.log("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-synthetic mode");
     return null;
-  } else {
-    console.log(`[HMRC Fraud Prevention] Checking fraud prevention header validation feedback for user sub: ${auditForUserSub}`);
   }
+  console.log("[HMRC Fraud Prevention] Checking fraud prevention header validation feedback");
 
-  // Initialize salt for hashing (needed when getFraudPreventionHeadersFeedback stores to DynamoDB)
-  // This is called from the test executor, not Lambda, so salt needs explicit initialization
-  try {
-    const { initializeSalt } = await import("@app/services/subHasher.js");
-    await initializeSalt();
-  } catch (e) {
-    console.log(`[HMRC Fraud Prevention] Salt initialization skipped (this is OK for CI): ${e.message}`);
-  }
-
-  const { extractHmrcAccessTokenFromSessionStorage } = await import("./fileHelper.js");
+  const { extractHmrcGrantIdFromSessionStorage } = await import("./fileHelper.js");
   const { fetchFraudPreventionHeadersFeedback } = await import("../steps/behaviour-hmrc-vat-steps.js");
 
-  const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
-  if (hmrcAccessToken) {
-    const result = await fetchFraudPreventionHeadersFeedback(
-      hmrcAccessToken,
-      screenshotPath,
-      auditForUserSub,
-      requestId,
-      traceparent,
-      correlationId,
-    );
-    return result;
+  const hmrcGrantId = await extractHmrcGrantIdFromSessionStorage(page, testInfo);
+  if (hmrcGrantId) {
+    return fetchFraudPreventionHeadersFeedback(page, hmrcGrantId, screenshotPath, requestId, traceparent, correlationId);
   } else {
-    console.warn("Could not retrieve HMRC access token from session storage for feedback check");
+    console.warn("Could not retrieve the HMRC grant id from session storage for feedback check");
     return null;
   }
 }

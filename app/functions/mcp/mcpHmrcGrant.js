@@ -3,7 +3,7 @@
 
 // @capability MCP-21 Start an HMRC grant from the MCP
 // - **Use when:** a VAT (or later Income Tax) tool call through the MCP needs an HMRC access token, or the grant, its callback branch, its seal or its refresh needs tracing.
-// - **Does:** request_hmrc_authorisation posts to `/api/v1/mcp/hmrc-grants` and answers HMRC's authorisation link, whose state is `mcp.<grantId>.<secret>`; the grant id stays on the MCP session. HMRC returns the user to activities/submitVatCallback.html, which sees the `mcp.` state and posts the code and state to `/api/v1/mcp/hmrc-grants/callback` (no sign-in in that browser). mcpHmrcGrant.js checks the state's hash, lets one callback claim the grant, exchanges the code, and seals the access and refresh tokens with AES-256-GCM under a key derived from the MCP blob key (`hmrc-grant` purpose in codesSeal.js). The grant item lives in the mcp-sessions table under `hmrc-grant:<grantId>`: ten minutes pending, 24 hours granted. `GET /api/v1/mcp/hmrc-grants/{grantId}` answers the grant's status, expiry, scope and HMRC account to the owner only (403 to another user) and no token; `DELETE` on the same path ends the grant for its owner (204). Each HMRC handler opens the grant itself: the MCP sends the grant id in `x-mcp-hmrc-grant` with the user's own sign-in token, and app/lib/mcpHmrcGrantAccess.js checks the owner, opens the seal and uses HMRC's refresh_token grant when the access token is within thirty minutes of expiry, one caller at a time. The hosted endpoint copies the grant id to and from the session item. No route or tool answers a token.
+// - **Does:** request_hmrc_authorisation posts to `/api/v1/mcp/hmrc-grants` and answers HMRC's authorisation link, whose state is `mcp.<grantId>.<secret>`; the grant id stays on the MCP session. HMRC returns the user to activities/submitVatCallback.html, which sees the `mcp.` state and posts the code and state to `/api/v1/mcp/hmrc-grants/callback` (no sign-in in that browser). mcpHmrcGrant.js checks the state's hash, lets one callback claim the grant, exchanges the code, and seals the access and refresh tokens with AES-256-GCM under a key derived from the MCP blob key (`hmrc-grant` purpose in codesSeal.js). The grant item lives in the mcp-sessions table under `hmrc-grant:<grantId>`: ten minutes pending, 24 hours granted. `GET /api/v1/mcp/hmrc-grants/{grantId}` answers the grant's status, expiry, scope and HMRC account to the owner only (403 to another user) and no token; `DELETE` on the same path ends the grant for its owner (204). Each HMRC handler opens the grant itself: the MCP sends the grant id in `x-mcp-hmrc-grant` with the user's own sign-in token, and app/lib/mcpHmrcGrantAccess.js checks the owner, opens the seal and uses HMRC's refresh_token grant when the access token is within thirty minutes of expiry, one caller at a time. The hosted endpoint copies the grant id to and from the session item. A browser sign-in lives in the same item with origin `web`: `POST /api/v1/hmrc/token` (hmrcTokenPost.js, whose exchangeOrFail the callback route shares) writes it already granted and answers the grant id as `accessToken` and `hmrcGrantId`, with no token. No route or tool answers a token.
 // - **Run:** `npm run test:mcpHmrcGrantBehaviour-simulator` walks the whole grant on the simulator lane; `npm --prefix mcp run test:system` starts a grant and files a return against the simulator.
 // - **Entry:** `app/functions/mcp/mcpHmrcGrant.js`; `app/data/dynamoDbHmrcGrantRepository.js`; `mcp/lib/submit-tools.js:requestHmrcAuthorisation`; `app/lib/mcpHmrcGrantAccess.js:grantAccessTokenFromEvent`; `mcp/lib/submit-tools.js:hmrcGrantFor`
 // - **Files:** app/functions/mcp/mcpHmrcGrant.js, app/lib/mcpHmrcGrantAccess.js, app/data/dynamoDbHmrcGrantRepository.js, app/data/dynamoDbMcpSessionRepository.js, app/lib/codesSeal.js, app/functions/hmrc/hmrcTokenPost.js, app/functions/mcp/mcpHttp.js, web/public/activities/submitVatCallback.page.js, mcp/lib/submit-tools.js, mcp/lib/server.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, behaviour-tests/mcpHmrcGrant.behaviour.test.js, app/unit-tests/functions/mcpHmrcGrant.test.js, mcp/test/hmrc-grant.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_MCP.md
@@ -34,8 +34,6 @@ import {
   http409ConflictResponse,
   http500ServerErrorResponse,
   http502BadGatewayResponse,
-  buildUpstreamRejectionResponse,
-  safeHostname,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -48,7 +46,7 @@ import {
   deleteHmrcGrant,
 } from "../../data/dynamoDbHmrcGrantRepository.js";
 import { sealFor, HMRC_GRANT_PURPOSE } from "../../lib/codesSeal.js";
-import { prepareTokenExchangeRequest, performHmrcTokenExchange } from "../hmrc/hmrcTokenPost.js";
+import { prepareTokenExchangeRequest, exchangeOrFail } from "../hmrc/hmrcTokenPost.js";
 import { openGrantFor, GRANT_ID_PATTERN } from "../../lib/mcpHmrcGrantAccess.js";
 import { getFraudPreventionHeadersFeedback } from "../../services/hmrcFraudPreventionFeedback.js";
 
@@ -167,7 +165,7 @@ async function callback(event, request, responseHeaders) {
 
   await initializeSalt();
   const exchangeRequest = await prepareTokenExchangeRequest(code, grant.hmrcAccount);
-  const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, parsed.grantId, grant.hmrcAccount);
+  const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, `mcp-hmrc-grant:${parsed.grantId}`, grant.hmrcAccount);
   if (exchanged.failure) {
     await deleteHmrcGrant(parsed.grantId);
     return exchanged.failure;
@@ -181,36 +179,6 @@ async function callback(event, request, responseHeaders) {
   });
   logger.info({ message: "MCP HMRC grant completed", grantId: parsed.grantId, hmrcAccount: grant.hmrcAccount });
   return http200OkResponse({ request, headers: responseHeaders, data: { state: "granted" } });
-}
-
-// The token request is audited under the grant, since the callback carries no signed-in user.
-async function exchangeOrFail(request, responseHeaders, { url, body }, grantId, hmrcAccount) {
-  let result;
-  try {
-    result = await performHmrcTokenExchange(url, body, `mcp-hmrc-grant:${grantId}`, hmrcAccount);
-  } catch (error) {
-    logger.error({ message: "HMRC token request failed", error: error.message });
-    return {
-      failure: http502BadGatewayResponse({
-        request,
-        headers: responseHeaders,
-        message: "Unable to reach the upstream token endpoint",
-        error: { upstream: safeHostname(url) },
-      }),
-    };
-  }
-  if (!result.response.ok || !result.accessToken) {
-    return {
-      failure: buildUpstreamRejectionResponse({
-        request,
-        upstreamHost: safeHostname(url),
-        responseStatus: result.response.ok ? 502 : result.response.status,
-        responseBody: result.responseBody,
-        headers: responseHeaders,
-      }),
-    };
-  }
-  return result;
 }
 
 // HMRC's fraud prevention header feedback for the grant's sandbox sign-in. The token is used here
