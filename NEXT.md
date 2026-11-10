@@ -72,7 +72,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OHA9. Give the HMRC Assist for VAT design demo.** Join the Teams meeting in the invite of 2026-11-09 (thread "HMRC Assist for VAT- design demo DIY Accounting"), using HA9's material. The material is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/DEMO_2026-11.md`, with 4 screenshots in `demo-2026-11/` (private commit 68c7f77). The date is in the invite's `invite.ics`, which the Gmail connector cannot read; write it here. **Source**: operator, 2026-11-09. **Owner**: Operator. **Model**: none.
+- [ ] **OHA9. Give the HMRC Assist for VAT design demo, Thursday 2026-11-19, 15:00 to 16:00 UK.** Join the Teams meeting in the invite of 2026-11-09 (thread "HMRC Assist for VAT- design demo DIY Accounting"), using HA9's material. The material is `../private.diyaccounting.co.uk/hmrc/vat/hmrc-assist/DEMO_2026-11.md`, with 4 screenshots in `demo-2026-11/` (private commit 68c7f77). **Source**: operator, 2026-11-09. **Owner**: Operator. **Model**: none.
 
 ## Blocked
 
