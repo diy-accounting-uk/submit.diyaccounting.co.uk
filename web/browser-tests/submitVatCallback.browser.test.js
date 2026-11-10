@@ -13,6 +13,7 @@ import { servePageScripts } from "./hmrcFieldTableAssets.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 test.describe("VAT submission OAuth callback error persistence", () => {
+  const GRANT_ID = "0a1b2c3d-0a1b-4a1b-8a1b-0a1b2c3d4e5f";
   let callbackHtmlContent;
   let statusMessagesJs;
   let loadingSpinnerJs;
@@ -130,7 +131,17 @@ test.describe("VAT submission OAuth callback error persistence", () => {
       sessionStorage.setItem("oauth_state", "expected-state");
       sessionStorage.setItem("currentActivity", "/hmrc/vat/submitVat.html");
     });
-    await setupRoutes(page, { tokenResponseStatus: 200, tokenResponseBody: { accessToken: "test-access-token" } });
+    await setupRoutes(page, {
+      tokenResponseStatus: 200,
+      tokenResponseBody: {
+        accessToken: GRANT_ID,
+        hmrcGrantId: GRANT_ID,
+        expiresIn: 14400,
+        tokenType: "bearer",
+        scope: "read:vat write:vat",
+        hmrcAccount: "live",
+      },
+    });
 
     await page.goto("http://localhost:3000/activities/submitVatCallback.html?code=test-code&state=expected-state", {
       waitUntil: "domcontentloaded",
@@ -138,9 +149,11 @@ test.describe("VAT submission OAuth callback error persistence", () => {
 
     await page.waitForURL("**/hmrc/vat/submitVat.html", { timeout: 5000 });
     expect(page.url()).toContain("submitVat.html");
+    const stored = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    expect(stored).toBe(GRANT_ID);
+    expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  const GRANT_ID = "0a1b2c3d-0a1b-4a1b-8a1b-0a1b2c3d4e5f";
   const MCP_STATE = `mcp.${GRANT_ID}.secret`;
 
   test("returns a practice's agent grant to the practice page with the connected message", async ({ page }) => {

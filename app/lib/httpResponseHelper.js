@@ -691,7 +691,6 @@ export async function buildTokenExchangeResponse(request, url, body, auditForUse
     request,
     data: {
       accessToken,
-      hmrcAccessToken: accessToken,
       idToken,
       refreshToken,
       expiresIn,

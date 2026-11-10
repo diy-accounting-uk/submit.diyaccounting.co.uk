@@ -2011,19 +2011,20 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 
 /**
  * Fetch and log HMRC fraud prevention header validation feedback for synthetic tests.
- * This calls the HMRC test API to get feedback on all requests made to the vat-mtd API.
+ * The page asks the grant route, which opens the grant on the server and calls HMRC's test API
+ * for all requests made to the vat-mtd API. The token stays on the server.
  *
- * @param {string} hmrcAccessToken - HMRC OAuth access token
+ * @param {import("@playwright/test").Page} page - the signed-in page
+ * @param {string} hmrcGrantId - the grant id the page holds
  * @param {string} screenshotPath - Path for screenshots
- * @param {string} auditForUserSub - User sub for auditing to DynamoDB
- * @param {string|null} requestId - Optional request ID to filter feedback
+ * @param {string|null} requestId - Optional request ID for correlation and the audit row
  * @param {string|null} traceparent - Optional traceparent for correlation
  * @param {string|null} correlationId - Optional correlation ID
  */
 export async function fetchFraudPreventionHeadersFeedback(
-  hmrcAccessToken,
+  page,
+  hmrcGrantId,
   screenshotPath = defaultScreenshotPath,
-  auditForUserSub,
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
@@ -2031,16 +2032,20 @@ export async function fetchFraudPreventionHeadersFeedback(
   let capturedResult = null;
 
   await test.step("Fetch fraud prevention headers validation feedback from HMRC", async () => {
-    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcFraudPreventionFeedback.js");
-
     console.log("Fetching fraud prevention headers validation feedback...");
-    const result = await getFraudPreventionHeadersFeedback(
-      "vat-mtd",
-      hmrcAccessToken,
-      auditForUserSub,
-      requestId,
-      traceparent,
-      correlationId,
+    const result = await page.evaluate(
+      async ({ grantId, requestId, traceparent, correlationId }) => {
+        const headers = {
+          "Authorization": `Bearer ${localStorage.getItem("cognitoAccessToken")}`,
+          "X-Id-Token": localStorage.getItem("cognitoIdToken") || "",
+        };
+        if (requestId) headers["x-request-id"] = requestId;
+        if (traceparent) headers["traceparent"] = traceparent;
+        if (correlationId) headers["x-correlationid"] = correlationId;
+        const response = await fetch(`/api/v1/mcp/hmrc-grants/${grantId}?validationFeedback=vat-mtd`, { headers });
+        return response.json();
+      },
+      { grantId: hmrcGrantId, requestId, traceparent, correlationId },
     );
 
     // Capture the result for return
