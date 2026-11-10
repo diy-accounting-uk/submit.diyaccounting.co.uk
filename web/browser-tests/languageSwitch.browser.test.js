@@ -32,6 +32,7 @@ for (const { english, welsh } of PAIRS) {
     await expect(page.locator('head link[rel="alternate"][hreflang="cy"]')).toHaveCount(1);
     await expect(page.locator('head link[rel="alternate"][hreflang="en-GB"]')).toHaveCount(1);
     await expect(page.locator('head link[rel="alternate"][hreflang="x-default"]')).toHaveCount(1);
+    await expect(page.locator("aside.welsh-services")).toContainText("0300 200 1900");
     const welshSwitch = page.locator("header nav.language-switch");
     await expect(welshSwitch).toHaveAttribute("aria-label", "Iaith");
     await expect(welshSwitch.locator('[aria-current="true"]')).toHaveText("Cymraeg");

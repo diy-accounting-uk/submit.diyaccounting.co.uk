@@ -3,7 +3,7 @@
 
 // @capability SITE-30 Build the Welsh pages
 // - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, and writes web/public/cy/<page>. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page that differs from the render.
+// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page that differs from the render.
 // - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 // - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
 // - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
@@ -147,6 +147,12 @@ function relocate(url, pages) {
   return `../${bare}`;
 }
 
+function welshServicesBlock(catalogue) {
+  const entry = catalogue.shared["hmrc-welsh-services"];
+  if (!entry || !entry.cy) throw new Error("shared.hmrc-welsh-services: no Welsh text in i18n/cy.toml");
+  return `<aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>${entry.cy.trim()}</aside>`;
+}
+
 export async function renderWelshPage(page, catalogue = loadCatalogue(), pages = WELSH_PAGES) {
   const english = readEnglishPage(page);
   for (const { hreflang, href } of expectedAlternates(page)) {
@@ -170,6 +176,7 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   });
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
+  html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue)}</main>`, `</main> in ${page.en}`);
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages)}${end}`);
   html = html.replace(`<!-- ${page.en} -->`, `<!-- ${page.cy} -->`);
   html = html.replace(

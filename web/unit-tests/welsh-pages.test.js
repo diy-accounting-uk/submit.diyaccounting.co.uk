@@ -62,6 +62,16 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(welsh).toContain(`<link rel="canonical" href="${welshUrl(page)}" />`);
   });
 
+  it("carries HMRC's Welsh services block", () => {
+    const block = welsh.match(/<aside class="welsh-services"[^>]*data-welsh-services[^>]*>([\s\S]*?)<\/aside>/);
+    expect(block).not.toBeNull();
+    const text = block[1].replace(/\s+/g, " ");
+    expect(text).toContain("0300 200 1900");
+    expect(text).toContain("0300 200 3705");
+    expect(text).toMatch(/sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg/);
+    expect(text).toMatch(/HMRC Assist .* yn Gymraeg/);
+  });
+
   it("leaves no English string marked for translation untranslated", () => {
     const catalogue = loadCatalogue();
     for (const match of welsh.matchAll(/data-i18n="([^"]+)"[^>]*>([\s\S]*?)<\//g)) {
