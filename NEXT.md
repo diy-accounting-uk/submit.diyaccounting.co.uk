@@ -44,8 +44,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
-- [ ] **INT3. The Header checks table wastes the phone screen on a failed check.** At 390 px the panel scrolls sideways inside itself and shows Checked, Result and the start of API; a failed row's Message (HMRC's sentence) wraps in its off-screen column, so the row stands several lines tall and the visible cells sit above blank space (`web/browser-tests/operatorDashboard.browser.test.js` saves it as `target/int2-screens/integrations-390.png`). Prod's rows are all passes today, so prod looks right. The rows get `integrations-check-row` in `web/public/operator/dashboard.page.js` (line 744); the three tables are `table.observations.data-table.integrations-table` in `web/public/operator/dashboard.html` (lines 209, 260, 282), styled by `web/public/css/operator-dashboard.css` (`table.observations`, line 35), where no `integrations-table` rule exists yet. Add a scoped rule there, not in the shared `submit.css`: at phone width, give Message a minimum width, or stack each check as a card; then the browser test's 390 screenshot passes `visual-review`. The cards at 390 px are on prod since PR #778 (prod-cd79009). Left: `visual-review` of prod's operator dashboard Integrations tab at 390 px (Chrome, read-only), and close the row when it passes. **Source**: INT2's visual review, 2026-11-09. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
 ## Machine-ask
 
 ## Human-driven
