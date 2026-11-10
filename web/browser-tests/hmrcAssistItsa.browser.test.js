@@ -162,6 +162,7 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
 
   test("shows no language switch when the report carries no Welsh messages", async ({ page }) => {
     await openCalculationPage(page);
+    await showCalculation(page);
     await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistMessages > li").first()).toBeVisible();
     await expect(page.locator("#hmrcAssistLanguageSwitch")).toHaveCount(0);
