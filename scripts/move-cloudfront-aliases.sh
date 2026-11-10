@@ -200,7 +200,7 @@ if [ "$MISSING" != "[]" ]; then
     .Aliases = (((.Aliases.Items // []) + $missing) as $items | {Quantity: ($items | length), Items: $items})
   ' > "$CONFIG_FILE"
   aws cloudfront update-distribution --id "$TARGET_ID" --if-match "$ETAG" \
-    --distribution-config "file://${CONFIG_FILE}" >&2 || {
+    --distribution-config "file://${CONFIG_FILE}" --query Distribution.Status --output text >&2 || {
     log "ERROR: could not add ${MISSING} to [${TARGET_ID}]"
     rm -f "$CONFIG_FILE"
     exit 1
