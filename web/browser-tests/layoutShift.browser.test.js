@@ -363,3 +363,43 @@ test.describe("Layout shift while data loads on a phone", () => {
     expect(clipped, "blocks whose content is taller than the block").toEqual([]);
   });
 });
+
+test.describe("Home page activities card after the list renders", () => {
+  for (const [width, height] of [
+    [1920, 1080],
+    [390, 844],
+  ]) {
+    test(`signed-out card ends within 64px of its last button at ${width}x${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await serveRealSiteWithSlowData(page);
+      await page.addInitScript(() => {
+        try {
+          localStorage.removeItem("cognitoIdToken");
+          localStorage.removeItem("userInfo");
+        } catch {}
+      });
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      const container = page.locator("#dynamicActivities");
+      const reservedBeforeFill = await container.evaluate((element) => ({
+        hasClass: element.classList.contains("reserve-viewport-height"),
+        height: element.getBoundingClientRect().height,
+      }));
+      expect(reservedBeforeFill.hasClass).toBe(true);
+      expect(reservedBeforeFill.height).toBeGreaterThan(height / 2);
+
+      await expect(container.locator("button.btn").first()).toBeVisible();
+      await expect(container).not.toHaveClass(/reserve-viewport-height/);
+
+      const gap = await container.evaluate((element) => {
+        const buttons = [...element.querySelectorAll("button")];
+        const lastBottom = Math.max(...buttons.map((button) => button.getBoundingClientRect().bottom));
+        return element.closest(".form-container").getBoundingClientRect().bottom - lastBottom;
+      });
+      expect(gap).toBeLessThan(64);
+
+      if (process.env.HOME_SCREENSHOT_DIR) {
+        await page.screenshot({ path: path.join(process.env.HOME_SCREENSHOT_DIR, `home-signed-out-${width}.png`), fullPage: true });
+      }
+    });
+  }
+});
