@@ -7,6 +7,7 @@
 import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent, buildAuthorizerContext } from "@app/test-helpers/eventBuilders.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
 import { setupTestEnv, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 import {
   mockSend,
@@ -66,6 +67,10 @@ vi.mock("@app/lib/emfMetrics.js", () => ({
   emitMetric: (...args) => mockEmitMetric(...args),
 }));
 
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
+
 import { ingestHandler as hmrcVatReturnPostHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -85,14 +90,13 @@ function mockObligationsSuccess(periodKey = "18A2") {
 
 function buildSubmissionEvent(headers = {}, authorizer) {
   return buildHmrcEvent({
-    headers,
+    headers: { ...hmrcGrantHeader("test-token"), ...headers },
     authorizer,
     body: {
       vatNumber: TEST_VRN,
       periodStart: TEST_PERIOD_START,
       periodEnd: TEST_PERIOD_END,
       vatDue: 100,
-      accessToken: "test-token",
     },
   });
 }

@@ -4,6 +4,7 @@
 // app/unit-tests/functions/companiesHouseTransactionPost.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { companiesHouseGrantHeader } from "@app/test-helpers/companiesHouseGrantTestDouble.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock } from "@app/test-helpers/mockHelpers.js";
 
@@ -64,10 +65,11 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 const grantAccess = vi.hoisted(() => ({ override: null }));
 vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) => {
   const real = await importOriginal();
+  const double = (await import("@app/test-helpers/companiesHouseGrantTestDouble.js")).companiesHouseGrantAccessDouble(real);
   return {
     ...real,
     companiesHouseAccessFromEvent: (...args) =>
-      grantAccess.override ? grantAccess.override(...args) : real.companiesHouseAccessFromEvent(...args),
+      grantAccess.override ? grantAccess.override(...args) : double.companiesHouseAccessFromEvent(...args),
   };
 });
 
@@ -117,7 +119,7 @@ function buildEvent({ body = {}, headers = {}, authorizer, method = "POST" } = {
     method,
     path: "/api/v1/companies-house/transaction",
     body,
-    headers: { Authorization: "Bearer test-ch-access-token", ...headers },
+    headers: { ...companiesHouseGrantHeader("test-ch-access-token"), ...headers },
   };
   if (authorizer !== undefined) options.authorizer = authorizer;
   return buildLambdaEvent(options);
@@ -235,7 +237,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
     const response = await companiesHouseTransactionPostHandler(
       buildEvent({
         body: { companyNumber: "00000001", description: "Change of registered office address" },
-        headers: { Authorization: "" },
+        headers: { "x-companies-house-grant": "", "Authorization": "" },
       }),
     );
     expect(response.statusCode).toBe(401);

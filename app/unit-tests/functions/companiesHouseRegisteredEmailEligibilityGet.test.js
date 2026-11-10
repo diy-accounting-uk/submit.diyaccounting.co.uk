@@ -4,6 +4,7 @@
 // app/unit-tests/functions/companiesHouseRegisteredEmailEligibilityGet.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { companiesHouseGrantHeader } from "@app/test-helpers/companiesHouseGrantTestDouble.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock } from "@app/test-helpers/mockHelpers.js";
 
@@ -64,10 +65,11 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 const grantAccess = vi.hoisted(() => ({ override: null }));
 vi.mock("@app/lib/companiesHouseGrantAccess.js", async (importOriginal) => {
   const real = await importOriginal();
+  const double = (await import("@app/test-helpers/companiesHouseGrantTestDouble.js")).companiesHouseGrantAccessDouble(real);
   return {
     ...real,
     companiesHouseAccessFromEvent: (...args) =>
-      grantAccess.override ? grantAccess.override(...args) : real.companiesHouseAccessFromEvent(...args),
+      grantAccess.override ? grantAccess.override(...args) : double.companiesHouseAccessFromEvent(...args),
   };
 });
 
@@ -99,7 +101,7 @@ function buildEvent({ pathParameters = { companyNumber: "00000001" }, headers = 
     method,
     path: "/api/v1/companies-house/company/00000001/registered-email-address/eligibility",
     pathParameters,
-    headers: { Authorization: "Bearer test-ch-access-token", ...headers },
+    headers: { ...companiesHouseGrantHeader("test-ch-access-token"), ...headers },
   });
 }
 
@@ -191,7 +193,9 @@ describe("companiesHouseRegisteredEmailEligibilityGet ingestHandler", () => {
   });
 
   test("returns 401 when no Companies House access token is present", async () => {
-    const response = await companiesHouseRegisteredEmailEligibilityGetHandler(buildEvent({ headers: { Authorization: "" } }));
+    const response = await companiesHouseRegisteredEmailEligibilityGetHandler(
+      buildEvent({ headers: { "x-companies-house-grant": "", "Authorization": "" } }),
+    );
     expect(response.statusCode).toBe(401);
     expect(mockFetch).not.toHaveBeenCalled();
   });

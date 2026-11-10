@@ -54,7 +54,7 @@ export async function resolveClientSecret() {
 
 // The user's Companies House access token. The request
 // names a grant in the x-companies-house-grant header (or as a bearer value shaped like a grant
-// id); any other bearer value is a raw token and passes unchanged, with no company. The Cognito
+// id); any other bearer value gives null. The Cognito
 // access token travels separately as X-Authorization, exactly like the HMRC VAT routes.
 export async function extractCompaniesHouseAccessTokenFromLambdaEvent(event, userSub) {
   return (await companiesHouseAccessFromEvent(event, userSub))?.accessToken ?? null;

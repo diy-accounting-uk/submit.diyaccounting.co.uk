@@ -186,7 +186,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     // With the primed mock HMRC server, token exchange should succeed
     expect(tokenResponse.statusCode).toBe(200);
     const tokenBody = parseResponseBody(tokenResponse);
-    const hmrcAccessToken = tokenBody?.accessToken || tokenBody?.hmrcAccessToken || "mock-token";
+    const hmrcAccessToken = "mock-token";
 
     // Step 3: Get VAT obligations to see what needs to be submitted
     process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
@@ -258,10 +258,10 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
         periodStart: periodStartToSubmit,
         periodEnd: periodEndToSubmit,
         vatDue: 2750.0,
-        accessToken: hmrcAccessToken,
       },
       headers: {
         ...buildGovClientHeaders(),
+        ...hmrcGrantHeader(hmrcAccessToken),
       },
       authorizer: {
         authorizer: {

@@ -96,9 +96,8 @@ describe("companiesHouseGrantAccess", () => {
     expect(byBearer).toEqual({ accessToken: "ch-access-1", companyNumber: "01234567" });
   });
 
-  test("a raw bearer token passes unchanged with no company", async () => {
-    const access = await companiesHouseAccessFromEvent(eventFor({ Authorization: "Bearer a-raw-token" }), SUB);
-    expect(access).toEqual({ accessToken: "a-raw-token", companyNumber: null });
+  test("a bearer value that is not a grant id answers null", async () => {
+    expect(await companiesHouseAccessFromEvent(eventFor({ Authorization: "Bearer a-raw-token" }), SUB)).toBeNull();
   });
 
   test("a request with no token, or a grant that does not open, answers null", async () => {

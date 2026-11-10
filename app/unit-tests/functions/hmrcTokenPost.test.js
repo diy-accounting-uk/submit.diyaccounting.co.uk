@@ -74,17 +74,15 @@ describe("hmrcTokenPost ingestHandler", () => {
       expect(body).not.toHaveProperty("idToken");
       expect(response.body).not.toContain("hmrc-access-secret");
       expect(response.body).not.toContain("hmrc-refresh-secret");
-      expect(body.accessToken).toMatch(GRANT_ID_PATTERN);
+      expect(body).not.toHaveProperty("accessToken");
+      expect(body.hmrcGrantId).toMatch(GRANT_ID_PATTERN);
       expect(body).toMatchObject({
-        accessToken: body.hmrcGrantId,
         expiresIn: 14400,
         tokenType: "bearer",
         scope: "read:vat write:vat",
         hmrcAccount: "live",
       });
-      expect(Object.keys(body).sort()).toEqual(
-        expect.arrayContaining(["accessToken", "expiresIn", "hmrcAccount", "hmrcGrantId", "scope", "tokenType"]),
-      );
+      expect(Object.keys(body).sort()).toEqual(expect.arrayContaining(["expiresIn", "hmrcAccount", "hmrcGrantId", "scope", "tokenType"]));
     } finally {
       restore();
     }

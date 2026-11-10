@@ -47,8 +47,8 @@ function headerValue(headers, name) {
 }
 
 /**
- * The replacement module for app/lib/mcpHmrcGrantAccess.js: the original exports, with the two
- * functions that open a grant answering the ids this double issued with their token. Any other
+ * The replacement module for app/lib/mcpHmrcGrantAccess.js: the original exports, with the
+ * function that opens a grant answering the ids this double issued with their token. Any other
  * id goes to the real module, so a test can still open a real grant from a fake table.
  * @param {Object} original - the module's real exports, from importOriginal()
  * @returns {Object}
@@ -60,7 +60,5 @@ export function hmrcGrantAccessDouble(original) {
       const grantId = headerValue(event.headers, HMRC_GRANT_HEADER);
       return tokenByGrantId.has(grantId) ? tokenByGrantId.get(grantId) : original.grantAccessTokenFromEvent(event);
     },
-    resolveBodyAccessToken: async (event, bodyValue) =>
-      tokenByGrantId.has(bodyValue) ? tokenByGrantId.get(bodyValue) : original.resolveBodyAccessToken(event, bodyValue),
   };
 }

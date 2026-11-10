@@ -16,6 +16,11 @@ import { ingestHandler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmr
 import { ingestHandler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
 import { buildLambdaEvent, buildGovClientHeaders, makeIdToken } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { hmrcGrantHeader } from "../test-helpers/hmrcGrantTestDouble.js";
+
+vi.mock("../lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("../test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
 import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
@@ -242,7 +247,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     // With the primed mock HMRC server, token exchange should succeed
     expect(tokenResponse.statusCode).toBe(200);
     const tokenBody = parseResponseBody(tokenResponse);
-    const hmrcAccessToken = tokenBody?.accessToken || tokenBody?.hmrcAccessToken || "mock-token";
+    const hmrcAccessToken = "mock-token";
 
     // Step 3: Submit VAT return to HMRC
     // Use period dates matching the simulator's default open obligation (18A2)
@@ -254,10 +259,10 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         periodStart: "2017-04-01",
         periodEnd: "2017-06-30",
         vatDue: 1500.5,
-        accessToken: hmrcAccessToken,
       },
       headers: {
         ...buildGovClientHeaders(),
+        ...hmrcGrantHeader(hmrcAccessToken),
       },
       authorizer: {
         authorizer: {

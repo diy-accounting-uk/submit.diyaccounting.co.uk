@@ -178,15 +178,3 @@ export async function grantAccessTokenFromEvent(event) {
   if (!grantId) return null;
   return accessTokenOfGrant(event, grantId);
 }
-
-/**
- * A token value a request carries in its body. A value shaped like a grant id is opened as that
- * grant; any other value is a raw token and is returned unchanged.
- * @param {Object} event - the Lambda event
- * @param {string|undefined} bodyValue
- * @returns {Promise<string|Object|undefined>}
- */
-export async function resolveBodyAccessToken(event, bodyValue) {
-  if (typeof bodyValue !== "string" || !GRANT_ID_PATTERN.test(bodyValue)) return bodyValue;
-  return accessTokenOfGrant(event, bodyValue);
-}

@@ -7,6 +7,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
+import { hmrcGrantHeader } from "@app/test-helpers/hmrcGrantTestDouble.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 import {
   mockSend,
@@ -55,6 +56,10 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 // Defer importing the ingestHandlers until after mocks are defined
 const mockRequestCustomerEmail = vi.fn();
 vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 import { ingestHandler as hmrcVatReturnPostHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 import { HmrcTimeoutError } from "@app/services/hmrcApi.js";
@@ -124,7 +129,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when vatNumber is missing", async () => {
     const event = buildHmrcEvent({
-      body: { periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -134,7 +140,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when periodStart is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "111222333", periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -144,7 +151,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when periodEnd is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, vatDue: 100, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -154,7 +162,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when vatDue is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -170,7 +179,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when vatNumber has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "12345678", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" }, // 8 digits instead of 9
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "12345678", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 }, // 8 digits instead of 9
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -181,7 +191,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when periodStart has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: "invalid-date", periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "111222333", periodStart: "invalid-date", periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -192,7 +203,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when periodEnd has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: "invalid-date", vatDue: 100, accessToken: "token" },
+      headers: hmrcGrantHeader("token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: "invalid-date", vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -205,7 +217,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockGetVatObligations.mockRejectedValue(new HmrcTimeoutError("GET", "/organisations/vat/111222333/obligations", 25000));
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+      headers: hmrcGrantHeader("test-token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(504);
@@ -218,7 +231,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockObligationsNotFound();
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+      headers: hmrcGrantHeader("test-token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -235,7 +249,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     });
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+      headers: hmrcGrantHeader("test-token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -253,7 +268,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     });
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+      headers: hmrcGrantHeader("test-token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
 
@@ -279,12 +295,12 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         vatNumber: "111222333",
         periodStart: "2017-04-02",
         periodEnd: "2017-07-01",
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -298,7 +314,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockObligationsError(500);
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+      headers: hmrcGrantHeader("test-token"),
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -317,12 +334,12 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockHmrcSuccess(mockFetch, receipt);
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         vatNumber: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -365,12 +382,12 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockHmrcError(mockFetch, 400, { error: "INVALID_VAT_NUMBER" });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         vatNumber: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -382,12 +399,12 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     mockHmrcError(mockFetch, 400, { code: "DUPLICATE_SUBMISSION", message: "Duplicate submission" });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         vatNumber: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -438,14 +455,13 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     });
 
     const event = buildHmrcEvent({
-      headers: { "x-initial-request": "false", "x-request-id": "poll-after-success" },
+      headers: { ...hmrcGrantHeader("test-token"), "x-initial-request": "false", "x-request-id": "poll-after-success" },
       requestId: "poll-after-success",
       body: {
         vatNumber: "860611051",
         periodStart: "2026-02-01",
         periodEnd: "2026-04-30",
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
 
@@ -503,12 +519,12 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
     });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         clientId: "c1",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -528,12 +544,12 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
     });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         clientId: "c1",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -548,12 +564,12 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
     mockPracticeAndClient(null);
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         clientId: "not-mine",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -577,12 +593,12 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
     });
 
     const event = buildHmrcEvent({
+      headers: hmrcGrantHeader("test-token"),
       body: {
         vatNumber: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
       },
     });
     const response = await hmrcVatReturnPostHandler(event);
@@ -602,7 +618,6 @@ describe("hmrcVatReturnPost extractAndValidateParameters allowSyntheticObligatio
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
         vatDue: 100,
-        accessToken: "test-token",
         ...(allowSyntheticObligations === undefined ? {} : { allowSyntheticObligations }),
       },
     });

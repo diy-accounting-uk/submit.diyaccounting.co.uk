@@ -2,7 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
+import { hmrcGrantHeader } from "../../test-helpers/hmrcGrantTestDouble.js";
 import { buildJwtAuthorizerContext, buildLambdaEvent } from "../../test-helpers/eventBuilders.js";
+
+vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
+  (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
+);
 
 vi.mock("@app/services/bundleManagement.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -33,7 +38,7 @@ function buildAuthenticatedEvent({ sub = "practice-sub", clientId = "c1", servic
     authorizer: buildJwtAuthorizerContext(sub),
     pathParameters: { clientId },
     queryStringParameters: service ? { service } : null,
-    headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
+    headers: accessToken ? hmrcGrantHeader(accessToken) : {},
   });
 }
 
@@ -132,6 +137,15 @@ describe("practiceClientAuthorisationGet", () => {
 
   test("rejects an unsupported service query parameter", async () => {
     const result = await ingestHandler(buildAuthenticatedEvent({ service: "MTD-CT" }));
+
+    expect(result.statusCode).toBe(400);
+    expect(getClient).not.toHaveBeenCalled();
+  });
+
+  test("rejects a bearer value that is not a grant id", async () => {
+    const event = buildAuthenticatedEvent({ accessToken: null });
+    event.headers.authorization = "Bearer a-raw-hmrc-token";
+    const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(400);
     expect(getClient).not.toHaveBeenCalled();

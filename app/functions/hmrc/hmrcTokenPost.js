@@ -3,7 +3,7 @@
 
 // @capability HMRC-23 Exchange an HMRC OAuth code for a token
 // - **Use when:** an OAuth authorisation code from HMRC must become an access token.
-// - **Does:** hmrcTokenPost.js's ingestHandler calls prepareTokenExchangeRequest to build the token request, then exchangeOrFail executes it and the handler seals HMRC's tokens into a web grant in the mcp-sessions table (createGrantedHmrcGrant). It answers the grant id as `accessToken` and `hmrcGrantId` with the expiry and scope, and never a token. It reads the application's client secret from Secrets Manager.
+// - **Does:** hmrcTokenPost.js's ingestHandler calls prepareTokenExchangeRequest to build the token request, then exchangeOrFail executes it and the handler seals HMRC's tokens into a web grant in the mcp-sessions table (createGrantedHmrcGrant). It answers the grant id as `hmrcGrantId` with the expiry and scope, and never a token. It reads the application's client secret from Secrets Manager.
 // - **Run:** `POST /api/v1/hmrc/token`
 // - **Entry:** `app/functions/hmrc/hmrcTokenPost.js:ingestHandler`; `app/functions/hmrc/hmrcTokenPost.js:prepareTokenExchangeRequest`
 // - **Files:** app/functions/hmrc/hmrcTokenPost.js, app/unit-tests/functions/hmrcTokenPost.test.js, app/system-tests/hmrcAuth.system.test.js, web/public/activities/submitVatCallback.html, web/browser-tests/submitVatCallback.browser.test.js, web/public/lib/hmrc-scope-check.js, behaviour-tests/steps/behaviour-hmrc-steps.js, app/data/dynamoDbHmrcGrantRepository.js
@@ -150,7 +150,6 @@ export async function ingestHandler(event) {
   return http200OkResponse({
     request,
     data: {
-      accessToken: grantId,
       hmrcGrantId: grantId,
       expiresIn: responseBody.expires_in,
       tokenType: responseBody.token_type,

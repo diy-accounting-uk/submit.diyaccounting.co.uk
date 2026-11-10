@@ -287,15 +287,9 @@ export class UnauthorizedTokenError extends Error {
 
 // The HMRC access token a request carries. A request that names a grant (the x-mcp-hmrc-grant
 // header, or an Authorization bearer shaped like a grant id) gets that grant's token, or
-// HMRC_GRANT_NOT_USABLE when the grant does not open. Any other bearer value is a raw token.
+// HMRC_GRANT_NOT_USABLE when the grant does not open. Any other bearer value gives null.
 export async function extractHmrcAccessTokenFromLambdaEvent(event) {
-  const grantToken = await grantAccessTokenFromEvent(event);
-  if (grantToken) return grantToken;
-  const authHeader = event.headers?.authorization || event.headers?.Authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null;
-  }
-  return authHeader.split(" ")[1];
+  return grantAccessTokenFromEvent(event);
 }
 
 export function validateHmrcAccessToken(hmrcAccessToken) {

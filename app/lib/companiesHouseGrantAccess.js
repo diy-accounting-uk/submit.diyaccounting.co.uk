@@ -8,7 +8,7 @@
 // access token.
 
 import { createLogger } from "./logger.js";
-import { getHeader, extractBearerTokenFromAuthHeaderInLambdaEvent } from "./httpResponseHelper.js";
+import { getHeader } from "./httpResponseHelper.js";
 import { initializeSalt, hashSub } from "../services/subHasher.js";
 import { getCompaniesHouseGrant } from "../data/dynamoDbCompaniesHouseGrantRepository.js";
 import { openFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "./codesSeal.js";
@@ -71,7 +71,7 @@ export async function openCompaniesHouseGrantFor(grantId, userSub) {
 /**
  * The Companies House access token a request carries, with the company its grant is bound to.
  * A request that names a grant gets the grant's token; the grant must belong to the signed-in
- * user. Any other bearer value is a raw token and passes unchanged, with no company.
+ * user. Any other bearer value gives null.
  * @param {Object} event - the Lambda event
  * @param {string} userSub - the signed-in user's sub
  * @returns {Promise<{accessToken: string, companyNumber: string|null}|null>} null when the request
@@ -88,6 +88,5 @@ export async function companiesHouseAccessFromEvent(event, userSub) {
     }
     return { accessToken: grant.accessToken, companyNumber: grant.companyNumber };
   }
-  const rawToken = extractBearerTokenFromAuthHeaderInLambdaEvent(event);
-  return rawToken ? { accessToken: rawToken, companyNumber: null } : null;
+  return null;
 }
