@@ -60,19 +60,19 @@
         { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
         {
           "action": "scroll",
-          "target": "#dynamicActivities",
-          "caption": "Everything you can do is listed on the home page.",
-          "headline": "See every activity",
-          "keyWord": "activity"
-        },
-        { "action": "point", "target": "#dynamicActivities button:first-of-type" },
-        {
-          "action": "scroll",
           "target": { "text": "reviews on Google" },
           "caption": "DIY Accounting has run VAT submissions for years.",
           "headline": "Years of VAT submissions",
           "keyWord": "Years"
         },
+        {
+          "action": "scroll",
+          "to": "top",
+          "caption": "Everything you can do is listed on the home page.",
+          "headline": "See every activity",
+          "keyWord": "activity"
+        },
+        { "action": "point", "target": "#dynamicActivities button:first-of-type" },
         { "action": "hold", "ms": 600 }
       ]
     },
@@ -184,7 +184,7 @@
         { "action": "point", "target": { "text": "Log in to add bundles" } },
         { "action": "hold", "ms": 800 },
         {
-          "action": "scroll",
+          "action": "point",
           "target": "#passEntryForm",
           "caption": "Got a pass? Redeem it here.",
           "headline": "Redeem your pass",
