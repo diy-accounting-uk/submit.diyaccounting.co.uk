@@ -13,6 +13,7 @@ describe("logout revoke and sign-out", () => {
   let store;
   let fetchMock;
   let gtagMock;
+  let sessionGrantId;
 
   function loadWidget() {
     // eslint-disable-next-line no-new-func
@@ -21,6 +22,7 @@ describe("logout revoke and sign-out", () => {
 
   beforeEach(() => {
     store = {};
+    sessionGrantId = null;
     fetchMock = vi.fn().mockResolvedValue({ ok: true });
     gtagMock = vi.fn();
 
@@ -34,7 +36,7 @@ describe("logout revoke and sign-out", () => {
       },
     };
     const sessionStorageStub = {
-      getItem: () => null,
+      getItem: (key) => (key === "hmrcAccessToken" ? sessionGrantId : null),
       setItem: () => {},
       removeItem: () => {},
     };
@@ -74,6 +76,23 @@ describe("logout revoke and sign-out", () => {
     expect(revokeCall[1].method).toBe("POST");
     expect(revokeCall[1].keepalive).toBe(true);
     expect(revokeCall[1].body).toBe("token=the-refresh-token&client_id=client123");
+  });
+
+  it("deletes the held HMRC grant before the refresh token is revoked", async () => {
+    store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+    store.cognitoAccessToken = "the-access-token";
+    store.cognitoRefreshToken = "the-refresh-token";
+    sessionGrantId = "00000000-0000-4000-8000-000000000001";
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    const urls = fetchMock.mock.calls.map(([url]) => url);
+    const deleteIndex = urls.indexOf("/api/v1/mcp/hmrc-grants/00000000-0000-4000-8000-000000000001");
+    expect(deleteIndex).toBeGreaterThanOrEqual(0);
+    expect(fetchMock.mock.calls[deleteIndex][1].method).toBe("DELETE");
+    expect(fetchMock.mock.calls[deleteIndex][1].headers["X-Authorization"]).toBe("Bearer the-access-token");
+    expect(deleteIndex).toBeLessThan(urls.indexOf("https://auth.example.com/oauth2/revoke"));
   });
 
   it("posts to the sign-out route with the access token, keepalive", async () => {

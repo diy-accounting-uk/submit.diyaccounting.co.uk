@@ -114,6 +114,23 @@
   }
 
   /**
+   * The id of the HMRC grant the page holds, or null when there is none.
+   * @returns {string|null}
+   */
+  function storedGrantId() {
+    return sessionStorage.getItem("hmrcAccessToken") || null;
+  }
+
+  /**
+   * The request headers that name the HMRC grant the page holds.
+   * @returns {Object<string,string>} {"x-mcp-hmrc-grant": id}, or an empty object when there is no grant
+   */
+  function grantHeaders() {
+    const grantId = storedGrantId();
+    return grantId ? { "x-mcp-hmrc-grant": grantId } : {};
+  }
+
+  /**
    * Clear the stored HMRC token and scope (e.g. when re-authorization is needed).
    */
   function clearHmrcToken() {
@@ -127,6 +144,8 @@
     hasRequiredScopes,
     getOAuthScopeString,
     isTokenSufficient,
+    storedGrantId,
+    grantHeaders,
     clearHmrcToken,
   };
 })();

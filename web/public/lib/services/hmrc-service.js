@@ -295,7 +295,7 @@ export async function getGovClientHeaders() {
  * Submit VAT return to HMRC
  * @param {string} vatNumber - VAT registration number
  * @param {object} vatData - VAT submission data containing periodStart, periodEnd, and 9-box fields
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (synthetic only)
  * @param {boolean} allowSyntheticObligations - Synthetic-only option: use any available open obligation if dates don't match
@@ -304,7 +304,7 @@ export async function getGovClientHeaders() {
 export async function submitVat(
   vatNumber,
   vatData,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   allowSyntheticObligations = false,
@@ -316,6 +316,7 @@ export async function submitVat(
   const headers = {
     "Content-Type": "application/json",
     ...govClientHeaders,
+    "x-mcp-hmrc-grant": hmrcGrantId,
   };
   if (cognitoAccessToken) {
     headers["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
@@ -337,7 +338,6 @@ export async function submitVat(
     totalValueGoodsSuppliedExVAT: vatData.totalValueGoodsSuppliedExVAT,
     totalAcquisitionsExVAT: vatData.totalAcquisitionsExVAT,
     finalised: vatData.finalised,
-    accessToken,
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
   });
@@ -385,7 +385,7 @@ export async function submitVat(
 /**
  * Retrieve the authenticated user's ITSA business list from HMRC.
  * @param {string} nino - National Insurance number
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -393,7 +393,7 @@ export async function submitVat(
  */
 export async function getBusinessDetails(
   nino,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -404,7 +404,7 @@ export async function getBusinessDetails(
   const url = `/api/v1/hmrc/itsa/business/details?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -435,7 +435,7 @@ export async function getBusinessDetails(
 /**
  * Retrieve the authenticated user's ITSA quarterly update obligations from HMRC.
  * @param {string} nino - National Insurance number
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -444,7 +444,7 @@ export async function getBusinessDetails(
  */
 export async function getObligations(
   nino,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -461,7 +461,7 @@ export async function getObligations(
   const url = `/api/v1/hmrc/itsa/obligations?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -492,7 +492,7 @@ export async function getObligations(
 /**
  * File an ITSA self-employment quarterly update (create a period summary) with HMRC.
  * @param {object} periodData - { nino, businessId, periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -500,7 +500,7 @@ export async function getObligations(
  */
 export async function postSelfEmploymentPeriod(
   periodData,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -510,7 +510,7 @@ export async function postSelfEmploymentPeriod(
   // Gov-Test-Scenario is a real HTTP header on every write endpoint (see submitVat's
   // shape), never a query parameter - it becomes the header HMRC itself reads.
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -555,7 +555,7 @@ export async function postSelfEmploymentPeriod(
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -565,7 +565,7 @@ export async function getSelfEmploymentAnnual(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -576,7 +576,7 @@ export async function getSelfEmploymentAnnual(
   const url = `/api/v1/hmrc/itsa/self-employment/annual?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -605,7 +605,7 @@ export async function getSelfEmploymentAnnual(
 /**
  * Create or amend an ITSA self-employment annual submission with HMRC.
  * @param {object} annualDetails - { nino, businessId, taxYear, adjustments, allowances, nonFinancials }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -613,7 +613,7 @@ export async function getSelfEmploymentAnnual(
  */
 export async function putSelfEmploymentAnnual(
   annualDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -621,7 +621,7 @@ export async function putSelfEmploymentAnnual(
   const url = "/api/v1/hmrc/itsa/self-employment/annual";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -661,7 +661,7 @@ export async function putSelfEmploymentAnnual(
 /**
  * Trigger an ITSA business source adjustable summary (BSAS) for an accounting period.
  * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate, typeOfBusiness }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -669,7 +669,7 @@ export async function putSelfEmploymentAnnual(
  */
 export async function triggerBsas(
   triggerDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -677,7 +677,7 @@ export async function triggerBsas(
   const url = "/api/v1/hmrc/itsa/bsas/trigger";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -718,7 +718,7 @@ export async function triggerBsas(
  * @param {string} nino - National Insurance number
  * @param {string} calculationId - The BSAS calculation ID from the trigger response
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -728,7 +728,7 @@ export async function getBsasSelfEmployment(
   nino,
   calculationId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -739,7 +739,7 @@ export async function getBsasSelfEmployment(
   const url = `/api/v1/hmrc/itsa/bsas/self-employment?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -769,7 +769,7 @@ export async function getBsasSelfEmployment(
 /**
  * Submit an adjustment (or zeroAdjustments) to a triggered ITSA business source adjustable summary.
  * @param {object} adjustDetails - { nino, calculationId, taxYear, income, expenses, additions, zeroAdjustments }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -777,7 +777,7 @@ export async function getBsasSelfEmployment(
  */
 export async function adjustBsasSelfEmployment(
   adjustDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -785,7 +785,7 @@ export async function adjustBsasSelfEmployment(
   const url = "/api/v1/hmrc/itsa/bsas/self-employment/adjust";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -828,7 +828,7 @@ export async function adjustBsasSelfEmployment(
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -838,7 +838,7 @@ export async function getUkPropertyAnnual(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -849,7 +849,7 @@ export async function getUkPropertyAnnual(
   const url = `/api/v1/hmrc/itsa/uk-property/annual?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -878,7 +878,7 @@ export async function getUkPropertyAnnual(
 /**
  * Create or amend an ITSA UK property annual submission with HMRC.
  * @param {object} annualDetails - { nino, businessId, taxYear, adjustments, allowances }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -886,7 +886,7 @@ export async function getUkPropertyAnnual(
  */
 export async function putUkPropertyAnnual(
   annualDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -894,7 +894,7 @@ export async function putUkPropertyAnnual(
   const url = "/api/v1/hmrc/itsa/uk-property/annual";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -937,14 +937,14 @@ export async function putUkPropertyAnnual(
  * @param {string} method - "GET", "POST" or "PUT"
  * @param {string} url - The Submit route, with its query string for a GET
  * @param {object|null} body - The JSON body for a POST or PUT
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
  * @returns {Promise<object>} The response body
  */
-async function foreignPropertyRequest(action, method, url, body, accessToken, govClientHeaders, testScenario) {
+async function foreignPropertyRequest(action, method, url, body, hmrcGrantId, govClientHeaders, testScenario) {
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -976,7 +976,7 @@ async function foreignPropertyRequest(action, method, url, body, accessToken, go
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2026-27"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
@@ -986,7 +986,7 @@ export async function getForeignPropertyDetails(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -995,13 +995,13 @@ export async function getForeignPropertyDetails(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   const url = `/api/v1/hmrc/itsa/foreign-property/details?${params}`;
-  return foreignPropertyRequest("retrieve the properties", "GET", url, null, accessToken, govClientHeaders, null);
+  return foreignPropertyRequest("retrieve the properties", "GET", url, null, hmrcGrantId, govClientHeaders, null);
 }
 
 /**
  * Create a foreign property for a tax year (2026-27 on) with HMRC.
  * @param {object} details - { nino, businessId, taxYear, propertyName, countryCode, endDate?, endReason? }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1009,7 +1009,7 @@ export async function getForeignPropertyDetails(
  */
 export async function postForeignPropertyDetails(
   details,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1029,7 +1029,7 @@ export async function postForeignPropertyDetails(
     "POST",
     "/api/v1/hmrc/itsa/foreign-property/details",
     body,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1038,7 +1038,7 @@ export async function postForeignPropertyDetails(
 /**
  * Change the name of a foreign property, or end it with a date and a reason, with HMRC.
  * @param {object} details - { nino, taxYear, propertyId, propertyName, endDate?, endReason? }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1046,7 +1046,7 @@ export async function postForeignPropertyDetails(
  */
 export async function putForeignPropertyDetails(
   details,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1065,7 +1065,7 @@ export async function putForeignPropertyDetails(
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/details",
     body,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1096,7 +1096,7 @@ function foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation) {
  * File a dated foreign property period summary with HMRC (2024-25 and before). From 2025-26 the
  * cumulative summary is sent with putForeignPropertyPeriod.
  * @param {object} period - See foreignPropertyPeriodBody
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1104,7 +1104,7 @@ function foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation) {
  */
 export async function postForeignPropertyPeriod(
   period,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1114,7 +1114,7 @@ export async function postForeignPropertyPeriod(
     "POST",
     "/api/v1/hmrc/itsa/foreign-property/period",
     foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1124,7 +1124,7 @@ export async function postForeignPropertyPeriod(
  * Send a foreign property period to HMRC as an amendment: a dated period (2024-25 and before,
  * addressed by submissionId) or the year's cumulative summary (2025-26 on, which also creates it).
  * @param {object} period - See foreignPropertyPeriodBody
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1132,7 +1132,7 @@ export async function postForeignPropertyPeriod(
  */
 export async function putForeignPropertyPeriod(
   period,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1142,7 +1142,7 @@ export async function putForeignPropertyPeriod(
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/period",
     foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1152,7 +1152,7 @@ export async function putForeignPropertyPeriod(
  * Retrieve one foreign property period summary (dated, by submissionId) or the cumulative summary
  * of a tax year (2025-26 on) from HMRC.
  * @param {object} query - { nino, businessId, taxYear, submissionId? }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
@@ -1160,7 +1160,7 @@ export async function putForeignPropertyPeriod(
  */
 export async function getForeignPropertyPeriod(
   query,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1174,7 +1174,7 @@ export async function getForeignPropertyPeriod(
     "GET",
     `/api/v1/hmrc/itsa/foreign-property/period?${params}`,
     null,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     null,
   );
@@ -1186,7 +1186,7 @@ export async function getForeignPropertyPeriod(
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
@@ -1196,7 +1196,7 @@ export async function getPropertyPeriods(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1209,7 +1209,7 @@ export async function getPropertyPeriods(
     "GET",
     `/api/v1/hmrc/itsa/uk-property/periods?${params}`,
     null,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     null,
   );
@@ -1220,7 +1220,7 @@ export async function getPropertyPeriods(
  * @param {string} nino - National Insurance number
  * @param {string} calculationId - The BSAS calculation ID from the trigger response
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1230,7 +1230,7 @@ export async function getBsasUkProperty(
   nino,
   calculationId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1241,7 +1241,7 @@ export async function getBsasUkProperty(
   const url = `/api/v1/hmrc/itsa/bsas/uk-property?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1271,7 +1271,7 @@ export async function getBsasUkProperty(
 /**
  * Submit an adjustment (or zeroAdjustments) to a triggered ITSA UK property adjustable summary.
  * @param {object} adjustDetails - { nino, calculationId, taxYear, income, expenses, zeroAdjustments }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1279,7 +1279,7 @@ export async function getBsasUkProperty(
  */
 export async function adjustBsasUkProperty(
   adjustDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1287,7 +1287,7 @@ export async function adjustBsasUkProperty(
   const url = "/api/v1/hmrc/itsa/bsas/uk-property/adjust";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1329,7 +1329,7 @@ export async function adjustBsasUkProperty(
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2025-26"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
@@ -1339,7 +1339,7 @@ export async function getForeignPropertyAnnual(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1352,7 +1352,7 @@ export async function getForeignPropertyAnnual(
     "GET",
     `/api/v1/hmrc/itsa/foreign-property/annual?${params}`,
     null,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     null,
   );
@@ -1362,7 +1362,7 @@ export async function getForeignPropertyAnnual(
  * Create or amend the annual submission of a foreign property business with HMRC.
  * @param {object} annualDetails - { nino, businessId, taxYear, foreignFhlEea?, foreignProperty? }. foreignProperty holds
  *   one entry for each country (2025-26 and before) or property (2026-27 on), each with adjustments and allowances.
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
@@ -1370,7 +1370,7 @@ export async function getForeignPropertyAnnual(
  */
 export async function putForeignPropertyAnnual(
   annualDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1387,7 +1387,7 @@ export async function putForeignPropertyAnnual(
       foreignFhlEea: annualDetails.foreignFhlEea,
       foreignProperty: annualDetails.foreignProperty,
     },
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1398,7 +1398,7 @@ export async function putForeignPropertyAnnual(
  * @param {string} nino - National Insurance number
  * @param {string} calculationId - The BSAS calculation ID from the trigger response
  * @param {string} taxYear - Tax year, e.g. "2025-26"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
@@ -1409,7 +1409,7 @@ export async function getBsasForeignProperty(
   nino,
   calculationId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1422,7 +1422,7 @@ export async function getBsasForeignProperty(
     "GET",
     `/api/v1/hmrc/itsa/bsas/foreign-property?${params}`,
     null,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     null,
   );
@@ -1433,7 +1433,7 @@ export async function getBsasForeignProperty(
  * @param {object} adjustDetails - { nino, calculationId, taxYear, foreignProperty?, foreignFhlEea?, zeroAdjustments? }. foreignProperty
  *   holds one entry for each country (2025-26 and before) or property (2026-27 on), each with income and expenses. foreignFhlEea
  *   holds the income and expenses of furnished holiday lettings in the EEA, for 2024-25 and before.
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
@@ -1441,7 +1441,7 @@ export async function getBsasForeignProperty(
  */
 export async function adjustBsasForeignProperty(
   adjustDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1459,7 +1459,7 @@ export async function adjustBsasForeignProperty(
       foreignFhlEea: adjustDetails.foreignFhlEea,
       zeroAdjustments: adjustDetails.zeroAdjustments,
     },
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     testScenario,
   );
@@ -1470,7 +1470,7 @@ export async function adjustBsasForeignProperty(
  * calculation runs asynchronously; the worker behind this endpoint waits and retrieves it, so
  * this call answers with the finished calculation body.
  * @param {object} calculationDetails - { nino, taxYear, calculationType }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1478,7 +1478,7 @@ export async function adjustBsasForeignProperty(
  */
 export async function triggerCalculation(
   calculationDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1486,7 +1486,7 @@ export async function triggerCalculation(
   const url = "/api/v1/hmrc/itsa/calculation/trigger";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1532,7 +1532,7 @@ export async function triggerCalculation(
  * @param {string} nino - National Insurance number
  * @param {string} taxYear - Tax year, e.g. "2024-25"
  * @param {string} calculationId - The calculation ID from the trigger response
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1542,7 +1542,7 @@ export async function getCalculation(
   nino,
   taxYear,
   calculationId,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1553,7 +1553,7 @@ export async function getCalculation(
   const url = `/api/v1/hmrc/itsa/calculation?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1583,7 +1583,7 @@ export async function getCalculation(
  * Submit an ITSA final declaration with HMRC, confirming a previously retrieved
  * intent-to-finalise calculation.
  * @param {object} declarationDetails - { nino, taxYear, calculationId, calculationType, totalIncomeTaxAndNicsDue }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1591,7 +1591,7 @@ export async function getCalculation(
  */
 export async function postFinalDeclaration(
   declarationDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1599,7 +1599,7 @@ export async function postFinalDeclaration(
   const url = "/api/v1/hmrc/itsa/final-declaration";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1650,7 +1650,7 @@ export async function postFinalDeclaration(
  * @param {string} nino - National Insurance number
  * @param {string} businessId - HMRC business ID
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1660,7 +1660,7 @@ export async function getLossesAndClaims(
   nino,
   businessId,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1671,7 +1671,7 @@ export async function getLossesAndClaims(
   const url = `/api/v1/hmrc/itsa/losses-and-claims?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1700,7 +1700,7 @@ export async function getLossesAndClaims(
 /**
  * Create or amend a business's losses and claims for a tax year with HMRC.
  * @param {object} lossesDetails - { nino, businessId, taxYear, typeOfBusiness, losses, claims, suspendTemporalValidations }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1708,7 +1708,7 @@ export async function getLossesAndClaims(
  */
 export async function putLossesAndClaims(
   lossesDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1716,7 +1716,7 @@ export async function putLossesAndClaims(
   const url = "/api/v1/hmrc/itsa/losses-and-claims";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1758,7 +1758,7 @@ export async function putLossesAndClaims(
  * Retrieve a person's tax liability adjustments for a tax year from HMRC.
  * @param {string} nino - National Insurance number
  * @param {string} taxYear - Tax year, e.g. "2024-25"
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1767,7 +1767,7 @@ export async function putLossesAndClaims(
 export async function getTaxLiabilityAdjustments(
   nino,
   taxYear,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1778,7 +1778,7 @@ export async function getTaxLiabilityAdjustments(
   const url = `/api/v1/hmrc/itsa/tax-liability-adjustments?${params}`;
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",
@@ -1807,7 +1807,7 @@ export async function getTaxLiabilityAdjustments(
 /**
  * Create or amend a person's tax liability adjustments for a tax year with HMRC.
  * @param {object} adjustmentsDetails - { nino, taxYear, carryBackLossesDecrease, suspendTemporalValidations }
- * @param {string} accessToken - HMRC access token
+ * @param {string} hmrcGrantId - HMRC grant id
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
@@ -1815,7 +1815,7 @@ export async function getTaxLiabilityAdjustments(
  */
 export async function putTaxLiabilityAdjustments(
   adjustmentsDetails,
-  accessToken,
+  hmrcGrantId,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
   testScenario = null,
@@ -1823,7 +1823,7 @@ export async function putTaxLiabilityAdjustments(
   const url = "/api/v1/hmrc/itsa/tax-liability-adjustments";
 
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
+    "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
     ...govClientHeaders,
     "x-wait-time-ms": "0",

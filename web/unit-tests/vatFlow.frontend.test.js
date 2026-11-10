@@ -354,12 +354,13 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(body.totalValueGoodsSuppliedExVAT).toBe(0);
       expect(body.totalAcquisitionsExVAT).toBe(0);
       expect(body.finalised).toBe(true);
-      expect(body.accessToken).toBe("test-token");
+      expect(body).not.toHaveProperty("accessToken");
 
       // Verify headers - authorizedFetch converts to Headers object
       const headers = init.headers;
       expect(headers).toBeInstanceOf(Headers);
       expect(headers.get("Content-Type")).toBe("application/json");
+      expect(headers.get("x-mcp-hmrc-grant")).toBe("test-token");
       expect(headers.get("Gov-Client-Browser-JS-User-Agent")).toBe(govHeaders["Gov-Client-Browser-JS-User-Agent"]);
       expect(headers.get("Gov-Client-Device-ID")).toBe(govHeaders["Gov-Client-Device-ID"]);
       expect(headers.get("Gov-Client-Public-IP")).toBe(govHeaders["Gov-Client-Public-IP"]);

@@ -129,6 +129,23 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
  * @returns {Promise<Response>} Fetch response
  */
 export async function authorizedFetch(input, init = {}) {
+  const response = await authorizedFetchOnce(input, init);
+  if (response.status === 401 && isHmrcApiPath(input) && typeof window !== "undefined" && window.hmrcScopeCheck) {
+    window.hmrcScopeCheck.clearHmrcToken();
+  }
+  return response;
+}
+
+function isHmrcApiPath(input) {
+  const urlPath = typeof input === "string" ? input : input?.url || String(input);
+  try {
+    return new URL(urlPath, "http://localhost").pathname.startsWith("/api/v1/hmrc/");
+  } catch {
+    return false;
+  }
+}
+
+async function authorizedFetchOnce(input, init) {
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
   // Uses X-Authorization (not Authorization) to match API Gateway Lambda authorizer configuration

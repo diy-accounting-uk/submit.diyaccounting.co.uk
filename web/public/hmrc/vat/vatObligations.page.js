@@ -87,8 +87,8 @@ function initializePage() {
 
 // OAuth callback handling
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
+  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  if (hmrcGrantId) {
     console.log("OAuth callback handler (accessToken found)");
     // If we have an access token, retrieve stored parameters and execute the call
     continueObligationsRetrieval();
@@ -99,7 +99,7 @@ function handleOAuthCallback() {
 
 async function continueObligationsRetrieval() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
     const pendingRequest = window.PendingRequest.read("pendingObligationsRequest", ["vrn"]);
 
     if (!pendingRequest) {
@@ -136,7 +136,7 @@ async function continueObligationsRetrieval() {
     const govClientHeaders = await getGovClientHeaders();
 
     const requestHeaders = {
-      "Authorization": `Bearer ${accessToken}`,
+      "x-mcp-hmrc-grant": hmrcGrantId,
       "Content-Type": "application/json",
       ...govClientHeaders,
     };
@@ -218,11 +218,11 @@ async function handleFormSubmission(event) {
   if (!window.formErrors.requireVatNumberAnd("vrn")) return;
 
   // Check if we have an access token with sufficient scope
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = sessionStorage.getItem("hmrcAccessToken");
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
@@ -289,7 +289,7 @@ async function handleFormSubmission(event) {
       const govClientHeaders = await getGovClientHeaders();
 
       const requestHeaders = {
-        "Authorization": `Bearer ${accessToken}`,
+        "x-mcp-hmrc-grant": hmrcGrantId,
         "Content-Type": "application/json",
         ...govClientHeaders,
       };
