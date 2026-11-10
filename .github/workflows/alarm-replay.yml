@@ -2,17 +2,17 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # @capability OPS-195 Replay the alarm triage prompt over invented alarms
-# - **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Sonnet or Nova Pro on alarm triage.
-# - **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. The `runner` input picks Nova Pro (through the run-triage-agent action with `--frozen-results`), Sonnet (through the same action's claude path, with the frozen results in the prompt), or both in one run. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of Sonnet's, taken from the same run or from the `sonnet-baseline` input. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
-# - **Run:** `gh workflow run alarm-replay.yml -f runner=both`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
+# - **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Nova Pro on alarm triage.
+# - **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. It runs Nova Pro through the run-triage-agent action with `--frozen-results`. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of the `sonnet-baseline` input when one is given. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
+# - **Run:** `gh workflow run alarm-replay.yml -f set=synthetic`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
 # - **Entry:** `.github/workflows/alarm-replay.yml`; `scripts/alarm-replay.mjs:scoreAnswer`
 # - **Files:** .github/workflows/alarm-replay.yml, scripts/alarm-replay.mjs, app/unit-tests/fixtures/alarm-triage/, app/unit-tests/scripts/alarmReplay.test.js, app/unit-tests/alarmReplayWorkflow.test.js, prompts/alarm-triage.md, prompts/alarm-triage-answer.json
-# - **Keywords:** alarm replay, alarm fixtures, alarm triage score, nova pro, sonnet baseline, close-when-gone, safety gate
+# - **Keywords:** alarm replay, alarm fixtures, alarm triage score, nova pro, baseline, close-when-gone, safety gate
 # - **Related:** OPS-18, OPS-155, OPS-194
 # @end-capability
 
 name: alarm-replay
-run-name: alarm replay (${{ inputs.runner || 'nova' }})
+run-name: alarm replay
 
 # The fixtures in the repository hold invented alarms only. The private set holds past alarms, so
 # the jobs print no fixture name, answer or log text for it: marks and counts only. The jobs run
@@ -31,15 +31,6 @@ on:
       - '.github/workflows/alarm-replay.yml'
   workflow_dispatch:
     inputs:
-      runner:
-        description: nova scores Nova Pro, sonnet scores the baseline, both scores both in this run
-        required: false
-        default: nova
-        type: choice
-        options:
-          - nova
-          - sonnet
-          - both
       set:
         description: synthetic is the invented fixtures; private adds the past alarms from the private repository
         required: false
@@ -66,9 +57,6 @@ concurrency:
 env:
   AWS_REGION: 'eu-west-2'
   NOVA_MODEL_ID: 'amazon.nova-pro-v1:0'
-  SONNET_MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
-  HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
-  CLAUDE_CODE_VERSION: '2.0.30'
   PRIVATE_SET_DIR: 'private-set/engineering/submit/alarm-replay'
 
 jobs:
@@ -118,7 +106,6 @@ jobs:
         id: list
         env:
           SET_INPUT: ${{ inputs.set || 'synthetic' }}
-          RUNNER_INPUT: ${{ inputs.runner || 'nova' }}
         run: |
           set -euo pipefail
           echo '[]' > /tmp/items-synthetic.json
@@ -126,11 +113,7 @@ jobs:
           if [ "$SET_INPUT" != "private" ]; then node scripts/alarm-replay.mjs list synthetic > /tmp/items-synthetic.json; fi
           if [ "$SET_INPUT" != "synthetic" ]; then node scripts/alarm-replay.mjs list private "$PRIVATE_SET_DIR" > /tmp/items-private.json; fi
           echo "items=$(jq -c -s 'add' /tmp/items-synthetic.json /tmp/items-private.json)" >> "$GITHUB_OUTPUT"
-          if [ "$RUNNER_INPUT" = "both" ]; then
-            echo 'runners=["nova","sonnet"]' >> "$GITHUB_OUTPUT"
-          else
-            echo "runners=[\"$RUNNER_INPUT\"]" >> "$GITHUB_OUTPUT"
-          fi
+          echo 'runners=["nova"]' >> "$GITHUB_OUTPUT"
 
   replay:
     needs: plan
@@ -180,10 +163,6 @@ jobs:
           sparse-checkout: engineering/submit/alarm-replay
           persist-credentials: false
 
-      - name: Install Claude Code
-        if: matrix.runner == 'sonnet'
-        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
       - name: Assume the AWS actions and deployment roles
         uses: ./.github/actions/aws-role
         with:
@@ -212,10 +191,8 @@ jobs:
           cat /tmp/alarm-replay/alarm.env >> "$GITHUB_ENV"
 
       - name: Run triage (Nova Pro)
-        if: matrix.runner == 'nova'
         uses: ./.github/actions/run-triage-agent
         with:
-          runner: nova
           model-id: ${{ env.NOVA_MODEL_ID }}
           tools: read_file,grep_repo,list_files,aws_read
           max-turns: '30'
@@ -225,20 +202,6 @@ jobs:
           frozen-results: /tmp/alarm-replay/frozen-results.json
           output-file: /tmp/alarm-replay-result.json
           prompt-file: prompts/alarm-triage.md
-          echo-output: 'false'
-
-      - name: Run triage (Sonnet)
-        if: matrix.runner == 'sonnet'
-        uses: ./.github/actions/run-triage-agent
-        with:
-          runner: claude
-          model-id: ${{ env.SONNET_MODEL_ID }}
-          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
-          allowed-tools: Read
-          max-turns: '20'
-          output-file: /tmp/alarm-replay-result.json
-          prompt-file: /tmp/alarm-replay/prompt-claude.md
-          echo-output: 'false'
 
       # A run that stops early scores 0 on every mark. The step never fails on a low score:
       # the score job applies the bar.

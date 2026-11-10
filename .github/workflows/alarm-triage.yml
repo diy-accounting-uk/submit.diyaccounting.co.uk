@@ -441,7 +441,6 @@ jobs:
         if: steps.role.outputs.configured == 'true' && env.MODE == 'first-pass'
         uses: ./.github/actions/run-triage-agent
         with:
-          runner: nova
           model-id: ${{ env.TRIAGE_MODEL_ID }}
           tools: read_file,grep_repo,list_files,aws_read
           max-turns: '30'
@@ -449,7 +448,6 @@ jobs:
           final-schema: prompts/alarm-triage-answer.json
           input-files: /tmp/evidence.json
           output-file: /tmp/triage.first-pass.json
-          echo-output: 'false'
 
       # Holds for the operator when the first pass is unusable (no result, an error, the turn budget
       # spent) or unsure (it answered "Is it still broken?" with an admission it could not tell).
@@ -497,7 +495,6 @@ jobs:
         if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
         uses: ./.github/actions/run-triage-agent
         with:
-          runner: nova
           model-id: ${{ env.TRIAGE_MODEL_ID }}
           tools: read_file,grep_repo,list_files,aws_read
           max-turns: '30'
@@ -507,7 +504,6 @@ jobs:
             /tmp/evidence.json
             /tmp/escalation-input.json
           output-file: /tmp/triage.second-pass.json
-          echo-output: 'false'
 
       # A held run hands the first-pass result to the quarantine reader, encrypted. A step that
       # reads a job output shows the value in its log header, and this repository's logs are
@@ -554,11 +550,10 @@ jobs:
         id: triage-run
         run: |
           set -o pipefail
-          # A run that stopped early (max-turns, a denied tool, an entitlement error from
+          # A run that stopped early (max-turns, a denied tool, an access error from
           # Bedrock) can still exit 0 with a JSON result that carries no usable answer. Gate on
-          # the content, not just the exit code, so every failure shape - including the AWS
-          # Marketplace entitlement error an environment without the Anthropic model agreement
-          # gets back from Bedrock - fails this step with the reason on record, instead of
+          # the content, not just the exit code, so every failure shape - including an access
+          # error from Bedrock - fails this step with the reason on record, instead of
           # falling through to be posted as a comment.
           #
           # A run that stopped without a complete answer (the turn budget spent, or a success whose
@@ -592,7 +587,7 @@ jobs:
         uses: ./.github/actions/publish-filter
         with:
           input-file: /tmp/triage.json
-          format: claude-json
+          format: json
           environment-name: ${{ env.ENV_NAME }}
           model-id: ${{ steps.select-result.outputs.model-id }}
           workflow-name: ${{ github.workflow }}
@@ -628,12 +623,11 @@ jobs:
           git switch -c "$BRANCH"
           git apply triage-change.patch
           rm triage-change.patch
-          # Unattended-run attribution: Co-Authored-By and Claude-Model are the same trailers a
-          # terminal session writes; Claude-Run replaces Claude-Session because nobody is watching
-          # this run (see CLAUDE.md, "Commit attribution"). printf, not a quoted multi-line
-          # string, so the trailer lines land at column 0 rather than inheriting this script's
-          # indentation.
-          printf 'Alarm triage for #%s: %s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+          # Unattended-run attribution: Agent-Model names the model that wrote the text and
+          # Agent-Run links the run. The commit author is the diya-agent App. printf, not a quoted
+          # multi-line string, so the trailer lines land at column 0 rather than inheriting this
+          # script's indentation.
+          printf 'Alarm triage for #%s: %s\n\nAgent-Model: %s\nAgent-Run: %s' \
             "$ISSUE_NUMBER" "$ALARM_NAME" "$ANSWERING_MODEL_ID" "$RUN_URL" > /tmp/commit-message.txt
           # Commits through the GitHub API with the App's own token, not `git commit` + `git
           # push`, so the commit is the App's own signed, verified identity rather than an
@@ -641,7 +635,7 @@ jobs:
           # this App and should not need one).
           scripts/github-api-commit.sh --repo "${{ github.repository }}" --branch "$BRANCH" \
             --base-sha "$BASE_SHA" --message-file /tmp/commit-message.txt
-          PR_BODY=$(printf 'Draft from the alarm-triage workflow for #%s. Not reviewed by a human. Closes nothing.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+          PR_BODY=$(printf 'Draft from the alarm-triage workflow for #%s. Not reviewed by a human. Closes nothing.\n\nAgent-Model: %s\nAgent-Run: %s' \
             "$ISSUE_NUMBER" "$ANSWERING_MODEL_ID" "$RUN_URL")
           PR_URL=$(gh pr create --draft --base main --head "$BRANCH" \
             --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \

@@ -14,7 +14,7 @@
 
 // scripts/redact-triage-output.mjs
 //
-// Reads the Claude Code JSON output from a headless alarm-triage run, pulls out the final
+// Reads the agent runner JSON output from a headless alarm-triage run, pulls out the final
 // assistant text, and strips shapes that look like customer-identifying data before the
 // workflow posts it as a GitHub issue comment. Writes the redacted Markdown to stdout and
 // one line per redaction (the pattern label only, never the matched value) to
@@ -73,7 +73,7 @@ export function redact(text) {
 }
 
 /**
- * Extracts the final assistant text from a parsed Claude Code `--output-format json` result.
+ * Extracts the final assistant text from a parsed agent runner result.
  * Accepts either the single result object that mode normally prints (a top-level string
  * `result` field) or an array of transcript messages, and in both cases returns the text from
  * the last entry that carries assistant text, never an earlier turn's.
@@ -132,7 +132,7 @@ export function maxTurnsNote(parsed) {
 }
 
 /**
- * Describes a Claude Code run that stopped before producing any assistant text — most often by
+ * Describes an agent run that stopped before producing any assistant text — most often by
  * exhausting `--max-turns`. Returns null when `parsed` is not that shape, so callers fall back to
  * `extractFinalAssistantText`'s own error for a genuine `is_error` failure or malformed input.
  */
@@ -154,7 +154,7 @@ function main() {
 
   const raw = readFileSync(inputPath, "utf8");
 
-  // A plain Markdown file (a PR body, say) carries no Claude Code JSON envelope to unwrap and
+  // A plain Markdown file (a PR body, say) carries no agent JSON envelope to unwrap and
   // no turn structure to judge, so it skips both parsing and extractFinalAssistantText and goes
   // to redact() as-is.
   let text;

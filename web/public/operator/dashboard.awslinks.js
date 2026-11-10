@@ -234,7 +234,7 @@
   function shortModelName(model) {
     return model
       .slice(model.lastIndexOf("/") + 1)
-      .replace(/^eu\.anthropic\./, "")
+      .replace(/^[a-z]{2}\.[a-z]+\./, "")
       .replace(/-v1:0$/, "");
   }
 

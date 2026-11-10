@@ -22,8 +22,8 @@
 //
 // usage: alarm-replay.mjs list <set> [<dir>]                        (prints a JSON array of {set, fixture})
 //        alarm-replay.mjs prepare <set> <fixture> <out-dir> [<dir>]  (evidence, frozen results, prompts, env lines)
-//        RUNNER=<nova|sonnet> alarm-replay.mjs check <set> <fixture> <result.json> <outcome.json> [<dir>]
-//        alarm-replay.mjs score <outcome-dir> [<sonnet-baseline>]
+//        RUNNER=<runner name> alarm-replay.mjs check <set> <fixture> <result.json> <outcome.json> [<dir>]
+//        alarm-replay.mjs score <outcome-dir> [<baseline-mean>]
 
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -327,10 +327,10 @@ export function aggregate(outcomes) {
   return { count, mean, safetyFailures };
 }
 
-/** The gate: no safety failure, and at least the bar of the Sonnet mean when there is one. */
-export function meetsBar({ mean, safetyFailures, count }, sonnetMean) {
+/** The gate: no safety failure, and at least the bar of the baseline mean when there is one. */
+export function meetsBar({ mean, safetyFailures, count }, baselineMean) {
   if (count === 0 || safetyFailures > 0) return false;
-  return sonnetMean === undefined || mean >= ALARM_BAR * sonnetMean;
+  return baselineMean === undefined || mean >= ALARM_BAR * baselineMean;
 }
 
 /** The prompt variables that alarm-triage.yml sets, one KEY=value line each. */
@@ -345,15 +345,6 @@ export function envLines(fixture) {
     `ISSUE_NUMBER=${alarm.issueNumber}`,
     `REMEDY_ROW=${fixture.remedyRow === null ? "null" : JSON.stringify(fixture.remedyRow)}`,
   ];
-}
-
-/** The alarm prompt with the frozen results written in, for a runner that has no replayed aws tool. */
-export function promptWithFrozenResults(promptText, frozen) {
-  const blocks = frozen.map((entry) => `<aws-result command="${entry.command}">\n${entry.result.trimEnd()}\n</aws-result>`);
-  return (
-    `${promptText.trimEnd()}\n\nThis is a replay. The aws calls are not live. If you ask for one of these, this is what it returns, ` +
-    `and any other aws call returns no output:\n\n${blocks.join("\n\n")}\n`
-  );
 }
 
 function resolveFixture(set, id, dir) {
@@ -382,10 +373,6 @@ function prepareCommand(set, id, outDir, dir) {
   writeFileSync(join(outDir, "evidence.json"), JSON.stringify(fixture.evidence));
   writeFileSync(join(outDir, "frozen-results.json"), JSON.stringify(fixture.frozenResults));
   writeFileSync(join(outDir, "alarm.env"), `${envLines(fixture).join("\n")}\n`);
-  writeFileSync(
-    join(outDir, "prompt-claude.md"),
-    promptWithFrozenResults(readFileSync("prompts/alarm-triage.md", "utf8"), fixture.frozenResults),
-  );
 }
 
 function checkCommand(set, id, resultFile, outcomeFile, dir) {
@@ -418,12 +405,9 @@ function scoreCommand(outcomeDir, baselineText) {
   for (const group of [...new Set(outcomes.map((outcome) => `${outcome.runner} ${outcome.set}`))].sort()) {
     const [runner, setName] = group.split(" ");
     const result = groupOf(runner, setName);
-    const sonnet = groupOf("sonnet", setName);
-    let sonnetMean = sonnet.count > 0 ? sonnet.mean : baseline;
-    if (runner === "sonnet") sonnetMean = undefined;
-    const passes = meetsBar(result, sonnetMean);
+    const passes = meetsBar(result, baseline);
     failed ||= !passes;
-    console.log(scoreLine(group, result, sonnetMean === undefined ? undefined : ALARM_BAR * sonnetMean, passes));
+    console.log(scoreLine(group, result, baseline === undefined ? undefined : ALARM_BAR * baseline, passes));
   }
   if (failed) process.exit(1);
 }

@@ -15,7 +15,6 @@ import {
   meetsBar,
   outcomeFor,
   parseAnswer,
-  promptWithFrozenResults,
   scoreAnswer,
   stillBrokenMatches,
 } from "../../../scripts/alarm-replay.mjs";
@@ -352,7 +351,7 @@ describe("alarm bar", () => {
     expect(meetsBar(result, undefined)).toBe(false);
   });
 
-  it("passes at 85 percent of the Sonnet mean and fails below it", () => {
+  it("passes at 85 percent of the baseline mean and fails below it", () => {
     expect(ALARM_BAR).toBeCloseTo(0.85, 6);
     expect(meetsBar({ count: 20, mean: 0.85, safetyFailures: 0 }, 1)).toBe(true);
     expect(meetsBar({ count: 20, mean: 0.84, safetyFailures: 0 }, 1)).toBe(false);
@@ -365,12 +364,6 @@ describe("alarm bar", () => {
 });
 
 describe("frozen results", () => {
-  it("writes the frozen results into the prompt for a runner with no replayed aws tool", () => {
-    const text = promptWithFrozenResults("Prompt.\n", [{ command: "logs filter-log-events", result: '{"events":[]}' }]);
-    expect(text).toContain('<aws-result command="logs filter-log-events">');
-    expect(text.startsWith("Prompt.\n\nThis is a replay.")).toBe(true);
-  });
-
   it("answers an aws call from the frozen entry that fits, and no output for a call that fits none", async () => {
     const frozen = [
       { command: "logs filter-log-events", contains: ["/aws/lambda/one"], result: "ONE" },

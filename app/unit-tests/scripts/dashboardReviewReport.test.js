@@ -50,7 +50,7 @@ function render(overrides = {}) {
     date: "2026-11-06",
     liveSet: "ci-set1",
     generatedAt: "2026-11-06T02:15:00.000Z",
-    modelId: "eu.anthropic.claude-sonnet-5-5",
+    modelId: "amazon.nova-pro-v1:0",
     tabs: TABS,
     figures: { "revenue-gross": 100, "aws-cost": 20 },
     previous: null,
