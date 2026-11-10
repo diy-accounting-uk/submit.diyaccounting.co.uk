@@ -1,17 +1,18 @@
 # PLAN_LANGUAGES
 
-Status: LANG1 in flight on `claude/wren-welsh`. LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3, LANG4 and LANG6 are on `NEXT.md`. Dropped by the operator on 2026-11-10: right-to-left languages (Urdu, Arabic, Panjabi in Shahmukhi) and their layout work, video captions, and in-language keyword research.
+Status: LANG1 in flight on `claude/wren-welsh`. LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3, LANG4 and LANG6 are on `NEXT.md`. Dropped by the operator on 2026-11-10: every language but Welsh; right-to-left languages (Urdu, Arabic, Panjabi in Shahmukhi) and their layout work, video captions, and in-language keyword research.
 
 ## User assertions (verbatim)
 
 - "close this before the 19th with a language switch on the feedback" (operator, 2026-11-10, on HMRC Assist feedback in Welsh)
 - "add a board task to research making all the diy sites multi-lingual with a list of languages we should support to reach communities where english may not be spoken but there are small businesses needing a place to file. include ranked changes in terms of language cover and how much of the site we internationalise and locate marketting oppertunities in those langauges." (operator, 2026-11-10)
+- "I only want to support welsh" (operator, 2026-11-10)
 - "Drop LANG7 LANG8 LANG5 (and any Right-to-left languages)" (operator, 2026-11-10)
 - "Consider all the language stuff part of a new plan PLAN_LANGUAGES.md and use task naming to match. I don't want the HMC Assist approval plan to get caught up in this." (operator, 2026-11-10)
 
 ## Scope
 
-Left-to-right scripts only: Welsh, Polish, Romanian, Panjabi in Gurmukhi, Bengali.
+Welsh only (operator, 2026-11-10).
 
 The DIY Accounting sites in the languages of UK small businesses: submit (`web/public/`), the gateway (`../www.diyaccounting.co.uk/`) and spreadsheets (`../spreadsheets.diyaccounting.co.uk/`). Text that HMRC or Companies House supplies (field names, HMRC Assist messages, error text) is shown as they give it, in English or Welsh.
 
@@ -21,9 +22,9 @@ The DIY Accounting sites in the languages of UK small businesses: submit (`web/p
 |---|---|---|---|
 | LANG1 | HMRC Assist feedback shown in Welsh and English, with a switch, before 2026-11-19 | in flight, `claude/wren-welsh` | NEXT.md |
 | LANG2 | Research into `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` | done, private 7af3f84 | — |
-| LANG3 | Language scaffold: catalogue, build script, `hreflang`, switch | ready | NEXT.md |
-| LANG4 | Tier A copy in cy, pl, ro, pa (Gurmukhi), bn | blocked on LANG3 | NEXT.md |
-| LANG6 | Compliance wording block and test | blocked on LANG3 | NEXT.md |
+| LANG3 | Welsh scaffold: catalogue, `/cy/` pages, `hreflang`, switch | ready | NEXT.md |
+| LANG4 | Tier A copy in Welsh | blocked on LANG3 | NEXT.md |
+| LANG6 | HMRC's Welsh services on the Welsh pages | blocked on LANG3 | NEXT.md |
 
 ## Verification
 
