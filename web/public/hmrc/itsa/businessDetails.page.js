@@ -39,8 +39,7 @@ function hideRequestControls() {
 
 function cancelRequest() {
   sessionStorage.removeItem("pendingBusinessDetailsRequest");
-  sessionStorage.removeItem("hmrcAccessToken");
-  sessionStorage.removeItem("hmrcTokenScope");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
@@ -79,18 +78,18 @@ function initializePage() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) {
-    console.log("OAuth callback handler (accessToken found)");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) {
+    console.log("OAuth callback handler (hmrcGrantId found)");
     continueBusinessDetailsRetrieval();
   } else {
-    console.log("OAuth callback handler (no accessToken found)");
+    console.log("OAuth callback handler (no hmrcGrantId found)");
   }
 }
 
 async function continueBusinessDetailsRetrieval() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingBusinessDetailsRequest") || "null");
 
     if (!pendingRequest) {
@@ -116,7 +115,7 @@ async function continueBusinessDetailsRetrieval() {
     const govClientHeaders = await getGovClientHeaders();
 
     const requestHeaders = {
-      "Authorization": `Bearer ${accessToken}`,
+      "x-mcp-hmrc-grant": hmrcGrantId,
       "Content-Type": "application/json",
       ...govClientHeaders,
     };
@@ -141,8 +140,7 @@ async function continueBusinessDetailsRetrieval() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+        window.hmrcScopeCheck.clearHmrcToken();
         showStatus("Access token expired. Please re-authenticate.", "error");
         showSearchCriteria();
         return;
@@ -164,8 +162,7 @@ async function continueBusinessDetailsRetrieval() {
     showStatus(`Failed to retrieve business details: ${error.message}`, "error");
     showSearchCriteria();
     sessionStorage.removeItem("pendingBusinessDetailsRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
@@ -185,11 +182,11 @@ async function handleFormSubmission(event) {
 
   if (!window.formErrors.requireFields(["nino"])) return;
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken) {
+    if (hmrcGrantId) {
       console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
       if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     }
@@ -237,7 +234,7 @@ async function handleFormSubmission(event) {
       const govClientHeaders = await getGovClientHeaders();
 
       const requestHeaders = {
-        "Authorization": `Bearer ${accessToken}`,
+        "x-mcp-hmrc-grant": hmrcGrantId,
         "Content-Type": "application/json",
         ...govClientHeaders,
       };
@@ -262,8 +259,7 @@ async function handleFormSubmission(event) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          sessionStorage.removeItem("hmrcAccessToken");
-          sessionStorage.removeItem("hmrcTokenScope");
+          window.hmrcScopeCheck.clearHmrcToken();
           showStatus("Access token expired. Please try again.", "error");
           return;
         }

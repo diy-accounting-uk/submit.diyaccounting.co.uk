@@ -67,16 +67,16 @@ function populateEditForm(taxLiabilityAdjustments) {
   document.getElementById("capitalGainsTax").value = carryBackLossesDecrease.capitalGainsTax ?? 0;
 }
 
-async function loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await getTaxLiabilityAdjustments(nino, taxYear, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await getTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
-async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   return await putTaxLiabilityAdjustments(
     adjustmentsDetails,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     runFraudPreventionHeaderValidation,
     testScenario,
@@ -89,7 +89,7 @@ async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPrevent
 async function showEarlierYearFigure() {
   const nino = loadedNino;
   const taxYear = loadedTaxYear;
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const calculationTestScenario = document.getElementById("calculationTestScenario").value || null;
   const button = document.getElementById("showEarlierYearBtn");
   const figureEl = document.getElementById("earlierYearFigure");
@@ -100,7 +100,7 @@ async function showEarlierYearFigure() {
     const govClientHeaders = await getGovClientHeaders();
     const result = await triggerCalculation(
       { nino, taxYear, calculationType: "in-year" },
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       false,
       calculationTestScenario,
@@ -117,7 +117,7 @@ async function showEarlierYearFigure() {
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingAdjustmentsLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingAdjustmentsSaveRequest") || "null");
 
@@ -129,7 +129,7 @@ async function continueAfterOAuth() {
         pendingLoad.taxYear,
         pendingLoad.testScenario,
         pendingLoad.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       loadedNino = pendingLoad.nino;
       loadedTaxYear = pendingLoad.taxYear;
@@ -145,7 +145,7 @@ async function continueAfterOAuth() {
         pendingSave.adjustmentsDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       await showSavedRecord(pendingSave.adjustmentsDetails, saved?.correlationId);
       hideStatus();
@@ -159,8 +159,7 @@ async function continueAfterOAuth() {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
     sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
-    sessionStorage.removeItem("hmrcTokenScope");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -169,16 +168,16 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -194,7 +193,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleLoadFormSubmission(event) {
@@ -209,12 +208,12 @@ async function handleLoadFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingAdjustmentsLoadRequest",
     { nino, taxYear, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Loading tax liability adjustments...", "info");
-        const result = await loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedTaxYear = taxYear;
         populateEditForm(result);
@@ -253,12 +252,12 @@ async function handleSaveClick() {
   await ensureAuthorizedThen(
     "pendingAdjustmentsSaveRequest",
     { adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Saving tax liability adjustments...", "info");
-        const saved = await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const saved = await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord(adjustmentsDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {

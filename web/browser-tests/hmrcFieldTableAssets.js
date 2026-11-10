@@ -109,6 +109,18 @@ export async function servePageScripts(page) {
 
 // The real page script of an ITSA page whose other scripts are stubbed out.
 export async function serveItsaPageScripts(page) {
+  await page.route("**/lib/hmrc-scope-check.js", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.hmrcScopeCheck = window.hmrcScopeCheck || {
+        isTokenSufficient: () => Promise.resolve(!!sessionStorage.getItem("hmrcAccessToken")),
+        getOAuthScopeString: () => Promise.resolve("read:self-assessment"),
+        clearHmrcToken: () => {},
+      };
+      window.hmrcScopeCheck.storedGrantId = window.hmrcScopeCheck.storedGrantId || (() => sessionStorage.getItem("hmrcAccessToken"));`,
+    });
+  });
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
