@@ -342,14 +342,13 @@ test.describe("HMRC Assist check on the VAT return", () => {
     });
   });
 
-  test("retries the acknowledgement until HMRC answers 204 and never blocks the submit button", async ({ page }) => {
+  test("retries the acknowledgement until HMRC answers 204 and keeps it going in the background", async ({ page }) => {
     const { acknowledgeRequests } = await openForm(page, {
       acknowledge: (_request, count) => ({ status: count < 2 ? 503 : 204 }),
     });
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
-    await expect(page.locator("#submitBtn")).toBeEnabled();
     await scrollToLastMessage(page);
 
     await expect.poll(() => acknowledgeRequests.length, { timeout: 8000 }).toBe(2);
@@ -357,12 +356,91 @@ test.describe("HMRC Assist check on the VAT return", () => {
     expect(acknowledgeRequests).toHaveLength(2);
   });
 
-  test("holds the submit button only while the request is in flight", async ({ page }) => {
+  test("holds the submit button and shows the countdown from the moment the check is pressed", async ({ page }) => {
+    await page.clock.install();
+    await openForm(page);
+    await fillBoxes(page);
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistHold")).toBeVisible();
+    await expect(page.locator("#hmrcAssistHoldSeconds")).toHaveText("30s");
+    await expect(page.locator("#hmrcAssistHoldBar")).toHaveAttribute("aria-valuemax", "30");
+    await expect(page.locator("#hmrcAssistHoldBar")).toHaveAttribute("aria-valuenow", "30");
+    await expect(page.locator("#hmrcAssistHoldStop")).toHaveAccessibleName("Stop waiting and enable submit");
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+  });
+
+  test("sits directly below the feedback list and keeps submit held after HMRC's messages arrive, until 0", async ({ page }) => {
+    await page.clock.install();
+    await openForm(page);
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
+    expect(await page.locator("#hmrcAssistFeedback + #hmrcAssistHold").count()).toBe(1);
+
+    await page.clock.runFor(10000);
+    await expect(page.locator("#hmrcAssistHoldSeconds")).toHaveText("20s");
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+    await expect(page.locator("#hmrcAssistHoldBar")).toHaveAttribute("aria-valuenow", "20");
+
+    await page.clock.runFor(19000);
+    await expect(page.locator("#hmrcAssistHoldSeconds")).toHaveText("1s");
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+
+    await page.clock.runFor(1000);
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
+  });
+
+  test("announces the time left no more than every five seconds", async ({ page }) => {
+    await page.clock.install();
+    await openForm(page);
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    const announcement = page.locator("#hmrcAssistHoldAnnouncement");
+    await expect(announcement).toHaveAttribute("aria-live", "polite");
+    await expect(announcement).toHaveText("30 seconds left");
+    await page.clock.runFor(3000);
+    await expect(announcement).toHaveText("30 seconds left");
+    await page.clock.runFor(2000);
+    await expect(announcement).toHaveText("25 seconds left");
+  });
+
+  test("ends the hold at once when the stop button is pressed", async ({ page }) => {
+    await page.clock.install();
+    await openForm(page);
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
+    await page.clock.runFor(4000);
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+
+    await page.locator("#hmrcAssistHoldStop").click();
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
+  });
+
+  test("shows the stop label in Welsh when the Welsh switch is on", async ({ page }) => {
+    await page.clock.install();
+    await page.addInitScript(() => sessionStorage.setItem("hmrcAssistLanguage", "cy"));
+    await openForm(page);
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistHoldStop")).toHaveAccessibleName("Rhoi'r gorau i aros a galluogi cyflwyno");
+    await expect(page.locator("#hmrcAssistHoldStop")).toHaveAttribute("lang", "cy");
+  });
+
+  test("shows unavailable at 0 when HMRC has not answered, and ignores a late answer", async ({ page }) => {
+    await page.clock.install();
     let release;
     const gate = new Promise((resolve) => {
       release = resolve;
     });
-    await openForm(page, {
+    const { acknowledgeRequests } = await openForm(page, {
       report: async (request) => {
         await gate;
         return {
@@ -372,14 +450,33 @@ test.describe("HMRC Assist check on the VAT return", () => {
       },
     });
     await fillBoxes(page);
-    await expect(page.locator("#submitBtn")).toBeEnabled();
-
     await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistStatus")).toContainText("Asking HMRC Assist");
     await expect(page.locator("#submitBtn")).toBeDisabled();
 
+    await page.clock.runFor(30000);
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+    await expect(page.locator("#hmrcAssistStatus")).toContainText("HMRC Assist feedback is unavailable");
+
     release();
+    await settle(page, 300);
+    await expect(page.locator("#hmrcAssistFeedback")).toBeHidden();
+    await expect(page.locator("#hmrcAssistStatus")).toContainText("HMRC Assist feedback is unavailable");
+    expect(acknowledgeRequests).toHaveLength(0);
+  });
+
+  test("clears the bar and restores submit when an edit clears the messages", async ({ page }) => {
+    await page.clock.install();
+    await openForm(page);
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
     await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+
+    await page.locator("#vatDueSales").fill("150.00");
+    await expect(page.locator("#hmrcAssistFeedback")).toBeHidden();
+    await expect(page.locator("#hmrcAssistHold")).toBeHidden();
     await expect(page.locator("#submitBtn")).toBeEnabled();
   });
 
@@ -407,6 +504,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
 
       await expect(page.locator("#hmrcAssistStatus")).toContainText("HMRC Assist feedback is unavailable");
       await expect(page.locator("#hmrcAssistFeedback")).toBeHidden();
+      await expect(page.locator("#hmrcAssistHold")).toBeHidden();
       await expect(page.locator("#submitBtn")).toBeEnabled();
       await expect(page.locator("#hmrcAssistCheckBtn")).toBeEnabled();
       await expect(page.locator("#vatDueSales")).toHaveValue(BOXES.vatDueSales);

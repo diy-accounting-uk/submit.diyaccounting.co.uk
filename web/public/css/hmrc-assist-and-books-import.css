@@ -38,6 +38,64 @@
   outline: 2px solid var(--c-focus);
 }
 
+.hmrc-assist-hold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+.hmrc-assist-hold[hidden] {
+  display: none;
+}
+
+.hmrc-assist-hold-seconds {
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-strong);
+}
+
+.hmrc-assist-hold-bar {
+  flex: 1 1 auto;
+  height: var(--space-3);
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius-card);
+  background: var(--c-brand-tint);
+  overflow: hidden;
+}
+
+.hmrc-assist-hold-fill {
+  height: 100%;
+  background: var(--c-brand);
+  transition: width 1s linear;
+}
+
+.hmrc-assist-hold-stop {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.hmrc-assist-hold-stop:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.hmrc-assist-hold-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hmrc-assist-hold-fill {
+    transition: none;
+  }
+}
+
 input.hmrc-assist-highlight {
   outline: 3px solid var(--c-focus);
   outline-offset: 0;
