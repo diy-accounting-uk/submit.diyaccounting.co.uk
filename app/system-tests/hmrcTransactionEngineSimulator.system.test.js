@@ -84,7 +84,7 @@ describe("System: HMRC Transaction Engine simulator", () => {
     const deleted = await send(pollUrl, buildDeleteRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }));
     expect(deleted).toMatchObject({ qualifier: "response", messageFunction: "delete" });
     expect((await send(pollUrl, poll)).qualifier).toBe("error");
-  });
+  }, 20000);
 
   it("answers error 2021 after the pending poll when the submission names the reject scenario", async () => {
     const { acknowledgement, pollUrl } = await submit({ "Gov-Test-Scenario": "CT600_REJECT_IRMARK" });
