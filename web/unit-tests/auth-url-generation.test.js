@@ -143,7 +143,7 @@ describe("Auth URL Generation", () => {
   it.each([
     ["?provider=COGNITO", "COGNITO"],
     ["?provider=Microsoft", "Microsoft"],
-    ["?provider=SignInWithApple", "SignInWithApple"],
+    ["?provider=SignInWithApple", "Google"],
     ["?provider=Google", "Google"],
     ["?provider=Facebook", "Google"],
     ["?provider=google", "Google"],

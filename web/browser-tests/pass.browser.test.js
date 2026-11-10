@@ -168,7 +168,7 @@ for (const width of WIDTHS) {
       await expect(heading(page)).toHaveText("You have a pass for Resident Pro");
       await expect(page.getByRole("button", { name: "Redeem pass" })).toBeVisible();
       await expect(page.locator("#passAfterAction")).toHaveText(
-        "You sign in with a Google account next. When you come back, Resident Pro is on your account.",
+        "You sign in with a Google or Microsoft account next. When you come back, Resident Pro is on your account.",
       );
       await shot(page, "valid-signed-out", width);
     });
@@ -178,7 +178,7 @@ for (const width of WIDTHS) {
       await open(page, width);
       await expect(heading(page)).toHaveText("You have a pass for Week pass");
       await expect(page.locator("#passMessage")).toContainText("Free VAT filing for 7 days. No card needed.");
-      await expect(page.locator("#passAfterAction")).toContainText("You sign in with a Google account next.");
+      await expect(page.locator("#passAfterAction")).toContainText("You sign in with a Google or Microsoft account next.");
       await expectNoSideScroll(page);
       await shot(page, "week-pass-signed-out", width);
     });
@@ -187,7 +187,7 @@ for (const width of WIDTHS) {
       await serveRealSite(page, { signedIn: false, check: { ...VALID_PRO, emailRestricted: true } });
       await open(page, width);
       await expect(page.locator("#passAfterAction")).toContainText(
-        "Use the Google account for the email address that this pass was sent to.",
+        "Use the Google or Microsoft account for the email address that this pass was sent to.",
       );
       await shot(page, "valid-restricted", width);
     });

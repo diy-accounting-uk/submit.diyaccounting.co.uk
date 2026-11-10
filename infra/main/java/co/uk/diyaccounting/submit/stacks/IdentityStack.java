@@ -11,7 +11,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -32,6 +32,7 @@ import software.amazon.awscdk.services.cognito.MfaSecondFactor;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.OidcAttributeRequestMethod;
 import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttribute;
@@ -43,6 +44,7 @@ import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.cognito.UserPoolOperation;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -69,8 +71,10 @@ public class IdentityStack extends Stack {
     public UserPoolClient userPoolClient;
     public UserPoolClient booksUserPoolClient;
     public UserPoolClient mcpUserPoolClient;
+    public ISecret microsoftClientSecretsManagerSecret;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
-    public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
+    public UserPoolIdentityProviderOidc microsoftIdentityProvider;
+    public final LinkedHashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new LinkedHashMap<>();
     public final UserPoolDomain userPoolDomain;
     public final String userPoolDomainARecordName;
     public final String userPoolDomainAaaaRecordName;
@@ -113,6 +117,10 @@ public class IdentityStack extends Stack {
 
         String googleClientSecretArn();
 
+        String microsoftClientId();
+
+        String microsoftClientSecretArn();
+
         static ImmutableIdentityStackProps.Builder builder() {
             return ImmutableIdentityStackProps.builder();
         }
@@ -149,6 +157,14 @@ public class IdentityStack extends Stack {
                 this, props.resourceNamePrefix() + "-GoogleClientSecret", props.googleClientSecretArn());
 
         var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
+
+        if (props.microsoftClientSecretArn() == null
+                || props.microsoftClientSecretArn().isBlank()) {
+            throw new IllegalArgumentException(
+                    "MICROSOFT_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
+        }
+        this.microsoftClientSecretsManagerSecret = Secret.fromSecretPartialArn(
+                this, props.resourceNamePrefix() + "-MicrosoftClientSecret", props.microsoftClientSecretArn());
 
         // Create Cognito User Pool for authentication
         var standardAttributes = StandardAttributes.builder()
@@ -246,6 +262,39 @@ public class IdentityStack extends Stack {
                 .resources(List.of(props.sharedNames().activity.signInActivityPublishLambdaArn))
                 .build());
 
+        // Pre sign-up trigger: links a second provider's first sign-in to the existing profile that
+        // has the same provider-asserted email, so the person keeps one sub across providers.
+        var preSignUpRelativePath = "app/functions/auth/preSignUp";
+        var preSignUpAssetDir =
+                Paths.get(preSignUpRelativePath).toAbsolutePath().normalize();
+        if (!preSignUpAssetDir.toFile().isDirectory()) {
+            preSignUpAssetDir =
+                    Paths.get("../" + preSignUpRelativePath).toAbsolutePath().normalize();
+        }
+        var preSignUpFunctionName = props.resourceNamePrefix() + "-pre-sign-up";
+        var preSignUpLogGroup = ensureLogGroupWithDependency(
+                this, props.resourceNamePrefix() + "-PreSignUpLogGroup", "/aws/lambda/" + preSignUpFunctionName);
+
+        var preSignUpFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreSignUp")
+                .functionName(preSignUpFunctionName)
+                .runtime(Runtime.NODEJS_24_X)
+                .architecture(Architecture.ARM_64)
+                .handler("index.handler")
+                .code(Code.fromAsset(preSignUpAssetDir.toString()))
+                .timeout(Duration.seconds(5))
+                .memorySize(128)
+                .logGroup(preSignUpLogGroup.logGroup())
+                .build();
+        preSignUpFunction.getNode().addDependency(preSignUpLogGroup.ensureResource());
+        this.userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, preSignUpFunction);
+        // String ARN pattern, as for the Pre token grant above, to avoid the circular dependency.
+        preSignUpFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("cognito-idp:ListUsers", "cognito-idp:AdminLinkProviderForUser"))
+                .resources(List.of(String.format(
+                        "arn:aws:cognito-idp:%s:%s:userpool/*",
+                        props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .build());
+
         // Google IdP
         this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(
                         this, props.resourceNamePrefix() + "-GoogleIdentityProvider")
@@ -255,11 +304,34 @@ public class IdentityStack extends Stack {
                 .scopes(List.of("email", "openid", "profile"))
                 .attributeMapping(AttributeMapping.builder()
                         .email(ProviderAttribute.GOOGLE_EMAIL)
+                        // The Pre sign-up trigger links a Google identity only when Google verified the address.
+                        .emailVerified(ProviderAttribute.GOOGLE_EMAIL_VERIFIED)
                         .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
                         .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
                         .build())
                 .build();
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
+
+        // Microsoft IdP: the consumers tenant, so personal Microsoft accounts sign in. The client
+        // secret stays a CloudFormation dynamic reference to Secrets Manager in the template.
+        this.microsoftIdentityProvider = UserPoolIdentityProviderOidc.Builder.create(
+                        this, props.resourceNamePrefix() + "-MicrosoftIdentityProvider")
+                .userPool(this.userPool)
+                .name("Microsoft")
+                .clientId(props.microsoftClientId())
+                .clientSecret(this.microsoftClientSecretsManagerSecret
+                        .getSecretValue()
+                        .unsafeUnwrap())
+                .issuerUrl("https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0")
+                .scopes(List.of("openid", "profile", "email"))
+                .attributeRequestMethod(OidcAttributeRequestMethod.GET)
+                .attributeMapping(AttributeMapping.builder()
+                        .email(ProviderAttribute.other("email"))
+                        .givenName(ProviderAttribute.other("given_name"))
+                        .familyName(ProviderAttribute.other("family_name"))
+                        .build())
+                .build();
+        this.identityProviders.put(UserPoolClientIdentityProvider.custom("Microsoft"), this.microsoftIdentityProvider);
 
         // User Pool Client
         // Native Cognito login (COGNITO) is NOT included by default to hide the email/password

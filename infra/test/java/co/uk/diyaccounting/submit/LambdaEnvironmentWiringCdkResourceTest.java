@@ -111,6 +111,9 @@ class LambdaEnvironmentWiringCdkResourceTest {
         @SetEnvironmentVariable(
                 key = "GOOGLE_CLIENT_SECRET_ARN",
                 value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:tt-witheight-google-secret"),
+        @SetEnvironmentVariable(
+                key = "MICROSOFT_CLIENT_SECRET_ARN",
+                value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:tt-witheight-microsoft-secret"),
         @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
         @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
         @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),

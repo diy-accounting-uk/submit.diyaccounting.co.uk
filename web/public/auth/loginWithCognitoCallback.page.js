@@ -11,11 +11,73 @@ function checkAuthCallback() {
 
   if (code) {
     console.log("Authentication callback received with code:", code);
+    sessionStorage.removeItem("cognito_link_retry");
     handleAuthCallback(code, state);
   } else if (error || errorDescription) {
     console.error("OAuth error received:", error, errorDescription);
+    if (shouldRetryAfterLink(errorDescription)) {
+      restartSignInAfterLink();
+      return;
+    }
+    sessionStorage.removeItem("cognito_link_retry");
     showStatus(`Authentication error: ${errorDescription || error}`, "error");
   }
+}
+
+// When the Pre sign-up trigger links a second provider to an existing profile, Cognito ends that
+// first sign-in with this error. The same provider's sign-in, started once more, then succeeds.
+const LINKED_PROFILE_ERROR = "already found an entry for username";
+
+function shouldRetryAfterLink(errorDescription) {
+  if (
+    !String(errorDescription || "")
+      .toLowerCase()
+      .includes(LINKED_PROFILE_ERROR)
+  )
+    return false;
+  return !sessionStorage.getItem("cognito_link_retry") && !!sessionStorage.getItem("cognito_identity_provider");
+}
+
+async function restartSignInAfterLink() {
+  const identityProvider = sessionStorage.getItem("cognito_identity_provider");
+  sessionStorage.setItem("cognito_link_retry", "1");
+  showStatus("Linking your sign-in to your existing account...", "info");
+  try {
+    // crypto-utils.js is a module script, so it has run only once the document has loaded.
+    if (document.readyState === "loading") {
+      await new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }));
+    }
+    const state = window.generateRandomState();
+    const nonce = window.generateRandomState();
+    const codeVerifier = window.generateCodeVerifier();
+    sessionStorage.setItem("cognito_oauth_state", state);
+    sessionStorage.setItem("cognito_oauth_nonce", nonce);
+    sessionStorage.setItem("cognito_pkce_verifier", codeVerifier);
+    const codeChallenge = await window.computeCodeChallenge(codeVerifier);
+    const authUrl = await window.authUrlBuilder.buildCognitoAuthUrl(state, nonce, codeChallenge, { identityProvider });
+    try {
+      window.__correlation?.prepareRedirect?.();
+    } catch {}
+    window.location.replace(authUrl);
+  } catch (err) {
+    console.error("Failed to restart sign-in after an account link:", err);
+    showStatus("Sign-in could not be completed. Please try logging in again.", "error");
+  }
+}
+
+// The provider the person chose on the sign-in page. After a link the token's identities list
+// holds every linked provider, and identities[0] is the first one linked, so the token cannot say
+// which one this sign-in used.
+function signedInProvider(idTokenPayload) {
+  const requested = sessionStorage.getItem("cognito_identity_provider");
+  if (requested) return requested === "COGNITO" ? "cognito" : requested;
+  try {
+    const identities = typeof idTokenPayload.identities === "string" ? JSON.parse(idTokenPayload.identities) : idTokenPayload.identities;
+    if (Array.isArray(identities) && identities[0]) return identities[0].providerName || identities[0].providerType || "cognito";
+  } catch {
+    // malformed identities claim: fall back to "cognito"
+  }
+  return "cognito";
 }
 
 function base64UrlDecode(str) {
@@ -102,16 +164,6 @@ async function handleAuthCallback(code, state) {
     const idToken = tokens.idToken || tokens.id_token;
     const refreshToken = tokens.refreshToken || tokens.refresh_token;
 
-    if (accessToken) {
-      localStorage.setItem("cognitoAccessToken", accessToken);
-    }
-    if (idToken) {
-      localStorage.setItem("cognitoIdToken", idToken);
-    }
-    if (refreshToken) {
-      localStorage.setItem("cognitoRefreshToken", refreshToken);
-    }
-
     // Decode ID token to get user info
     if (!idToken) {
       throw new Error("Missing idToken in exchange-token response");
@@ -128,16 +180,28 @@ async function handleAuthCallback(code, state) {
     if (storedNonce) {
       if (!idTokenPayload.nonce || idTokenPayload.nonce !== storedNonce) {
         console.error("OAuth nonce mismatch - possible replay attack", {
+          provider: sessionStorage.getItem("cognito_identity_provider"),
           hasTokenNonce: !!idTokenPayload.nonce,
           hasStoredNonce: !!storedNonce,
         });
-        showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
         sessionStorage.removeItem("cognito_oauth_nonce");
+        showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
         hideLoading();
         return;
       }
       // Clear nonce after successful validation (single use)
       sessionStorage.removeItem("cognito_oauth_nonce");
+    }
+
+    // Tokens are kept only once the nonce has matched.
+    if (accessToken) {
+      localStorage.setItem("cognitoAccessToken", accessToken);
+    }
+    if (idToken) {
+      localStorage.setItem("cognitoIdToken", idToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem("cognitoRefreshToken", refreshToken);
     }
 
     // Handle optional email gracefully
@@ -154,22 +218,11 @@ async function handleAuthCallback(code, state) {
     );
 
     console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
-    // GA4: login event after successful Cognito authentication. method names the
-    // identity provider Cognito recorded (e.g. "Google"), or "cognito" for a native
-    // email/password user -- identities is a JSON string for a federated user, absent
-    // for a native one.
+    // GA4: login event after successful Cognito authentication. method names the identity
+    // provider of this sign-in (e.g. "Google"), or "cognito" for a native email/password user.
+    const loginProvider = signedInProvider(idTokenPayload);
     if (typeof gtag === "function") {
-      let loginMethod = "cognito";
-      try {
-        const identities =
-          typeof idTokenPayload.identities === "string" ? JSON.parse(idTokenPayload.identities) : idTokenPayload.identities;
-        if (Array.isArray(identities) && identities[0] && identities[0].providerName) {
-          loginMethod = identities[0].providerName;
-        }
-      } catch {
-        // malformed identities claim: fall back to "cognito"
-      }
-      gtag("event", "login", { method: loginMethod });
+      gtag("event", "login", { method: loginProvider });
     }
     showStatus("Authenticated successfully. Fetching bundles...", "info");
 
@@ -238,12 +291,7 @@ async function handleAuthCallback(code, state) {
     }
 
     // Store login provider for logout flow (Google logout requires extra redirect)
-    if (isFederatedLogin) {
-      const providerName = idTokenPayload.identities[0].providerName || idTokenPayload.identities[0].providerType;
-      localStorage.setItem("loginProvider", providerName);
-    } else {
-      localStorage.setItem("loginProvider", "cognito");
-    }
+    localStorage.setItem("loginProvider", loginProvider);
 
     // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
     showStatus("Authenticated successfully. Redirecting...", "info");

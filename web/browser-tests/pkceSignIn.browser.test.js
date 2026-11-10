@@ -14,7 +14,14 @@ import path from "node:path";
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
 const COGNITO = "https://auth.example.test";
-const CONTENT_TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".json": "application/json" };
+const CONTENT_TYPES = {
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+};
 const SUBMIT_ENV = `COGNITO_CLIENT_ID=client123\nCOGNITO_BASE_URI=${COGNITO}/\nDIY_SUBMIT_BASE_URL=${SITE}/\n`;
 
 async function serveSite(page) {
@@ -59,6 +66,29 @@ test.describe("PKCE on the Cognito sign-in", () => {
     expect(authorizeUrl.searchParams.get("code_challenge_method")).toBe("S256");
     expect(challenge).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(authorizeUrl.searchParams.get("state")).toBeTruthy();
+  });
+
+  test("the sign-in page shows two enabled provider buttons and the Microsoft button names Microsoft", async ({ page }) => {
+    await serveSite(page);
+    for (const [width, height] of [
+      [1280, 800],
+      [375, 667],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`${SITE}/auth/login.html`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".google-btn, .microsoft-btn")).toHaveCount(2);
+      await expect(page.locator("#loginWithCognito")).toBeEnabled();
+      await expect(page.locator("#loginWithMicrosoft")).toBeEnabled();
+      await expect(page.locator("#loginWithMicrosoft img.provider-logo")).toBeVisible();
+      await expect(page.locator("#providerAccountNote")).toContainText("We receive your email address and name, and nothing else.");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: `target/screenshots/login-providers-${width}.png`, fullPage: true });
+    }
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    await page.click("#loginWithMicrosoft");
+    const authorizeUrl = new URL((await authorizeRequest).url());
+    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
   });
 
   test("the Google button names its provider and a listed ?provider= value replaces it", async ({ page }) => {
@@ -173,6 +203,121 @@ test.describe("PKCE on the Cognito sign-in", () => {
     await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).toContainText("Security validation failed");
     expect(tokenRequested).toBe(false);
+  });
+
+  test("a linked-profile error restarts the same provider's sign-in once, then shows the error", async ({ page }) => {
+    await serveSite(page);
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("test_seeded")) {
+        sessionStorage.setItem("test_seeded", "1");
+        sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+      }
+    });
+    const linkError = "error=invalid_request&error_description=" + encodeURIComponent("Already found an entry for username Microsoft_abc ");
+
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?${linkError}`, { waitUntil: "domcontentloaded" });
+    const authorizeUrl = new URL((await authorizeRequest).url());
+    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
+    expect(authorizeUrl.searchParams.get("code_challenge_method")).toBe("S256");
+    await page.waitForURL((url) => url.href.startsWith(`${COGNITO}/oauth2/authorize`));
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?${linkError}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("body")).toContainText("Already found an entry for username");
+    expect(await page.evaluate(() => sessionStorage.getItem("cognito_link_retry"))).toBeNull();
+  });
+
+  test("the nonce the Microsoft button sends is the one the callback accepts in the ID token", async ({ page }) => {
+    await serveSite(page);
+    await page.route("**/api/v1/cognito/token", async (route) => {
+      const nonce = new URL(authorizeUrlSeen).searchParams.get("nonce");
+      const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com", nonce })).toString("base64url");
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id_token: `h.${payload}.s`, access_token: "a" }),
+      });
+    });
+    let authorizeUrlSeen = "";
+    await page.goto(`${SITE}/auth/login.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#loginWithMicrosoft")).toBeEnabled();
+    const authorizeRequest = page.waitForRequest((request) => request.url().startsWith(`${COGNITO}/oauth2/authorize`));
+    await page.click("#loginWithMicrosoft");
+    authorizeUrlSeen = (await authorizeRequest).url();
+    const authorizeUrl = new URL(authorizeUrlSeen);
+    expect(authorizeUrl.searchParams.get("identity_provider")).toBe("Microsoft");
+    expect(authorizeUrl.searchParams.get("nonce")).toBeTruthy();
+    const returnedState = authorizeUrl.searchParams.get("state");
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=${returnedState}`, { waitUntil: "domcontentloaded" });
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("loginProvider"))).toBe("Microsoft");
+    expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).not.toBeNull();
+  });
+
+  test("an ID token without the sent nonce stores no tokens, shows the error and logs the provider", async ({ page }) => {
+    await serveSite(page);
+    const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com" })).toString("base64url");
+    await page.route("**/api/v1/cognito/token", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id_token: `h.${payload}.s`, access_token: "a" }),
+      });
+    });
+    await page.addInitScript(() => {
+      sessionStorage.setItem("cognito_oauth_state", "state-1");
+      sessionStorage.setItem("cognito_oauth_nonce", "nonce-sent");
+      sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
+      sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
+      sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+    });
+    let authorizeRequested = false;
+    page.on("request", (request) => {
+      if (request.url().startsWith(`${COGNITO}/oauth2/authorize`)) authorizeRequested = true;
+    });
+    const logged = [];
+    page.on("console", (message) => logged.push(message.text()));
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("body")).toContainText("nonce mismatch");
+    expect(await page.evaluate(() => localStorage.getItem("cognitoIdToken"))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem("cognitoAccessToken"))).toBeNull();
+    expect(authorizeRequested).toBe(false);
+    expect(logged.some((text) => text.includes("OAuth nonce mismatch"))).toBe(true);
+    expect(logged.join("\n")).not.toContain("nonce-sent");
+  });
+
+  test("the stored login provider is the one chosen on the sign-in page, not the first linked", async ({ page }) => {
+    await serveSite(page);
+    const payload = Buffer.from(
+      JSON.stringify({
+        sub: "sub-1",
+        email: "person@example.com",
+        identities: [
+          { providerName: "Google", userId: "1" },
+          { providerName: "Microsoft", userId: "2" },
+        ],
+      }),
+    ).toString("base64url");
+    await page.route("**/api/v1/cognito/token", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id_token: `h.${payload}.s`, access_token: "a" }),
+      });
+    });
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("test_seeded")) {
+        sessionStorage.setItem("test_seeded", "1");
+        sessionStorage.setItem("cognito_oauth_state", "state-1");
+        sessionStorage.setItem("cognito_pkce_verifier", "verifier-1");
+        sessionStorage.setItem("cognito_redirect_uri", "https://ci-submit.diyaccounting.co.uk/auth/loginWithCognitoCallback.html");
+        sessionStorage.setItem("cognito_identity_provider", "Microsoft");
+      }
+    });
+
+    await page.goto(`${SITE}/auth/loginWithCognitoCallback.html?code=code-1&state=state-1`, { waitUntil: "domcontentloaded" });
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("loginProvider"))).toBe("Microsoft");
   });
 
   test("the callback makes no token request when the verifier is missing", async ({ page }) => {

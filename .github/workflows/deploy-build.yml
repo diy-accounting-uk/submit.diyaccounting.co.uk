@@ -172,6 +172,7 @@ jobs:
           SECRETS=(
             "$ENV_NAME/submit/user-sub-hash-salt"
             "$ENV_NAME/submit/google/client_secret"
+            "$ENV_NAME/submit/microsoft/client_secret"
             "$ENV_NAME/submit/hmrc/client_secret"
             "$ENV_NAME/submit/hmrc/sandbox_client_secret"
             "$ENV_NAME/submit/companies-house/api_key"

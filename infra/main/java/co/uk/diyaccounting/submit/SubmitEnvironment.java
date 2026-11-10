@@ -72,6 +72,8 @@ public class SubmitEnvironment {
         public String holdingDocRootPath;
         public String googleClientId;
         public String googleClientSecretArn;
+        public String microsoftClientId;
+        public String microsoftClientSecretArn;
         public String securityServicesEnabled;
         public String authCertificateArn;
         public String holdingCertificateArn;
@@ -154,6 +156,10 @@ public class SubmitEnvironment {
         // Load configuration from environment variables not defaulted in the cdk.json
         var googleClientSecretArn = envOr(
                 "GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn, "(from googleClientSecretArn in cdk.json)");
+        var microsoftClientSecretArn = envOr(
+                "MICROSOFT_CLIENT_SECRET_ARN",
+                appProps.microsoftClientSecretArn,
+                "(from microsoftClientSecretArn in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
@@ -534,6 +540,8 @@ public class SubmitEnvironment {
                                         : certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
+                        .microsoftClientId(appProps.microsoftClientId)
+                        .microsoftClientSecretArn(microsoftClientSecretArn)
                         .build());
 
         // Create EmailStack with the SES sender, the request queue and the workers. It reads the

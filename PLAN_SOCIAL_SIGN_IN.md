@@ -178,7 +178,9 @@ The Pre sign-up trigger (`app/functions/auth/preSignUp/index.js`, new) runs on
    Microsoft `consumers`, whose `email` is the account's sign-in address. Otherwise return without linking.
 3. `ListUsers` with filter `email = "<address>"`. Zero matches: return. Two or more: log and
    return, so an ambiguous address never links. One match: `AdminLinkProviderForUser` with
-   destination `ProviderName=Cognito, ProviderAttributeValue=<existing username>` and source
+   destination `ProviderName=Cognito, ProviderAttributeValue=<existing username>` for a native
+   profile, or `ProviderName=<provider>, ProviderAttributeValue=<provider user id>` for a
+   profile a provider created (username `<provider>_<id>`, that provider in `identities`), and source
    `ProviderName=<provider>, ProviderAttributeName=Cognito_Subject, ProviderAttributeValue=<id>`.
 4. Set `response.autoVerifyEmail = true` for a trusted provider.
 
@@ -188,6 +190,19 @@ providers; `identities[0]` is the first linked, so `loginProvider` and the GA4 `
 the provider that signed in from the token's `identities` entry whose `dateCreated` is newest
 or, simpler, from the `identity_provider` the page sent (kept in sessionStorage as
 `cognito_identity_provider`). Step 4 uses the page's value.
+
+The Pre token generation event cannot tell which provider signed in. It carries `userName`,
+which after a link stays the profile's first username (`Google_<id>` for a profile Google
+created), and `request.userAttributes.identities`, a JSON string that lists every linked
+identity. Each entry has `providerName`, `userId`, `primary` and `dateCreated`; `dateCreated` is
+the time of the link, and no field names the provider of this sign-in. `triggerSource` is
+`TokenGeneration_HostedAuth` for every provider. So `signInActivityPublish.js` `extractProvider`
+names the first-linked provider for a linked profile, and SGN7's split by provider counts a
+linked person's sign-ins under that one provider. The page knows the provider of each sign-in;
+the lake gets it only when the page or the token request sends it.
+
+The Google provider maps `email_verified`, because the trigger reads it from
+`request.userAttributes`, which holds only mapped attributes.
 
 IAM for the trigger: `cognito-idp:ListUsers` and `cognito-idp:AdminLinkProviderForUser` on
 `arn:aws:cognito-idp:<region>:<account>:userpool/*`, the string pattern the Pre token trigger

@@ -640,11 +640,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-01 Sign customers in via Cognito
 
 - **Use when:** a page must start, complete or refresh a Cognito hosted-UI login.
-- **Does:** auth-url-builder.js builds the Cognito hosted-UI authorization URL. login.html and the callback pages redirect and complete the exchange. cognitoTokenPost.js exchanges the code or refresh token for tokens. auth-service.js tracks token expiry and refreshes the session. auth-status.js renders logged-in state and sends a logout beacon.
+- **Does:** auth-url-builder.js builds the Cognito hosted-UI authorization URL. login.html and the callback pages redirect and complete the exchange. cognitoTokenPost.js exchanges the code or refresh token for tokens. The Pre sign-up trigger links a second provider's first sign-in to the existing profile with the same provider-asserted email. auth-service.js tracks token expiry and refreshes the session. auth-status.js renders logged-in state and sends a logout beacon.
 - **Run:** `POST /api/v1/cognito/token`; `import { buildCognitoAuthUrl } from "web/public/lib/auth-url-builder.js"`
 - **Entry:** `web/public/lib/auth-url-builder.js:buildCognitoAuthUrl`; `app/functions/auth/cognitoTokenPost.js:ingestHandler`; `web/public/lib/services/auth-service.js`
-- **Files:** web/public/auth/login.html, web/public/auth/loginWithCognitoCallback.html, web/public/auth/loginWithMockCallback.html, web/public/auth/login-mock-addon.js, web/public/auth/signed-out.html, web/public/widgets/auth-status.js, web/public/lib/auth-url-builder.js, web/public/lib/services/auth-service.js, web/public/lib/utils/jwt-utils.js, app/functions/auth/cognitoTokenPost.js, app/functions/auth/preTokenGeneration/index.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IdentityStackTest.java, app/system-tests/cognitoAuth.system.test.js, app/unit-tests/functions/cognitoTokenPost.test.js, app/unit-tests/functions/preTokenGeneration.test.js, behaviour-tests/auth.behaviour.test.js, behaviour-tests/helpers/hosted-ui-navigation.js, behaviour-tests/steps/behaviour-login-steps.js, web/unit-tests/hosted-ui-navigation.test.js, web/unit-tests/auth-url-generation.test.js, web/unit-tests/auth-logout-sign-out.test.js
-- **Keywords:** cognito, login, logout, hosted ui, oauth, token refresh, auth-status, sign in, callback, mfa claim, user pool
+- **Files:** web/public/auth/login.html, web/public/images/microsoft-logo.svg, web/public/auth/loginWithCognitoCallback.html, web/public/auth/loginWithMockCallback.html, web/public/auth/login-mock-addon.js, web/public/auth/signed-out.html, web/public/widgets/auth-status.js, web/public/lib/auth-url-builder.js, web/public/lib/services/auth-service.js, web/public/lib/utils/jwt-utils.js, app/functions/auth/cognitoTokenPost.js, app/functions/auth/preTokenGeneration/index.js, app/functions/auth/preSignUp/index.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IdentityStackTest.java, app/system-tests/cognitoAuth.system.test.js, app/unit-tests/functions/cognitoTokenPost.test.js, app/unit-tests/functions/preTokenGeneration.test.js, app/unit-tests/functions/preSignUp.test.js, web/browser-tests/pkceSignIn.browser.test.js, behaviour-tests/auth.behaviour.test.js, behaviour-tests/helpers/hosted-ui-navigation.js, behaviour-tests/steps/behaviour-login-steps.js, web/unit-tests/hosted-ui-navigation.test.js, web/unit-tests/auth-url-generation.test.js, web/unit-tests/auth-logout-sign-out.test.js
+- **Keywords:** cognito, login, logout, hosted ui, oauth, token refresh, auth-status, sign in, callback, mfa claim, user pool, pre sign-up, account linking
 - **Related:** SITE-02
 
 #### SITE-02 Verify JWTs at the API gateway
@@ -6822,6 +6822,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accessibility statement: [SITE-10](#site-10-serve-general-site-pages)
 - accessibility test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - account link: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
+- account linking: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
@@ -8634,6 +8635,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - practice client: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client)
 - practice clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - practice.html: [BILL-16](#bill-16-manage-practice-clients)
+- pre sign-up: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - pre-deploy: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - pre-login: [BILL-08](#bill-08-check-a-passs-validity)
 - pre-push check: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)

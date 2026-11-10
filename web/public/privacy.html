@@ -28,7 +28,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Privacy policy</h1>
-      <p class="legal-meta">Last updated: 5 November 2026</p>
+      <p class="legal-meta">Last updated: 9 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -66,7 +66,14 @@
 
         <h3>Account and Authentication Data</h3>
         <ul>
-          <li><strong>Cognito user profile</strong>: Email address, name, and unique user identifier (sub) from Google OAuth sign-in</li>
+          <li>
+            <strong>Cognito user profile</strong>: Email address, name, and unique user identifier (sub) from the sign-in provider you
+            choose (Google or Microsoft)
+          </li>
+          <li>
+            <strong>One account per email address</strong>: If you sign in with another provider that confirms the same email address, we
+            link it to your existing account, so you keep one account and the same bundles.
+          </li>
           <li>
             <strong>Authentication tokens</strong>: JWT access, identity, and refresh tokens stored in your browser's localStorage for
             session management
@@ -361,7 +368,8 @@
         <h2>How and when we collect it</h2>
         <ul>
           <li>
-            <strong>Account data</strong>: Collected when you sign in with Google OAuth and stored in AWS Cognito and browser localStorage.
+            <strong>Account data</strong>: Collected when you sign in with Google or Microsoft and stored in AWS Cognito and browser
+            localStorage.
           </li>
           <li>
             <strong>VAT submission data</strong>: Collected when you submit a VAT return; receipts are stored in DynamoDB for 7 years.
@@ -702,6 +710,13 @@
           <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> for details.
         </p>
 
+        <h3>Microsoft (Authentication Provider)</h3>
+        <p>
+          If you sign in with Microsoft, Microsoft Ireland Operations Limited processes your authentication data according to Microsoft's
+          privacy statement. We receive only your name, email address, and a unique identifier from Microsoft. See the
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Microsoft Privacy Statement</a>.
+        </p>
+
         <h3>Stripe (Data Processor)</h3>
         <p>
           We use Stripe to process subscription billing. Stripe acts as a data processor on our behalf. Checkout sends Stripe your email
@@ -870,6 +885,7 @@
               <strong>Google</strong>: Authentication provider (data controller for auth data) and analytics processor (Google Analytics 4,
               consent-based)
             </li>
+            <li><strong>Microsoft</strong>: Authentication provider (data controller for auth data)</li>
           </ul>
 
           <h3>International Transfers</h3>

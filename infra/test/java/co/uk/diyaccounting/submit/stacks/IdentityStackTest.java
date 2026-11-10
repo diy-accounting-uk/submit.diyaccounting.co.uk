@@ -33,6 +33,9 @@ class IdentityStackTest {
     private static final String GOOGLE_CLIENT_SECRET_ARN =
             "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/google-client-secret";
 
+    private static final String MICROSOFT_CLIENT_SECRET_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/microsoft-client-secret";
+
     private static IdentityStack synthIdentityStack(String envName) {
         App app = new App();
         SubmitSharedNames.SubmitSharedNamesProps sharedNamesProps = new SubmitSharedNames.SubmitSharedNamesProps();
@@ -60,6 +63,8 @@ class IdentityStackTest {
                 .certificateArn(CERTIFICATE_ARN)
                 .googleClientId("test-google-client-id")
                 .googleClientSecretArn(GOOGLE_CLIENT_SECRET_ARN)
+                .microsoftClientId("test-microsoft-client-id")
+                .microsoftClientSecretArn(MICROSOFT_CLIENT_SECRET_ARN)
                 .build();
 
         return new IdentityStack(app, "TestIdentityStack", props);
@@ -118,7 +123,49 @@ class IdentityStackTest {
         assertEquals("ENABLED", properties.get("PreventUserExistenceErrors"));
         assertEquals(List.of("code"), properties.get("AllowedOAuthFlows"));
         assertEquals(List.of("email", "openid", "profile"), properties.get("AllowedOAuthScopes"));
-        assertEquals(List.of("Google"), properties.get("SupportedIdentityProviders"));
+        assertEquals(List.of("Google", "Microsoft"), properties.get("SupportedIdentityProviders"));
+    }
+
+    @Test
+    void microsoftProviderUsesTheConsumersIssuerAndAllClientsOfferGoogleThenMicrosoft() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        var clients = template.findResources("AWS::Cognito::UserPoolClient");
+        assertEquals(3, clients.size());
+        clients.values().forEach(resource -> {
+            @SuppressWarnings("unchecked")
+            var clientProperties = (Map<String, Object>) resource.get("Properties");
+            assertEquals(List.of("Google", "Microsoft"), clientProperties.get("SupportedIdentityProviders"));
+        });
+
+        var providers = template.findResources(
+                "AWS::Cognito::UserPoolIdentityProvider", Map.of("Properties", Map.of("ProviderName", "Microsoft")));
+        assertEquals(1, providers.size());
+        @SuppressWarnings("unchecked")
+        var providerProperties =
+                (Map<String, Object>) providers.values().iterator().next().get("Properties");
+        assertEquals("OIDC", providerProperties.get("ProviderType"));
+        @SuppressWarnings("unchecked")
+        var details = (Map<String, Object>) providerProperties.get("ProviderDetails");
+        assertEquals(
+                "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
+                details.get("oidc_issuer"));
+        assertEquals("openid profile email", details.get("authorize_scopes"));
+        assertEquals("GET", details.get("attributes_request_method"));
+        assertEquals("test-microsoft-client-id", details.get("client_id"));
+        @SuppressWarnings("unchecked")
+        var attributeMapping = (Map<String, Object>) providerProperties.get("AttributeMapping");
+        assertEquals("email", attributeMapping.get("email"));
+        assertEquals("given_name", attributeMapping.get("given_name"));
+        assertEquals("family_name", attributeMapping.get("family_name"));
+    }
+
+    @Test
+    void microsoftClientSecretIsASecretsManagerReferenceNotALiteral() {
+        IdentityStack stack = synthIdentityStack("ci");
+        var json = Template.fromStack(stack).toJSON().toString();
+        assertTrue(json.contains("{{resolve:secretsmanager:" + MICROSOFT_CLIENT_SECRET_ARN));
     }
 
     @Test
@@ -429,19 +476,57 @@ class IdentityStackTest {
                 "expected an InvokeFunction grant on " + expectedFunctionArn);
     }
 
-    @SuppressWarnings("unchecked")
+    @Test
+    void preSignUpTriggerHasItsLogGroupAndMayOnlyListUsersAndLinkProviders() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        Match.stringLikeRegexp(".*-pre-sign-up$"),
+                        "LoggingConfig",
+                        Match.objectLike(Map.of("LogGroup", Match.stringLikeRegexp(".*-pre-sign-up$"))))));
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPool",
+                Match.objectLike(Map.of("LambdaConfig", Match.objectLike(Map.of("PreSignUp", Match.anyValue())))));
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolIdentityProvider",
+                Match.objectLike(Map.of(
+                        "ProviderName",
+                        "Google",
+                        "AttributeMapping",
+                        Match.objectLike(Map.of("email_verified", "email_verified")))));
+
+        List<Map<String, Object>> statements = policyStatementsForFunction(template, "-pre-sign-up");
+        Set<Object> actions = new HashSet<>();
+        for (Map<String, Object> statement : statements) {
+            var action = statement.get("Action");
+            if (action instanceof List<?> list) actions.addAll(list);
+            else actions.add(action);
+            assertEquals("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/*", statement.get("Resource"));
+        }
+        assertEquals(Set.of("cognito-idp:ListUsers", "cognito-idp:AdminLinkProviderForUser"), actions);
+    }
+
     private static List<Map<String, Object>> policyStatementsForPreTokenGeneration(Template template) {
+        return policyStatementsForFunction(template, "-pre-token-generation");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> policyStatementsForFunction(Template template, String functionNameSuffix) {
         String roleLogicalId = null;
         for (var entry : template.findResources("AWS::Lambda::Function").entrySet()) {
             var properties = (Map<String, Object>) entry.getValue().get("Properties");
-            if (String.valueOf(properties.get("FunctionName")).endsWith("-pre-token-generation")) {
+            if (String.valueOf(properties.get("FunctionName")).endsWith(functionNameSuffix)) {
                 var role = (Map<String, Object>) properties.get("Role");
                 var getAtt = (List<Object>) role.get("Fn::GetAtt");
                 roleLogicalId = String.valueOf(getAtt.get(0));
                 break;
             }
         }
-        if (roleLogicalId == null) throw new AssertionError("no pre-token-generation Lambda function found");
+        if (roleLogicalId == null) throw new AssertionError("no " + functionNameSuffix + " Lambda function found");
 
         List<Map<String, Object>> statements = new java.util.ArrayList<>();
         for (Map<String, Object> policy :

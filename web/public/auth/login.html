@@ -34,7 +34,9 @@
 
       <div class="form-container auth-panel">
         <h2>Choose how to sign in</h2>
-        <p class="hint" id="pendingPassNote" hidden>Your free pass is waiting. Sign in with a Google account to add it. No card needed.</p>
+        <p class="hint" id="pendingPassNote" hidden>
+          Your free pass is waiting. Sign in with a Google or Microsoft account to add it. No card needed.
+        </p>
 
         <div class="auth-providers">
           <div class="auth-provider">
@@ -43,10 +45,14 @@
             </button>
           </div>
 
-          <p class="hint" id="googleAccountNote">
-            Any Google account works, including one made with your own email address.
-            <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">Make a Google account</a>, then choose "Use my
-            current email address instead".
+          <div class="auth-provider">
+            <button type="button" class="btn auth-btn microsoft-btn" id="loginWithMicrosoft" disabled>
+              <img src="../images/microsoft-logo.svg" alt="" class="provider-logo" /> Sign in with your Microsoft account
+            </button>
+          </div>
+
+          <p class="hint" id="providerAccountNote">
+            Use the account you already have. We receive your email address and name, and nothing else.
           </p>
 
           <!-- Mock auth button injected by login-mock-addon.js in dev environments only -->
