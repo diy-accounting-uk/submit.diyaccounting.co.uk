@@ -1,11 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://submit.diyaccounting.co.uk/</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/index.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/" />
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/index.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/index.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/get-started.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/get-started.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/get-started.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/get-started.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/get-started.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/get-started.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/get-started.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/get-started.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/about.html</loc>

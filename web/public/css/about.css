@@ -70,3 +70,17 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Get started */
+.get-started section {
+  margin-bottom: var(--space-6);
+}
+
+.get-started h2 {
+  margin-top: 0;
+}
+
+.get-started p,
+.get-started li {
+  max-width: var(--measure);
+}

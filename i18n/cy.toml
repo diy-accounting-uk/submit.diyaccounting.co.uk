@@ -1,0 +1,168 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The Welsh text of the pages under web/public/cy/, built by scripts/build-welsh-pages.mjs.
+# [strings."<id>"] holds the Welsh for the English element marked data-i18n="<id>" (or data-i18n-<attr>="<id>").
+# hash is the hash of that English text. When the English changes, the build and npm test list the entry as stale
+# with the new hash: translate the new English, then put the new hash here.
+# Product names (DIY Accounting, Submit, Bundles, Submit VAT) stay in English. Text that HMRC sends back stays as HMRC sends it.
+
+[strings."common.skip-link"]
+hash = "c887f134c26e"
+cy = '''Skip to main content'''
+
+[strings."index.title"]
+hash = "cb3609b4c4dc"
+cy = '''DIY Accounting Submit - VAT Returns for MTD'''
+
+[strings."index.description"]
+hash = "871f948f13b7"
+cy = '''Submit VAT returns to HMRC Making Tax Digital. Secure VAT submission tool for DIY Accounting spreadsheet users. Free guest tier available.'''
+
+[strings."index.heading"]
+hash = "4d0076e6b4c7"
+cy = '''Activities'''
+
+[strings."index.subtitle"]
+hash = "c244775bd79e"
+cy = '''Submit to HMRC and Companies House'''
+
+[strings."index.feedback-label"]
+hash = "6fc1976630fa"
+cy = '''Feedback engagement'''
+
+[strings."index.feedback-button"]
+hash = "09f35caecbad"
+cy = '''I'm willing to share feedback'''
+
+[strings."index.feedback-dismiss"]
+hash = "8f1ff9d42342"
+cy = '''Dismiss feedback banner'''
+
+[strings."index.price"]
+hash = "3b3c849f3275"
+cy = '''VAT returns to HMRC cost £0.99 a month or £9.99 a year. A pass link gives you 3 VAT submissions free for 7 days first.'''
+
+[strings."index.get-started"]
+hash = "de0ca0816695"
+cy = '''<a href="get-started.html">New to Submit? Read how to get started.</a>'''
+
+[strings."index.status"]
+hash = "4506e5b3700f"
+cy = '''<strong>Status of each feature.</strong> Sandbox and preview features file nothing real. <a href="mtd-calendar.html#availability">See the availability table</a>.'''
+
+[strings."index.reviews-label"]
+hash = "b24146719e20"
+cy = '''Reviews and listing'''
+
+[strings."index.reviews"]
+hash = "21d3eb53dde7"
+cy = '''<span class="proof-stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 reviews on Google</a>'''
+
+[strings."index.finder-label"]
+hash = "167fba46f9c4"
+cy = '''HMRC software finder'''
+
+[strings."index.finder"]
+hash = "84609fe4f109"
+cy = '''DIY Accounting Submit is listed on HMRC's official finder for Making Tax Digital VAT software. <a href="https://www.tax.service.gov.uk/making-tax-digital-software" target="_blank" rel="noopener">Search for DIY Accounting</a> on the finder to check for yourself.'''
+
+[strings."get-started.title"]
+hash = "2491af039e03"
+cy = '''Get started - DIY Accounting Submit'''
+
+[strings."get-started.description"]
+hash = "adf20195665f"
+cy = '''How to file your VAT return with HMRC using DIY Accounting Submit: what it does, the price, the free day pass, Income Tax, and where to get help.'''
+
+[strings."get-started.heading"]
+hash = "61e8d44ad423"
+cy = '''Get started'''
+
+[strings."get-started.subtitle"]
+hash = "718cfbd44b2f"
+cy = '''File your VAT return with HMRC'''
+
+[strings."get-started.what-heading"]
+hash = "4404ef66dc30"
+cy = '''What Submit does'''
+
+[strings."get-started.what-1"]
+hash = "71d604d7efc8"
+cy = '''DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital. It is bridging software: you keep your records in a spreadsheet or in other software, then you enter the figures for the nine boxes here and submit them.'''
+
+[strings."get-started.what-2"]
+hash = "3b8d08b8024d"
+cy = '''You can also see your VAT obligations and their due dates, and look at the returns you sent before. When HMRC accepts a return, it sends back a receipt with a Form Bundle Number. Submit also files accounts and confirmation statements with Companies House.'''
+
+[strings."get-started.price-heading"]
+hash = "93c91c851e7a"
+cy = '''Price'''
+
+[strings."get-started.price"]
+hash = "33dbabfeb07c"
+cy = '''VAT returns to HMRC cost £0.99 a month or £9.99 a year. You can cancel at any time.'''
+
+[strings."get-started.pass-heading"]
+hash = "e0e5828b7087"
+cy = '''The free day pass'''
+
+[strings."get-started.pass-1"]
+hash = "ba3d61570026"
+cy = '''You can try Submit free first. On the <a href="bundles.html">Bundles</a> page, request a day pass. It gives you 3 tokens for 24 hours, and each VAT submission uses 1 token. Up to 100 guests can hold a day pass at one time. If the passes are all in use, try again the next day.'''
+
+[strings."get-started.pass-2"]
+hash = "58a69ec5f922"
+cy = '''If someone sends you a pass link, it gives you 3 VAT submissions free for 7 days.'''
+
+[strings."get-started.vat-heading"]
+hash = "3b104c83c820"
+cy = '''How to file your VAT return'''
+
+[strings."get-started.vat-1"]
+hash = "9421da8f03f5"
+cy = '''Log in with your Google or Microsoft account.'''
+
+[strings."get-started.vat-2"]
+hash = "3b2e45310271"
+cy = '''Request a day pass, or subscribe on the Bundles page.'''
+
+[strings."get-started.vat-3"]
+hash = "6e41c0fcee4a"
+cy = '''Choose Submit VAT, then enter your VAT registration number and the dates of the VAT period.'''
+
+[strings."get-started.vat-4"]
+hash = "2efa2e8065ad"
+cy = '''Enter the figures for the boxes. Submit calculates boxes 3 and 5 for you.'''
+
+[strings."get-started.vat-5"]
+hash = "47db8349289e"
+cy = '''Sign in to HMRC with your Government Gateway user ID when Submit asks you to, and give Submit permission to send your returns.'''
+
+[strings."get-started.vat-6"]
+hash = "14e9a9ecf841"
+cy = '''Submit the return. Keep the receipt that HMRC sends back.'''
+
+[strings."get-started.itsa-heading"]
+hash = "31db62e1dc8f"
+cy = '''Income Tax'''
+
+[strings."get-started.itsa-1"]
+hash = "757c5a07ef6a"
+cy = '''Making Tax Digital for Income Tax started on 6 April 2026 for sole traders and landlords with qualifying income over £50,000. It includes qualifying income over £30,000 from 6 April 2027.'''
+
+[strings."get-started.itsa-2"]
+hash = "a99887fc646f"
+cy = '''Our Income Tax service runs in HMRC's sandbox, so it does not file anything real yet. The <a href="mtd-calendar.html#availability">availability table</a> shows the status of each service. Until Income Tax is in production here, use software from <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax" >HMRC's list of compatible software</a >.'''
+
+[strings."get-started.help-heading"]
+hash = "00f1193a0417"
+cy = '''Where to get help'''
+
+[strings."get-started.help-1"]
+hash = "a00d9d5e061b"
+cy = '''Read the <a href="help.html">help and frequently asked questions</a>, the <a href="guide.html">user guide</a> or watch the <a href="videos.html">walkthrough videos</a>. You can email us at <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>.'''
+
+[strings."get-started.help-2"]
+hash = "e8493e1fc280"
+cy = '''For questions about your own tax, contact HMRC.'''
