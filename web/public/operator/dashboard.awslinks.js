@@ -232,7 +232,10 @@
   // The model name a reader recognises: the part after the last slash of an ARN, without the
   // provider prefix and the version suffix.
   function shortModelName(model) {
-    return model.slice(model.lastIndexOf("/") + 1).replace(/-v1:0$/, "");
+    return model
+      .slice(model.lastIndexOf("/") + 1)
+      .replace(/^[a-z]{2}\.[a-z]+\./, "")
+      .replace(/-v1:0$/, "");
   }
 
   function bedrockMeasure(rows, days, models, id, label, field) {

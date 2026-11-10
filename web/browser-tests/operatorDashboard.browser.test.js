@@ -255,7 +255,7 @@ test.describe("Operator Dashboard", () => {
       const card = page.locator("#console-prod-bedrock .chart-card");
       await expect(card).toHaveCount(1);
       await expect(card.locator(".chart-line")).toHaveCount(1);
-      await expect(card.locator(".chart-legend-item")).toHaveText(["claude-haiku-4-5-20251001"]);
+      await expect(card.locator(".chart-legend-item")).toHaveText(["nova-pro"]);
       await expect(card.locator(".chart-readout")).not.toContainText("undefined");
       await expect(card.locator(".chart-empty")).toBeHidden();
       await expect(card.locator(".chart-table-link")).toHaveCount(0);
