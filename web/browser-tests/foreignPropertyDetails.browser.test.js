@@ -53,6 +53,11 @@ window.putForeignPropertyDetails = function(details){
 async function openPage(page) {
   await page.addInitScript(() => {
     sessionStorage.setItem("hmrcAccessToken", "token");
+    window.hmrcScopeCheck = {
+      isTokenSufficient: async () => true,
+      storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+      clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+    };
   });
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") {

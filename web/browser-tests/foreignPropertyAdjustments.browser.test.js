@@ -102,6 +102,11 @@ async function openPage(page, { summary, obligations = [], synthetic = false }) 
   await page.addInitScript(
     ({ synthetic }) => {
       sessionStorage.setItem("hmrcAccessToken", "token");
+      window.hmrcScopeCheck = {
+        isTokenSufficient: async () => true,
+        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+      };
       if (synthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
     },
     { synthetic },

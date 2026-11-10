@@ -59,7 +59,7 @@ function readCriteria() {
 
 // HMRC's cumulative retrieve is not stateful in the sandbox: with no Gov-Test-Scenario it answers
 // not-found. A synthetic account without a chosen scenario sends the named one; a live account sends none.
-async function fetchResult(criteria, accessToken) {
+async function fetchResult(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   if (isCumulativeTaxYear(criteria.taxYear)) {
     const scenario = window.resolveSyntheticTestScenario(
@@ -67,32 +67,32 @@ async function fetchResult(criteria, accessToken) {
       sessionStorage.getItem("hmrcAccount"),
       "FOREIGN_PROPERTY_FULL_EXPENSES",
     );
-    return window.getForeignPropertyPeriod(criteria, accessToken, govClientHeaders, criteria.runFraudPreventionHeaderValidation, scenario);
+    return window.getForeignPropertyPeriod(criteria, hmrcGrantId, govClientHeaders, criteria.runFraudPreventionHeaderValidation, scenario);
   }
   return window.getPropertyPeriods(
     criteria.nino,
     criteria.businessId,
     criteria.taxYear,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
   );
 }
 
-async function runRequest(criteria, accessToken) {
+async function runRequest(criteria, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     showStatus("Retrieving period summaries...", "info");
-    const result = await fetchResult(criteria, accessToken);
+    const result = await fetchResult(criteria, hmrcGrantId);
     if (isCumulativeTaxYear(criteria.taxYear)) displayCurrentTotal(result);
     else displayPeriods(result.periods || []);
     document.getElementById("periodsResults").style.display = "block";
     hideStatus();
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
+      window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus("Access token expired. Please try again.", "error");
     } else if (error.status === 404 && isCumulativeTaxYear(criteria.taxYear)) {
@@ -108,14 +108,14 @@ async function runRequest(criteria, accessToken) {
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
   hideSearchCriteria();
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 async function handleFormSubmission(event) {
@@ -123,13 +123,13 @@ async function handleFormSubmission(event) {
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
   const criteria = readCriteria();
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
   if (scopeSufficient) {
-    await runRequest(criteria, accessToken);
+    await runRequest(criteria, hmrcGrantId);
     return;
   }
-  if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+  if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
   try {
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
@@ -226,7 +226,7 @@ document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", sh
 
 document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
   sessionStorage.removeItem(PENDING_KEY);
-  sessionStorage.removeItem("hmrcAccessToken");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");

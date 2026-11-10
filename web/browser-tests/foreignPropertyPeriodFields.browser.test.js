@@ -85,6 +85,11 @@ async function openPage(page, fileName, { summary = null, synthetic = false } = 
   await page.addInitScript(
     ({ summary, synthetic }) => {
       sessionStorage.setItem("hmrcAccessToken", "token");
+      window.hmrcScopeCheck = {
+        isTokenSufficient: async () => true,
+        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+      };
       if (synthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
       window.__initialSummary = summary;
     },

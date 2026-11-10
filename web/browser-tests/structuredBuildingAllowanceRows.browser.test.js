@@ -25,6 +25,11 @@ async function openAnnualPage(page, fileName, stubs) {
   const url = `http://localhost:3000/hmrc/itsa/${fileName}`;
   await page.addInitScript(() => {
     sessionStorage.setItem("hmrcAccessToken", "token");
+    window.hmrcScopeCheck = {
+      isTokenSufficient: async () => true,
+      storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+      clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+    };
     window.__sent = [];
   });
   await page.route("**/*.js", async (route) => {

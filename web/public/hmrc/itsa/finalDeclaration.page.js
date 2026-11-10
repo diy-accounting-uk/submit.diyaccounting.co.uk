@@ -54,22 +54,22 @@ function updateSubmitEnabled() {
   document.getElementById("submitDeclarationBtn").disabled = !(ticked && isFinaliseType && hasTotal);
 }
 
-async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   return await getCalculation(
     nino,
     taxYear,
     calculationId,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     runFraudPreventionHeaderValidation,
     testScenario,
   );
 }
 
-async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await postFinalDeclaration(declarationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await postFinalDeclaration(declarationDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 const TAX_BREAKDOWN_VALUE_IDS = {
@@ -154,20 +154,20 @@ function displayCalculation(calculation) {
 // and tax year - the absence this page checks for, not an error the customer needs to
 // see. Any other failure is swallowed the same way: a business list is worth showing even
 // if one business's loss position could not be read.
-async function fetchClaims(nino, businessId, taxYear, accessToken) {
+async function fetchClaims(nino, businessId, taxYear, hmrcGrantId) {
   try {
     const govClientHeaders = await getGovClientHeaders();
-    const result = await getLossesAndClaims(nino, businessId, taxYear, accessToken, govClientHeaders, false, null);
+    const result = await getLossesAndClaims(nino, businessId, taxYear, hmrcGrantId, govClientHeaders, false, null);
     return result?.claims || null;
   } catch (error) {
     return null;
   }
 }
 
-async function fetchTaxLiabilityAdjustments(nino, taxYear, accessToken) {
+async function fetchTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId) {
   try {
     const govClientHeaders = await getGovClientHeaders();
-    const result = await getTaxLiabilityAdjustments(nino, taxYear, accessToken, govClientHeaders, false, null);
+    const result = await getTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId, govClientHeaders, false, null);
     return result?.carryBackLossesDecrease ? result : null;
   } catch (error) {
     return null;
@@ -188,7 +188,7 @@ function describeClaims(claims) {
 // HMRC's own inputs, never from a page the customer visited earlier. Against each business
 // it shows what the losses and claims retrieve answered, so a business whose calculation
 // shows a loss with no claim recorded is visible before the tick, not after.
-async function displayBusinessesAndLossPositions(calculation, nino, taxYear, accessToken) {
+async function displayBusinessesAndLossPositions(calculation, nino, taxYear, hmrcGrantId) {
   const container = document.getElementById("businessesList");
   const businesses = (calculation?.inputs?.incomeSources?.businessIncomeSources || []).filter(
     (entry) => entry && typeof entry === "object",
@@ -213,7 +213,7 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
       const profitAndLoss = profitAndLossByBusiness[business.incomeSourceId] || {};
       const hasLoss = Number(profitAndLoss.netLoss || 0) > 0 || Number(profitAndLoss.adjustedIncomeTaxLoss || 0) > 0;
       const checkable = typeof business.incomeSourceId === "string" && business.incomeSourceId !== "";
-      const claims = checkable ? await fetchClaims(nino, business.incomeSourceId, taxYear, accessToken) : null;
+      const claims = checkable ? await fetchClaims(nino, business.incomeSourceId, taxYear, hmrcGrantId) : null;
       return { business, hasLoss, claims, checkable };
     }),
   );
@@ -250,7 +250,7 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
 
   document.getElementById("unclaimedLossWarning").style.display = anyUnclaimedLoss ? "block" : "none";
 
-  const taxLiabilityAdjustments = await fetchTaxLiabilityAdjustments(nino, taxYear, accessToken);
+  const taxLiabilityAdjustments = await fetchTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId);
   document.getElementById("taxLiabilityAdjustmentLine").textContent = taxLiabilityAdjustments
     ? "A tax liability adjustment is recorded for this tax year."
     : "No tax liability adjustment is recorded for this tax year.";
@@ -282,11 +282,11 @@ function showDeclarationCopy(declarationDetails, result) {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -302,7 +302,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleRetrieveFormSubmission(event) {
@@ -319,7 +319,7 @@ async function handleRetrieveFormSubmission(event) {
     "pendingFinalDeclarationRetrieveRequest",
     { nino, taxYear, calculationId, calculationTestScenario, runFraudPreventionHeaderValidation },
     "read:self-assessment",
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
@@ -330,7 +330,7 @@ async function handleRetrieveFormSubmission(event) {
           calculationId,
           calculationTestScenario,
           runFraudPreventionHeaderValidation,
-          accessToken,
+          hmrcGrantId,
         );
         retrievedCalculation = calculation;
         retrievedNino = nino;
@@ -340,7 +340,7 @@ async function handleRetrieveFormSubmission(event) {
         document.getElementById("retrieveForm").style.display = "none";
         document.getElementById("declarationContainer").style.display = "block";
         hideStatus();
-        await displayBusinessesAndLossPositions(calculation, nino, taxYear, accessToken);
+        await displayBusinessesAndLossPositions(calculation, nino, taxYear, hmrcGrantId);
       } catch (error) {
         showStatus(`Failed to retrieve the calculation: ${error.message}`, "error");
       } finally {
@@ -367,12 +367,12 @@ async function handleSubmitDeclaration() {
     "pendingFinalDeclarationSubmitRequest",
     { declarationDetails, testScenario, runFraudPreventionHeaderValidation },
     "write:self-assessment",
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Submitting final declaration...", "info");
-        const result = await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         showDeclarationCopy(declarationDetails, result);
         document.getElementById("declarationContainer").style.display = "none";
         document.getElementById("finalDeclarationResults").style.display = "block";
@@ -402,7 +402,7 @@ async function handleSubmitDeclaration() {
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRetrieve = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationRetrieveRequest") || "null");
     const pendingSubmit = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationSubmitRequest") || "null");
 
@@ -415,7 +415,7 @@ async function continueAfterOAuth() {
         pendingRetrieve.calculationId,
         pendingRetrieve.calculationTestScenario,
         pendingRetrieve.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       retrievedCalculation = calculation;
       retrievedNino = pendingRetrieve.nino;
@@ -425,7 +425,7 @@ async function continueAfterOAuth() {
       document.getElementById("retrieveForm").style.display = "none";
       document.getElementById("declarationContainer").style.display = "block";
       hideStatus();
-      await displayBusinessesAndLossPositions(calculation, pendingRetrieve.nino, pendingRetrieve.taxYear, accessToken);
+      await displayBusinessesAndLossPositions(calculation, pendingRetrieve.nino, pendingRetrieve.taxYear, hmrcGrantId);
       sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     } else if (pendingSubmit) {
       showLoading();
@@ -434,7 +434,7 @@ async function continueAfterOAuth() {
         pendingSubmit.declarationDetails,
         pendingSubmit.testScenario,
         pendingSubmit.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       showDeclarationCopy(pendingSubmit.declarationDetails, result);
       document.getElementById("declarationContainer").style.display = "none";
@@ -456,7 +456,7 @@ async function continueAfterOAuth() {
     }
     sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -466,8 +466,8 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 document.getElementById("itsaFinalDeclarationRetrieveForm").addEventListener("submit", handleRetrieveFormSubmission);

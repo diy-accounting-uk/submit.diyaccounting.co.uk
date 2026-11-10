@@ -62,6 +62,11 @@ async function openPage(page, { annual = null, synthetic = false } = {}) {
   await page.addInitScript(
     ({ annual, synthetic }) => {
       sessionStorage.setItem("hmrcAccessToken", "token");
+      window.hmrcScopeCheck = {
+        isTokenSufficient: async () => true,
+        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+      };
       if (synthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
       window.__initialAnnual = annual;
     },

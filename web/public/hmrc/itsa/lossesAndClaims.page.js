@@ -176,27 +176,27 @@ function populateEditForm(lossesAndClaims) {
   updateCarryBackVisibility();
 }
 
-async function loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   return await getLossesAndClaims(
     nino,
     businessId,
     taxYear,
-    accessToken,
+    hmrcGrantId,
     govClientHeaders,
     runFraudPreventionHeaderValidation,
     testScenario,
   );
 }
 
-async function saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+async function saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await putLossesAndClaims(lossesDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await putLossesAndClaims(lossesDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
 async function continueAfterOAuth() {
   try {
-    const accessToken = sessionStorage.getItem("hmrcAccessToken");
+    const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingLossesLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingLossesSaveRequest") || "null");
 
@@ -209,7 +209,7 @@ async function continueAfterOAuth() {
         pendingLoad.taxYear,
         pendingLoad.testScenario,
         pendingLoad.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       loadedNino = pendingLoad.nino;
       loadedBusinessId = pendingLoad.businessId;
@@ -227,7 +227,7 @@ async function continueAfterOAuth() {
         pendingSave.lossesDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
-        accessToken,
+        hmrcGrantId,
       );
       await showSavedRecord(pendingSave.lossesDetails, saved?.correlationId);
       hideStatus();
@@ -241,7 +241,7 @@ async function continueAfterOAuth() {
     showStatus(`Failed: ${error.message}`, "error");
     sessionStorage.removeItem("pendingLossesLoadRequest");
     sessionStorage.removeItem("pendingLossesSaveRequest");
-    sessionStorage.removeItem("hmrcAccessToken");
+    window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
@@ -251,16 +251,16 @@ async function continueAfterOAuth() {
 }
 
 function handleOAuthCallback() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  if (accessToken) continueAfterOAuth();
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  if (hmrcGrantId) continueAfterOAuth();
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -277,7 +277,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     window.location.href = authResponseUrl;
     return;
   }
-  await run(accessToken);
+  await run(hmrcGrantId);
 }
 
 async function handleLoadFormSubmission(event) {
@@ -294,12 +294,12 @@ async function handleLoadFormSubmission(event) {
   await ensureAuthorizedThen(
     "pendingLossesLoadRequest",
     { nino, businessId, taxYear, typeOfBusiness, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Loading losses and claims...", "info");
-        const result = await loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedBusinessId = businessId;
         loadedTaxYear = taxYear;
@@ -345,12 +345,12 @@ async function handleSaveClick() {
   await ensureAuthorizedThen(
     "pendingLossesSaveRequest",
     { lossesDetails, testScenario, runFraudPreventionHeaderValidation },
-    async (accessToken) => {
+    async (hmrcGrantId) => {
       try {
         showLoading();
         hideStatus();
         showStatus("Saving losses and claims...", "info");
-        const saved = await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const saved = await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord(lossesDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {

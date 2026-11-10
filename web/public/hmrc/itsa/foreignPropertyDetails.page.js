@@ -139,7 +139,7 @@ function openPropertyForm(property) {
   document.getElementById("propertyFormTitle").focus();
 }
 
-async function loadProperties(criteria, accessToken) {
+async function loadProperties(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   // HMRC answers 404 when the business holds no property yet; the list is then empty and the add button is the way on.
   const result = await window
@@ -147,7 +147,7 @@ async function loadProperties(criteria, accessToken) {
       criteria.nino,
       criteria.businessId,
       criteria.taxYear,
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       criteria.runFraudPreventionHeaderValidation,
       criteria.testScenario,
@@ -162,13 +162,13 @@ async function loadProperties(criteria, accessToken) {
   closePropertyForm();
 }
 
-async function saveProperty(request, accessToken) {
+async function saveProperty(request, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const { criteria, property } = request;
   if (request.propertyId) {
     await window.putForeignPropertyDetails(
       { nino: criteria.nino, taxYear: criteria.taxYear, propertyId: request.propertyId, ...property },
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       criteria.runFraudPreventionHeaderValidation,
       criteria.testScenario,
@@ -176,26 +176,26 @@ async function saveProperty(request, accessToken) {
   } else {
     await window.postForeignPropertyDetails(
       { nino: criteria.nino, businessId: criteria.businessId, taxYear: criteria.taxYear, ...property },
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       criteria.runFraudPreventionHeaderValidation,
       criteria.testScenario,
     );
   }
-  await loadProperties(criteria, accessToken);
+  await loadProperties(criteria, hmrcGrantId);
 }
 
-async function runRequest(request, accessToken) {
+async function runRequest(request, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     if (request.action === "save") {
       showStatus("Saving the property...", "info");
-      await saveProperty(request, accessToken);
+      await saveProperty(request, hmrcGrantId);
       showStatus("Property saved.", "success");
     } else {
       showStatus("Loading your foreign properties...", "info");
-      await loadProperties(request.criteria, accessToken);
+      await loadProperties(request.criteria, hmrcGrantId);
       hideStatus();
     }
   } catch (error) {
@@ -206,11 +206,11 @@ async function runRequest(request, accessToken) {
 }
 
 async function ensureAuthorizedThen(request) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
     const state = generateRandomState();
@@ -226,17 +226,17 @@ async function ensureAuthorizedThen(request) {
     window.location.href = authResponseUrl;
     return;
   }
-  await runRequest(request, accessToken);
+  await runRequest(request, hmrcGrantId);
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 async function handleLoadSubmission(event) {

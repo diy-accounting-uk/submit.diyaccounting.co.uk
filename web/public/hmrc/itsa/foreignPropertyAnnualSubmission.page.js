@@ -273,7 +273,7 @@ function applySubmission(submission, mode) {
   return unknown;
 }
 
-async function loadAnnual(criteria, accessToken) {
+async function loadAnnual(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const mode = mountEntries(criteria.taxYear);
   loaded = { nino: criteria.nino, businessId: criteria.businessId, taxYear: criteria.taxYear };
@@ -283,7 +283,7 @@ async function loadAnnual(criteria, accessToken) {
       criteria.nino,
       criteria.businessId,
       criteria.taxYear,
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       criteria.runFraudPreventionHeaderValidation,
       null,
@@ -306,7 +306,7 @@ async function loadAnnual(criteria, accessToken) {
       criteria.nino,
       criteria.businessId,
       criteria.taxYear,
-      accessToken,
+      hmrcGrantId,
       govClientHeaders,
       criteria.runFraudPreventionHeaderValidation,
       scenario,
@@ -355,12 +355,12 @@ async function showSavedRecord(annualDetails, names, correlationId) {
   document.getElementById("annualSubmissionResults").style.display = "block";
 }
 
-async function saveAnnual(request, accessToken) {
+async function saveAnnual(request, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const { annualDetails, names, runFraudPreventionHeaderValidation } = request;
   // The scenario on the load form exists for the retrieve, whose sandbox default is not-found.
   // Create and amend does not accept those values, so a save never forwards it.
-  const saved = await window.putForeignPropertyAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation);
+  const saved = await window.putForeignPropertyAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation);
   await showSavedRecord(annualDetails, names, saved?.correlationId);
 }
 
@@ -387,22 +387,22 @@ function readCriteria() {
   };
 }
 
-async function runRequest(request, accessToken) {
+async function runRequest(request, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     if (request.action === "load") {
       showStatus("Loading annual submission...", "info");
-      await loadAnnual(request.criteria, accessToken);
+      await loadAnnual(request.criteria, hmrcGrantId);
       hideStatus();
     } else {
       showStatus("Saving annual submission...", "info");
-      await saveAnnual(request, accessToken);
+      await saveAnnual(request, hmrcGrantId);
       hideStatus();
     }
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
+      window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus("Access token expired. Please try again.", "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
@@ -420,11 +420,11 @@ async function runRequest(request, accessToken) {
 }
 
 async function ensureAuthorizedThen(request) {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   if (!scopeSufficient) {
-    if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+    if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
       showStatus("Initiating HMRC authentication...", "info");
@@ -448,18 +448,18 @@ async function ensureAuthorizedThen(request) {
     }
     return;
   }
-  await runRequest(request, accessToken);
+  await runRequest(request, hmrcGrantId);
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
   if (pending.action === "load") document.getElementById("taxYear").value = pending.criteria.taxYear;
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 async function handleLoadSubmission(event) {

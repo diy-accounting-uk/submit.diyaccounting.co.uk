@@ -414,6 +414,11 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await page.addInitScript(() => {
       sessionStorage.setItem("showDeveloperOptions", "true");
       sessionStorage.setItem("hmrcAccessToken", "test-token");
+      window.hmrcScopeCheck = {
+        isTokenSufficient: async () => true,
+        storedGrantId: () => sessionStorage.getItem("hmrcAccessToken"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcAccessToken"),
+      };
     });
     await loadPage(page);
 

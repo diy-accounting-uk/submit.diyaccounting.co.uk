@@ -68,14 +68,14 @@ function readCriteria() {
 // Neither the dated nor the cumulative retrieve is stateful in the sandbox: both answer not-found
 // with no Gov-Test-Scenario. A synthetic account without a chosen scenario sends the named one for
 // the tax year's model; a live account sends none.
-async function fetchPeriod(criteria, accessToken) {
+async function fetchPeriod(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const scenario = window.resolveSyntheticTestScenario(
     criteria.testScenario,
     sessionStorage.getItem("hmrcAccount"),
     isCumulativeTaxYear(criteria.taxYear) ? "FOREIGN_PROPERTY_FULL_EXPENSES" : "FOREIGN_PROPERTY",
   );
-  return window.getForeignPropertyPeriod(criteria, accessToken, govClientHeaders, criteria.runFraudPreventionHeaderValidation, scenario);
+  return window.getForeignPropertyPeriod(criteria, hmrcGrantId, govClientHeaders, criteria.runFraudPreventionHeaderValidation, scenario);
 }
 
 async function displayPeriod(period, query = {}) {
@@ -96,18 +96,18 @@ async function displayPeriod(period, query = {}) {
   );
 }
 
-async function runRequest(criteria, accessToken) {
+async function runRequest(criteria, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
     showStatus("Retrieving period summary...", "info");
-    const result = await fetchPeriod(criteria, accessToken);
+    const result = await fetchPeriod(criteria, hmrcGrantId);
     await displayPeriod(result, criteria);
     document.getElementById("periodViewResults").style.display = "block";
     hideStatus();
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem("hmrcAccessToken");
+      window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus("Access token expired. Please try again.", "error");
     } else {
@@ -120,14 +120,14 @@ async function runRequest(criteria, accessToken) {
 }
 
 async function continueAfterOAuth() {
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
-  if (!accessToken || !pending) return;
+  if (!hmrcGrantId || !pending) return;
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
   hideSearchCriteria();
-  await runRequest(pending, accessToken);
+  await runRequest(pending, hmrcGrantId);
 }
 
 async function handleFormSubmission(event) {
@@ -136,13 +136,13 @@ async function handleFormSubmission(event) {
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"].concat(cumulative ? [] : ["submissionId"]))) return;
   const criteria = readCriteria();
 
-  const accessToken = sessionStorage.getItem("hmrcAccessToken");
-  const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+  const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
+  const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
   if (scopeSufficient) {
-    await runRequest(criteria, accessToken);
+    await runRequest(criteria, hmrcGrantId);
     return;
   }
-  if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+  if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
   try {
     showLoading();
     showStatus("Initiating HMRC authentication...", "info");
@@ -170,7 +170,7 @@ document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", sh
 
 document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
   sessionStorage.removeItem(PENDING_KEY);
-  sessionStorage.removeItem("hmrcAccessToken");
+  window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
   sessionStorage.removeItem("hmrcAccount");
