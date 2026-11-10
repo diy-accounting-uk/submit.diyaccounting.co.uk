@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN_LANGUAGES
 
 Status: LANG1 in flight on `claude/wren-welsh`. LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3, LANG4 and LANG6 are on `NEXT.md`. Dropped by the operator on 2026-11-10: every language but Welsh; right-to-left languages (Urdu, Arabic, Panjabi in Shahmukhi) and their layout work, video captions, and in-language keyword research.
