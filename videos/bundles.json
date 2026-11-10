@@ -202,12 +202,9 @@
           "label": "Loading current bundles"
         },
         {
-          "action": "scroll",
-          "target": "#currentBundlesSection"
-        },
-        {
           "action": "point",
           "target": "#currentBundles",
+          "scrollTo": "#currentBundlesSection",
           "caption": "The bundle from the pass is now in your current bundles.",
           "headline": "Your current bundles",
           "keyWord": "current",
