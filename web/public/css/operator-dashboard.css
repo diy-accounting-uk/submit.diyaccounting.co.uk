@@ -89,6 +89,10 @@ table.observations th {
     overflow-wrap: anywhere;
   }
 
+  :is(.header-checks-table, .integrations-table) :is(.integrations-check-row, .integrations-call-row) td:is(:nth-child(n)) {
+    white-space: normal;
+  }
+
   :is(.integrations-check-row, .integrations-call-row, .integrations-summary-row) td::before {
     content: attr(data-label);
     display: block;
