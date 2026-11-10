@@ -407,6 +407,8 @@ async function renderDynamicActivities() {
     dynamicContainer.replaceChildren(
       messageParagraph("activity-message activity-message--error", "Error loading activities. Please refresh the page."),
     );
+  } finally {
+    dynamicContainer.classList.remove("reserve-viewport-height");
   }
 }
 
