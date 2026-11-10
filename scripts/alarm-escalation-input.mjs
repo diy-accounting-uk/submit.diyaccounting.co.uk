@@ -4,7 +4,7 @@
 
 // scripts/alarm-escalation-input.mjs
 //
-// Writes the only input the Sonnet escalation reads about the first pass. The first-pass
+// Writes the only input the escalation reads about the first pass. The first-pass
 // result is untrusted (the agent read log lines that outside traffic can write), so the
 // escalation never sees it. It sees the quarantine reader's checked fields from the private
 // mirror issue, and the operator's comments after the reader's comment.

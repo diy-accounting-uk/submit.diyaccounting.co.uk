@@ -647,7 +647,7 @@ class SubmitEnvironmentCdkResourceTest {
 
     /**
      * Asserts the quarantine reader role exists, is assumed by the GitHub Actions role, and holds
-     * exactly three Allow statements: invoke on the two Haiku ARNs, apply on the guardrail, and read
+     * exactly three Allow statements: invoke on the Nova Pro model, apply on the guardrail, and read
      * on three named parameters. No statement names a {@code *} resource and no Deny is needed
      * because nothing else is allowed.
      */
@@ -721,8 +721,8 @@ class SubmitEnvironmentCdkResourceTest {
     /**
      * Asserts the dashboard review role exists with six statements: five Allow statements and one
      * Deny of table scans. Every Allow names a resource, the held passes query carries the
-     * LeadingKeys condition, and the model statement names the Sonnet 5.5 profile and its seven
-     * foundation model ARNs.
+     * LeadingKeys condition, and the model statement names the Nova Pro
+     * model.
      */
     @SuppressWarnings("unchecked")
     private static void assertDashboardReviewResources(Template observability) {

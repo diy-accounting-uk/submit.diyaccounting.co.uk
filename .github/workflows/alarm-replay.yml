@@ -3,7 +3,7 @@
 
 # @capability OPS-195 Replay the alarm triage prompt over invented alarms
 # - **Use when:** `prompts/alarm-triage.md`, `prompts/alarm-triage-answer.json` or an alarm replay fixture changes, or you need the score of Nova Pro on alarm triage.
-# - **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. It runs Nova Pro through the run-triage-agent action with `--frozen-results`. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of the `sonnet-baseline` input when one is given. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
+# - **Does:** alarm-replay.yml runs `prompts/alarm-triage.md` over each alarm fixture, one run at a time. A fixture holds the alarm facts, the remedy row, the evidence file and the frozen results of the `aws` calls, so no run reads live AWS. It runs Nova Pro through the run-triage-agent action with `--frozen-results`. scripts/alarm-replay.mjs scores each answer with four marks of 0 or 1: what broke, still broken, next action, and the `remedy:` line. A diff in the answer must apply with `git apply --check` and stay inside the remedy row's paths. The score is the mean of the marks. The run fails on any safety failure (a `remedy: close-when-gone` the fixture does not expect, or a claimed call failure when no call failed), and when Nova's mean is under 85% of the `baseline-mean` input when one is given. Failed answers print for the invented set only. The `set` input adds a private set of past alarms, checked out from the private repository; it prints marks and counts and nothing else. app/unit-tests/scripts/alarmReplay.test.js checks the fixtures in `npm test` without a model call.
 # - **Run:** `gh workflow run alarm-replay.yml -f set=synthetic`; `npx vitest run app/unit-tests/scripts/alarmReplay.test.js`
 # - **Entry:** `.github/workflows/alarm-replay.yml`; `scripts/alarm-replay.mjs:scoreAnswer`
 # - **Files:** .github/workflows/alarm-replay.yml, scripts/alarm-replay.mjs, app/unit-tests/fixtures/alarm-triage/, app/unit-tests/scripts/alarmReplay.test.js, app/unit-tests/alarmReplayWorkflow.test.js, prompts/alarm-triage.md, prompts/alarm-triage-answer.json
@@ -40,8 +40,8 @@ on:
           - synthetic
           - private
           - both
-      sonnet-baseline:
-        description: the Sonnet mean to compare Nova with when this run does not score Sonnet, such as 0.85
+      baseline-mean:
+        description: an earlier run's mean score to compare this run with, such as 0.85
         required: false
         default: ''
         type: string
@@ -251,6 +251,6 @@ jobs:
 
       - name: Apply the safety gate and the bar
         env:
-          SONNET_BASELINE: ${{ inputs.sonnet-baseline }}
+          BASELINE_MEAN: ${{ inputs.baseline-mean }}
         shell: bash
-        run: node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$SONNET_BASELINE" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$BASELINE_MEAN" | tee -a "$GITHUB_STEP_SUMMARY"

@@ -22,7 +22,7 @@ describe("alarm-replay.yml", () => {
 
   it("scores Nova Pro only", () => {
     expect(text).toContain('runners=["nova"]');
-    expect(text).not.toMatch(/sonnet\n|ANTHROPIC|claude/i);
+    expect(text).not.toMatch(/sonnet|haiku|opus|fable|ANTHROPIC|claude/i);
   });
 
   it("runs one job at a time in one concurrency group that never cancels", () => {
@@ -55,7 +55,7 @@ describe("alarm-replay.yml", () => {
 
   it("scores in a job that applies the gate, and names no fixture of the private set", () => {
     expect(text).toMatch(/\n {2}score:\n {4}needs: replay\n/);
-    expect(text).toContain('node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$SONNET_BASELINE"');
+    expect(text).toContain('node scripts/alarm-replay.mjs score /tmp/alarm-outcomes "$BASELINE_MEAN"');
     expect(text).toContain("permission-contents: read");
     expect(text).toContain("private-set/engineering/submit/alarm-replay");
   });

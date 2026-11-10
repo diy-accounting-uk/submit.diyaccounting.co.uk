@@ -204,16 +204,9 @@ public class ObservabilityUE1Stack extends Stack {
         // notification to the same topic, so the operator still hears about a bad day before the
         // month-level enforcement would trip.
         //
-        // Both budgets filter on the BillingEntity dimension, not Service. AWS bills the Bedrock
-        // models the triage role invokes through AWS Marketplace, each under its own product name
-        // ("Claude Sonnet 4.5 (Amazon Bedrock Edition)", "Claude Haiku 4.5 (Amazon Bedrock
-        // Edition)", read from Cost Explorer on 2026-09-10). A Service filter naming today's
-        // models would go blind the next time a model is pinned, the same failure this replaces:
-        // both live budgets read $0.00 actual against a "Service": ["Amazon Bedrock"] filter while
-        // Cost Explorer showed $0.199 of real model spend that day, because none of it bills under
-        // the plain "Amazon Bedrock" service. BillingEntity: ["AWS Marketplace"] catches every
-        // Marketplace-billed model without listing one, and this account carries no other
-        // Marketplace purchase to dilute it.
+        // Both budgets filter on Service: ["Amazon Bedrock"]. The Nova models the triage and
+        // review roles invoke are first-party and bill under that service (Cost Explorer,
+        // 2026-11-03 to 2026-11-10: USD 2.19 under "Amazon Bedrock", none under AWS Marketplace).
         String bedrockMonthlyBudgetName = props.envName() + "-env-bedrock-monthly";
 
         CfnBudget.Builder.create(this, props.resourceNamePrefix() + "-BedrockMonthlyBudget")
@@ -225,7 +218,7 @@ public class ObservabilityUE1Stack extends Stack {
                                 .amount(150)
                                 .unit("USD")
                                 .build())
-                        .costFilters(Map.of("BillingEntity", List.of("AWS Marketplace")))
+                        .costFilters(Map.of("Service", List.of("Amazon Bedrock")))
                         .build())
                 .build();
 
@@ -265,7 +258,7 @@ public class ObservabilityUE1Stack extends Stack {
                                 .amount(5)
                                 .unit("USD")
                                 .build())
-                        .costFilters(Map.of("BillingEntity", List.of("AWS Marketplace")))
+                        .costFilters(Map.of("Service", List.of("Amazon Bedrock")))
                         .build())
                 .notificationsWithSubscribers(List.of(CfnBudget.NotificationWithSubscribersProperty.builder()
                         .notification(CfnBudget.NotificationProperty.builder()
