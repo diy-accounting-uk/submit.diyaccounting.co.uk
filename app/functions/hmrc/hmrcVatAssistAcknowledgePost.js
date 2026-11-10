@@ -10,6 +10,7 @@ import { createAssistHandlers, postHmrcAssist, hmrcBaseUriFor } from "../../lib/
 import { acknowledgeReceipt } from "../../lib/hmrcAssistReceipt.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
+const PRESENTED_LANGUAGES = ["en", "cy"];
 const isoUtcSeconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const isoUtcMillis = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3}Z$/;
 
@@ -18,7 +19,7 @@ function isValidIsoUtcDateTime(value) {
 }
 
 function validateBody(body, errorMessages) {
-  const { vrn, reportId, correlationId, receiptId, presentedDateTime } = body;
+  const { vrn, reportId, correlationId, receiptId, presentedDateTime, presentedLanguage } = body;
   if (!vrn) errorMessages.push("Missing vrn parameter from body");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
   if (!reportId) errorMessages.push("Missing reportId parameter from body");
@@ -28,17 +29,20 @@ function validateBody(body, errorMessages) {
   if (presentedDateTime && !isValidIsoUtcDateTime(presentedDateTime)) {
     errorMessages.push("Invalid presentedDateTime format - must be an ISO 8601 UTC date and time");
   }
-  return { vrn, reportId, correlationId, receiptId, presentedDateTime };
+  if (presentedLanguage !== undefined && !PRESENTED_LANGUAGES.includes(presentedLanguage)) {
+    errorMessages.push("Invalid presentedLanguage - must be en or cy");
+  }
+  return { vrn, reportId, correlationId, receiptId, presentedDateTime, presentedLanguage };
 }
 
 async function call(params, requestContext) {
-  const { vrn, reportId, correlationId, receiptId, presentedDateTime } = params;
+  const { vrn, reportId, correlationId, receiptId, presentedDateTime, presentedLanguage } = params;
   const url = vatAssist.acknowledgeUrl(hmrcBaseUriFor(requestContext.hmrcAccount), { vrn, reportId, correlationId, presentedDateTime });
   const { hmrcResponse, hmrcResponseBody } = await postHmrcAssist({ url, body: undefined, acceptVersion: "1.0", context: requestContext });
 
   if (!hmrcResponse.ok) return { hmrcResponse, hmrcResponseBody, data: null };
 
-  await acknowledgeReceipt(requestContext.userSub, receiptId, requestContext.hmrcAccount === "synthetic");
+  await acknowledgeReceipt(requestContext.userSub, receiptId, requestContext.hmrcAccount === "synthetic", presentedLanguage);
   await publishActivityEvent({
     event: "vat-assist-report-acknowledged",
     summary: "VAT Assist report acknowledged",

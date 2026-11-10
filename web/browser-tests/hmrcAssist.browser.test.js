@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { vatMultipleMessages } from "@app/http-simulator/scenarios/assist.js";
+import { vatMultipleMessages, vatFeedbackLists } from "@app/http-simulator/scenarios/assist.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -157,6 +157,119 @@ async function scrollToLastMessage(page) {
   await page.locator("#hmrcAssistMessages > li").last().scrollIntoViewIfNeeded();
 }
 
+function welshMessages() {
+  return vatFeedbackLists("multiple").welshFeedback.map(({ itemNumber: _itemNumber, ...message }) => message);
+}
+
+function bilingualReport(request, count, { english = vatMultipleMessages(), welsh = welshMessages() } = {}) {
+  return {
+    status: 200,
+    body: {
+      reportId: `report-${count}`,
+      correlationId: `correlation-${count}`,
+      receiptId: `receipt-${count}`,
+      messages: english,
+      welshMessages: welsh,
+      vrn: request.vrn,
+      periodKey: request.periodKey,
+    },
+  };
+}
+
+function manyMessages(prefix) {
+  return Array.from({ length: 7 }, (_unused, index) => ({ title: `${prefix} ${index + 1}`, body: `Body ${index + 1}`, links: [] }));
+}
+
+test.describe("HMRC Assist check on the VAT return, in English and Welsh", () => {
+  test("shows the Welsh messages verbatim, in order, with their links and highlights, after the switch", async ({ page }) => {
+    await openForm(page, { report: bilingualReport });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+
+    const english = page.locator("#hmrcAssistLanguage-en");
+    const welsh = page.locator("#hmrcAssistLanguage-cy");
+    await expect(english).toHaveText("English");
+    await expect(welsh).toHaveText("Cymraeg");
+    await expect(english).toHaveAttribute("aria-pressed", "true");
+    await expect(welsh).toHaveAttribute("aria-pressed", "false");
+
+    await welsh.focus();
+    await page.keyboard.press("Enter");
+    await expect(welsh).toHaveAttribute("aria-pressed", "true");
+    await expect(english).toHaveAttribute("aria-pressed", "false");
+
+    const expected = welshMessages();
+    const items = page.locator("#hmrcAssistMessages > li");
+    await expect(items).toHaveCount(expected.length);
+    await expect(page.locator("#hmrcAssistMessages")).toHaveAttribute("lang", "cy");
+    for (const [index, message] of expected.entries()) {
+      const item = items.nth(index);
+      await expect(item.locator(".hmrc-assist-message-title")).toHaveText(message.title);
+      await expect(item.locator(".hmrc-assist-message-body")).toHaveText(message.body);
+      await expect(item.locator(".hmrc-assist-message-action")).toHaveText(message.action);
+      await expect(item.locator("a")).toHaveText(message.links[0].title);
+      await expect(item.locator("a")).toHaveAttribute("href", message.links[0].url);
+    }
+    await expect(page.locator("#vatDueSales")).toHaveClass(/hmrc-assist-highlight/);
+    await expect(page.locator("#totalValuePurchasesExVAT")).toHaveClass(/hmrc-assist-highlight/);
+
+    await english.click();
+    await expect(items.first().locator(".hmrc-assist-message-title")).toHaveText(vatMultipleMessages()[0].title);
+  });
+
+  test("shows at most five messages in each language", async ({ page }) => {
+    await openForm(page, {
+      report: (request, count) => bilingualReport(request, count, { english: manyMessages("English"), welsh: manyMessages("Cymraeg") }),
+    });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    const items = page.locator("#hmrcAssistMessages > li");
+    await expect(items).toHaveCount(5);
+    await expect(items.last().locator(".hmrc-assist-message-title")).toHaveText("English 5");
+    await page.locator("#hmrcAssistLanguage-cy").click();
+    await expect(items).toHaveCount(5);
+    await expect(items.last().locator(".hmrc-assist-message-title")).toHaveText("Cymraeg 5");
+  });
+
+  test("sends one acknowledgement across switches, recording the language shown when it was sent", async ({ page }) => {
+    const { acknowledgeRequests } = await openForm(page, { report: bilingualReport });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect.poll(() => acknowledgeRequests.length).toBe(1);
+
+    await page.locator("#hmrcAssistLanguage-cy").click();
+    await page.locator("#hmrcAssistLanguage-en").click();
+    await page.locator("#hmrcAssistLanguage-cy").click();
+    await settle(page);
+    expect(acknowledgeRequests).toHaveLength(1);
+    expect(acknowledgeRequests[0].presentedLanguage).toBe("en");
+  });
+
+  test("remembers the chosen language for the session and records it in the acknowledgement", async ({ page }) => {
+    const { acknowledgeRequests } = await openForm(page, { report: bilingualReport });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await page.locator("#hmrcAssistLanguage-cy").click();
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem("hmrcAssistLanguage"))).toBe("cy");
+
+    await page.locator("#vatDueSales").fill("101.00");
+    await page.locator("#vatDueSales").blur();
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistLanguage-cy")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#hmrcAssistMessages > li .hmrc-assist-message-title").first()).toHaveText(welshMessages()[0].title);
+    await expect.poll(() => acknowledgeRequests.length).toBe(2);
+    expect(acknowledgeRequests[1].presentedLanguage).toBe("cy");
+  });
+
+  test("hides the switch when the report has no Welsh messages", async ({ page }) => {
+    await openForm(page, { report: (request, count) => bilingualReport(request, count, { welsh: [] }) });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistMessages > li").first()).toBeVisible();
+    await expect(page.locator("#hmrcAssistLanguageSwitch")).toHaveCount(0);
+  });
+});
+
 test.describe("HMRC Assist check on the VAT return", () => {
   test("shows HMRC's messages verbatim and in order with their links, and highlights the named box", async ({ page }) => {
     await openForm(page);
@@ -225,6 +338,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
       correlationId: "correlation-1",
       receiptId: "receipt-1",
       presentedDateTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
+      presentedLanguage: "en",
     });
   });
 

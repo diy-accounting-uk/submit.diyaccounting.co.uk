@@ -195,7 +195,7 @@ function isHttpUrl(value) {
   }
 }
 
-function displayAssistMessages(container, messages, acknowledgedAt) {
+function displayAssistMessages(container, messages, acknowledgedAt, language) {
   container.replaceChildren();
   if (!messages) return;
   const section = document.createElement("section");
@@ -214,6 +214,7 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
 
   const messagesList = document.createElement("ol");
   messagesList.className = "assist-messages-list";
+  messagesList.lang = language;
 
   for (const message of messages) {
     const li = document.createElement("li");
@@ -314,12 +315,15 @@ async function displayReceiptTable(data, name) {
   const receiptContent = document.getElementById("receiptContent");
 
   const isAssistReport = data && (data.kind === "vat-assist-report" || data.kind === "itsa-assist-report");
-  const hasMessages = isAssistReport && Array.isArray(data.messages) && data.messages.length > 0;
-  displayAssistMessages(document.getElementById("assistMessages"), hasMessages ? data.messages : null, data?.acknowledgedAt);
+  const welshMessages = isAssistReport && Array.isArray(data.welshMessages) ? data.welshMessages : [];
+  const language = data?.presentedLanguage === "cy" && welshMessages.length > 0 ? "cy" : "en";
+  const messages = language === "cy" ? welshMessages : isAssistReport ? data.messages : null;
+  const hasMessages = Array.isArray(messages) && messages.length > 0;
+  displayAssistMessages(document.getElementById("assistMessages"), hasMessages ? messages : null, data?.acknowledgedAt, language);
 
   let dataToDisplay = data;
   if (isAssistReport) {
-    const { messages, ...rest } = data;
+    const { messages: _english, welshMessages: _welsh, ...rest } = data;
     dataToDisplay = rest;
   }
 

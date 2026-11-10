@@ -160,6 +160,13 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
     await expect(page.locator("#continueToFinalDeclarationLink")).toBeVisible();
   });
 
+  test("shows no language switch when the report carries no Welsh messages", async ({ page }) => {
+    await openCalculationPage(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.locator("#hmrcAssistMessages > li").first()).toBeVisible();
+    await expect(page.locator("#hmrcAssistLanguageSwitch")).toHaveCount(0);
+  });
+
   test("acknowledges the report once, with the receipt id, and clears the unacknowledged mark", async ({ page }) => {
     const { acknowledgeRequests } = await openCalculationPage(page);
     await showCalculation(page);
@@ -174,6 +181,7 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
       correlationId: "correlation-1",
       receiptId: "receipt-1",
       presentedDateTime: expect.any(String),
+      presentedLanguage: "en",
     });
     await expect
       .poll(() => page.evaluate(() => window.hmrcAssistMessages.unacknowledgedFor("itsa", "f2fb30e5-4ab6-4a29-b3c1-c7efc90fc66a")))
