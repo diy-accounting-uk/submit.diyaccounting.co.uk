@@ -5,7 +5,7 @@
 // @capability OPS-169 Rotate the user sub hash salt and re-key every store
 // - **Use when:** the user-sub-hash-salt must change, or items written late under an earlier salt version must move to the current one.
 // - **Does:** salt-rotate.js adds a new salt version and makes it current in two waits that cover the Lambda salt cache. It moves every hash-keyed item in every table of scripts/salt-rotation-tables.json and every diya-gl object to the new hash, updates the canary, and writes the lake's hash aliases. Every step is resumable and idempotent, and it prints counts only.
-// - **Run:** `gh workflow run salt-rotate.yml -f environment-name=<ci|prod> -f mode=<plan|rotate|sweep>`
+// - **Run:** `gh workflow run salt-rotate.yml -f environment-name=<ci|prod> -f mode=<plan|rotate|sweep|retire> [-f version=<vN>]`
 // - **Entry:** `scripts/salt-rotate.js:runRotation`
 // - **Files:** .github/workflows/salt-rotate.yml, scripts/salt-rotate.js, scripts/salt-rotation-tables.json, app/unit-tests/scripts/saltRotate.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/SaltRotationTablesTest.java, infra/main/resources/analytics/views/aliased_dynamo_bundles.sql, infra/main/resources/analytics/views/aliased_dynamo_commissions.sql, infra/main/resources/analytics/views/aliased_dynamo_passes.sql, infra/main/resources/analytics/views/aliased_dynamo_receipts.sql, infra/main/resources/analytics/views/aliased_dynamo_subscriptions.sql, infra/main/resources/analytics/views/aliased_stripe_charges.sql, infra/main/resources/analytics/views/aliased_stripe_subscriptions.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/HashAliasTable.java, app/unit-tests/data/saltRotationWindow.test.js
 // - **Keywords:** salt rotation, re-key, hashed sub, hash aliases, salt sweep, repeatable rotation, cutover
@@ -33,7 +33,7 @@
 // This log is public: nothing here prints a salt, a hash, a sub or an email.
 //
 // Usage:
-//   ENVIRONMENT_NAME=ci COGNITO_USER_POOL_ID=<id> node scripts/salt-rotate.js [--mode plan|rotate|sweep]
+//   ENVIRONMENT_NAME=ci COGNITO_USER_POOL_ID=<id> node scripts/salt-rotate.js [--mode plan|rotate|sweep|retire] [--version <vN>]
 
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -64,9 +64,12 @@ export function parseArgs(argv) {
   const opts = { mode: "plan" };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--mode") opts.mode = argv[++i];
+    else if (argv[i] === "--version") opts.version = argv[++i];
     else throw new Error(`Unknown argument "${argv[i]}"`);
   }
-  if (!["plan", "rotate", "sweep"].includes(opts.mode)) throw new Error(`Unknown mode "${opts.mode}"`);
+  if (!["plan", "rotate", "sweep", "retire"].includes(opts.mode)) throw new Error(`Unknown mode "${opts.mode}"`);
+  if (opts.mode === "retire" && !/^v\d+$/.test(opts.version ?? "")) throw new Error("Mode retire needs --version <vN>");
+  if (opts.mode !== "retire" && opts.version !== undefined) throw new Error("--version applies to mode retire only");
   return opts;
 }
 
@@ -612,15 +615,48 @@ async function advanceRegistry(context, startRegistry) {
   return registry;
 }
 
+/** The registry without the named earlier version. */
+export function retireVersion(registry, version) {
+  const versions = { ...registry.versions };
+  delete versions[version];
+  return { ...registry, versions };
+}
+
 /**
- * Runs one plan, rotation or sweep.
+ * Drops one earlier version from the registry. The lake aliases of that version stay as they are,
+ * because writeAliases keeps every alias row of an earlier run, so old lake rows keep joining.
+ */
+async function retireEarlierVersion(context, manifest, registry, users, version) {
+  if (version === registry.current) throw new Error(`Version ${version} is the current version`);
+  if (!(version in registry.versions)) throw new Error(`Version ${version} is not in the registry`);
+  if (registry.rotation) throw new Error("A rotation is in flight. Resume it with --mode rotate");
+
+  const onlyThisVersion = {
+    ...registry,
+    versions: { [registry.current]: registry.versions[registry.current], [version]: registry.versions[version] },
+  };
+  const counts = await countByVersion(context, manifest, onlyThisVersion, buildIdentityMap(onlyThisVersion, users));
+  printCounts(context, `Items by version before retiring ${version}:`, counts);
+  const holding = Object.entries(counts).filter(([, { earlier }]) => earlier > 0);
+  if (holding.length > 0) throw new Error(`Items still sit under ${version} in: ${holding.map(([table]) => table).join(", ")}`);
+
+  await context.writeRegistry(retireVersion(registry, version));
+  context.log(
+    `Retired ${version}. Current stays ${registry.current}. Versions now: [${Object.keys(retireVersion(registry, version).versions).join(", ")}]`,
+  );
+  context.log("Next: run scripts/backup-salts.sh and print a new card");
+  return { before: counts, after: null, report: {} };
+}
+
+/**
+ * Runs one plan, rotation, sweep or retirement.
  *
  * @param {object} context - doc, s3, envName, booksBucket, lakeBucket, listUsers, readRegistry,
  *   writeRegistry, readLakeHashes, now, sleep, log
- * @param {{mode: "plan"|"rotate"|"sweep"}} options
+ * @param {{mode: "plan"|"rotate"|"sweep"|"retire", version?: string}} options
  * @returns {Promise<{before: object, after: object|null, report: object}>}
  */
-export async function runRotation(context, { mode }) {
+export async function runRotation(context, { mode, version }) {
   const manifest = loadManifest();
   let registry = await context.readRegistry();
   const users = await context.listUsers();
@@ -632,6 +668,8 @@ export async function runRotation(context, { mode }) {
   context.log(`Versions: [${Object.keys(registry.versions).join(", ")}]`);
   context.log(`Rotation in flight: ${registry.rotation ? `${registry.rotation.to} ${registry.rotation.state}` : "none"}`);
   context.log(`Cognito users: ${users.length}`);
+
+  if (mode === "retire") return retireEarlierVersion(context, manifest, registry, users, version);
 
   const beforeMap = buildIdentityMap(registry, users);
   const before = await countByVersion(context, manifest, registry, beforeMap);
@@ -765,10 +803,10 @@ export async function createContext(envName) {
 }
 
 export async function main(argv = process.argv.slice(2)) {
-  const { mode } = parseArgs(argv);
+  const { mode, version } = parseArgs(argv);
   const envName = process.env.ENVIRONMENT_NAME;
   if (!envName) throw new Error("ENVIRONMENT_NAME is required (e.g., 'ci' or 'prod')");
-  await runRotation(await createContext(envName), { mode });
+  await runRotation(await createContext(envName), { mode, version });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

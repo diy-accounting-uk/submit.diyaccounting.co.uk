@@ -470,6 +470,71 @@ describe("salt-rotate runs", () => {
   });
 });
 
+describe("salt-rotate retire", () => {
+  let state;
+
+  beforeEach(async () => {
+    state = newState();
+    await runRotation(createContext(state), { mode: "rotate" });
+    state.registryWrites.length = 0;
+    state.dynamo.writes = 0;
+  });
+
+  const aliasRows = () =>
+    gunzipSync(state.s3.objects.get("curated/hash-aliases/hash_aliases.json.gz").Body).toString("utf-8").split("\n").filter(Boolean);
+
+  test("retire drops the named version, logs the next step and writes nothing else", async () => {
+    const aliasesBefore = aliasRows();
+    await runRotation(createContext(state), { mode: "retire", version: "v1" });
+    expect(state.registryWrites).toHaveLength(1);
+    const registry = JSON.parse(state.secret);
+    expect(Object.keys(registry.versions)).toEqual(["v2"]);
+    expect(registry.current).toBe("v2");
+    expect(state.dynamo.writes).toBe(0);
+    expect(aliasRows()).toEqual(aliasesBefore);
+    expect(state.logs.join("\n")).toContain("Next: run scripts/backup-salts.sh and print a new card");
+  });
+
+  test("retire refuses the current version", async () => {
+    await expect(runRotation(createContext(state), { mode: "retire", version: "v2" })).rejects.toThrow("is the current version");
+    expect(state.registryWrites).toEqual([]);
+  });
+
+  test("retire refuses a version that is not in the registry", async () => {
+    await expect(runRotation(createContext(state), { mode: "retire", version: "v9" })).rejects.toThrow("is not in the registry");
+    expect(state.registryWrites).toEqual([]);
+  });
+
+  test("retire refuses while a rotation is in flight", async () => {
+    state.secret = JSON.stringify(stageRegistry(JSON.parse(state.secret), "v3", "third-salt", "2026-11-04T10:00:00.000Z"));
+    await expect(runRotation(createContext(state), { mode: "retire", version: "v1" })).rejects.toThrow("A rotation is in flight");
+    expect(state.registryWrites).toEqual([]);
+  });
+
+  test("retire refuses while an item still sits under the version", async () => {
+    state.dynamo.seed("ci-env-bundles", { hashedSub: hashA, bundleId: "late-item" });
+    await expect(runRotation(createContext(state), { mode: "retire", version: "v1" })).rejects.toThrow(
+      "Items still sit under v1 in: bundles",
+    );
+    expect(state.registryWrites).toEqual([]);
+    expect(Object.keys(JSON.parse(state.secret).versions)).toEqual(["v1", "v2"]);
+  });
+
+  test("a later rotation keeps the alias rows of a retired version", async () => {
+    await runRotation(createContext(state), { mode: "retire", version: "v1" });
+    await runRotation(createContext(state), { mode: "rotate" });
+    const rows = aliasRows().map((line) => JSON.parse(line));
+    const newest = JSON.parse(state.secret).versions.v3;
+    expect(rows.find((row) => row.old_hash === hashA)?.current_hash).toBe(hashValue(newest, SUB_A));
+  });
+
+  test("the arguments need a version for retire and refuse one elsewhere", () => {
+    expect(parseArgs(["--mode", "retire", "--version", "v2"])).toEqual({ mode: "retire", version: "v2" });
+    expect(() => parseArgs(["--mode", "retire"])).toThrow("needs --version");
+    expect(() => parseArgs(["--mode", "sweep", "--version", "v2"])).toThrow("mode retire only");
+  });
+});
+
 describe("salt-rotate alias chains", () => {
   test("an alias from an earlier rotation follows on to the current hash", () => {
     const registry = { current: "v3", versions: { v2: "two", v3: "three" } };
