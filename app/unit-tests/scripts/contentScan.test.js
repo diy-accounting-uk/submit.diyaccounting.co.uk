@@ -141,6 +141,30 @@ describe("secrets: checked everywhere, including test directories", () => {
   });
 });
 
+describe("jwt: refused in every tracked file unless the exact value is allow-listed", () => {
+  const fakeJwt = ["eyJ" + "a".repeat(12), "b".repeat(12), "c".repeat(12)].join(".");
+
+  test("a JWT in a source file, a test directory and a root text file fails", () => {
+    for (const file of ["app/lib/foo.js", "app/unit-tests/foo.test.js", "submitVatBehaviour.txt"]) {
+      const hits = scanEntries([{ file, lineNumber: 3, text: `token=${fakeJwt}` }], []);
+      expect(hits).toEqual([{ file, lineNumber: 3, label: "jwt" }]);
+    }
+  });
+
+  test("a JWT whose exact value is allow-listed passes and any other JWT still fails", () => {
+    const allowList = parseAllowList(fakeJwt);
+    expect(scanEntries([{ file: "app/unit-tests/foo.test.js", lineNumber: 1, text: fakeJwt }], allowList)).toEqual([]);
+    const other = fakeJwt + "x";
+    expect(scanEntries([{ file: "app/unit-tests/foo.test.js", lineNumber: 1, text: other }], allowList)).toEqual([
+      { file: "app/unit-tests/foo.test.js", lineNumber: 1, label: "jwt" },
+    ]);
+  });
+
+  test("text that only mentions the format passes", () => {
+    expect(scanEntries([{ file: "NOTES.md", lineNumber: 1, text: "a JWT starts with eyJ and has three parts" }], [])).toEqual([]);
+  });
+});
+
 describe("personal data: checked outside test directories and /fixtures/ paths", () => {
   test("a NINO in an added Markdown line fails", () => {
     const diff = diffAdding("NOTES.md", "Customer NINO: AB123456C");
