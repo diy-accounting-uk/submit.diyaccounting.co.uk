@@ -37,6 +37,10 @@ import {
   previewCompanyTaxReturn,
   setCtGovTestScenario,
   enterGatewayCredentialsAndSubmit,
+  enterEtsCredentialsAndSubmit,
+  hideEtsCredentialsInScreenshots,
+  verifyReturnAcceptedByEtsWithItsReceipt,
+  readStoredReturnReceipt,
   verifyMicroEntityReview,
   verifyReturnAccepted,
   verifyReturnRejectedAndRetryable,
@@ -72,6 +76,7 @@ import {
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 import { buildCtReturnExportFromBook, FIXTURE_UTR } from "@app/test-helpers/ctReturnFixture.js";
+import { readEtsPageCredentials } from "./helpers/etsPageCredentials.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -94,6 +99,12 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
 
+// Set only on the ci run that files with HMRC's External Test Service (hmrc-ets-ct600-page.yml).
+const etsCredentials = readEtsPageCredentials(process.env);
+const ETS_TEST_TITLE_MARKER = "External Test Service";
+// No video and no failure screenshot: neither goes through the masking of the ETS journey.
+if (etsCredentials) test.use({ video: "off", screenshot: "off" });
+
 const gatewayCredentials = { userId: "dummy-gateway-user", password: "dummy-gateway-password" };
 
 let mockOAuth2Process;
@@ -104,6 +115,11 @@ test.setTimeout(300_000);
 
 test.beforeEach(async ({}, testInfo) => {
   testInfo.annotations.push({ type: "test-id", description: "companyTaxReturnBehaviour" });
+  // The ETS credentials select the one ETS journey; without them it is skipped and every other journey runs.
+  test.skip(
+    testInfo.title.includes(ETS_TEST_TITLE_MARKER) !== Boolean(etsCredentials),
+    "The ETS journey runs only with the ETS credentials",
+  );
 });
 
 test.beforeAll(async () => {
@@ -228,6 +244,44 @@ test("Click through: file the Company Tax Return shows the error HMRC returns an
   await setCtGovTestScenario(page, "CT600_REJECT_IRMARK", screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
   await verifyReturnRejectedAndRetryable(page, "2021", screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file the Company Tax Return through HMRC's External Test Service and keep the IRmark receipt", async ({
+  page,
+}, testInfo) => {
+  // ETS answers about three minutes after the submission, then the Lambda deletes it.
+  test.setTimeout(900_000);
+  hideEtsCredentialsInScreenshots(page, etsCredentials);
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(
+    page,
+    { utr: etsCredentials.utr, declarantName: bookExport.director.name, utrIsSecret: true },
+    screenshotPath,
+  );
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await enterEtsCredentialsAndSubmit(page, etsCredentials, screenshotPath);
+  const shownIrmark = await verifyReturnAcceptedByEtsWithItsReceipt(page, screenshotPath);
+
+  const stored = await readStoredReturnReceipt(page, shownIrmark);
+  expect(stored, "a stored receipt with the IRmark the page showed").toBeTruthy();
+  expect(stored.irmarkReceipt).toBeTruthy();
+  expect(stored.irmarkReceiptMismatch).toBeUndefined();
+  await testInfo.attach("ets-receipt-summary.json", {
+    body: JSON.stringify(
+      {
+        correlationId: stored.correlationId,
+        irmark: stored.irmark,
+        irmarkReceipt: stored.irmarkReceipt,
+        receiptSignature: stored.receiptSignature,
+      },
+      null,
+      2,
+    ),
+    contentType: "application/json",
+  });
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

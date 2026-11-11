@@ -1,0 +1,197 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: hmrc-ets-ct600-page
+run-name: "CT600 through the page to HMRC's External Test Service on ${{ inputs.deployment-name || 'the last known good ci deployment' }}"
+#
+# Files one Corporation Tax return through web/public/companies-house/fileCompanyTaxReturn.html on a
+# ci deployment, signed in as the companyTaxReturnBehaviour lane's durable test user. The page sends
+# it to HMRC's External Test Service with the ETS credentials from the ci environment secrets. The
+# test waits for the acknowledgement and the final response, then checks the IRmark and the receipt.
+# The Lambda polls and deletes the submission at the Transaction Engine.
+#
+# The Playwright trace is off whenever TEST_AUTH_PASSWORD is set (playwright.config.js), the video is
+# off for the ETS journey, and the ETS credentials are filled without a logged step. Every
+# screenshot masks the credential fields and the UTR. Only the screenshots and a receipt summary
+# (correlation ID, IRmark, IRmark receipt) are uploaded.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment-name:
+        type: string
+        description: 'ci deployment to file on, e.g. ci-set1. Empty uses the last known good ci deployment.'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_REGION: 'eu-west-2'
+  SUITE: companyTaxReturnBehaviour
+
+jobs:
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
+  names:
+    runs-on: ubuntu-24.04
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read back the last known good ci deployment from SSM Parameter Store
+        if: ${{ inputs.deployment-name == '' }}
+        run: |
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "/submit/ci/last-known-good-deployment" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
+
+      - name: Use the named deployment, else the last known good one
+        id: deployment-name
+        env:
+          INPUT_DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
+        run: |
+          if [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
+            echo "deployment-name=${INPUT_DEPLOYMENT_NAME}" | tee -a "$GITHUB_OUTPUT"
+          elif [ -s /tmp/last_known_good_deployment.txt ]; then
+            echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "::error::No deployment name given and no last known good ci deployment found."
+            exit 1
+          fi
+
+      - name: Compute environment name and apex URL
+        id: deployment-config
+        uses: './.github/actions/get-names'
+        with:
+          environment-name: ci
+          deployment-name: ${{ steps.deployment-name.outputs.deployment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      public-url: ${{ steps.deployment-config.outputs.public-url }}
+
+  file-through-the-page:
+    name: 'CT600 through the page to ETS'
+    needs:
+      - names
+      - playwright-version
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
+    environment: ci
+    timeout-minutes: 40
+    # The lane's durable Cognito user is shared with any other run of this suite.
+    concurrency:
+      group: behaviour-test-user-ci-companyTaxReturnBehaviour
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Assume the AWS actions and deploy roles (for the test user)
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read TEST_AUTH_PROVIDER
+        id: auth-provider
+        shell: bash
+        run: |
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' .env.ci | tail -n1 | cut -d'=' -f2)
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: enable
+          environment-name: ci
+          holder-id: ${{ github.run_id }}-ets-page
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
+
+      - name: Ensure Cognito test user
+        id: cognito-test-user
+        shell: bash
+        run: |
+          if [ "${{ steps.auth-provider.outputs.provider }}" = "cognito-native" ]; then
+            node scripts/ensure-cognito-test-user.js ci "${SUITE}"
+          else
+            echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${{ steps.auth-provider.outputs.provider }})"
+          fi
+
+      - name: 'Run behaviour test companyTaxReturnBehaviour-ci with the ETS credentials'
+        id: behaviour-test
+        # ETS settles in about three minutes; the test allows ten for the outcome.
+        timeout-minutes: 30
+        run: npm run test:companyTaxReturnBehaviour-ci -- --grep "External Test Service"
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          HMRC_ACCOUNT: synthetic
+          TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
+          TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
+          TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+          HMRC_CT_ETS_SENDER_ID: ${{ secrets.HMRC_CT_ETS_SENDER_ID }}
+          HMRC_CT_ETS_PASSWORD: ${{ secrets.HMRC_CT_ETS_PASSWORD }}
+          HMRC_CT_ETS_UTR: ${{ secrets.HMRC_CT_ETS_UTR }}
+
+      - name: Assume the AWS actions and deploy roles
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ !cancelled() && steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: disable
+          environment-name: ci
+          holder-id: ${{ github.run_id }}-ets-page
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
+
+      # Only the masked screenshots and the receipt summary are uploaded. The Playwright report and
+      # the run log are not: the report embeds page snapshots that can hold typed values, and the
+      # repository is public, so any GitHub user can download an artifact. The job log carries the
+      # list reporter's result, with the secrets masked by GitHub.
+      - name: Upload the masked screenshots and the receipt summary
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hmrc-ets-ct600-page-results
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            target/behaviour-test-results/**/*.png
+            target/behaviour-test-results/**/ets-receipt-summary*.json

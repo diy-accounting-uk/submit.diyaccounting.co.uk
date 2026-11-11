@@ -37,9 +37,14 @@ async function zippedFixtureBook() {
 
 // The fixture book is a micro-entity by size, so the card opens the form on the micro-entity
 // accounts; regime "small" files the small company accounts the same book also gives.
-export async function fillInCompanyTaxReturnForm(page, { utr, declarantName, regime = "small" }, screenshotPath = defaultScreenshotPath) {
+export async function fillInCompanyTaxReturnForm(
+  page,
+  { utr, declarantName, regime = "small", utrIsSecret = false },
+  screenshotPath = defaultScreenshotPath,
+) {
   await test.step(`The user enters the UTR, drops the company's book, keeps the ${regime} accounts, and enters the declarant, the statements and the declaration`, async () => {
-    await loggedFill(page, "#utr", utr, "UTR");
+    if (utrIsSecret) await page.locator("#utr").fill(utr);
+    else await loggedFill(page, "#utr", utr, "UTR");
     await expect(page.locator("#booksImportFile")).toBeAttached();
     await page.locator("#booksImportFile").setInputFiles({
       name: "precision-code.diya-gl.zip",
@@ -197,6 +202,51 @@ export async function verifyReturnAccepted(page, screenshotPath = defaultScreens
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png`, readerView: true });
   });
+}
+
+// The ETS credentials are real secrets: filled without loggedFill, which writes the value into the
+// step title and the console. A step title appears in the Playwright report.
+export async function enterEtsCredentialsAndSubmit(page, { userId, password }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters the External Test Service Government Gateway credentials and submits the return", async () => {
+    await page.locator("#gatewayUserId").fill(userId);
+    await page.locator("#gatewayPassword").fill(password);
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submitted-to-ets.png`, readerView: true });
+  });
+}
+
+// Every screenshot of the ETS journey hides the credential fields and any text that holds the UTR.
+// The artifact of a public repository can be downloaded by any GitHub user.
+export function hideEtsCredentialsInScreenshots(page, { utr }) {
+  const takeScreenshot = page.screenshot.bind(page);
+  page.screenshot = (options = {}) =>
+    takeScreenshot({
+      ...options,
+      mask: [...(options.mask ?? []), page.locator("#utr, #gatewayUserId, #gatewayPassword"), page.getByText(utr)],
+    });
+}
+
+const ETS_OUTCOME_TIMEOUT_MS = 600_000;
+
+export async function verifyReturnAcceptedByEtsWithItsReceipt(page, screenshotPath = defaultScreenshotPath) {
+  return test.step("The user waits for the External Test Service to settle, then sees the IRmark and the receipt as proof of submission", async () => {
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: ETS_OUTCOME_TIMEOUT_MS });
+    await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
+    await expect(page.locator("#irmarkMismatchWarning")).toHaveCount(0);
+    await expect(page.locator("#receiptProof")).toContainText("proof that it filed this return");
+    await expect(page.locator("#returnRecord")).toContainText("IRmark receipt");
+    await expect(page.locator("#returnRecord")).toContainText("proof that it filed the return");
+    const irmark = (await page.locator("#returnIrmark code").first().textContent()).trim();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-ets-accepted-receipt.png`, readerView: true });
+    return irmark;
+  });
+}
+
+// The durable test user keeps the receipts of earlier runs, so the receipt is found by its IRmark.
+export async function readStoredReturnReceipt(page, irmark) {
+  const receipts = await readReceiptsOfTheFilings(page);
+  return receipts.find((entry) => entry.kind === "company-tax-return" && entry.receipt.irmark === irmark)?.receipt;
 }
 
 export async function verifyReturnRejectedAndRetryable(page, expectedErrorNumber, screenshotPath = defaultScreenshotPath) {
