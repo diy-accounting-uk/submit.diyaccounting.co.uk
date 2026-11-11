@@ -127,8 +127,9 @@
     });
     if (alternates.length < 2) return null;
     const currentLang = document.documentElement.getAttribute("lang");
-    const nav = document.createElement("nav");
+    const nav = document.createElement("div");
     nav.className = "language-switch";
+    nav.setAttribute("role", "group");
     nav.setAttribute("aria-label", LANGUAGE_SWITCH_LABELS[currentLang] || LANGUAGE_SWITCH_LABELS["en-GB"]);
     alternates.forEach(function (link) {
       const lang = link.getAttribute("hreflang");
@@ -282,8 +283,8 @@
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
     const languageSwitch = buildLanguageSwitch(rootPrefix);
-    const authSection = header.querySelector(".auth-section");
-    if (languageSwitch && authSection) authSection.prepend(languageSwitch);
+    const mainNav = header.querySelector(".main-nav");
+    if (languageSwitch && mainNav) mainNav.append(languageSwitch);
 
     // On a narrow screen the row scrolls sideways; bring the current page's link into view.
     const nav = header.querySelector(".main-nav");
