@@ -18,11 +18,8 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
-| O34g | Register with HMRC's SDST for the CT test services; set the ETS sender ID, password and vendor ID on GitHub's `ci` environment | 0 | none | done 2026-11-11 (Vendor ID 9873; three `ci` secrets) |
-| B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g |
-| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity | ~2 | Sonnet | B34g1 |
-| DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | B34g2b |
-| CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | CT28, B34g2b |
+| DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | UH7 |
+| CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | CT28 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | CT24 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), B34g2b, the activity in a bundle sold on prod, the operator's approval |
@@ -51,7 +48,7 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ### Human-driven
 
-- [ ] **CT24. Ask SDST for the CT new applicant's pack.** After CT28 and B34g2b, the operator emails sdsteam@hmrc.gov.uk asking for the new applicant's pack for Corporation Tax recognition, quoting Vendor ID 9873 and the product name DIY Accounting Submit, in the thread of 2026-11-11. Claude drafts it with the `email-draft` skill; the operator sends it. The sent copy goes to `../private.diyaccounting.co.uk/hmrc/ct/`. Checklist C68. **Source**: CT recognition instructions 1.0 (https://www.gov.uk/government/publications/corporation-tax-generic-technical-specifications/corporation-tax-recognition-instructions-10). **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT28 and B34g2b.
+- [ ] **CT24. Ask SDST for the CT new applicant's pack.** After CT28, the operator emails sdsteam@hmrc.gov.uk asking for the new applicant's pack for Corporation Tax recognition, quoting Vendor ID 9873 and the product name DIY Accounting Submit, in the thread of 2026-11-11. Claude drafts it with the `email-draft` skill; the operator sends it. The sent copy goes to `../private.diyaccounting.co.uk/hmrc/ct/`. Checklist C68. **Source**: CT recognition instructions 1.0 (https://www.gov.uk/government/publications/corporation-tax-generic-technical-specifications/corporation-tax-recognition-instructions-10). **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT28.
 
 - [ ] **CT26. Send SDST the recognition scenario XML.** The operator replies to SDST with the XML of each scenario CT25 passed, and the supplier-list answers: "Produce and submit CT600" Yes, "Submit iXBRL documents" Yes, "Suitable for self-filers" Yes. SDST aims to decide within 2 weeks; the listing on the commercial software suppliers page is the recognition (C71). Claude drafts with the `email-draft` skill. Checklist C70, C71. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT25.
 
@@ -61,11 +58,7 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 - [ ] **CT27. The yearly CT recognition renewal.** When SDST's renewal email arrives (both contacts have Corporation Tax email preferences), the operator asks sdsteam@hmrc.gov.uk for the recognition checklist link and completes it. Checklist C72. **Source**: CT recognition instructions 1.0. **Owner**: Operator. **Model**: none. **Size**: 0 files. Blocked on HMRC's CT recognition.
 
-- [ ] **B34g1. The ETS proof.** The TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted (NEXT.md B34g). Ready: the credentials are on `ci` since 2026-11-11. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B34g2b. One ETS filing from the page.** Polled and deleted; then `prod` on the activity (NEXT.md B34g). Blocked on B34g1. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **DF2b. The joint accounts and CT600 filing on prod.** `prod` on the joint filing's activity, both receipts under one entry. Blocked on B34g2b. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **DF2b. The joint accounts and CT600 filing on prod.** `prod` on the joint filing's activity, both receipts under one entry. Live CT600 filing needs HMRC's CT recognition, as UH7 does. Blocked on UH7. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax recognition (CT26's outcome, checklist C71); B34g2b's ETS filing from the page; the activity in a bundle sold on prod; the operator's approval to enable it for live users. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
@@ -73,24 +66,18 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ```mermaid
 flowchart LR
-    B34g1 --> B34g2b
-    B34g2b --> CT24
     CT24 --> CT25
     CT25 --> CT26
     CT26 --> REC["HMRC's CT recognition"]
     REC --> UH7
+    UH7 --> DF2b
     REC --> CT27
-    B34g2b --> DF2b
-    B34g2b --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-- O34g: done 2026-11-11 (Vendor ID 9873; `HMRC_CT_ETS_SENDER_ID`, `HMRC_CT_ETS_PASSWORD`, `HMRC_CT_ETS_UTR` on `ci`)
-- B34g1: ready; the ETS script mode, the Vendor ID setting and a dispatchable workflow (`NEXT.md` B34g1)
-- B34g2b: blocked by B34g1; the ETS filing from the page
-- DF2b: blocked by B34g2b
-- CT24: blocked by CT28 and B34g2b; CT25 by CT24; CT26 by CT25
-- UH7: blocked by HMRC's Corporation Tax recognition (CT26), B34g2b and the operator's approval
+- DF2b: blocked by UH7
+- CT24: blocked by CT28; CT25 by CT24; CT26 by CT25
+- UH7: blocked by HMRC's Corporation Tax recognition (CT26) and the operator's approval
 - CT27: blocked by HMRC's Corporation Tax recognition
 
 ## Designs
@@ -901,9 +888,8 @@ The launch and approval steps are on the Board above.
 
 | Id | What | Files | Model | Blocked by | Class |
 |---|---|---|---|---|---|
-| B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked (NEXT.md B34g) |
 | B34g2a | The CT600 filing journey on the simulator: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | — | On main (PR #511) |
-| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g) | ~2 | Sonnet | B34g1, O34g | Blocked |
+| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g) | ~2 | Sonnet | B34g1, O34g | On main (PR #802; ETS run 43072995143) |
 | CT3a | The CT600 figures model in one module for the browser and the server; the server derives the boxes; the precision-code-ltd regression and TPVS proof (the CT2 design) | ~8 | Sonnet | — | On main (PR #533) |
 | CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | — | On main (PR #534, PR #535) |
 | CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the submit refuses figures that differ from the reviewed boxes | ~5 | Sonnet | — | On main (PR #535, PR #536) |
