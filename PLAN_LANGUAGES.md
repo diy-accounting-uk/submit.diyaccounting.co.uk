@@ -25,9 +25,9 @@ The DIY Accounting sites in the languages of UK small businesses: submit (`web/p
 |---|---|---|---|
 | LANG1 | HMRC Assist feedback shown in Welsh and English, with a switch | on prod, PR #792 | — |
 | LANG2 | Research into `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` | done, private 7af3f84 | — |
-| LANG3 | Welsh scaffold: catalogue, `/cy/` pages, `hreflang`, switch | ready | NEXT.md |
-| LANG4 | Tier A copy in Welsh | blocked on LANG3 | NEXT.md |
-| LANG6 | HMRC's Welsh services on the Welsh pages | blocked on LANG3 | NEXT.md |
+| LANG3 | Welsh scaffold: catalogue, `/cy/` pages, `hreflang`, switch | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
+| LANG4 | Tier A copy in Welsh | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
+| LANG6 | HMRC's Welsh services on the Welsh pages | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
 
 ## Verification
 
