@@ -25,6 +25,11 @@ describe("content that names a catalogue activity", () => {
     expect(named.filter((id) => !catalogIds.has(id))).toEqual([]);
   });
 
+  test("every FAQ id is unique", () => {
+    const ids = TOML.parse(readFileSync("web/public/faqs.toml", "utf8")).faq.map((faq) => faq.id);
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
+  });
+
   test("every tagged element on a page names an activity the catalogue has", () => {
     for (const page of ["mcp.html", "about.html", "help.html", "index.html", "guide.html"]) {
       const html = readFileSync(`web/public/${page}`, "utf8");

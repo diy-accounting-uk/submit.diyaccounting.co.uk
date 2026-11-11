@@ -613,10 +613,37 @@ Not yet. The Company Tax Return (CT600) is a **preview** on our simulator. It pr
 
 Filing it needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle.
 
+You can also file the accounts and the return as one filing. See [filing both together](help.html#accounts-and-company-tax-return-together).
+
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
 keywords = ["ct600", "company tax return", "corporation tax", "hmrc company tax", "tax return"]
 priority = 32
+
+[[faq]]
+id = "accounts-and-company-tax-return-together"
+activity = "file-company-tax-return-with-accounts"
+category = "submission"
+question = "Can I file my accounts and Company Tax Return together?"
+answer = """
+Not yet. Filing both together is a **preview** on our simulator. Nothing goes to Companies House or HMRC for real.
+
+On the Company Tax Return form, choose **To Companies House and to HMRC with the Company Tax Return**. You fill in one form. The accounts go to Companies House first. When Companies House accepts them, the Company Tax Return goes to HMRC with the same figures. While Companies House has not answered, you can send the Company Tax Return now or wait. If Companies House then rejects the accounts, a changed figure needs an amended return.
+
+If Companies House rejects the accounts or its gateway fails, nothing goes to HMRC. Change the accounts in the review and send again. If HMRC rejects the return after Companies House accepted the accounts, you send only the return again.
+
+If your company is a small company, the form asks which copy goes to Companies House: the full accounts or the filleted accounts. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way. A micro-entity's accounts go to Companies House without the profit and loss account.
+
+You need the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle, the company authentication code from Companies House (6 to 8 characters), and the Government Gateway user ID and password for the company's Corporation Tax enrolment.
+
+Each filing costs one token, charged when that filing is accepted. Both together cost two tokens. A rejected filing costs nothing.
+
+You get two receipts under one filing. Find them on [Your receipts](hmrc/receipt/receipts.html).
+
+See the [guide](guide.html#file-company-tax-return-with-accounts) and the [availability table](mtd-calendar.html#availability).
+"""
+keywords = ["accounts and tax return together", "file both", "joint filing", "companies house and hmrc", "ct600", "company tax return", "annual accounts", "filleted accounts", "one filing"]
+priority = 35
 
 [[faq]]
 id = "diya-gl-books"
