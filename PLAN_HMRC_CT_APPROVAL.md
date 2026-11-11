@@ -26,7 +26,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 ### Human-driven
 
-- [ ] **O34g. HMRC Corporation Tax test-service credentials.** The registration email went to SDST on 2026-10-23 at 22:07 (`../private.diyaccounting.co.uk/hmrc/ct/EMAIL_SDST_CT600_REGISTRATION.md`); when SDST answers, set the test-service (ETS) sender id, password and the 4-digit vendor id as secrets on GitHub's `ci` environment, named as this plan's design section lists them. Unblocks B34g2 (B34g1 proves against the credential-free payload validator first). **Source**: this plan, design section. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **O34g. HMRC Corporation Tax test-service credentials.** SDST answered on 2026-11-11 at 10:51 (`../private.diyaccounting.co.uk/hmrc/ct/EMAIL_SDST_CT600_VENDOR_ID_2026-11-11.md`): Vendor ID 9873, sender ID `CTUser100`, UTR 8596148860, and a list of test passwords (`../Test service passwords-v1-0.txt` at the workspace root and in the operator's KeePass vault). Left: the operator sets GitHub's `ci` environment secrets `HMRC_CT_ETS_SENDER_ID`, `HMRC_CT_ETS_PASSWORD` and `HMRC_CT_ETS_UTR` with the piped commands on `NEXT.md` O34g (the classifier denies the writes to sessions). The Vendor ID is not a secret: it goes into `cdk-application/cdk.json` `hmrcCtVendorId` and `.env.ci` with B34g. **Source**: this plan, design section. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ### Blocked
 
@@ -50,7 +50,7 @@ flowchart LR
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-- O34g: blocked on SDST's answer
+- O34g: SDST answered 2026-11-11 (Vendor ID 9873); the three `ci` secrets are left
 - B34g1: built (PR #475); its ETS proof waits on O34g and runs with B34g2b as `NEXT.md` B34g
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
 - DF2b: blocked by B34g2b
