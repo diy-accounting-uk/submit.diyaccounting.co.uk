@@ -206,6 +206,23 @@ header::after {
   }
 }
 
+/* On the narrowest phones the band's controls pack tighter so the brand, both icons and then the switch beside the account controls all fit. */
+@media (max-width: 360px) {
+  .header-nav {
+    column-gap: 0;
+  }
+
+  .language-switch {
+    margin-right: var(--space-3);
+    gap: var(--space-1);
+    font-size: 0.75rem;
+  }
+
+  .language-switch > * + *::before {
+    margin-right: var(--space-1);
+  }
+}
+
 /* Home icon used outside the band */
 .home-icon {
   display: inline-block;
@@ -245,14 +262,14 @@ header::after {
   min-width: 0;
 }
 
-/* The language switch, at the right-hand end of the main navigation row so the header keeps
-   its reserved height: the current language as plain text, the other as a link. */
+/* The language switch sits in the band after the theme button: the current language as plain
+   text, the other as a link, both on one baseline at the height of a control. */
 .language-switch {
-  display: flex;
-  margin-left: auto;
+  display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   gap: var(--space-2);
+  margin-left: var(--space-2);
   font-size: var(--step--1);
   white-space: nowrap;
 }
@@ -267,7 +284,8 @@ header::after {
   font-weight: var(--weight-strong);
 }
 
-.language-switch a {
+.language-switch a,
+.language-switch [aria-current] {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
