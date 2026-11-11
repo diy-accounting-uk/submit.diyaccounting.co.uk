@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-1a2e476** (PR #801's merge 1a2e4766a, deploy run 43064810075, 2026-11-11: CT28's compliance fixes, the ZAP rules and the Chromium install that skips apt; PR #802's deploy, run 43072935361, kept this set).
+**Prod runs deployment prod-753a3fc** (PR #803's merge 753a3fc42, deploy run 43105752860, 2026-11-11 22:22 UTC: the CT600 scenario runner, the joint filing activity, the sign-out grant delete with `Authorization`, the WAF alarm dimensions and the single Pa11y run).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment` and carries PR #803's head; ci-set2 is destroyed.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -40,11 +40,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-- [ ] **FPH5. Prove sign-out ends the HMRC grant on prod.** The fix is on `main` since PR #803 (753a3fc42, 2026-11-11 21:45 UTC): sign-out sends the grant delete with `Authorization`, which the grant routes' JWT authorizer reads. Left: after `main`'s deploy (run 43105752860) and the next deploy test or probe on prod, read `/aws/apigw/prod-env/access` for `DELETE /api/v1/mcp/hmrc-grants/{grantId}` answering 204 and no 401, then close. **Source**: operator, 2026-11-04; the log read of 2026-11-11. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **AL27. Read the WAF alarms on the new prod set.** The four alarms watch `WebACL` and `Rule` only since PR #803 (753a3fc42, 2026-11-11 21:45 UTC). Left: after `main`'s deploy (run 43105752860), `aws --profile diya-submit-prod cloudwatch describe-alarms --region us-east-1 --alarm-names prod-<set>-app-waf-rate-limit` shows those two dimensions and state OK, then close. An end-to-end ALARM needs a real block of 50 requests in 5 minutes, which is the operator's call. **Source**: operator's question on A11Y1, 2026-11-11. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **A11Y1. Prove Pa11y on prod after the single-run change.** Pa11y runs once, 6 seconds a page, and gates the job since PR #803 (753a3fc42, 2026-11-11 21:45 UTC). Left: after `main`'s deploy (run 43105752860), `gh workflow run compliance.yml --ref main -f environment-name=prod`, with Pa11y at 67 pages and 0 errors and no `RateLimitRule` block in the window, then close. **Source**: CT28's prod run, 2026-11-11. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **A11Y1. Prove Pa11y on prod after the single-run change.** Pa11y runs once, 6 seconds a page, and gates the job since PR #803 (753a3fc42, 2026-11-11 21:45 UTC). Running: the prod compliance run 43111265865 (dispatched 2026-11-11 22:22 UTC on prod-753a3fc). Left: read it, with Pa11y at 67 pages and 0 errors and no `RateLimitRule` block in the window, then close. **Source**: CT28's prod run, 2026-11-11. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **API4. Sign-out does not end the Companies House grant.** The page has no sign-out delete for the Companies House grant and no route deletes one: `app/functions/companies-house/companiesHouseTokenPost.js` seals the grant into the sessions table (`ch-grant:<id>`), where it stays until its TTL. Build a delete route for the caller's own Companies House grant, on the pattern of `DELETE /api/v1/mcp/hmrc-grants/{grantId}` (`app/functions/mcp/mcpHmrcGrant.js`, with the native JWT authorizer and the `Authorization` header), call it from `deleteHmrcGrant`'s place in `web/public/widgets/auth-status.js` at sign-out, and test that a signed-out grant is refused by the filing routes. Built on the batch `claude/comet-ci-gates` (bd05c49b3): `DELETE /api/v1/companies-house/grants/{grantId}` on the token Lambda, called at sign-out. Left: the batch's PR and merge, then on ci or prod a sign-out with a grant shows the DELETE answering 204 in the API Gateway access log. **Source**: FPH5's investigation, 2026-11-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
