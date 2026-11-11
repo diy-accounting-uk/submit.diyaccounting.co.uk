@@ -97,6 +97,13 @@ early. `/auto-merge` is what settles it.
 If `/auto-merge` merges anything, the scope changes — the PR's branch leaves it and `main` gains a
 deploy. Re-read the scope on the next cycle rather than carrying the old one.
 
+## A runner-setup change is tried in one job first
+
+Before a push whose only purpose is a change to runner setup (an install script, the toolchain
+action, a job's packages), dispatch `runner-install-check.yml` on the branch with
+`gh workflow run runner-install-check.yml --ref <branch>`. Push the PR only when it passes. One
+push re-runs about 160 test and 290 deploy job-minutes; the check is one job of a few minutes.
+
 ## When a red arrives
 
 **Gather the whole run's failures before fixing anything.** One run's worth, diagnosed together,
