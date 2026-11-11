@@ -2,7 +2,8 @@
   "defaults": {
     "standard": "WCAG2AA",
     "timeout": 30000,
-    "wait": 2000,
+    "wait": 6000,
+    "reporters": ["cli", ["json", { "fileName": "web/public/tests/accessibility/pa11y-results.json" }]],
     "chromeLaunchConfig": {
       "args": ["--no-sandbox"]
     }

@@ -145,14 +145,8 @@ jobs:
           npm-install: scripts
       - name: Run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
         run: npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
-        continue-on-error: true
-      - name: Save pa11y JSON results for the compliance panel
-        run: |
-          mkdir -p web/public/tests/accessibility
-          npx pa11y-ci --config .pa11yci.${{ needs.names.outputs.environment-name }}.json --reporter json \
-            > web/public/tests/accessibility/pa11y-results.json
-        continue-on-error: true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
         with:
           name: pa11y-results
           path: web/public/tests/accessibility/pa11y-results.json
