@@ -1128,7 +1128,7 @@ One UUID names the filing. It is `jointFilingId` when the accounts go to Compani
 2" or "2 of 2" with its dates. `jointFilingFields` keeps its meaning: an id on a return says the
 accounts went with it.
 
-Each return costs one token through today's charge path, so a long period costs two (question 2).
+A long period costs one token for both returns (operator, 2026-11-11). Part 1 takes the token. Part 2 of the same `longPeriod.filingId` takes none, and the server checks that part 1 of that filing was charged to the same account.
 
 **The page.** One form, two reviews, two sends, in order. The first column of each per-period
 field keeps today's element id, so a return of 12 months or less does not change. The second
@@ -1201,9 +1201,7 @@ first; both returns are then amended where their boxes differ.
    context. The build uses these. The TPVS proof tests the schema and the rules. If TPVS answers
    with a context error, the build moves every computation fact to the accounting period's
    context. The question goes in the CT26 email.
-2. Operator: a long period costs two tokens, one for each return, or one. Recommendation: two,
-   because each return is a CT600 filing on today's charge path. The build charges two.
-3. Operator: a spreadsheets row for a Company book of up to 18 months. Recommendation: board it
+2. Operator: a spreadsheets row for a Company book of up to 18 months. Recommendation: board it
    when a customer asks. The build takes a long period on the typed route.
 
 **The build.** Each step branches from the batch that holds the one before. Run `npm run bundle`
