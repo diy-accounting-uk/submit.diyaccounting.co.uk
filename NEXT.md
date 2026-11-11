@@ -42,6 +42,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
+- [ ] **LANG7. The language switch is off-screen on a phone.** On prod (prod-64402e2) at 375px wide, the switch sits at the end of the main navigation row (`web/public/widgets/page-chrome.js`, `mainNav.append(languageSwitch)`), which scrolls sideways, so a Welsh reader sees no "English" link and an English reader no "Cymraeg" link without scrolling the row. Screenshot: `target/vr-header/cy-375.png` (local). Fix: below the narrow breakpoint in `web/public/css/navigation.css` (the `.main-nav` block near line 180), give `.language-switch` `order: -1` and no left margin, so it leads the row; keep the header height (the layout-shift tests in `web/browser-tests/layoutShift.browser.test.js` must still pass at 375 and 280); add a case to `web/browser-tests/languageSwitch.browser.test.js` that the other-language link is in the viewport at 375px. **Source**: visual review after PR #795 (2026-11-11). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
 ## Machine-ask
 
 ## Human-driven
