@@ -19,7 +19,6 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
 | CT30 | A `--scenario <file>` runner for the recognition pack's scenarios, proven on TPVS | ~4 | Sonnet | — |
-| CT31 | HMRC's published RIM V1.994 sample cases through CT30's runner; the refused list becomes build rows | ~2 | Sonnet | CT30 |
 | CT32 | The brief shows complete filings for three company sizes, the error handling and the videos | ~4 | Sonnet | — |
 | CT29 | A `file-company-tax-return-with-accounts` activity, so the joint filing is enabled apart from the CT600 alone (page and Lambda gate) | ~6 | Sonnet | — |
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | CT29, UH7 |
