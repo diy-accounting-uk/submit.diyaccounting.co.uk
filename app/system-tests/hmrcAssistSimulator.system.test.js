@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { startSimulator } from "../http-simulator/index.js";
+import { vatErrors } from "../http-simulator/scenarios/assist.js";
 
 const vrn = "123456789";
 const nino = "AA123456A";
@@ -114,7 +115,7 @@ describe("HTTP Simulator HMRC Assist", () => {
 
     it.each([
       ["INVALID_VRN", 400, "VRN_INVALID"],
-      ["INVALID_PERIODKEY", 400, "PERIOD_KEY_INVALID"],
+      ["INVALID_PERIODKEY", 400, "INVALID_REQUEST"],
       ["INVALID_REQUEST", 400, "INVALID_REQUEST"],
       ["TAX_PERIOD_NOT_ENDED", 403, "TAX_PERIOD_NOT_ENDED"],
       ["INSOLVENT_TRADER", 403, "RULE_INSOLVENT_TRADER"],
@@ -146,12 +147,32 @@ describe("HTTP Simulator HMRC Assist", () => {
       expect(badVrn.status).toBe(400);
       expect((await badVrn.json()).code).toBe("VRN_INVALID");
       const badKey = await postJson(feedbackPath, { ...vatBody, periodKey: "TESTKEY" });
-      expect((await badKey.json()).code).toBe("PERIOD_KEY_INVALID");
+      expect(await badKey.json()).toEqual({
+        code: "INVALID_REQUEST",
+        message: "Invalid request",
+        errors: [{ code: "PERIOD_KEY_INVALID", message: "period key should be a 4 character string", path: "/periodKey" }],
+      });
       const missingBox = { ...vatBody };
       delete missingBox.netVatDue;
       const response = await postJson(feedbackPath, missingBox);
       expect(response.status).toBe(400);
-      expect((await response.json()).code).toBe("INVALID_REQUEST");
+      expect(await response.json()).toEqual({
+        code: "INVALID_REQUEST",
+        message: "Invalid request",
+        errors: [{ code: "MANDATORY_FIELD_MISSING", message: "a mandatory field is missing", path: "/netVatDue" }],
+      });
+    });
+
+    it.each([
+      ["PERIOD_KEY_INVALID", 400, "The supplied period key does not match an open obligation"],
+      ["FEEDBACK_INVALID_CREDENTIALS", 401, "Invalid Authentication information provided"],
+      ["ACKNOWLEDGE_INVALID_CREDENTIALS", 401, "Invalid authentication information provided."],
+      ["VRN_NOT_FOUND", 404, "The remote endpoint has indicated that the VRN could not be found."],
+      ["INTERNAL_SERVER_ERROR", 500, "An unexpected error occurred."],
+      ["SERVICE_UNAVAILABLE", 503, "The service is currently unavailable"],
+    ])("holds the published %s answer with status %i and its message", (key, status, message) => {
+      expect(vatErrors[key].status).toBe(status);
+      expect(vatErrors[key].body.message).toBe(message);
     });
   });
 

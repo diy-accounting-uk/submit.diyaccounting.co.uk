@@ -499,7 +499,9 @@ test.describe("HMRC Assist check on the VAT return", () => {
 
   for (const [name, answer] of [
     ["a 403", { status: 403, body: { message: "forbidden" } }],
+    ["a 404 VRN_NOT_FOUND", { status: 404, body: { code: "VRN_NOT_FOUND", message: "not found" } }],
     ["a 500", { status: 500, body: { message: "failed" } }],
+    ["a 503", { status: 503, body: { code: "SERVICE_UNAVAILABLE", message: "unavailable" } }],
     ["a network failure", { abort: true }],
   ]) {
     test(`shows one line and leaves the form as it was after ${name}`, async ({ page }) => {

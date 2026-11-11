@@ -271,6 +271,17 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     expect(receiptPuts()).toHaveLength(0);
   });
 
+  test.each([
+    [500, "INTERNAL_SERVER_ERROR"],
+    [503, "SERVICE_UNAVAILABLE"],
+  ])("maps an HMRC %i (%s) to a 500 and leaves the receipt unstamped", async (status, code) => {
+    mockHmrcError(mockFetch, status, { code, message: "HMRC is down" });
+    const response = await ingestHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect(receiptPuts()).toHaveLength(0);
+  });
+
   test("returns 202 when x-wait-time-ms is 0", async () => {
     const response = await ingestHandler(buildEvent({ headers: { "x-wait-time-ms": "0" } }));
     expect(response.statusCode).toBe(202);

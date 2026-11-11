@@ -8,7 +8,13 @@
 
 import { randomUUID, randomBytes } from "crypto";
 import { storeAssistReport, getAssistReport } from "../state/store.js";
-import { vatFeedbackLists, getVatFeedbackScenarioResponse, getVatAcknowledgeScenarioResponse, vatErrors } from "../scenarios/assist.js";
+import {
+  vatFeedbackLists,
+  getVatFeedbackScenarioResponse,
+  getVatAcknowledgeScenarioResponse,
+  vatErrors,
+  missingFieldError,
+} from "../scenarios/assist.js";
 
 const REQUIRED_FIELDS = [
   "periodKey",
@@ -65,9 +71,9 @@ export function apiEndpoint(app) {
 
     const body = req.body || {};
     for (const field of REQUIRED_FIELDS) {
-      if (body[field] === undefined || body[field] === null) return sendError(res, vatErrors.INVALID_REQUEST);
+      if (body[field] === undefined || body[field] === null) return sendError(res, missingFieldError(field));
     }
-    if (!isValidPeriodKey(body.periodKey)) return sendError(res, vatErrors.PERIOD_KEY_INVALID);
+    if (!isValidPeriodKey(body.periodKey)) return sendError(res, vatErrors.INVALID_REQUEST_PERIOD_KEY_FORMAT);
 
     const reportId = randomUUID();
     if (scenarioResponse?.feedback === "none") {
