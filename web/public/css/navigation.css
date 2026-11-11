@@ -114,10 +114,6 @@ dd {
     margin-bottom: var(--space-1);
   }
 
-  .login-prefix {
-    display: none;
-  }
-
   .brand-name {
     font-size: var(--step-0);
   }

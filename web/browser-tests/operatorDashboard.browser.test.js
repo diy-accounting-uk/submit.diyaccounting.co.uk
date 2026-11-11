@@ -1772,7 +1772,8 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page);
       await loadDashboard(page, { loggedIn: true });
 
-      await expect(page.locator(".login-status")).toHaveText("Logged in as Operator");
+      await expect(page.locator(".login-status")).toHaveText("Operator");
+      await expect(page.locator(".login-status")).toHaveAttribute("aria-label", "Signed in as Operator");
       await expect(page.locator(".login-link")).toHaveText("Logout");
       await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
     });

@@ -289,6 +289,14 @@ header::after {
   color: var(--c-error);
 }
 
+.login-person {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  vertical-align: -0.15em;
+  fill: currentColor;
+}
+
 .login-status {
   color: var(--c-ink-muted);
   font-size: var(--step--1);

@@ -86,7 +86,7 @@ for (const { path, otherName } of [
         if (signedIn) {
           await expect(page.locator(".token-balance .token-count")).toHaveText(/tokens/);
           await expect(page.locator(".token-refresh-btn")).toBeVisible();
-          await expect(page.locator(".login-status")).toContainText("Logged in as");
+          await expect(page.locator(".login-status")).toHaveAttribute("aria-label", /^(Signed in as|Wedi mewngofnodi fel) /);
         } else {
           await expect(page.locator(".login-status")).toHaveText("Not logged in");
         }

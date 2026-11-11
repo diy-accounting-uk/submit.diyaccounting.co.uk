@@ -70,7 +70,7 @@ export async function verifyLoggedInStatus(page, screenshotPath = defaultScreens
   await test.step("The user returns to the home page and sees their logged-in status", async () => {
     console.log("Checking home page...");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home.png`, readerView: true });
-    await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
+    await expect(page.getByRole("group", { name: /^Signed in as / })).toBeVisible({ timeout: 16000 });
   });
 }
 
