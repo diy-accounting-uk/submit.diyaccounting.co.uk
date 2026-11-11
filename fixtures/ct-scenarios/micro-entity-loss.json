@@ -1,0 +1,72 @@
+{
+  "name": "micro-entity-loss",
+  "description": "Made-up micro-entity with a trading loss of 12000 carried forward, FRS 105 accounts.",
+  "sender": "company",
+  "request": {
+    "registeredOffice": {
+      "addressLine1": "1 Example Road",
+      "cityOrTown": "London",
+      "postalCode": "EC1A 1AA"
+    },
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 2,
+    "declarationAccepted": true,
+    "companyNumber": "09999992",
+    "companyName": "Micro Loss Example Ltd",
+    "tradeName": "Garden design",
+    "director": {
+      "name": "Sam Example",
+      "dateApproved": "2026-06-30"
+    },
+    "declarant": {
+      "name": "Sam Example",
+      "status": "Director"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 0,
+        "currentAssets": 20000,
+        "creditorsWithinOneYear": 4000,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 15900,
+        "capitalAndReserves": 16000
+      },
+      "priorYear": {
+        "fixedAssets": 0,
+        "currentAssets": 30000,
+        "creditorsWithinOneYear": 2000,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 27900,
+        "capitalAndReserves": 28000
+      }
+    },
+    "profitAndLoss": {
+      "currentYear": {
+        "turnover": 30000,
+        "otherIncome": 0,
+        "rawMaterials": 5000,
+        "staffCosts": 0,
+        "depreciation": 0,
+        "otherCharges": 37000,
+        "profitBeforeTax": -12000,
+        "tax": 0,
+        "profit": -12000
+      }
+    },
+    "figures": {
+      "periodStart": "2025-04-01",
+      "periodEnd": "2026-03-31",
+      "companyType": 0,
+      "associatedCompanies": 0
+    }
+  }
+}

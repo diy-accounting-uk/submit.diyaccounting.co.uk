@@ -32,7 +32,14 @@
  * With --ets --tamper-irmark the IRmark is changed after it is computed; the case passes (exit 0)
  * only when HMRC answers business error 2021 and the delete succeeds.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]
+ * With --scenario <file> the return is built from one scenario file (fixtures/ct-scenarios/marginal-relief-small.json
+ * shows the format): the typed figures the typed-entry page posts, worked by the product's own request
+ * code. It writes <out>/<scenario name>/ with request.xml, each response, result.json and, when the
+ * product refuses the scenario, refused.json with the field and message and exit code 2. It works with
+ * --ets, which reads the ETS credentials from the environment, and with --utr for TPVS.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js --scenario <file> [--out <dir>] [--utr <10 digits>] [--ets]
+ *        node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -60,6 +67,11 @@ import { readEtsInputs, runEtsExchange, tamperCasePassed, tamperIrmark } from ".
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
   return index === -1 ? fallback : process.argv[index + 1];
+}
+
+if (process.argv.includes("--scenario")) {
+  const { runScenarioCommand } = await import("./lib/ctScenarioCommand.js");
+  process.exit(await runScenarioCommand({ argv: process.argv, env: process.env }));
 }
 
 const loansIndex = process.argv.indexOf("--loans");
