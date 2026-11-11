@@ -117,6 +117,38 @@
     });
   }
 
+  // A page with hreflang alternates gets a switch to the same page in the other language.
+  const LANGUAGE_NAMES = { "en-GB": "English", "cy": "Cymraeg" };
+  const LANGUAGE_SWITCH_LABELS = { "en-GB": "Language", "cy": "Iaith" };
+
+  function buildLanguageSwitch(rootPrefix) {
+    const alternates = Array.from(document.querySelectorAll('head link[rel="alternate"][hreflang]')).filter(function (link) {
+      return Object.prototype.hasOwnProperty.call(LANGUAGE_NAMES, link.getAttribute("hreflang"));
+    });
+    if (alternates.length < 2) return null;
+    const currentLang = document.documentElement.getAttribute("lang");
+    const nav = document.createElement("nav");
+    nav.className = "language-switch";
+    nav.setAttribute("aria-label", LANGUAGE_SWITCH_LABELS[currentLang] || LANGUAGE_SWITCH_LABELS["en-GB"]);
+    alternates.forEach(function (link) {
+      const lang = link.getAttribute("hreflang");
+      let item;
+      if (lang === currentLang) {
+        item = document.createElement("span");
+        item.setAttribute("aria-current", "true");
+      } else {
+        item = document.createElement("a");
+        const sitePath = new URL(link.getAttribute("href")).pathname.replace(/^\//, "");
+        item.setAttribute("href", rootPrefix + sitePath || "./");
+        item.setAttribute("hreflang", lang);
+      }
+      item.setAttribute("lang", lang);
+      item.textContent = LANGUAGE_NAMES[lang];
+      nav.append(item);
+    });
+    return nav;
+  }
+
   const NAV_LINKS = [
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
@@ -249,6 +281,9 @@
     // eslint-disable-next-line no-unsanitized/method -- both strings are built from the fixed NAV_LINKS table and the page-relative root prefix
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
+    const languageSwitch = buildLanguageSwitch(rootPrefix);
+    const authSection = header.querySelector(".auth-section");
+    if (languageSwitch && authSection) authSection.prepend(languageSwitch);
 
     // On a narrow screen the row scrolls sideways; bring the current page's link into view.
     const nav = header.querySelector(".main-nav");

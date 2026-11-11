@@ -10,15 +10,20 @@
     <meta
       name="description"
       content="Submit VAT returns to HMRC Making Tax Digital. Secure VAT submission tool for DIY Accounting spreadsheet users. Free guest tier available."
+      data-i18n-content="index.description"
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/index.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/" />
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="DIY Accounting Submit - VAT Returns for MTD" />
+    <meta property="og:title" content="DIY Accounting Submit - VAT Returns for MTD" data-i18n-content="index.title" />
     <meta
       property="og:description"
       content="Submit VAT returns to HMRC Making Tax Digital. Secure VAT submission tool for DIY Accounting spreadsheet users. Free guest tier available."
+      data-i18n-content="index.description"
     />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/" />
     <meta property="og:site_name" content="DIY Accounting" />
@@ -86,18 +91,35 @@
     <!--script async src="./prefetch/prefetch-bundle-head.js"></script-->
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>Activities</h1>
-      <p class="subtitle" id="homeSubtitle">Submit to HMRC and Companies House</p>
+      <h1 data-i18n="index.heading">Activities</h1>
+      <p class="subtitle" id="homeSubtitle" data-i18n="index.subtitle">Submit to HMRC and Companies House</p>
     </header>
 
     <main id="mainContent">
-      <div id="feedbackEngagementBanner" class="feedback-banner" role="complementary" aria-label="Feedback engagement" hidden>
+      <div
+        id="feedbackEngagementBanner"
+        class="feedback-banner"
+        role="complementary"
+        aria-label="Feedback engagement"
+        data-i18n-aria-label="index.feedback-label"
+        hidden
+      >
         <span id="feedbackEngagementMessage"></span>
-        <button type="button" id="feedbackEngagementBtn" class="btn btn-small">I'm willing to share feedback</button>
-        <button type="button" id="feedbackDismissBtn" class="link-button" aria-label="Dismiss feedback banner">&#x2715;</button>
+        <button type="button" id="feedbackEngagementBtn" class="btn btn-small" data-i18n="index.feedback-button">
+          I'm willing to share feedback
+        </button>
+        <button
+          type="button"
+          id="feedbackDismissBtn"
+          class="link-button"
+          aria-label="Dismiss feedback banner"
+          data-i18n-aria-label="index.feedback-dismiss"
+        >
+          &#x2715;
+        </button>
       </div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
@@ -106,25 +128,27 @@
         <div id="dynamicActivities" class="reserve-viewport-height"></div>
       </div>
 
-      <p class="hint" id="homePriceLine">
+      <p class="hint" id="homePriceLine" data-i18n="index.price">
         VAT returns to HMRC cost £0.99 a month or £9.99 a year. A pass link gives you 3 VAT submissions free for 7 days first.
       </p>
 
+      <p class="hint" data-i18n="index.get-started"><a href="get-started.html">New to Submit? Read how to get started.</a></p>
+
       <div class="feature-status-summary" data-feature-status="summary">
-        <p>
+        <p data-i18n="index.status">
           <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
           <a href="mtd-calendar.html#availability">See the availability table</a>.
         </p>
         <ul id="featureStatusList"></ul>
       </div>
 
-      <aside class="proof-note" aria-label="Reviews and listing">
-        <p>
+      <aside class="proof-note" aria-label="Reviews and listing" data-i18n-aria-label="index.reviews-label">
+        <p data-i18n="index.reviews">
           <span class="proof-stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
           <strong>5.0</strong>
           <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 reviews on Google</a>
         </p>
-        <blockquote>
+        <blockquote lang="en-GB">
           <p>
             &ldquo;I highly recommend the DIY Accounting accounts packages: far better value and much simpler than expensive subscription
             accounting packages.&rdquo;
@@ -133,8 +157,8 @@
         </blockquote>
       </aside>
 
-      <aside class="proof-note" aria-label="HMRC software finder">
-        <p>
+      <aside class="proof-note" aria-label="HMRC software finder" data-i18n-aria-label="index.finder-label">
+        <p data-i18n="index.finder">
           DIY Accounting Submit is listed on HMRC's official finder for Making Tax Digital VAT software.
           <a href="https://www.tax.service.gov.uk/making-tax-digital-software" target="_blank" rel="noopener">Search for DIY Accounting</a>
           on the finder to check for yourself.

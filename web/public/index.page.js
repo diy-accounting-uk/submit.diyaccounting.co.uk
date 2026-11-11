@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// The page's distance from the site root, read from this script's own src ("" on /index.html, "../" on /cy/index.html).
+const SITE_ROOT_PREFIX = (document.currentScript?.getAttribute("src") || "").replace(/index\.page\.js$/, "");
+
 // In-memory user bundles state (list of bundleId strings)
 let __userBundles = [];
 let __syntheticBundleIds = new Set();
@@ -220,7 +223,7 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
     button.disabled = true;
   } else {
     button.addEventListener("click", () => {
-      window.location.href = href;
+      window.location.href = /^(\/|[a-z]+:)/.test(href) ? href : SITE_ROOT_PREFIX + href;
     });
   }
   item.append(button);
@@ -239,7 +242,7 @@ function renderFeatureStatus(catalog, environmentName, viewer) {
   const subtitle = document.getElementById("homeSubtitle");
   const { groups, filings } = window.featureStatusSummary(catalog, environmentName, viewer);
   if (list) window.renderFeatureStatusList(list, groups);
-  if (subtitle && filings.length > 0) {
+  if (subtitle && filings.length > 0 && document.documentElement.lang === "en-GB") {
     subtitle.textContent = `Submit ${window.joinWithAnd(filings)} to HMRC and Companies House`;
   }
 }

@@ -21,6 +21,27 @@
       }
     },
     {
+      "path": "/cy/index.html",
+      "thresholds": {
+        "performance": 50,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/get-started.html",
+      "thresholds": {
+        "performance": 69,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/cy/get-started.html",
+      "thresholds": {
+        "performance": 69,
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/guide.html",
       "thresholds": {
         "performance": 65,

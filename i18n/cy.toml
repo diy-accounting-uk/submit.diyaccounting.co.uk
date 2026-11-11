@@ -1,0 +1,221 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The Welsh text of the pages under web/public/cy/, built by scripts/build-welsh-pages.mjs.
+# [strings."<id>"] holds the Welsh for the English element marked data-i18n="<id>" (or data-i18n-<attr>="<id>").
+# hash is the hash of that English text. When the English changes, the build and npm test list the entry as stale
+# with the new hash: translate the new English, then put the new hash here.
+# [shared."<id>"] holds Welsh-only text that every Welsh page carries.
+# Product names (DIY Accounting, Submit, Bundles, Submit VAT) stay in English. Text that HMRC sends back stays as HMRC sends it.
+#
+# Glossary: HMRC's own Welsh terms, from the gov.uk Welsh pages.
+#   HMRC                          Cyllid a Thollau EF (CThEF)
+#   VAT                           Treth ar Werth (TAW)
+#   VAT return                    Ffurflen TAW
+#   VAT registration number       rhif cofrestru TAW
+#   VAT-registered business       busnes sydd wedi'i gofrestru ar gyfer TAW
+#   Income Tax                    Treth Incwm
+#   Making Tax Digital            Troi Treth yn Ddigidol
+#   Making Tax Digital for VAT    Troi Treth yn Ddigidol ar gyfer TAW
+#   Self Assessment               Hunanasesiad
+#   tax return                    Ffurflen Dreth
+#   PAYE                          TWE
+#   National Insurance            Yswiriant Gwladol
+#   customs, excise               tollau, ecséis
+#   sole traders and landlords    unig fasnachwyr a landlordiaid
+#   qualifying income             incwm cymhwysol
+#   tax year                      blwyddyn dreth
+#   quarterly update              diweddariad chwarterol
+#   software                      meddalwedd
+#   compatible software           meddalwedd sy'n cydweddu
+#   bridging software             meddalwedd bontio
+#   digital records               cofnodion digidol
+#   obligations                   rhwymedigaethau
+#   agent                         asiant
+#   Government Gateway user ID    Dynodydd Defnyddiwr (ID) ar gyfer Porth y Llywodraeth
+#   Companies House               Tŷ'r Cwmnïau
+#   confirmation statement        datganiad cadarnhau
+#   helpline                      llinell gymorth
+#   bank holidays                 gwyliau banc
+# Our own terms:
+#   day pass                      tocyn diwrnod
+#   pass link                     dolen tocyn
+#   token                         credyd (with "tokens" in brackets where the English screen says tokens)
+#   VAT submission                cyflwyniad TAW
+#   sandbox                       amgylchedd prawf (sandbox)
+#   preview                       rhagolwg (preview)
+# Sources: https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat.cy
+#          https://www.gov.uk/guidance/choose-the-right-software-for-making-tax-digital-for-income-tax.cy
+#          https://www.gov.uk/government/news/sole-traders-and-landlords-earning-more-than-30000-urged-to-act-now.cy
+#          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines (updated 19 Rhagfyr 2025)
+#          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/vat-customs-and-excise-and-duties-enquiries-for-welsh-speaking-customers (updated 19 Rhagfyr 2025)
+
+[shared."hmrc-welsh-services"]
+cy = '''
+<h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+<p>Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’ ar dudalen CThEF.</p>
+<p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+<p>Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE: <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>. Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.</p>
+<p><a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines">Llinellau cymorth Cymraeg CThEF ar GOV.UK</a></p>
+<p class="welsh-services-note">Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.</p>
+'''
+
+[strings."common.skip-link"]
+hash = "c887f134c26e"
+cy = '''Neidio i’r prif gynnwys'''
+
+[strings."index.title"]
+hash = "cb3609b4c4dc"
+cy = '''DIY Accounting Submit - Ffurflenni TAW ar gyfer Troi Treth yn Ddigidol'''
+
+[strings."index.description"]
+hash = "871f948f13b7"
+cy = '''Cyflwynwch Ffurflenni TAW i CThEF drwy’r cynllun Troi Treth yn Ddigidol. Teclyn diogel i gyflwyno TAW i ddefnyddwyr taenlenni DIY Accounting. Mae haen westai am ddim ar gael.'''
+
+[strings."index.heading"]
+hash = "4d0076e6b4c7"
+cy = '''Gweithgareddau'''
+
+[strings."index.subtitle"]
+hash = "c244775bd79e"
+cy = '''Cyflwyno i CThEF ac i Dŷ’r Cwmnïau'''
+
+[strings."index.feedback-label"]
+hash = "6fc1976630fa"
+cy = '''Rhannu adborth'''
+
+[strings."index.feedback-button"]
+hash = "09f35caecbad"
+cy = '''Rwy’n fodlon rhannu adborth'''
+
+[strings."index.feedback-dismiss"]
+hash = "8f1ff9d42342"
+cy = '''Cau’r neges am adborth'''
+
+[strings."index.price"]
+hash = "3b3c849f3275"
+cy = '''Mae Ffurflenni TAW i CThEF yn costio £0.99 y mis neu £9.99 y flwyddyn. Mae dolen tocyn yn rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod yn gyntaf.'''
+
+[strings."index.get-started"]
+hash = "de0ca0816695"
+cy = '''<a href="get-started.html">Newydd i Submit? Darllenwch sut i ddechrau arni.</a>'''
+
+[strings."index.status"]
+hash = "4506e5b3700f"
+cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a> (yn Saesneg).'''
+
+[strings."index.reviews-label"]
+hash = "b24146719e20"
+cy = '''Adolygiadau a rhestriad'''
+
+[strings."index.reviews"]
+hash = "21d3eb53dde7"
+cy = '''<span class="proof-stars" role="img" aria-label="5 allan o 5 seren">&#9733;&#9733;&#9733;&#9733;&#9733;</span> <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad ar Google</a>'''
+
+[strings."index.finder-label"]
+hash = "167fba46f9c4"
+cy = '''Teclyn chwilio meddalwedd CThEF'''
+
+[strings."index.finder"]
+hash = "84609fe4f109"
+cy = '''Mae DIY Accounting Submit wedi’i restru ar declyn chwilio swyddogol CThEF am feddalwedd Troi Treth yn Ddigidol ar gyfer TAW. <a href="https://www.tax.service.gov.uk/making-tax-digital-software" target="_blank" rel="noopener">Chwiliwch am DIY Accounting</a> ar y teclyn i wirio drosoch eich hun.'''
+
+[strings."get-started.title"]
+hash = "2491af039e03"
+cy = '''Dechrau arni - DIY Accounting Submit'''
+
+[strings."get-started.description"]
+hash = "adf20195665f"
+cy = '''Sut i anfon eich Ffurflen TAW i CThEF gyda DIY Accounting Submit: beth mae’n ei wneud, y pris, y tocyn diwrnod am ddim, Treth Incwm, a ble i gael help.'''
+
+[strings."get-started.heading"]
+hash = "61e8d44ad423"
+cy = '''Dechrau arni'''
+
+[strings."get-started.subtitle"]
+hash = "718cfbd44b2f"
+cy = '''Anfon eich Ffurflen TAW i CThEF'''
+
+[strings."get-started.what-heading"]
+hash = "4404ef66dc30"
+cy = '''Beth mae Submit yn ei wneud'''
+
+[strings."get-started.what-1"]
+hash = "71d604d7efc8"
+cy = '''Mae DIY Accounting Submit yn anfon eich Ffurflen TAW i CThEF o dan y cynllun Troi Treth yn Ddigidol. Meddalwedd bontio yw hi: rydych yn cadw’ch cofnodion mewn taenlen neu mewn meddalwedd arall, ac yna’n rhoi’r ffigurau ar gyfer y naw blwch yma a’u cyflwyno.'''
+
+[strings."get-started.what-2"]
+hash = "3b8d08b8024d"
+cy = '''Gallwch hefyd weld eich rhwymedigaethau TAW a’u dyddiadau dyledus, ac edrych ar y Ffurflenni a anfonoch o’r blaen. Pan fydd CThEF yn derbyn Ffurflen, mae’n anfon derbynneb yn ôl gyda rhif Form Bundle Number. Mae Submit hefyd yn cyflwyno cyfrifon a datganiadau cadarnhau i Dŷ’r Cwmnïau.'''
+
+[strings."get-started.price-heading"]
+hash = "93c91c851e7a"
+cy = '''Pris'''
+
+[strings."get-started.price"]
+hash = "33dbabfeb07c"
+cy = '''Mae Ffurflenni TAW i CThEF yn costio £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg.'''
+
+[strings."get-started.pass-heading"]
+hash = "e0e5828b7087"
+cy = '''Y tocyn diwrnod am ddim'''
+
+[strings."get-started.pass-1"]
+hash = "ba3d61570026"
+cy = '''Gallwch roi cynnig ar Submit am ddim yn gyntaf. Ar y dudalen <a href="bundles.html">Bundles</a> (yn Saesneg), gofynnwch am docyn diwrnod. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, ac mae pob cyflwyniad TAW yn defnyddio 1 credyd. Gall hyd at 100 o westeion ddal tocyn diwrnod ar yr un pryd. Os yw’r tocynnau i gyd yn cael eu defnyddio, rhowch gynnig eto y diwrnod wedyn.'''
+
+[strings."get-started.pass-2"]
+hash = "58a69ec5f922"
+cy = '''Os bydd rhywun yn anfon dolen tocyn atoch, mae’n rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod.'''
+
+[strings."get-started.vat-heading"]
+hash = "3b104c83c820"
+cy = '''Sut i anfon eich Ffurflen TAW'''
+
+[strings."get-started.vat-1"]
+hash = "9421da8f03f5"
+cy = '''Mewngofnodwch gyda’ch cyfrif Google neu Microsoft.'''
+
+[strings."get-started.vat-2"]
+hash = "3b2e45310271"
+cy = '''Gofynnwch am docyn diwrnod, neu tanysgrifiwch ar y dudalen Bundles.'''
+
+[strings."get-started.vat-3"]
+hash = "6e41c0fcee4a"
+cy = '''Dewiswch Submit VAT, ac yna rhowch eich rhif cofrestru TAW a dyddiadau’r cyfnod TAW.'''
+
+[strings."get-started.vat-4"]
+hash = "2efa2e8065ad"
+cy = '''Rhowch y ffigurau ar gyfer y blychau. Mae Submit yn cyfrifo blychau 3 a 5 i chi.'''
+
+[strings."get-started.vat-5"]
+hash = "47db8349289e"
+cy = '''Mewngofnodwch i CThEF gyda’ch Dynodydd Defnyddiwr (ID) ar gyfer Porth y Llywodraeth pan fydd Submit yn gofyn i chi wneud hynny, a rhowch ganiatâd i Submit anfon eich Ffurflenni.'''
+
+[strings."get-started.vat-6"]
+hash = "14e9a9ecf841"
+cy = '''Cyflwynwch y Ffurflen. Cadwch y dderbynneb y mae CThEF yn ei hanfon yn ôl.'''
+
+[strings."get-started.itsa-heading"]
+hash = "31db62e1dc8f"
+cy = '''Treth Incwm'''
+
+[strings."get-started.itsa-1"]
+hash = "757c5a07ef6a"
+cy = '''Dechreuodd Troi Treth yn Ddigidol ar gyfer Treth Incwm ar 6 Ebrill 2026 ar gyfer unig fasnachwyr a landlordiaid sydd ag incwm cymhwysol dros £50,000. O 6 Ebrill 2027 ymlaen, mae’n cynnwys incwm cymhwysol dros £30,000.'''
+
+[strings."get-started.itsa-2"]
+hash = "a99887fc646f"
+cy = '''Mae ein gwasanaeth Treth Incwm yn rhedeg yn amgylchedd prawf (sandbox) CThEF, felly nid yw’n cyflwyno dim byd go iawn eto. Mae’r <a href="mtd-calendar.html#availability">tabl argaeledd</a> (yn Saesneg) yn dangos statws pob gwasanaeth. Hyd nes y bydd Treth Incwm ar waith yma, defnyddiwch feddalwedd o <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax.cy">restr CThEF o feddalwedd sy’n cydweddu</a>.'''
+
+[strings."get-started.help-heading"]
+hash = "00f1193a0417"
+cy = '''Ble i gael help'''
+
+[strings."get-started.help-1"]
+hash = "a00d9d5e061b"
+cy = '''Darllenwch y <a href="help.html">cymorth a’r cwestiynau cyffredin</a>, y <a href="guide.html">canllaw defnyddiwr</a>, neu gwyliwch y <a href="videos.html">fideos sy’n dangos y camau</a>. Mae’r tudalennau hyn yn Saesneg. Gallwch anfon e-bost atom yn <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>.'''
+
+[strings."get-started.help-2"]
+hash = "e8493e1fc280"
+cy = '''Am gwestiynau am eich treth eich hun, cysylltwch â CThEF.'''

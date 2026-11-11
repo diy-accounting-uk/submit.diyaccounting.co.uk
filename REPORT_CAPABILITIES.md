@@ -29,6 +29,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
     - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
     - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
+    - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages: use when a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -623,7 +624,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -667,6 +668,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
 - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
+- [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -738,6 +740,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
 - **Keywords:** customer email, render, fixtures, screenshot, visual check, pass email, receipt email
 - **Related:** SITE-27
+
+#### SITE-30 Build the Welsh pages
+
+- **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
+- **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page that differs from the render.
+- **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
+- **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
+- **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
+- **Keywords:** welsh, cymraeg, cy, i18n, translation, hreflang, language switch, catalogue, stale translation
+- **Related:** SITE-14
 
 ### Server and API plumbing (SITE)
 
@@ -7163,7 +7175,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - card hold: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - cash: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
-- catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- catalogue: [SITE-30](#site-30-build-the-welsh-pages), [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
@@ -7458,6 +7470,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - cutover: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
+- cy: [SITE-30](#site-30-build-the-welsh-pages)
+- cymraeg: [SITE-30](#site-30-build-the-welsh-pages)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -8037,6 +8051,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hotspots: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - house style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
+- hreflang: [SITE-30](#site-30-build-the-welsh-pages)
 - http client: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - http response helper: [SITE-07](#site-07-format-http-responses-and-errors)
 - http simulator: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8049,6 +8064,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - human-driven: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - human-facing text: [DEV-38](#dev-38-write-plain-human-prose)
 - hypothesis lever metric: [SITE-21](#site-21-log-growth-experiments)
+- i18n: [SITE-30](#site-30-build-the-welsh-pages)
 - iam policy snapshot: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
 - iam workloadidentityuser: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - iam-safe name: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
@@ -8194,6 +8210,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda worker: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
+- language switch: [SITE-30](#site-30-build-the-welsh-pages)
 - lapse: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - last known good: [OPS-149](#ops-149-finish-a-deployment)
 - last-known-good: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
@@ -9129,6 +9146,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - stale key cache: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - stale passes: [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
+- stale translation: [SITE-30](#site-30-build-the-welsh-pages)
 - stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - stall: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
@@ -9330,6 +9348,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - transfer: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - transform: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- translation: [SITE-30](#site-30-build-the-welsh-pages)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - triage: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
@@ -9501,6 +9520,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
+- welsh: [SITE-30](#site-30-build-the-welsh-pages)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - whole-site design pass: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)

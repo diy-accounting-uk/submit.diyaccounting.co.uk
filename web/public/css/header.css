@@ -245,6 +245,32 @@ header::after {
   min-width: 0;
 }
 
+/* The language switch: the current language as plain text, the other as a link. */
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-2);
+  font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+.language-switch > * + *::before {
+  content: "|";
+  margin-right: var(--space-2);
+  color: var(--c-ink-muted);
+}
+
+.language-switch [aria-current] {
+  font-weight: var(--weight-strong);
+}
+
+.language-switch a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
 .entitlement-status {
   color: var(--c-ink-muted);
   font-size: var(--step--1);
