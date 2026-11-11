@@ -23,8 +23,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT33 | A period of account longer than 12 months files as two CT600s: CT33a short-period limits, CT33b the split, CT33c the request and records, CT33d the page (the CT33 design below) | ~45 | Sonnet | CT30 on `main` |
 | CT29 | A `file-company-tax-return-with-accounts` activity, so the joint filing is enabled apart from the CT600 alone (page and Lambda gate) | ~6 | Sonnet | — |
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | CT29, UH7 |
-| CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | — |
-| CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | CT24 |
+| CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), B34g2b, the activity in a bundle sold on prod, the operator's approval |
 | CT27 | The yearly recognition renewal: ask SDST for the checklist link and complete it (C72) | 0 | none | HMRC's CT recognition |
@@ -37,9 +36,6 @@ The Required checks still open, in order:
 
 | Order | Checks | What | Row |
 |---|---|---|---|
-| 1 | C17, C89 | Vendor ID 9873 in `URI` on test and live (SDST email of 2026-11-11) | B34g1 |
-| 2 | C62 (Recommended) | Own testing through ETS: submit, poll, delete (Basic guide, "Software recognition") | B34g1 |
-| 3 | C68 | Request the new applicant's pack with the vendor ID (CT recognition instructions 1.0) | CT24 |
 | 4 | C69 | Pass the pack's scenarios on the test service each names | CT25 |
 | 5 | C70 | Send SDST the scenario XML | CT26 |
 | 6 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
@@ -52,13 +48,11 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ### Human-driven
 
-- [ ] **CT24. Ask SDST for the CT new applicant's pack.** The operator emails sdsteam@hmrc.gov.uk asking for the new applicant's pack for Corporation Tax recognition, quoting Vendor ID 9873 and the product name DIY Accounting Submit, in the thread of 2026-11-11. Claude drafts it with the `email-draft` skill; the operator sends it. The sent copy goes to `../private.diyaccounting.co.uk/hmrc/ct/`. Checklist C68. **Source**: CT recognition instructions 1.0 (https://www.gov.uk/government/publications/corporation-tax-generic-technical-specifications/corporation-tax-recognition-instructions-10). **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Ready: every Required check that can pass before recognition passes.
-
 - [ ] **CT26. Send SDST the recognition scenario XML.** The operator replies to SDST with the XML of each scenario CT25 passed, and the supplier-list answers: "Produce and submit CT600" Yes, "Submit iXBRL documents" Yes, "Suitable for self-filers" Yes. SDST aims to decide within 2 weeks; the listing on the commercial software suppliers page is the recognition (C71). Claude drafts with the `email-draft` skill. Checklist C70, C71. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT25.
 
 ### Blocked
 
-- [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on CT24.
+- [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's reply to the request of 2026-11-11.
 
 - [ ] **CT27. The yearly CT recognition renewal.** When SDST's renewal email arrives (both contacts have Corporation Tax email preferences), the operator asks sdsteam@hmrc.gov.uk for the recognition checklist link and completes it. Checklist C72. **Source**: CT recognition instructions 1.0. **Owner**: Operator. **Model**: none. **Size**: 0 files. Blocked on HMRC's CT recognition.
 
@@ -72,7 +66,7 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ```mermaid
 flowchart LR
-    CT24 --> CT25
+    SDST["SDST's reply to the request of 2026-11-11"] --> CT25
     CT25 --> CT26
     CT26 --> REC["HMRC's CT recognition"]
     REC --> UH7
@@ -84,7 +78,7 @@ flowchart LR
 
 - CT29: ready
 - UH8: blocked by CT29, UH7 and the operator's approval
-- CT24: ready (the operator sends); CT25 by CT24; CT26 by CT25
+- CT25: blocked by SDST's reply to the request of 2026-11-11; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26) and the operator's approval
 - CT27: blocked by HMRC's Corporation Tax recognition
 
@@ -229,7 +223,7 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
-| 9 | CT recognition criteria for the software list | SDST's new applicant's pack (CT24) | UH7 |
+| 9 | CT recognition criteria for the software list | SDST's new applicant's pack (requested 2026-11-11) | UH7 |
 
 ### Design: the CT600 without a book (CT2)
 
