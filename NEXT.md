@@ -46,8 +46,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **SEC4. Clear Dependabot #187 (minimatch, medium) in `cdk-typescript`.** `cdk-typescript/package-lock.json` holds the vulnerable minimatch; the only reference outside the folder is `cdk-typescript/scripts/diff-templates.mjs` in `REPORT_CAPABILITIES.md`'s backup entry. minimatch 10.2.6 is bundled inside `aws-cdk-lib` (latest 2.276.0 depends on `minimatch ^10.2.6`; patched is 11.0.1), so `npm audit fix` and a bump of `aws-cdk-lib` both leave the alert open. Next step: re-check when an `aws-cdk-lib` release depends on minimatch 11.0.1 or later, then bump it in `cdk-typescript/`, run `node cdk-typescript/scripts/diff-templates.mjs --help` or its own test to prove it still loads, and check the alert closes after merge. **Source**: the security overview of 2026-11-10 (operator, 2026-11-11). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **SEC6. Keep behaviour-test output out of git.** `../private.diyaccounting.co.uk/security/SECURITY_OVERVIEW_2026-11-10.md` item 9 (EC-5): committed behaviour-test output (`submitVatBehaviour.txt` and others, in history only; none at main head) carried short-lived JWT and bearer tokens. Add ignore rules for the behaviour-test output names (`*Behaviour*.txt` next to the existing log rules in `.gitignore`), and a content-scan or pre-commit check that refuses a staged file holding a JWT outside the test fixtures directory. **Source**: the security overview of 2026-11-10 (operator, 2026-11-11). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-ask
 
 ## Human-driven
