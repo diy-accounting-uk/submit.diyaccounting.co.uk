@@ -890,6 +890,418 @@ that holds CT8b. Run `npm run bundle` first. Steps:
 Done when the tests pass, the TPVS run exits 0, and the `visual-review` skill passes the page with
 a client chosen at 1280 px and 390 px. The ETS agent case runs with B34g1 when O34g lands.
 
+### Design: a long period of account as two returns (CT33)
+
+The design that CT33's build steps follow. Today `figureProblems` in `app/services/ct600Figures.js`
+(line 161) refuses a return period longer than 12 months. After the build, a period of account of
+up to 18 months files as two CT600s: the first 12 months, then the rest. One set of accounts goes
+with both returns, and to Companies House once.
+
+**Sources** (read 2026-11-11). The rules table below keys each rule to these ids.
+
+| Id | Source |
+|---|---|
+| S1 | Companies Act 2006 s392, https://www.legislation.gov.uk/ukpga/2006/46/section/392 |
+| S2 | CTA 2009 s10, s52, s1307: https://www.legislation.gov.uk/ukpga/2009/4/section/10 (and `/52`, `/1307`) |
+| S3 | CTA 2010 s18A, s18D, s18E, s189, s455, s1172, s1173: https://www.legislation.gov.uk/ukpga/2010/4/section/18D (and the others) |
+| S4 | CAA 2001 s6, s51A, s56: https://www.legislation.gov.uk/ukpga/2001/2/section/51A (and `/6`, `/56`) |
+| S5 | FA 1998 Sch 18 paras 11 and 14: https://www.legislation.gov.uk/ukpga/1998/36/schedule/18/paragraph/14 |
+| S6 | TMA 1970 s59D: https://www.legislation.gov.uk/ukpga/1970/9/section/59D |
+| S7 | CTM01405, CTM01510, CTM03930, CTM93030, CTM93190: https://www.gov.uk/hmrc-internal-manuals/company-taxation-manual/ctm01405 (and the others) |
+| S8 | Accounting periods for Corporation Tax: https://www.gov.uk/corporation-tax-accounting-period |
+| S9 | The Company Tax Return guide: https://www.gov.uk/guidance/the-company-tax-return-guide |
+| S10 | HMRC Prescription of Computations, November 2025: https://assets.publishing.service.gov.uk/media/691c7cd40dcbf6343e9a2999/ct-computations-format-version-1.1.pdf |
+| S11 | Corporation Tax Online Service Validation Rules V1.14: https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/880222/CT-onlinevalidsV1.14.pdf |
+| S12 | RIM artefacts V1.994: `CT-2014-v1-994.xsd`, `CT-2014-v1-994.sch`, `CT-specDoc-v1-994.xml` |
+| S13 | HMRC's marginal relief calculator: https://github.com/hmrc/marginal-relief-calculator-frontend/blob/main/app/calculator/computations/MarginalRateComputation.scala |
+| S14 | Capital allowances policy paper: https://www.gov.uk/government/publications/new-first-year-allowance-and-main-rate-of-writing-down-allowances/capital-allowances-new-first-year-allowance-and-reducing-main-rate-writing-down-allowances |
+
+**The rules.** "Split by days" means the figure for the period of account goes to each accounting
+period in proportion to its days. The quote for each rule is below the table, by rule id.
+
+| Id | Rule | Kind | Source |
+|---|---|---|---|
+| R1 | A period of account is at most 18 months | limit | S1 s392(5) |
+| R2 | An accounting period ends 12 months after it starts | periods | S2 s10(1)(a); S7 CTM01510 |
+| R3 | Each accounting period has its own return | periods | S8; S12 rule 9101 |
+| R4 | Trading profit before allowances | split by days | S2 s52(3); S3 s1172(1) |
+| R5 | Another basis only when more accurate | exception | S7 CTM01405 |
+| R6 | Turnover and non-trading loan relationship credits | split by days | S3 s1172(1) |
+| R7 | The computation shows the time apportionment | per period | S10 |
+| R8 | Capital allowances are worked for each accounting period | per period | S4 s6(1)(b) |
+| R9 | Annual investment allowance maximum | scales | S4 s51A(6) |
+| R10 | Writing down allowances | scales | S4 s56(3) |
+| R11 | Main pool rate 14% from 1 April 2026 | rate | S4 s56(1); S14 |
+| R12 | Qualifying donations | when paid | S3 s189(1); S9 box 305 |
+| R13 | Section 455 tax | when lent | S3 s455(3) |
+| R14 | Small profits and marginal relief limits | scale by days | S3 s18D(4); S7 CTM03930; S13 |
+| R15 | Associated companies | per period | S3 s18E(1); S9 box 326 |
+| R16 | A later period's loss against an earlier period | per period | S9 boxes 275, 280 |
+| R17 | Both returns file 12 months after the period of account | dates | S5 para 14(1)(b); S7 CTM93030 |
+| R18 | Tax is due 9 months and 1 day after each period | dates | S6 s59D(1) |
+| R19 | Each return carries the period of account's accounts | attachments | S7 CTM93190; S10; S5 para 11 |
+| R20 | Each return carries its own computations | attachments | S10; S11 1607 |
+| R21 | The accounts overlap the return by a day at least | attachments | S11 7782 |
+| R22 | Box 85 says the accounts are for another period | boxes | S9 boxes 80, 85; S12 |
+| R23 | HMRC checks box 435 | check | S11 9043 |
+| R24 | An amendment keeps the dates HMRC holds | check | S11 1610 |
+| R25 | Tell HMRC the new accounting period dates | customer step | S8 |
+
+- R1: "An accounting reference period may not be extended so as to exceed 18 months".
+- R2: s10(1) "An accounting period of a company comes to an end on the first occurrence of any of the following", (a) "the ending of 12 months from the beginning of the accounting period,". CTM01510: "the first twelve months will normally be an accounting period."
+- R3: S8: "You must file 2 returns to cover the period of your accounts because your accounting period cannot be longer than 12 months." Rule 9101 (N010.1): "The return period covered in Boxes 30 and 35 must not be longer than 12 months".
+- R4: s52(2)(a) "apportioning the profits or losses of a period of account to the parts of that period falling in different accounting periods,"; s52(3) "The steps must be taken by reference to the number of days in the periods concerned."
+- R5: CTM01405: "the profits of accounting periods may be computed by reference to the transactions which took place in that accounting period where this gives a more accurate result". It names "a few easily identifiable transactions and the trade is 'lumpy'".
+- R6: s1172(1): "Any apportionment to different periods which falls to be made under the Corporation Tax Acts is to be made on a time basis according to the respective lengths of the periods." Loan relationships are not in the s1173 list that s1307 covers, so s1172 applies to them.
+- R7: S10: "Usually we would expect this to be done through time apportionment based on number of days". Its Part 1 summary has the line "Time apportionment figure", footnote 4: "Only applicable where there is an accounting period longer than 12 months".
+- R8: s6(1)(b): a chargeable period is, "for corporation tax purposes, an accounting period of a company."
+- R9: s51A(5) "The maximum allowance is £1,000,000."; s51A(6) "But if the chargeable period is more or less than a year, the maximum allowance is proportionately increased or reduced."
+- R10: s56(3): "If the chargeable period is more or less than a year, the amount is proportionately increased or reduced."
+- R11: S14: "The measure reduces the rate of writing-down allowance (WDA) on the main pool of plant and machinery from 18% to 14% per year", from "1 April 2026 for businesses within the charge to Corporation Tax"; "For businesses whose chargeable period spans 1 April (Corporation Tax) or 6 April (Income Tax), a hybrid rate". The new first year allowance: "available for expenditure incurred from 1 January 2026."
+- R12: s189(1): "Qualifying charitable donations made by a company are allowed as deductions from the company's total profits in calculating the corporation tax chargeable for an accounting period." Box 305: "Enter the amount of qualifying donations made by the company in the period."
+- R13: s455(3): the tax is due "on the day following the end of the period of 9 months from the end of the accounting period in which the loan or advance was made."
+- R14: s18D(4): "For an accounting period of less than 12 months the lower limit and the upper limit are proportionately reduced." CTM03930: "(Note that strictly the calculation should be carried out by reference to the number of days in the short AP rather than months)." S13: `val totalNoOfDays = if (differentUpperLimitThresholds) fyDays else fyDays max daysInAP`, so the ratio is the period's days in the financial year over that year's days (or the period's days, when more).
+- R15: s18E(1): a company is an associated company in an accounting period if it is one "for any part of the accounting period". Box 326: "enter the number of companies associated with your company for any part of the accounting period."
+- R16: Box 275: "Enter the total trading losses you're claiming to set against total profits under Section 37 of the Corporation Tax Act 2010." Box 280: "Put an X in box 280 if amounts carried back from later accounting periods are included in box 275."
+- R17: para 14(1)(b): "if the company's relevant period of account is not longer than 18 months, twelve months from the end of that period;". CTM93030 gives the same filing date.
+- R18: s59D(1): tax for an accounting period "is due and payable on the day following the expiry of nine months from the end of that period."
+- R19: CTM93190: "The accounts to be delivered are those for the period that either coincides with, or includes, the accounting period". Its example 2: "The accounts to be delivered are for the 18 months to 30 June 2019." S10: "Each of these returns will contain duplicate accounts but the tax computations and CT600 form will be different."
+- R20: S10: "if there is a long set of accounts that is split into two APs then computations must be provided with each submission separately and only contain information relevant to that AP". Rule 1607: "the 'date for the end of the period' in the Computation must match the 'Period covered to' date in the CT600."
+- R21: Rule 7782: the accounts' period "must have at least a single days overlap with the Period Covered in the CT600".
+- R22: Box 80: "Enter X in box 80 to indicate you're submitting accounts for the period the return relates to." Box 85: "Enter X in box 85 to indicate a different period." RIM: `Accounts/DifferentPeriod` is [85A], "I attach accounts for a different period"; `ThisPeriodComputations` is [80B].
+- R23: Rule 9043: "For V3 submissions - Check that Box 435 agrees with the result of the computation of marginal relief." Returned on TPVS, TIL and live.
+- R24: Rule 1610: "the return period start and end dates on the return must match those on held on the system."
+- R25: S8: "If you've lengthened your company's financial year, you need to update your accounting period dates." "To do this you must contact HMRC before the original filing date of your Company Tax return."
+
+Submit produces no chargeable gains or property income boxes (box 190 and the gains boxes), so
+this build does not split them.
+
+**A defect this design also fixes.** `apportionCorporationTax` in diya-gl scales each financial
+year's limits by `days / totalDays`, the share of the accounting period. For a 12-month period
+that is the same as R14. For a short period it gives the full £50,000 and £250,000. So a short
+return that Submit files today, such as a new company's first period, can charge the wrong rate
+or relief. HMRC's check 9043 tests box 435 against its own working. diya-gl's Company books cover
+twelve months, so only Submit meets a short period.
+
+**The worked example.** A company with no associated companies extends its accounts to 15 months:
+1 January 2025 to 31 March 2026, 455 days.
+
+| Item | Amount | Date or note |
+|---|---|---|
+| Turnover | 250,000 | the 15 months |
+| Profit before tax | 120,000 | after the three lines below |
+| Depreciation | 6,000 | added back |
+| Charitable donation | 2,000 | paid 10 October 2025 |
+| Bank interest | 1,000 | non-trading credit |
+| Plant bought | 12,000 | 15 March 2025, main pool |
+| Main pool brought forward | 10,000 | at 1 January 2025 |
+| Loan to the director | 15,000 | made 1 February 2026, owed at 31 March 2026 |
+
+The adjusted trading profit before allowances for the 15 months is
+120,000 − 1,000 + 6,000 + 2,000 = 127,000.
+
+| Line | Box | Return 1 | Return 2 | Rule |
+|---|---|---|---|---|
+| Period | 30, 35 | 1 Jan 2025 to 31 Dec 2025 | 1 Jan 2026 to 31 Mar 2026 | R2 |
+| Days | — | 365 | 90 | — |
+| Turnover | 145 | 200,549 | 49,451 | R6 |
+| Profit before allowances | — | 101,879 | 25,121 | R4 |
+| Annual investment allowance | 690 | 12,000 | 0 | R8, R9 |
+| Main pool allowances | 705 | 13,800 | 363 | R10 |
+| Trading profit | 155, 165 | 88,079 | 24,758 | — |
+| Bank interest | 170 | 802 | 198 | R6 |
+| Profits | 235, 300 | 88,881 | 24,956 | — |
+| Qualifying donations | 305 | 2,000 | 0 | R12 |
+| Chargeable profits | 315 | 86,881 | 24,956 | — |
+
+Notes on the split:
+
+- 127,000 × 365 / 455 = 101,879.12, so 101,879; return 2 takes the rest. Turnover and interest split the same way.
+- Return 1's 13,800 is the 12,000 allowance and 18% of the 10,000 pool. Return 2's maximum is 18% × 8,200 × 90/365 = 363.95, so 363 whole pounds.
+- Return 2's maximum annual investment allowance is 1,000,000 × 90/365 = 246,575.34.
+- Return 2 ends before 1 April 2026, so the 14% rate (R11) does not apply.
+
+| Tax | Box | Return 1 | Return 2 |
+|---|---|---|---|
+| Financial years | 330, 380 | 2024 (90 days), 2025 (275 days) | 2025 (90 days) |
+| Lower limit | — | 50,000 | 12,328.77 |
+| Upper limit | — | 250,000 | 61,643.84 |
+| Profit in each year | 335, 385 | 21,423 and 65,458 | 24,956 |
+| Tax at 25% | 430 | 21,720.25 | 6,239.00 |
+| Marginal relief | 435 | 2,446.79 | 550.32 |
+| Corporation Tax | 440, 475 | 19,273.46 | 5,688.68 |
+| Section 455 tax | 480 | 0.00 | 5,062.50 |
+| Tax chargeable | 510, 525 | 19,273.46 | 10,751.18 |
+| Tax due | — | 1 October 2026 | 1 January 2027 |
+| Return due | — | 31 March 2027 | 31 March 2027 |
+
+The arithmetic:
+
+- Return 1: 86,881 × 90/365 = 21,422.88, so box 335 is 21,423 (rule 9198). 21,423 × 25% + 65,458 × 25% = 5,355.75 + 16,364.50.
+- Return 1: relief 3/200 × (250,000 − 86,881) = 2,446.785, so 2,446.79. 21,720.25 − 2,446.79 = 19,273.46.
+- Return 2: limits 50,000 × 90/365 and 250,000 × 90/365. Relief 3/200 × (61,643.84 − 24,956) = 550.32. 6,239.00 − 550.32 = 5,688.68.
+- Return 2: the loan was made in tax year 2025-26, so A20 is 15,000 × 33.75% = 5,062.50 (the CT8a design). Return 1 has no CT600A.
+- Today's code charges return 2 at 19% on 24,956, 4,741.64, because it does not scale the limits. That is 947.04 too little.
+- Both returns carry boxes 1 to 4, 50, 85A, 975 and 985 with the same values, and the same accounts iXBRL. Return 2 also carries box 95 and CT600A. Boxes 326 to 329 follow each period: return 1 has 327 and 328 (two financial years), return 2 has 326.
+
+**Where the split lives.** A new module `app/services/ct600LongPeriod.js` holds the split. Like
+`ct600Figures.js`, it has no `fs` and no `Buffer`. The server imports it, and
+`scripts/build-books-bundle.mjs` exports it to the page through the books bundle. So the page's
+live check and the server's boxes come from the same code.
+
+| Export | Does |
+|---|---|
+| `accountingPeriodsOf(start, end)` | One period, or two: the first 12 months and the rest. Refuses over 18 months |
+| `splitLongPeriodFigures(figures)` | Two figures objects, one for each accounting period |
+| `deriveLongPeriodReturns(figures, taxDataByYear, options)` | Both `deriveCt600FromFigures` results, in order, with the carry-back between them |
+| `annualInvestmentAllowanceMaximum(start, end)` | 1,000,000 × days / days in the 12 months from `start`, for any return |
+
+`ct600Figures.js` changes in four places:
+
+- The limits (every return): before `apportionCorporationTax`, multiply each year's `lowerLimit` and `upperLimit` by `totalDays / max(daysInFinancialYear, totalDays)`. The row's `days / totalDays` then gives R14. `corporationTaxPenceOn` uses the same helper.
+- The annual investment allowance (every return): refuse box 690 above `annualInvestmentAllowanceMaximum`, with the maximum and the days in the message.
+- The computation lines: with `figures.periodOfAccount`, `adjustedProfitBeforeAccountingPeriodAdjustments` is the 15-month figure, `timeApportionment` is the period's share less that figure, and `adjustedProfitBeforeCapitalAllowances` is the share.
+- The donations and losses: box 305 takes `donationsPaid` when it is present, and the add-back stays `donations`. Box 275 adds `lossCarriedBackFromLaterPeriod`, and box 280 is then `yes`.
+
+**The figures shape.** A long period's figures keep today's fields for the period of account and
+add `accountingPeriods`, two objects. `figures.periodStart` and `periodEnd` are the period of
+account. The presence of `accountingPeriods` marks a long period; it is refused on a period of 12
+months or less, and required on a longer one.
+
+| Fields | Where | How each return gets them |
+|---|---|---|
+| Company, UTR, declarant, `profitAndLoss` | period of account | the same; turnover split by days (R6) |
+| `nonTradingLoanRelationshipCredits` | period of account | split by days (R6) |
+| `depreciation`, `amortisation`, `entertaining`, `donations` | period of account | in the computation before the split (R4) |
+| `lossOutsideUk` | period of account | the same |
+| Every capital allowance field (688 to 775) | `accountingPeriods[n]` | typed for each (R8 to R11) |
+| `donationsPaid` | `accountingPeriods[n]` | typed for each (R12) |
+| `associatedCompanies`, `frankedInvestmentIncome` | `accountingPeriods[n]` | typed for each (R15) |
+| `loansToParticipators` | `accountingPeriods[n]` | typed for each (R13) |
+| Loss claims, `incomeTaxDeducted`, `taxAlreadyPaid`, `ownCorporationTax` | `accountingPeriods[n]` | typed for each |
+
+`splitLongPeriodFigures` sets each return's `periodStart` and `periodEnd` to its accounting
+period, and `periodOfAccount` to `{ periodStart, periodEnd, days, lines }`. Return 1's loss
+carried forward becomes return 2's `lossesBroughtForward`. `lossesBroughtForward` and
+`priorPeriodChargeableProfits` are typed for return 1 only.
+
+`deriveLongPeriodReturns` works return 1, then return 2 with `priorPeriodChargeableProfits` set
+to return 1's box 315. When return 2 carries a loss back (box 275 of return 1, R16), it works
+return 1 again with `lossCarriedBackFromLaterPeriod`. `taxDataByYear` holds the years of both
+periods: the server merges `ltdTaxDataForPeriodEnd` for each period end.
+
+**The XML and the attachments.** In `ct600Xml.js`, a return with `longPeriod` writes
+`ReturnInfoSummary/MultipleReturns` `yes` (box 50) and `Accounts/DifferentPeriod` `yes` (box 85A)
+in place of `ThisPeriodAccounts`. `DeductionsAndReliefs` writes `TradingLossesCarriedBack` (box
+280) after `TradingLosses`. `ThisPeriodComputations` stays `yes`, because each return's
+computations are for its own period (R20). Both returns attach the same accounts iXBRL, built once
+from the period of account (R19, R21).
+
+In `ctComputationsIxbrl.js`, `PeriodOfAccountStartDate` and `PeriodOfAccountEndDate` take the
+period of account. `StartOfPeriodCoveredByReturn` and `EndOfPeriodCoveredByReturn` take the
+accounting period, so 1607 holds. The table shows the 15-month lines down to
+`AdjustedProfitOrLossBeforeAccountingPeriodAdjustments` in a context dated to the period of
+account. A row "Time apportionment: 365 of 455 days" follows it with no tag, as S10's summary has
+none. `AdjustedProfitForThePeriod`, the capital allowances and the losses use the accounting
+period's context.
+
+**The request and the records.** The page posts one return at a time.
+
+| Field | Where | Holds |
+|---|---|---|
+| `figures.accountingPeriods` | request | the two objects above |
+| `longPeriod` | request | `{ filingId, part }`: a UUID and 1 or 2 |
+| `reviewedBoxes` | request | the boxes of that part only |
+| `jointFilingId` | request | the same UUID as `filingId` when the accounts go to Companies House |
+| `longPeriod` | async record, receipt | `{ filingId, part, parts: 2, periodOfAccountStart, periodOfAccountEnd }` |
+
+`hmrcCtReturnRequest.js` reads `longPeriod` and builds both returns, so a part 2 request still
+works return 1 for the carry-back. `buildCtReturnDocuments` returns the documents of the part
+asked for. The preview route returns `returns: [part 1, part 2]`, each with its boxes, worked
+entries, computation lines, CT600A, tax due date and return due date. `hmrcCtReturnPost.js`
+refuses part 2 unless the user's receipts hold an accepted part 1 with the same `filingId`. It
+reads them with the receipts query by user.
+
+One UUID names the filing. It is `jointFilingId` when the accounts go to Companies House, and
+`longPeriod.filingId` always. So the receipts page groups the accounts and both returns by
+`jointFilingId ?? longPeriod.filingId`. Each return's receipt is titled "Company Tax Return 1 of
+2" or "2 of 2" with its dates. `jointFilingFields` keeps its meaning: an id on a return says the
+accounts went with it.
+
+Each return costs one token through today's charge path, so a long period costs two (question 2).
+
+**The page.** One form, two reviews, two sends, in order. The first column of each per-period
+field keeps today's element id, so a return of 12 months or less does not change. The second
+column adds the suffix `Ap2`.
+
+1. The period. The hint says the accounts can cover up to 18 months. When the dates span more
+   than 12 months, a panel names the two accounting periods and the two returns. It says to tell
+   HMRC the new dates before the original filing date (R25), with the gov.uk link.
+2. The question "Does the first accounting period start on 1 January 2025?" (the period start),
+   default Yes.
+3. The accounts and the 15-month adjustments: one column, as today.
+4. "The two accounting periods": a two-column ledger for the per-period fields in the shape
+   table. The hints give each column's annual investment allowance maximum and its main pool
+   rate, and the hybrid rate when a period spans 1 April 2026.
+5. The loans section: one set of loan and repayment rows for each period.
+6. The worked tax panel: both returns side by side. It shows the days and the split, the limits
+   of each period, the two tax due dates and the return due date.
+7. The review: "Return 1 of 2", then "Return 2 of 2", each with its own boxes and Change links.
+8. The send step: the Gateway user ID and password once. In memory only, they cover both sends
+   and clear when return 2 is sent or the customer leaves the step. With Companies House, the
+   order is the accounts, then return 1, then return 2. Each send waits for the one before to be
+   accepted.
+
+What happens on each outcome:
+
+| Outcome | The page |
+|---|---|
+| Return 1 rejected | Shows HMRC's errors. Nothing is at HMRC. The form opens; the review sends return 1 again. |
+| Return 1 accepted, return 2 rejected | Shows return 1's receipt and return 2's errors. The accounts, the 15-month figures and the first column lock. |
+| A fix needs a locked field | "Return 1 is filed with HMRC. Send return 2 first, then amend return 1 from its receipt." |
+| A fix changes return 2's carry-back | After return 2 is accepted, the page offers the amendment of return 1. |
+| Both accepted | Both receipts, both IRmarks, both downloads, under one filing. |
+
+Resume. `persistJoint` saves `sending.longPeriod = { filingId, parts: [{ correlationId,
+statusCode, irmark }] }`. `readSavedJoint` takes a saved entry with a sent part, also without a
+Companies House filing. `resumeJoint` polls a part still pending, shows each part's state, and
+offers the next send. The saved entry holds no password, so the customer types it again.
+
+Amendment. `loadAmendment` takes either return's receipt. It refills the form from the stored
+`formRequest`, keeps `filingId`, and locks the period dates (R24). The page works both returns and
+compares each with its receipt's filed boxes. It sends `ReturnType="amended"` only for a return
+whose boxes differ, return 1 first. Revised accounts go to Companies House first, as today.
+
+**The book route and the typed route.** A diya-gl Company book holds twelve months
+(`diya-gl-new-book.js`: "the twelve months to the year end"). So a long period comes through the
+typed route. A customer can load a book and then set dates beyond twelve months. The page then
+drops the book's working-sheet check and says the book covers twelve months. The typed route
+takes the whole long period. The book route opens for a long period when a Company book can hold
+one; that is a spreadsheets row (question 3).
+
+**The refusals that remain** (checklist C44).
+
+| Case | Message |
+|---|---|
+| Period of account over 18 months | "A period of account can be 18 months at most (Companies Act 2006 s392)." |
+| First accounting period starts later | "Submit files a long period when the first accounting period starts on the first day of the accounts." |
+| Annual investment allowance over the maximum | "The annual investment allowance of a 90-day period can be 246,575 at most." |
+
+**Companies House.** Companies House takes the accounts for the period of account once. The
+accounts iXBRL is the same document in that filing and in both returns, so the accounts lock
+after Companies House accepts them, as today. A revision of the accounts goes to Companies House
+first; both returns are then amended where their boxes differ.
+
+**Open questions.**
+
+1. SDST: box 85A on both returns, with the 15-month accounts attached to both. And the 15-month
+   computation lines in a context dated to the period of account. The other choices are box 90A
+   "PoA differs from AP-a/cs with sep rtn" on one return, and every computation fact in the
+   accounting period's context. Recommendation: 85A on both (R19, R22), and the period of account
+   context. The build uses these. The TPVS proof tests the schema and the rules. If TPVS answers
+   with a context error, the build moves every computation fact to the accounting period's
+   context. The question goes in the CT26 email.
+2. Operator: a long period costs two tokens, one for each return, or one. Recommendation: two,
+   because each return is a CT600 filing on today's charge path. The build charges two.
+3. Operator: a spreadsheets row for a Company book of up to 18 months. Recommendation: board it
+   when a customer asks. The build takes a long period on the typed route.
+
+**The build.** Each step branches from the batch that holds the one before. Run `npm run bundle`
+first in each worktree.
+
+| Step | What | Files | Model | After |
+|---|---|---|---|---|
+| CT33a | Short-period limits and the allowance maximum | ~7 | Sonnet | CT30 (the runner) |
+| CT33b | The split, the XML, the computations, the TPVS proof | ~13 | Sonnet | CT33a |
+| CT33c | The request, the routes, the records, the simulator | ~13 | Sonnet | CT33b |
+| CT33d | The page, the receipts, the behaviour journey | ~12 | Sonnet | CT33c |
+
+CT33a files: `app/services/ct600Figures.js`; `app/unit-tests/services/ct600Figures.test.js`;
+`app/unit-tests/services/ct600Xml.test.js`; `web/public/lib/ct600-fields.js` (the 690 hint);
+`web/public/lib/books-bundle.js` (rebuilt); `fixtures/ct-scenarios/short-period.json`;
+`REPORT_CAPABILITIES.md`. Tests:
+
+- A 90-day return in one financial year gives the example's return 2 tax, 5,688.68 before CT600A.
+- A 6-month return across 1 April scales each year's limits by its days over that year's days.
+- A period in financial year 2023 (366 days) divides by 366.
+- A 12-month return does not change (the precision-code regression).
+- Box 690 above the maximum is refused.
+
+Proof: TPVS accepts
+`node scripts/hmrc-tpvs-ct600.js --scenario fixtures/ct-scenarios/short-period.json`, a 90-day
+return with box 435 (rule 9043).
+
+CT33b files: `app/services/ct600LongPeriod.js` (new); `app/services/ct600Figures.js`;
+`app/services/ct600Xml.js`; `app/services/ctComputationsIxbrl.js`;
+`scripts/build-books-bundle.mjs`; `web/public/lib/books-bundle.js`;
+`app/unit-tests/services/ct600LongPeriod.test.js` (new); `ct600Figures.test.js`;
+`ct600Xml.test.js`; `ctComputationsIxbrl.test.js`;
+`fixtures/ct-scenarios/long-period-part-1.json` and `long-period-part-2.json` (new);
+`REPORT_CAPABILITIES.md`. Tests:
+
+- The example's two tables, box by box.
+- A period over 12 months with no `accountingPeriods` is refused.
+- 18 months and a day is refused.
+- A return 2 loss carried back sets boxes 275 and 280 in return 1.
+- Boxes 50 and 85A, and the element order, against the V1.994 XSD.
+- The computation's dates, the apportionment row and both contexts.
+
+Proof: each scenario file holds the example's request with `longPeriod.part` 1 or 2. TPVS
+accepts each one, and the runner writes its `result.json`.
+
+CT33c files: `app/services/hmrcCtReturnRequest.js`; `app/services/jointFiling.js`
+(`readLongPeriod`, `longPeriodFields`); `app/functions/hmrc/hmrcCtReturnPreviewPost.js`;
+`app/functions/hmrc/hmrcCtReturnPost.js`; `app/services/hmrcCtSubmissionStatus.js`;
+`app/data/dynamoDbReceiptRepository.js`; `app/http-simulator/routes/hmrc-transaction-engine.js`;
+the tests `hmrcCtReturnRequest.test.js`, `jointFiling.test.js`, `hmrcCtReturnPreviewPost.test.js`,
+`hmrcCtReturnPost.test.js`, `hmrcCtSubmissionStatus.test.js`, `hmrc-transaction-engine.test.js`.
+Tests:
+
+- The preview returns both parts.
+- A part 2 post with no accepted part 1 is refused. With one, it is stored with `longPeriod`.
+- The receipt and the receipts list carry `longPeriod`.
+- `reviewedBoxes` of the other part answers 409.
+
+The simulator's Transaction Engine needs two things. It answers a return longer than 12 months
+with business error 9101 and HMRC's text. So a return sent unsplit fails on the simulator as on
+TPVS. A `Gov-Test-Scenario` of `CT600_REJECT_SECOND_RETURN` accepts the first submission that
+carries it and gives the next one business error 9043.
+
+CT33d files: `web/public/companies-house/fileCompanyTaxReturn.html` and `.page.js`;
+`web/public/lib/ct600-fields.js`; `web/public/hmrc/receipt/receipts.page.js`;
+`web/public/lib/filing-result-record.js`; `web/public/mtd-calendar.html` (the CT600 row notes a
+period of account up to 18 months); `web/unit-tests/ct600-fields.test.js`;
+`web/browser-tests/fileCompanyTaxReturn.browser.test.js`;
+`behaviour-tests/companyTaxReturn.behaviour.test.js`; the guide screenshots that
+`npm run video:walkthrough` takes. Tests:
+
+- The panel shows at 12 months and a day, and not at 12 months.
+- The two columns, the two reviews and the send order.
+- The locks after return 1 is accepted.
+- Resume after a reload between the sends.
+- Amendment from return 2's receipt.
+
+The behaviour journey on the simulator types the example in. Both returns are accepted, and
+both receipts show on the receipts page. A second case uses `CT600_REJECT_SECOND_RETURN`. It
+fixes a second-column field and sends return 2 again. The `visual-review` skill then judges the
+panel, the ledger and the two reviews at 1280 px and 390 px.
+
+**The checklist checks this touches** (`../private.diyaccounting.co.uk/hmrc/ct/CT600_APPROVAL_CHECKLIST.md`):
+
+| Check | What changes |
+|---|---|
+| C24 | 9043 and 9101 reach the customer with HMRC's number and text |
+| C33, C37 | Each return has its own IRmark and receipt |
+| C40 | New elements: `MultipleReturns`, `Accounts/DifferentPeriod`, `TradingLossesCarriedBack` |
+| C44 | Over 12 months is refused only without `accountingPeriods`; the refusals above remain |
+| C45, C46 | CT600A for each period, the rate by the date of each loan |
+| C48, C49 | Amendment of each return; 1610 and 1611 for each period |
+| C51, C52 | One accounts and one computations file in each return; 1607 and 7782 for each |
+| C56 | The time apportionment line and the period of account dates |
+| C59 | Both returns' files offered as downloads |
+| C60, C69 | The short-period and the two long-period scenario files accepted by TPVS |
+| C87 | The new panel, ledger and reviews pass WCAG AA |
+
 ## Tasks
 
 The launch and approval steps are on the Board above.
