@@ -170,13 +170,38 @@ jobs:
         timeout-minutes: 6
         with:
           npm-install: scripts
+      - name: Install the ChromeDriver that matches the installed Chrome
+        run: |
+          CHROME_MAJOR=$(google-chrome --version | grep -oE '[0-9]+' | head -1)
+          INSTALL_LINE=$(npx --yes @puppeteer/browsers@2.10.5 install "chromedriver@${CHROME_MAJOR}" --path "$RUNNER_TEMP/chromedriver" | tail -1)
+          echo "$INSTALL_LINE"
+          echo "CHROMEDRIVER_PATH=${INSTALL_LINE#* }" | tee -a "$GITHUB_ENV"
       - name: Run accessibility:axe-${{ needs.names.outputs.environment-name }}
         run: |
           mkdir -p web/public/tests/accessibility
+          # axe exits 0 when it finds violations (no --exit flag), so a non-zero exit or a
+          # missing results file is a tool error and fails the job.
           npm run accessibility:axe-${{ needs.names.outputs.environment-name }} -- \
+            --chromedriver-path "$CHROMEDRIVER_PATH" \
+            --chrome-options="no-sandbox,disable-setuid-sandbox,disable-dev-shm-usage" \
             --save web/public/tests/accessibility/axe-results.json
-        continue-on-error: true
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+          test -s web/public/tests/accessibility/axe-results.json
+      - name: Report the violation count
+        if: always()
+        run: |
+          set -o pipefail
+          FILE=web/public/tests/accessibility/axe-results.json
+          if [ -s "$FILE" ]; then
+            PAGES=$(jq 'length' "$FILE")
+            VIOLATIONS=$(jq '[.[].violations | length] | add // 0' "$FILE")
+            echo "### accessibility-axe (axe-results.json)" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$PAGES pages tested, $VIOLATIONS violations (violations do not fail the job)." | tee -a "$GITHUB_STEP_SUMMARY"
+            jq -r '.[] | select(.violations | length > 0) | "- \(.url): \(.violations | length) (\([.violations[].id] | join(", ")))"' "$FILE" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No results file: the tool did not complete." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: axe-results
           path: web/public/tests/accessibility/axe-results.json
@@ -194,13 +219,38 @@ jobs:
         timeout-minutes: 6
         with:
           npm-install: scripts
+      - name: Install the ChromeDriver that matches the installed Chrome
+        run: |
+          CHROME_MAJOR=$(google-chrome --version | grep -oE '[0-9]+' | head -1)
+          INSTALL_LINE=$(npx --yes @puppeteer/browsers@2.10.5 install "chromedriver@${CHROME_MAJOR}" --path "$RUNNER_TEMP/chromedriver" | tail -1)
+          echo "$INSTALL_LINE"
+          echo "CHROMEDRIVER_PATH=${INSTALL_LINE#* }" | tee -a "$GITHUB_ENV"
       - name: Run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
         run: |
           mkdir -p web/public/tests/accessibility
+          # axe exits 0 when it finds violations (no --exit flag), so a non-zero exit or a
+          # missing results file is a tool error and fails the job.
           npm run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }} -- \
+            --chromedriver-path "$CHROMEDRIVER_PATH" \
+            --chrome-options="no-sandbox,disable-setuid-sandbox,disable-dev-shm-usage" \
             --save web/public/tests/accessibility/axe-wcag22-results.json
-        continue-on-error: true
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+          test -s web/public/tests/accessibility/axe-wcag22-results.json
+      - name: Report the violation count
+        if: always()
+        run: |
+          set -o pipefail
+          FILE=web/public/tests/accessibility/axe-wcag22-results.json
+          if [ -s "$FILE" ]; then
+            PAGES=$(jq 'length' "$FILE")
+            VIOLATIONS=$(jq '[.[].violations | length] | add // 0' "$FILE")
+            echo "### accessibility-axe-wcag22 (axe-wcag22-results.json)" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$PAGES pages tested, $VIOLATIONS violations (violations do not fail the job)." | tee -a "$GITHUB_STEP_SUMMARY"
+            jq -r '.[] | select(.violations | length > 0) | "- \(.url): \(.violations | length) (\([.violations[].id] | join(", ")))"' "$FILE" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No results file: the tool did not complete." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: axe-wcag22-results
           path: web/public/tests/accessibility/axe-wcag22-results.json
@@ -288,8 +338,22 @@ jobs:
         with:
           npm-install: scripts
       - name: Run penetration:zap-${{ needs.names.outputs.environment-name }}
-        run: npm run penetration:zap-${{ needs.names.outputs.environment-name }}
-        continue-on-error: true
+        run: |
+          # Exit codes: 0 clean, 1 and 2 alerts (not blocking), 3 ZAP error, 10 a seeded
+          # Corporation Tax URL missing from the scan (scripts/check-zap-urls.js).
+          set +e
+          npm run penetration:zap-${{ needs.names.outputs.environment-name }}
+          STATUS=$?
+          echo "ZAP exit status $STATUS" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$STATUS" -ge 3 ]; then exit "$STATUS"; fi
+          exit 0
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: zap-scan
+          path: web/public/tests/penetration/zap-*
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Accessibility and fraud-prevention-header findings into the analytics lake, for the
   # one-stop dashboard's compliance panel (v_compliance_status)

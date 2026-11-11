@@ -95,7 +95,7 @@ jobs:
 
       - name: Install Chromium
         if: inputs.proof != 'leading-keys'
-        run: npx playwright install chromium --with-deps
+        run: scripts/playwright-install-chromium.sh
 
       - name: Stop once ${{ env.DASHBOARD_REVIEW_BUDGET_PER_DAY }} reports have already been committed today
         if: inputs.proof != 'leading-keys'

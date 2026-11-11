@@ -48,6 +48,7 @@ import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxb
 import { deriveMicroEntityAccounts, microProfitAndLossYear } from "../app/services/microEntityAccounts.js";
 import { deriveCompanyTaxReturn, buildCt600IrEnvelope } from "../app/services/ct600Xml.js";
 import { buildCtComputations } from "../app/services/ctComputationsIxbrl.js";
+import { PRODUCT_VERSION } from "../app/lib/productVersion.js";
 import {
   buildCt600SubmissionRequest,
   parseTransactionEngineResponse,
@@ -170,7 +171,7 @@ const { xml, irmark } = buildCt600SubmissionRequest({
   utr,
   vendorId: etsInputs ? etsInputs.vendorId : "1000",
   productName: "DIY Accounting Submit",
-  productVersion: "1.0",
+  productVersion: PRODUCT_VERSION,
   irEnvelopeXml,
   gatewayTest: true,
 });

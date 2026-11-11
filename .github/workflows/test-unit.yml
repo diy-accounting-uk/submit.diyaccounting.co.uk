@@ -176,7 +176,7 @@ jobs:
         with:
           npm-install: scripts
 
-      - run: npx playwright install chromium --with-deps
+      - run: scripts/playwright-install-chromium.sh
 
       # diya-gl caches the workbook templates it downloads under ~/.cache/diya-gl/<version>/
       # (XDG_CACHE_HOME moves it); a warm cache lets savePackageZip run with no network.
