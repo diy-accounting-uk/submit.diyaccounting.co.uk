@@ -1,0 +1,606 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "file-company-tax-return-with-accounts",
+  "title": "File the accounts and the Company Tax Return together",
+  "description": "A signed-in walk through filing a company's annual accounts at Companies House and its Company Tax Return at HMRC as one filing: sign in, take out Resident Ltd, look up a company, drop the book, choose to send to both, review what each receives, file, and see both receipts under one filing.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileCompanyTaxReturn.html",
+    "web/public/companies-house/filings.html"
+  ],
+  "environments": ["simulator"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 3000,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "A sandbox preview against HMRC's test service.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident Ltd",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident Ltd",
+          "testPass": true,
+          "caption": "Resident Ltd opens the Company Tax Return filing.",
+          "headline": "Unlock the tax return",
+          "keyWord": "tax"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Company Tax Return (HMRC, preview)')",
+          "label": "Waiting for the subscription to unlock the activity"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "File Company Tax Return (HMRC, preview)"
+          },
+          "expectsNavigation": true,
+          "caption": "Open File Company Tax Return to find the company.",
+          "headline": "Find the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "00000001",
+          "clear": true,
+          "caption": "Type the company number.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn",
+          "caption": "Look up the company with Companies House.",
+          "headline": "Look up the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#formView",
+          "label": "Looking up the company"
+        },
+        {
+          "action": "point",
+          "target": "#formCompanyName",
+          "caption": "Companies House confirms the company name.",
+          "headline": "Confirm the company name",
+          "keyWord": "name",
+          "dwellMs": 400
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "import-book",
+      "chapter": "Fill from a book",
+      "still": true,
+      "steps": [
+        {
+          "action": "dropFile",
+          "target": "#booksImportDrop",
+          "file": "videos/books/precision-code-ltd-ct600.diya-gl.zip",
+          "caption": "Drop the company's diya-gl book on the form.",
+          "headline": "Drop your book",
+          "keyWord": "book"
+        },
+        {
+          "action": "await",
+          "until": "#booksImportStatus:has-text('Filled')",
+          "label": "Reading the book",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Fill from your books"
+          },
+          "timeoutMs": 60000,
+          "caption": "The accounts and the tax figures fill from the book.",
+          "headline": "The form fills itself",
+          "keyWord": "fills"
+        },
+        {
+          "action": "scroll",
+          "target": "#microCurrentTurnover"
+        },
+        {
+          "action": "point",
+          "target": "#microCurrentTurnover",
+          "dwellMs": 500,
+          "caption": "Turnover comes straight from the book.",
+          "headline": "Turnover from the book",
+          "keyWord": "Turnover"
+        },
+        {
+          "action": "scroll",
+          "target": "#workedTax"
+        },
+        {
+          "action": "point",
+          "target": "#workedTax",
+          "scrollTo": "#workedTax",
+          "dwellMs": 700,
+          "caption": "The tax is worked out beside your answers.",
+          "headline": "The tax is worked out",
+          "keyWord": "tax"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "file-company-tax-return-with-accounts-filled"
+        }
+      ]
+    },
+    {
+      "id": "send-to-both",
+      "chapter": "Send to both",
+      "still": true,
+      "steps": [
+        {
+          "action": "scroll",
+          "target": "#sendToBoth"
+        },
+        {
+          "action": "point",
+          "target": "#sendToBoth",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Where the accounts go"
+          },
+          "dwellMs": 500,
+          "caption": "The accounts can go to HMRC alone, or to Companies House and HMRC together.",
+          "headline": "Choose where they go",
+          "keyWord": "where"
+        },
+        {
+          "action": "click",
+          "target": "#sendToBoth",
+          "caption": "Choose to send to Companies House and to HMRC.",
+          "headline": "Send to both",
+          "keyWord": "both"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "point",
+          "target": "#companiesHouseMicroNote",
+          "dwellMs": 600,
+          "caption": "Companies House gets the balance sheet and notes. HMRC also gets the profit and loss.",
+          "headline": "What Companies House gets",
+          "keyWord": "Companies"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "finish-form",
+      "chapter": "Complete the answers",
+      "still": true,
+      "steps": [
+        {
+          "action": "scroll",
+          "target": "#utr"
+        },
+        {
+          "action": "type",
+          "target": "#utr",
+          "text": "8596148860",
+          "clear": true,
+          "caption": "Type the company's Unique Taxpayer Reference.",
+          "headline": "Enter the UTR",
+          "keyWord": "UTR"
+        },
+        {
+          "action": "click",
+          "target": "#statementSection477Exemption",
+          "caption": "Accept the four statutory statements.",
+          "headline": "Accept the statements",
+          "keyWord": "statements"
+        },
+        {
+          "action": "click",
+          "target": "#statementMembersNotRequiredAudit"
+        },
+        {
+          "action": "click",
+          "target": "#statementDirectorsResponsibilities"
+        },
+        {
+          "action": "click",
+          "target": "#statementMicroEntityProvisions"
+        },
+        {
+          "action": "click",
+          "target": "#declarationAccepted",
+          "caption": "Tick the declaration to confirm the return is accurate.",
+          "headline": "Confirm the declaration",
+          "keyWord": "declaration",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Statements"
+          }
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "chapter": "Review the return",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#previewBtn",
+          "caption": "Preview the return before anything is sent.",
+          "headline": "Preview the return",
+          "keyWord": "Preview"
+        },
+        {
+          "action": "await",
+          "until": "#ct600Table tbody tr",
+          "label": "Working out the CT600"
+        },
+        {
+          "action": "scroll",
+          "target": "#ct600Table"
+        },
+        {
+          "action": "scroll",
+          "target": "#reviewSendTo"
+        },
+        {
+          "action": "point",
+          "target": "#review-row-sendTo",
+          "scrollTo": "#reviewSendTo",
+          "dwellMs": 700,
+          "caption": "The review says Companies House gets the accounts first, then HMRC.",
+          "headline": "Companies House first",
+          "keyWord": "first"
+        },
+        {
+          "action": "point",
+          "target": "#review-row-hmrcAccounts",
+          "dwellMs": 700,
+          "caption": "HMRC receives the full accounts with the return.",
+          "headline": "What HMRC receives",
+          "keyWord": "HMRC"
+        },
+        {
+          "action": "point",
+          "target": "#ct600Table",
+          "caption": "These are the CT600 boxes as HMRC will receive them.",
+          "headline": "The CT600 boxes",
+          "keyWord": "CT600",
+          "dwellMs": 600
+        },
+        {
+          "action": "scroll",
+          "target": "#computationsTable"
+        },
+        {
+          "action": "point",
+          "target": "#computationsTable",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Computations"
+          },
+          "caption": "The tax computation sits beside the return.",
+          "headline": "The tax computation",
+          "keyWord": "computation",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 1000
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "File it",
+      "still": true,
+      "steps": [
+        {
+          "action": "scroll",
+          "target": "#companyAuthCode"
+        },
+        {
+          "action": "type",
+          "target": "#companyAuthCode",
+          "text": "AB12CD",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the company's Companies House authentication code.",
+          "headline": "Enter the auth code",
+          "keyWord": "code"
+        },
+        {
+          "action": "type",
+          "target": "#gatewayUserId",
+          "text": "dummy-gateway-user",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the company's Government Gateway user ID.",
+          "headline": "Enter the Gateway user ID",
+          "keyWord": "Gateway"
+        },
+        {
+          "action": "type",
+          "target": "#gatewayPassword",
+          "text": "dummy-gateway-password",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the Government Gateway password.",
+          "headline": "Enter the password",
+          "keyWord": "password"
+        },
+        {
+          "action": "click",
+          "target": "#submitReturnBtn",
+          "caption": "Send the accounts to Companies House, then the return to HMRC.",
+          "headline": "Send to both",
+          "keyWord": "both"
+        },
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Submitting the return"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "chapter": "The outcome",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#companiesHouseOutcome:has-text('Companies House accepted the accounts')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 120000,
+          "scrollTo": "#companiesHouseHeading",
+          "caption": "Companies House accepts the accounts first.",
+          "headline": "Companies House accepts",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "await",
+          "until": "#returnResult:has-text('ACCEPTED')",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 120000,
+          "caption": "Then HMRC accepts the Company Tax Return.",
+          "headline": "HMRC accepts the return",
+          "keyWord": "HMRC"
+        },
+        {
+          "action": "point",
+          "target": "#returnIrmark",
+          "caption": "The IRmark proves the return arrived unchanged.",
+          "headline": "The IRmark",
+          "keyWord": "IRmark",
+          "dwellMs": 600
+        },
+        {
+          "action": "point",
+          "target": "#jointAccepted",
+          "scrollTo": "#jointAccepted",
+          "dwellMs": 800,
+          "caption": "Both filings are accepted under one entry.",
+          "headline": "Both filings accepted",
+          "keyWord": "Both"
+        },
+        {
+          "action": "hold",
+          "ms": 2000
+        },
+        {
+          "action": "goto",
+          "url": "/hmrc/receipt/receipts.html",
+          "waitFor": "#receiptsTable .receipt-label",
+          "scrollTo": "#receiptsTable",
+          "caption": "Your receipts page lists the accounts and the return as one filing.",
+          "headline": "One filing, two receipts",
+          "keyWord": "two"
+        },
+        {
+          "action": "hold",
+          "ms": 2000
+        },
+        {
+          "action": "click",
+          "target": ".receipt-label >> nth=0",
+          "expectsNavigation": true,
+          "caption": "Open your copy of the Company Tax Return.",
+          "headline": "Open your copy",
+          "keyWord": "copy"
+        },
+        {
+          "action": "await",
+          "until": "#filingContent iframe.filed-document",
+          "label": "Loading your copy"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "scroll",
+          "to": "top",
+          "caption": "Your copy shows the return as filed, with its figures and declaration.",
+          "headline": "The return as filed",
+          "keyWord": "filed"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "still",
+          "name": "file-company-tax-return-with-accounts-result"
+        },
+        {
+          "action": "hold",
+          "ms": 2500,
+          "caption": "Your copies stay on your receipts page.",
+          "headline": "Kept on your receipts",
+          "keyWord": "receipts"
+        }
+      ]
+    }
+  ]
+}

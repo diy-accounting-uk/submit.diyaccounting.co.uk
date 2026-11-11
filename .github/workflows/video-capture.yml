@@ -61,6 +61,7 @@ on:
           - 'file-confirmation-statement'
           - 'file-company-tax-return-book'
           - 'file-company-tax-return-typed'
+          - 'file-company-tax-return-with-accounts'
           - 'mcp-harness'
           - 'mcp-diya-gl'
           - 'mcp-cli'
