@@ -18,9 +18,9 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
-| O34g | Register with HMRC's SDST for the CT test services; set the ETS sender ID, password and vendor ID on GitHub's `ci` environment | 0 | none | none |
+| O34g | Register with HMRC's SDST for the CT test services; set the ETS sender ID, password and vendor ID on GitHub's `ci` environment | 0 | none | done 2026-11-11 (Vendor ID 9873; three `ci` secrets) |
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g |
-| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity | ~2 | Sonnet | B34g1, O34g |
+| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity | ~2 | Sonnet | B34g1 |
 | DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | B34g2b |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT production approval, B34g2b, the activity in a bundle sold on prod, the operator's approval |
 
@@ -40,17 +40,15 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 ```mermaid
 flowchart LR
-    O34g[O34g HMRC SDST test credentials] --> B34g1
     B34g1 --> B34g2b
-    O34g --> B34g2b
     B34g2b --> DF2b
     B34g2b --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
 - O34g: done 2026-11-11 (Vendor ID 9873; `HMRC_CT_ETS_SENDER_ID`, `HMRC_CT_ETS_PASSWORD`, `HMRC_CT_ETS_UTR` on `ci`)
-- B34g1: built (PR #475); its ETS proof waits on O34g and runs with B34g2b as `NEXT.md` B34g
-- B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
+- B34g1: ready; the ETS script mode, the Vendor ID setting and a dispatchable workflow (`NEXT.md` B34g1)
+- B34g2b: blocked by B34g1; the ETS filing from the page
 - DF2b: blocked by B34g2b
 - UH7: blocked by HMRC's Corporation Tax production approval, B34g2b and the operator's approval
 
