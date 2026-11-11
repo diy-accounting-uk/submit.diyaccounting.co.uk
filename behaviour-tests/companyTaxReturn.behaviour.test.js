@@ -45,6 +45,11 @@ import {
   verifyMicroEntityReview,
   verifyReturnAccepted,
   verifyReturnRejectedAndRetryable,
+  previewWithAnswersMissingAndUnreconciled,
+  fixTheAnswersAndPreview,
+  previewWithAnOwnWorkingTheTaxDoesNotMatch,
+  takeApprovalBriefScreenshot,
+  verifyLargeCompanyReviewWithLoans,
   chooseToSendToCompaniesHouseAndHmrc,
   verifyJointReview,
   enterJointCredentialsAndSubmit,
@@ -76,7 +81,12 @@ import {
   verifyRevisedAccountsRejected,
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
-import { buildCtReturnExportFromBook, FIXTURE_UTR } from "@app/test-helpers/ctReturnFixture.js";
+import {
+  buildCtReturnExportFromBook,
+  FIXTURE_UTR,
+  DIRECTORS_ADVANCE_TERMS,
+  LARGE_COMPANY_FIXTURE_BOOK_DIRECTORY,
+} from "@app/test-helpers/ctReturnFixture.js";
 import { readEtsPageCredentials } from "./helpers/etsPageCredentials.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
@@ -186,10 +196,16 @@ async function reachPreview(page, testInfo) {
 test("Click through: file the Company Tax Return from a book, change an answer from the review and see HMRC accept it with its IRmark", async ({
   page,
 }, testInfo) => {
-  await reachPreview(page, testInfo);
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name }, screenshotPath);
+  await takeApprovalBriefScreenshot(page, "small-01-form-filled", { scrollTo: "#currentTurnover" });
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await takeApprovalBriefScreenshot(page, "small-02-review-boxes", { locator: "#ct600Table" });
+  await takeApprovalBriefScreenshot(page, "small-03-review-computation", { locator: "#computationsTable" });
   await changeAnAnswerFromTheReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
-  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
-  await verifyReturnAccepted(page, screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath, { sendStepPictureName: "small-04-send" });
+  await verifyReturnAccepted(page, screenshotPath, { resultPictureName: "small-05-accepted" });
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
@@ -198,10 +214,38 @@ test("Click through: file a micro-entity's Company Tax Return from a book and se
   const bookExport = await buildCtReturnExportFromBook();
   await reachCompanyForm(page, testInfo);
   await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name, regime: "micro" }, screenshotPath);
+  await takeApprovalBriefScreenshot(page, "micro-01-form-filled", { scrollTo: "#microCurrentTurnover" });
   await previewCompanyTaxReturn(page, screenshotPath);
   await verifyMicroEntityReview(page, screenshotPath);
-  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
-  await verifyReturnAccepted(page, screenshotPath);
+  await takeApprovalBriefScreenshot(page, "micro-02-review-boxes", { locator: "#ct600Table" });
+  await takeApprovalBriefScreenshot(page, "micro-03-review-computation", { locator: "#computationsTable" });
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath, { sendStepPictureName: "micro-04-send" });
+  await verifyReturnAccepted(page, screenshotPath, { resultPictureName: "micro-05-accepted" });
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a larger company's Company Tax Return from a book with a loan to a participator and see HMRC accept it with supplementary page CT600A at the main rate", async ({
+  page,
+}, testInfo) => {
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(
+    page,
+    {
+      utr: FIXTURE_UTR,
+      declarantName: "Carol Smith",
+      bookDirectory: LARGE_COMPANY_FIXTURE_BOOK_DIRECTORY,
+      directorsAdvanceTerms: DIRECTORS_ADVANCE_TERMS,
+    },
+    screenshotPath,
+  );
+  await takeApprovalBriefScreenshot(page, "large-01-form-filled", { scrollTo: "#currentTurnover" });
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyLargeCompanyReviewWithLoans(page, screenshotPath);
+  await takeApprovalBriefScreenshot(page, "large-02-review-boxes", { locator: "#ct600Table" });
+  await takeApprovalBriefScreenshot(page, "large-03-review-computation", { locator: "#computationsTable" });
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath, { sendStepPictureName: "large-04-send" });
+  await verifyReturnAccepted(page, screenshotPath, { resultPictureName: "large-05-accepted" });
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
@@ -244,7 +288,33 @@ test("Click through: file the Company Tax Return shows the error HMRC returns an
   await reachPreview(page, testInfo);
   await setCtGovTestScenario(page, "CT600_REJECT_IRMARK", screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
-  await verifyReturnRejectedAndRetryable(page, "2021", screenshotPath);
+  await verifyReturnRejectedAndRetryable(page, "2021", screenshotPath, {
+    rejectedPictureName: "errors-03-hmrc-rejected",
+    tryAgainPictureName: "errors-04-hmrc-rejected-try-again",
+  });
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: the form lists the answers that are missing or do not reconcile, and the review opens once they are fixed", async ({
+  page,
+}, testInfo) => {
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name }, screenshotPath);
+  const kept = await previewWithAnswersMissingAndUnreconciled(page, { pictureNamePrefix: "errors-01-form" }, screenshotPath);
+  await fixTheAnswersAndPreview(page, kept, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: the product refuses a Corporation Tax that differs from the worked tax and sends nothing to HMRC", async ({
+  page,
+}, testInfo) => {
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name }, screenshotPath);
+  await previewWithAnOwnWorkingTheTaxDoesNotMatch(page, { pictureNamePrefix: "errors-02-refusal" }, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
