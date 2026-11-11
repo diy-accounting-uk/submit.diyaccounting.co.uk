@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-403e24d** (PR #794's merge 403e24dc3, deploy run 42948838086, promoted on 2026-11-11; it carries #792, #793 and #794).
+**Prod runs deployment prod-64402e2** (PR #795's merge 64402e2d2, deploy run 42964378909, 2026-11-11; it carries #792 to #795: HMRC Assist in Welsh with the 30-second hold, the Assist banner and preview kept off prod, the Welsh pages, and diya-gl 1.2.78).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment` (PR #789's branch deploy); ci-set2 is destroyed.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -42,7 +42,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
-- [ ] **DIV1. Move submit to diya-gl 1.2.78, which carries the 2026-27 dividend rates.** The rates (10.75% and 35.75% from 6 April 2026) are on spreadsheets main since PR #193 (8906d7343) and published in `@diy-accounting-uk/diya-gl` 1.2.78 (npm, 2026-11-11 03:00 UTC; its `dist/app/data/ltd-2026.toml` and `ltd-2027.toml` carry `higher_rate = 0.3575`). Submit pins 1.2.73 in `package.json` (line 425) and `mcp/package.json` (line 36); submit's CT600A reads `higher_rate` through `taxDataByYear` (`app/services/ct600Figures.js` line 371). Left: bump both pins and the lockfiles, run the CT600 and MCP tests, one PR. **Source**: the submit-to-spreadsheets inbox request of 2026-11-03 (operator, 2026-11-10). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
 ## Machine-ask
 
 ## Human-driven
