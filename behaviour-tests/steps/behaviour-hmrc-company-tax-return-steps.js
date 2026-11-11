@@ -206,17 +206,20 @@ export async function verifyReturnAccepted(page, screenshotPath = defaultScreens
 
 // The ETS credentials are real secrets: filled without loggedFill, which writes the value into the
 // step title and the console. A step title appears in the Playwright report.
-export async function enterEtsCredentialsAndSubmit(page, { userId, password }, screenshotPath = defaultScreenshotPath) {
+export async function enterEtsCredentialsAndSubmit(page, { userId, password }) {
   await test.step("The user enters the External Test Service Government Gateway credentials and submits the return", async () => {
     await page.locator("#gatewayUserId").fill(userId);
     await page.locator("#gatewayPassword").fill(password);
     await page.locator("#submitReturnBtn").click();
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submitted-to-ets.png`, readerView: true });
   });
 }
 
-// Every screenshot of the ETS journey hides the credential fields and any text that holds the UTR.
+// The only files the ETS workflow uploads. Each is a screenshot of one receipt element, never of a view
+// that holds a credential field.
+export const ETS_EVIDENCE_DIRECTORY = "target/ets-evidence";
+
+// Every other screenshot of the ETS journey hides the credential fields and any text that holds the UTR.
 // The artifact of a public repository can be downloaded by any GitHub user.
 export function hideEtsCredentialsInScreenshots(page, { utr }) {
   const takeScreenshot = page.screenshot.bind(page);
@@ -229,7 +232,7 @@ export function hideEtsCredentialsInScreenshots(page, { utr }) {
 
 const ETS_OUTCOME_TIMEOUT_MS = 600_000;
 
-export async function verifyReturnAcceptedByEtsWithItsReceipt(page, screenshotPath = defaultScreenshotPath) {
+export async function verifyReturnAcceptedByEtsWithItsReceipt(page, { utr }) {
   return test.step("The user waits for the External Test Service to settle, then sees the IRmark and the receipt as proof of submission", async () => {
     await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: ETS_OUTCOME_TIMEOUT_MS });
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
@@ -238,7 +241,11 @@ export async function verifyReturnAcceptedByEtsWithItsReceipt(page, screenshotPa
     await expect(page.locator("#returnRecord")).toContainText("IRmark receipt");
     await expect(page.locator("#returnRecord")).toContainText("proof that it filed the return");
     const irmark = (await page.locator("#returnIrmark code").first().textContent()).trim();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-ets-accepted-receipt.png`, readerView: true });
+    fs.mkdirSync(ETS_EVIDENCE_DIRECTORY, { recursive: true });
+    await page.locator("#receiptProof").screenshot({ path: `${ETS_EVIDENCE_DIRECTORY}/01-receipt-proof.png` });
+    await page
+      .locator("#returnRecord")
+      .screenshot({ path: `${ETS_EVIDENCE_DIRECTORY}/02-receipt-record.png`, mask: [page.getByText(utr)] });
     return irmark;
   });
 }

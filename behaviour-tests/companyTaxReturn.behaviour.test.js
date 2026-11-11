@@ -39,6 +39,7 @@ import {
   enterGatewayCredentialsAndSubmit,
   enterEtsCredentialsAndSubmit,
   hideEtsCredentialsInScreenshots,
+  ETS_EVIDENCE_DIRECTORY,
   verifyReturnAcceptedByEtsWithItsReceipt,
   readStoredReturnReceipt,
   verifyMicroEntityReview,
@@ -102,8 +103,8 @@ const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
 // Set only on the ci run that files with HMRC's External Test Service (hmrc-ets-ct600-page.yml).
 const etsCredentials = readEtsPageCredentials(process.env);
 const ETS_TEST_TITLE_MARKER = "External Test Service";
-// No video and no failure screenshot: neither goes through the masking of the ETS journey.
-if (etsCredentials) test.use({ video: "off", screenshot: "off" });
+// No video, no failure screenshot and no trace: none of them is limited to the receipt elements.
+if (etsCredentials) test.use({ video: "off", screenshot: "off", trace: "off" });
 
 const gatewayCredentials = { userId: "dummy-gateway-user", password: "dummy-gateway-password" };
 
@@ -262,15 +263,16 @@ test("Click through: file the Company Tax Return through HMRC's External Test Se
     screenshotPath,
   );
   await previewCompanyTaxReturn(page, screenshotPath);
-  await enterEtsCredentialsAndSubmit(page, etsCredentials, screenshotPath);
-  const shownIrmark = await verifyReturnAcceptedByEtsWithItsReceipt(page, screenshotPath);
+  await enterEtsCredentialsAndSubmit(page, etsCredentials);
+  const shownIrmark = await verifyReturnAcceptedByEtsWithItsReceipt(page, etsCredentials);
 
   const stored = await readStoredReturnReceipt(page, shownIrmark);
   expect(stored, "a stored receipt with the IRmark the page showed").toBeTruthy();
   expect(stored.irmarkReceipt).toBeTruthy();
   expect(stored.irmarkReceiptMismatch).toBeUndefined();
-  await testInfo.attach("ets-receipt-summary.json", {
-    body: JSON.stringify(
+  fs.writeFileSync(
+    `${ETS_EVIDENCE_DIRECTORY}/ets-receipt-summary.json`,
+    JSON.stringify(
       {
         correlationId: stored.correlationId,
         irmark: stored.irmark,
@@ -280,8 +282,7 @@ test("Click through: file the Company Tax Return through HMRC's External Test Se
       null,
       2,
     ),
-    contentType: "application/json",
-  });
+  );
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

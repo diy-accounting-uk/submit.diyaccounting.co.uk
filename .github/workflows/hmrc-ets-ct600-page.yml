@@ -11,9 +11,9 @@ run-name: "CT600 through the page to HMRC's External Test Service on ${{ inputs.
 # The Lambda polls and deletes the submission at the Transaction Engine.
 #
 # The Playwright trace is off whenever TEST_AUTH_PASSWORD is set (playwright.config.js), the video is
-# off for the ETS journey, and the ETS credentials are filled without a logged step. Every
-# screenshot masks the credential fields and the UTR. Only the screenshots and a receipt summary
-# (correlation ID, IRmark, IRmark receipt) are uploaded.
+# off for the ETS journey, and the ETS credentials are filled without a logged step. Only
+# target/ets-evidence/ is uploaded: two screenshots of receipt elements and a receipt summary
+# (correlation ID, IRmark, IRmark receipt).
 
 on:
   workflow_dispatch:
@@ -181,17 +181,15 @@ jobs:
           workflow: ${{ github.workflow }}
           github-token: ${{ github.token }}
 
-      # Only the masked screenshots and the receipt summary are uploaded. The Playwright report and
-      # the run log are not: the report embeds page snapshots that can hold typed values, and the
-      # repository is public, so any GitHub user can download an artifact. The job log carries the
-      # list reporter's result, with the secrets masked by GitHub.
-      - name: Upload the masked screenshots and the receipt summary
+      # Only target/ets-evidence/ is uploaded: two screenshots of receipt elements and the receipt
+      # summary. No view that holds a credential field is captured there. The Playwright report, the
+      # run log, the video and the trace are not uploaded; the repository is public, so any GitHub user
+      # can download an artifact. The job log carries the list reporter's result, secrets masked.
+      - name: Upload the receipt evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: hmrc-ets-ct600-page-results
           retention-days: 7
           if-no-files-found: warn
-          path: |
-            target/behaviour-test-results/**/*.png
-            target/behaviour-test-results/**/ets-receipt-summary*.json
+          path: target/ets-evidence/
