@@ -5,7 +5,7 @@
 
 HMRC Corporation Tax filing in Submit: the CT600 and its computations through HMRC's Transaction Engine,
 the proofs on HMRC's test services (TPVS, then ETS), the approval steps with HMRC, and the prod launch
-that follows them, including the joint accounts and CT600 filing on prod (DF2b). Companies House
+that follows them, including the joint accounts and CT600 filing on prod (UH8). Companies House
 filing and the Companies House forms' unhide on prod (UH4) are live; their plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 ## User assertions
@@ -18,7 +18,8 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
-| DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | UH7 |
+| CT29 | A `file-company-tax-return-with-accounts` activity, so the joint filing is enabled apart from the CT600 alone (page and Lambda gate) | ~6 | Sonnet | — |
+| UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | CT29, UH7 |
 | CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | CT28 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | CT24 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
@@ -58,7 +59,9 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 - [ ] **CT27. The yearly CT recognition renewal.** When SDST's renewal email arrives (both contacts have Corporation Tax email preferences), the operator asks sdsteam@hmrc.gov.uk for the recognition checklist link and completes it. Checklist C72. **Source**: CT recognition instructions 1.0. **Owner**: Operator. **Model**: none. **Size**: 0 files. Blocked on HMRC's CT recognition.
 
-- [ ] **DF2b. The joint accounts and CT600 filing on prod.** `prod` on the joint filing's activity, both receipts under one entry. Live CT600 filing needs HMRC's CT recognition, as UH7 does. Blocked on UH7. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **CT29. Enable the joint filing on its own.** A `file-company-tax-return-with-accounts` activity without `prod`; the CT600 page offers "To Companies House and to HMRC" only when it is enabled; `hmrcCtReturnPost.js` refuses a joint filing id when it is not. Companies House accounts (live), the CT600 alone (UH7) and the joint filing (UH8) then launch separately. **Source**: operator, 2026-11-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **UH8. The joint accounts and CT600 filing on prod.** `prod` on CT29's activity and the availability table on `web/public/mtd-calendar.html`. Blocked on CT29, UH7 and the operator's approval. **Source**: operator, 2026-11-11 (replaces DF2b). **Owner**: Claude Code (build), operator (approval). **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax recognition (CT26's outcome, checklist C71); B34g2b's ETS filing from the page; the activity in a bundle sold on prod; the operator's approval to enable it for live users. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
@@ -70,12 +73,14 @@ flowchart LR
     CT25 --> CT26
     CT26 --> REC["HMRC's CT recognition"]
     REC --> UH7
-    UH7 --> DF2b
+    UH7 --> UH8
+    CT29 --> UH8
     REC --> CT27
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-- DF2b: blocked by UH7
+- CT29: ready
+- UH8: blocked by CT29, UH7 and the operator's approval
 - CT24: blocked by CT28; CT25 by CT24; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26) and the operator's approval
 - CT27: blocked by HMRC's Corporation Tax recognition
@@ -478,7 +483,7 @@ Ranked, most harm to the reader first:
 | 11 | The `h1` is in Title Case, against the site rule (DS 1.11) and its sibling "File micro-entity accounts" | Page | "File a Company Tax Return" [consistency] |
 | 12 | The review answers are nine separate tables, each with its own header row and its own column widths, so the Answer columns do not line up | Review | One column plan for every answers table (fixed layout, set widths) [consistency] |
 
-The joint filing's open row is DF2b on this plan's board.
+The joint filing's open rows are CT29 and UH8 on this plan's board.
 
 ### Design: supplementary page CT600A, loans to participators (CT8a)
 
