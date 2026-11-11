@@ -83,7 +83,7 @@ test.describe("token balance", () => {
     });
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator(".login-status")).toContainText("Logged in as");
+    await expect(page.locator(".login-status")).toHaveAttribute("aria-label", /^Signed in as /);
     await expect(page.locator(".token-balance")).toBeHidden();
   });
 });

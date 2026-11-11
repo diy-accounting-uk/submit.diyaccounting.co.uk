@@ -2,6 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 (function () {
+  const PERSON_ICON_PATH = "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z";
+
   function pickDisplayName(user) {
     const candidates = ["given_name", "name", "email", "sub"];
 
@@ -182,11 +184,18 @@
       const userLabel = pickDisplayName(user);
       console.log("User info:", user);
       console.log("User label:", userLabel);
-      const prefix = document.createElement("span");
-      prefix.className = "login-prefix";
-      prefix.textContent = "Logged in as ";
-      loginStatusElement.replaceChildren(prefix, userLabel);
-      loginStatusElement.title = "Logged in as " + userLabel;
+      const signedInAs = (document.documentElement.getAttribute("lang") === "cy" ? "Wedi mewngofnodi fel " : "Signed in as ") + userLabel;
+      const person = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      person.setAttribute("class", "login-person");
+      person.setAttribute("viewBox", "0 0 24 24");
+      person.setAttribute("aria-hidden", "true");
+      const personPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      personPath.setAttribute("d", PERSON_ICON_PATH);
+      person.append(personPath);
+      loginStatusElement.replaceChildren(person, userLabel);
+      loginStatusElement.title = signedInAs;
+      loginStatusElement.setAttribute("role", "group");
+      loginStatusElement.setAttribute("aria-label", signedInAs);
       ensureSettingsCog(loginLinkElement);
       loginLinkElement.textContent = "Logout";
       loginLinkElement.href = "#";
@@ -196,6 +205,8 @@
     } else {
       loginStatusElement.textContent = "Not logged in";
       loginStatusElement.removeAttribute("title");
+      loginStatusElement.removeAttribute("role");
+      loginStatusElement.removeAttribute("aria-label");
       // Hide token balance and the settings cog when not logged in
       const tokenBalanceEl = document.querySelector(".token-balance");
       if (tokenBalanceEl) tokenBalanceEl.style.display = "none";

@@ -210,7 +210,7 @@ test.describe("Header account line truncates, the brand stays whole", () => {
         await openHeader(page, width, signedIn);
 
         const status = page.locator(".login-status");
-        await expect(status).toHaveText(signedIn ? `Logged in as ${LONG_ADDRESS}` : "Not logged in");
+        await expect(status).toHaveText(signedIn ? LONG_ADDRESS : "Not logged in");
         const measured = await page.evaluate(() => {
           const brand = document.querySelector(".brand-name");
           const login = document.querySelector(".login-status");
@@ -226,7 +226,7 @@ test.describe("Header account line truncates, the brand stays whole", () => {
         if (!measured.brandHidden) expect(measured.brandClipped, ".brand-name is clipped").toBe(false);
         if (signedIn) {
           expect(measured.loginEllipsis, ".login-status ends in an ellipsis when it overflows").toBe(true);
-          expect(measured.loginTitle, ".login-status title holds the full address").toBe(`Logged in as ${LONG_ADDRESS}`);
+          expect(measured.loginTitle, ".login-status title holds the full address").toBe(`Signed in as ${LONG_ADDRESS}`);
         } else {
           expect(measured.loginClipped, ".login-status is clipped").toBe(false);
           expect(measured.loginTitle).toBeNull();
@@ -279,7 +279,7 @@ test.describe("Header account line truncates, the brand stays whole", () => {
         expect(icon.top, `${icon.selector} top`).toBeGreaterThanOrEqual(measured.header.top);
         expect(icon.bottom, `${icon.selector} bottom`).toBeLessThanOrEqual(measured.header.bottom);
       }
-      expect(measured.statusTitle, ".login-status title holds the full address").toBe(`Logged in as ${longAddress}`);
+      expect(measured.statusTitle, ".login-status title holds the full address").toBe(`Signed in as ${longAddress}`);
       await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
       expect(await hasRealHorizontalScroll(page)).toBe(false);
 

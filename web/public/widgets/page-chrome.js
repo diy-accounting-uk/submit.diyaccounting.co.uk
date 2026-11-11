@@ -117,7 +117,8 @@
     });
   }
 
-  // A page with hreflang alternates gets a switch to the same page in the other language.
+  // A page with hreflang alternates gets a link to the same page in the other language; the
+  // current language is the page itself.
   const LANGUAGE_NAMES = { "en-GB": "English", "cy": "Cymraeg" };
   const LANGUAGE_SWITCH_LABELS = { "en-GB": "Language", "cy": "Iaith" };
 
@@ -133,16 +134,11 @@
     nav.setAttribute("aria-label", LANGUAGE_SWITCH_LABELS[currentLang] || LANGUAGE_SWITCH_LABELS["en-GB"]);
     alternates.forEach(function (link) {
       const lang = link.getAttribute("hreflang");
-      let item;
-      if (lang === currentLang) {
-        item = document.createElement("span");
-        item.setAttribute("aria-current", "true");
-      } else {
-        item = document.createElement("a");
-        const sitePath = new URL(link.getAttribute("href")).pathname.replace(/^\//, "");
-        item.setAttribute("href", rootPrefix + sitePath || "./");
-        item.setAttribute("hreflang", lang);
-      }
+      if (lang === currentLang) return;
+      const item = document.createElement("a");
+      const sitePath = new URL(link.getAttribute("href")).pathname.replace(/^\//, "");
+      item.setAttribute("href", rootPrefix + sitePath || "./");
+      item.setAttribute("hreflang", lang);
       item.setAttribute("lang", lang);
       item.textContent = LANGUAGE_NAMES[lang];
       nav.append(item);
@@ -283,8 +279,8 @@
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
     const languageSwitch = buildLanguageSwitch(rootPrefix);
-    const mainNav = header.querySelector(".main-nav");
-    if (languageSwitch && mainNav) mainNav.append(languageSwitch);
+    const bandLeft = header.querySelector(".header-left");
+    if (languageSwitch && bandLeft) bandLeft.append(languageSwitch);
 
     // On a narrow screen the row scrolls sideways; bring the current page's link into view.
     const nav = header.querySelector(".main-nav");
