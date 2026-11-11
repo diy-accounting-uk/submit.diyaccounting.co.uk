@@ -177,7 +177,7 @@ export const AVAILABILITY = [
   {
     filing: "Accounts at Companies House and CT600 at HMRC together",
     web: "companies-house/fileCompanyTaxReturn.html",
-    activity: "file-company-tax-return",
+    activity: "file-company-tax-return-with-accounts",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
 ];

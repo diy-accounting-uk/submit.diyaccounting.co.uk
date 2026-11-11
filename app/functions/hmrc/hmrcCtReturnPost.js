@@ -23,7 +23,7 @@ import {
 import { PRODUCT_VERSION } from "../../lib/productVersion.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceCtBundles, clientAuthorisationMessage } from "../../services/ctClientScope.js";
+import { enforceCtBundles, clientAuthorisationMessage, refuseJointFilingWhenNotEnabled } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
@@ -79,15 +79,19 @@ export async function ingestHandler(event) {
   const clientId = parseRequestBody(event)?.clientId || undefined;
   const enforcement = await enforceCtBundles(event, request, clientId);
   if (enforcement.refusal) return enforcement.refusal;
-  const { userSub, client } = enforcement;
+  const { userSub, client, bundleIds } = enforcement;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });
   }
 
+  const requestBody = parseRequestBody(event);
+  const carriesJointFilingId = requestBody?.jointFilingId !== undefined && requestBody?.jointFilingId !== null;
+  const jointRefusal = refuseJointFilingWhenNotEnabled(event, request, carriesJointFilingId, bundleIds);
+  if (jointRefusal) return jointRefusal;
+
   const errorMessages = [];
   const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, { client });
-  const requestBody = parseRequestBody(event);
   const jointFilingId = readJointFilingId(requestBody, errorMessages);
   const formRequest = sanitiseFormRequest(requestBody);
   if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);

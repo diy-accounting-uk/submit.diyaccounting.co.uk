@@ -206,6 +206,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- /generated:group company-tax-return-filing-ch -->
 
 <!-- capability CH-15 -->
+<!-- capability CH-19 -->
 ### Filing infrastructure (CH)
 
 <!-- generated:group filing-infrastructure-ch -->

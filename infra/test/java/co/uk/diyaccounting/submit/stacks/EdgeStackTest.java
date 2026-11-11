@@ -89,6 +89,30 @@ class EdgeStackTest {
     }
 
     @Test
+    void wafBlockAlarmsWatchTheMetricDimensionsCloudFrontScopeWebAclsPublish() {
+        Template template = Template.fromStack(synthEdgeStack("prod"));
+        String webAcl = SubmitSharedNames.forDocs().appResourceNamePrefix + "-waf";
+
+        Map<String, String> ruleByAlarm = Map.of(
+                "waf-rate-limit", "RateLimitRule",
+                "waf-attack-signatures", "AWSManagedRulesCommonRuleSet",
+                "waf-known-bad-inputs", "AWSManagedRulesKnownBadInputsRuleSet",
+                "waf-manual-block", "WafManualBlock");
+        ruleByAlarm.forEach((alarmSuffix, rule) -> template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        Match.stringLikeRegexp(".*-" + alarmSuffix),
+                        "Namespace",
+                        "AWS/WAFV2",
+                        "MetricName",
+                        "BlockedRequests",
+                        "Dimensions",
+                        Match.arrayEquals(List.of(
+                                Map.of("Name", "Rule", "Value", rule), Map.of("Name", "WebACL", "Value", webAcl)))))));
+    }
+
+    @Test
     void wafScanBurstsTableIsPayPerRequestWithClientIpKeyTtlAndDestroy() {
         Template template = Template.fromStack(synthEdgeStack());
 
