@@ -26,7 +26,6 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), B34g2b, the activity in a bundle sold on prod, the operator's approval |
-| CT27 | The yearly recognition renewal: ask SDST for the checklist link and complete it (C72) | 0 | none | HMRC's CT recognition |
 
 ### The approval path
 
@@ -40,7 +39,6 @@ The Required checks still open, in order:
 | 5 | C70 | Send SDST the scenario XML | CT26 |
 | 6 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
 | 7 | C86, C88 | Terms describe CT600 filing as live; no recognition claim before step 6 (Developer Hub terms of use) | UH7 |
-| 8 | C72 | Yearly renewal | CT27 |
 
 RIM V1.994 is live and C1 to C8 are done. The other Required checks pass or are fixed on `main`.
 
@@ -53,8 +51,6 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 ### Blocked
 
 - [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's reply to the request of 2026-11-11.
-
-- [ ] **CT27. The yearly CT recognition renewal.** When SDST's renewal email arrives (both contacts have Corporation Tax email preferences), the operator asks sdsteam@hmrc.gov.uk for the recognition checklist link and completes it. Checklist C72. **Source**: CT recognition instructions 1.0. **Owner**: Operator. **Model**: none. **Size**: 0 files. Blocked on HMRC's CT recognition.
 
 - [ ] **CT29. Enable the joint filing on its own.** A `file-company-tax-return-with-accounts` activity without `prod`; the CT600 page offers "To Companies House and to HMRC" only when it is enabled; `hmrcCtReturnPost.js` refuses a joint filing id when it is not. Companies House accounts (live), the CT600 alone (UH7) and the joint filing (UH8) then launch separately. **Source**: operator, 2026-11-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
@@ -72,7 +68,6 @@ flowchart LR
     REC --> UH7
     UH7 --> UH8
     CT29 --> UH8
-    REC --> CT27
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
@@ -80,7 +75,6 @@ flowchart LR
 - UH8: blocked by CT29, UH7 and the operator's approval
 - CT25: blocked by SDST's reply to the request of 2026-11-11; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26) and the operator's approval
-- CT27: blocked by HMRC's Corporation Tax recognition
 
 ## Designs
 
