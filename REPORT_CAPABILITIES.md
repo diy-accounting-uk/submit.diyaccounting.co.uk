@@ -120,6 +120,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
   - [Company Tax Return filing](#company-tax-return-filing-ch)
     - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC: use when a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
+    - [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS: use when HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
   - [Filing infrastructure](#filing-infrastructure-ch)
     - [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions: use when a filing (office address, email address, accounts) needs a Companies House transaction created, read or updated.
     - [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout: use when any outbound Companies House API call needs a bounded wait instead of hanging.
@@ -1517,7 +1518,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
-- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
+- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
 - [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
@@ -1634,6 +1635,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group company-tax-return-filing-ch -->
 - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
+- [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 <!-- /generated:group company-tax-return-filing-ch -->
 
 #### CH-15 File a Company Tax Return with HMRC
@@ -1645,6 +1647,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/services/ctClientScope.js, app/services/ct600Xml.js, web/public/lib/ct600-agent.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml
 - **Keywords:** company tax return, CT600, corporation tax, computations, irmark, transaction engine, government gateway, UTR, hmrc, filing, simulator
 - **Related:** CH-08
+
+#### CH-19 File a Corporation Tax test scenario to TPVS or ETS
+
+- **Use when:** HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
+- **Does:** reads one scenario file holding the typed figures the typed-entry page posts, builds the return through the same request validation and builders the hmrcCtReturnPost Lambda uses, sends it to TPVS or with --ets to ETS, and writes request.xml (credentials masked), each response and result.json under the output folder. A scenario the product refuses writes refused.json with the field and message and exits 2.
+- **Run:** `node scripts/hmrc-tpvs-ct600.js --scenario fixtures/ct-scenarios/marginal-relief-small.json --out target/ct-scenarios`
+- **Entry:** `scripts/hmrc-tpvs-ct600.js`; `scripts/lib/ctScenarioCommand.js:runScenarioCommand`
+- **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, app/unit-tests/scripts/ctScenario.test.js
+- **Keywords:** scenario, SDST, TPVS, ETS, CT600, corporation tax, test pack, refused, irmark, new applicant
+- **Related:** CH-15
 
 ### Filing infrastructure (CH)
 
@@ -7400,7 +7412,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copy secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
-- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -7459,7 +7471,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
-- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - cumulative update: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
@@ -7751,6 +7763,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - eslint security: [SS-45](#ss-45-run-compliance-checks)
 - estate: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - etag: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
+- ets: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - event builders: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - event export: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - eventbridge: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [DATA-01](#data-01-publish-activity-events-to-the-bus)
@@ -8136,7 +8149,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - invoice de-duplication: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice import: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
-- irmark: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- irmark: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - isdiyaglpackage: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - iso 25010: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - iso 8601 duration: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -8411,6 +8424,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - navigation structure: [SITE-12](#site-12-map-the-site-structure)
 - never torn down: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - new account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- new applicant: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - new-session: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - newsletters: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - next.md: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
@@ -8824,6 +8838,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - refresh token scopes: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - refresh_token: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - refund: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- refused: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - regenerate: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
@@ -8985,6 +9000,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scan detection alarm: [OPS-122](#ops-122-provision-the-security-detection-stack)
 - scan rate: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - scannable code: [SITE-19](#site-19-generate-qr-codes)
+- scenario: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - scene frames: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - scene script: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - scene script validation: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
@@ -9007,7 +9023,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - screenshots in memory: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - scripted chat: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
-- sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
+- sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - sealed grant: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
@@ -9304,6 +9320,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
+- test pack: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - test records: [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
 - test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports), [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
@@ -9347,6 +9364,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - toolchain: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - toolchain check: [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job)
 - totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
+- tpvs: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - trademarks: [SITE-20](#site-20-document-business-governance-and-positioning)

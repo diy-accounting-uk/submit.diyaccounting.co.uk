@@ -39,6 +39,10 @@ h2 + form > .form-section:first-child {
   margin-bottom: var(--space-2);
 }
 
+.choice[hidden] {
+  display: none;
+}
+
 .choice > input {
   flex: none;
   margin: 0;

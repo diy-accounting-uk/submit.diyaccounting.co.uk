@@ -129,6 +129,10 @@ test.describe("File Company Tax Return entry form", () => {
         await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
         return;
       }
+      if (url.pathname === "/submit.environment-name.txt") {
+        await route.fulfill({ status: 200, contentType: "text/plain", body: "ci" });
+        return;
+      }
       if (url.pathname === "/api/v1/bundle") {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles: [], tokensRemaining: 0 }) });
         return;
@@ -996,6 +1000,29 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");
+  });
+
+  test("the send-to question offers HMRC alone where the joint filing is not enabled", async ({ page }) => {
+    await serveRealSite(page);
+    const catalogue = fs
+      .readFileSync(path.join(PUBLIC_ROOT, "submit.catalogue.toml"), "utf-8")
+      .replace(/(id = "file-company-tax-return-with-accounts"[\s\S]*?environments = )\[[^\]]*\]/, '$1["prod"]');
+    await page.route("**/submit.catalogue.toml", (route) => route.fulfill({ status: 200, contentType: "text/x-toml", body: catalogue }));
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("12345678");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#sendToHmrc")).toBeChecked();
+    await expect(page.locator("#sendToBoth")).toBeHidden();
+    await expect(page.locator("#sendToBoth")).toBeDisabled();
+    await expect(page.locator("#sendTo-hint")).toHaveText("The accounts go to HMRC with the Company Tax Return.");
+  });
+
+  test("the send-to question offers both choices where the joint filing is enabled", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#sendToBoth")).toBeVisible();
+    await expect(page.locator("#sendToBoth")).toBeEnabled();
+    await expect(page.locator("#sendTo-hint")).toContainText("Companies House gets the accounts first");
   });
 
   test("the send-to question offers the full or filleted copy for a small company and the note for a micro-entity", async ({ page }) => {

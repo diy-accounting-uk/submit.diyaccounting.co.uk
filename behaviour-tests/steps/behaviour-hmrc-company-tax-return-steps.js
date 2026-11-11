@@ -14,6 +14,23 @@ import { FIXTURE_BOOK_DIRECTORY } from "@app/test-helpers/ctReturnFixture.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-company-tax-return-steps";
 
+export const APPROVAL_BRIEF_DIRECTORY = "target/approval-brief";
+
+// A whole-page picture of one stage of a filing, or of one element, named for the approval brief.
+export async function takeApprovalBriefScreenshot(page, name, { locator, scrollTo } = {}) {
+  fs.mkdirSync(APPROVAL_BRIEF_DIRECTORY, { recursive: true });
+  const options = { path: `${APPROVAL_BRIEF_DIRECTORY}/${name}.png` };
+  if (locator) {
+    await page.locator(locator).scrollIntoViewIfNeeded();
+    await page.locator(locator).screenshot(options);
+  } else if (scrollTo) {
+    await page.locator(scrollTo).scrollIntoViewIfNeeded();
+    await page.screenshot(options);
+  } else {
+    await page.screenshot({ ...options, fullPage: true });
+  }
+}
+
 export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
   const activityButtonText = "File Company Tax Return (HMRC, preview)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
@@ -28,10 +45,10 @@ export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScr
   });
 }
 
-async function zippedFixtureBook() {
+async function zippedFixtureBook(bookDirectory) {
   const zip = new JSZip();
-  zip.file("book.toml", fs.readFileSync(path.join(FIXTURE_BOOK_DIRECTORY, "book.toml")));
-  zip.file("lines.jsonl", fs.readFileSync(path.join(FIXTURE_BOOK_DIRECTORY, "lines.jsonl")));
+  zip.file("book.toml", fs.readFileSync(path.join(bookDirectory, "book.toml")));
+  zip.file("lines.jsonl", fs.readFileSync(path.join(bookDirectory, "lines.jsonl")));
   return zip.generateAsync({ type: "nodebuffer" });
 }
 
@@ -39,7 +56,7 @@ async function zippedFixtureBook() {
 // accounts; regime "small" files the small company accounts the same book also gives.
 export async function fillInCompanyTaxReturnForm(
   page,
-  { utr, declarantName, regime = "small", utrIsSecret = false },
+  { utr, declarantName, regime = "small", utrIsSecret = false, bookDirectory = FIXTURE_BOOK_DIRECTORY, directorsAdvanceTerms },
   screenshotPath = defaultScreenshotPath,
 ) {
   await test.step(`The user enters the UTR, drops the company's book, keeps the ${regime} accounts, and enters the declarant, the statements and the declaration`, async () => {
@@ -49,11 +66,12 @@ export async function fillInCompanyTaxReturnForm(
     await page.locator("#booksImportFile").setInputFiles({
       name: "precision-code.diya-gl.zip",
       mimeType: "application/zip",
-      buffer: await zippedFixtureBook(),
+      buffer: await zippedFixtureBook(bookDirectory),
     });
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60000 });
     await expect(page.locator("#regimeMicro")).toBeChecked();
     await page.check(regime === "micro" ? "#regimeMicro" : "#regimeSmall");
+    if (directorsAdvanceTerms) await loggedFill(page, "#directorsAdvanceTerms", directorsAdvanceTerms, "Terms of the director's advance");
     await loggedFill(page, "#declarantName", declarantName, "Declarant name");
     await page.check("#statementSection477Exemption");
     await page.check("#statementMembersNotRequiredAudit");
@@ -165,6 +183,73 @@ export async function verifyMicroEntityReview(page, screenshotPath = defaultScre
   });
 }
 
+export async function verifyLargeCompanyReviewWithLoans(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the loan to a participator, supplementary page CT600A and the main rate in the review", async () => {
+    await expect(page.locator("#review-row-loansMade")).toContainText("Yes");
+    await expect(page.locator("#ct600Table")).toContainText("Tax payable on loans to participators");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-review-large-company.png`, readerView: true });
+  });
+}
+
+// Breaks three answers a customer can get wrong (the UTR, the cash at bank so the balance sheet no longer balances,
+// the declaration), asks for the review, and sees the summary list each one with its message beside the field.
+export async function previewWithAnswersMissingAndUnreconciled(page, { pictureNamePrefix }, screenshotPath = defaultScreenshotPath) {
+  const kept = {};
+  await test.step("The user asks for the review with a short UTR, a balance sheet that does not balance and no declaration, and sees what to fix", async () => {
+    kept.utr = await page.locator("#utr").inputValue();
+    kept.cash = await page.locator("#currentCashAtBank").inputValue();
+    await page.locator("#utr").fill("123");
+    await page.locator("#currentCashAtBank").fill("1");
+    await page.locator("#declarationAccepted").uncheck();
+    await loggedClick(page, "#previewBtn", "Asking for the review with answers to fix", { screenshotPath });
+    const summary = page.locator("#ct600-error-summary");
+    await expect(summary).toBeFocused();
+    for (const text of ["10 digits", "does not balance", "declaration"]) {
+      await expect(summary).toContainText(text);
+    }
+    await expect(page.locator("#utr-error")).toContainText("10 digits");
+    await expect(page.locator("#currentProfitAndLossAccount-error")).toContainText("does not balance");
+    await expect(page.locator("#previewView")).toBeHidden();
+    await takeApprovalBriefScreenshot(page, `${pictureNamePrefix}-summary`, { locator: "#ct600-error-summary" });
+    await takeApprovalBriefScreenshot(page, `${pictureNamePrefix}-utr-field`, { locator: ".form-group:has(#utr)" });
+    await takeApprovalBriefScreenshot(page, `${pictureNamePrefix}-balance-field`, {
+      locator: "xpath=//*[@id='currentProfitAndLossAccount-error']/..",
+    });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-errors-shown.png`, readerView: true });
+  });
+  return kept;
+}
+
+export async function fixTheAnswersAndPreview(page, kept, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user corrects the answers and the review opens", async () => {
+    await page.locator("#utr").fill(kept.utr);
+    await page.locator("#currentCashAtBank").fill(kept.cash);
+    await page.check("#declarationAccepted");
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+    await loggedClick(page, "#previewBtn", "Asking for the review with the answers fixed", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("#ct600Table tbody tr").first()).toBeVisible();
+  });
+}
+
+// The product works the tax before anything is sent and refuses an answer that contradicts it.
+export async function previewWithAnOwnWorkingTheTaxDoesNotMatch(page, { pictureNamePrefix }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters a Corporation Tax of their own that differs from the worked tax and sees the product refuse the review", async () => {
+    await page.locator("#ownCorporationTax").fill("1");
+    await page.locator("#ownCorporationTax").blur();
+    await expect(page.locator("#ownCorporationTax-error")).toContainText("disagrees with your own working");
+    await loggedClick(page, "#previewBtn", "Asking for the review with a Corporation Tax the product refuses", { screenshotPath });
+    const summary = page.locator("#ct600-error-summary");
+    await expect(summary).toBeFocused();
+    await expect(summary).toContainText("disagrees with your own working");
+    await expect(page.locator("#previewView")).toBeHidden();
+    await expect(page.locator("#submitReturnBtn")).toBeHidden();
+    await takeApprovalBriefScreenshot(page, `${pictureNamePrefix}-summary`, { locator: "#ct600-error-summary" });
+    await takeApprovalBriefScreenshot(page, `${pictureNamePrefix}-field`, { locator: ".form-group:has(#ownCorporationTax)" });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-refused.png`, readerView: true });
+  });
+}
+
 export async function previewCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user previews the return and sees the CT600 and computations tables", async () => {
     await loggedClick(page, "#previewBtn", "Previewing the return", { screenshotPath });
@@ -186,20 +271,27 @@ export async function setCtGovTestScenario(page, scenario, screenshotPath = defa
   });
 }
 
-export async function enterGatewayCredentialsAndSubmit(page, { userId, password }, screenshotPath = defaultScreenshotPath) {
+export async function enterGatewayCredentialsAndSubmit(
+  page,
+  { userId, password },
+  screenshotPath = defaultScreenshotPath,
+  { sendStepPictureName } = {},
+) {
   await test.step("The user enters the Government Gateway credentials and submits the return", async () => {
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    if (sendStepPictureName) await takeApprovalBriefScreenshot(page, sendStepPictureName, { locator: ".send-step" });
     await loggedClick(page, "#submitReturnBtn", "Submitting the Company Tax Return", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submitted.png`, readerView: true });
   });
 }
 
-export async function verifyReturnAccepted(page, screenshotPath = defaultScreenshotPath) {
+export async function verifyReturnAccepted(page, screenshotPath = defaultScreenshotPath, { resultPictureName } = {}) {
   await test.step("The user sees the return accepted with its IRmark", async () => {
     await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: 60000 });
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
+    if (resultPictureName) await takeApprovalBriefScreenshot(page, resultPictureName);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png`, readerView: true });
   });
 }
@@ -256,13 +348,20 @@ export async function readStoredReturnReceipt(page, irmark) {
   return receipts.find((entry) => entry.kind === "company-tax-return" && entry.receipt.irmark === irmark)?.receipt;
 }
 
-export async function verifyReturnRejectedAndRetryable(page, expectedErrorNumber, screenshotPath = defaultScreenshotPath) {
+export async function verifyReturnRejectedAndRetryable(
+  page,
+  expectedErrorNumber,
+  screenshotPath = defaultScreenshotPath,
+  { rejectedPictureName, tryAgainPictureName } = {},
+) {
   await test.step(`The user sees the return rejected with error ${expectedErrorNumber} and can try again`, async () => {
     await expect(page.locator("#returnResult")).toContainText("HMRC rejected", { timeout: 60000 });
     await expect(page.locator("#returnErrors")).toContainText(expectedErrorNumber);
     await expect(page.locator("#tryAgainBtn")).toBeVisible();
+    if (rejectedPictureName) await takeApprovalBriefScreenshot(page, rejectedPictureName, { locator: "#resultView" });
     await loggedClick(page, "#tryAgainBtn", "Returning to the review to try again", { screenshotPath });
     await expect(page.locator("#submitReturnBtn")).toBeVisible();
+    if (tryAgainPictureName) await takeApprovalBriefScreenshot(page, tryAgainPictureName, { locator: ".send-step" });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-rejected.png`, readerView: true });
   });
 }

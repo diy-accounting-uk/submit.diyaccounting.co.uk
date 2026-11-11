@@ -15,6 +15,8 @@ import { deriveCompanyTaxReturn } from "../services/ct600Xml.js";
 
 export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
 export const LOANS_FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd-loan";
+export const MICRO_ENTITY_FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/willow-design-ltd";
+export const LARGE_COMPANY_FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd-loan-large";
 export const LOANS_FIXTURE_ANSWERS = JSON.parse(readFileSync(join(LOANS_FIXTURE_BOOK_DIRECTORY, "loans.json"), "utf8"));
 export const DIRECTORS_ADVANCE_TERMS = "Interest free and repayable on demand.";
 export const FIXTURE_UTR = "8596148860";

@@ -1361,10 +1361,7 @@ public class EdgeStack extends Stack {
                 .metric(Metric.Builder.create()
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "RateLimitRule"))
+                        .dimensionsMap(Map.of("WebACL", props.resourceNamePrefix() + "-waf", "Rule", "RateLimitRule"))
                         .statistic("Sum")
                         .period(software.amazon.awscdk.Duration.minutes(5))
                         .build())
@@ -1383,9 +1380,7 @@ public class EdgeStack extends Stack {
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
                         .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "AWSManagedRulesCommonRuleSet"))
+                                "WebACL", props.resourceNamePrefix() + "-waf", "Rule", "AWSManagedRulesCommonRuleSet"))
                         .statistic("Sum")
                         .period(software.amazon.awscdk.Duration.minutes(5))
                         .build())
@@ -1403,9 +1398,10 @@ public class EdgeStack extends Stack {
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
                         .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "AWSManagedRulesKnownBadInputsRuleSet"))
+                                "WebACL",
+                                props.resourceNamePrefix() + "-waf",
+                                "Rule",
+                                "AWSManagedRulesKnownBadInputsRuleSet"))
                         .statistic("Sum")
                         .period(software.amazon.awscdk.Duration.minutes(5))
                         .build())
@@ -1430,10 +1426,7 @@ public class EdgeStack extends Stack {
                 .metric(Metric.Builder.create()
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "WafManualBlock"))
+                        .dimensionsMap(Map.of("WebACL", props.resourceNamePrefix() + "-waf", "Rule", "WafManualBlock"))
                         .statistic("Sum")
                         .period(Duration.minutes(5))
                         .build())

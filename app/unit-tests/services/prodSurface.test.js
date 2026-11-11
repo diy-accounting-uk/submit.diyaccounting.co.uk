@@ -15,6 +15,7 @@ describe("what the catalogue lists in each environment", () => {
     "self-employed",
     "vat-assist-check",
     "file-company-tax-return",
+    "file-company-tax-return-with-accounts",
     "file-psc-verification-statement",
   ])("%s is listed in ci and not in prod", (id) => {
     expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
