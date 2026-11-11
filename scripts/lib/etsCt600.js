@@ -86,3 +86,26 @@ export async function runEtsExchange({
   }
   return { transcript, final: parsed, ok };
 }
+
+/**
+ * Change the IRmark in a built submission after it was computed, so HMRC cannot match it.
+ * @param {string} xml
+ * @returns {string}
+ */
+export function tamperIrmark(xml) {
+  const pattern = /(<IRmark Type="generic">)([^<]*)(<\/IRmark>)/;
+  if (!pattern.test(xml)) throw new Error("The submission carries no IRmark to change");
+  return xml.replace(pattern, (_, open, value, close) => `${open}${value.startsWith("A") ? "B" : "A"}${value.slice(1)}${close}`);
+}
+
+/**
+ * Whether the tampered-IRmark case passed: HMRC answered business error 2021 and the delete went through.
+ * @param {{final?: object, transcript: {label: string}[]}} result - from runEtsExchange
+ * @returns {boolean}
+ */
+export function tamperCasePassed({ final, transcript }) {
+  const numbers = [...(final?.errors ?? []), ...(final?.businessErrors ?? [])].map((error) => error.number);
+  const deleted =
+    transcript.some((entry) => entry.label === "delete-response") && !transcript.some((entry) => entry.label === "delete-error");
+  return numbers.includes("2021") && deleted;
+}

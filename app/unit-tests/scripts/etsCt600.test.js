@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { readEtsInputs, runEtsExchange } from "../../../scripts/lib/etsCt600.js";
+import { readEtsInputs, runEtsExchange, tamperCasePassed, tamperIrmark } from "../../../scripts/lib/etsCt600.js";
 
 const complete = {
   HMRC_CT_ETS_SENDER_ID: "sender",
@@ -77,5 +77,43 @@ describe("runEtsExchange", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.final.errors[0].number).toBe("1046");
+  });
+});
+
+describe("the tampered IRmark case", () => {
+  const error2021 = govTalk("error").replace(
+    "<GovTalkDetails><Keys/></GovTalkDetails>",
+    "<GovTalkDetails><Keys/><GovTalkErrors><Error><RaisedBy>HMRC-CT</RaisedBy><Number>2021</Number><Type>business</Type><Text>IRmark is incorrect</Text></Error></GovTalkErrors></GovTalkDetails>",
+  );
+  const run = (answers, deleteStatus = 200) => {
+    const queue = [...answers];
+    return runEtsExchange({
+      submissionXml: "<GovTalkMessage/>",
+      post: async (url, xml) => ({ status: xml.includes("<Function>delete</Function>") ? deleteStatus : 200, data: queue.shift() }),
+      wait: async () => {},
+    });
+  };
+
+  it("changes the IRmark value", () => {
+    const original = '<Body><IRmark Type="generic">AbC=</IRmark></Body>';
+    expect(tamperIrmark(original)).toBe('<Body><IRmark Type="generic">BbC=</IRmark></Body>');
+    expect(() => tamperIrmark("<Body/>")).toThrow(/no IRmark/);
+  });
+
+  it("passes on 2021 and a delete", async () => {
+    expect(tamperCasePassed(await run([error2021, govTalk("response")]))).toBe(true);
+  });
+
+  it("fails when the return is accepted", async () => {
+    expect(tamperCasePassed(await run([govTalk("response"), govTalk("response")]))).toBe(false);
+  });
+
+  it("fails on another error", async () => {
+    const other = error2021.replace("2021", "1046");
+    expect(tamperCasePassed(await run([other, govTalk("response")]))).toBe(false);
+  });
+
+  it("fails when the delete fails", async () => {
+    expect(tamperCasePassed(await run([error2021, "<x/>"], 500))).toBe(false);
   });
 });

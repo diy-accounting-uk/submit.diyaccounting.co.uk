@@ -29,7 +29,10 @@
  * final response or an error, then the submission is deleted. The transcript is written with the
  * gateway user ID and password blanked. --agent works in this mode too.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets]
+ * With --ets --tamper-irmark the IRmark is changed after it is computed; the case passes (exit 0)
+ * only when HMRC answers business error 2021 and the delete succeeds.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -51,7 +54,7 @@ import {
   postToTransactionEngine,
   TPVS_CT600_URL,
 } from "../app/services/hmrcTransactionEngine.js";
-import { readEtsInputs, runEtsExchange } from "./lib/etsCt600.js";
+import { readEtsInputs, runEtsExchange, tamperCasePassed, tamperIrmark } from "./lib/etsCt600.js";
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
@@ -173,15 +176,16 @@ const { xml, irmark } = buildCt600SubmissionRequest({
 });
 
 mkdirSync(outputDirectory, { recursive: true });
-const outputPrefix = agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600";
+const tamper = ets && process.argv.includes("--tamper-irmark");
+const outputPrefix = (agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600") + (tamper ? "-tamper" : "");
 if (ets) {
-  const { transcript, final, ok } = await runEtsExchange({ submissionXml: xml });
+  const { transcript, final, ok } = await runEtsExchange({ submissionXml: tamper ? tamperIrmark(xml) : xml });
+  const exchange = { transcript, final, ok };
   transcript.forEach(({ label, xml: message }, index) =>
     writeFileSync(join(outputDirectory, `${outputPrefix}-ets-${String(index + 1).padStart(2, "0")}-${label}.xml`), message),
   );
   console.log(JSON.stringify({ irmark, boxes, response: final }, null, 2));
-  if (!ok) process.exit(1);
-  process.exit(0);
+  process.exit(tamper ? (tamperCasePassed(exchange) ? 0 : 1) : ok ? 0 : 1);
 }
 writeFileSync(join(outputDirectory, `${outputPrefix}-submission.xml`), xml);
 const result = await postToTransactionEngine(TPVS_CT600_URL, xml);

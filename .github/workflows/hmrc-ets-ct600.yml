@@ -2,11 +2,12 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 name: hmrc-ets-ct600
-run-name: "CT600 through HMRC's External Test Service (agent: ${{ inputs.agent }})"
+run-name: "CT600 through HMRC's External Test Service"
 #
 # Files the book fixture's CT600 with HMRC's External Test Service under the SDST test
-# credentials, polls the acknowledgement, deletes the submission, and uploads the transcript
-# with the gateway user ID and password blanked.
+# credentials, polls the acknowledgement, deletes the submission, then files the same return with a
+# changed IRmark (expects error 2021) and, when asked, the agent case. A later case runs even when an
+# earlier one failed. The transcripts are uploaded with the gateway user ID and password blanked.
 
 on:
   workflow_dispatch:
@@ -33,13 +34,26 @@ jobs:
         with:
           npm-install: ignore-scripts
 
-      - name: File the CT600 with ETS
-        run: |
-          if [ "${{ inputs.agent }}" = "true" ]; then
-            node scripts/hmrc-tpvs-ct600.js --ets --out target/hmrc-ets --agent "DIY Accounting Test Practice"
-          else
-            node scripts/hmrc-tpvs-ct600.js --ets --out target/hmrc-ets
-          fi
+      - name: Company case
+        run: node scripts/hmrc-tpvs-ct600.js --ets --out target/hmrc-ets/company
+        env:
+          HMRC_CT_ETS_SENDER_ID: ${{ secrets.HMRC_CT_ETS_SENDER_ID }}
+          HMRC_CT_ETS_PASSWORD: ${{ secrets.HMRC_CT_ETS_PASSWORD }}
+          HMRC_CT_ETS_UTR: ${{ secrets.HMRC_CT_ETS_UTR }}
+          HMRC_CT_VENDOR_ID: "9873"
+
+      - name: Tampered IRmark case (expects error 2021, then delete)
+        if: always()
+        run: node scripts/hmrc-tpvs-ct600.js --ets --tamper-irmark --out target/hmrc-ets/tamper
+        env:
+          HMRC_CT_ETS_SENDER_ID: ${{ secrets.HMRC_CT_ETS_SENDER_ID }}
+          HMRC_CT_ETS_PASSWORD: ${{ secrets.HMRC_CT_ETS_PASSWORD }}
+          HMRC_CT_ETS_UTR: ${{ secrets.HMRC_CT_ETS_UTR }}
+          HMRC_CT_VENDOR_ID: "9873"
+
+      - name: Agent case
+        if: always() && inputs.agent
+        run: node scripts/hmrc-tpvs-ct600.js --ets --agent "DIY Accounting Test Practice" --out target/hmrc-ets/agent
         env:
           HMRC_CT_ETS_SENDER_ID: ${{ secrets.HMRC_CT_ETS_SENDER_ID }}
           HMRC_CT_ETS_PASSWORD: ${{ secrets.HMRC_CT_ETS_PASSWORD }}
