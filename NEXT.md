@@ -40,8 +40,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-- [ ] **CT28. Republish the CT600 brief with C81, C87, C89 and C64.** The prod compliance run 43075449355 (2026-11-11) passed: ZAP FAIL-NEW 0 with the CT page and routes scanned; axe WCAG 2.1 and 2.2 AA 0 violations on the CT page; Pa11y 0 errors on it. C81, C87 and C89 are Pass in `../private.diyaccounting.co.uk/hmrc/ct/CT600_APPROVAL_CHECKLIST.md` (private bae5394), with files under `evidence/`. A sub-agent is rebuilding `approval-brief/` from `build/build.py`. Left: publish it to https://claude.ai/artifact/4Tm4E9EvnHzWKZYMFUf2YV. **Source**: `PLAN_HMRC_CT_APPROVAL.md` approval path; operator, 2026-11-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
-
 ## Machine-only
 
 - [ ] **A11Y1. Pa11y reads 16 prod pages with no `lang` on `<html>`.** The prod compliance run 43075449355 (2026-11-11) shows Pa11y error `WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2` once on each of 16 pages (`/`, `index.html`, `privacy.html`, `security.html`, `terms.html`, `about.html`, `accessibility.html`, `auth/login.html`, `bundles.html`, `pass.html`, `usage.html`, the three VAT pages, `receipts.html`, `guide.html`), with the context `<html><head><meta http-equiv="Content...`. `curl` of those pages gets `<html lang="en-GB">`, so Pa11y loaded a different document: find which (a redirect or refresh page, a WAF challenge, or the Welsh switch from PR #798 rewriting `<html>`) from the run's Pa11y job log and the configs `.pa11yci.prod.json`, fix the cause, and prove it with a prod `compliance.yml` run with Pa11y 0 errors. The CT page had 0 errors. **Source**: CT28's prod run, 2026-11-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
