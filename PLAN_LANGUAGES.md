@@ -3,7 +3,7 @@
 
 # PLAN_LANGUAGES
 
-Status: LANG1 is on prod since PR #792 (3f4b0e02, prod-3f4b0e0). LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3, LANG4 and LANG6 are on `NEXT.md`. Dropped by the operator on 2026-11-10: every language but Welsh; right-to-left languages (Urdu, Arabic, Panjabi in Shahmukhi) and their layout work, video captions, and in-language keyword research.
+Status: every task is on prod: LANG1 (submit PR #792), LANG3, LANG4 and LANG6 (submit PR #794, www PR #54). LANG2 is done: `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` (private commit 7af3f84), recommending tier A in six languages. LANG3, LANG4 and LANG6 are on `NEXT.md`. Dropped by the operator on 2026-11-10: every language but Welsh; right-to-left languages (Urdu, Arabic, Panjabi in Shahmukhi) and their layout work, video captions, and in-language keyword research.
 
 ## User assertions (verbatim)
 
@@ -25,9 +25,9 @@ The DIY Accounting sites in the languages of UK small businesses: submit (`web/p
 |---|---|---|---|
 | LANG1 | HMRC Assist feedback shown in Welsh and English, with a switch | on prod, PR #792 | — |
 | LANG2 | Research into `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md` | done, private 7af3f84 | — |
-| LANG3 | Welsh scaffold: catalogue, `/cy/` pages, `hreflang`, switch | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
-| LANG4 | Tier A copy in Welsh | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
-| LANG6 | HMRC's Welsh services on the Welsh pages | submit on prod, PR #794; www in flight | NEXT.md LANG3w |
+| LANG3 | Welsh scaffold: catalogue, `/cy/` pages, `hreflang`, switch | on prod: submit PR #794, www PR #54 | — |
+| LANG4 | Tier A copy in Welsh | on prod: submit PR #794, www PR #54 | — |
+| LANG6 | HMRC's Welsh services on the Welsh pages | on prod: submit PR #794, www PR #54 | — |
 
 ## Verification
 
