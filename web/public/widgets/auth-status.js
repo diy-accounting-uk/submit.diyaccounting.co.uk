@@ -225,8 +225,10 @@
   }
 
   // End the HMRC grant the page holds, so the server drops the HMRC tokens it keeps for it. The
-  // keepalive request is started here and carries through the sign-out redirect; a failure leaves the
-  // grant to expire on its own.
+  // grant routes use API Gateway's native JWT authorizer, which reads the plain Authorization header
+  // (X-Authorization belongs to the custom authorizer and leaves this route with a 401). The keepalive
+  // request is started here and carries through the sign-out redirect; a failure leaves the grant to
+  // expire on its own.
   async function deleteHmrcGrant() {
     let grantId;
     try {
@@ -238,7 +240,7 @@
     if (!grantId || !cognitoAccessToken) return;
     fetch("/api/v1/mcp/hmrc-grants/" + encodeURIComponent(grantId), {
       method: "DELETE",
-      headers: { "X-Authorization": "Bearer " + cognitoAccessToken },
+      headers: { Authorization: "Bearer " + cognitoAccessToken },
       keepalive: true,
     }).catch(() => {
       // delete failures are expected (offline, ad blockers) -- local sign-out still proceeds

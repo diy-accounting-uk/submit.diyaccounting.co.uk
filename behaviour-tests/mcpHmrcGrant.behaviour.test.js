@@ -142,4 +142,16 @@ test("the MCP starts an HMRC grant, the user consents in the browser, and the VA
     });
     expect(replay.status).toBe(409);
   });
+
+  await test.step("Signing out ends the grant: the page's delete answers 204 and the grant no longer opens", async () => {
+    const grantId = new URL(authorisation.url).searchParams.get("state").split(".")[1];
+    const ended = await fetch(new URL(`api/v1/mcp/hmrc-grants/${grantId}`, baseUrl), {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${bearer}` },
+    });
+    expect(ended.status).toBe(204);
+    const afterSignOut = await callHarnessTool(session, "list_vat_obligations", { vrn: SIMULATOR_VRN, status: "O" });
+    expect(afterSignOut.ok).toBe(false);
+    expect(String(afterSignOut.result)).toContain("request_hmrc_authorisation");
+  });
 });

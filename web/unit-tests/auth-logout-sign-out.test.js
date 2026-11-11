@@ -91,7 +91,9 @@ describe("logout revoke and sign-out", () => {
     const deleteIndex = urls.indexOf("/api/v1/mcp/hmrc-grants/00000000-0000-4000-8000-000000000001");
     expect(deleteIndex).toBeGreaterThanOrEqual(0);
     expect(fetchMock.mock.calls[deleteIndex][1].method).toBe("DELETE");
-    expect(fetchMock.mock.calls[deleteIndex][1].headers["X-Authorization"]).toBe("Bearer the-access-token");
+    expect(fetchMock.mock.calls[deleteIndex][1].headers.Authorization).toBe("Bearer the-access-token");
+    expect(fetchMock.mock.calls[deleteIndex][1].headers["X-Authorization"]).toBeUndefined();
+    expect(fetchMock.mock.calls[deleteIndex][1].keepalive).toBe(true);
     expect(deleteIndex).toBeLessThan(urls.indexOf("https://auth.example.com/oauth2/revoke"));
   });
 
