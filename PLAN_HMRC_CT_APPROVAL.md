@@ -22,7 +22,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g |
 | B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity | ~2 | Sonnet | B34g1 |
 | DF2b | The joint accounts and CT600 filing on prod: `prod` on the joint filing's activity, both receipts under one entry | ~2 | Sonnet | B34g2b |
-| CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | B34g1 |
+| CT24 | Ask SDST for the new applicant's pack, with Vendor ID 9873 (checklist C68) | 0 | Opus (email draft) | CT28, B34g2b |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | CT24 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), B34g2b, the activity in a bundle sold on prod, the operator's approval |
@@ -51,7 +51,7 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ### Human-driven
 
-- [ ] **CT24. Ask SDST for the CT new applicant's pack.** After B34g1's ETS proof, the operator emails sdsteam@hmrc.gov.uk asking for the new applicant's pack for Corporation Tax recognition, quoting Vendor ID 9873 and the product name DIY Accounting Submit, in the thread of 2026-11-11. Claude drafts it with the `email-draft` skill; the operator sends it. The sent copy goes to `../private.diyaccounting.co.uk/hmrc/ct/`. Checklist C68. **Source**: CT recognition instructions 1.0 (https://www.gov.uk/government/publications/corporation-tax-generic-technical-specifications/corporation-tax-recognition-instructions-10). **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on B34g1.
+- [ ] **CT24. Ask SDST for the CT new applicant's pack.** After CT28 and B34g2b, the operator emails sdsteam@hmrc.gov.uk asking for the new applicant's pack for Corporation Tax recognition, quoting Vendor ID 9873 and the product name DIY Accounting Submit, in the thread of 2026-11-11. Claude drafts it with the `email-draft` skill; the operator sends it. The sent copy goes to `../private.diyaccounting.co.uk/hmrc/ct/`. Checklist C68. **Source**: CT recognition instructions 1.0 (https://www.gov.uk/government/publications/corporation-tax-generic-technical-specifications/corporation-tax-recognition-instructions-10). **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT28 and B34g2b.
 
 - [ ] **CT26. Send SDST the recognition scenario XML.** The operator replies to SDST with the XML of each scenario CT25 passed, and the supplier-list answers: "Produce and submit CT600" Yes, "Submit iXBRL documents" Yes, "Suitable for self-filers" Yes. SDST aims to decide within 2 weeks; the listing on the commercial software suppliers page is the recognition (C71). Claude drafts with the `email-draft` skill. Checklist C70, C71. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT25.
 
@@ -74,7 +74,7 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 ```mermaid
 flowchart LR
     B34g1 --> B34g2b
-    B34g1 --> CT24
+    B34g2b --> CT24
     CT24 --> CT25
     CT25 --> CT26
     CT26 --> REC["HMRC's CT recognition"]
@@ -89,7 +89,7 @@ flowchart LR
 - B34g1: ready; the ETS script mode, the Vendor ID setting and a dispatchable workflow (`NEXT.md` B34g1)
 - B34g2b: blocked by B34g1; the ETS filing from the page
 - DF2b: blocked by B34g2b
-- CT24: blocked by B34g1; CT25 by CT24; CT26 by CT25
+- CT24: blocked by CT28 and B34g2b; CT25 by CT24; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26), B34g2b and the operator's approval
 - CT27: blocked by HMRC's Corporation Tax recognition
 
