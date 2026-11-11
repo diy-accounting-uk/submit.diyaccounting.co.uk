@@ -279,6 +279,7 @@
     "test:fileMicroEntityAccountsBehaviour-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- npm run test:fileMicroEntityAccountsBehaviour 2>&1 | tee fileMicroEntityAccountsBehaviour-simulator.log'",
     "test:companyTaxReturnBehaviour": "bash -c 'set -o pipefail; playwright test --project=companyTaxReturnBehaviour 2>&1 | tee companyTaxReturnBehaviour.log'",
     "test:companyTaxReturnBehaviour-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- npm run test:companyTaxReturnBehaviour 2>&1 | tee companyTaxReturnBehaviour-simulator.log'",
+    "test:companyTaxReturnBehaviour-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/use-deployed-base-url.js -- npm run test:companyTaxReturnBehaviour 2>&1 | tee companyTaxReturnBehaviour-ci.log'",
     "test:fileConfirmationStatementBehaviour": "bash -c 'set -o pipefail; playwright test --project=fileConfirmationStatementBehaviour 2>&1 | tee fileConfirmationStatementBehaviour.log'",
     "test:fileConfirmationStatementBehaviour-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- npm run test:fileConfirmationStatementBehaviour 2>&1 | tee fileConfirmationStatementBehaviour-proxy.log'",
     "test:fileConfirmationStatementBehaviour-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/use-deployed-base-url.js -- npm run test:fileConfirmationStatementBehaviour 2>&1 | tee fileConfirmationStatementBehaviour-ci.log'",
