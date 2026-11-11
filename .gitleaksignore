@@ -251,3 +251,5 @@ c5759cf909490629d41e7b90b8905d540b8ef5d9:behaviour-tests/submitVat.behaviour.tes
 089b4ccbbb9438dfdf785c6d431afbc954d01424:_developers/backlog/MCP Server Implementation Guide for DIY Accounting _ Claude.mhtml:generic-api-key:4849
 089b4ccbbb9438dfdf785c6d431afbc954d01424:_developers/backlog/MCP Server Implementation Guide for DIY Accounting _ Claude.mhtml:generic-api-key:4871
 089b4ccbbb9438dfdf785c6d431afbc954d01424:_developers/backlog/European VAT reform and API requirements 2026-2027 _ Claude.mhtml:generic-api-key:4591
+# superseded by rotation, see the private security overview of 2026-11-10
+2bece3e79305de881403713fe058f2a5dda75fb6:.github/respository.env:generic-api-key:8
