@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ steps.auth-provider.outputs.provider }}" = "cognito-native" ]; then
-            node scripts/ensure-cognito-test-user.js ci "${SUITE}"
+            node scripts/ensure-cognito-test-user.js ci companyTaxReturnBehaviour
           else
             echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${{ steps.auth-provider.outputs.provider }})"
           fi
