@@ -35,6 +35,10 @@ function isValidReportId(reportId) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reportId);
 }
 
+function isValidCorrelationId(correlationId) {
+  return /^[0-9A-Fa-f]{64}$/.test(correlationId);
+}
+
 function isValidPresentedDateTime(value) {
   return (
     typeof value === "string" &&
@@ -80,8 +84,9 @@ export function apiEndpoint(app) {
     console.log(`[http-simulator:vat-assist] POST /organisations/vat-assist/acknowledge/${vrn}/${reportId}/${correlationId}`);
 
     if (!isValidVrn(vrn)) return sendError(res, vatErrors.VRN_INVALID);
-    if (!isValidReportId(reportId)) return sendError(res, vatErrors.FORMAT_REPORT_ID);
-    if (!isValidPresentedDateTime(req.query.presentedDateTime)) return sendError(res, vatErrors.FORMAT_DATETIME);
+    if (!isValidReportId(reportId)) return sendError(res, vatErrors.REPORT_ID_INVALID);
+    if (!isValidCorrelationId(correlationId)) return sendError(res, vatErrors.CORRELATION_ID_INVALID);
+    if (!isValidPresentedDateTime(req.query.presentedDateTime)) return sendError(res, vatErrors.PRESENTED_DATE_TIME_INVALID);
 
     res.setHeader("X-CorrelationId", randomUUID());
 
@@ -89,8 +94,9 @@ export function apiEndpoint(app) {
     if (scenarioResponse) return sendError(res, scenarioResponse);
 
     const issued = getAssistReport(reportId);
-    if (!issued || issued.vrn !== vrn) return sendError(res, vatErrors.NOT_FOUND);
-    if (issued.correlationId !== correlationId) return sendError(res, vatErrors.CORRELATION_ID);
+    if (!issued || issued.vrn !== vrn || issued.correlationId !== correlationId) {
+      return sendError(res, vatErrors.ACKNOWLEDGEMENT_VALIDATION_FAILED);
+    }
     res.status(204).end();
   });
 }

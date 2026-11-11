@@ -82,28 +82,34 @@ describe("HTTP Simulator HMRC Assist", () => {
       expect(report.englishFeedback[0].path).toBeUndefined();
     });
 
-    it("acknowledges an issued report with 204 and refuses a forged correlation id with 403", async () => {
+    it("acknowledges an issued report with 204 and refuses a forged correlation id with 400", async () => {
       const report = await (await postJson(feedbackPath, vatBody)).json();
       const ok = await postJson(acknowledgePath(report.reportId, report.correlationId));
       expect(ok.status).toBe(204);
       const forged = await postJson(acknowledgePath(report.reportId, "0".repeat(64)));
-      expect(forged.status).toBe(403);
-      expect((await forged.json()).code).toBe("CORRELATION_ID");
+      expect(forged.status).toBe(400);
+      expect((await forged.json()).code).toBe("ACKNOWLEDGEMENT_VALIDATION_FAILED");
     });
 
     it("rejects an acknowledgement without a valid presentedDateTime", async () => {
       const report = await (await postJson(feedbackPath, vatBody)).json();
       const missing = await postJson(`/organisations/vat-assist/acknowledge/${vrn}/${report.reportId}/${report.correlationId}`);
       expect(missing.status).toBe(400);
-      expect((await missing.json()).code).toBe("FORMAT_DATETIME");
+      expect((await missing.json()).code).toBe("PRESENTED_DATE_TIME_INVALID");
       const bad = await postJson(acknowledgePath(report.reportId, report.correlationId, "yesterday"));
-      expect((await bad.json()).code).toBe("FORMAT_DATETIME");
+      expect((await bad.json()).code).toBe("PRESENTED_DATE_TIME_INVALID");
     });
 
-    it("answers 404 for an unknown report id", async () => {
+    it("answers 400 ACKNOWLEDGEMENT_VALIDATION_FAILED for an unknown report id", async () => {
       const response = await postJson(acknowledgePath("99999999-2222-4333-8444-555555555555", "a".repeat(64)));
-      expect(response.status).toBe(404);
-      expect((await response.json()).code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+      expect(response.status).toBe(400);
+      expect((await response.json()).code).toBe("ACKNOWLEDGEMENT_VALIDATION_FAILED");
+    });
+
+    it("answers 400 CORRELATION_ID_INVALID for a correlation id that is not 64 hexadecimal characters", async () => {
+      const response = await postJson(acknowledgePath("99999999-2222-4333-8444-555555555555", "not-hex"));
+      expect(response.status).toBe(400);
+      expect((await response.json()).code).toBe("CORRELATION_ID_INVALID");
     });
 
     it.each([
@@ -120,11 +126,12 @@ describe("HTTP Simulator HMRC Assist", () => {
 
     it.each([
       ["INVALID_VRN", 400, "VRN_INVALID"],
-      ["INVALID_REPORTID", 400, "FORMAT_REPORT_ID"],
-      ["INVALID_DATETIME", 400, "FORMAT_DATETIME"],
+      ["INVALID_REPORTID", 400, "REPORT_ID_INVALID"],
+      ["INVALID_DATETIME", 400, "PRESENTED_DATE_TIME_INVALID"],
       ["INVALID_CREDENTIALS", 401, "INVALID_CREDENTIALS"],
       ["NOT_AUTHORISED", 403, "CLIENT_OR_AGENT_NOT_AUTHORISED"],
-      ["CORRELATION_ID", 403, "CORRELATION_ID"],
+      ["INVALID_CORRELATIONID", 400, "CORRELATION_ID_INVALID"],
+      ["ACKNOWLEDGEMENT_VALIDATION_FAILED", 400, "ACKNOWLEDGEMENT_VALIDATION_FAILED"],
       ["NOT_FOUND", 404, "MATCHING_RESOURCE_NOT_FOUND"],
     ])("answers the %s acknowledge scenario with %i %s", async (scenario, status, code) => {
       const response = await postJson(acknowledgePath("99999999-2222-4333-8444-555555555555", "a".repeat(64)), undefined, {
