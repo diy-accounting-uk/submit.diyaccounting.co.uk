@@ -27,7 +27,6 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), B34g2b, the activity in a bundle sold on prod, the operator's approval |
 | CT27 | The yearly recognition renewal: ask SDST for the checklist link and complete it (C72) | 0 | none | HMRC's CT recognition |
-| CT23 | Move to RIM V1.995 (CT600 2027) and the 35.75% section 455 rate when HMRC puts it in TPVS and live (C43) | ~6 | Sonnet | HMRC's V1.995 release |
 
 ### The approval path
 
@@ -45,7 +44,6 @@ The Required checks still open, in order:
 | 6 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
 | 7 | C86, C88 | Terms describe CT600 filing as live; no recognition claim before step 6 (Developer Hub terms of use) | UH7 |
 | 8 | C72 | Yearly renewal | CT27 |
-| when HMRC releases it | C43 | RIM V1.995 | CT23 |
 
 RIM V1.994 is live and C1 to C8 are done. The other Required checks pass or are fixed on `main`.
 
@@ -62,8 +60,6 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 - [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on CT24.
 
 - [ ] **CT27. The yearly CT recognition renewal.** When SDST's renewal email arrives (both contacts have Corporation Tax email preferences), the operator asks sdsteam@hmrc.gov.uk for the recognition checklist link and completes it. Checklist C72. **Source**: CT recognition instructions 1.0. **Owner**: Operator. **Model**: none. **Size**: 0 files. Blocked on HMRC's CT recognition.
-
-- [ ] **CT23. RIM V1.995 (CT600 2027).** When HMRC puts V1.995 in TPVS and live, move `ct600Xml.js` to it, add `{ from: "2026-04-06", rate: 0.3575 }` to `S455_RATES_IN_RIM`, clear `S455_RATES_IN_RIM_UNTIL`, drop the 33.75% warning (C46), and prove it with `node scripts/hmrc-tpvs-ct600.js` with and without `--loans`. Checklist C43. **Source**: CT600 RIM artefacts page (V1.995 "Awaiting implementation"). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. Blocked on HMRC.
 
 - [ ] **B34g1. The ETS proof.** The TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted (NEXT.md B34g). Ready: the credentials are on `ci` since 2026-11-11. **Source**: this plan. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
@@ -87,7 +83,6 @@ flowchart LR
     B34g2b --> DF2b
     B34g2b --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
-    HMRC["HMRC's V1.995 release"] --> CT23
 ```
 
 - O34g: done 2026-11-11 (Vendor ID 9873; `HMRC_CT_ETS_SENDER_ID`, `HMRC_CT_ETS_PASSWORD`, `HMRC_CT_ETS_UTR` on `ci`)
@@ -97,7 +92,6 @@ flowchart LR
 - CT24: blocked by B34g1; CT25 by CT24; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26), B34g2b and the operator's approval
 - CT27: blocked by HMRC's Corporation Tax recognition
-- CT23: blocked by HMRC's V1.995 release
 
 ## Designs
 
