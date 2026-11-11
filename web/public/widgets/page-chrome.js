@@ -282,8 +282,8 @@
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
     const languageSwitch = buildLanguageSwitch(rootPrefix);
-    const authSection = header.querySelector(".auth-section");
-    if (languageSwitch && authSection) authSection.prepend(languageSwitch);
+    const mainNav = header.querySelector(".main-nav");
+    if (languageSwitch && mainNav) mainNav.after(languageSwitch);
 
     // On a narrow screen the row scrolls sideways; bring the current page's link into view.
     const nav = header.querySelector(".main-nav");
