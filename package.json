@@ -422,7 +422,7 @@
     "@aws-sdk/client-sts": "^3.1161.0",
     "@aws-sdk/client-xray": "^3.1161.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
-    "@diy-accounting-uk/diya-gl": "1.2.73",
+    "@diy-accounting-uk/diya-gl": "1.2.78",
     "@google-analytics/data": "^7.3.0",
     "@google-cloud/bigquery": "^9.5.0",
     "@iarna/toml": "^3.0.0",
