@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: hmrc-ets-ct600
+run-name: "CT600 through HMRC's External Test Service (agent: ${{ inputs.agent }})"
+#
+# Files the book fixture's CT600 with HMRC's External Test Service under the SDST test
+# credentials, polls the acknowledgement, deletes the submission, and uploads the transcript
+# with the gateway user ID and password blanked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent:
+        type: boolean
+        description: "File as a practice for its client (the agent case)"
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ets-ct600:
+    name: "CT600 through ETS"
+    runs-on: ubuntu-24.04
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Node
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: ignore-scripts
+
+      - name: File the CT600 with ETS
+        run: |
+          if [ "${{ inputs.agent }}" = "true" ]; then
+            node scripts/hmrc-tpvs-ct600.js --ets --out target/hmrc-ets --agent "DIY Accounting Test Practice"
+          else
+            node scripts/hmrc-tpvs-ct600.js --ets --out target/hmrc-ets
+          fi
+        env:
+          HMRC_CT_ETS_SENDER_ID: ${{ secrets.HMRC_CT_ETS_SENDER_ID }}
+          HMRC_CT_ETS_PASSWORD: ${{ secrets.HMRC_CT_ETS_PASSWORD }}
+          HMRC_CT_ETS_UTR: ${{ secrets.HMRC_CT_ETS_UTR }}
+          HMRC_CT_VENDOR_ID: "9873"
+
+      - name: Upload the redacted transcript
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hmrc-ets-ct600-transcript
+          path: target/hmrc-ets/
+          if-no-files-found: warn

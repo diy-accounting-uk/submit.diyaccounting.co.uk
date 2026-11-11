@@ -23,7 +23,13 @@
  * carries the client reference PCL-001 and the practice name, Sender is Agent, and the declaration
  * status (box 985) is Agent.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>]
+ * With --ets the same return is filed with HMRC's External Test Service under the SDST test
+ * credentials from HMRC_CT_ETS_SENDER_ID, HMRC_CT_ETS_PASSWORD, HMRC_CT_ETS_UTR and
+ * HMRC_CT_VENDOR_ID: the ETS UTR replaces --utr everywhere, the acknowledgement is polled until a
+ * final response or an error, then the submission is deleted. The transcript is written with the
+ * gateway user ID and password blanked. --agent works in this mode too.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -45,6 +51,7 @@ import {
   postToTransactionEngine,
   TPVS_CT600_URL,
 } from "../app/services/hmrcTransactionEngine.js";
+import { readEtsInputs, runEtsExchange } from "./lib/etsCt600.js";
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
@@ -61,7 +68,9 @@ const loansToParticipators = withLoans ? JSON.parse(readFileSync(loansFile, "utf
 const directorsAdvances = (accounts) =>
   accounts.directorsAdvances?.map((advance) => ({ ...advance, terms: "Interest free and repayable on demand." }));
 const outputDirectory = argument("--out", "target/hmrc-tpvs");
-const utr = argument("--utr", "8596148860");
+const ets = process.argv.includes("--ets");
+const etsInputs = ets ? readEtsInputs(process.env) : undefined;
+const utr = etsInputs ? etsInputs.utr : argument("--utr", "8596148860");
 const micro = process.argv.includes("--micro");
 const amended = process.argv.includes("--amended");
 const agentPracticeName = argument("--agent", undefined);
@@ -153,10 +162,10 @@ const computationsIxbrl = buildCtComputations({
 });
 const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
 const { xml, irmark } = buildCt600SubmissionRequest({
-  senderId: "tpvs",
-  password: "tpvs",
+  senderId: etsInputs ? etsInputs.senderId : "tpvs",
+  password: etsInputs ? etsInputs.password : "tpvs",
   utr,
-  vendorId: "1000",
+  vendorId: etsInputs ? etsInputs.vendorId : "1000",
   productName: "DIY Accounting Submit",
   productVersion: "1.0",
   irEnvelopeXml,
@@ -165,6 +174,15 @@ const { xml, irmark } = buildCt600SubmissionRequest({
 
 mkdirSync(outputDirectory, { recursive: true });
 const outputPrefix = agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600";
+if (ets) {
+  const { transcript, final, ok } = await runEtsExchange({ submissionXml: xml });
+  transcript.forEach(({ label, xml: message }, index) =>
+    writeFileSync(join(outputDirectory, `${outputPrefix}-ets-${String(index + 1).padStart(2, "0")}-${label}.xml`), message),
+  );
+  console.log(JSON.stringify({ irmark, boxes, response: final }, null, 2));
+  if (!ok) process.exit(1);
+  process.exit(0);
+}
 writeFileSync(join(outputDirectory, `${outputPrefix}-submission.xml`), xml);
 const result = await postToTransactionEngine(TPVS_CT600_URL, xml);
 writeFileSync(join(outputDirectory, `${outputPrefix}-tpvs-response.xml`), result.data);
