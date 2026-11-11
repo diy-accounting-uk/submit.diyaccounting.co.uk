@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-64402e2** (PR #795's merge 64402e2d2, deploy run 42964378909, 2026-11-11; it carries #792 to #795: HMRC Assist in Welsh with the 30-second hold, the Assist banner and preview kept off prod, the Welsh pages, and diya-gl 1.2.78).
-**ci**: ci-set1 is `/submit/ci/last-known-good-deployment` (PR #789's branch deploy); ci-set2 is destroyed.
+**ci**: ci-set1 is `/submit/ci/last-known-good-deployment` (promoted again 2026-11-11 05:12 UTC); ci-set2 is destroyed.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,6 +40,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
+- [ ] **LANG7. The language switch in the header's top band, visible at every width.** On prod (prod-64402e2) the switch ends the main navigation row: off-screen on a phone, and clipped at 1280 when the Practice link shows. Operator decision (2026-11-11): the switch goes in the top band, after the info and theme icons, left of the account controls. Built on `claude/lang7-switch-phone` (939958b46, worktree `.claude/worktrees/lang7`): `page-chrome.js` appends it to `.header-left`; `header.css` and `navigation.css` keep the band height (below 600px it shares the account row). `web/browser-tests/languageSwitch.browser.test.js` checks both languages, signed in and out, at 1280, 768 and 375: the other-language link fully in view, no overlap with the icons or the account controls; with the layout-shift and mobile-layout tests, 99 pass. Left: `scripts/batch-check.sh` (running), push, one PR, `/auto-merge`, then the header screenshots on prod. **Source**: visual review after PR #795 (2026-11-11). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 ## Machine-only
 
 - [ ] **SEC3. Mark the superseded HMRC client secret in history as known to gitleaks.** `../private.diyaccounting.co.uk/security/SECURITY_OVERVIEW_2026-11-10.md` item 3: the secret-scan report `SECRET_SCAN_2026-11-10.md` lists its fingerprint. Add that fingerprint to submit's `.gitleaksignore` with the reason "superseded by rotation", so the scan stops reporting it; run the gitleaks pre-commit hook over the change. **Source**: the security overview of 2026-11-10 (operator, 2026-11-11). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
@@ -47,8 +49,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 - [ ] **SEC4. Clear Dependabot #187 (minimatch, medium) in `cdk-typescript`.** `cdk-typescript/package-lock.json` holds the vulnerable minimatch; the only reference outside the folder is `cdk-typescript/scripts/diff-templates.mjs` in `REPORT_CAPABILITIES.md`'s backup entry. Bump minimatch through `npm audit fix` in `cdk-typescript/` (or the parent dependency that pins it), run `node cdk-typescript/scripts/diff-templates.mjs --help` or its own test to prove it still loads, and check the alert closes after merge. **Source**: the security overview of 2026-11-10 (operator, 2026-11-11). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **SEC6. Keep behaviour-test output out of git.** `../private.diyaccounting.co.uk/security/SECURITY_OVERVIEW_2026-11-10.md` item 9 (EC-5): committed behaviour-test output (`submitVatBehaviour.txt` and others, in history only; none at main head) carried short-lived JWT and bearer tokens. Add ignore rules for the behaviour-test output names (`*Behaviour*.txt` next to the existing log rules in `.gitignore`), and a content-scan or pre-commit check that refuses a staged file holding a JWT outside the test fixtures directory. **Source**: the security overview of 2026-11-10 (operator, 2026-11-11). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **LANG7. The language switch is off-screen on a phone.** On prod (prod-64402e2) at 375px wide, the switch sits at the end of the main navigation row (`web/public/widgets/page-chrome.js`, `mainNav.append(languageSwitch)`), which scrolls sideways, so a Welsh reader sees no "English" link and an English reader no "Cymraeg" link without scrolling the row. Screenshot: `target/vr-header/cy-375.png` (local). Fix: below the narrow breakpoint in `web/public/css/navigation.css` (the `.main-nav` block near line 180), give `.language-switch` `order: -1` and no left margin, so it leads the row; keep the header height (the layout-shift tests in `web/browser-tests/layoutShift.browser.test.js` must still pass at 375 and 280); add a case to `web/browser-tests/languageSwitch.browser.test.js` that the other-language link is in the viewport at 375px. **Source**: visual review after PR #795 (2026-11-11). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 ## Machine-ask
 
