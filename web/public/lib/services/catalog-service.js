@@ -108,6 +108,7 @@ function isOperatorOnly(bundleIds) {
  * preview features, and not switched off by the person's own settings. An activity may name an
  * account setting in `accountSetting` (a setting that is false hides it), and an operator who
  * turned operator features off does not see an activity that only the operator bundle serves.
+ * An activity that names `previewEnvironments` is shown under preview features only in those environments.
  * @param {object} activity - An activity entry from the parsed catalog
  * @param {string|null} environmentName - The current environment name
  * @param {{preview: boolean, operatorFeatures: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
@@ -116,6 +117,9 @@ function isOperatorOnly(bundleIds) {
 export function isActivityShown(activity, environmentName, viewer) {
   if (activity?.accountSetting && viewer?.account?.[activity.accountSetting] === false) return false;
   if (viewer?.operatorFeatures === false && isOperatorOnly(activity?.bundles)) return false;
+  if (viewer?.preview === true && Array.isArray(activity?.previewEnvironments)) {
+    return typeof environmentName === "string" && activity.previewEnvironments.includes(environmentName);
+  }
   return viewer?.preview === true || isActivityListedInEnvironment(activity, environmentName);
 }
 

@@ -107,13 +107,50 @@ export function vatFeedbackLists(kind) {
   };
 }
 
+function invalidRequest(code, message, path) {
+  return { status: 400, body: { code: "INVALID_REQUEST", message: "Invalid request", errors: [{ code, message, path }] } };
+}
+
+/**
+ * The INVALID_REQUEST answer for a mandatory box the request left out.
+ * @param {string} field - the request field that is missing
+ */
+export function missingFieldError(field) {
+  return invalidRequest("MANDATORY_FIELD_MISSING", "a mandatory field is missing", `/${field}`);
+}
+
 const VAT_ERRORS = {
   VRN_INVALID: { status: 400, body: { code: "VRN_INVALID", message: "The provided VRN is invalid" } },
-  PERIOD_KEY_INVALID: { status: 400, body: { code: "PERIOD_KEY_INVALID", message: "Invalid period key" } },
-  INVALID_REQUEST: { status: 400, body: { code: "INVALID_REQUEST", message: "Invalid request" } },
-  FORMAT_REPORT_ID: { status: 400, body: { code: "FORMAT_REPORT_ID", message: "The provided Report ID is invalid." } },
-  FORMAT_DATETIME: { status: 400, body: { code: "FORMAT_DATETIME", message: "The provided Presented Date Time is invalid." } },
-  INVALID_CREDENTIALS: { status: 401, body: { code: "INVALID_CREDENTIALS", message: "Invalid authentication information provided." } },
+  PERIOD_KEY_INVALID: {
+    status: 400,
+    body: { code: "PERIOD_KEY_INVALID", message: "The supplied period key does not match an open obligation" },
+  },
+  INVALID_REQUEST_PERIOD_KEY_FORMAT: invalidRequest("PERIOD_KEY_INVALID", "period key should be a 4 character string", "/periodKey"),
+  INVALID_REQUEST_MANDATORY_FIELD_MISSING: invalidRequest("MANDATORY_FIELD_MISSING", "a mandatory field is missing", "/totalVatDue"),
+  REPORT_ID_INVALID: { status: 400, body: { code: "REPORT_ID_INVALID", message: "The provided report ID is invalid" } },
+  CORRELATION_ID_INVALID: { status: 400, body: { code: "CORRELATION_ID_INVALID", message: "The provided correlation ID is invalid" } },
+  PRESENTED_DATE_TIME_INVALID: {
+    status: 400,
+    body: { code: "PRESENTED_DATE_TIME_INVALID", message: "The presentedDateTime query parameter is missing or invalid" },
+  },
+  ACKNOWLEDGEMENT_VALIDATION_FAILED: {
+    status: 400,
+    body: { code: "ACKNOWLEDGEMENT_VALIDATION_FAILED", message: "The acknowledgement request failed validation" },
+  },
+  FEEDBACK_INVALID_CREDENTIALS: {
+    status: 401,
+    body: { code: "INVALID_CREDENTIALS", message: "Invalid Authentication information provided" },
+  },
+  ACKNOWLEDGE_INVALID_CREDENTIALS: {
+    status: 401,
+    body: { code: "INVALID_CREDENTIALS", message: "Invalid authentication information provided." },
+  },
+  VRN_NOT_FOUND: {
+    status: 404,
+    body: { code: "VRN_NOT_FOUND", message: "The remote endpoint has indicated that the VRN could not be found." },
+  },
+  INTERNAL_SERVER_ERROR: { status: 500, body: { code: "INTERNAL_SERVER_ERROR", message: "An unexpected error occurred." } },
+  SERVICE_UNAVAILABLE: { status: 503, body: { code: "SERVICE_UNAVAILABLE", message: "The service is currently unavailable" } },
   TAX_PERIOD_NOT_ENDED: {
     status: 403,
     body: {
@@ -127,11 +164,7 @@ const VAT_ERRORS = {
   },
   CLIENT_OR_AGENT_NOT_AUTHORISED: {
     status: 403,
-    body: { code: "CLIENT_OR_AGENT_NOT_AUTHORISED", message: "Client and/or agent is not authorised." },
-  },
-  CORRELATION_ID: {
-    status: 403,
-    body: { code: "CORRELATION_ID", message: "The Correlation ID is not the expected value for this report." },
+    body: { code: "CLIENT_OR_AGENT_NOT_AUTHORISED", message: "The client and/or agent is not authorised" },
   },
   NOT_FOUND: {
     status: 404,
@@ -156,9 +189,9 @@ export function getVatFeedbackScenarioResponse(scenario) {
     case "INVALID_VRN":
       return VAT_ERRORS.VRN_INVALID;
     case "INVALID_PERIODKEY":
-      return VAT_ERRORS.PERIOD_KEY_INVALID;
+      return VAT_ERRORS.INVALID_REQUEST_PERIOD_KEY_FORMAT;
     case "INVALID_REQUEST":
-      return VAT_ERRORS.INVALID_REQUEST;
+      return VAT_ERRORS.INVALID_REQUEST_MANDATORY_FIELD_MISSING;
     case "TAX_PERIOD_NOT_ENDED":
       return VAT_ERRORS.TAX_PERIOD_NOT_ENDED;
     case "INSOLVENT_TRADER":
@@ -179,15 +212,17 @@ export function getVatAcknowledgeScenarioResponse(scenario) {
     case "INVALID_VRN":
       return VAT_ERRORS.VRN_INVALID;
     case "INVALID_REPORTID":
-      return VAT_ERRORS.FORMAT_REPORT_ID;
+      return VAT_ERRORS.REPORT_ID_INVALID;
+    case "INVALID_CORRELATIONID":
+      return VAT_ERRORS.CORRELATION_ID_INVALID;
     case "INVALID_DATETIME":
-      return VAT_ERRORS.FORMAT_DATETIME;
+      return VAT_ERRORS.PRESENTED_DATE_TIME_INVALID;
     case "INVALID_CREDENTIALS":
-      return VAT_ERRORS.INVALID_CREDENTIALS;
+      return VAT_ERRORS.ACKNOWLEDGE_INVALID_CREDENTIALS;
     case "NOT_AUTHORISED":
       return VAT_ERRORS.CLIENT_OR_AGENT_NOT_AUTHORISED;
-    case "CORRELATION_ID":
-      return VAT_ERRORS.CORRELATION_ID;
+    case "ACKNOWLEDGEMENT_VALIDATION_FAILED":
+      return VAT_ERRORS.ACKNOWLEDGEMENT_VALIDATION_FAILED;
     case "NOT_FOUND":
       return VAT_ERRORS.NOT_FOUND;
     default:

@@ -499,7 +499,9 @@ test.describe("HMRC Assist check on the VAT return", () => {
 
   for (const [name, answer] of [
     ["a 403", { status: 403, body: { message: "forbidden" } }],
+    ["a 404 VRN_NOT_FOUND", { status: 404, body: { code: "VRN_NOT_FOUND", message: "not found" } }],
     ["a 500", { status: 500, body: { message: "failed" } }],
+    ["a 503", { status: 503, body: { code: "SERVICE_UNAVAILABLE", message: "unavailable" } }],
     ["a network failure", { abort: true }],
   ]) {
     test(`shows one line and leaves the form as it was after ${name}`, async ({ page }) => {
@@ -561,18 +563,43 @@ test.describe("HMRC Assist check on the VAT return", () => {
 
       await expect(page.locator("#hmrcAssistCheckBtn")).toHaveCount(0);
       await expect(page.locator("#hmrcAssistCheck")).toBeEmpty();
+      await expect(page.locator("#hmrcAssistStatusNote")).toBeHidden();
       expect(reportRequests).toHaveLength(0);
       expect(acknowledgeRequests).toHaveLength(0);
     });
   }
 
-  test("shows the control on prod when preview features are on for the session", async ({ page }) => {
+  test("shows no control and no note on prod when preview features are on for the session", async ({ page }) => {
     await page.addInitScript(() => sessionStorage.setItem("previewFeatures", "on"));
-    await openForm(page, { environmentName: "prod" });
+    const { reportRequests } = await openForm(page, { environmentName: "prod" });
+    await fillBoxes(page);
+    await settle(page);
+
+    await expect(page.locator("#hmrcAssistCheckBtn")).toHaveCount(0);
+    await expect(page.locator("#hmrcAssistStatusNote")).toBeHidden();
+    await expect(page.locator("p.hint[data-feature-status]").first()).toContainText("Returns you submit here reach HMRC.");
+    expect(reportRequests).toHaveLength(0);
+  });
+
+  test("shows the control and the note on ci with preview features off", async ({ page }) => {
+    await openForm(page, { environmentName: "ci" });
     await fillBoxes(page);
     await settle(page);
 
     await expect(page.locator("#hmrcAssistCheckBtn")).toBeVisible();
+    await expect(page.locator("#hmrcAssistStatusNote")).toBeVisible();
+  });
+
+  test("keeps the preview note in the sandbox status line when the control is mounted", async ({ page }) => {
+    await page.addInitScript(() => sessionStorage.setItem("hmrcAccount", "synthetic"));
+    await page.route("**/api/v1/bundle", async (route) => {
+      const bundles = [{ bundleId: "day-guest", qualifiers: { synthetic: true } }];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles }) });
+    });
+    await openForm(page);
+    await expect(page.locator("#hmrcAssistCheckBtn")).toBeVisible();
+    await expect(page.locator("p.hint[data-feature-status]").first()).toContainText("Status: sandbox.");
+    await expect(page.locator("#hmrcAssistStatusNote")).toBeVisible();
   });
 
   test("shows no control when the obligation is fulfilled", async ({ page }) => {

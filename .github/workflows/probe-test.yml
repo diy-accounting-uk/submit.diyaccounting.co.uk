@@ -728,6 +728,53 @@ jobs:
       # not record a pass or a fail for it here.
       superseded: ${{ (steps.wait-before-navigate.outputs.deploy-in-progress == 'true' || steps.wait-before-retry.outputs.deploy-in-progress == 'true') && 'true' || 'false' }}
 
+  # The developer site links this path as the latest Playwright report for submit. The ci
+  # environment's bucket holds it. A called run sees the caller's github.ref, so the
+  # submitVatBehaviour probe of every deploy.yml run on main publishes it.
+  publish-developer-report:
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name == 'ci' && contains(needs.params.outputs.behaviour-test-suites-json, 'submitVatBehaviour') && needs.behaviour-test.result == 'success' && needs.behaviour-test.outputs.superseded != 'true' }}
+    name: 'publish the Playwright report to the developer site'
+    needs:
+      - params
+      - names
+      - behaviour-test
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - name: Download the submitVatBehaviour report
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: submitVatBehaviour-reports
+          path: report
+
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Publish the Playwright report to the developer site
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ ! -d report/html-report ]; then
+            echo "::notice::the submitVatBehaviour run produced no html-report; the report is not published"
+            exit 0
+          fi
+          OUTPUTS=$(aws cloudformation describe-stacks --region us-east-1 \
+            --stack-name ci-env-DeveloperSiteStack \
+            --query 'Stacks[0].Outputs' --output json 2>/dev/null || echo '[]')
+          BUCKET=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "BucketName") | .OutputValue')
+          DISTRIBUTION_ID=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "DistributionId") | .OutputValue')
+          if [ -z "${BUCKET}" ]; then
+            echo "::notice::ci-env-DeveloperSiteStack is not deployed; the report is not published"
+            exit 0
+          fi
+          aws s3 sync report/html-report "s3://${BUCKET}/reports/submit/" --delete --region us-east-1
+          aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths '/reports/submit/*'
+
   publish-cloudwatch-metric:
     if: ${{ !cancelled() }}
     name: 'publish cloudwatch metric ${{ matrix.suite }}'

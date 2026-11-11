@@ -17,7 +17,8 @@ const pages = ["index.html", "mcp-api.html"];
 const rootPackage = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf-8"));
 const mcpPackage = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf-8"));
 const publishMcp = fs.readFileSync(path.join(root, ".github/workflows/publish-mcp.yml"), "utf-8");
-const testWorkflow = fs.readFileSync(path.join(root, ".github/workflows/test-behaviour.yml"), "utf-8");
+const probeWorkflow = fs.readFileSync(path.join(root, ".github/workflows/probe-test.yml"), "utf-8");
+const deployWorkflow = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf-8");
 
 function hrefsOf(page) {
   const html = fs.readFileSync(path.join(developerDir, page), "utf-8");
@@ -47,7 +48,7 @@ function resolves(link) {
     return image === "diya-submit-mcp" ? publishMcp.includes(`ghcr.io/diy-accounting-uk/${image}`) : EXTERNAL_URLS.has(link);
   }
   if (link === "https://ci-developer.diyaccounting.co.uk/reports/submit/index.html") {
-    return testWorkflow.includes('"s3://${BUCKET}/reports/submit/"');
+    return probeWorkflow.includes('"s3://${BUCKET}/reports/submit/"');
   }
   return EXTERNAL_URLS.has(link);
 }
@@ -72,6 +73,20 @@ describe("developer site", () => {
     expect(links.filter((link) => link.includes("/packages/container/package/"))).toHaveLength(2);
     expect(links).toContain("https://ci-developer.diyaccounting.co.uk/reports/submit/index.html");
     expect(links).toContain("https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/actions/workflows/test.yml");
+  });
+
+  it("publishes the submit report from a probe job that runs on main for every deploy", () => {
+    const job = probeWorkflow.slice(
+      probeWorkflow.indexOf("  publish-developer-report:"),
+      probeWorkflow.indexOf("  publish-cloudwatch-metric:"),
+    );
+    expect(job).toContain("github.ref == 'refs/heads/main'");
+    expect(job).toContain("s3://${BUCKET}/reports/submit/");
+    expect(job).toContain("cloudfront create-invalidation");
+    expect(job).toContain("submitVatBehaviour-reports");
+    const deployCall = deployWorkflow.slice(deployWorkflow.indexOf("via probe test'"), deployWorkflow.indexOf("  probe-suites:"));
+    expect(deployCall).toContain("behaviour-test-suite: 'submitVatBehaviour'");
+    expect(deployCall).toContain("generate-test-reports: 'true'");
   });
 
   it("carries light and dark colour tokens", () => {

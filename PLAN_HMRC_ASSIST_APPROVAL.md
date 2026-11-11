@@ -116,16 +116,19 @@ The VAT half follows the published specification (<https://developer.service.hmr
 | `MULTIPLE_FEEDBACK` | several messages | |
 | `NO_FEEDBACK` | the item 0 message | |
 | `INVALID_VRN` | 400 `VRN_INVALID` | 400 `VRN_INVALID` |
-| `INVALID_PERIODKEY` | 400 `PERIOD_KEY_INVALID` | |
-| `INVALID_REQUEST` | 400 `INVALID_REQUEST` | |
+| `INVALID_PERIODKEY` | 400 `INVALID_REQUEST` with `errors` `PERIOD_KEY_INVALID` at `/periodKey` | |
+| `INVALID_REQUEST` | 400 `INVALID_REQUEST` with `errors` `MANDATORY_FIELD_MISSING` | |
 | `TAX_PERIOD_NOT_ENDED` | 403 `TAX_PERIOD_NOT_ENDED` | |
 | `INSOLVENT_TRADER` | 403 `RULE_INSOLVENT_TRADER` | |
-| `INVALID_REPORTID` | | 400 `FORMAT_REPORT_ID` |
-| `INVALID_DATETIME` | | 400 `FORMAT_DATETIME` |
+| `INVALID_REPORTID` | | 400 `REPORT_ID_INVALID` |
+| `INVALID_CORRELATIONID` | | 400 `CORRELATION_ID_INVALID` |
+| `INVALID_DATETIME` | | 400 `PRESENTED_DATE_TIME_INVALID` |
 | `INVALID_CREDENTIALS` | | 401 `INVALID_CREDENTIALS` |
 | `NOT_AUTHORISED` | | 403 `CLIENT_OR_AGENT_NOT_AUTHORISED` |
-| `CORRELATION_ID` | | 403 `CORRELATION_ID` |
+| `ACKNOWLEDGEMENT_VALIDATION_FAILED` | | 400 `ACKNOWLEDGEMENT_VALIDATION_FAILED` |
 | `NOT_FOUND` | | 404 `MATCHING_RESOURCE_NOT_FOUND` |
+
+HMRC's specification names no Gov-Test-Scenario for these answers, so the simulator holds them in its error table and no header selects them: feedback 400 `PERIOD_KEY_INVALID` (a well-formed key that matches no open obligation), 401 `INVALID_CREDENTIALS` ("Invalid Authentication information provided"), 404 `VRN_NOT_FOUND` (the sandbox cannot simulate it); both operations 500 `INTERNAL_SERVER_ERROR` and 503 `SERVICE_UNAVAILABLE`. The widget treats every non-success feedback answer as "unavailable" and still allows the submit.
 
 ## Tasks
 

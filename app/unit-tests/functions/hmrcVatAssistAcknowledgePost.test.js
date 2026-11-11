@@ -260,14 +260,25 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
   });
 
   test.each([
-    [400, "FORMAT_DATETIME"],
-    [403, "CORRELATION_ID"],
+    [400, "PRESENTED_DATE_TIME_INVALID"],
+    [400, "ACKNOWLEDGEMENT_VALIDATION_FAILED"],
     [404, "MATCHING_RESOURCE_NOT_FOUND"],
   ])("maps an HMRC %i (%s) to the same status and leaves the receipt unstamped", async (status, code) => {
     mockHmrcError(mockFetch, status, { code, message: "HMRC says no" });
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(status);
+    expect(receiptPuts()).toHaveLength(0);
+  });
+
+  test.each([
+    [500, "INTERNAL_SERVER_ERROR"],
+    [503, "SERVICE_UNAVAILABLE"],
+  ])("maps an HMRC %i (%s) to a 500 and leaves the receipt unstamped", async (status, code) => {
+    mockHmrcError(mockFetch, status, { code, message: "HMRC is down" });
+    const response = await ingestHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
     expect(receiptPuts()).toHaveLength(0);
   });
 

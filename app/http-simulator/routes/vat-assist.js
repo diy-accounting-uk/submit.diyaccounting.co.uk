@@ -8,7 +8,13 @@
 
 import { randomUUID, randomBytes } from "crypto";
 import { storeAssistReport, getAssistReport } from "../state/store.js";
-import { vatFeedbackLists, getVatFeedbackScenarioResponse, getVatAcknowledgeScenarioResponse, vatErrors } from "../scenarios/assist.js";
+import {
+  vatFeedbackLists,
+  getVatFeedbackScenarioResponse,
+  getVatAcknowledgeScenarioResponse,
+  vatErrors,
+  missingFieldError,
+} from "../scenarios/assist.js";
 
 const REQUIRED_FIELDS = [
   "periodKey",
@@ -33,6 +39,10 @@ function isValidPeriodKey(periodKey) {
 
 function isValidReportId(reportId) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reportId);
+}
+
+function isValidCorrelationId(correlationId) {
+  return /^[0-9A-Fa-f]{64}$/.test(correlationId);
 }
 
 function isValidPresentedDateTime(value) {
@@ -61,9 +71,9 @@ export function apiEndpoint(app) {
 
     const body = req.body || {};
     for (const field of REQUIRED_FIELDS) {
-      if (body[field] === undefined || body[field] === null) return sendError(res, vatErrors.INVALID_REQUEST);
+      if (body[field] === undefined || body[field] === null) return sendError(res, missingFieldError(field));
     }
-    if (!isValidPeriodKey(body.periodKey)) return sendError(res, vatErrors.PERIOD_KEY_INVALID);
+    if (!isValidPeriodKey(body.periodKey)) return sendError(res, vatErrors.INVALID_REQUEST_PERIOD_KEY_FORMAT);
 
     const reportId = randomUUID();
     if (scenarioResponse?.feedback === "none") {
@@ -80,8 +90,9 @@ export function apiEndpoint(app) {
     console.log(`[http-simulator:vat-assist] POST /organisations/vat-assist/acknowledge/${vrn}/${reportId}/${correlationId}`);
 
     if (!isValidVrn(vrn)) return sendError(res, vatErrors.VRN_INVALID);
-    if (!isValidReportId(reportId)) return sendError(res, vatErrors.FORMAT_REPORT_ID);
-    if (!isValidPresentedDateTime(req.query.presentedDateTime)) return sendError(res, vatErrors.FORMAT_DATETIME);
+    if (!isValidReportId(reportId)) return sendError(res, vatErrors.REPORT_ID_INVALID);
+    if (!isValidCorrelationId(correlationId)) return sendError(res, vatErrors.CORRELATION_ID_INVALID);
+    if (!isValidPresentedDateTime(req.query.presentedDateTime)) return sendError(res, vatErrors.PRESENTED_DATE_TIME_INVALID);
 
     res.setHeader("X-CorrelationId", randomUUID());
 
@@ -89,8 +100,9 @@ export function apiEndpoint(app) {
     if (scenarioResponse) return sendError(res, scenarioResponse);
 
     const issued = getAssistReport(reportId);
-    if (!issued || issued.vrn !== vrn) return sendError(res, vatErrors.NOT_FOUND);
-    if (issued.correlationId !== correlationId) return sendError(res, vatErrors.CORRELATION_ID);
+    if (!issued || issued.vrn !== vrn || issued.correlationId !== correlationId) {
+      return sendError(res, vatErrors.ACKNOWLEDGEMENT_VALIDATION_FAILED);
+    }
     res.status(204).end();
   });
 }

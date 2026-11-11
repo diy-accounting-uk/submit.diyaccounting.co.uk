@@ -692,13 +692,12 @@ function showSandboxStatus() {
   const banner = document.querySelector("p.hint[data-feature-status]");
   if (!banner) return;
   banner.setAttribute("data-feature-status", "sandbox");
+  const assistNote = document.getElementById("hmrcAssistStatusNote");
   banner.replaceChildren();
   const strong = document.createElement("strong");
   strong.textContent = "Status: sandbox.";
-  banner.append(
-    strong,
-    " Returns you submit here go to HMRC's test service and reach no real record. The HMRC Assist check on this page is preview: it runs on our simulator only.",
-  );
+  banner.append(strong, " Returns you submit here go to HMRC's test service and reach no real record. ");
+  if (assistNote) banner.append(assistNote);
 }
 
 async function connectHmrc() {
@@ -943,6 +942,8 @@ onDOMReady(async function () {
   const hmrcAssistEnvironmentName = hmrcAssistActivity ? await window.fetchCurrentEnvironmentName() : null;
   const hmrcAssistViewer = hmrcAssistActivity ? await (await import("/lib/services/viewer-settings.js")).fetchViewer() : null;
   if (hmrcAssistActivity && window.isActivityShown(hmrcAssistActivity, hmrcAssistEnvironmentName, hmrcAssistViewer)) {
+    const hmrcAssistStatusNote = document.getElementById("hmrcAssistStatusNote");
+    if (hmrcAssistStatusNote) hmrcAssistStatusNote.hidden = false;
     hmrcAssist = window.hmrcAssistMessages.mount({
       kind: "vat",
       container: document.getElementById("hmrcAssistCheck"),
