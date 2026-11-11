@@ -136,8 +136,7 @@ dd {
     margin-left: 0;
   }
 
-  .language-switch a,
-  .language-switch [aria-current] {
+  .language-switch a {
     min-height: 2.5rem;
   }
 

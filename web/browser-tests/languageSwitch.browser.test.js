@@ -21,7 +21,7 @@ for (const { english, welsh } of PAIRS) {
     await expect(page.locator("html")).toHaveAttribute("lang", "en-GB");
     const englishSwitch = page.locator("header .header-nav .header-left .language-switch");
     await expect(englishSwitch).toHaveAttribute("aria-label", "Language");
-    await expect(englishSwitch.locator('[aria-current="true"]')).toHaveText("English");
+    await expect(englishSwitch.locator("a")).toHaveCount(1);
     const toWelsh = englishSwitch.getByRole("link", { name: "Cymraeg" });
     await expect(toWelsh).toHaveAttribute("lang", "cy");
     await expect(toWelsh).toHaveAttribute("hreflang", "cy");
@@ -35,7 +35,7 @@ for (const { english, welsh } of PAIRS) {
     await expect(page.locator("aside.welsh-services")).toContainText("0300 200 1900");
     const welshSwitch = page.locator("header .header-nav .header-left .language-switch");
     await expect(welshSwitch).toHaveAttribute("aria-label", "Iaith");
-    await expect(welshSwitch.locator('[aria-current="true"]')).toHaveText("Cymraeg");
+    await expect(welshSwitch.locator("a")).toHaveCount(1);
 
     await welshSwitch.getByRole("link", { name: "English" }).click();
     const expected = english === "/index.html" ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${english}`;
@@ -61,8 +61,6 @@ test("the Welsh home keeps its Welsh subtitle and its activity links reach the s
   await expect(page).not.toHaveURL(/\/cy\/(?!index\.html)/);
 });
 
-const SIGNED_IN_ADDRESS = "synthetic-user@test.diyaccounting.co.uk";
-
 for (const { path, otherName } of [
   { path: "/", otherName: "Cymraeg" },
   { path: "/cy/index.html", otherName: "English" },
@@ -72,20 +70,26 @@ for (const { path, otherName } of [
       const state = signedIn ? "signed in" : "signed out";
       test(`${path} header keeps the language switch whole and clear of the account row at ${width}px, ${state}`, async ({ page }) => {
         await page.setViewportSize({ width, height: 800 });
-        await serveRealSite(page);
-        await page.addInitScript(
-          ({ signedIn, address }) => {
-            try {
-              if (signedIn) localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: address }));
-              else localStorage.removeItem("userInfo");
-            } catch {}
-          },
-          { signedIn, address: SIGNED_IN_ADDRESS },
-        );
+        await serveRealSite(page, {
+          signedIn,
+          apiHandler: (url) =>
+            url.pathname === "/api/v1/bundle"
+              ? {
+                  bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: 99999, tokensConsumed: 0 }],
+                  tokensRemaining: 99999,
+                }
+              : undefined,
+        });
         await page.goto(`${SITE_ORIGIN}${path}`, { waitUntil: "domcontentloaded" });
         const bandSwitch = page.locator("header .header-nav .header-left .language-switch");
         await expect(bandSwitch).toBeVisible();
-        await expect(page.locator(".login-status")).toHaveText(signedIn ? `Logged in as ${SIGNED_IN_ADDRESS}` : "Not logged in");
+        if (signedIn) {
+          await expect(page.locator(".token-balance .token-count")).toHaveText(/tokens/);
+          await expect(page.locator(".token-refresh-btn")).toBeVisible();
+          await expect(page.locator(".login-status")).toContainText("Logged in as");
+        } else {
+          await expect(page.locator(".login-status")).toHaveText("Not logged in");
+        }
         const other = bandSwitch.getByRole("link", { name: otherName });
         await expect(other).toBeInViewport({ ratio: 1 });
 
@@ -97,13 +101,22 @@ for (const { path, otherName } of [
           return {
             band: rect(document.querySelector("header .header-nav")),
             switchBox: rect(document.querySelector(".language-switch")),
-            others: [".home-link", ".info-link", ".theme-toggle", ".auth-section > *"]
+            auth: rect(document.querySelector(".auth-section")),
+            authItems: [".auth-section > *", ".token-balance a", ".token-refresh-btn"]
+              .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+              .filter((el) => el.getClientRects().length > 0)
+              .map((el) => ({ name: el.className, ...rect(el) })),
+            others: [".home-link", ".info-link", ".theme-toggle", ".auth-section > *", ".token-balance a", ".token-refresh-btn"]
               .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
               .filter((el) => el.getClientRects().length > 0)
               .map((el) => ({ name: el.className, ...rect(el) })),
           };
         });
-        const { band, switchBox } = boxes;
+        const { band, switchBox, auth } = boxes;
+        for (const item of boxes.authItems) {
+          expect(item.left, `${item.name} stays inside the account row on the left`).toBeGreaterThanOrEqual(auth.left - 0.5);
+          expect(item.right, `${item.name} stays inside the account row on the right`).toBeLessThanOrEqual(auth.right + 0.5);
+        }
         if (width === 375) expect(band.bottom - band.top, "the band keeps its two phone rows").toBeLessThan(100);
         expect(switchBox.left, "switch inside the band on the left").toBeGreaterThanOrEqual(band.left);
         expect(switchBox.right, "switch inside the band on the right").toBeLessThanOrEqual(band.right + 0.5);

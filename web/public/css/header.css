@@ -214,12 +214,6 @@ header::after {
 
   .language-switch {
     margin-right: var(--space-3);
-    gap: var(--space-1);
-    font-size: 0.75rem;
-  }
-
-  .language-switch > * + *::before {
-    margin-right: var(--space-1);
   }
 }
 
@@ -262,30 +256,17 @@ header::after {
   min-width: 0;
 }
 
-/* The language switch sits in the band after the theme button: the current language as plain
-   text, the other as a link, both on one baseline at the height of a control. */
+/* The language link sits in the band after the theme button, at the height of a control. */
 .language-switch {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--space-2);
   margin-left: var(--space-2);
   font-size: var(--step--1);
   white-space: nowrap;
 }
 
-.language-switch > * + *::before {
-  content: "|";
-  margin-right: var(--space-2);
-  color: var(--c-ink-muted);
-}
-
-.language-switch [aria-current] {
-  font-weight: var(--weight-strong);
-}
-
-.language-switch a,
-.language-switch [aria-current] {
+.language-switch a {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
