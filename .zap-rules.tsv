@@ -1,87 +1,90 @@
-# ZAP Baseline Scan Rules Configuration
-# Format: rule_id	action	comment
-# Actions: IGNORE (don't report), WARN (report but don't fail), FAIL (report and fail)
-# See: https://www.zaproxy.org/docs/docker/baseline-scan/
+# ZAP baseline rules (zap-baseline.py -c). Format: id<TAB>action<TAB>(name)<TAB>message; the message prints beside the alert.
+# Actions: IGNORE (not reported), INFO, WARN (reported, no fail), FAIL (reported, exit 1).
+# Rule ids and names: https://www.zaproxy.org/docs/alerts/
 
-# Information Disclosure - typically informational
-10020	WARN	X-Frame-Options header missing (handled by CSP frame-ancestors)
-10021	WARN	X-Content-Type-Options header missing
-10036	WARN	Server leaks version information
-10037	WARN	Server leaks information via X-Powered-By
+# Content Security Policy. 10055 covers every CSP sub-alert (ZAP keys this file by plugin id).
+# 10055-6 style-src 'unsafe-inline' is dropped in scripts/zap/zap-hooks.py; any other 10055 alert is a regression.
+10055	WARN	(CSP)	style-src 'unsafe-inline' accepted (ZAP1, 2026-11-11): 259 style attributes in 43 pages; no HTML sink passes the no-unsanitized ratchet; img-src, font-src and connect-src close CSS exfiltration. script-src must not carry 'unsafe-inline'.
+10038	WARN	(Content Security Policy (CSP) Header Not Set)
 
-# Security Headers - we handle these at CloudFront/WAF level
-10038	WARN	Content Security Policy header missing
-10039	WARN	X-XSS-Protection header missing (deprecated)
-10098	WARN	Cross-Domain Misconfiguration
+# Cookie rules: the site sets no cookie on its origin
+10010	IGNORE	(Cookie No HttpOnly Flag)
+10011	IGNORE	(Cookie Without Secure Flag)
+10054	IGNORE	(Cookie without SameSite Attribute)
+90033	IGNORE	(Loosely Scoped Cookie)
 
-# Cookie-related - we use localStorage, not cookies
-10054	IGNORE	Cookie without SameSite attribute
-10055	IGNORE	Cookie without Secure flag
-10056	IGNORE	Cookie without HttpOnly flag
-90033	IGNORE	Loosely scoped cookie
+# Headers and information disclosure
+10039	WARN	(X-Backend-Server Header Information Leak)
+10056	WARN	(X-Debug-Token Information Leak)
 
-# Common false positives
-10015	WARN	Incomplete or no cache-control header
-10017	WARN	Cross-domain JavaScript source file inclusion
-10019	WARN	Content-Type header missing
-10024	WARN	Information disclosure via sensitive information in URL
-10027	WARN	Information disclosure via suspicious comments
-10109	WARN	Modern web application (informational)
-10110	WARN	Dangerous JS function
+# Accepted with a reason
+120002	WARN	(Information Disclosure - JWT in Browser Storage)	JWT in localStorage accepted (ZAP3, 2026-11-11): Cognito access and ID tokens (60 min) as bearer headers; CSP script-src has no 'unsafe-inline'; HMRC and Companies House tokens held server-side (FPH5, API3)
 
-# SSL/TLS - handled by AWS CloudFront
-10011	IGNORE	Cookie without secure flag (AWS handles HTTPS)
+# Rules that always fail
+10098	FAIL	(Cross-Domain Misconfiguration)	the API and the edge echo only the environment's own origin (SEC8)
+90003	FAIL	(Sub Resource Integrity Attribute Missing)	no static cross-origin script or style; swagger-ui vendored under /docs/api/vendor/ (XQ2a)
 
-# Application-specific ignores
-40025	WARN	Proxy disclosure
-90022	WARN	Application error disclosure
-90011	WARN	Charset mismatch
+# Informational and low-value rules
+10020	WARN	(Anti-clickjacking Header)
+10021	WARN	(X-Content-Type-Options Header Missing)
+10036	WARN	(HTTP Server Response Header)
+10037	WARN	(Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s))
+10015	WARN	(Re-examine Cache-control Directives)
+10017	WARN	(Cross-Domain JavaScript Source File Inclusion)
+10019	WARN	(Content-Type Header Missing)
+10024	WARN	(Information Disclosure - Sensitive Information in URL)
+10027	WARN	(Information Disclosure - Suspicious Comments)
+10109	WARN	(Modern Web Application)
+10110	WARN	(Dangerous JS Functions)
+40025	WARN	(Proxy Disclosure)
+90022	WARN	(Application error disclosure)
+90011	WARN	(Charset Mismatch)
 
-# Critical rules that should always fail
-10016	FAIL	Web browser XSS protection not enabled
-10035	FAIL	Strict-Transport-Security header not set
-10040	FAIL	Secure pages include mixed content
-10045	FAIL	Source code disclosure
-10095	FAIL	Backup file disclosure
-10105	FAIL	Weak authentication method
-10106	FAIL	HTTP only site
-10202	FAIL	Absence of anti-CSRF tokens
-30001	FAIL	Buffer overflow
-30002	FAIL	Format string error
-40003	FAIL	CRLF injection
-40008	FAIL	Parameter tampering
-40009	FAIL	Server-side include
-40012	FAIL	Cross-site scripting (reflected)
-40013	FAIL	Session ID in URL rewrite
-40014	FAIL	Cross-site scripting (persistent)
-40016	FAIL	Cross-site scripting (DOM-based)
-40017	FAIL	Cross-site scripting (reflected)
-40018	FAIL	SQL injection
-40019	FAIL	SQL injection (MySQL)
-40020	FAIL	SQL injection (Hypersonic)
-40021	FAIL	SQL injection (Oracle)
-40022	FAIL	SQL injection (PostgreSQL)
-40024	FAIL	SQL injection (SQLite)
-40026	FAIL	Cross-site scripting (DOM-based)
-40027	FAIL	SQL injection (MsSQL)
-40028	FAIL	ELMAH information leak
-40029	FAIL	Trace.axd information leak
-40031	FAIL	Out of band XSS
-40032	FAIL	Integer overflow error
-40034	FAIL	LDAP injection
-40035	FAIL	Server-side template injection
-40038	FAIL	Persistent XSS (prime)
-40039	FAIL	Persistent XSS (spider)
-40040	FAIL	Persistent XSS (attack)
-90017	FAIL	XSLT injection
-90018	FAIL	SQL injection (SQLite - time-based)
-90019	FAIL	Server-side code injection
-90020	FAIL	Remote OS command injection
-90021	FAIL	XPath injection
-90023	FAIL	XML external entity attack
-90024	FAIL	Generic padding oracle
-90025	FAIL	Expression language injection
-90028	FAIL	Insecure HTTP method
-90029	FAIL	SOAP XML injection
-90030	FAIL	WSDL file detection
-90034	FAIL	Cloud metadata potentially exposed
+# Injection, disclosure and protocol rules that always fail
+10016	FAIL	(Web Browser XSS Protection Not Enabled (deprecated rule))
+10035	FAIL	(Strict-Transport-Security Header)
+10040	FAIL	(Secure Pages Include Mixed Content)
+10045	FAIL	(Source Code Disclosure - /WEB-INF Folder)
+10095	FAIL	(Backup file disclosure)
+10105	FAIL	(Weak authentication method)
+10106	FAIL	(HTTP only site)
+10202	FAIL	(Absence of anti-CSRF tokens)
+30001	FAIL	(Buffer overflow)
+30002	FAIL	(Format string error)
+40003	FAIL	(CRLF injection)
+40008	FAIL	(Parameter tampering)
+40009	FAIL	(Server-side include)
+40012	FAIL	(Cross Site Scripting (Reflected))
+40013	FAIL	(Session Fixation)
+40014	FAIL	(Cross Site Scripting (Persistent))
+40016	FAIL	(Cross Site Scripting (Persistent) - Prime)
+40017	FAIL	(Cross Site Scripting (Persistent) - Spider)
+40018	FAIL	(SQL injection)
+40019	FAIL	(SQL Injection - MySQL (Time Based))
+40020	FAIL	(SQL Injection - Hypersonic SQL (Time Based))
+40021	FAIL	(SQL Injection - Oracle (Time Based))
+40022	FAIL	(SQL Injection - PostgreSQL (Time Based))
+40024	FAIL	(SQL Injection - SQLite (Time Based))
+40026	FAIL	(Cross Site Scripting (DOM Based))
+40027	FAIL	(SQL Injection - MsSQL (Time Based))
+40028	FAIL	(ELMAH information leak)
+40029	FAIL	(Trace.axd information leak)
+40031	FAIL	(Out of band XSS)
+40032	FAIL	(.htaccess Information Leak)
+40034	FAIL	(.env Information Leak)
+40035	FAIL	(Hidden File Found)
+40038	FAIL	(Bypassing 403)
+40039	FAIL	(Web Cache Deception)
+40040	FAIL	(CORS Header)
+90017	FAIL	(XSLT injection)
+90018	FAIL	(Advanced SQL Injection)
+90019	FAIL	(Server-side code injection)
+90020	FAIL	(Remote OS command injection)
+90021	FAIL	(XPath injection)
+90023	FAIL	(XML external entity attack)
+90024	FAIL	(Generic padding oracle)
+90025	FAIL	(Expression language injection)
+90028	FAIL	(Insecure HTTP Method)
+90029	FAIL	(SOAP XML injection)
+90030	FAIL	(WSDL file detection)
+90034	FAIL	(Cloud metadata potentially exposed)

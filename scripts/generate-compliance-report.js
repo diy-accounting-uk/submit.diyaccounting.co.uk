@@ -312,10 +312,8 @@ function parseTextSpacingResults(textSpacingJson) {
 
 // Suppressed ZAP alerts - accepted risks documented in privacy.html
 const SUPPRESSED_ZAP_ALERTS = {
-  "CSP: script-src unsafe-inline":
-    "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
   "CSP: style-src unsafe-inline":
-    "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
+    "Accepted: 259 style attributes in 43 pages, and no HTML sink passes the no-unsanitized ratchet; img-src, font-src and connect-src close CSS exfiltration. script-src carries no unsafe-inline. Documented in privacy policy.",
 };
 
 function parseZapResults(zapJson) {

@@ -174,7 +174,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npx playwright install chromium --with-deps
+          scripts/playwright-install-chromium.sh
 
       - name: Resolve the local hostname to loopback
         run: echo "127.0.0.1 local.submit.diyaccounting.co.uk" | sudo tee -a /etc/hosts
@@ -303,7 +303,7 @@ jobs:
         if: ${{ steps.gate.outputs.run == 'true' }}
         run: |
           npm ci --ignore-scripts
-          npx playwright install chromium --with-deps
+          scripts/playwright-install-chromium.sh
 
       - name: Enable native auth and refresh the ci test user
         if: ${{ steps.gate.outputs.run == 'true' }}

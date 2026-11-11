@@ -5,7 +5,8 @@
 #
 # Hook file for zap-baseline.py (--hook). It requests every path in seed-urls.json so the
 # spider's site tree and the passive scan include the pages and API routes that no link reaches,
-# then writes the URLs the scan holds to zap-urls.json for scripts/check-zap-urls.js.
+# then writes the URLs the scan holds to zap-urls.json for scripts/check-zap-urls.js. It also drops
+# the accepted style-src 'unsafe-inline' alert before the baseline counts alerts.
 
 import json
 
@@ -24,3 +25,12 @@ def zap_started(zap, target):
 def zap_pre_shutdown(zap):
     with open(URLS_FILE, "w") as urls_file:
         json.dump({"urls": zap.core.urls()}, urls_file)
+
+
+def zap_get_alerts_wrap(alert_dict):
+    # Accepted: style-src 'unsafe-inline' (alertRef 10055-6). Every other 10055 alert still reports.
+    kept = [alert for alert in alert_dict.get("10055", []) if alert.get("alertRef") != "10055-6"]
+    if kept:
+        alert_dict["10055"] = kept
+    else:
+        alert_dict.pop("10055", None)

@@ -939,20 +939,18 @@
         <h3>Content Security Policy</h3>
         <p>
           We use a Content Security Policy (CSP) to protect against cross-site scripting (XSS) and other code injection attacks. Our policy
-          restricts content sources to trusted origins with the following accepted exceptions:
+          restricts content sources to trusted origins. The script-src directive does not allow 'unsafe-inline', so inline scripts do not
+          run. One exception is accepted:
         </p>
         <ul>
           <li>
-            <strong>script-src 'unsafe-inline'</strong>: Required for inline event handlers used in form validation and dynamic UI
-            components. Mitigated by: strict input validation, no user-generated content in scripts, and limited scope of inline handlers.
-          </li>
-          <li>
-            <strong>style-src 'unsafe-inline'</strong>: Required for dynamic styling of UI components and third-party integrations
-            (CloudWatch RUM). Mitigated by: no user-controlled style values and strict output encoding.
+            <strong>style-src 'unsafe-inline'</strong>: Required for the style attributes on our pages and for third-party widgets.
+            Mitigated by: no user-controlled style values, no page that renders another user's HTML, and img-src, font-src and connect-src
+            limits that stop styles from sending data out.
           </li>
         </ul>
         <p>
-          These exceptions are documented as accepted risks in our security compliance process. We regularly review whether these can be
+          This exception is documented as an accepted risk in our security compliance process. We regularly review whether it can be
           eliminated through code refactoring.
         </p>
       </section>
