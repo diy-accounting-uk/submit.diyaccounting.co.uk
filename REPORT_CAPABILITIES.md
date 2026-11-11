@@ -2645,7 +2645,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-134 Monitor GitHub Actions CI from the CLI
 
 - **Use when:** main and every open PR's head branch need polling until CI is green, with each red and each PR's readiness reported once.
-- **Does:** watch-ci.sh polls the GitHub API to watch every CI workflow run on main and each open PR's head branch until it completes. It reports each red once, each PR's merge-readiness once per head, and one tally when the whole scope is terminal.
+- **Does:** watch-ci.sh polls the GitHub API to watch every CI workflow run on main and each open PR's head branch until it completes. It reports each red and each unreplaced cancelled run once, each PR's merge-readiness once per head, and one tally when the whole scope is terminal.
 - **Run:** `./scripts/watch-ci.sh [state-dir]`
 - **Entry:** `scripts/watch-ci.sh`
 - **Files:** scripts/watch-ci.sh
