@@ -311,6 +311,93 @@ describe("the marginal relief band", () => {
   });
 });
 
+describe("the limits of a period under 12 months (CTA 2010 section 18D)", () => {
+  const BARE = {
+    ...TYPED,
+    nonTradingLoanRelationshipCredits: 0,
+    depreciation: 0,
+    amortisation: 0,
+    entertaining: 0,
+    annualInvestmentAllowance: 0,
+    mainPoolAllowances: 0,
+  };
+  const withProfit = (profitBeforeTax, changes) => ({
+    ...BARE,
+    profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax } },
+    ...changes,
+  });
+
+  test("a 90-day period scales both limits to 90/365: 12,328.77 and 61,643.84", () => {
+    const { boxes } = derive(withProfit(24956, { periodStart: "2026-01-01", periodEnd: "2026-03-31" }));
+    expect(boxes[315]).toBe(24956);
+    expect(boxes[340]).toBe(25);
+    expect(boxes[430]).toBe(6239);
+    expect(boxes[435]).toBe(550.32);
+    expect(boxes[440]).toBe(5688.68);
+    expect(Math.round(50000 * (90 / 365) * 100) / 100).toBe(12328.77);
+    expect(Math.round(250000 * (90 / 365) * 100) / 100).toBe(61643.84);
+  });
+
+  test("a 90-day period above its scaled upper limit pays the main rate with no relief", () => {
+    const { boxes } = derive(withProfit(70000, { periodStart: "2026-01-01", periodEnd: "2026-03-31" }));
+    expect(boxes[340]).toBe(25);
+    expect(boxes[435]).toBeUndefined();
+  });
+
+  test("a 90-day period below its scaled lower limit pays the small profits rate", () => {
+    const { boxes } = derive(withProfit(12000, { periodStart: "2026-01-01", periodEnd: "2026-03-31" }));
+    expect(boxes[340]).toBe(19);
+    expect(boxes[329]).toBe("yes");
+    expect(boxes[435]).toBeUndefined();
+  });
+
+  test("a 12-month period keeps the full limits", () => {
+    const { boxes } = derive(withProfit(100000));
+    expect(boxes[435]).toBe(2250);
+    expect(boxes[440]).toBe(22750);
+  });
+
+  test("a period in a 366-day financial year divides by 366", () => {
+    const { boxes } = derive(withProfit(30000, { periodStart: "2023-10-01", periodEnd: "2023-12-31" }));
+    const upperLimit = (250000 * 92) / 366;
+    expect(boxes[435]).toBe(Math.round((upperLimit - 30000) * 0.015 * 100) / 100);
+    expect(boxes[435]).toBe(492.62);
+  });
+
+  test("a 6-month period across 1 April scales each year's limits by its days over that year's days", () => {
+    const { boxes } = derive(withProfit(40000, { periodStart: "2025-01-01", periodEnd: "2025-06-30" }));
+    expect(boxes[330]).toBe(2024);
+    expect(boxes[380]).toBe(2025);
+    expect(boxes[340]).toBe(25);
+    expect(boxes[390]).toBe(25);
+    expect(boxes[435]).toBe(Math.round(((250000 * 181) / 365 - 40000) * 0.015 * 100) / 100);
+    expect(boxes[435]).toBe(1259.59);
+  });
+
+  test("a short period with an associated company halves the scaled limits", () => {
+    const { boxes } = derive(withProfit(24956, { periodStart: "2026-01-01", periodEnd: "2026-03-31", associatedCompanies: 1 }));
+    expect(boxes[326]).toBe(1);
+    expect(boxes[435]).toBe(Math.round(((250000 * 90) / 365 / 2 - 24956) * 0.015 * 100) / 100);
+    expect(boxes[435]).toBe(87.99);
+  });
+
+  test("the annual investment allowance of a 90-day period is at most 246,575", () => {
+    const short = { periodStart: "2026-01-01", periodEnd: "2026-03-31" };
+    expect(derive(withProfit(500000, { ...short, annualInvestmentAllowance: 246575, mainPoolAllowances: 246575 })).boxes[690]).toBe(246575);
+    expect(() => derive(withProfit(500000, { ...short, annualInvestmentAllowance: 246576 }))).toThrow(
+      /annual investment allowance of a 90-day period can be 246,575 at most/,
+    );
+    const refusal = validateCt600Figures(withProfit(500000, { ...short, annualInvestmentAllowance: 246576 }), {
+      taxDataByYear: ltdTaxDataForPeriodEnd(short.periodEnd),
+    }).find((entry) => entry.refusal);
+    expect(refusal?.field).toBe("annualInvestmentAllowance");
+  });
+
+  test("the annual investment allowance of a 12-month period is at most 1,000,000", () => {
+    expect(() => derive(withProfit(2000000, { annualInvestmentAllowance: 1000001 }))).toThrow(/at most/);
+  });
+});
+
 describe("the figures refusals", () => {
   test.each([
     ["a company type other than 0", { companyType: 6 }, /Company type 6/, "companyType"],

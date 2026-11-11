@@ -1,0 +1,97 @@
+{
+  "name": "short-period",
+  "description": "Made-up small company whose first accounting period is 90 days (1 January to 31 March 2026), with a trading profit of 30000 inside the scaled marginal relief band (12,328.77 to 61,643.84), FRS 102 section 1A accounts.",
+  "sender": "company",
+  "request": {
+    "registeredOffice": {
+      "addressLine1": "1 Example Road",
+      "cityOrTown": "London",
+      "postalCode": "EC1A 1AA"
+    },
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 2,
+    "declarationAccepted": true,
+    "companyNumber": "09999992",
+    "companyName": "Short Period Example Ltd",
+    "tradeName": "Software consultancy",
+    "director": {
+      "name": "Alex Example",
+      "dateApproved": "2026-06-30"
+    },
+    "declarant": {
+      "name": "Alex Example",
+      "status": "Director"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "principalActivity": "Software consultancy",
+      "accountingPolicies": "The accounts are prepared under FRS 102 section 1A.",
+      "directors": ["Alex Example"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 10000,
+          "tradeDebtors": 10000,
+          "otherDebtors": 0,
+          "amountsOwedByDirectors": 0,
+          "cashAtBank": 26100,
+          "bankLoansOverdrafts": 0,
+          "tradeCreditors": 5000,
+          "corporationTax": 7025,
+          "taxationSocialSecurity": 1000,
+          "otherCreditors": 0,
+          "creditorsAfterOneYear": 0,
+          "amountsOwedToDirectors": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 22975,
+          "capitalAndReserves": 23075
+        },
+        "priorYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 0,
+          "tradeDebtors": 0,
+          "otherDebtors": 0,
+          "amountsOwedByDirectors": 0,
+          "cashAtBank": 100,
+          "bankLoansOverdrafts": 0,
+          "tradeCreditors": 0,
+          "corporationTax": 0,
+          "taxationSocialSecurity": 0,
+          "otherCreditors": 0,
+          "creditorsAfterOneYear": 0,
+          "amountsOwedToDirectors": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 0,
+          "capitalAndReserves": 100
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 90000,
+          "costOfSales": 10000,
+          "grossProfit": 80000,
+          "administrativeExpenses": 50000,
+          "operatingProfit": 30000,
+          "interestReceivable": 0,
+          "profitBeforeTax": 30000,
+          "tax": 7025,
+          "profit": 22975
+        }
+      }
+    },
+    "figures": {
+      "periodStart": "2026-01-01",
+      "periodEnd": "2026-03-31",
+      "companyType": 0,
+      "associatedCompanies": 0
+    }
+  }
+}

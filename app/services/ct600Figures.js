@@ -52,6 +52,36 @@ function isIsoDate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && utcDate(value).toISOString().slice(0, 10) === value;
 }
 
+function daysInclusive(isoStart, isoEnd) {
+  return Math.round((utcDate(isoEnd).getTime() - utcDate(isoStart).getTime()) / DAY_MS) + 1;
+}
+
+/**
+ * The most annual investment allowance a return can claim: 1,000,000 for a year, increased or
+ * reduced in proportion to the return's days over the days in the 12 months from its start
+ * (CAA 2001 section 51A(6)).
+ */
+export function annualInvestmentAllowanceMaximum(periodStart, periodEnd) {
+  const daysInTwelveMonths = daysInclusive(periodStart, lastDayOfTwelveMonths(periodStart));
+  return (1_000_000 * daysInclusive(periodStart, periodEnd)) / daysInTwelveMonths;
+}
+
+/**
+ * Each financial year's small profits and marginal relief limits, scaled to the accounting period
+ * (CTA 2010 section 18D(4)). The apportioning code multiplies a year's limits by that year's share
+ * of the period, so the limits here carry the period's days over the larger of the financial year's
+ * days and the period's days: a period of 90 days gets 90/365 of each limit, and a period of 12
+ * months or more keeps the full limits. This is HMRC's marginal relief calculator's ratio.
+ */
+function limitsScaledToPeriod(perYear, years, totalDays) {
+  return perYear.map((rates, index) => {
+    const financialYear = years[index].year;
+    const daysInFinancialYear = daysInclusive(`${financialYear}-04-01`, `${financialYear + 1}-03-31`);
+    const scale = totalDays / Math.max(daysInFinancialYear, totalDays);
+    return { ...rates, lowerLimit: rates.lowerLimit * scale, upperLimit: rates.upperLimit * scale };
+  });
+}
+
 function lastDayOfTwelveMonths(isoStart) {
   const date = utcDate(isoStart);
   date.setUTCFullYear(date.getUTCFullYear() + 1);
@@ -200,6 +230,16 @@ function figureProblems(figures, { today } = {}) {
     numberOrZero(figures.donations) > current.costOfSales + current.administrativeExpenses
   ) {
     problem("donations", "Donations added back are more than the cost of sales and administrative expenses");
+  }
+  if (isIsoDate(figures.periodStart) && isIsoDate(figures.periodEnd) && figures.periodEnd >= figures.periodStart) {
+    const maximum = Math.floor(annualInvestmentAllowanceMaximum(figures.periodStart, figures.periodEnd));
+    if (numberOrZero(figures.annualInvestmentAllowance) > maximum) {
+      problem(
+        "annualInvestmentAllowance",
+        `The annual investment allowance of a ${daysInclusive(figures.periodStart, figures.periodEnd)}-day period can be ${maximum.toLocaleString("en-GB")} at most`,
+        true,
+      );
+    }
   }
   if (numberOrZero(figures.specialRatePoolAnnualInvestmentAllowance) > numberOrZero(figures.annualInvestmentAllowance)) {
     problem(
@@ -440,7 +480,11 @@ function workLosses({ figures, tradingLoss, profitsBeforeOtherDeductions, losses
 }
 
 function corporationTaxPenceOn(profits, years, totalDays, { taxData, fileFinancialYear, associatedCompanies }) {
-  const perYear = years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days));
+  const perYear = limitsScaledToPeriod(
+    years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days)),
+    years,
+    totalDays,
+  );
   const charge = apportionCorporationTax(profits, years, totalDays, { perYear, associatedCompanies });
   const firstShare = years[1].days > 0 ? Math.round((profits * years[0].days) / totalDays) : profits;
   const shares = [firstShare, profits - firstShare];
@@ -1069,7 +1113,11 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
     const fileFinancialYear = financialYearNumber(utcDate(periodEnd));
     const taxData = taxDataByYear?.[fileFinancialYear];
     if (!taxData) throw new Ct600RefusedError(`No tax data is held for the financial year ${fileFinancialYear}`, "period");
-    const perYear = years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days));
+    const perYear = limitsScaledToPeriod(
+      years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days)),
+      years,
+      totalDays,
+    );
     const charge = apportionCorporationTax(chargeableProfits, years, totalDays, { perYear, associatedCompanies, frankedInvestmentIncome });
     const firstShare = straddles ? Math.round((chargeableProfits * years[0].days) / totalDays) : chargeableProfits;
     const shares = [firstShare, chargeableProfits - firstShare];
