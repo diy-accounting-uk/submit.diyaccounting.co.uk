@@ -245,11 +245,12 @@ header::after {
   min-width: 0;
 }
 
-/* The language switch, its own row under the main navigation: the current language as plain
-   text, the other as a link. */
+/* The language switch, at the right-hand end of the main navigation row so the header keeps
+   its reserved height: the current language as plain text, the other as a link. */
 .language-switch {
   display: flex;
-  justify-content: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--step--1);
