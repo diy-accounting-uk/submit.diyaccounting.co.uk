@@ -1012,3 +1012,75 @@ describe("the capital allowance classes", () => {
     expect(validateCt600Figures({ ...TYPED, [field]: 1.5 }).map((entry) => entry.field)).toContain(field);
   });
 });
+
+describe("the figures of one accounting period of a longer period of account", () => {
+  test("donations paid in the period are claimed in box 305 while the add-back stays the whole period's", () => {
+    const { boxes, computationLines } = derive({ ...TYPED, donations: 1000, donationsPaid: 400 });
+    expect(computationLines.donations).toBe(1000);
+    expect(boxes[305]).toBe(400);
+    expect(boxes[315]).toBe(boxes[300] - 400);
+    expect(derive({ ...TYPED, donations: 1000, donationsPaid: 0 }).boxes[305]).toBeUndefined();
+  });
+
+  test("a loss carried back from the next accounting period is box 275, with box 280 ticked", () => {
+    const base = derive(TYPED).boxes;
+    const { boxes, worked } = derive({ ...TYPED, lossCarriedBackFromLaterPeriod: 5000 });
+    expect(boxes).toMatchObject({ 275: 5000, 280: "yes", 295: 5000, 300: base[300] - 5000, 315: base[315] - 5000 });
+    expect(worked[295].sources).toContain("lossCarriedBackFromLaterPeriod");
+    expect(base[280]).toBeUndefined();
+  });
+
+  test("a loss carried back from the next period adds to the loss claimed against this period's total profits", () => {
+    const figures = {
+      ...TYPED,
+      profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax: 1000, operatingProfit: 660 } },
+      nonTradingLoanRelationshipCredits: 340,
+      depreciation: 0,
+      amortisation: 0,
+      entertaining: 0,
+      annualInvestmentAllowance: 0,
+      mainPoolAllowances: 0,
+    };
+    const base = derive(figures).boxes;
+    expect(base[235]).toBe(1000);
+    expect(() => derive({ ...figures, lossCarriedBackFromLaterPeriod: 1001 })).toThrow(
+      /more than the profits this period's other claims leave/,
+    );
+    expect(derive({ ...figures, lossCarriedBackFromLaterPeriod: 1000 }).boxes).toMatchObject({ 275: 1000, 280: "yes", 315: 0 });
+  });
+
+  test("the computation lines of a return in a period of account carry the apportionment", () => {
+    const periodOfAccount = {
+      periodStart: "2025-01-01",
+      periodEnd: "2026-03-31",
+      days: 455,
+      apportioned: { turnover: 200549, nonTradingLoanRelationshipCredits: 802, adjustedProfitBeforeCapitalAllowances: 101879 },
+    };
+    const figures = {
+      ...TYPED,
+      periodStart: "2025-01-01",
+      periodEnd: "2025-12-31",
+      profitAndLoss: { current: { ...PROFIT_AND_LOSS, turnover: 250000, profitBeforeTax: 120000 } },
+      nonTradingLoanRelationshipCredits: 1000,
+      depreciation: 6000,
+      donations: 2000,
+      amortisation: 0,
+      entertaining: 0,
+      annualInvestmentAllowance: 12000,
+      mainPoolAllowances: 1800,
+      periodOfAccount,
+    };
+    const lines = computationLinesFromFigures(figures);
+    expect(lines).toMatchObject({
+      adjustedProfitBeforeAccountingPeriodAdjustments: 127000,
+      timeApportionment: -25121,
+      adjustedProfitBeforeCapitalAllowances: 101879,
+      adjustedProfit: 88079,
+    });
+    expect(computationLinesFromFigures({ ...figures, periodOfAccount: undefined }).timeApportionment).toBeUndefined();
+  });
+
+  test("a return longer than 12 months that was not split is refused", () => {
+    expect(() => derive({ ...TYPED, periodEnd: "2026-03-31", periodStart: "2025-01-01" })).toThrow(/longer than 12 months/);
+  });
+});

@@ -3,10 +3,10 @@
 
 // @capability CH-19 File a Corporation Tax test scenario to TPVS or ETS
 // - **Use when:** HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
-// - **Does:** reads one scenario file holding the typed figures the typed-entry page posts, builds the return through the same request validation and builders the hmrcCtReturnPost Lambda uses, sends it to TPVS or with --ets to ETS, and writes request.xml (credentials masked), each response and result.json under the output folder. A scenario the product refuses writes refused.json with the field and message and exits 2.
+// - **Does:** reads one scenario file holding the typed figures the typed-entry page posts, builds the return through the same request validation and builders the hmrcCtReturnPost Lambda uses, sends it to TPVS or with --ets to ETS, and writes request.xml (credentials masked), each response and result.json under the output folder. A scenario the product refuses writes refused.json with the field and message and exits 2. A scenario with longPeriod.part files one of the two returns of a period of account longer than 12 months (long-period-part-1.json and long-period-part-2.json).
 // - **Run:** `node scripts/hmrc-tpvs-ct600.js --scenario fixtures/ct-scenarios/marginal-relief-small.json --out target/ct-scenarios`
 // - **Entry:** `scripts/hmrc-tpvs-ct600.js`; `scripts/lib/ctScenarioCommand.js:runScenarioCommand`
-// - **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, app/unit-tests/scripts/ctScenario.test.js
+// - **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, fixtures/ct-scenarios/long-period-part-1.json, fixtures/ct-scenarios/long-period-part-2.json, app/unit-tests/scripts/ctScenario.test.js
 // - **Keywords:** scenario, SDST, TPVS, ETS, CT600, corporation tax, test pack, refused, irmark, new applicant
 // - **Related:** CH-15
 // @end-capability
@@ -14,13 +14,19 @@
 // Reads a Corporation Tax test scenario and files it for scripts/hmrc-tpvs-ct600.js --scenario.
 // The scenario holds the request body the typed-entry page posts to hmrcCtReturnPost. The return is
 // built by the same product code the Lambda calls, then sent to TPVS or, with ets, to ETS.
-// The scenario file format is documented in fixtures/ct-scenarios/marginal-relief-small.json.
+// The scenario file format is documented in fixtures/ct-scenarios/marginal-relief-small.json. A
+// request with longPeriod { part: 1 | 2 } and figures.accountingPeriods files one of the two
+// returns of a period of account longer than 12 months (fixtures/ct-scenarios/long-period-part-1.json).
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PRODUCT_VERSION } from "../../app/lib/productVersion.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "../../app/services/hmrcCtReturnRequest.js";
+import { buildAccountsIxbrl } from "../../app/functions/companies-house/companiesHouseAccountsPost.js";
 import { Ct600RefusedError } from "../../app/services/ct600Figures.js";
+import { ACCOUNTING_PERIOD_FIELDS, accountingPeriodsOf, deriveLongPeriodReturns } from "../../app/services/ct600LongPeriod.js";
+import { buildCt600IrEnvelope, ltdTaxDataForPeriodEnd } from "../../app/services/ct600Xml.js";
+import { buildCtComputations } from "../../app/services/ctComputationsIxbrl.js";
 import {
   assertCtMessageWithinLimit,
   buildCt600SubmissionRequest,
@@ -68,6 +74,52 @@ export function readScenario(file) {
   return { name: scenario.name, description: scenario.description, sender, request: scenario.request };
 }
 
+// A period of account longer than 12 months: the request carries figures.accountingPeriods and
+// longPeriod.part, and the scenario files the one return of that part. The request reader checks the
+// first accounting period's figures; the return and its computations come from the long period's
+// own derivation.
+function longPeriodPart(longPeriod) {
+  if (longPeriod.part !== 1 && longPeriod.part !== 2) throw new Ct600RefusedError("longPeriod.part must be 1 or 2", "longPeriod");
+  return longPeriod.part;
+}
+
+function readerBodyForLongPeriod(body) {
+  const { accountingPeriods, ...wholePeriod } = body.figures;
+  if (!Array.isArray(accountingPeriods)) throw new Ct600RefusedError("A long period needs figures.accountingPeriods", "accountingPeriods");
+  const [first] = accountingPeriodsOf(wholePeriod.periodStart, wholePeriod.periodEnd);
+  return { ...body, figures: { ...wholePeriod, ...accountingPeriods[0], periodEnd: first.periodEnd } };
+}
+
+function buildLongPeriodDocuments(request, part, { periodStart, periodEnd, accountingPeriods }) {
+  const wholePeriod = Object.fromEntries(Object.entries(request.figures).filter(([field]) => !ACCOUNTING_PERIOD_FIELDS.includes(field)));
+  const figures = { ...wholePeriod, periodStart, periodEnd, accountingPeriods };
+  const taxData = { ...ltdTaxDataForPeriodEnd(periodStart), ...ltdTaxDataForPeriodEnd(periodEnd) };
+  const derived = deriveLongPeriodReturns(figures, taxData, { today: new Date().toISOString().slice(0, 10) })[part - 1];
+  const { accounts, utr, tradeName, amended, agent } = request;
+  const computationsIxbrl = buildCtComputations({
+    companyName: accounts.companyName,
+    companyNumber: accounts.companyNumber,
+    utr,
+    periodStart: derived.periodStart,
+    periodEnd: derived.periodEnd,
+    periodOfAccount: derived.periodOfAccount,
+    tradeName,
+    lines: derived.computationLines,
+    losses: derived.losses,
+    carryBack: derived.carryBack,
+    tradeOutsideUk: figures.lossOutsideUk === true,
+  });
+  const irEnvelopeXml = buildCt600IrEnvelope({
+    boxes: derived.boxes,
+    ct600a: derived.ct600a,
+    accountsIxbrl: buildAccountsIxbrl(accounts),
+    computationsIxbrl,
+    amended,
+    agent,
+  });
+  return { irEnvelopeXml, boxes: derived.boxes };
+}
+
 /**
  * Build the return for a scenario through the product's own request validation and builders.
  * @param {object} input
@@ -79,14 +131,31 @@ export function readScenario(file) {
  * @returns {{refused: {field: string, message: string}} | {xml: string, irmark: string, boxes: object, transactionId: string}}
  */
 export function buildScenarioSubmission({ scenario, utr, senderId, password, vendorId }) {
-  const body = { ...scenario.request, utr };
+  const { longPeriod, ...requestBody } = scenario.request;
+  const body = { ...requestBody, utr };
   const errors = [];
   let client;
   if (scenario.sender === "agent") {
     const clientId = scenario.request.agent.reference || DEFAULT_AGENT_REFERENCE;
     client = { clientId, identifiers: { utr, companyNumber: scenario.request.companyNumber } };
   }
-  const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, errors, {
+  let longPeriodFigures;
+  let readerBody = body;
+  if (longPeriod) {
+    try {
+      longPeriodPart(longPeriod);
+      longPeriodFigures = {
+        periodStart: body.figures.periodStart,
+        periodEnd: body.figures.periodEnd,
+        accountingPeriods: body.figures.accountingPeriods,
+      };
+      readerBody = readerBodyForLongPeriod(body);
+    } catch (error) {
+      if (error instanceof Ct600RefusedError) return { refused: { field: error.field ?? "figures", message: error.message } };
+      throw error;
+    }
+  }
+  const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(readerBody) }, errors, {
     requireGatewayCredentials: false,
     requireReviewedBoxes: false,
     client,
@@ -98,7 +167,9 @@ export function buildScenarioSubmission({ scenario, utr, senderId, password, ven
 
   let documents;
   try {
-    documents = buildCtReturnDocuments(request);
+    documents = longPeriod
+      ? buildLongPeriodDocuments(request, longPeriodPart(longPeriod), longPeriodFigures)
+      : buildCtReturnDocuments(request);
   } catch (error) {
     if (error instanceof Ct600RefusedError) return { refused: { field: error.field ?? "figures", message: error.message } };
     return { refused: { field: "documents", message: `${error.name}: ${error.message}` } };

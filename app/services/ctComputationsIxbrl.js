@@ -24,6 +24,7 @@ import {
 } from "./accountsIxbrlCommon.js";
 import { recordAmount, recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
+import { daysInclusive } from "./ct600Figures.js";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the entry point HMRC accepts is this http URI, resolved from the taxonomy package
 export const CT_COMP_ENTRY_POINT = "http://www.hmrc.gov.uk/schemas/ct/comp/2025-01-01/ct-comp-2025.xsd";
@@ -194,8 +195,9 @@ function dateFact(concept, contextRef, isoDate) {
  * @param {string} input.companyName
  * @param {string} input.companyNumber - the Companies House registration number, the context entity identifier
  * @param {string} input.utr - the 10-digit UTR; equals the CT600's Reference (validation 1607)
- * @param {string} input.periodStart - ISO date, the return period start
+ * @param {string} input.periodStart - ISO date, the return period start (the accounting period)
  * @param {string} input.periodEnd - ISO date, equals the CT600's PeriodCovered/To (validation 1607)
+ * @param {{periodStart: string, periodEnd: string}} [input.periodOfAccount] - the period of account when it is longer than the return period: the lines down to the adjusted profit before accounting period adjustments are its, and a time apportionment line takes them to the return period
  * @param {string} input.tradeName - names the trade in the BusinessNameDimension
  * @param {object} input.lines - computationLinesFromFigures output; a loss is a negative adjustedProfit
  * @param {object} [input.losses] - deriveCt600FromFigures losses: shown as the analysis of losses
@@ -210,6 +212,7 @@ export function buildCtComputations({
   periodStart,
   periodEnd,
   tradeName,
+  periodOfAccount,
   lines,
   losses,
   carryBack,
@@ -220,7 +223,8 @@ export function buildCtComputations({
   if (!tradeName || !tradeName.trim()) throw new Error("The trade name is required for the computation's trade context");
   const expectedAdjusted =
     lines.profitLossPerAccounts +
-    TRADING_LINES.reduce((total, line) => total + line.effect * lines[line.key], 0) -
+    TRADING_LINES.reduce((total, line) => total + line.effect * lines[line.key], 0) +
+    (lines.timeApportionment ?? 0) -
     lines.totalCapitalAllowances;
   if (expectedAdjusted !== lines.adjustedProfit) {
     throw new Error(
@@ -231,7 +235,9 @@ export function buildCtComputations({
   const identifier = `<xbrli:identifier scheme="${COMPANIES_HOUSE_SCHEME}">${escapeXmlText(companyNumber)}</xbrli:identifier>`;
   const company = `<xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Company</xbrldi:explicitMember>`;
   const trade = `<xbrldi:typedMember dimension="ct-comp:BusinessNameDimension"><ct-comp:BusinessNameDomain>${escapeXmlText(tradeName)}</ct-comp:BusinessNameDomain></xbrldi:typedMember><xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Trade</xbrldi:explicitMember><xbrldi:explicitMember dimension="ct-comp:TerritoryDimension">ct-comp:${tradeOutsideUk ? "Overseas" : "UK"}</xbrldi:explicitMember>`;
-  const duration = `<xbrli:period><xbrli:startDate>${periodStart}</xbrli:startDate><xbrli:endDate>${periodEnd}</xbrli:endDate></xbrli:period>`;
+  const durationOf = (start, end) =>
+    `<xbrli:period><xbrli:startDate>${start}</xbrli:startDate><xbrli:endDate>${end}</xbrli:endDate></xbrli:period>`;
+  const duration = durationOf(periodStart, periodEnd);
   const instant = `<xbrli:period><xbrli:instant>${periodEnd}</xbrli:instant></xbrli:period>`;
   const context = (id, segment, period) =>
     `<xbrli:context id="${id}"><xbrli:entity>${identifier}<xbrli:segment>${segment}</xbrli:segment></xbrli:entity>${period}</xbrli:context>`;
@@ -239,27 +245,62 @@ export function buildCtComputations({
     context("companyInstant", company, instant),
     context("companyPeriod", company, duration),
     context("tradePeriod", trade, duration),
+    ...(periodOfAccount
+      ? [context("tradePeriodOfAccount", trade, durationOf(periodOfAccount.periodStart, periodOfAccount.periodEnd))]
+      : []),
   ].join("\n");
 
+  // The lines before the time apportionment belong to the period of account.
+  const accountsContext = periodOfAccount ? "tradePeriodOfAccount" : "tradePeriod";
   const tradeRows = TRADING_LINES.filter((line) => lines[line.key] !== 0).map((line) => ({
     label: line.label,
-    cells: [monetaryCell(line.concept, "tradePeriod", lines[line.key], { deduction: line.effect < 0 })],
+    cells: [monetaryCell(line.concept, accountsContext, lines[line.key], { deduction: line.effect < 0 })],
   }));
+  const beforeAllowancesRows = periodOfAccount
+    ? [
+        {
+          label: "Adjusted profit before accounting period adjustments",
+          style: "subtotal",
+          cells: [
+            monetaryCell(
+              "AdjustedProfitOrLossBeforeAccountingPeriodAdjustments",
+              accountsContext,
+              lines.adjustedProfitBeforeAccountingPeriodAdjustments,
+            ),
+          ],
+        },
+        {
+          label: `Time apportionment: ${daysInclusive(periodStart, periodEnd)} of ${daysInclusive(periodOfAccount.periodStart, periodOfAccount.periodEnd)} days`,
+          cells: [recordAmount(lines.timeApportionment)],
+        },
+        {
+          label: "Adjusted profit before capital allowances",
+          style: "subtotal",
+          cells: [recordAmount(lines.adjustedProfitBeforeCapitalAllowances)],
+        },
+      ]
+    : [
+        {
+          label: "Adjusted profit before capital allowances",
+          style: "subtotal",
+          cells: [
+            monetaryCell(
+              "AdjustedProfitOrLossBeforeAccountingPeriodAdjustments",
+              "tradePeriod",
+              lines.adjustedProfitBeforeCapitalAllowances,
+            ),
+          ],
+        },
+      ];
   const computationTable = recordTable({
-    columns: [periodEnd.slice(0, 4)],
+    columns: [periodOfAccount ? "" : periodEnd.slice(0, 4)],
     rows: [
       {
         label: "Profit before tax per accounts",
-        cells: [monetaryCell("ProfitLossPerAccounts", "tradePeriod", lines.profitLossPerAccounts)],
+        cells: [monetaryCell("ProfitLossPerAccounts", accountsContext, lines.profitLossPerAccounts)],
       },
       ...tradeRows,
-      {
-        label: "Adjusted profit before capital allowances",
-        style: "subtotal",
-        cells: [
-          monetaryCell("AdjustedProfitOrLossBeforeAccountingPeriodAdjustments", "tradePeriod", lines.adjustedProfitBeforeCapitalAllowances),
-        ],
-      },
+      ...beforeAllowancesRows,
       {
         label: "Less: capital allowances",
         cells: [monetaryCell("TotalCapitalAllowances", "tradePeriod", lines.totalCapitalAllowances, { deduction: true })],
@@ -287,7 +328,7 @@ ${recordHeading({
   title: "Corporation Tax computation",
   subtitleHtml: `for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}`,
 })}<p>Return period: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
-<p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodEnd)}</p>
+<p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodOfAccount?.periodStart ?? periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodOfAccount?.periodEnd ?? periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}
 ${capitalAllowancesHtml}

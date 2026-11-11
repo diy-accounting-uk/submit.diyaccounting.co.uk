@@ -41,6 +41,14 @@ export const CT600_BOX_ROWS = [
     anchor: "and-35-period-of-the-return",
   },
   {
+    box: 50,
+    label: "Making more than one return for this company now",
+    kind: "worked",
+    section: "period",
+    rule: "Box 50 is ticked on each return of a period of account longer than 12 months",
+    anchor: "making-more-than-one-return-now",
+  },
+  {
     box: 95,
     label: "Supplementary page CT600A, loans to participators",
     kind: "worked",
@@ -79,6 +87,14 @@ export const CT600_BOX_ROWS = [
     section: "reliefs",
     field: "lossAgainstTotalProfits",
     anchor: "trading-losses-of-this-or-a-later-accounting-period",
+  },
+  {
+    box: 280,
+    label: "Amounts carried back from later accounting periods are included in box 275",
+    kind: "worked",
+    section: "reliefs",
+    rule: "Box 280 is ticked when the next accounting period's loss is carried back into box 275",
+    anchor: "amounts-carried-back-from-later-accounting-periods",
   },
   {
     box: 285,
@@ -486,7 +502,7 @@ export function guideUrl(anchor) {
 }
 
 // Boxes the review shows as typed or coded text; every other box is an amount in pounds.
-export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 95, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: "Company" },
@@ -1924,6 +1940,7 @@ export const BOX_SOURCE_FIELD = {
   4: "companyType",
   30: "period",
   35: "period",
+  50: "period",
   95: "loansMade",
   145: TURNOVER_FIELD,
   155: TURNOVER_FIELD,
@@ -1932,6 +1949,7 @@ export const BOX_SOURCE_FIELD = {
   170: "nonTradingLoanRelationshipCredits",
   235: TURNOVER_FIELD,
   275: "lossAgainstTotalProfits",
+  280: "lossAgainstTotalProfits",
   285: "lossesBroughtForwardAgainstTotalProfits",
   295: "lossAgainstTotalProfits",
   300: TURNOVER_FIELD,

@@ -106,6 +106,90 @@ describe("runScenario against TPVS", () => {
   });
 });
 
+describe("runScenario for the two returns of a long period of account", () => {
+  const LONG_PART_1 = "fixtures/ct-scenarios/long-period-part-1.json";
+  const LONG_PART_2 = "fixtures/ct-scenarios/long-period-part-2.json";
+
+  function longScenarioFile(change) {
+    const scenario = JSON.parse(readFileSync(LONG_PART_1, "utf8"));
+    const file = join(directory, "long.json");
+    writeFileSync(file, JSON.stringify(change(scenario) ?? scenario));
+    return file;
+  }
+
+  it("files return 1 and return 2 of the 15-month example, each with boxes 50 and 85A", async () => {
+    const accepted = async () => ({ status: 200, data: TPVS_SUCCESS });
+    const first = await runScenario({ scenario: readScenario(LONG_PART_1), outDirectory: directory, utr: UTR, post: accepted });
+    const second = await runScenario({ scenario: readScenario(LONG_PART_2), outDirectory: directory, utr: UTR, post: accepted });
+    expect([first.exitCode, second.exitCode]).toEqual([0, 0]);
+    expect(first.result.boxes).toMatchObject({
+      "30": "2025-01-01",
+      "35": "2025-12-31",
+      "50": "yes",
+      "85A": "yes",
+      "315": 86881,
+      "435": 2446.79,
+      "440": 19273.46,
+    });
+    expect(second.result.boxes).toMatchObject({
+      "30": "2026-01-01",
+      "35": "2026-03-31",
+      "50": "yes",
+      "85A": "yes",
+      "315": 24956,
+      "435": 550.32,
+      "440": 5688.68,
+      "480": 5062.5,
+      "95": "yes",
+    });
+    expect(first.result.irmark).not.toBe(second.result.irmark);
+  });
+
+  it("refuses a part other than 1 or 2", async () => {
+    const file = longScenarioFile((scenario) => {
+      scenario.request.longPeriod.part = 3;
+    });
+    const { exitCode, result } = await runScenario({
+      scenario: readScenario(file),
+      outDirectory: directory,
+      utr: UTR,
+      post: async () => ({ status: 200, data: TPVS_SUCCESS }),
+    });
+    expect(exitCode).toBe(REFUSED_EXIT_CODE);
+    expect(result.message).toMatch(/part must be 1 or 2/);
+  });
+
+  it("refuses a period over 18 months and posts nothing", async () => {
+    const posts = [];
+    const file = longScenarioFile((scenario) => {
+      scenario.request.figures.periodEnd = "2026-07-01";
+    });
+    const { exitCode, result } = await runScenario({
+      scenario: readScenario(file),
+      outDirectory: directory,
+      utr: UTR,
+      post: async (...call) => posts.push(call),
+    });
+    expect(exitCode).toBe(REFUSED_EXIT_CODE);
+    expect(result.message).toMatch(/18 months at most/);
+    expect(posts).toEqual([]);
+  });
+
+  it("refuses a long period with no accounting periods", async () => {
+    const file = longScenarioFile((scenario) => {
+      delete scenario.request.figures.accountingPeriods;
+    });
+    const { exitCode, result } = await runScenario({
+      scenario: readScenario(file),
+      outDirectory: directory,
+      utr: UTR,
+      post: async () => ({ status: 200, data: TPVS_SUCCESS }),
+    });
+    expect(exitCode).toBe(REFUSED_EXIT_CODE);
+    expect(result.field).toBe("accountingPeriods");
+  });
+});
+
 describe("runScenario refused by the product", () => {
   it("writes refused.json with the field and message and posts nothing", async () => {
     const file = scenarioFile((scenario) => {

@@ -1651,10 +1651,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-19 File a Corporation Tax test scenario to TPVS or ETS
 
 - **Use when:** HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
-- **Does:** reads one scenario file holding the typed figures the typed-entry page posts, builds the return through the same request validation and builders the hmrcCtReturnPost Lambda uses, sends it to TPVS or with --ets to ETS, and writes request.xml (credentials masked), each response and result.json under the output folder. A scenario the product refuses writes refused.json with the field and message and exits 2.
+- **Does:** reads one scenario file holding the typed figures the typed-entry page posts, builds the return through the same request validation and builders the hmrcCtReturnPost Lambda uses, sends it to TPVS or with --ets to ETS, and writes request.xml (credentials masked), each response and result.json under the output folder. A scenario the product refuses writes refused.json with the field and message and exits 2. A scenario with longPeriod.part files one of the two returns of a period of account longer than 12 months (long-period-part-1.json and long-period-part-2.json).
 - **Run:** `node scripts/hmrc-tpvs-ct600.js --scenario fixtures/ct-scenarios/marginal-relief-small.json --out target/ct-scenarios`
 - **Entry:** `scripts/hmrc-tpvs-ct600.js`; `scripts/lib/ctScenarioCommand.js:runScenarioCommand`
-- **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, app/unit-tests/scripts/ctScenario.test.js
+- **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, fixtures/ct-scenarios/long-period-part-1.json, fixtures/ct-scenarios/long-period-part-2.json, app/unit-tests/scripts/ctScenario.test.js
 - **Keywords:** scenario, SDST, TPVS, ETS, CT600, corporation tax, test pack, refused, irmark, new applicant
 - **Related:** CH-15
 

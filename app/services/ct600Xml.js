@@ -33,6 +33,7 @@ export const CT600_BOX_PATHS = {
   4: "/IRenvelope/CompanyTaxReturn/CompanyInformation/CompanyType",
   30: "/IRenvelope/CompanyTaxReturn/CompanyInformation/PeriodCovered/From",
   35: "/IRenvelope/CompanyTaxReturn/CompanyInformation/PeriodCovered/To",
+  50: "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/MultipleReturns",
   95: "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/SupplementaryPages/CT600A",
   145: "/IRenvelope/CompanyTaxReturn/Turnover/Total",
   155: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/Trading/Profits",
@@ -41,6 +42,7 @@ export const CT600_BOX_PATHS = {
   170: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/NonTradingLoanProfitsAndGains",
   235: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ProfitsBeforeOtherDeductions",
   275: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/TradingLosses",
+  280: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/TradingLossesCarriedBack",
   285: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/TradingLossesCarriedForward",
   295: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/Total",
   300: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ChargesAndReliefs/ProfitsBeforeDonationsAndGroupRelief",
@@ -89,6 +91,10 @@ export const CT600_BOX_PATHS = {
   975: "/IRenvelope/CompanyTaxReturn/Declaration/Name",
   985: "/IRenvelope/CompanyTaxReturn/Declaration/Status",
 };
+
+// Box 85A, "I attach accounts for a different period", ticked on each return of a long period of
+// account: the accounts are for the whole period of account.
+export const CT600_BOX_85A_PATH = "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/DifferentPeriod";
 
 // Where each box of supplementary page CT600A sits in the return, as HMRC's CT-specDoc names it.
 // Part 2 and part 3 rows repeat per participator; the paths name the first.
@@ -206,7 +212,7 @@ function financialYearXml(name, year, profit, rate, tax) {
  * iXBRL and an empty IRmark for hmrcTransactionEngine.js to fill.
  *
  * @param {object} input
- * @param {Record<number, string|number>} input.boxes - deriveCt600FromFigures output
+ * @param {Record<number|string, string|number>} input.boxes - deriveCt600FromFigures output; boxes 50 and 85A mark one of the two returns of a long period of account, whose accounts are for the whole period
  * @param {object} [input.ct600a] - deriveCt600FromFigures output: the supplementary page CT600A, when the company lent to participators
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
@@ -241,7 +247,10 @@ export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computation
       : `<CorporationTaxChargeable>${associatedCompanies}${financialYearXml("FinancialYearOne", b[330], b[335], b[340], b[345])}${financialYearXml("FinancialYearTwo", b[380], b[385], b[390], b[395])}</CorporationTaxChargeable>`;
   const deductionsAndReliefs = wrap(
     "DeductionsAndReliefs",
-    moneyElement("TradingLosses", b[275]) + moneyElement("TradingLossesCarriedForward", b[285]) + moneyElement("Total", b[295]),
+    moneyElement("TradingLosses", b[275]) +
+      element("TradingLossesCarriedBack", b[280]) +
+      moneyElement("TradingLossesCarriedForward", b[285]) +
+      moneyElement("Total", b[295]),
   );
   const chargesAndReliefs = wrap(
     "ChargesAndReliefs",
@@ -276,7 +285,7 @@ export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computation
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary>${element("MultipleReturns", b[50])}<Accounts>${b["85A"] ? element("DifferentPeriod", b["85A"]) : "<ThisPeriodAccounts>yes</ThisPeriodAccounts>"}</Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**

@@ -7,6 +7,7 @@ import { describe, test, expect, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import TOML from "@iarna/toml";
+import { validateXML } from "xmllint-wasm";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { loadTaxDataForBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
@@ -15,6 +16,7 @@ import {
   buildCt600IrEnvelope,
   ltdTaxDataForPeriodEnd,
   CT600_BOX_PATHS,
+  CT600_BOX_85A_PATH,
   CT600A_BOX_PATHS,
   CT600_NAMESPACE,
 } from "@app/services/ct600Xml.js";
@@ -24,9 +26,11 @@ import {
   smallCompanyProfitAndLossFromPublishedAccount,
   Ct600RefusedError,
 } from "@app/services/ct600Figures.js";
+import { deriveLongPeriodReturns } from "@app/services/ct600LongPeriod.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
 
 const BOOK_DIRECTORY = join(process.cwd(), "fixtures", "diya-gl", "precision-code-ltd");
+const CT600_SCHEMA = join(process.cwd(), "fixtures", "hmrc-ct600", "CT-2014-v1-994.xsd");
 const CT600_TOML = join(process.cwd(), "node_modules", "@diy-accounting-uk", "diya-gl", "dist", "app", "data", "filing", "ct600-v3.toml");
 
 const COMPANY = {
@@ -551,5 +555,118 @@ describe("supplementary page CT600A in the return", () => {
     const xml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl: "<html>a</html>", computationsIxbrl: "<html>c</html>" });
     expect(xml).not.toContain("LoanLaterReliefNow");
     expect(xml).not.toContain("CT600AreliefDue");
+  });
+});
+
+// The XML is checked against the schema HMRC publishes in RIM artefacts V1.994. The validator is
+// libxml2 built to WebAssembly, so the check needs no xmllint binary on the machine.
+async function schemaProblems(xml) {
+  const result = await validateXML({
+    xml: [{ fileName: "return.xml", contents: xml }],
+    schema: [{ fileName: "CT-2014-v1-994.xsd", contents: readFileSync(CT600_SCHEMA, "utf8") }],
+  });
+  return result.valid ? [] : result.errors.map((error) => error.message);
+}
+
+describe("the two returns of a long period of account", () => {
+  const LONG_FIGURES = {
+    ...COMPANY,
+    companyName: "Long Period Example Ltd",
+    periodStart: "2025-01-01",
+    periodEnd: "2026-03-31",
+    profitAndLoss: {
+      current: {
+        turnover: 250000,
+        costOfSales: 50000,
+        grossProfit: 200000,
+        administrativeExpenses: 81000,
+        operatingProfit: 119000,
+        interestReceivable: 1000,
+        profitBeforeTax: 120000,
+        tax: 24962,
+        profit: 95038,
+      },
+    },
+    nonTradingLoanRelationshipCredits: 1000,
+    depreciation: 6000,
+    donations: 2000,
+    accountingPeriods: [
+      { associatedCompanies: 0, annualInvestmentAllowance: 12000, mainPoolAllowances: 1800, donationsPaid: 2000 },
+      {
+        associatedCompanies: 0,
+        mainPoolAllowances: 363,
+        loansToParticipators: { releasedBeforeEnd: false, repayments: [], loans: [{ name: "Carol Smith", amount: 15000 }] },
+      },
+    ],
+  };
+  const taxData = { ...ltdTaxDataForPeriodEnd("2025-12-31"), ...ltdTaxDataForPeriodEnd("2026-03-31") };
+  const envelope = (returnResult) =>
+    buildCt600IrEnvelope({
+      boxes: returnResult.boxes,
+      ct600a: returnResult.ct600a,
+      accountsIxbrl: "<html>accounts</html>",
+      computationsIxbrl: "<html>computations</html>",
+    });
+  const [first, second] = deriveLongPeriodReturns(LONG_FIGURES, taxData, { today: "2026-11-11" });
+
+  test("both returns validate against CT-2014-v1-994.xsd", async () => {
+    expect(await schemaProblems(envelope(first))).toEqual([]);
+    expect(await schemaProblems(envelope(second))).toEqual([]);
+  });
+
+  test("the schema check rejects MultipleReturns after Accounts", async () => {
+    const misplaced = envelope(first)
+      .replace("<MultipleReturns>yes</MultipleReturns>", "")
+      .replace("</Computations>", "</Computations><MultipleReturns>yes</MultipleReturns>");
+    expect((await schemaProblems(misplaced)).join(" ")).toMatch(/MultipleReturns/);
+  });
+
+  test("writes boxes 50 and 85A, with the accounts for the whole period of account", () => {
+    for (const returnResult of [first, second]) {
+      const document = parseXmlDocument(envelope(returnResult));
+      expect(valueAt(document, CT600_BOX_PATHS[50])).toBe("yes");
+      expect(valueAt(document, CT600_BOX_85A_PATH)).toBe("yes");
+      expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/ThisPeriodAccounts")).toBeUndefined();
+      expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Computations/ThisPeriodComputations")).toBe("yes");
+    }
+  });
+
+  test("lists the ReturnInfoSummary elements in the schema's order, MultipleReturns first", () => {
+    const document = parseXmlDocument(envelope(second));
+    const summary = Array.from(document.documentElement.getElementsByTagName("ReturnInfoSummary")[0].children).map(
+      (child) => child.localName,
+    );
+    expect(summary).toEqual(["MultipleReturns", "Accounts", "Computations", "SupplementaryPages"]);
+  });
+
+  test("each return's period dates are its own, and PeriodEnd matches", () => {
+    const one = parseXmlDocument(envelope(first));
+    const two = parseXmlDocument(envelope(second));
+    expect([valueAt(one, CT600_BOX_PATHS[30]), valueAt(one, CT600_BOX_PATHS[35])]).toEqual(["2025-01-01", "2025-12-31"]);
+    expect([valueAt(two, CT600_BOX_PATHS[30]), valueAt(two, CT600_BOX_PATHS[35])]).toEqual(["2026-01-01", "2026-03-31"]);
+    expect(valueAt(two, "/IRenvelope/IRheader/PeriodEnd")).toBe("2026-03-31");
+  });
+
+  test("a loss carried back from the second return writes box 280 between boxes 275 and 285, and validates", async () => {
+    const figures = structuredClone(LONG_FIGURES);
+    figures.accountingPeriods[1] = { associatedCompanies: 0, annualInvestmentAllowance: 40000, lossCarriedBack: 10000 };
+    const [withClaim] = deriveLongPeriodReturns(figures, taxData, { today: "2026-11-11" });
+    const xml = envelope(withClaim);
+    const document = parseXmlDocument(xml);
+    expect(valueAt(document, CT600_BOX_PATHS[275])).toBe("10000.00");
+    expect(valueAt(document, CT600_BOX_PATHS[280])).toBe("yes");
+    const deductions = Array.from(document.documentElement.getElementsByTagName("DeductionsAndReliefs")[0].children).map(
+      (child) => child.localName,
+    );
+    expect(deductions).toEqual(["TradingLosses", "TradingLossesCarriedBack", "Total"]);
+    expect(await schemaProblems(xml)).toEqual([]);
+  });
+
+  test("a return of 12 months or less writes no MultipleReturns and keeps ThisPeriodAccounts", () => {
+    const { boxes } = boxesFor({ results, company: COMPANY });
+    const document = buildDocument(boxes);
+    expect(valueAt(document, CT600_BOX_PATHS[50])).toBeUndefined();
+    expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/ThisPeriodAccounts")).toBe("yes");
+    expect(valueAt(document, CT600_BOX_85A_PATH)).toBeUndefined();
   });
 });
