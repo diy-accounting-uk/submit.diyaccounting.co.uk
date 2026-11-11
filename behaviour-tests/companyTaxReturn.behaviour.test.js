@@ -86,6 +86,7 @@ import {
   FIXTURE_UTR,
   DIRECTORS_ADVANCE_TERMS,
   LARGE_COMPANY_FIXTURE_BOOK_DIRECTORY,
+  MICRO_ENTITY_FIXTURE_BOOK_DIRECTORY,
 } from "@app/test-helpers/ctReturnFixture.js";
 import { readEtsPageCredentials } from "./helpers/etsPageCredentials.js";
 
@@ -211,9 +212,18 @@ test("Click through: file the Company Tax Return from a book, change an answer f
 });
 
 test("Click through: file a micro-entity's Company Tax Return from a book and see HMRC accept it", async ({ page }, testInfo) => {
-  const bookExport = await buildCtReturnExportFromBook();
+  const bookExport = await buildCtReturnExportFromBook({ bookDirectory: MICRO_ENTITY_FIXTURE_BOOK_DIRECTORY });
   await reachCompanyForm(page, testInfo);
-  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name, regime: "micro" }, screenshotPath);
+  await fillInCompanyTaxReturnForm(
+    page,
+    {
+      utr: FIXTURE_UTR,
+      declarantName: bookExport.director.name,
+      regime: "micro",
+      bookDirectory: MICRO_ENTITY_FIXTURE_BOOK_DIRECTORY,
+    },
+    screenshotPath,
+  );
   await takeApprovalBriefScreenshot(page, "micro-01-form-filled", { scrollTo: "#microCurrentTurnover" });
   await previewCompanyTaxReturn(page, screenshotPath);
   await verifyMicroEntityReview(page, screenshotPath);
