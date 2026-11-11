@@ -1533,10 +1533,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-01 Exchange a Companies House OAuth token
 
 - **Use when:** a filing journey has an authorization code and needs an access token for the session.
-- **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped.
+- **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped. The same Lambda serves `DELETE /api/v1/companies-house/grants/{grantId}`, which ends the caller's own grant at sign-out (204; the same 404 for a grant that is missing, expired or another user's).
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseTokenPost.js:ingestHandler`; `web/public/companies-house/filingCallback.html`
-- **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
+- **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/data/dynamoDbCompaniesHouseGrantRepository.js, web/public/widgets/auth-status.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
 - **Keywords:** oauth, token exchange, authorization code, companies house, filing callback, session storage, access token, identity
 - **Related:** CH-02, CH-09
 

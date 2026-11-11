@@ -420,6 +420,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/search"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/companies-house/grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/transaction/{transactionId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "PUT /api/v1/companies-house/transaction/{transactionId}"));
@@ -538,7 +539,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // primary route and an auto-HEAD route, for 224. GET /api/v1/commission/mine sits on its own unshared
         // path and adds a primary route and an auto-HEAD route, for 226 in total.
         assertEquals(
-                226,
+                228,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

@@ -3,10 +3,10 @@
 
 // @capability CH-01 Exchange a Companies House OAuth token
 // - **Use when:** a filing journey has an authorization code and needs an access token for the session.
-// - **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped.
+// - **Does:** companiesHouseTokenPost.js exchanges an OAuth authorization code for a Companies House access token. It seals the access token into a grant in the sessions table, bound to the user and to the company the requested scope names, and returns the grant id, the expiry and the token type. The refresh token is dropped. The same Lambda serves `DELETE /api/v1/companies-house/grants/{grantId}`, which ends the caller's own grant at sign-out (204; the same 404 for a grant that is missing, expired or another user's).
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/companies-house/companiesHouseTokenPost.js:ingestHandler`; `web/public/companies-house/filingCallback.html`
-// - **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
+// - **Files:** app/functions/companies-house/companiesHouseTokenPost.js, app/data/dynamoDbCompaniesHouseGrantRepository.js, web/public/widgets/auth-status.js, app/unit-tests/functions/companiesHouseTokenPost.test.js, web/public/companies-house/filingCallback.html, web/browser-tests/filingCallback.browser.test.js
 // - **Keywords:** oauth, token exchange, authorization code, companies house, filing callback, session storage, access token, identity
 // - **Related:** CH-02, CH-09
 // @end-capability
@@ -20,6 +20,8 @@ import {
   buildValidationError,
   http200OkResponse,
   http401UnauthorizedResponse,
+  http404NotFoundResponse,
+  http500ServerErrorResponse,
   http502BadGatewayResponse,
   buildUpstreamRejectionResponse,
   safeHostname,
@@ -33,16 +35,24 @@ import { DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
 import { sendJsonToCompaniesHouse } from "../../services/companiesHouseSend.js";
 import { getIdentityBaseUrl, resolveClientSecret } from "../../services/companiesHouseFilingApi.js";
 import { refreshAfterAuthFailure } from "../../lib/cachedSecret.js";
-import { createCompaniesHouseGrant } from "../../data/dynamoDbCompaniesHouseGrantRepository.js";
+import {
+  createCompaniesHouseGrant,
+  getCompaniesHouseGrant,
+  deleteCompaniesHouseGrant,
+} from "../../data/dynamoDbCompaniesHouseGrantRepository.js";
 import { sealFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "../../lib/codesSeal.js";
-import { companyNumberFromScope } from "../../lib/companiesHouseGrantAccess.js";
+import { companyNumberFromScope, GRANT_ID_PATTERN } from "../../lib/companiesHouseGrantAccess.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTokenPost.js" });
+
+const GRANT_ITEM_PATH = "/api/v1/companies-house/grants/:grantId";
+const GRANT_NOT_FOUND_MESSAGE = "This Companies House authorisation has expired or does not exist.";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/companies-house/token", ingestHandler);
+  registerLambdaRoute(app, "delete", GRANT_ITEM_PATH, ingestHandler);
   app.head("/api/v1/companies-house/token", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
@@ -61,9 +71,35 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { code, scope };
 }
 
+// Ends the caller's own grant at sign-out. A grant that is missing, expired or another user's
+// answers the same 404, so a caller learns nothing about a grant that is not theirs.
+async function deleteGrant(event, request, responseHeaders) {
+  validateEnv(["MCP_SESSIONS_DYNAMODB_TABLE_NAME"]);
+  const userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  if (!userSub) {
+    return http401UnauthorizedResponse({ request, headers: { ...responseHeaders }, message: "Authentication required" });
+  }
+  const grantId = event?.pathParameters?.grantId;
+  const notFound = () => http404NotFoundResponse({ request, headers: { ...responseHeaders }, message: GRANT_NOT_FOUND_MESSAGE, error: {} });
+  if (!GRANT_ID_PATTERN.test(grantId ?? "")) return notFound();
+  try {
+    const grant = await getCompaniesHouseGrant(grantId);
+    if (!grant || grant.hashedSub !== hashSub(userSub)) return notFound();
+    await deleteCompaniesHouseGrant(grantId);
+  } catch (error) {
+    logger.error({ message: "Companies House grant delete failed", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({ request, headers: { ...responseHeaders }, message: "Internal server error", error: {} });
+  }
+  return { statusCode: 204, headers: { ...responseHeaders }, body: "" };
+}
+
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
+  if (event?.requestContext?.http?.method === "DELETE") {
+    const { request } = extractRequest(event);
+    return deleteGrant(event, request, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  }
   validateEnv([
     "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "COMPANIES_HOUSE_CLIENT_ID",
