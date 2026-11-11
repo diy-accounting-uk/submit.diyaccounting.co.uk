@@ -76,6 +76,22 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => {
   };
 });
 
+let jointActivityOverride;
+vi.mock("@app/services/productCatalog.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    loadCatalogFromRoot: (...args) => {
+      const catalog = actual.loadCatalogFromRoot(...args);
+      if (!jointActivityOverride) return catalog;
+      const activities = catalog.activities.map((activity) =>
+        activity.id === "file-company-tax-return-with-accounts" ? { ...activity, ...jointActivityOverride } : activity,
+      );
+      return { ...catalog, activities };
+    },
+  };
+});
+
 const mockLogs = [];
 vi.mock("@app/lib/logger.js", async (importOriginal) => {
   const actual = await importOriginal();
@@ -141,6 +157,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     delete process.env.HMRC_TRANSACTION_ENGINE_URL;
     vi.clearAllMocks();
     mockLogs.length = 0;
+    jointActivityOverride = undefined;
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -445,6 +462,42 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
       expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
+    });
+
+    const jointBody = () => ({ ...baseBody, gatewayUserId: USER_ID, gatewayPassword: PASSWORD, jointFilingId: JOINT_FILING_ID });
+
+    test("answers 403 and sends nothing when the joint filing activity is not enabled in the environment", async () => {
+      jointActivityOverride = { environments: ["prod"] };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: jointBody() }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({
+        message: "Forbidden: filing the accounts and the Company Tax Return together is not available in this environment",
+        code: "ACTIVITY_ENVIRONMENT_RESTRICTED",
+        activityId: "file-company-tax-return-with-accounts",
+        environmentName: "test",
+      });
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("lets the joint filing through under preview features against a synthetic HMRC account", async () => {
+      jointActivityOverride = { environments: ["prod"] };
+      const headers = { "x-preview-features": "on", "hmrcAccount": "synthetic" };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: jointBody(), headers }));
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("answers 403 and sends nothing when the caller holds none of the joint filing bundles", async () => {
+      jointActivityOverride = { bundles: ["resident-guest"] };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: jointBody() }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "BUNDLE_FORBIDDEN", requiredBundleIds: ["resident-guest"] });
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("sends a return without a jointFilingId although the joint filing activity is not enabled", async () => {
+      jointActivityOverride = { environments: ["prod"] };
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
     });
 
     test("stores no jointFilingId for a return sent alone", async () => {

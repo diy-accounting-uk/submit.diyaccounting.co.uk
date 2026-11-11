@@ -404,7 +404,12 @@ function accountsTextGroup({ id, label, type }) {
   return textGroup({ id, label, type, hint: "" });
 }
 
-// Where the accounts go: HMRC with the return, or Companies House first and then HMRC.
+const SEND_TO_HMRC_ONLY_HINT = "The accounts go to HMRC with the Company Tax Return.";
+const SEND_TO_BOTH_HINT =
+  "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.";
+
+// Where the accounts go: HMRC with the return, or Companies House first and then HMRC. The joint
+// choice stays hidden and disabled until the catalogue says it is offered in this environment.
 function sendToSection() {
   const radio = (id, value, text, checked) =>
     choiceRow(
@@ -427,16 +432,45 @@ function sendToSection() {
       "div",
       { class: "form-group" },
       create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, "Where are you sending these accounts?"),
-      create(
-        "p",
-        { id: "sendTo-hint", class: "hint" },
-        "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.",
-      ),
+      create("p", { id: "sendTo-hint", class: "hint" }, SEND_TO_HMRC_ONLY_HINT),
       errorHost("sendTo"),
       radio("sendToHmrc", "hmrc", "To HMRC with the Company Tax Return", true),
       radio("sendToBoth", "both", "To Companies House and to HMRC with the Company Tax Return", false),
     ),
   );
+}
+
+// The joint filing has its own catalogue activity. The page offers the choice only when that
+// activity is shown to this person in this environment, and refuses to amend a joint filing
+// otherwise. A catalogue or environment that cannot be read leaves the choice off.
+async function readJointFilingOffered() {
+  try {
+    const service = await import("/lib/services/catalog-service.js");
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const [text, environmentName, viewer] = await Promise.all([
+      service.fetchCatalogText(),
+      service.fetchCurrentEnvironmentName(),
+      viewerSettings.fetchViewer(),
+    ]);
+    return service.isJointFilingOffered(service.parseCatalogueText(text), environmentName, viewer);
+  } catch (error) {
+    console.warn("The joint filing choice is off because the catalogue could not be read:", error);
+    return false;
+  }
+}
+
+const jointFilingOffered = readJointFilingOffered();
+
+async function applyJointFilingOffer() {
+  const offered = await jointFilingOffered;
+  const both = element("sendToBoth");
+  both.disabled = Boolean(agentClient) || !offered;
+  both.closest(".choice").hidden = !offered;
+  element("sendTo-hint").textContent = offered ? SEND_TO_BOTH_HINT : SEND_TO_HMRC_ONLY_HINT;
+  if (!offered && both.checked) {
+    element("sendToHmrc").checked = true;
+    applyRegime();
+  }
 }
 
 // Companies House can take the accounts in full or filleted; HMRC always takes the full accounts.
@@ -1301,7 +1335,7 @@ function applyClientToForm() {
     element("sendToHmrc").checked = true;
     applyRegime();
   }
-  element("sendToBoth").disabled = filingAsAgent;
+  applyJointFilingOffer();
   element("gatewayWhose").textContent = filingAsAgent
     ? "Sign in with the practice's own agent Government Gateway user ID and password, with Corporation Tax enrolled."
     : "Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.";
@@ -2242,6 +2276,12 @@ async function loadAmendment(receiptName) {
       );
       return;
     }
+    if (receipt.jointFilingId && !(await jointFilingOffered)) {
+      refuseAmendment(
+        "Filing the accounts and the Company Tax Return together is not available here, so this joint filing cannot be amended.",
+      );
+      return;
+    }
     if (receipt.kind === "companies-house-accounts" && !receipt.jointFilingId) {
       refuseAmendment(
         "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
@@ -2269,6 +2309,7 @@ async function loadAmendment(receiptName) {
 }
 
 renderForm();
+applyJointFilingOffer();
 renderAgentAuthorisation();
 mountBooksCard();
 loadPracticeClients();

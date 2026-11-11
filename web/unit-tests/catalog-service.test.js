@@ -10,6 +10,7 @@ import { parse as parseToml } from "@iarna/toml";
 import {
   isActivityListedInEnvironment,
   isActivityShown,
+  isJointFilingOffered,
   isBundleShown,
   activityPagePath,
   activityArea,
@@ -242,5 +243,34 @@ describe("isBundleShown", () => {
   it("hides the operator bundle when operator features are off", () => {
     expect(isBundleShown({ id: "operator" }, "prod", viewer)).toBe(true);
     expect(isBundleShown({ id: "operator" }, "prod", { ...viewer, operatorFeatures: false })).toBe(false);
+  });
+});
+
+describe("isJointFilingOffered", () => {
+  const viewer = { preview: false, operatorFeatures: true, account: { passGeneration: true } };
+  const catalog = { activities: [{ id: "file-company-tax-return-with-accounts", bundles: ["resident-ltd"], environments: ["ci"] }] };
+
+  it("offers the joint filing where its activity is listed", () => {
+    expect(isJointFilingOffered(catalog, "ci", viewer)).toBe(true);
+  });
+
+  it("withholds it where the activity is not listed, until preview features are on", () => {
+    expect(isJointFilingOffered(catalog, "prod", viewer)).toBe(false);
+    expect(isJointFilingOffered(catalog, "prod", { ...viewer, preview: true })).toBe(true);
+  });
+
+  it("withholds it when the environment name is unknown", () => {
+    expect(isJointFilingOffered(catalog, null, viewer)).toBe(false);
+  });
+
+  it("withholds it when the catalogue has no joint filing activity", () => {
+    expect(isJointFilingOffered({ activities: [] }, "ci", viewer)).toBe(false);
+  });
+
+  it("is offered in ci and not in prod by the real catalogue", () => {
+    const real = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf8"));
+    expect(isJointFilingOffered(real, "ci", viewer)).toBe(true);
+    expect(isJointFilingOffered(real, "simulator", viewer)).toBe(true);
+    expect(isJointFilingOffered(real, "prod", viewer)).toBe(false);
   });
 });

@@ -94,6 +94,22 @@ export function isActivityListedInEnvironment(activity, environmentName) {
   return typeof environmentName === "string" && listed.includes(environmentName);
 }
 
+/** The activity that decides whether the accounts and the Company Tax Return can be filed together. */
+export const JOINT_FILING_ACTIVITY_ID = "file-company-tax-return-with-accounts";
+
+/**
+ * Whether the Company Tax Return page offers the choice to file the accounts at Companies House
+ * with the return: the joint filing activity is shown to this person in this environment.
+ * @param {object} catalog - The parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @param {{preview: boolean, operatorFeatures: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
+ * @returns {boolean} True when the joint filing is offered
+ */
+export function isJointFilingOffered(catalog, environmentName, viewer) {
+  const activity = catalog?.activities?.find((candidate) => candidate.id === JOINT_FILING_ACTIVITY_ID);
+  return activity !== undefined && isActivityShown(activity, environmentName, viewer);
+}
+
 /**
  * Whether a bundle or activity serves only operators: every bundle it names is the operator bundle.
  * @param {string[]|undefined} bundleIds - The bundle ids of an activity
