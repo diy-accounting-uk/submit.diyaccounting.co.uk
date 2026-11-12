@@ -62,6 +62,7 @@ on:
           - 'file-company-tax-return-book'
           - 'file-company-tax-return-typed'
           - 'file-company-tax-return-with-accounts'
+          - 'file-company-tax-return-long-period'
           - 'mcp-harness'
           - 'mcp-diya-gl'
           - 'mcp-cli'

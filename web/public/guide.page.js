@@ -58,11 +58,12 @@ const GROUPS = [
   },
   {
     title: "Company Tax Return (CT600)",
-    intro: "File the corporation tax return from the company's book, or send it with the accounts to Companies House and HMRC together.",
+    intro: "File the corporation tax return from a book, with the accounts, or for a period over 12 months.",
     journeys: [
       { video: "file-company-tax-return-book" },
       { video: "file-company-tax-return-typed" },
       { video: "file-company-tax-return-with-accounts" },
+      { video: "file-company-tax-return-long-period" },
     ],
   },
   {

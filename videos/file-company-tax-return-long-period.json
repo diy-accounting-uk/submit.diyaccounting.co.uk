@@ -1,0 +1,718 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "file-company-tax-return-long-period",
+  "title": "File a Company Tax Return for a period of account over 12 months",
+  "description": "A signed-in walk through a Company Tax Return for a 15 month period of account: sign in, take out Resident Ltd, look up a company, type the 15 months, see HMRC take it as two returns, fill the two columns where the answers differ, check both reviews, send return 1 and then return 2, and see both receipts under one filing.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileCompanyTaxReturn.html",
+    "web/public/hmrc/receipt/receipts.html"
+  ],
+  "environments": ["simulator"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 3000,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "A sandbox preview against HMRC's test service.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident Ltd",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident Ltd",
+          "testPass": true,
+          "caption": "Resident Ltd opens the Company Tax Return filing.",
+          "headline": "Unlock the tax return",
+          "keyWord": "tax"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Company Tax Return (HMRC, preview)')",
+          "label": "Waiting for the subscription to unlock the activity"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "File Company Tax Return (HMRC, preview)"
+          },
+          "expectsNavigation": true,
+          "caption": "Open File Company Tax Return to find the company.",
+          "headline": "Find the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "00000001",
+          "clear": true,
+          "caption": "Type the company number.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn",
+          "caption": "Look up the company with Companies House.",
+          "headline": "Look up the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#formView",
+          "label": "Looking up the company"
+        },
+        {
+          "action": "point",
+          "target": "#formCompanyName",
+          "caption": "Companies House confirms the company name.",
+          "headline": "Confirm the company name",
+          "keyWord": "name",
+          "dwellMs": 400
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "period",
+      "chapter": "A 15 month period",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#utr",
+          "text": "8596148860",
+          "clear": true,
+          "caption": "Type the Unique Taxpayer Reference.",
+          "headline": "Enter the UTR",
+          "keyWord": "UTR"
+        },
+        {
+          "action": "fill",
+          "target": "#periodStart",
+          "value": "2025-01-01"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEnd",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Period"
+          },
+          "value": "2026-03-31",
+          "caption": "This period of account runs for 15 months, from 1 January 2025 to 31 March 2026.",
+          "headline": "A 15 month period",
+          "keyWord": "15"
+        },
+        {
+          "action": "await",
+          "until": "#longPeriodPanel:not([hidden])",
+          "label": "Showing the two returns"
+        },
+        {
+          "action": "point",
+          "target": "#longPeriodHeading",
+          "scrollTo": "#longPeriodPanel",
+          "dwellMs": 700,
+          "caption": "A Company Tax Return covers at most 12 months, so HMRC takes this period as two returns.",
+          "headline": "Two returns, not one",
+          "keyWord": "two"
+        },
+        {
+          "action": "point",
+          "target": "#longPeriodPanel ul",
+          "scrollTo": "#longPeriodPanel",
+          "dwellMs": 700,
+          "caption": "Return 1 covers the first 12 months. Return 2 covers the last three.",
+          "headline": "12 months, then three",
+          "keyWord": "three"
+        },
+        {
+          "action": "point",
+          "target": "#longPeriodPanel p:nth-of-type(2)",
+          "scrollTo": "#longPeriodPanel",
+          "dwellMs": 700,
+          "caption": "You send return 1 first. The two returns cost one token.",
+          "headline": "Two returns, one token",
+          "keyWord": "token"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "figures",
+      "chapter": "The figures",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#currentTurnover",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Accounts"
+          },
+          "text": "250000",
+          "clear": true,
+          "caption": "Type the profit and loss for the whole 15 months, then the balance sheet.",
+          "headline": "Type the 15 month figures",
+          "keyWord": "figures"
+        },
+        {
+          "action": "type",
+          "target": "#currentCostOfSales",
+          "text": "50000",
+          "clear": true
+        },
+        {
+          "action": "type",
+          "target": "#currentAdministrativeExpenses",
+          "text": "81000",
+          "clear": true
+        },
+        {
+          "action": "fill",
+          "target": "#currentInterestReceivable",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTax",
+          "value": "24962"
+        },
+        {
+          "action": "fill",
+          "target": "#currentDebtors",
+          "value": "10000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCashAtBank",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Balance sheet"
+          },
+          "value": "116100"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTradeCreditors",
+          "value": "5000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCorporationTax",
+          "value": "24962"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTaxationSocialSecurity",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#currentProfitAndLossAccount",
+          "value": "95038"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "details",
+      "chapter": "The details",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#principalActivity",
+          "text": "Software consultancy",
+          "clear": true
+        },
+        {
+          "action": "fill",
+          "target": "#accountingPolicies",
+          "value": "The accounts are prepared under FRS 102 section 1A."
+        },
+        {
+          "action": "fill",
+          "target": "#directors",
+          "value": "Alex Example"
+        },
+        {
+          "action": "fill",
+          "target": "#averageEmployees",
+          "value": "2"
+        },
+        {
+          "action": "fill",
+          "target": "#directorName",
+          "value": "Alex Example"
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "2026-06-30"
+        },
+        {
+          "action": "fill",
+          "target": "#declarantName",
+          "value": "Alex Example"
+        },
+        {
+          "action": "fill",
+          "target": "#nonTradingLoanRelationshipCredits",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#depreciation",
+          "value": "6000"
+        },
+        {
+          "action": "fill",
+          "target": "#donations",
+          "value": "2000"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "two-columns",
+      "chapter": "Two columns",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "#annualInvestmentAllowance",
+          "value": "12000"
+        },
+        {
+          "action": "point",
+          "target": "#mainPoolAllowances",
+          "scrollTo": "label[for=mainPoolAllowances]",
+          "dwellMs": 600,
+          "caption": "Where an answer can differ between the returns, the form has a column for each.",
+          "headline": "A column for each return",
+          "keyWord": "column"
+        },
+        {
+          "action": "fill",
+          "target": "#mainPoolAllowances",
+          "value": "1800"
+        },
+        {
+          "action": "fill",
+          "target": "#mainPoolAllowancesAp2",
+          "scrollTo": "label[for=mainPoolAllowances]",
+          "value": "363",
+          "caption": "Type the allowances for return 1, then for return 2.",
+          "headline": "Allowances for each return",
+          "keyWord": "Allowances"
+        },
+        {
+          "action": "fill",
+          "target": "#donationsPaid",
+          "value": "2000"
+        },
+        {
+          "action": "fill",
+          "target": "#donationsPaidAp2",
+          "scrollTo": "label[for=donationsPaid]",
+          "value": "0",
+          "caption": "Donations paid are also typed for each return.",
+          "headline": "Donations for each return",
+          "keyWord": "Donations"
+        },
+        {
+          "action": "click",
+          "target": "#loansMadeAp2Yes",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Loans"
+          },
+          "caption": "Only return 2 has a loan to a director.",
+          "headline": "A loan in return 2",
+          "keyWord": "loan"
+        },
+        {
+          "action": "fill",
+          "target": "#loanName1Ap2",
+          "value": "Alex Example"
+        },
+        {
+          "action": "fill",
+          "target": "#loanAmount1Ap2",
+          "value": "15000"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "declaration",
+      "chapter": "The declaration",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#statementSection477Exemption",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Statements"
+          },
+          "caption": "Accept the four statutory statements.",
+          "headline": "Accept the statements",
+          "keyWord": "statements"
+        },
+        {
+          "action": "click",
+          "target": "#statementMembersNotRequiredAudit"
+        },
+        {
+          "action": "click",
+          "target": "#statementDirectorsResponsibilities"
+        },
+        {
+          "action": "click",
+          "target": "#statementSmallCompaniesRegime"
+        },
+        {
+          "action": "click",
+          "target": "#declarationAccepted",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Statements"
+          },
+          "caption": "Tick the declaration to confirm both returns are accurate.",
+          "headline": "Confirm the declaration",
+          "keyWord": "declaration"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "chapter": "Review both returns",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#previewBtn",
+          "caption": "Preview both returns before anything is sent.",
+          "headline": "Preview both returns",
+          "keyWord": "Preview"
+        },
+        {
+          "action": "await",
+          "until": "#review-return-2",
+          "label": "Working out both returns",
+          "scrollTo": "#previewView"
+        },
+        {
+          "action": "point",
+          "target": "#reviewReturn1Heading",
+          "scrollTo": "#reviewReturn1Heading",
+          "dwellMs": 700,
+          "caption": "The review shows return 1 first, with its own boxes and due date.",
+          "headline": "Review return 1",
+          "keyWord": "1"
+        },
+        {
+          "action": "point",
+          "target": "#reviewReturn2Heading",
+          "scrollTo": "#reviewReturn2Heading",
+          "dwellMs": 700,
+          "caption": "Then return 2, for the last three months.",
+          "headline": "Review return 2",
+          "keyWord": "2"
+        },
+        {
+          "action": "point",
+          "target": "#sendStepHeading",
+          "scrollTo": "#sendStepHeading",
+          "dwellMs": 700,
+          "caption": "One step sends both returns, in order.",
+          "headline": "One send step",
+          "keyWord": "send"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "Send both returns",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#gatewayUserId",
+          "scrollTo": "#sendStepHeading",
+          "text": "dummy-gateway-user",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the company's Government Gateway user ID.",
+          "headline": "Enter the Gateway user ID",
+          "keyWord": "Gateway"
+        },
+        {
+          "action": "type",
+          "target": "#gatewayPassword",
+          "text": "dummy-gateway-password",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the Government Gateway password.",
+          "headline": "Enter the password",
+          "keyWord": "password"
+        },
+        {
+          "action": "point",
+          "target": "#submissionCost",
+          "scrollTo": "#sendStepHeading",
+          "dwellMs": 700,
+          "caption": "The two returns cost one token.",
+          "headline": "Two returns, one token",
+          "keyWord": "token"
+        },
+        {
+          "action": "click",
+          "target": "#submitReturnBtn",
+          "scrollTo": "#sendStepHeading",
+          "caption": "Send return 1 and then return 2 to HMRC's test service.",
+          "headline": "Send two returns",
+          "keyWord": "two"
+        },
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Sending the returns"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "chapter": "The outcome",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#returnResult:has-text('HMRC accepted the Company Tax Return 1 of 2')",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 120000,
+          "scrollTo": "#hmrcHeading",
+          "caption": "HMRC accepts return 1.",
+          "headline": "HMRC accepts return 1",
+          "keyWord": "1"
+        },
+        {
+          "action": "await",
+          "until": "#returnResult:has-text('HMRC accepted the Company Tax Return 2 of 2')",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 120000,
+          "scrollTo": "#hmrcHeading",
+          "caption": "Then HMRC accepts return 2.",
+          "headline": "HMRC accepts return 2",
+          "keyWord": "2"
+        },
+        {
+          "action": "point",
+          "target": "#returnIrmark",
+          "scrollTo": "#hmrcHeading",
+          "dwellMs": 600,
+          "caption": "Each return has its own IRmark.",
+          "headline": "An IRmark for each",
+          "keyWord": "IRmark"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "goto",
+          "url": "/hmrc/receipt/receipts.html",
+          "waitFor": "#receiptsTable .receipt-label",
+          "scrollTo": "#receiptsTable",
+          "caption": "Your receipts page lists both returns as one filing.",
+          "headline": "One filing, two receipts",
+          "keyWord": "two"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "still",
+          "name": "file-company-tax-return-long-period-result"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        }
+      ]
+    }
+  ]
+}

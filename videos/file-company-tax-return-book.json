@@ -394,12 +394,15 @@
           "keyWord": "password"
         },
         {
-          "action": "click",
-          "target": "#submitReturnBtn",
-          "caption": "Submit the return to HMRC's test service.",
-          "headline": "Submit to the test service",
-          "keyWord": "test"
+          "action": "point",
+          "target": "#submissionCost",
+          "scrollTo": "#submissionCost",
+          "dwellMs": 700,
+          "caption": "Filing costs one token. Submit the return to HMRC's test service.",
+          "headline": "Submit for one token",
+          "keyWord": "token"
         },
+        { "action": "click", "target": "#submitReturnBtn" },
         {
           "action": "await",
           "until": "#resultView",

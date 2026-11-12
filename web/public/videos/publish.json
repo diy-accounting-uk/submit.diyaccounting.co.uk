@@ -3593,14 +3593,14 @@
         {
           "scene": "submit",
           "headline": "File it",
-          "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House.",
+          "caption": "Type the company's Companies House authentication code. Filing costs one token. Submit the filing to Companies House.",
           "startSeconds": 136,
           "thumb": "videos/file-micro-entity-accounts/submit-thumb.webp",
           "full": "videos/file-micro-entity-accounts/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 310,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 646
+          "fullHeight": 1080
         },
         {
           "scene": "result",
@@ -3817,14 +3817,14 @@
         {
           "scene": "submit",
           "headline": "File it",
-          "caption": "Type the Government Gateway password. Submit the return to HMRC's test service.",
+          "caption": "Type the Government Gateway password. Filing costs one token. Submit the return to HMRC's test service.",
           "startSeconds": 134,
           "thumb": "videos/file-company-tax-return-book/submit-thumb.webp",
           "full": "videos/file-company-tax-return-book/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1054
         },
         {
           "scene": "result",
@@ -3900,9 +3900,9 @@
           "thumb": "videos/file-company-tax-return-book/result-10-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-10.webp",
           "thumbWidth": 480,
-          "thumbHeight": 510,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1062
+          "fullHeight": 1056
         },
         {
           "scene": "result",
@@ -3913,9 +3913,9 @@
           "thumb": "videos/file-company-tax-return-book/result-13-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-13.webp",
           "thumbWidth": 480,
-          "thumbHeight": 510,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1062
+          "fullHeight": 1056
         }
       ]
     },
@@ -4009,9 +4009,9 @@
           "thumb": "videos/file-company-tax-return-typed/figures-0-thumb.webp",
           "full": "videos/file-company-tax-return-typed/figures-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 512,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1066
         },
         {
           "scene": "figures",
@@ -4079,14 +4079,14 @@
         {
           "scene": "submit",
           "headline": "File it",
-          "caption": "Type the Government Gateway password. Submit the return to HMRC's test service.",
+          "caption": "Type the Government Gateway password. Filing costs one token. Submit the return to HMRC's test service.",
           "startSeconds": 170,
           "thumb": "videos/file-company-tax-return-typed/submit-thumb.webp",
           "full": "videos/file-company-tax-return-typed/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1054
         },
         {
           "scene": "result",
@@ -4162,9 +4162,9 @@
           "thumb": "videos/file-company-tax-return-typed/result-10-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-10.webp",
           "thumbWidth": 480,
-          "thumbHeight": 514,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1070
+          "fullHeight": 1056
         },
         {
           "scene": "result",
@@ -4175,9 +4175,9 @@
           "thumb": "videos/file-company-tax-return-typed/result-13-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-13.webp",
           "thumbWidth": 480,
-          "thumbHeight": 514,
+          "thumbHeight": 506,
           "fullWidth": 1000,
-          "fullHeight": 1070
+          "fullHeight": 1056
         }
       ]
     },
@@ -8083,14 +8083,14 @@
         {
           "scene": "submit",
           "headline": "File it",
-          "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House.",
+          "caption": "Type the company's Companies House authentication code. Filing costs one token. Submit the filing to Companies House.",
           "startSeconds": 217,
           "thumb": "videos/file-small-company-accounts/submit-thumb.webp",
           "full": "videos/file-small-company-accounts/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 288,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 602
+          "fullHeight": 1080
         },
         {
           "scene": "result",
@@ -8992,9 +8992,9 @@
           "thumb": "videos/file-company-tax-return-with-accounts/submit-1-thumb.webp",
           "full": "videos/file-company-tax-return-with-accounts/submit-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 504,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 1052
+          "fullHeight": 1080
         },
         {
           "scene": "submit",
@@ -9005,9 +9005,9 @@
           "thumb": "videos/file-company-tax-return-with-accounts/submit-2-thumb.webp",
           "full": "videos/file-company-tax-return-with-accounts/submit-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 504,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 1052
+          "fullHeight": 1080
         },
         {
           "scene": "submit",
@@ -9018,9 +9018,9 @@
           "thumb": "videos/file-company-tax-return-with-accounts/submit-3-thumb.webp",
           "full": "videos/file-company-tax-return-with-accounts/submit-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 504,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 1052
+          "fullHeight": 1080
         },
         {
           "scene": "submit",
@@ -9031,9 +9031,9 @@
           "thumb": "videos/file-company-tax-return-with-accounts/submit-4-thumb.webp",
           "full": "videos/file-company-tax-return-with-accounts/submit-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 504,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 1052
+          "fullHeight": 1080
         },
         {
           "scene": "result",
@@ -9128,6 +9128,374 @@
         }
       ],
       "videoId": "aQAF5hAcxeQ"
+    },
+    {
+      "id": "file-company-tax-return-long-period",
+      "catalogueActivity": "file-company-tax-return",
+      "group": "companies-house",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/.claude/worktrees/eagle-guide1/target/videos-eagle/file-company-tax-return-long-period-full/file-company-tax-return-long-period.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/.claude/worktrees/eagle-guide1/target/videos-eagle/file-company-tax-return-long-period-full/file-company-tax-return-long-period.vtt",
+      "activity": "file-company-tax-return",
+      "title": "How to file a Company Tax Return for a period over 12 months (preview)",
+      "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video files a Company Tax Return for a period of account of 15 months. A Company Tax Return covers at most 12 months, so HMRC takes the period as two returns, and the two cost one token. The form shows a column for each return where the answers differ, the review shows both returns, and one step sends return 1 and then return 2. The video ends on both receipts under one filing. This is a preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident Ltd\n00:16 Which company?\n00:44 A 15 month period\n01:37 The figures\n02:08 The details\n02:29 Two columns\n03:12 The declaration\n03:33 Review both returns\n04:06 Send both returns\n04:40 The outcome",
+      "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox", "long period of account"],
+      "categoryId": "27",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "step": 0,
+          "headline": "Find the company",
+          "caption": "Open File Company Tax Return to find the company.",
+          "startSeconds": 16,
+          "thumb": "videos/file-company-tax-return-long-period/company-lookup-0-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/company-lookup-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 292,
+          "fullWidth": 1000,
+          "fullHeight": 610
+        },
+        {
+          "scene": "company-lookup",
+          "step": 2,
+          "headline": "Enter the company number",
+          "caption": "Type the company number.",
+          "startSeconds": 24,
+          "thumb": "videos/file-company-tax-return-long-period/company-lookup-2-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/company-lookup-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 292,
+          "fullWidth": 1000,
+          "fullHeight": 610
+        },
+        {
+          "scene": "company-lookup",
+          "step": 3,
+          "headline": "Look up the company",
+          "caption": "Look up the company with Companies House.",
+          "startSeconds": 29,
+          "thumb": "videos/file-company-tax-return-long-period/company-lookup-3-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/company-lookup-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "company-lookup",
+          "step": 5,
+          "headline": "Confirm the company name",
+          "caption": "Companies House confirms the company name.",
+          "startSeconds": 36,
+          "thumb": "videos/file-company-tax-return-long-period/company-lookup-5-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/company-lookup-5.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "period",
+          "step": 0,
+          "headline": "Enter the UTR",
+          "caption": "Type the Unique Taxpayer Reference.",
+          "startSeconds": 44,
+          "thumb": "videos/file-company-tax-return-long-period/period-0-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/period-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 508,
+          "fullWidth": 1000,
+          "fullHeight": 1058
+        },
+        {
+          "scene": "period",
+          "step": 2,
+          "headline": "A 15 month period",
+          "caption": "This period of account runs for 15 months, from 1 January 2025 to 31 March 2026.",
+          "startSeconds": 52,
+          "thumb": "videos/file-company-tax-return-long-period/period-2-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/period-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "period",
+          "step": 4,
+          "headline": "Two returns, not one",
+          "caption": "A Company Tax Return covers at most 12 months, so HMRC takes this period as two returns.",
+          "startSeconds": 66,
+          "thumb": "videos/file-company-tax-return-long-period/period-4-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/period-4.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "period",
+          "step": 5,
+          "headline": "12 months, then three",
+          "caption": "Return 1 covers the first 12 months. Return 2 covers the last three.",
+          "startSeconds": 77,
+          "thumb": "videos/file-company-tax-return-long-period/period-5-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/period-5.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "period",
+          "step": 6,
+          "headline": "Two returns, one token",
+          "caption": "You send return 1 first. The two returns cost one token.",
+          "startSeconds": 87,
+          "thumb": "videos/file-company-tax-return-long-period/period-6-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/period-6.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "figures",
+          "headline": "The figures",
+          "caption": "Type the profit and loss for the whole 15 months, then the balance sheet.",
+          "startSeconds": 97,
+          "thumb": "videos/file-company-tax-return-long-period/figures-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/figures.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "two-columns",
+          "step": 1,
+          "headline": "A column for each return",
+          "caption": "Where an answer can differ between the returns, the form has a column for each.",
+          "startSeconds": 151,
+          "thumb": "videos/file-company-tax-return-long-period/two-columns-1-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/two-columns-1.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 514,
+          "fullWidth": 1000,
+          "fullHeight": 1070
+        },
+        {
+          "scene": "two-columns",
+          "step": 3,
+          "headline": "Allowances for each return",
+          "caption": "Type the allowances for return 1, then for return 2.",
+          "startSeconds": 162,
+          "thumb": "videos/file-company-tax-return-long-period/two-columns-3-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/two-columns-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 514,
+          "fullWidth": 1000,
+          "fullHeight": 1070
+        },
+        {
+          "scene": "two-columns",
+          "step": 5,
+          "headline": "Donations for each return",
+          "caption": "Donations paid are also typed for each return.",
+          "startSeconds": 172,
+          "thumb": "videos/file-company-tax-return-long-period/two-columns-5-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/two-columns-5.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "two-columns",
+          "step": 6,
+          "headline": "A loan in return 2",
+          "caption": "Only return 2 has a loan to a director.",
+          "startSeconds": 180,
+          "thumb": "videos/file-company-tax-return-long-period/two-columns-6-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/two-columns-6.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "declaration",
+          "headline": "The declaration",
+          "caption": "Accept the four statutory statements. Tick the declaration to confirm both returns are accurate.",
+          "startSeconds": 192,
+          "thumb": "videos/file-company-tax-return-long-period/declaration-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/declaration.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 438,
+          "fullWidth": 1000,
+          "fullHeight": 912
+        },
+        {
+          "scene": "preview",
+          "step": 0,
+          "headline": "Preview both returns",
+          "caption": "Preview both returns before anything is sent.",
+          "startSeconds": 213,
+          "thumb": "videos/file-company-tax-return-long-period/preview-0-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/preview-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "preview",
+          "step": 2,
+          "headline": "Review return 1",
+          "caption": "The review shows return 1 first, with its own boxes and due date.",
+          "startSeconds": 221,
+          "thumb": "videos/file-company-tax-return-long-period/preview-2-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/preview-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "preview",
+          "step": 3,
+          "headline": "Review return 2",
+          "caption": "Then return 2, for the last three months.",
+          "startSeconds": 230,
+          "thumb": "videos/file-company-tax-return-long-period/preview-3-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/preview-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "preview",
+          "step": 4,
+          "headline": "One send step",
+          "caption": "One step sends both returns, in order.",
+          "startSeconds": 237,
+          "thumb": "videos/file-company-tax-return-long-period/preview-4-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/preview-4.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "step": 0,
+          "headline": "Enter the Gateway user ID",
+          "caption": "Type the company's Government Gateway user ID.",
+          "startSeconds": 246,
+          "thumb": "videos/file-company-tax-return-long-period/submit-0-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/submit-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "step": 1,
+          "headline": "Enter the password",
+          "caption": "Type the Government Gateway password.",
+          "startSeconds": 255,
+          "thumb": "videos/file-company-tax-return-long-period/submit-1-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/submit-1.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "step": 2,
+          "headline": "Two returns, one token",
+          "caption": "The two returns cost one token.",
+          "startSeconds": 262,
+          "thumb": "videos/file-company-tax-return-long-period/submit-2-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/submit-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "step": 3,
+          "headline": "Send two returns",
+          "caption": "Send return 1 and then return 2 to HMRC's test service.",
+          "startSeconds": 269,
+          "thumb": "videos/file-company-tax-return-long-period/submit-3-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/submit-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "result",
+          "step": 0,
+          "headline": "HMRC accepts return 1",
+          "caption": "HMRC accepts return 1.",
+          "startSeconds": 280,
+          "thumb": "videos/file-company-tax-return-long-period/result-0-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/result-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "result",
+          "step": 1,
+          "headline": "HMRC accepts return 2",
+          "caption": "Then HMRC accepts return 2.",
+          "startSeconds": 286,
+          "thumb": "videos/file-company-tax-return-long-period/result-1-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/result-1.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "result",
+          "step": 2,
+          "headline": "An IRmark for each",
+          "caption": "Each return has its own IRmark.",
+          "startSeconds": 292,
+          "thumb": "videos/file-company-tax-return-long-period/result-2-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/result-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "result",
+          "step": 4,
+          "headline": "One filing, two receipts",
+          "caption": "Your receipts page lists both returns as one filing.",
+          "startSeconds": 300,
+          "thumb": "videos/file-company-tax-return-long-period/result-4-thumb.webp",
+          "full": "videos/file-company-tax-return-long-period/result-4.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 290,
+          "fullWidth": 1000,
+          "fullHeight": 606
+        }
+      ],
+      "videoId": "Lwt-U4Emrao"
     }
   ]
 }

@@ -283,12 +283,15 @@
           "keyWord": "code"
         },
         {
-          "action": "click",
-          "target": "#submitFilingBtn",
-          "caption": "Submit the filing to Companies House.",
-          "headline": "Submit the filing",
-          "keyWord": "Submit"
+          "action": "point",
+          "target": "#submissionCost",
+          "scrollTo": "#submissionCost",
+          "dwellMs": 700,
+          "caption": "Filing costs one token. Submit the filing to Companies House.",
+          "headline": "Submit for one token",
+          "keyWord": "token"
         },
+        { "action": "click", "target": "#submitFilingBtn" },
         { "action": "await", "until": "#resultView", "label": "Submitting the filing" },
         { "action": "hold", "ms": 500 }
       ]
