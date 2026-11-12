@@ -87,7 +87,7 @@ export function isSensitiveField(fieldName) {
  * @param {string} body - URL-encoded form body string
  * @returns {string} Body with sensitive values masked
  */
-export function maskUrlEncodedBody(body) {
+function maskUrlEncodedBody(body) {
   if (!body || typeof body !== "string") {
     return body;
   }

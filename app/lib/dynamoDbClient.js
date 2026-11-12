@@ -54,15 +54,6 @@ export async function getDynamoDbDocClient(options = {}) {
 }
 
 /**
- * Reset the cached client (useful for testing)
- */
-export function resetDynamoDbClient() {
-  __dynamoDbModule = null;
-  __dynamoDbDocClient = null;
-  __dynamoEndpointUsed = null;
-}
-
-/**
  * Execute a DynamoDB command using the shared client
  *
  * @param {Function} commandBuilder - Function that receives the module and returns a command

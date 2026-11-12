@@ -30,7 +30,7 @@
 import { AwsClient, GoogleAuth } from "google-auth-library";
 
 export const AWS_SUBJECT_TOKEN_TYPE = "urn:ietf:params:aws:token-type:aws4_request";
-export const GOOGLE_STS_TOKEN_URL = "https://sts.googleapis.com/v1/token";
+const GOOGLE_STS_TOKEN_URL = "https://sts.googleapis.com/v1/token";
 
 /**
  * The audience and service account a federated Lambda needs, read from its environment.

@@ -18,7 +18,7 @@
 
 import { Window } from "happy-dom";
 
-export class XmlParseError extends Error {
+class XmlParseError extends Error {
   constructor(message) {
     super(message);
     this.name = "XmlParseError";

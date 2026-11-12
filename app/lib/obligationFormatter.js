@@ -87,14 +87,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * How far a user-entered boundary may drift from the obligation's own boundary and still match.
  * VAT obligation periods are a month or longer, so a few days cannot reach a neighbouring period.
  */
-export const OBLIGATION_DATE_TOLERANCE_DAYS = 3;
+const OBLIGATION_DATE_TOLERANCE_DAYS = 3;
 
 /**
  * Days of slack added either side of the requested period when asking HMRC for obligations.
  * HMRC filters on its own period dates, so a request keyed to drifted dates can otherwise
  * exclude the very obligation we are looking for.
  */
-export const OBLIGATION_WINDOW_PADDING_DAYS = 7;
+const OBLIGATION_WINDOW_PADDING_DAYS = 7;
 
 function toIsoDay(value) {
   if (typeof value !== "string") {

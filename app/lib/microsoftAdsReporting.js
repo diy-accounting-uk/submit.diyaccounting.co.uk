@@ -12,9 +12,9 @@ import zlib from "node:zlib";
 import TOML from "@iarna/toml";
 import { GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
-export const POLL_INTERVAL_MS = 3000;
-export const POLL_ATTEMPTS = 40;
-export const CAMPAIGN_REPORT_COLUMNS = [
+const POLL_INTERVAL_MS = 3000;
+const POLL_ATTEMPTS = 40;
+const CAMPAIGN_REPORT_COLUMNS = [
   "CampaignId",
   "CampaignName",
   "Impressions",
@@ -25,7 +25,7 @@ export const CAMPAIGN_REPORT_COLUMNS = [
   "Conversions",
   "Revenue",
 ];
-export const REPORT_TIME_ZONE = "GreenwichMeanTimeDublinEdinburghLisbonLondon";
+const REPORT_TIME_ZONE = "GreenwichMeanTimeDublinEdinburghLisbonLondon";
 
 export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
@@ -93,7 +93,7 @@ export function buildHeaders(session) {
   return headers;
 }
 
-export function redact(text, session) {
+function redact(text, session) {
   let out = String(text);
   for (const secret of [session.accessToken, session.developerToken]) {
     if (secret) out = out.split(secret).join("[redacted]");
@@ -114,7 +114,7 @@ export async function callApi(session, baseUrl, operationPath, body, { method = 
   return text ? JSON.parse(text) : {};
 }
 
-export function shapeAccount(account) {
+function shapeAccount(account) {
   return {
     id: String(account.Id),
     number: account.Number,
@@ -224,7 +224,7 @@ export function unzipFirstEntry(buffer) {
   throw new Error(`unsupported zip method ${method}`);
 }
 
-export function parseDateArg(value, label) {
+function parseDateArg(value, label) {
   const date = dateObject(value);
   if (!date) throw new Error(`${label} must be YYYY-MM-DD`);
   return date;

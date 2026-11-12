@@ -11,9 +11,9 @@
 
 import { z } from "zod";
 
-export const FINDINGS_MAX = 12;
-export const PROPOSED_ROWS_MAX = 4;
-export const PROPOSED_ROW_PREFIXES = ["DASH", "COST", "SEC", "MKT", "OPS"];
+const FINDINGS_MAX = 12;
+const PROPOSED_ROWS_MAX = 4;
+const PROPOSED_ROW_PREFIXES = ["DASH", "COST", "SEC", "MKT", "OPS"];
 export const LISTS = ["improvement", "observation"];
 
 // Shapes that can carry data out or steer a reader: a link, an address, markup, a Markdown link or

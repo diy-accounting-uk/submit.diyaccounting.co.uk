@@ -29,7 +29,7 @@
 
 import { isValidVrn, isValidIsoDate } from "./hmrcValidation.js";
 
-export const CSV_COLUMNS = [
+const CSV_COLUMNS = [
   "vrn",
   "periodStart",
   "periodEnd",

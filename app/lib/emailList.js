@@ -14,7 +14,7 @@ const logger = createLogger({ source: "app/lib/emailList.js" });
 
 const secretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
-export function parseEmailList(raw) {
+function parseEmailList(raw) {
   return raw
     .split(",")
     .map((email) => email.trim().toLowerCase())

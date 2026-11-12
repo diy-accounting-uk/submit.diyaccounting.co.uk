@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 
-export const SUMMARY_MAX_LENGTH = 300;
+const SUMMARY_MAX_LENGTH = 300;
 
 const summary = z
   .string()
