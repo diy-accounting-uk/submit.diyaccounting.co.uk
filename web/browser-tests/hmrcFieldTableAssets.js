@@ -132,6 +132,7 @@ export async function serveItsaPageScripts(page) {
   });
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
+  await serveFile(page, "**/lib/review-links.js", "lib/review-links.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
   await serveSelfEmploymentExpenses(page);

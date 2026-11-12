@@ -50,6 +50,7 @@
     "bundle:books": "node scripts/build-books-bundle.mjs",
     "generate:submission-record": "node scripts/generate-submission-record.mjs",
     "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
+    "build:review-links": "node scripts/build-review-links.mjs",
     "build:rates-page": "node scripts/build-rates-page.mjs",
     "ai-ranges:refresh": "node scripts/ai-vendor-ranges.mjs refresh",
     "ai-ranges:check": "node scripts/ai-vendor-ranges.mjs check",

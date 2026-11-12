@@ -8,10 +8,12 @@
 // web/public/submission-record.css defines. The record functions write the plain record: the
 // entity's name and reference, the title and period, the statement tables with their figures,
 // and the approval line. customerCopyHtml puts DIY Accounting's frame around a record and
-// leaves the record unchanged. This module imports nothing, so that the iXBRL builders under
+// leaves the record unchanged. This module imports only the generated review links, so that the iXBRL builders under
 // Node and the site pages in a browser run the same code. The browser copy,
 // web/public/lib/submission-record.js, is written from this file by
 // scripts/generate-submission-record.mjs.
+
+import { reviewLinks as defaultReviewLinks } from "./review-links.js";
 
 const STATUS_KINDS = new Set(["accepted", "sent", "pending", "rejected"]);
 
@@ -132,7 +134,7 @@ ${references}<h2>${escapeRecordText(title)}</h2>
  * @param {{href: string, text: string}[]} [copy.links]
  * @returns {string}
  */
-export function customerCopyHtml({ title, reference, status, date, sections, links = [] }) {
+export function customerCopyHtml({ title, reference, status, date, sections, links = [], reviewLinks = defaultReviewLinks }) {
   if (!STATUS_KINDS.has(status.kind)) throw new Error(`Unknown submission status kind: ${status.kind}`);
   const sectionHtml = sections
     .map((section) => {
@@ -163,6 +165,30 @@ ${section.recordHtml}
 <div><dt>Date</dt><dd>${escapeRecordText(date)}</dd></div>
 </dl>
 </header>
-${sectionHtml}${linksHtml}
+${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
 </article>`;
+}
+
+/**
+ * The one line that invites a review, shown to every customer whose filing the authority accepted.
+ * It is empty for any other status, and while no review profile is live.
+ * @param {{kind: string, text: string}} status
+ * @param {{site: string, url: string}[]} reviewLinks - Trustpilot first
+ * @returns {string}
+ */
+export function reviewLineHtml(status, reviewLinks) {
+  if (status.kind !== "accepted" || !status.text.startsWith("Accepted") || reviewLinks.length === 0) return "";
+  const anchors = reviewLinks.map(
+    (link) =>
+      `<a href="${escapeRecordAttribute(link.url)}" data-review-site="${escapeRecordAttribute(link.site)}" target="_blank" rel="noopener noreferrer">${escapeRecordText(link.site)}</a>`,
+  );
+  return `\n<p class="customer-copy-review">Leave a review of DIY Accounting Submit on ${anchors.join(" or ")}.</p>`;
+}
+
+if (globalThis.document) {
+  globalThis.document.addEventListener("click", (event) => {
+    const anchor = event.target.closest?.("a[data-review-site]");
+    if (anchor && typeof globalThis.gtag === "function")
+      globalThis.gtag("event", "review_link_clicked", { site: anchor.dataset.reviewSite });
+  });
 }

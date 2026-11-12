@@ -89,7 +89,10 @@ export function generatedFiles(root = ROOT) {
       path: STYLE_MODULE,
       contents: `${LICENCE}\n${generatedNote(STYLESHEET)}\n// The record layer of the submission record house style, for a document that can link to no\n// stylesheet.\nexport const RECORD_STYLE = \`${recordStyle}\`;\n`,
     },
-    browserCopy(HELPER, BROWSER_HELPER),
+    {
+      ...browserCopy(HELPER, BROWSER_HELPER),
+      contents: browserCopy(HELPER, BROWSER_HELPER).contents.replace('"./reviewLinks.js"', '"./review-links.js"'),
+    },
     browserCopy(PASS_MEDIA, BROWSER_PASS_MEDIA),
   ];
 }
