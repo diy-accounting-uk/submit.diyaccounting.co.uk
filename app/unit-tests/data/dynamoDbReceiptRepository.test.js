@@ -142,6 +142,19 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts[0].clientId).toBeNull();
     });
 
+    test("reads every page of the query, so the newest receipt of a long list is not lost", async () => {
+      const lastKeyOfPageOne = { hashedSub: "hashed-practice-sub", receiptId: "2026-01-01T00:00:00.000Z-FB1" };
+      mockSend.mockResolvedValueOnce({ Items: [items[0]], Count: 1, LastEvaluatedKey: lastKeyOfPageOne }).mockResolvedValueOnce({
+        Items: [{ hashedSub: "hashed-practice-sub", receiptId: "2026-01-04T00:00:00.000Z-FB4", createdAt: "2026-01-04T00:00:00.000Z" }],
+        Count: 1,
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map((receipt) => receipt.receiptId)).toEqual(["2026-01-04T00:00:00.000Z-FB4", "2026-01-01T00:00:00.000Z-FB1"]);
+      expect(mockQueryCommand.mock.calls.map(([params]) => params.ExclusiveStartKey)).toEqual([undefined, lastKeyOfPageOne]);
+    });
+
     test("with a client id, returns only that client's receipts", async () => {
       mockSend.mockResolvedValueOnce({ Items: items });
 
