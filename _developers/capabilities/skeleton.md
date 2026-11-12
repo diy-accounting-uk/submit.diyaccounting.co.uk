@@ -737,6 +737,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-14 -->
 <!-- capability MCP-15 -->
 <!-- capability MCP-22 -->
+<!-- capability MCP-23 -->
 ## Developer workflow (DEV)
 
 <!-- generated:area DEV -->
