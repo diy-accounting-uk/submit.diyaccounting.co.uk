@@ -32,7 +32,7 @@ import {
 const logger = createLogger({ source: "app/services/commissionLedger.js" });
 
 // Pinned because an invoice from basil on carries no `charge`.
-export const INVOICE_API_VERSION = "2024-12-18.acacia";
+const INVOICE_API_VERSION = "2024-12-18.acacia";
 
 const MS_PER_MONTH = (365.2425 / 12) * 24 * 60 * 60 * 1000;
 

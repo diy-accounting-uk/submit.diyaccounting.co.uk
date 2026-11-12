@@ -1681,7 +1681,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Use when:** any outbound Companies House API call needs a bounded wait instead of hanging.
 - **Does:** httpFetch.js wraps the native fetch function with a configurable timeout. Every Companies House API, filing and XML Gateway service uses it for outbound calls.
 - **Run:** no command; see Does and Entry
-- **Entry:** `app/lib/httpFetch.js:fetchWithTimeout`; `app/lib/httpFetch.js:fetchJsonWithTimeout`
+- **Entry:** `app/lib/httpFetch.js:fetchWithTimeout`
 - **Files:** app/lib/httpFetch.js
 - **Keywords:** fetch, timeout, http client, companies house, outbound call, abort
 - **Related:** CH-11
@@ -5397,7 +5397,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Use when:** supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
 - **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching both mailboxes (mail-antony, then mail-support) for each supplier within a date range, and keeps one line when the same invoice sits in both. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
 - **Run:** no command; see Does and Entry
-- **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`; `mcp/lib/finance/mail-invoices.js:runCorpus`
+- **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`
 - **Files:** mcp/lib/finance/mail-invoices.js, mcp/test/mail-invoices.test.js
 - **Keywords:** supplier invoices, corpus cli, mail-antony, mail-support, invoice de-duplication, invoice import, purchases lines, mail index search
 - **Related:** MCP-10, MCP-11

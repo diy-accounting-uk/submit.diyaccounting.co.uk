@@ -66,7 +66,7 @@ export function getTier(config, id) {
   return tier;
 }
 
-export const FAMILY_TIER_ID = "family";
+const FAMILY_TIER_ID = "family";
 
 /**
  * The family tier for a referrer marked as a family affiliate, unless the affiliate item has ended;

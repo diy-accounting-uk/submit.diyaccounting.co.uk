@@ -9,13 +9,13 @@
 // no AWS calls. The capture Lambda (consoleCapturePublish.js) turns each entry into one PNG or one
 // table, and a unit test holds this list equal to the ids the dashboard page asks for.
 
-export const SUBMIT_REGION = "eu-west-2";
-export const SIBLING_REGION = "us-east-1";
+const SUBMIT_REGION = "eu-west-2";
+const SIBLING_REGION = "us-east-1";
 
 // Where a capture run reads, by target key. prod and ci are this repository's accounts; the two
 // sibling keys are the spreadsheets and gateway accounts, which hold their RUM monitors in
 // us-east-1.
-export const SIBLING_TARGETS = {
+const SIBLING_TARGETS = {
   spreadsheets: { label: "Spreadsheets site", monitor: "spreadsheets-web" },
   gateway: { label: "Gateway site", monitor: "gateway-web" },
 };

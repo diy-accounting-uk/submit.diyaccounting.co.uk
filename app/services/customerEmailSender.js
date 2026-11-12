@@ -7,7 +7,7 @@ import { SESv2Client, SendEmailCommand, GetAccountCommand } from "@aws-sdk/clien
 
 const ses = new SESv2Client({ region: process.env.AWS_REGION || "eu-west-2" });
 
-export const SUPPORT_ADDRESS = "support@diyaccounting.co.uk";
+const SUPPORT_ADDRESS = "support@diyaccounting.co.uk";
 
 const SANDBOX_DOMAINS = ["@diyaccounting.co.uk", "@simulator.amazonses.com"];
 const PRODUCTION_ACCESS_TTL_MS = 15 * 60 * 1000;

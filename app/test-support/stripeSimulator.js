@@ -15,7 +15,7 @@ import express from "express";
  * `state.customers` maps a customer id to `{ balance, transactions }`; balance transactions move the balance
  * (a negative amount is credit) and a repeated idempotency key answers the first transaction.
  */
-export function createStripeSimulator({ state = { accounts: {}, transfers: [] } } = {}) {
+function createStripeSimulator({ state = { accounts: {}, transfers: [] } } = {}) {
   const app = express();
   app.locals.stripeState = state;
   app.use(express.urlencoded({ extended: true }));

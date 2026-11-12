@@ -8,7 +8,7 @@
 
 import { getHeader } from "./httpResponseHelper.js";
 
-export const PREVIEW_FEATURES_HEADER = "x-preview-features";
+const PREVIEW_FEATURES_HEADER = "x-preview-features";
 
 const COMPANIES_HOUSE_PATH_PREFIX = "/api/v1/companies-house/";
 

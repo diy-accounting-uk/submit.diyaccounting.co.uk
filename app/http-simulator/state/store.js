@@ -9,8 +9,6 @@ const state = {
   submittedReturns: new Map(),
   // Authorization codes keyed by code value
   authorizationCodes: new Map(),
-  // Tokens keyed by access token value
-  tokens: new Map(),
   // Businesses created through the Self Assessment Test Support API, keyed by normalised NINO
   testSupportBusinesses: new Map(),
   // HMRC Assist reports issued by this simulator, keyed by reportId
@@ -30,7 +28,6 @@ const state = {
 export function reset() {
   state.submittedReturns.clear();
   state.authorizationCodes.clear();
-  state.tokens.clear();
   state.testSupportBusinesses.clear();
   state.assistReports.clear();
   state.periodSummaries.clear();
@@ -128,24 +125,6 @@ export function consumeAuthorizationCode(code) {
   return data;
 }
 
-/**
- * Store a token
- * @param {string} accessToken - Access token
- * @param {Object} data - Token data
- */
-export function storeToken(accessToken, data) {
-  state.tokens.set(accessToken, data);
-}
-
-/**
- * Get token data
- * @param {string} accessToken - Access token
- * @returns {Object|undefined}
- */
-export function getToken(accessToken) {
-  return state.tokens.get(accessToken);
-}
-
 function normaliseNino(nino) {
   return String(nino).replace(/\s+/g, "").toUpperCase();
 }
@@ -234,5 +213,3 @@ export function storeForeignAnnualCountries(nino, taxYear, countryCodes) {
 export function getForeignAnnualCountries(nino, taxYear) {
   return state.foreignAnnualCountries.get(`${normaliseNino(nino)}:${taxYear}`) || [];
 }
-
-export default state;

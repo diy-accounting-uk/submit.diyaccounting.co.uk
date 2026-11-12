@@ -23,7 +23,7 @@ const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" 
 
 // The sandbox has taken more than 20 seconds to answer a filing request. The Lambda timeout is 28
 // seconds, so the wait stays below that.
-export const FILING_REQUEST_TIMEOUT_MS = 26000;
+const FILING_REQUEST_TIMEOUT_MS = 26000;
 
 export function getFilingBaseUrl() {
   const base = process.env.COMPANIES_HOUSE_FILING_BASE_URI;

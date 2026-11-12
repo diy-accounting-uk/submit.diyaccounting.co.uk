@@ -7,7 +7,7 @@
 // pattern as COGNITO_CALLBACK_HOST in web/public/lib/auth-url-builder.js; a unit test keeps them equal.
 export const COGNITO_CALLBACK_HOST = /^(?:ci-submit|prod-submit|submit|ci-set\d+\.submit)\.diyaccounting\.co\.uk$/;
 
-export const COGNITO_CALLBACK_PATH = "/auth/loginWithCognitoCallback.html";
+const COGNITO_CALLBACK_PATH = "/auth/loginWithCognitoCallback.html";
 
 // True when redirectUri is the sign-in callback on a registered host, or the callback of the
 // deployment's own base URL (the address the browser falls back to when its host is unregistered,

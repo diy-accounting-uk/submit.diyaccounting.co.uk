@@ -11,7 +11,7 @@ import { singleLine } from "./issueFormat.js";
 
 const SUBJECT_LIMIT = 200;
 
-export function unparsedFact(sns) {
+function unparsedFact(sns) {
   return {
     source: "aws.budgets",
     sourceLabel: "budget",

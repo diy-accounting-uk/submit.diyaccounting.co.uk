@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto";
 import { appendAutomationDisclosure } from "../gitHubHelpers.js";
 
-export const SOURCES = ["aws.health", "aws.acm", "route53domains", "companies-house", "aws.budgets", "aws.ce"];
+const SOURCES = ["aws.health", "aws.acm", "route53domains", "companies-house", "aws.budgets", "aws.ce"];
 
 const BODY_HEADING = "## Trusted event";
 const TITLE_LIMIT = 120;

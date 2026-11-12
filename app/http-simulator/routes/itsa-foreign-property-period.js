@@ -35,12 +35,12 @@ const ITEMISED_EXPENSE_FIELDS = [
  * Matches app/lib/hmrcValidation.js#isValidNino without importing across the app/simulator
  * boundary - the simulator is deliberately standalone from the app it's simulating for.
  */
-export function isValidNino(nino) {
+function isValidNino(nino) {
   const normalized = String(nino).replace(/\s+/g, "").toUpperCase();
   return /^(?!BG|GB|NK|KN|TN|NT|ZZ)[ABCEGHJ-PRSTW-Z][ABCEGHJ-NPRSTW-Z]\d{6}[A-D]$/.test(normalized);
 }
 
-export function isValidBusinessId(businessId) {
+function isValidBusinessId(businessId) {
   return /^X[A-Za-z0-9]IS\d{11}$/.test(businessId);
 }
 

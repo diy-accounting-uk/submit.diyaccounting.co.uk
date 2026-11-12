@@ -115,7 +115,7 @@ function cloudTrailInsightsQuery(logGroupNamePrefixes, eventName) {
 
 // Ordered: the first matching rule wins. Rules are tried in this order; the first match
 // determines the evidence triage path.
-export const EVIDENCE_RULES = [
+const EVIDENCE_RULES = [
   {
     id: 1,
     match: (ctx) => ctx.familyParts?.kind === "env" && ctx.familyParts.suffix === "hmrc-submission-failure",

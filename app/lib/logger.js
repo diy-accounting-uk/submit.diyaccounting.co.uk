@@ -308,7 +308,7 @@ if (logToConsole && logToFile) {
 }
 
 // If neither console nor file are enabled, produce a disabled logger (no output)
-export const logger = pino(
+const logger = pino(
   {
     level: logLevel,
     // timestamp: pino.stdTimeFunctions.isoTime,
@@ -350,7 +350,7 @@ export const logger = pino(
 
 // Store for contextual information such as a request ID
 // export const context = new Map();
-export const storage = new AsyncLocalStorage();
+const storage = new AsyncLocalStorage();
 export const context = {
   get: (key) => storage.getStore()?.get(key),
   set: (key, value) => {
@@ -363,8 +363,3 @@ export const context = {
   getStore: () => storage.getStore(),
   enterWith: (store) => storage.enterWith(store),
 };
-
-// Create safe logger wrapper with regex-based sanitisation (Layer 2)
-export const safeLogger = createSafeLogger(logger);
-
-export default logger;

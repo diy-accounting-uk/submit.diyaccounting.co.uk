@@ -23,7 +23,7 @@ const ALLOWED_HEADERS = "authorization, content-type, if-match, x-request-id, x-
  * @param {object} headers - the incoming request's headers (event.headers)
  * @returns {object}
  */
-export function resolveDiyaGlCorsHeaders(headers) {
+function resolveDiyaGlCorsHeaders(headers) {
   const origin = getHeader(headers, "origin");
   const allowedOrigins = (process.env.DIYA_GL_ALLOWED_ORIGINS || "")
     .split(",")
@@ -43,7 +43,7 @@ export function resolveDiyaGlCorsHeaders(headers) {
  * @param {object} headers - the incoming request's headers (event.headers)
  * @returns {{statusCode: number, headers: object, body: string}}
  */
-export function diyaGlPreflightResponse(headers) {
+function diyaGlPreflightResponse(headers) {
   const corsHeaders = resolveDiyaGlCorsHeaders(headers);
   return {
     statusCode: 204,

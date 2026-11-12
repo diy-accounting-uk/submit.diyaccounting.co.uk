@@ -19,7 +19,7 @@ const logger = createLogger({ source: "app/data/dynamoDbWafScanBurstRepository.j
 // belongs to the same burst. TTL_BUFFER_SECONDS keeps the item alive a little past the
 // window's close, so no separate flush or scheduler is needed to clear it — DynamoDB's own TTL
 // sweep does it.
-export const WINDOW_SECONDS = 600;
+const WINDOW_SECONDS = 600;
 const TTL_BUFFER_SECONDS = 60;
 
 /**

@@ -38,7 +38,7 @@ export function isLoopbackRedirectUri(redirectUri) {
 /**
  * Exactly one of Claude's two callbacks, or a loopback http URI on localhost or 127.0.0.1 with any port.
  */
-export function isAllowedRedirectUri(redirectUri) {
+function isAllowedRedirectUri(redirectUri) {
   if (typeof redirectUri !== "string") return false;
   if (CLAUDE_CALLBACKS.has(redirectUri)) return true;
   return isLoopbackRedirectUri(redirectUri);
@@ -142,7 +142,7 @@ async function readCappedText(response, maxBytes) {
  *
  * @returns {Promise<{ok: true, document: object} | {ok: false, reason: string}>}
  */
-export async function fetchClientMetadataDocument(clientId, { now } = {}) {
+async function fetchClientMetadataDocument(clientId, { now } = {}) {
   if (!isCimdClientId(clientId)) return { ok: false, reason: "client_id_host_not_allowed" };
   const nowMs = now ?? Date.now();
   const cached = cimdCache.get(clientId);

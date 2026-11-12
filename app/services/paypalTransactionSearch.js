@@ -20,7 +20,7 @@ export class PayPalDataNotAvailableError extends Error {
   }
 }
 
-export const MIN_CALL_INTERVAL_MS = 1000;
+const MIN_CALL_INTERVAL_MS = 1000;
 
 export const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

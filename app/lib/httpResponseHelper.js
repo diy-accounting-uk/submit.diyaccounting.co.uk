@@ -363,53 +363,6 @@ export function extractRequest(event) {
   return { request, requestId, amznTraceId, traceparent, correlationId };
 }
 
-// Helper function to extract client IP from request headers
-export function extractClientIPFromHeaders(event) {
-  // Try various headers that might contain the client's real IP
-  const headers = event.headers || {};
-  const possibleIPHeaders = [
-    "x-forwarded-for",
-    "x-real-ip",
-    "x-client-ip",
-    "cf-connecting-ip", // Cloudflare
-    "x-forwarded",
-    "forwarded-for",
-    "forwarded",
-  ];
-
-  for (const header of possibleIPHeaders) {
-    const value = getHeader(headers, header);
-    if (value) {
-      // x-forwarded-for can contain multiple IPs, take the first one
-      const ip = value.split(",")[0].trim();
-      if (ip && ip !== "unknown") {
-        return ip;
-      }
-    }
-  }
-
-  // Fallback to source IP from event context
-  return event.requestContext?.identity?.sourceIp || "unknown";
-}
-
-export function extractBearerTokenFromAuthHeaderInLambdaEvent(event) {
-  const authHeader = getHeader(event.headers, "authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null;
-  }
-  return authHeader.split(" ")[1];
-}
-
-export function extractAuthTokenFromXAuthorization(event) {
-  const headers = event.headers || {};
-  const xAuthHeader = getHeader(headers, "x-authorization");
-
-  if (!xAuthHeader || !xAuthHeader.startsWith("Bearer ")) {
-    return null;
-  }
-  return xAuthHeader.split(" ")[1];
-}
-
 /**
  * Plumb userSub and email through the async context so downstream observability
  * (activity events → telegram routing, resolveActorClass) can classify a

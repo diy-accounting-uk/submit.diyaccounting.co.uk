@@ -13,18 +13,18 @@
 // history come from the CloudWatch S3 NumberOfObjects metric. The actor split comes from one
 // Athena query a day, kept in that day's history file for the hourly runs that follow.
 
-export const DATA_HISTORY_OFFSETS = [90, 30, 7, 1];
+const DATA_HISTORY_OFFSETS = [90, 30, 7, 1];
 
 // The tables whose change records the lake holds, by table-name suffix, with the columns that
 // form an item's key. Together with the `actor` column they give the split of the items now.
-export const DATA_LAKE_TABLES = {
+const DATA_LAKE_TABLES = {
   receipts: { glueTable: "dynamo_receipts", keys: ["hashed_sub", "receipt_id"] },
   bundles: { glueTable: "dynamo_bundles", keys: ["hashed_sub", "bundle_id"] },
   subscriptions: { glueTable: "dynamo_subscriptions", keys: ["hashed_sub", "subscription_id"] },
   passes: { glueTable: "dynamo_passes", keys: ["pass_id"] },
 };
 
-export const DATA_ACTOR_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
+const DATA_ACTOR_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
 
 // The activity actor classes folded into the three the dashboard shows. An operator or the
 // system is `other`; an empty actor is `unknown` and is never counted as a customer.
@@ -72,7 +72,7 @@ export function shapeActorSplit(rows) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const isoDay = (date) => date.toISOString().slice(0, 10);
+const isoDay = (date) => date.toISOString().slice(0, 10);
 
 export const dayBefore = (now, days) => isoDay(new Date(now.getTime() - days * DAY_MS));
 
@@ -81,9 +81,9 @@ export const historyKey = (envName, day) => `snapshots/${envName}/data-history/$
 const numberOrNull = (value) => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
 // "bundles" from "prod-env-bundles"; the label of a bucket from its name.
-export const tableLabel = (tableName, envName) => tableName.replace(new RegExp(`^${envName}-env-`), "");
+const tableLabel = (tableName, envName) => tableName.replace(new RegExp(`^${envName}-env-`), "");
 
-export function bucketLabel(bucketName, envName) {
+function bucketLabel(bucketName, envName) {
   return bucketName.replace(new RegExp(`^${envName}-env-`), "").replace(/-\d{12}$/, "");
 }
 

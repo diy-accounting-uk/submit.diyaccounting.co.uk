@@ -43,7 +43,7 @@ function localAppClientIdMap() {
  *
  * @returns {Promise<Object<string, string>>} clientId -> "submit" | "books" | "mcp"
  */
-export async function loadAppClientIdMap() {
+async function loadAppClientIdMap() {
   const envName = process.env.ENVIRONMENT_NAME;
   if (LOCAL_ENVIRONMENT_NAMES.has(envName)) {
     return localAppClientIdMap();

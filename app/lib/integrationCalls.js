@@ -23,7 +23,7 @@ import { putIntegrationCall } from "../data/dynamoDbIntegrationCallRepository.js
 
 const logger = createLogger({ source: "app/lib/integrationCalls.js" });
 
-export const INTEGRATION_CALLS_METRICS_NAMESPACE = "Submit/IntegrationCalls";
+const INTEGRATION_CALLS_METRICS_NAMESPACE = "Submit/IntegrationCalls";
 export const INTEGRATION_CALL_RECORD_FAILED_METRIC = "IntegrationCallRecordFailed";
 
 // A Lambda freezes after it answers, so the record is awaited, and this limit bounds what that

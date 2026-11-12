@@ -14,12 +14,12 @@ import { escapeXmlText } from "../lib/xmlDom.js";
 import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
-export const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
+const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
 // Namespace identifiers, not fetched URLs: they are compared as exact strings against the FRC
 // taxonomy schema (see fixtures/frc-taxonomy/frs-102-2026-concepts.json), which defines them as
 // http, and a validator rejects a document whose namespace doesn't match byte for byte.
-export const NAMESPACES = {
+const NAMESPACES = {
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   bus: "http://xbrl.frc.org.uk/cd/2026-01-01/business",
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
@@ -284,7 +284,7 @@ export const MEMBERS = {
   poundSterling: { prefix: "curr", name: "PoundSterling" },
 };
 
-export const STATEMENT_TEXT = {
+const STATEMENT_TEXT = {
   statementAuditExemptionSection480:
     "The company is entitled to exemption from audit under section 480 of the Companies Act 2006 relating to dormant companies.",
   statementAuditExemptionSection477:
@@ -538,7 +538,7 @@ export function accountsStatusMember(input) {
  * @param {{prefix: string, name: string}} domainElement
  * @param {string|number} value
  */
-export function typedMemberXml(dimension, domainElement, value) {
+function typedMemberXml(dimension, domainElement, value) {
   return `<xbrldi:typedMember dimension="${qname(dimension)}"><${qname(domainElement)}>${escapeXmlText(String(value))}</${qname(domainElement)}></xbrldi:typedMember>`;
 }
 
@@ -579,7 +579,7 @@ export function controllingPartyNote({ controllingParty, contextRef }) {
   };
 }
 
-export const DIRECTORS_ADVANCE_FIELDS = ["balanceAtStart", "advanced", "repaid", "balanceAtEnd"];
+const DIRECTORS_ADVANCE_FIELDS = ["balanceAtStart", "advanced", "repaid", "balanceAtEnd"];
 
 /**
  * The problems in the advances to directors figures: one row per director, whole pounds that are

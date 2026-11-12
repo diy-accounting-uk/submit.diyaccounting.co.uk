@@ -124,7 +124,7 @@ const emptyBodyError = (paths) => ({
  * is the alternative to the list. foreignFhlEea is accepted up to 2024-25 only.
  * @returns {null|{status: number, body: object}} the first error, or null when the body is valid
  */
-export function findForeignPropertyAdjustBodyError(nino, taxYear, body) {
+function findForeignPropertyAdjustBodyError(nino, taxYear, body) {
   const startYear = taxYearStartYear(taxYear);
   const foreignProperty = body?.foreignProperty;
   const fhl = body?.foreignFhlEea;

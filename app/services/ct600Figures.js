@@ -26,8 +26,8 @@ import {
   financialYearsInPeriod,
 } from "@diy-accounting-uk/diya-gl/dist/app/lib/tax/corporation-tax.js";
 
-export const EARLIEST_PERIOD_START = "2015-04-01";
-export const WORKING_SHEET_TOLERANCE_POUNDS = 5;
+const EARLIEST_PERIOD_START = "2015-04-01";
+const WORKING_SHEET_TOLERANCE_POUNDS = 5;
 
 const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
 const DAY_MS = 86_400_000;
@@ -59,7 +59,8 @@ export function daysInclusive(isoStart, isoEnd) {
 /**
  * The most annual investment allowance a return can claim: 1,000,000 for a year, increased or
  * reduced in proportion to the return's days over the days in the 12 months from its start
- * (CAA 2001 section 51A(6)).
+ * (CAA 2001 section 51A(6)). The books bundle re-exports it (`scripts/build-books-bundle.mjs`).
+ * @public
  */
 export function annualInvestmentAllowanceMaximum(periodStart, periodEnd) {
   const daysInTwelveMonths = daysInclusive(periodStart, lastDayOfTwelveMonths(periodStart));
@@ -752,6 +753,7 @@ function section455RateOf(taxDataByYear, year) {
  * @param {string} periodEnd - ISO date
  * @param {Record<number, object>} taxDataByYear
  * @returns {string|undefined}
+ * @public The books bundle re-exports it (`scripts/build-books-bundle.mjs`).
  */
 export function section455RateChangeDate(periodStart, periodEnd, taxDataByYear) {
   const startYear = taxYearStartOf(periodStart);
@@ -807,7 +809,7 @@ function rimRate() {
  * @param {{today?: string}} [options] - ISO date; a repayment cannot come after it
  * @returns {{ct600a: object|undefined, a80Pence: number}}
  */
-export function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today } = {}) {
+function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today } = {}) {
   const loans = figures.loansToParticipators;
   if (!loans) return { ct600a: undefined, a80Pence: 0 };
   const problems = loansProblems(figures, { today });

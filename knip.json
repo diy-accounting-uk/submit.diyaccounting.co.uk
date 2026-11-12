@@ -7,6 +7,7 @@
     "infra/stripe/**/*.js",
     ".github/actions/**/*.mjs",
     "web/public/**/*.js",
+    "web/marketing/**/*.js",
     "behaviour-tests/**/*.js",
     "app/unit-tests/**/*.js",
     "app/system-tests/**/*.js",

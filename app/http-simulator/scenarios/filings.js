@@ -11,7 +11,7 @@ import { randomUUID } from "crypto";
 
 // Deliberately fails the transaction close with a 422 validation error naming the postcode, so
 // the behaviour and system tests can exercise the validation-error rendering.
-export const VALIDATION_ERROR_COMPANY_NUMBER = "00000422";
+const VALIDATION_ERROR_COMPANY_NUMBER = "00000422";
 
 // The registered email address filing changes an existing address; it does not set the first
 // one. This company answers INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS on the eligibility check

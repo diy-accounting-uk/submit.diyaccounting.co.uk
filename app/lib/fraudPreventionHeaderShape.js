@@ -146,7 +146,7 @@ export function fraudPreventionHeaderShape(headers) {
 }
 
 // Fixed values for the synthetic set. None comes from a customer or a request.
-export const SYNTHETIC_DEVICE_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
+const SYNTHETIC_DEVICE_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 const SYNTHETIC_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 const SYNTHETIC_KEY_VALUES = {

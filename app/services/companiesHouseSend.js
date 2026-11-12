@@ -42,8 +42,7 @@ async function sendRecorded(url, init, timeoutMs, { api, target }) {
 }
 
 /**
- * Send a request to Companies House and read a JSON body. The result has the shape of
- * fetchJsonWithTimeout.
+ * Send a request to Companies House and read a JSON body into `data`.
  * @param {string} url
  * @param {Object} init - fetch options
  * @param {number} timeoutMs
@@ -60,9 +59,8 @@ export async function sendJsonToCompaniesHouse(url, init, timeoutMs, { api } = {
 }
 
 /**
- * Send a GovTalk message to the XML Gateway and read the XML text. The result has the shape of
- * fetchTextWithTimeout. The gateway can answer HTTP 200 with an error inside the envelope, and the
- * record keeps that error number.
+ * Send a GovTalk message to the XML Gateway and read the XML text into `data`. The gateway can
+ * answer HTTP 200 with an error inside the envelope, and the record keeps that error number.
  * @param {string} url
  * @param {Object} init - fetch options, with the XML text as the body
  * @param {number} timeoutMs

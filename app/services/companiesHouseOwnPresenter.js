@@ -12,8 +12,8 @@
 
 import { getHeader } from "../lib/httpResponseHelper.js";
 
-export const OWN_PRESENTER_ID_HEADER = "X-Presenter-Id";
-export const OWN_PRESENTER_CODE_HEADER = "X-Presenter-Code";
+const OWN_PRESENTER_ID_HEADER = "X-Presenter-Id";
+const OWN_PRESENTER_CODE_HEADER = "X-Presenter-Code";
 
 const MAX_PRESENTER_CREDENTIAL_LENGTH = 32;
 // Letters, digits and the few punctuation marks a Companies House authentication code can carry.

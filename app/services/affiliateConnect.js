@@ -10,10 +10,10 @@ import { loadReferralConfig } from "./referralConfig.js";
 
 const logger = createLogger({ source: "app/services/affiliateConnect.js" });
 
-export const AFFILIATE_PRODUCT_DESCRIPTION =
+const AFFILIATE_PRODUCT_DESCRIPTION =
   "Shares DIY Accounting Submit, a UK software service for Making Tax Digital submissions, and earns a commission on referred customers.";
-export const AFFILIATE_RETURN_PATH = "bundles.html";
-export const AFFILIATE_SECTION_ANCHOR = "affiliateApplySection";
+const AFFILIATE_RETURN_PATH = "bundles.html";
+const AFFILIATE_SECTION_ANCHOR = "affiliateApplySection";
 
 /**
  * Whether the platform collects the account's requirements through the API. True only for a

@@ -12,9 +12,9 @@
 export const INTEGRATION_ORGS = ["hmrc", "companies-house", "stripe"];
 
 // The newest calls of each organisation, and the newest calls with a status outside 2xx.
-export const INTEGRATION_RECENT_CALLS = 100;
-export const INTEGRATION_FAILED_CALLS = 100;
-export const INTEGRATION_FAILED_DAYS = 30;
+const INTEGRATION_RECENT_CALLS = 100;
+const INTEGRATION_FAILED_CALLS = 100;
+const INTEGRATION_FAILED_DAYS = 30;
 
 const SUMMARY_WINDOW_ALIASES = ["today", "prev_1", "last_7", "last_30", "prev_30", "last_90", "prev_90"];
 
@@ -81,7 +81,7 @@ function compareStatus(a, b) {
 }
 
 // The days of header check results the section lists, today included.
-export const HEADER_CHECK_DAYS = 7;
+const HEADER_CHECK_DAYS = 7;
 
 /**
  * The `fph#<day>` partition keys of the header check results the section lists, newest first.

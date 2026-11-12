@@ -42,7 +42,7 @@ export function codeFromPassUrl(raw, data) {
 }
 
 /** True when the link goes to Submit, so a pass replaces it. */
-export function isSubmitLink(link, data) {
+function isSubmitLink(link, data) {
   return data.submitHosts.includes(new URL(link).hostname);
 }
 
@@ -89,7 +89,7 @@ export function xWeightedLength(text) {
 /**
  * The length the X button posts: the selected one when it fits, else the short one.
  */
-export function lengthForNetwork(network, set, selectedLengthId, { code }, data) {
+function lengthForNetwork(network, set, selectedLengthId, { code }, data) {
   if (!network.maxWeightedLength) return selectedLengthId;
   const link = postLink(set, { code, source: network.id, medium: network.utmMedium, lengthId: selectedLengthId }, data);
   const text = renderPost(set, selectedLengthId, { code, link }, data);

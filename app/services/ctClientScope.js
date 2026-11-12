@@ -16,7 +16,7 @@ import { http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 import { http403ForbiddenFromBundleEnforcement } from "./companiesHouseApi.js";
 
 const PRACTICE_ACTIVITY_ID = "practice";
-export const JOINT_FILING_ACTIVITY_ID = "file-company-tax-return-with-accounts";
+const JOINT_FILING_ACTIVITY_ID = "file-company-tax-return-with-accounts";
 
 function practiceListedInEnvironment() {
   const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === PRACTICE_ACTIVITY_ID);

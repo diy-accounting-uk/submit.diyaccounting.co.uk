@@ -19,7 +19,7 @@ import { fraudPreventionHeaderShape } from "./fraudPreventionHeaderShape.js";
 
 const logger = createLogger({ source: "app/lib/fraudPreventionHeaderCheckQueue.js" });
 
-export const FPH_CHECK_USER_ID = "fph-check";
+const FPH_CHECK_USER_ID = "fph-check";
 
 let sqsClient;
 let seenDay;

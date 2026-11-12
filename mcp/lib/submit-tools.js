@@ -152,7 +152,7 @@ export async function requestHmrcAuthorisation(session, params = {}) {
   return { url: granted.url, expiresAt: granted.expiresAt, scope: granted.scope, hmrcAccount: granted.hmrcAccount };
 }
 
-export const HMRC_GRANT_HEADER = "x-mcp-hmrc-grant";
+const HMRC_GRANT_HEADER = "x-mcp-hmrc-grant";
 
 /**
  * The session's HMRC grant for one tool call: the headers that name it to Submit's API, and the

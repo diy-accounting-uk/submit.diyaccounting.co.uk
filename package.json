@@ -494,6 +494,7 @@
   },
   "homepage": "https://submit.diyaccounting.co.uk/",
   "overrides": {
+    "basic-ftp": "^6.2.1",
     "fast-xml-parser": "^5.7.0",
     "proxy-addr": "^2.0.8",
     "source-map-js": "^1.2.2",
