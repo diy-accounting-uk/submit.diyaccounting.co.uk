@@ -21,7 +21,6 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT33 | A period of account longer than 12 months files as two CT600s: CT33a short-period limits, CT33b the split, CT33c the request and records, CT33d the page (the CT33 design below) | ~45 | Sonnet | — |
 | DF3 | The joint filing's guide walk-through and video: the scene script `videos/file-company-tax-return-with-accounts.json`, the recording on the simulator, the guide frames, the `videos/publish.json` entry and the guide journey | ~6 | Sonnet | — |
 | DF4 | The joint filing's FAQ entry in `web/public/faqs.toml`, shown on the help page where the activity is offered | ~3 | Sonnet | — |
-| DF5 | Make the joint filing video public after the operator has watched the unlisted upload | 0 | Haiku | the operator's yes |
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | UH7 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
@@ -470,7 +469,7 @@ Ranked, most harm to the reader first:
 | 11 | The `h1` is in Title Case, against the site rule (DS 1.11) and its sibling "File micro-entity accounts" | Page | "File a Company Tax Return" [consistency] |
 | 12 | The review answers are nine separate tables, each with its own header row and its own column widths, so the Answer columns do not line up | Review | One column plan for every answers table (fixed layout, set widths) [consistency] |
 
-The joint filing's open rows are DF3, DF4, DF5 and UH8 on this plan's board.
+The joint filing's open rows are DF3, DF4 and UH8 on this plan's board.
 
 ### Design: supplementary page CT600A, loans to participators (CT8a)
 
