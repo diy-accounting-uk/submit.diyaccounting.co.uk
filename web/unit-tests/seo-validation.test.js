@@ -203,6 +203,46 @@ describe("Meta tag validation", () => {
   });
 });
 
+describe("Social tags and breadcrumbs on every sitemap page", () => {
+  const sitemapXml = readFile(path.join(sites.submit.dir, "sitemap.xml"));
+  const urls = extractSitemapUrls(sitemapXml);
+
+  for (const url of urls) {
+    const urlPath = new URL(url).pathname;
+    const fileName = urlPath === "/" ? "index.html" : urlPath.replace(/^\//, "");
+    const filePath = path.join(sites.submit.dir, fileName);
+
+    describe(fileName, () => {
+      const html = readFile(filePath);
+
+      it("has Open Graph and twitter:card tags", () => {
+        expect(html).toMatch(/<meta\s+property="og:title"\s+content="[^"]+"/);
+        expect(html).toMatch(/<meta\s+property="og:description"\s+content="[^"]+"/);
+        expect(html).toMatch(/<meta\s+property="og:type"\s+content="website"/);
+        expect(html).toMatch(/<meta\s+property="og:site_name"\s+content="DIY Accounting"/);
+        expect(html).toMatch(
+          /<meta\s+property="og:image"\s+content="https:\/\/submit\.diyaccounting\.co\.uk\/images\/social\/og-[a-z-]+\.png"/,
+        );
+        expect(html).toMatch(/<meta\s+name="twitter:card"\s+content="summary_large_image"/);
+        expect(html).toMatch(/<meta\s+property="og:url"\s+content="https:\/\/submit\.diyaccounting\.co\.uk\/[^"]*"/);
+      });
+
+      if (urlPath !== "/" && urlPath !== "/cy/index.html") {
+        it("has a BreadcrumbList from the home page", () => {
+          const breadcrumb = extractJsonLd(html).find((block) => block["@type"] === "BreadcrumbList");
+          expect(breadcrumb, "should have a BreadcrumbList JSON-LD block").toBeTruthy();
+          expect(breadcrumb.itemListElement[0].item).toBe("https://submit.diyaccounting.co.uk/");
+          expect(breadcrumb.itemListElement.length).toBeGreaterThan(1);
+        });
+      }
+    });
+  }
+
+  it("og-submit.png exists", () => {
+    expect(fs.existsSync(path.join(sites.submit.dir, "images/social/og-submit.png"))).toBe(true);
+  });
+});
+
 describe("Structured data validation", () => {
   it('submit index.html has JSON-LD with @type "WebApplication"', () => {
     const html = readFile(path.join(sites.submit.dir, "index.html"));
@@ -212,5 +252,27 @@ describe("Structured data validation", () => {
     expect(app, "Should have a WebApplication JSON-LD block").toBeTruthy();
     expect(app["@context"]).toBe("https://schema.org");
     expect(app.name).toBe("DIY Accounting Submit");
+  });
+
+  it("submit index.html has one Organization JSON-LD block with the company record", () => {
+    const html = readFile(path.join(sites.submit.dir, "index.html"));
+    const organizations = extractJsonLd(html).filter((block) => block["@type"] === "Organization");
+    expect(organizations).toHaveLength(1);
+    const [organization] = organizations;
+    expect(organization.name).toBe("DIY Accounting Limited");
+    expect(organization.legalName).toBe("DIY Accounting Limited");
+    expect(organization.identifier).toEqual({
+      "@type": "PropertyValue",
+      "propertyID": "Companies House company number",
+      "value": "06846849",
+    });
+    expect(organization.address.postalCode).toBe("LS8 1BY");
+    expect(organization.sameAs).toEqual([
+      "https://find-and-update.company-information.service.gov.uk/company/06846849",
+      "https://www.youtube.com/@DIYAccountingSubmit",
+      "https://github.com/diy-accounting-uk",
+      "https://www.npmjs.com/package/@diy-accounting-uk/diya-submit",
+      "https://www.npmjs.com/package/@diy-accounting-uk/diya-gl",
+    ]);
   });
 });
