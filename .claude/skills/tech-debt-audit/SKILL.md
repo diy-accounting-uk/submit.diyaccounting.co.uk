@@ -90,7 +90,7 @@ next to the figure. Never estimate a count that a command can measure.
 | A-11 | Skipped tests | `git grep -E '\b(it\|test\|describe)\.(skip\|fixme\|todo)\b' -- '*.js' '*.mjs'` |
 | A-12 | Test shape | `git ls-files <dir> \| grep -E '\.(test\|spec)\.(js\|mjs)$\|Test\.java$'` and the line count per test directory |
 | A-13 | Unit-test time | `npm test` in submit; the vitest `Duration` line, with the import and test split |
-| A-15 | Dead code | the tools in `node_modules/.bin` (`knip`, `ts-prune`, `depcheck`); when none is installed, the `^export ` count in `app/lib` and `app/services` as the base, and the finding goes under "Not measured" |
+| A-15 | Dead code | In submit: `npx --yes knip@6 --no-progress --reporter json` (about 10 seconds; it reads the tracked `knip.json` and exits 1 when it finds anything). The JSON is the last stdout line that starts with `{`; count `issues[].exports`, `issues[].devDependencies`, `issues[].unlisted`, `issues[].unresolved` and the top-level `files`. On 2026-11-12: 127 unused exports in 114 files, 0 unused files. In a repository with no `knip.json`: the `^export ` count in `app/lib` and `app/services` as the base, and the finding goes under "Not measured" |
 | A-16 | Duplicate files | `git -C <repo> ls-files -s` per repository, joined on blob hash, without lock files, images and `.md` |
 | A-17 | Shared-conventions drift | `diff <(sed -n '/^## Shared conventions/,$p' submit/CLAUDE.md) <(sed -n '/^## Shared conventions/,$p' <repo>/CLAUDE.md) \| grep -c '^[<>]'` |
 | A-18 | Rotting docs | every backtick path in `CLAUDE.md`, `NEXT.md`, `PLAN_*.md` and `.github/copilot-instructions.md`, checked against `git ls-files` by path, then by basename; `.html` paths resolve against `web/public` |
@@ -108,6 +108,8 @@ Traps the first audit hit:
 - A skip pattern with `xit(` matched `exit(`. Use the word-bounded pattern in A-11.
 - The `uses:` count took in some quoted local-action lines. Exclude `./` and quoted paths, as A-9 does.
 - `npm test` ran while other sessions loaded the machine. Check `uptime` first. When the load average is above the core count, report the time as an upper bound.
+- The second audit reported dead code as not measured because no tool sat in `node_modules/.bin`. Submit tracks a `knip.json`, and `npx` runs the tool without an install; A-15 says how.
+- `gh run list --limit 1000` reached only 3 days of submit runs. For submit, read each day with `gh api --paginate "repos/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs?created=<day>&per_page=100"`.
 - Lead time, time to restore and flaky tests need a join that `gh run list` does not give. Put them under "Not measured" with that reason, or join the run list to `git log` and to the next green run when the session has time.
 
 ## 5. Report shape
