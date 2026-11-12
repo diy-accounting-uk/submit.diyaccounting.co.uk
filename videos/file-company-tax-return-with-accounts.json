@@ -230,10 +230,7 @@
           "action": "await",
           "until": "#booksImportStatus:has-text('Filled')",
           "label": "Reading the book",
-          "scrollTo": {
-            "role": "heading",
-            "name": "Fill from your books"
-          },
+          "scrollTo": "#accountsRegime",
           "timeoutMs": 60000,
           "caption": "The accounts and the tax figures fill from the book.",
           "headline": "The form fills itself",
@@ -298,6 +295,10 @@
         {
           "action": "click",
           "target": "#sendToBoth",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Where the accounts go"
+          },
           "caption": "Choose to send to Companies House and to HMRC.",
           "headline": "Send to both",
           "keyWord": "both"
@@ -308,7 +309,20 @@
         },
         {
           "action": "point",
+          "target": "#sendTo-hint",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Where the accounts go"
+          },
+          "dwellMs": 600,
+          "caption": "Companies House gets the accounts first. HMRC follows when it accepts them.",
+          "headline": "Companies House first",
+          "keyWord": "first"
+        },
+        {
+          "action": "point",
           "target": "#companiesHouseMicroNote",
+          "scrollTo": "#accountsRegime",
           "dwellMs": 600,
           "caption": "Companies House gets the balance sheet and notes. HMRC also gets the profit and loss.",
           "headline": "What Companies House gets",
@@ -330,20 +344,32 @@
           "target": "#utr"
         },
         {
+          "action": "point",
+          "target": "#declarantName",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Declaration"
+          },
+          "dwellMs": 500,
+          "caption": "The director's name comes from the book.",
+          "headline": "Director from the book",
+          "keyWord": "book"
+        },
+        {
           "action": "type",
           "target": "#utr",
           "text": "8596148860",
           "clear": true,
           "caption": "Type the company's Unique Taxpayer Reference.",
           "headline": "Enter the UTR",
-          "keyWord": "UTR"
+          "keyWord": "UTR",
+          "scrollTo": {
+            "text": "Box 3: Tax reference (Unique Taxpayer Reference)"
+          }
         },
         {
           "action": "click",
-          "target": "#statementSection477Exemption",
-          "caption": "Accept the four statutory statements.",
-          "headline": "Accept the statements",
-          "keyWord": "statements"
+          "target": "#statementSection477Exemption"
         },
         {
           "action": "click",
@@ -355,7 +381,14 @@
         },
         {
           "action": "click",
-          "target": "#statementMicroEntityProvisions"
+          "target": "#statementMicroEntityProvisions",
+          "caption": "Accept the four statutory statements.",
+          "headline": "Accept the statements",
+          "keyWord": "statements",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Statements"
+          }
         },
         {
           "action": "click",
@@ -381,15 +414,22 @@
       "steps": [
         {
           "action": "click",
-          "target": "#previewBtn",
-          "caption": "Preview the return before anything is sent.",
-          "headline": "Preview the return",
-          "keyWord": "Preview"
+          "target": "#previewBtn"
         },
         {
           "action": "await",
           "until": "#ct600Table tbody tr",
-          "label": "Working out the CT600"
+          "label": "Working out the CT600",
+          "scrollTo": "#previewView"
+        },
+        {
+          "action": "point",
+          "target": "#previewView h2",
+          "scrollTo": "#previewView",
+          "dwellMs": 500,
+          "caption": "Preview the return before anything is sent.",
+          "headline": "Preview the return",
+          "keyWord": "Preview"
         },
         {
           "action": "scroll",
@@ -422,7 +462,8 @@
           "caption": "These are the CT600 boxes as HMRC will receive them.",
           "headline": "The CT600 boxes",
           "keyWord": "CT600",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "scrollTo": "#ct600Table"
         },
         {
           "action": "scroll",
@@ -486,11 +527,20 @@
           "keyWord": "password"
         },
         {
-          "action": "click",
+          "action": "point",
           "target": "#submitReturnBtn",
+          "dwellMs": 500,
           "caption": "Send the accounts to Companies House, then the return to HMRC.",
           "headline": "Send to both",
           "keyWord": "both"
+        },
+        {
+          "action": "click",
+          "target": "#submitReturnBtn"
+        },
+        {
+          "action": "hold",
+          "ms": 300
         },
         {
           "action": "await",
@@ -538,7 +588,10 @@
         {
           "action": "point",
           "target": "#jointAccepted",
-          "scrollTo": "#jointAccepted",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Return result"
+          },
           "dwellMs": 800,
           "caption": "Both filings are accepted under one entry.",
           "headline": "Both filings accepted",
@@ -580,9 +633,9 @@
         },
         {
           "action": "scroll",
-          "to": "top",
-          "caption": "Your copy shows the return as filed, with its figures and declaration.",
-          "headline": "The return as filed",
+          "to": "bottom",
+          "caption": "It ends with the status and the date filed.",
+          "headline": "Status and date filed",
           "keyWord": "filed"
         },
         {
@@ -595,10 +648,7 @@
         },
         {
           "action": "hold",
-          "ms": 2500,
-          "caption": "Your copies stay on your receipts page.",
-          "headline": "Kept on your receipts",
-          "keyWord": "receipts"
+          "ms": 2500
         }
       ]
     }
