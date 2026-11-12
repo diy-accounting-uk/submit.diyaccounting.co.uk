@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 46 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 45 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: proposed. No task is on `NEXT.md`. 34 machine-only, 3 machine-ask, 9 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: proposed. No task is on `NEXT.md`. 34 machine-only, 3 machine-ask, 8 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -238,7 +238,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
 | F1 VAT due-date and penalty-points calculator | absent | 2 | 1 | 5 | OS31 |
-| F2 Company deadline lookup with no sign-in | absent as a public page (a company lookup activity exists behind sign-in) | 4 | 2 | 5 | OS32, OOS32 |
+| F2 Company deadline lookup with no sign-in | absent as a public page (a company lookup activity exists behind sign-in) | 3 | 1 | 5 | OS32 |
 | F3 MTD Income Tax scope checker with an embed | absent | 2 | 1 | 4 | OS33 |
 | F4 Nine-box checker with no sign-in | absent (the same reader runs after sign-in) | 3 | 1 | 5 | OS34 |
 | F5 Quarterly-update workbook and article | absent | 3 | 2 | 4 | OS35 |
@@ -481,14 +481,14 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 2 | S1 Microsoft Marketplace for Excel add-ins | 5 | Counts the add-in build. |
 | 3 | F7 Google Sheets add-on | 5 | A second surface with its own sign-in flow and review. |
 | 4 | S2 Google Workspace Marketplace | 5 | Counts the add-on build. |
-| 5 | F2 Company deadline lookup with no sign-in | 4 | A public Lambda with its own Companies House key, a cache, two rate rules, a result page and a design step. |
-| 6 | X2 ChatGPT Plugin Directory | 4 | A plugin package, a domain challenge file, five positive and three negative test cases, a video walk-through, a reviewer sign-in with no second factor. |
-| 7 | S4 Apple App Store | 4 | A wrapper with enough native function to pass review. |
-| 8 | X5 Microsoft Copilot certification and Agent Store | 4 | A Teams-schema package, OAuth secrets in an Azure Key Vault, an OAuth mode without dynamic registration or PKCE. |
-| 9 | S5 Zapier and Make | 4 | An integration, its tests and a review. |
-| 10 | S6 Accounting-suite app stores | 4 | An integration per suite and a certification each. |
-| 11 | A3 Static landing page per filing on Submit | 3 | A generator fed by the catalogue and the `AVAILABILITY` table, six to nine pages, visual review. |
-| 12 | A13 A comparison page we publish | 3 | A data file of vendors and prices, a generated table, a monthly price check. |
+| 5 | X2 ChatGPT Plugin Directory | 4 | A plugin package, a domain challenge file, five positive and three negative test cases, a video walk-through, a reviewer sign-in with no second factor. |
+| 6 | S4 Apple App Store | 4 | A wrapper with enough native function to pass review. |
+| 7 | X5 Microsoft Copilot certification and Agent Store | 4 | A Teams-schema package, OAuth secrets in an Azure Key Vault, an OAuth mode without dynamic registration or PKCE. |
+| 8 | S5 Zapier and Make | 4 | An integration, its tests and a review. |
+| 9 | S6 Accounting-suite app stores | 4 | An integration per suite and a certification each. |
+| 10 | A3 Static landing page per filing on Submit | 3 | A generator fed by the catalogue and the `AVAILABILITY` table, six to nine pages, visual review. |
+| 11 | A13 A comparison page we publish | 3 | A data file of vendors and prices, a generated table, a monthly price check. |
+| 12 | F2 Company deadline lookup with no sign-in | 3 | A public Lambda on the key we hold, a cache, a metric and a result page. |
 | 13 | F4 Nine-box checker with no sign-in | 3 | The reader exists. The work is a public page, the stop before filing, and tests. |
 | 14 | X6 Google Connected Apps for Gemini and AI Mode | 3 | The same MCP server, registered and tested in Google's console. |
 | 15 | Y2 Facts in the page text that assistants quote | 3 | It is the page work in A3 and A4: days, not hours. |
@@ -614,35 +614,35 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 37 | V4 Open-source catalogues | 3 | Each catalogue | An OSI licence. diya-gl is Apache-2.0; the site repositories are PolyForm Internal Use. | Yes for diya-gl only. |
 | 38 | A13 A comparison page we publish | 2 | Operator | A comparison must be accurate and verifiable (CAP Code, comparative advertising rules). | Every figure carries its source URL and date; the operator approves. |
 | 39 | A16 Refresh articles that rank on pages two to five | 2 | Operator | Tax statements need a human read. | Draft with sources; the operator reads. |
-| 40 | F2 Company deadline lookup with no sign-in | 2 | Companies House | The public data API is free; the page needs its own key so its limit of 600 requests in five minutes is not shared with customers. | Yes. The operator registers a second application. |
-| 41 | A10 Knowledge-base articles from the support corpus | 2 | Operator | Tax content needs a human check before it publishes. | Draft with sources; the operator reads. |
-| 42 | A11 Bing Webmaster Tools and IndexNow | 2 | Microsoft | Self-serve. Site ownership is proved by a file or by import from Search Console. | Publish the key file; the operator signs in once. |
-| 43 | D1 Capterra, GetApp and Software Advice | 2 | The directory's listing team | A real product and a business email. Free tier exists. | Yes. |
-| 44 | D2 Trustpilot | 2 | Trustpilot | Domain verification. Reviews come from customers. | Yes. The review invitation (F8) supplies the reviews. |
-| 45 | F5 Quarterly-update workbook and article | 2 | Operator | Tax content check. | Draft with sources; the operator reads. |
-| 46 | F8 Review invitation after a filing | 2 | Review site rules | Invitations go to every customer alike and offer no reward (DMCC Act 2024, the review site's rules). | Yes, by design of the invitation. |
-| 47 | R1 Official MCP Registry | 2 | The registry | Namespace proof only. | Yes. GitHub Actions OIDC proves `io.github.diy-accounting-uk`. |
-| 48 | Z4 MCP Apps: a review card inside the assistant | 2 | Directories | The Claude directory asks for three to five screenshots of an app. | Yes. |
-| 49 | A12 Landing pages in other languages | 2 | Operator | A translation of tax wording needs a reader of that language. | Machine translation plus a native review per language. |
-| 50 | D4 G2 and TrustRadius | 2 | The directory | Self-serve profile; rank needs reviews. | Yes. |
-| 51 | D5 Long tail of software directories | 2 | Each directory | Vendor claim forms. Some sell placement; the free tier is enough for the page. | Yes. |
-| 52 | D6 Claim the profiles that exist | 2 | Each directory | Domain email. | Yes. |
-| 53 | E1 Product Hunt and Show HN | 2 | The community | Open to post; the vote decides reach. | Yes. |
-| 54 | E3 AI tool directories | 2 | Each directory | Free tier with a slow queue. | Yes. |
-| 55 | E4 Company profiles | 2 | The platform | A person creates the page. | Yes. |
-| 56 | R2 Downstream MCP catalogues | 2 | Each catalogue | Automatic ingest or a light check. | Yes. |
-| 57 | V6 Developer writing | 2 | Platform rules | Self-promotion rules; a person posts. | Yes. |
-| 58 | E2 Small launch boards | 2 | Each board | Open or a free queue. | Yes. |
-| 59 | L3 UK citation directories | 2 | Each directory | Free basic listings. | Yes. |
-| 60 | Q3 Other content platforms | 2 | Platform rules | Open. | Yes. |
-| 61 | X8 Agent tool galleries | 2 | Each gallery | Validation of the manifest; AWS Marketplace needs seller registration. | Yes for the crawled galleries. |
-| 62 | Z9 WebMCP annotations on public forms | 2 | Chrome | An origin-trial registration. | Yes. |
-| 63 | A1 Clear the Search Console indexing advisories | 1 | None | Our own pages. Google re-crawls after the change. | No gate. |
-| 64 | A2 Static page per spreadsheet product | 1 | None | Our own site. | No gate. |
-| 65 | A3 Static landing page per filing on Submit | 1 | None | Our own site. The operator checks tax wording. | No gate. |
-| 66 | A8 Links from the spreadsheets site into Submit | 1 | None | Our own site. | No gate. |
-| 67 | A15 Titles and descriptions for pages that rank and are not clicked | 1 | None | Our own pages. Google may rewrite a title it judges a poor match. | No gate. |
-| 68 | F1 VAT due-date and penalty-points calculator | 1 | None | Our own site. | No gate. |
+| 40 | A10 Knowledge-base articles from the support corpus | 2 | Operator | Tax content needs a human check before it publishes. | Draft with sources; the operator reads. |
+| 41 | A11 Bing Webmaster Tools and IndexNow | 2 | Microsoft | Self-serve. Site ownership is proved by a file or by import from Search Console. | Publish the key file; the operator signs in once. |
+| 42 | D1 Capterra, GetApp and Software Advice | 2 | The directory's listing team | A real product and a business email. Free tier exists. | Yes. |
+| 43 | D2 Trustpilot | 2 | Trustpilot | Domain verification. Reviews come from customers. | Yes. The review invitation (F8) supplies the reviews. |
+| 44 | F5 Quarterly-update workbook and article | 2 | Operator | Tax content check. | Draft with sources; the operator reads. |
+| 45 | F8 Review invitation after a filing | 2 | Review site rules | Invitations go to every customer alike and offer no reward (DMCC Act 2024, the review site's rules). | Yes, by design of the invitation. |
+| 46 | R1 Official MCP Registry | 2 | The registry | Namespace proof only. | Yes. GitHub Actions OIDC proves `io.github.diy-accounting-uk`. |
+| 47 | Z4 MCP Apps: a review card inside the assistant | 2 | Directories | The Claude directory asks for three to five screenshots of an app. | Yes. |
+| 48 | A12 Landing pages in other languages | 2 | Operator | A translation of tax wording needs a reader of that language. | Machine translation plus a native review per language. |
+| 49 | D4 G2 and TrustRadius | 2 | The directory | Self-serve profile; rank needs reviews. | Yes. |
+| 50 | D5 Long tail of software directories | 2 | Each directory | Vendor claim forms. Some sell placement; the free tier is enough for the page. | Yes. |
+| 51 | D6 Claim the profiles that exist | 2 | Each directory | Domain email. | Yes. |
+| 52 | E1 Product Hunt and Show HN | 2 | The community | Open to post; the vote decides reach. | Yes. |
+| 53 | E3 AI tool directories | 2 | Each directory | Free tier with a slow queue. | Yes. |
+| 54 | E4 Company profiles | 2 | The platform | A person creates the page. | Yes. |
+| 55 | R2 Downstream MCP catalogues | 2 | Each catalogue | Automatic ingest or a light check. | Yes. |
+| 56 | V6 Developer writing | 2 | Platform rules | Self-promotion rules; a person posts. | Yes. |
+| 57 | E2 Small launch boards | 2 | Each board | Open or a free queue. | Yes. |
+| 58 | L3 UK citation directories | 2 | Each directory | Free basic listings. | Yes. |
+| 59 | Q3 Other content platforms | 2 | Platform rules | Open. | Yes. |
+| 60 | X8 Agent tool galleries | 2 | Each gallery | Validation of the manifest; AWS Marketplace needs seller registration. | Yes for the crawled galleries. |
+| 61 | Z9 WebMCP annotations on public forms | 2 | Chrome | An origin-trial registration. | Yes. |
+| 62 | A1 Clear the Search Console indexing advisories | 1 | None | Our own pages. Google re-crawls after the change. | No gate. |
+| 63 | A2 Static page per spreadsheet product | 1 | None | Our own site. | No gate. |
+| 64 | A3 Static landing page per filing on Submit | 1 | None | Our own site. The operator checks tax wording. | No gate. |
+| 65 | A8 Links from the spreadsheets site into Submit | 1 | None | Our own site. | No gate. |
+| 66 | A15 Titles and descriptions for pages that rank and are not clicked | 1 | None | Our own pages. Google may rewrite a title it judges a poor match. | No gate. |
+| 67 | F1 VAT due-date and penalty-points calculator | 1 | None | Our own site. | No gate. |
+| 68 | F2 Company deadline lookup with no sign-in | 1 | None | The public data API is free with the key we hold. The page shares that key's limit of 600 requests in five minutes with signed-in lookups, which the operator accepts (2026-11-12). | No gate. |
 | 69 | F4 Nine-box checker with no sign-in | 1 | None | Our own site. | No gate. |
 | 70 | Y2 Facts in the page text that assistants quote | 1 | None | Our own sites. | No gate. |
 | 71 | A4 Render JavaScript-only content into the HTML at build | 1 | None | Our own site. | No gate. |
@@ -681,16 +681,16 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 6 | A3 Static landing page per filing on Submit | 5 | Submit had 10 Google clicks in 28 days in September 2026. No Submit page answers a filing query. Competitors that rank hold a page per intent (GoFile, TinyTax). |
 | 7 | A16 Refresh articles that rank on pages two to five | 5 | Measured demand for exactly the filings Submit sells, already attached to our URLs. |
 | 8 | B4 GOV.UK finder for accounts filing software | 5 | It is the page GOV.UK sends a director to when choosing software to file accounts. |
-| 9 | F4 Nine-box checker with no sign-in | 5 | It answers "submit VAT return from spreadsheet" with a working result and shows the product before any payment. |
-| 10 | Q1 Answers in forums, posted by a person | 5 | Forum threads are the top results for "cheapest way to submit VAT" and "software like the HMRC CT600 online". |
-| 11 | Y2 Facts in the page text that assistants quote | 5 | An assistant answers "cheapest MTD bridging software" from text it can fetch. |
-| 12 | A13 A comparison page we publish | 5 | "Best" and "cheapest MTD bridging software" are the highest-intent queries seen, and Submit is the lowest paid price found. |
-| 13 | B1 HMRC software finder for VAT | 5 | HMRC sends every MTD VAT trader to this finder. |
-| 14 | B2 HMRC software finder for MTD Income Tax | 5 | 864,000 people are mandated now and 1,077,000 more from April 2027. |
-| 15 | B3 HMRC Corporation Tax software suppliers list | 5 | Every small company that used HMRC's free service now needs software for the CT600. |
-| 16 | Y3 Presence in the sources assistants cite | 5 | An assistant names the vendors its sources name. |
-| 17 | D7 Editorial roundups | 5 | These are the non-vendor pages that rank for "best MTD software". |
-| 18 | F2 Company deadline lookup with no sign-in | 5 | Three competitors rank with this tool. Every result is a director with a dated filing. |
+| 9 | F2 Company deadline lookup with no sign-in | 5 | Three competitors rank with this tool. Every result is a director with a dated filing. |
+| 10 | F4 Nine-box checker with no sign-in | 5 | It answers "submit VAT return from spreadsheet" with a working result and shows the product before any payment. |
+| 11 | Q1 Answers in forums, posted by a person | 5 | Forum threads are the top results for "cheapest way to submit VAT" and "software like the HMRC CT600 online". |
+| 12 | Y2 Facts in the page text that assistants quote | 5 | An assistant answers "cheapest MTD bridging software" from text it can fetch. |
+| 13 | A13 A comparison page we publish | 5 | "Best" and "cheapest MTD bridging software" are the highest-intent queries seen, and Submit is the lowest paid price found. |
+| 14 | B1 HMRC software finder for VAT | 5 | HMRC sends every MTD VAT trader to this finder. |
+| 15 | B2 HMRC software finder for MTD Income Tax | 5 | 864,000 people are mandated now and 1,077,000 more from April 2027. |
+| 16 | B3 HMRC Corporation Tax software suppliers list | 5 | Every small company that used HMRC's free service now needs software for the CT600. |
+| 17 | Y3 Presence in the sources assistants cite | 5 | An assistant names the vendors its sources name. |
+| 18 | D7 Editorial roundups | 5 | These are the non-vendor pages that rank for "best MTD software". |
 | 19 | F6 Excel add-in | 5 | The customer keeps books in Excel. The add-in store is where an Excel user looks for a VAT tool. |
 | 20 | S1 Microsoft Marketplace for Excel add-ins | 5 | Search inside Excel's own "Get Add-ins" pane. |
 | 21 | X6 Google Connected Apps for Gemini and AI Mode | 5 | AI Mode sits on Google Search, the largest source of our clicks. |
@@ -769,7 +769,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 ### 6.4 Where the three rankings agree
 
-24 paths score 4 or 5 on relevance and 3 or less on both effort and gate. They are the first work.
+25 paths score 4 or 5 on relevance and 3 or less on both effort and gate. They are the first work.
 
 | Path | Relevance | Effort | Gate | Uplift |
 | --- | ---: | ---: | ---: | --- |
@@ -781,6 +781,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | A3 Static landing page per filing on Submit | 5 | 3 | 1 | OS4, OS9 |
 | A16 Refresh articles that rank on pages two to five | 5 | 2 | 2 | OS45 |
 | B4 GOV.UK finder for accounts filing software | 5 | 1 | 3 | OS22 |
+| F2 Company deadline lookup with no sign-in | 5 | 3 | 1 | OS32 |
 | F4 Nine-box checker with no sign-in | 5 | 3 | 1 | OS34 |
 | Q1 Answers in forums, posted by a person | 5 | 1 | 3 | OS41 |
 | Y2 Facts in the page text that assistants quote | 5 | 3 | 1 | OS7, OS9 |
@@ -877,7 +878,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS31 | VAT due-date and penalty-points calculator | F1, Z9 | A working answer to "how many penalty points" and "when is my VAT return due", which no competitor offers as a tool. | Impressions and clicks on the page; clicks from it to sign-in. | machine-only |
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only |
-| OOS32 | Operator: a second Companies House API key for the public lookup | F2 | A key whose rate limit the public page can use up without touching customers' lookups. | The secret exists on the ci and prod GitHub environments. | human-driven |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only |
 | OS34 | Nine-box checker with no sign-in | F4 | A visitor sees their own VAT figures from their own workbook before creating an account. | Workbooks read; sign-ins that follow. | machine-only |
 | OS35 | Quarterly-update workbook and the support articles | F5, A10, A8 | A free workbook for the Income Tax quarterly update and eleven articles that answer questions customers sent us. | Clicks per article; downloads of the workbook. | machine-only |
@@ -921,7 +921,6 @@ flowchart LR
   OOS17 --> OOS30
   OS9 --> OS31
   OS9 --> OS32
-  OOS32 --> OS32
   OS11 --> OS33
   OS9 --> OS34
   OS6 --> OS35
@@ -1034,9 +1033,7 @@ flowchart LR
 
 - [ ] **OS31. VAT due-date and penalty-points calculator.** Run the `tax-sources` skill first: no source file holds the VAT return due-date rule (one month and seven days after the period end) or the late-submission points thresholds (2 for annual, 4 for quarterly, 5 for monthly returns; £200 at the threshold and for each later late return). Then a generated static page `vat-return-due-date-and-penalty-points.html`, on the OS9 pattern, with a small script: the reader picks the period end and the filing frequency and ticks the late returns; the page shows the due date, the points, the threshold and what removes points. The rules also render as text in the HTML, so the page reads with JavaScript off. The action at the end is the VAT filing page from OS9. A unit test holds the rule table against the source files. If Chrome's WebMCP origin trial is open on the day, add `toolname` and `tooldescription` to the form; if not, leave them out. **Waits on**: OS9. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **OS32. Company deadline lookup with no sign-in.** The lookup exists behind sign-in: activity `company-lookup` in `web/public/submit.catalogue.toml` (line 504) with `companies-house/companySearch.html`, `/api/v1/companies-house/search` and `/api/v1/companies-house/company/{number}` (`app/functions/companies-house/companiesHouseSearchGet.js`, `companiesHouseCompanyGet.js`). A public route that shared the product's Companies House key would share its limit of 600 requests in five minutes, and requests spread over many addresses pass a per-address rule and can stop customers' lookups. So the public route uses its own key (OOS32). Opus writes the design in the PR first: a new Lambda with no authorizer (the authorizer is chosen per Lambda from its props in `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutes.java`, `authorizerFor`, line 145), matched in `app/bin/server.js`; a response of public fields only (name, number, status, accounts next due, confirmation statement next due, last accounts type); a CloudFront cache keyed by company number; a per-address rate rule in the web ACL tighter than the site's 2,000 in five minutes; a global ceiling under the key's 600 in five minutes; and what the page shows at the ceiling. Sonnet builds from it: a page `company-filing-deadlines.html` with a search box, the two due dates, the days left and the filing action for each (the filing pages from OS9). API errors return JSON, never HTML. Read the Companies House API terms for display of its data before the page design. Proof on ci: a lookup with no session returns the dates; a burst past the ceiling is refused by our rule and a signed-in lookup still works. **Waits on**: OS9, OOS32. **Class**: machine-only. **Repository**: SUB. **Model**: Opus (design), Sonnet (build). **Size**: ~12 files.
-
-- [ ] **OOS32. Operator: a second Companies House API key for the public lookup.** The operator registers a second application in the Companies House developer hub at https://developer.company-information.service.gov.uk/manage-applications, creates a REST API key for it, and adds the key as a GitHub environment secret on ci and prod under the name OS32's design gives. A session walks through the console steps researched on the day. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OS32. Company deadline lookup with no sign-in.** The lookup exists behind sign-in: activity `company-lookup` in `web/public/submit.catalogue.toml` (line 504) with `companies-house/companySearch.html`, `/api/v1/companies-house/search` and `/api/v1/companies-house/company/{number}` (`app/functions/companies-house/companiesHouseSearchGet.js`, `companiesHouseCompanyGet.js`). Add a public variant: a new Lambda with no authorizer (the authorizer is chosen per Lambda from its props in `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutes.java`, `authorizerFor`, line 145), matched in `app/bin/server.js`, that returns public fields only (name, number, status, accounts next due, confirmation statement next due, last accounts type). It uses the one Companies House API key the product already holds (`COMPANIES_HOUSE_API_KEY`); the operator accepts that the public page shares that key's limit of 600 requests in five minutes with signed-in lookups (2026-11-12) and acts when he sees a burst. So that he can see one: cache each answer at CloudFront by company number, and write a metric through `app/lib/emfMetrics.js` for each public lookup and for each 429 that Companies House returns. When Companies House answers 429, the page says to try again in a few minutes. Then the page `company-filing-deadlines.html`: a search box, the two due dates, the days left and the filing action for each (the filing pages from OS9). API errors return JSON, never HTML. Read the Companies House API terms for display of its data before the page design. Proof on ci: a lookup with no session returns the dates, and the metric shows the call. **Waits on**: OS9. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~10 files.
 
 - [ ] **OS33. MTD Income Tax scope checker with an embed.** A generated static page `mtd-income-tax-checker.html` on the OS9 pattern: the reader gives self-employment and property income for the tax year, and the page answers in or out of scope, the start date (6 April 2026, 2027 or 2028), the first quarterly deadline, and what records to keep. Sources: `itsa-mtd-over-50k.json`, `itsa-mtd-over-30k.json`, `itsa-mtd-over-20k.json`, `itsa-quarterly-update-deadlines.json`, `itsa-mtd-who-needs-to-use.json`. Income Tax filing is sandbox on prod, so the page says that Submit's Income Tax filing awaits HMRC recognition and links `mtd-calendar.html`; it never says the filing is available. The embed: `embed/mtd-income-tax-checker.js` renders the form in an iframe on another site with a visible link back; every Submit page is served with `frame-ancestors 'none'` and `X-Frame-Options: DENY` (`EdgeStack.java`, lines 357 and 369), so the row adds a CloudFront behaviour and a response headers policy for `/embed/*` that allows framing by any site, with its CDK test. It shares OS11's Income Tax page generator. **Waits on**: OS11. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~6 files.
 
