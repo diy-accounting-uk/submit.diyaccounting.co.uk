@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-896dcf2** (PR #807's merge 896dcf29d, deploy run 43156642450, 2026-11-12 05:21 UTC: a long period of account as two returns on the CT600 page, a token charged for each accepted accounts filing or return, the token cost on the accounts and CT600 pages, the receipts list reading every query page, and the joint filing guide frames from the recording).
-**ci**: ci-set1 is `/submit/ci/last-known-good-deployment` and carries PR #808's head; no slot is held; ci-set2 is destroyed.
+**ci**: ci-set1 is `/submit/ci/last-known-good-deployment`; PR #811's deploy (run 43183397459) holds its slot; the ci-set2 slot is free.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
