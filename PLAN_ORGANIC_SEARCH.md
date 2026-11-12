@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 45 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 44 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 38 of 45 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 34 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 37 of 44 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 33 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -121,7 +121,7 @@ Google Search Console sent 29 messages to the operator's and the support mailbox
 | 2026-11-09 | gateway | Duplicate, Google chose different canonical than user (two emails: pages in a sitemap, and pages outside one) | URL inspection shows the four sitemap URLs indexed under the canonical they declare. The duplicates are old `www.diyaccounting.co.uk` URLs, which redirect to the apex since early November. Three old URL shapes (`/feature.html`, `/product.html`, `/article.html` with a query) land on a 403. | OS2: switch on the three redirect handlers that exist. The rest folds away. |
 | 2026-11-12 | spreadsheets | Alternate page with proper canonical tag | The sitemap lists `download.html?product=<id>` for five products. Each declares `download.html` as canonical, so Google folds the product URLs away one by one. `?product=TaxiDriver` earned 60 clicks in 90 days, the third most of any URL. | OS6: a static page per product in the sitemap. The form URL stays, because every product card links to it. |
 
-Two advisories need a change (OS2, OS6). Five describe pages that are excluded or redirected on purpose.
+One advisory needs a change (OS6). Five describe pages that are excluded or redirected on purpose.
 
 | Date | Message | What it tells us |
 | --- | --- | --- |
@@ -199,7 +199,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
-| A1 Clear the Search Console indexing advisories | two faults open | 2 | 1 | 5 | OS1, OS2, OS4, OS6 |
+| A1 Clear the Search Console indexing advisories | one fault open | 2 | 1 | 5 | OS1, OS4, OS6 |
 | A15 Titles and descriptions for pages that rank and are not clicked | open | 1 | 1 | 5 | OS44 |
 | A16 Refresh articles that rank on pages two to five | open | 2 | 2 | 5 | OS45 |
 | A2 Static page per spreadsheet product | absent | 2 | 1 | 5 | OS6 |
@@ -774,7 +774,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Path | Relevance | Effort | Gate | Uplift |
 | --- | ---: | ---: | ---: | --- |
 | A15 Titles and descriptions for pages that rank and are not clicked | 5 | 1 | 1 | OS44 |
-| A1 Clear the Search Console indexing advisories | 5 | 2 | 1 | OS1, OS2, OS4, OS6 |
+| A1 Clear the Search Console indexing advisories | 5 | 2 | 1 | OS1, OS4, OS6 |
 | A2 Static page per spreadsheet product | 5 | 2 | 1 | OS6 |
 | A8 Links from the spreadsheets site into Submit | 5 | 2 | 1 | OS6, OS45, OS35 |
 | F1 VAT due-date and penalty-points calculator | 5 | 2 | 1 | OS31 |
@@ -818,7 +818,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS1 | Make the Search Console report run | A1 | Queries, pages, positions and the index verdict of every sitemap URL, from a local session or a workflow artifact. It ran once by hand on 2026-11-12. | The report writes `target/searchconsole-report.json` with rows for both properties. | machine-only; on the board |
-| OS2 | Switch on the redirects for old gateway URLs that answer 403 | A1 | A searcher who clicks an old `www` result for a product, an article or a feature lands on a page. Three old URL shapes answer 403 today. | `curl -sI` on each old URL in the report ends at a 200 page. | machine-only; on the board |
 | OS3 | Count visits and fetches that come from AI assistants | Y1, X1, X2 | A daily floor for human visits from each assistant across all four sites (consented sessions), and the pages each assistant fetched on Submit. The other three sites' fetches come from a log query in the monthly read. | Both views return rows by assistant; the monthly read (OS41) quotes them. | machine-only; on the board |
 | OS4 | Load Search Console data into the lake each night | A1, A3 | Clicks, impressions and position by page and query as a table, so each page family in this plan has a trend line. | A partition for yesterday in the lake table each morning. | machine-only; on the board |
 | OS5 | IndexNow on every deploy | A11 | Bing learns of a changed page within minutes of a deploy. Bing's index serves Copilot, DuckDuckGo and ChatGPT search. | The deploy log shows an accepted IndexNow call (HTTP 200 or 202) per site. | machine-only; on the board |
@@ -897,7 +896,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
-| 9 | Technical repairs | 2 to 10 | all sites | OS2, OS8, OS12, OS13 |
+| 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13 |
 | 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41a, OS41 |
 
 1. **Spreadsheet product pages and articles.** The taxi-driver product URL earns 20 clicks a month and the four other products have no page to rank. Six articles get 2,955 impressions a month at positions 27 to 43. OS6 also adds the links into Submit.
@@ -908,7 +907,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 6. **Assistant connector.** 19 fetches in 15 days came from the address ranges OpenAI and Anthropic publish, about one a day, and who asked is not known. The steady figure starts after the listings are submitted (OOS17, OOS18).
 7. **Bing and IndexNow.** Bing and the engines that use its index add roughly 5% to 10% on top of Google clicks, so this grows with groups 1 to 4.
 8. **Listing register and reviews.** Referral clicks from review profiles. OS24 is the sitting that creates the profiles; no visit arrives before it.
-9. **Technical repairs.** OS2 recovers the clicks that land on a 403. The agents in OS12 already get 200, and `llms.txt` files are rarely read.
+9. **Technical repairs.** The agents in OS12 already get 200, and `llms.txt` files are rarely read.
 10. **Measurement.** These bring no visits. They are how every figure above gets checked.
 
 ### 8.3 Order of work
