@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 44 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 47 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 37 of 44 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 33 machine-only, 3 machine-ask, 8 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 40 of 47 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 36 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -21,7 +21,7 @@ Every path that brings a customer to the DIY Accounting sites with no payment fo
 - **The hosted connector is listed in the assistant directories with its VAT tool set** (operator, 2026-11-12). The assistant derives the figures and the user files in the browser. A tool for another filing joins the listing when that filing is live on prod, under board row MCP1.
 - **The board holds the briefs.** A task that is a row on `NEXT.md` has its brief there and nowhere else. This plan keeps the brief of a task that is not yet a row, and the operator moves it to the board when its turn comes.
 
-The marketing strategy is `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md`. Its organic rows are carried here with their ids: MK-10 (OS41), MK-14 (OS6), MK-18 (OS35), MK-19 (OS4), MK-20 (OS23). Its goal stands: paid Submit subscribers.
+The marketing strategy is `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md`. Its organic rows are carried here with their ids: MK-10 (OS41a), MK-14 (OS6), MK-18 (OS35), MK-19 (OS4). MK-20 is met: HMRC's VAT finder shows Submit with its four VAT features and the free version (read 2026-11-12). Its goal stands: paid Submit subscribers.
 
 ## 1. Where organic search stands
 
@@ -259,7 +259,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
-| B1 HMRC software finder for VAT | listed, entry incomplete | 1 | 4 | 5 | OS23 |
+| B1 HMRC software finder for VAT | listed, with four VAT features and the free version | 1 | 4 | 5 | |
 | B2 HMRC software finder for MTD Income Tax | not listed; owned by `PLAN_ITSA_APPROVAL.md` | 1 | 4 | 5 | none |
 | B3 HMRC Corporation Tax software suppliers list | not listed; owned by `PLAN_HMRC_CT_APPROVAL.md` | 1 | 4 | 5 | none |
 | B4 GOV.UK finder for accounts filing software | not listed | 1 | 3 | 5 | OS22 |
@@ -845,6 +845,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS13 | llms.txt, Markdown copies and a feed, generated at build | Z5, Z6, Z12 | One Markdown page per site that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS14 | Make the hosted MCP pass every directory's technical checks | X1, X2, X6, Z1, Z2, Z3 | A connector that any assistant can add and that passes the Claude scan and the OpenAI review checks on the first submission. | The conformance test passes; the MCP inspector lists a title and annotations on every tool; `/.well-known/mcp/server-card.json` answers 200. | machine-only; on the board |
+| OS43a | Design the reviewer sign-in | X1, X2 | The auth flow, the threat-protection answer, the rate limit, the two secret names and the log line, written into OS43's row as its brief. | OS43's row carries the design. | machine-only; on the board |
+| OOS43 | Set the demo user's two secrets on ci and prod | X1, X2 | The two GitHub environment secrets exist on ci and prod before the deploy step that reads them. | `gh secret list --env ci` and `--env prod` show both names. | machine-ask; on the board |
 | OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only; on the board |
 | OS16b | `server.json` for the hosted connector | R1 | The hosted connector's registry entry, validated, with a dispatch that publishes it. | The workflow validates the file. | machine-only; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask |
@@ -863,8 +865,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS21 | A listing register, a copy pack and a monthly check | D1, D3, D5, L3, E2 | One file that holds every product fact a directory asks for and every place we are listed; a page of ready-to-paste text per directory; a check that our recorded price text matches the catalogue. The microsite stops being indexable. | Listings recorded as live; the monthly check passes; the microsite answers with `noindex`. | machine-only; on the board |
-| OS22 | Ask Companies House to add Submit to the accounts software finder | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. 41 suppliers are on it. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
-| OS23 | Complete the HMRC VAT finder entry | B1 | The "free version" filter on HMRC's finder includes Submit. | The finder shows Submit with the free filter on; sessions with a `tax.service.gov.uk` referrer. | human-driven; on the board |
+| OS22 | Draft the email that asks Companies House how a supplier joins the accounts software finder | B4, Y3 | The draft, ready for the operator to send. | The draft is committed in the private repository. | machine-only; on the board |
+| OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity page lists 117 products. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OS25 | Invite a review after each accepted filing | F8, D1, D2 | A steady supply of reviews on the two sites where the leading competitor has about 2,051 and 220. | Reviews per month on each profile. | machine-only; on the board |
 | OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | human-driven |
@@ -880,6 +882,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
 | OS35 | Quarterly-update workbook and the support articles | F5, A10, A8 | A free workbook for the Income Tax quarterly update and eleven articles that answer questions customers sent us. | Clicks per article; downloads of the workbook. | machine-only; on the board |
+| OS41a | Tag the YouTube description links | A14 | Sessions that arrive from a video description carry `utm_source=youtube`. | The metadata sync lists no description left to change. | machine-only; on the board |
 | OS41 | A monthly organic read in the campaign skill | Q1, A14 | One table a month: Search Console, Bing, assistant referrals, listings, and a fixed set of questions asked in each assistant. | The table exists for each month. | machine-only; on the board |
 
 ### 8.2 Groups, ranked by the visits each is expected to add
@@ -892,18 +895,18 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 2 | Result lines for pages that rank | 80 to 170 | spreadsheets | OS44 |
 | 3 | Submit pages that answer filing queries | 40 to 200 | Submit | OS7, OS9, OS10, OS11, OS40 |
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
-| 5 | GOV.UK software finders | 15 to 90 | Submit | OS22, OS23 |
-| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
+| 5 | GOV.UK software finders | 15 to 90 | Submit | OS22, OOS22 |
+| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OS43a, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
 | 9 | Technical repairs | 2 to 10 | all sites | OS2, OS8, OS12, OS13 |
-| 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41 |
+| 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41a, OS41 |
 
 1. **Spreadsheet product pages and articles.** The taxi-driver product URL earns 20 clicks a month and the four other products have no page to rank. Six articles get 2,955 impressions a month at positions 27 to 43. OS6 also adds the links into Submit.
 2. **Result lines for pages that rank.** The spreadsheets home page shows 9,760 times a month on page one and is clicked 1.2% of the time. A rate of 2% to 3% gives the range. Six files, and a result within about six weeks.
 3. **Submit pages that answer filing queries.** Submit has no such page and 3 clicks a month on its home page. Our own MTD bridging article draws 236 impressions a month from position 31. The range is wide because competitors hold page one. These visits have the highest intent to file.
 4. **Free tools.** Three competitors rank with a company deadline lookup, and 1,077,000 people join MTD Income Tax in April 2027. GOV.UK runs its own tools for two of these questions, which caps the share.
-5. **GOV.UK software finders.** The accounts finder lists 44 suppliers and we are absent. The HMRC VAT finder's free-version filter leaves us out. The outcome is Companies House's and HMRC's to give.
+5. **GOV.UK software finders.** The accounts finder's micro-entity page lists 117 products and we are absent. The HMRC VAT finder shows Submit with the free version, so its free filter includes us. The outcome is Companies House's to give.
 6. **Assistant connector.** 19 fetches in 15 days came from the address ranges OpenAI and Anthropic publish, about one a day, and who asked is not known. The steady figure starts after the listings are submitted (OOS17, OOS18).
 7. **Bing and IndexNow.** Bing and the engines that use its index add roughly 5% to 10% on top of Google clicks, so this grows with groups 1 to 4.
 8. **Listing register and reviews.** Referral clicks from review profiles. OS24 is the sitting that creates the profiles; no visit arrives before it.
@@ -923,10 +926,15 @@ flowchart LR
   OS9 --> OS40
   OS8 --> OS13
   OS14 --> OS43
-  OS14 --> OS16b
+  OS43a --> OS43
+  OS43a --> OOS43
+  OOS43 --> OS43
   OS16b --> OOS16
+  OS14 --> OOS16
   OS14 --> OS19
-  OS8 --> OS20
+  OS42 --> OS19
+  OS10 --> OS13
+  OS20 --> OS13
   OS14 --> OOS20
   OS20 --> OOS20
   OS14 --> OS42
@@ -940,7 +948,8 @@ flowchart LR
   OS18 --> OOS18
   OS42 --> OOS18
   OS21 --> OS24
-  OS24 --> OS25
+  OS21 --> OS25
+  OS22 --> OOS22
   OS9 --> OS26
   OS8 --> OS29
   OS42 --> OS30
@@ -961,10 +970,11 @@ flowchart LR
 - A new public page on Submit needs five things in the same change: an entry in `web/public/sitemap.xml` (`scripts/publish-sitemap.mjs` filters it and adds `lastmod` at deploy), a title, a description and a canonical (asserted by `web/unit-tests/seo-validation.test.js`), the path in the CloudFront invalidation list (`infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java` and `scripts/deploy-app.js`), a link from a page that is already indexed, and the visual definition of done in `CLAUDE.md`. OS7, OS9, OS11, OS31, OS32, OS33 and OS40 all do this; they land in that order or carry the earlier row's changes.
 - Generated pages follow `scripts/build-mtd-calendar.mjs` and `scripts/build-welsh-pages.mjs`: a script writes static HTML that is committed, and a check fails when the committed file is stale. Dates and thresholds come from `.claude/skills/tax-sources/sources/`; a fact with no source file gets one from the `tax-sources` skill first.
 - A page states only what prod offers. Status comes from `AVAILABILITY` in `scripts/build-mtd-calendar.mjs` (line 106) and the `environments` list of each activity in `web/public/submit.catalogue.toml`. Wording follows `../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md`.
-- A new Athena view raises `AWS::Athena::NamedQuery` from 72 in `infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java` (line 351) and `infra/test/java/co/uk/diyaccounting/submit/stacks/AnalyticsStackTest.java` (line 145), and `VIEW_COUNT` from 71 in `infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java` (line 32). OS3 adds two views and OS4 one; the second to land takes the first one's counts.
+- A new Athena view raises `AWS::Athena::NamedQuery` from 72 in `infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java` (line 351) and `infra/test/java/co/uk/diyaccounting/submit/stacks/AnalyticsStackTest.java` (line 145), and `VIEW_COUNT` from 71 in `infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java` (line 32). OS3 adds two views and OS4 one; the second to land takes the first one's counts. A new Glue table raises `AWS::Glue::Table` from 37 in the same two tests (lines 349 and 77), and a GA4 report table raises it from 4 in `infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java` (line 49). OS3 and OS4 add one table each.
 - In a worktree, `npm run bundle` comes before the unit tests. Each JS change passes `npx eslint <files>` and `npx prettier --check <files>`; each Java change passes `./mvnw spotless:check` with any `spotless:apply` kept to the row's own files; each workflow change passes `prettier --check` and a YAML parse. New files carry the licence header. Comments and test names name no plan, row or date.
+- `c_ip` in `cloudfront_requests` is personal data. A view uses it only inside an aggregate as a salted hash, or in a range test whose output is a boolean (OS3 adds the second use to the rule in `CloudFrontAccessLogs.java`), and never selects it or its hash. Athena tests a range with `contains('<cidr>', try_cast(c_ip AS ipaddress))`; it has no `ipprefix` type.
 - The MCP rows share `mcp/lib/` and `app/functions/mcp/`: OS14, then OS42, then OS46 and OS19. The hosted tool set on prod is `PROD_HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js`; a change to it is the operator's go.
-- Rows that can start together and edit one file run in one agent or in the order given: the spreadsheets `index.html` (OS6, OS44, OS8); Submit's `mcp.html` (OS8, then OS20, then OS13); Submit's `videos-*.html` (OS8, then OS7); Submit's `index.html` (OS7, then OS10, then OS13). A row that adds a capability comment changes the generated `REPORT_CAPABILITIES.md`, which `npm run capabilities:check` compares, so two such branches conflict; they land one after the other.
+- Rows that can start together and edit one file run in one agent or in the order given: the spreadsheets `index.html` (OS6 and OS44 in one agent, then OS8 and OS12 in a second agent that starts from its commit); Submit's `mcp.html` (OS8 and OS20 in one agent, then OS13); Submit's `videos-*.html` (OS8, then OS7); Submit's `index.html` (OS7, then OS10, then OS13). A row that adds or changes a capability comment (a new workflow or script; OS1, OS3, OS16b, OS20, OS21) changes the generated `REPORT_CAPABILITIES.md`, which `npm run capabilities:check` compares, so two such branches conflict; they land one after the other, and the second runs `npm run capabilities:generate` again.
 - Every Submit page is served with `frame-ancestors 'none'` and `X-Frame-Options: DENY` (`EdgeStack.java`, lines 357 and 369). A page that another site must frame (OS33's embed) needs its own CloudFront behaviour and response headers policy, with a CDK test.
 
 ### 8.5 Briefs of the tasks that are not yet on the board
@@ -973,7 +983,7 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 #### Wave 3: Assistants and agents
 
-- [ ] **OOS16. Operator's go: publish the hosted connector to the MCP Registry.** When OS14 is on prod, the operator says go and a session dispatches the publish of the hosted connector's entry (`gh workflow run <workflow> -f apply=true` in the submit repository). Smithery and PulseMCP read the official registry, so their pages follow with no further step. **Waits on**: OS16b. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OOS16. Operator's go: publish the hosted connector to the MCP Registry.** When OS14 is on prod, the operator says go and a session dispatches the publish of the hosted connector's entry (`gh workflow run <workflow> -f apply=true` in the submit repository). Smithery and PulseMCP read the official registry, so their pages follow with no further step. **Waits on**: OS16b, OS14. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **OOS20. Prove the connector in each assistant and write the steps that worked.** With the operator's accounts, a session adds `https://submit.diyaccounting.co.uk/mcp` as a custom connector in ChatGPT, Gemini, Perplexity and Copilot Studio in Chrome, signs in, and runs one tool. Each product that completes gets a section on `mcp.html` with the steps that worked; a product that fails gets no section and a line in the PR with the error. Whether ChatGPT's Plus plan allows a custom connector's tools is not confirmed; this run settles it. **Waits on**: OS14, OS20. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 1 file.
 
@@ -992,11 +1002,9 @@ The brief of a boarded task is its row on `NEXT.md`.
 ## 9. Not confirmed
 
 - How a supplier joins the GOV.UK accounts software finder: the page states no route (OS22 asks).
-- Whether a day pass limited to three submissions meets HMRC's meaning of a free version (OS23 asks).
-- Whether Cognito threat protection challenges the demo sign-in that the MCP Lambda makes (OS43's design settles it).
+- Whether Cognito threat protection challenges the demo sign-in that the MCP Lambda makes (OS43a settles it).
 - Whether MCP SDK 1.32.2 supports `skill://` and `ui://` resources (OS19 and OS46 check first).
 - Homebrew core's star thresholds: the current documentation page does not state them.
-- Whether the HMRC VAT finder entry shows the features asked for on 2026-10-03 and the free flag (OS23 reads it).
 - About half of the review, launch and citation directories were not opened on 2026-11-12; their free tiers are from general knowledge. OS21 records the terms of each when its form is opened.
 - Whether ChatGPT's Plus and Pro plans allow write actions through a custom MCP connector; the help page refused the fetch.
 - Google Connected Apps: the primary page was not read; the US-only preview is from press coverage of 2026-10-28.
