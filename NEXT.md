@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f86fc83** (PR #811's merge f86fc838d, deploy run 43187971599, 2026-11-12 09:41 UTC: the WAF attack alarms fire at 50 blocked requests in 5 minutes, and a confirmation statement costs no token). `destroy-prod.yml` run 43193627571 is removing prod-e54114d.
-**ci**: ci-set1 is `/submit/ci/last-known-good-deployment` and carries PR #811's head; no slot is held.
+**Prod runs deployment prod-f86fc83** (PR #811's merge f86fc838d, deploy run 43187971599, 2026-11-12 09:41 UTC: the WAF attack alarms fire at 50 blocked requests in 5 minutes, and a confirmation statement costs no token).
+**ci**: no ci set stands (the operator had ci-set1 destroyed, run 43195507044); `/submit/ci/last-known-good-deployment` is `None`; no slot is held. The next branch deploy creates a set.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -43,8 +43,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 ## Machine-only
 
 ## Machine-ask
-
-- [ ] **GUIDE2. Make the long period video public.** The recording is uploaded unlisted: https://youtu.be/Lwt-U4Emrao (5 minutes 19 seconds; a 15 month period of account filed as two Company Tax Returns, recorded on the simulator). The ask: the operator watches it and says yes. Then `AWS_PROFILE=diya-submit-prod AWS_REGION=eu-west-2 npm run video:publish -- --public` and `node scripts/youtube-upload.js --sync-status`, after a read of every video's live status so the flip changes only this one. Its `videoId` is on `main` (PR #808). The recording is `.claude/worktrees/eagle-guide1/target/videos-eagle/file-company-tax-return-long-period-full/file-company-tax-return-long-period.mp4`. **Source**: GUIDE1's report, 2026-11-12. **Owner**: Claude Code (the flip), operator (the watch). **Model**: Haiku. **Size**: 0 files.
 
 ## Human-driven
 
