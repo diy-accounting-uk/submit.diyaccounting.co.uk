@@ -21,7 +21,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT33 | A period of account longer than 12 months files as two CT600s: CT33a short-period limits, CT33b the split, CT33c the request and records, CT33d the page (the CT33 design below) | ~45 | Sonnet | — |
 | DF3 | The joint filing's guide walk-through and video: the scene script `videos/file-company-tax-return-with-accounts.json`, the recording on the simulator, the guide frames, the `videos/publish.json` entry and the guide journey | ~6 | Sonnet | — |
 | DF4 | The joint filing's FAQ entry in `web/public/faqs.toml`, shown on the help page where the activity is offered | ~3 | Sonnet | — |
-| DF5 | Publish the joint filing video: unlisted upload, the operator watches, then public | ~1 | Sonnet | DF3 |
+| DF5 | Make the joint filing video public after the operator has watched the unlisted upload | 0 | Haiku | the operator's yes |
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | UH7 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
