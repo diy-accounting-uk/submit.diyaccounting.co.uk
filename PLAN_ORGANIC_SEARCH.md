@@ -845,7 +845,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS13 | llms.txt, Markdown copies and a feed, generated at build | Z5, Z6, Z12 | One Markdown page per site that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS14 | Make the hosted MCP pass every directory's technical checks | X1, X2, X6, Z1, Z2, Z3 | A connector that any assistant can add and that passes the Claude scan and the OpenAI review checks on the first submission. | The conformance test passes; the MCP inspector lists a title and annotations on every tool; `/.well-known/mcp/server-card.json` answers 200. | machine-only; on the board |
-| OOS43 | Set the reviewer's password secret, and give the go for the first prod seed | X1, X2 | The GitHub environment secret `MCP_REVIEWER_PASSWORD` exists on ci and prod before the deploy step that reads it; the demo user and its sample books exist on prod. | `gh secret list --env ci` and `--env prod` show the name; the prod seed run is green. | machine-ask; on the board |
+| OOS43 | The go for the first prod seed of the demo reviewer | X1, X2 | The demo user and its sample books exist on prod. | The prod seed run is green. | machine-ask; on the board |
 | OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only; on the board |
 | OS16b | `server.json` for the hosted connector | R1 | The hosted connector's registry entry, validated, with a dispatch that publishes it. | The workflow validates the file. | machine-only; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask |
@@ -924,7 +924,9 @@ flowchart LR
   OS9 --> OS40
   OS8 --> OS13
   OS14 --> OS43
-  OOS43 --> OS43
+  OS43 --> OOS43
+  OOS43 --> OS17
+  OOS43 --> OS18
   OS16b --> OOS16
   OS14 --> OOS16
   OS14 --> OS19
