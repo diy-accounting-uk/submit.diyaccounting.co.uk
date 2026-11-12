@@ -37,11 +37,21 @@ import {
   CT600_CLASS,
   CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
-import { findHeldCtSubmission } from "../../services/hmrcCtSubmissionStatus.js";
+import { findHeldCtSubmission, CT_RETURN_ACTIVITY_ID } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { readJointFilingId, jointFilingFields, amendedFields, sanitiseFormRequest, formRequestFields } from "../../services/jointFiling.js";
+import {
+  readJointFilingId,
+  jointFilingFields,
+  amendedFields,
+  sanitiseFormRequest,
+  formRequestFields,
+  longPeriodRecord,
+  longPeriodFields,
+} from "../../services/jointFiling.js";
+import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
+import { listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
@@ -66,6 +76,21 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
     actor: resolveActorClass(),
     detail,
   });
+}
+
+// Part 2 of a long period of account files only after part 1 of the same filing and period of
+// account is accepted: a receipt exists only for an accepted return, and the user's receipts are
+// the ones their own sub filed, so part 1 was charged to this account.
+async function firstReturnAccepted({ userSub, clientId, longPeriod, periodStart, periodEnd }) {
+  const receipts = await listUserReceipts(userSub, clientId);
+  return receipts.some(
+    (receipt) =>
+      receipt.kind === CT_RETURN_KIND &&
+      receipt.longPeriod?.filingId === longPeriod.filingId &&
+      receipt.longPeriod.part === 1 &&
+      receipt.longPeriod.periodOfAccountStart === periodStart &&
+      receipt.longPeriod.periodOfAccountEnd === periodEnd,
+  );
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -99,6 +124,25 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  const { longPeriod } = returnRequest;
+  if (longPeriod?.part === 2) {
+    const accepted = await firstReturnAccepted({
+      userSub,
+      clientId,
+      longPeriod,
+      periodStart: returnRequest.figures.periodStart,
+      periodEnd: returnRequest.figures.periodEnd,
+    });
+    if (!accepted) {
+      return http409ConflictResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Return 2 of 2 files after return 1 of 2 is accepted. Send return 1 first.",
+        error: { code: "LONG_PERIOD_FIRST_RETURN_NOT_ACCEPTED", filingId: longPeriod.filingId },
+      });
+    }
+  }
+
   let documents;
   try {
     documents = buildCtReturnDocuments(returnRequest);
@@ -115,6 +159,25 @@ export async function ingestHandler(event) {
       message: `The figures changed after you reviewed them (box ${differingBoxes.join(", box ")}). Review the return again before you file it.`,
       error: { differingBoxes },
     });
+  }
+
+  // Return 2 of a long period of account costs no token: return 1 took the one token for the pair.
+  if (longPeriod?.part !== 2) {
+    const tokenRefusal = await refuseWhenOutOfTokens({
+      request,
+      headers: responseHeaders,
+      userId: userSub,
+      activityId: CT_RETURN_ACTIVITY_ID,
+    });
+    if (tokenRefusal) {
+      await recordSubmissionFailure({
+        failure: "tokens-exhausted",
+        summary: "HMRC Company Tax Return blocked: submission allowance used up",
+        userSub,
+        clientId,
+      });
+      return tokenRefusal;
+    }
   }
 
   // Forwarded so the simulator's Gov-Test-Scenario handling can be driven from the page's
@@ -229,6 +292,7 @@ export async function ingestHandler(event) {
         gatewayTest,
         messageClass: CT600_CLASS,
         ...jointFilingFields(jointFilingId),
+        ...longPeriodFields(longPeriod && longPeriodRecord(longPeriod, returnRequest.figures.periodStart, returnRequest.figures.periodEnd)),
         ...amendedFields(returnRequest.amended),
         ...formRequestFields(formRequest),
         filed: {

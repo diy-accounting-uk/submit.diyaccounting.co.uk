@@ -163,20 +163,30 @@ export async function listUserReceipts(userSub, clientId) {
     // During a salt rotation a user's receipts can sit under two hashes at once, so every version
     // is read and merged.
     for (const { version, hashedSub } of subHashCandidates(userSub)) {
-      const response = await executeDynamoDbCommand(
-        (module) =>
-          new module.QueryCommand({
-            TableName: tableName,
-            KeyConditionExpression: "hashedSub = :hashedSub",
-            ExpressionAttributeValues: {
-              ":hashedSub": hashedSub,
-            },
-          }),
-      );
-      logger.info({ message: "Queried DynamoDB for user receipts", version, hashedSub, itemCount: response.Count });
-      for (const item of response.Items ?? []) {
-        if (!itemsByReceiptId.has(item.receiptId)) itemsByReceiptId.set(item.receiptId, item);
-      }
+      // A query answers at most 1 MB a page, oldest first, and a receipt carries its filed copy, so
+      // every page is read: a single page would drop the newest receipts of a user with many filings.
+      let startKey;
+      let itemCount = 0;
+      do {
+        const exclusiveStartKey = startKey;
+        const response = await executeDynamoDbCommand(
+          (module) =>
+            new module.QueryCommand({
+              TableName: tableName,
+              KeyConditionExpression: "hashedSub = :hashedSub",
+              ExpressionAttributeValues: {
+                ":hashedSub": hashedSub,
+              },
+              ExclusiveStartKey: exclusiveStartKey,
+            }),
+        );
+        for (const item of response.Items ?? []) {
+          if (!itemsByReceiptId.has(item.receiptId)) itemsByReceiptId.set(item.receiptId, item);
+        }
+        itemCount += response.Count ?? 0;
+        startKey = response.LastEvaluatedKey;
+      } while (startKey);
+      logger.info({ message: "Queried DynamoDB for user receipts", version, hashedSub, itemCount });
     }
 
     // Convert DynamoDB items to receipt metadata, narrowed to the requested client (or, with no
@@ -212,6 +222,7 @@ export async function listUserReceipts(userSub, clientId) {
           clientId: item.clientId || null,
           kind: item.receipt?.kind || null,
           jointFilingId: item.receipt?.jointFilingId || null,
+          longPeriod: item.receipt?.longPeriod || null,
           amended: item.receipt?.amended === true,
           size: Buffer.byteLength(JSON.stringify(item.receipt ?? {})),
         };

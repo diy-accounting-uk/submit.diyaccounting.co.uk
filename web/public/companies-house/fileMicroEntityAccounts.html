@@ -731,9 +731,10 @@ In accordance with your instructions, we have compiled these unaudited financial
             <label for="govTestScenario">Gov-Test-Scenario</label>
             <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
           </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitFilingBtn"></div>
           <div class="button-group">
             <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
-            <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+            <button type="button" id="submitFilingBtn" class="btn" aria-describedby="submissionCost">Submit to Companies House</button>
           </div>
         </div>
       </div>
@@ -761,6 +762,7 @@ In accordance with your instructions, we have compiled these unaudited financial
     <script src="../lib/toml-parser.js"></script>
     <script src="../lib/money-input.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/submission-cost.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>

@@ -10,11 +10,11 @@
 import {
   ACCOUNTS_REGIMES,
   ACCOUNTS_TEXT_FIELDS,
-  BOX_SOURCE_FIELD,
-  COMPUTATION_SOURCE_FIELD,
   BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
+  DONATIONS_PAID_FIELD,
+  FIRST_PERIOD_START_FIELD,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
   MICRO_BALANCE_SHEET_FIELDS,
@@ -26,8 +26,15 @@ import {
   TEXT_BOXES,
   accountsFromValues,
   balanceSheetId,
+  PER_PERIOD_FIELD_IDS,
+  PER_PERIOD_LOAN_QUESTION_IDS,
+  LONG_PERIOD_DONATIONS_LABEL,
+  boxChangeTarget,
   boxRow,
-  changeTargetFor,
+  lineChangeTarget,
+  longPeriodOf,
+  periodFieldId,
+  secondPeriodField,
   ct600RequestFromValues,
   figuresFromValues,
   financialYearOf,
@@ -44,6 +51,7 @@ import {
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
+import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import {
   DEFAULT_AGENT_STATUS,
   agentRequestFields,
@@ -71,6 +79,8 @@ const COMPUTATION_LINES = [
   { field: "amortisation", meaning: "Add: amortisation" },
   { field: "entertaining", meaning: "Add: entertaining" },
   { field: "donations", meaning: "Add: donations" },
+  { field: "adjustedProfitBeforeAccountingPeriodAdjustments", meaning: "Adjusted profit before the time apportionment", style: "subtotal" },
+  { field: "timeApportionment", meaning: "Time apportionment", deduction: false },
   { field: "adjustedProfitBeforeCapitalAllowances", meaning: "Adjusted profit before capital allowances", style: "subtotal" },
   { field: "totalCapitalAllowances", meaning: "Less: total capital allowances", deduction: true },
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
@@ -107,7 +117,13 @@ const sending = {
   taxReturnAccepted: false,
   amendment: null,
   revision: null,
+  // A period of account over 12 months: the filing id both returns share and what each return has reached.
+  longPeriod: null,
 };
+
+// The boxes each accepted return was filed with, and the errors HMRC gave each return, for a long period of account.
+let filedLongBoxes = [null, null];
+let longErrors = [null, null];
 
 // bundle and taxData fill in once the books bundle has loaded; touched holds the error targets whose
 // field the customer has left; edited holds the ids the customer typed in, so a default stops following.
@@ -281,8 +297,8 @@ function choiceGroup(field) {
     create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
     hint,
     errorHost(field.id),
-    radio("no", "No", true),
-    radio("yes", "Yes", false),
+    radio("no", "No", field.default !== "yes"),
+    radio("yes", "Yes", field.default === "yes"),
   );
 }
 
@@ -314,6 +330,36 @@ function fieldGroup(field) {
   if (field.type === "dates") return datesGroup(field);
   if (field.type === "checkbox") return checkboxGroup(field.id, field.label);
   return textGroup(field);
+}
+
+// --- The second accounting period of a long period of account -----------------------------------
+// Each per-period field sits beside a second column that shows only when the period of account is
+// longer than 12 months. The first column keeps the field's own id; the second adds the suffix Ap2.
+
+const PERIOD_HINT_FIELDS = new Set(["annualInvestmentAllowance", "mainPoolAllowances"]);
+
+function returnTag(group, part) {
+  const label = group.querySelector("label, p.field-label");
+  label?.append(create("span", { class: "long-only", hidden: "" }, ` (return ${part})`));
+}
+
+function withPeriodHint(group, id, part) {
+  if (!PERIOD_HINT_FIELDS.has(id)) return;
+  group.querySelector(".hint")?.append(create("span", { "class": "period-hint", "data-period-hint": `${id}:${part}` }));
+}
+
+// A field and its second column: the first group is the field's own, the second is hidden until the period is long.
+function periodPair(field, firstGroup, secondGroup) {
+  returnTag(firstGroup, 1);
+  withPeriodHint(firstGroup, field.id, 1);
+  withPeriodHint(secondGroup, field.id, 2);
+  secondGroup.classList.add("period-pair__second");
+  secondGroup.hidden = true;
+  return create("div", { class: "period-pair" }, firstGroup, secondGroup);
+}
+
+function pairedFieldGroup(field) {
+  return periodPair(field, fieldGroup(field), fieldGroup(secondPeriodField(field)));
 }
 
 // A ledger: one row per line of the accounts, one column per year or movement. Every input
@@ -603,6 +649,7 @@ function workedTaxPanel() {
     errorHost(WORKED_TAX_ID),
     create("p", { id: "workedTaxEmpty", class: "hint" }, "Fill in the period and the accounts and the tax appears here."),
     create("dl", { id: "workedTaxRows", class: "worked-tax__list" }),
+    create("div", { id: "workedTaxLong", class: "worked-tax__returns", hidden: "" }),
   );
 }
 
@@ -629,163 +676,195 @@ function allowanceClasses(fields) {
   );
   const grouped = ALLOWANCE_CLASSES.flatMap(({ title, ids }) => [
     create("h4", {}, title),
-    create(
-      "div",
-      { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); column-gap: 1.5rem" },
-      ...ids.map((id) => byId.get(id)),
-    ),
+    create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id))),
   ]);
   const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
   return [...grouped, ...ungrouped];
 }
 
 // --- Loans to participators: rows the customer adds and removes -------------------------------
+// Each accounting period of a long period of account has its own set of rows. Part 2's ids carry the
+// suffix Ap2.
 
-const loanRows = { next: 1 };
-const repaymentRows = { next: 1 };
+const loanRows = { 1: 1, 2: 1 };
+const repaymentRows = { 1: 1, 2: 1 };
+const PARTS = [1, 2];
 
 function moneyGroup(id, label, hint) {
   return textGroup({ id, label, type: "whole-pounds", hint });
 }
 
-function removeButton(kind, row, label) {
-  return create("button", { "type": "button", "class": "secondary", "data-remove": kind, "data-row": String(row) }, label);
+function removeButton(kind, row, part, label) {
+  return create(
+    "button",
+    { "type": "button", "class": "secondary", "data-remove": kind, "data-row": String(row), "data-part": String(part) },
+    label,
+  );
 }
 
 function registerTargets(group) {
   for (const node of group.querySelectorAll("[data-error-target]")) state.targets?.add(node.dataset.errorTarget);
 }
 
-function loanRow(row) {
+function loanRow(row, part) {
   const group = create(
     "div",
-    { "class": "loan-row", "data-loan-row": String(row) },
-    textGroup({ id: loanId("Name", row), label: "Name of participator or associate", type: "text", maxlength: 56 }),
-    moneyGroup(loanId("Amount", row), "Amount still owed at the end of the period", "For example, £12,000"),
+    { "class": "loan-row", "data-loan-row": String(row), "data-part": String(part) },
+    textGroup({ id: loanId("Name", row, part), label: "Name of participator or associate", type: "text", maxlength: 56 }),
+    moneyGroup(loanId("Amount", row, part), "Amount still owed at the end of the period", "For example, £12,000"),
     create(
       "div",
       { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
       moneyGroup(
-        loanId("Lent", row),
+        loanId("Lent", row, part),
         "Of this, the amount lent on or after the rate change",
         "Leave it empty when none was lent after the change",
       ),
     ),
     textGroup({
-      id: loanId("Rate", row),
+      id: loanId("Rate", row, part),
       label: "Section 455 rate for this loan, if you want to use another (%)",
       type: "text",
       hint: "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
       inputmode: "decimal",
     }),
-    removeButton("loan", row, "Remove this loan"),
+    removeButton("loan", row, part, "Remove this loan"),
   );
   registerTargets(group);
   return group;
 }
 
-function repaymentRow(row) {
-  const select = create("select", {
-    "id": repaymentId("Name", row),
-    "name": repaymentId("Name", row),
-    "data-error-target": repaymentId("Name", row),
-  });
+function repaymentRow(row, part) {
+  const nameId = repaymentId("Name", row, part);
+  const select = create("select", { "id": nameId, "name": nameId, "data-error-target": nameId });
   const group = create(
     "div",
-    { "class": "loan-row", "data-repayment-row": String(row) },
-    create(
-      "div",
-      { class: "form-group" },
-      create("label", { for: repaymentId("Name", row) }, "Participator"),
-      errorHost(repaymentId("Name", row)),
-      select,
+    { "class": "loan-row", "data-repayment-row": String(row), "data-part": String(part) },
+    create("div", { class: "form-group" }, create("label", { for: nameId }, "Participator"), errorHost(nameId), select),
+    textGroup({ id: repaymentId("Date", row, part), label: "Date", type: "date" }),
+    moneyGroup(repaymentId("Repaid", row, part), "Amount repaid", "Leave it empty when none was repaid"),
+    moneyGroup(
+      repaymentId("Released", row, part),
+      "Amount released or written off",
+      "Leave it empty when none was released or written off",
     ),
-    textGroup({ id: repaymentId("Date", row), label: "Date", type: "date" }),
-    moneyGroup(repaymentId("Repaid", row), "Amount repaid", "Leave it empty when none was repaid"),
-    moneyGroup(repaymentId("Released", row), "Amount released or written off", "Leave it empty when none was released or written off"),
-    removeButton("repayment", row, "Remove this repayment"),
+    removeButton("repayment", row, part, "Remove this repayment"),
   );
   registerTargets(group);
   return group;
 }
 
-function addLoanRow() {
-  const row = loanRows.next++;
-  element("loanRows").append(loanRow(row));
+function addLoanRow(part = 1) {
+  const row = loanRows[part]++;
+  element(periodFieldId("loanRows", part)).append(loanRow(row, part));
   syncRepaymentNames();
   return row;
 }
 
-function addRepaymentRow() {
-  const row = repaymentRows.next++;
-  element("repaymentRows").append(repaymentRow(row));
+function addRepaymentRow(part = 1) {
+  const row = repaymentRows[part]++;
+  element(periodFieldId("repaymentRows", part)).append(repaymentRow(row, part));
   syncRepaymentNames();
   return row;
 }
 
-function loansSection(fields) {
-  const [loansMade, releasedBeforeEnd, repaidSince] = fields;
+// The three questions of one set of loans, for one accounting period.
+function loansPartBody(part, questions) {
+  const [loansMade, releasedBeforeEnd, repaidSince] = questions;
+  const id = (name) => periodFieldId(name, part);
   return [
     loansMade,
-    create("p", { id: "loansBookNote", class: "hint", hidden: "" }),
+    ...(part === 1 ? [create("p", { id: "loansBookNote", class: "hint", hidden: "" })] : []),
     create(
       "div",
-      { id: "loansDetail", hidden: "" },
+      { id: id("loansDetail"), hidden: "" },
       create("h4", {}, "Loans still owed at the end of the period"),
-      create("div", { id: "loanRows" }),
-      create("button", { type: "button", id: "addLoanBtn", class: "secondary" }, "Add another participator"),
+      create("div", { id: id("loanRows") }),
+      create(
+        "button",
+        { "type": "button", "id": id("addLoanBtn"), "class": "secondary", "data-part": String(part) },
+        "Add another participator",
+      ),
       releasedBeforeEnd,
       repaidSince,
       create(
         "div",
-        { id: "repaymentsDetail", hidden: "" },
+        { id: id("repaymentsDetail"), hidden: "" },
         create("h4", {}, "Repayments, releases and write-offs since the period end"),
         create(
           "p",
           { class: "hint" },
           "Enter what was repaid up to today. You claim relief on later repayments from HMRC after they are made.",
         ),
-        create("div", { id: "repaymentRows" }),
-        create("button", { type: "button", id: "addRepaymentBtn", class: "secondary" }, "Add another repayment"),
+        create("div", { id: id("repaymentRows") }),
+        create(
+          "button",
+          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary", "data-part": String(part) },
+          "Add another repayment",
+        ),
       ),
+    ),
+  ];
+}
+
+function loansSection(fields) {
+  const first = fields.map(fieldGroup);
+  for (const group of first) returnTag(group, 1);
+  const second = fields.map((field) => fieldGroup({ ...secondPeriodField(field), focus: `${periodFieldId(field.id, 2)}No` }));
+  return [
+    ...loansPartBody(1, first),
+    create(
+      "div",
+      { id: "loansPart2", hidden: "" },
+      create("h4", { id: "loansPart2Heading" }, "Return 2 of 2: the second accounting period"),
+      ...loansPartBody(2, second),
     ),
   ];
 }
 
 // Each repayment names one of the participators in the loans above it.
 function syncRepaymentNames() {
-  const names = [...element("loanRows").querySelectorAll('input[id^="loanName"]')].map((input) => input.value.trim()).filter(Boolean);
-  for (const select of element("repaymentRows").querySelectorAll("select")) {
-    const chosen = select.value;
-    select.replaceChildren(
-      create("option", { value: "" }, "Choose a participator"),
-      ...[...new Set(names)].map((name) => create("option", { value: name }, name)),
-    );
-    select.value = names.includes(chosen) ? chosen : "";
-  }
-}
-
-// Whether the period crosses a date at which the section 455 rate changes decides if each loan asks for the part lent after it.
-function showLoanDetail(values) {
-  const asked = values.loansMade === "yes";
-  element("loansDetail").hidden = !asked;
-  if (asked && loanRowNumbers(values).length === 0) addLoanRow();
-  element("repaymentsDetail").hidden = !(asked && values.repaidSince === "yes");
-  if (asked && values.repaidSince === "yes" && repaymentRowNumbers(values).length === 0) addRepaymentRow();
-  let crosses = false;
-  if (state.bundle && values.periodStart && values.periodEnd) {
-    try {
-      crosses = Boolean(state.bundle.section455RateChangeDate(values.periodStart, values.periodEnd, taxDataByYear()));
-    } catch {
-      crosses = false;
+  for (const part of PARTS) {
+    const names = [...element(periodFieldId("loanRows", part)).querySelectorAll('input[id^="loanName"]')]
+      .map((input) => input.value.trim())
+      .filter(Boolean);
+    for (const select of element(periodFieldId("repaymentRows", part)).querySelectorAll("select")) {
+      const chosen = select.value;
+      select.replaceChildren(
+        create("option", { value: "" }, "Choose a participator"),
+        ...[...new Set(names)].map((name) => create("option", { value: name }, name)),
+      );
+      select.value = names.includes(chosen) ? chosen : "";
     }
   }
-  for (const node of element("loanRows").querySelectorAll("[data-loan-lent]")) node.hidden = !crosses;
 }
 
-function removeRow(kind, row) {
+// Whether an accounting period crosses a date at which the section 455 rate changes decides if each loan asks for the part lent after it.
+function showLoanDetail(values) {
+  const long = longPeriodOf(values);
+  for (const part of PARTS) {
+    const asked = values[periodFieldId("loansMade", part)] === "yes" && (part === 1 || Boolean(long));
+    const repaid = values[periodFieldId("repaidSince", part)] === "yes";
+    element(periodFieldId("loansDetail", part)).hidden = !asked;
+    if (asked && loanRowNumbers(values, part).length === 0) addLoanRow(part);
+    element(periodFieldId("repaymentsDetail", part)).hidden = !(asked && repaid);
+    if (asked && repaid && repaymentRowNumbers(values, part).length === 0) addRepaymentRow(part);
+    const period = long ? long.periods[part - 1] : { periodStart: values.periodStart, periodEnd: values.periodEnd };
+    let crosses = false;
+    if (state.bundle && period.periodStart && period.periodEnd) {
+      try {
+        crosses = Boolean(state.bundle.section455RateChangeDate(period.periodStart, period.periodEnd, taxDataByYear()));
+      } catch {
+        crosses = false;
+      }
+    }
+    for (const node of element(periodFieldId("loanRows", part)).querySelectorAll("[data-loan-lent]")) node.hidden = !crosses;
+  }
+}
+
+function removeRow(kind, row, part) {
   const selector = kind === "loan" ? `[data-loan-row="${row}"]` : `[data-repayment-row="${row}"]`;
-  element(kind === "loan" ? "loanRows" : "repaymentRows")
+  element(periodFieldId(kind === "loan" ? "loanRows" : "repaymentRows", part))
     .querySelector(selector)
     ?.remove();
   syncRepaymentNames();
@@ -795,9 +874,10 @@ function removeRow(kind, row) {
 function handleLoanButton(event) {
   const button = event.target.closest?.("button");
   if (!button) return;
-  if (button.id === "addLoanBtn") addLoanRow();
-  else if (button.id === "addRepaymentBtn") addRepaymentRow();
-  else if (button.dataset.remove) removeRow(button.dataset.remove, button.dataset.row);
+  const part = Number(button.dataset.part ?? 1);
+  if (button.id === periodFieldId("addLoanBtn", part)) addLoanRow(part);
+  else if (button.id === periodFieldId("addRepaymentBtn", part)) addRepaymentRow(part);
+  else if (button.dataset.remove) removeRow(button.dataset.remove, button.dataset.row, part);
   else return;
   refresh();
 }
@@ -805,19 +885,50 @@ function handleLoanButton(event) {
 // A book fill names rows that do not exist yet: make the rows its entries need.
 function growRowsFor(entries) {
   const ids = new Set(entries.map(([id]) => id));
-  for (let row = 1; row <= 999; row += 1) {
-    if (!ids.has(loanId("Name", row))) break;
-    if (!element("loanRows").querySelector(`[data-loan-row="${row}"]`)) {
-      loanRows.next = row;
-      addLoanRow();
+  for (const part of PARTS) {
+    for (let row = 1; row <= 999; row += 1) {
+      if (!ids.has(loanId("Name", row, part))) break;
+      if (!element(periodFieldId("loanRows", part)).querySelector(`[data-loan-row="${row}"]`)) {
+        loanRows[part] = row;
+        addLoanRow(part);
+      }
     }
   }
 }
 
+function periodStartQuestion() {
+  const group = choiceGroup({
+    id: FIRST_PERIOD_START_FIELD,
+    label: "Does the first accounting period start on the first day of the accounts?",
+    hint: "Answer Yes when the company's accounting period began on the first day of these accounts. Submit files a long period only from there.",
+    default: "yes",
+  });
+  group.id = "firstPeriodStartGroup";
+  group.hidden = true;
+  return group;
+}
+
+function longPeriodPanel() {
+  return create("div", { id: "longPeriodPanel", class: "long-period-panel", role: "status", hidden: "" });
+}
+
+function fieldGroupsOf(sectionId) {
+  return CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map((field) =>
+    PER_PERIOD_FIELD_IDS.includes(field.id) ? pairedFieldGroup(field) : fieldGroup(field),
+  );
+}
+
 function sectionBody(sectionId) {
-  const fields = CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map(fieldGroup);
+  const fields = fieldGroupsOf(sectionId);
+  if (sectionId === "period") return [...fields, longPeriodPanel(), periodStartQuestion()];
   if (sectionId === "allowances") return allowanceClasses(fields);
-  if (sectionId === "loans") return loansSection(fields);
+  if (sectionId === "loans") return loansSection(CT600_FORM_FIELDS.filter((field) => field.section === "loans"));
+  if (sectionId === "reliefs") {
+    const donationsPaid = pairedFieldGroup(DONATIONS_PAID_FIELD);
+    donationsPaid.id = "donationsPaidGroup";
+    donationsPaid.hidden = true;
+    return [...fields, donationsPaid];
+  }
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
     return [
@@ -839,8 +950,10 @@ function renderForm() {
     sections.push(create("section", { id: `section-${id}`, class: "form-section" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
   }
-  loanRows.next = 1;
-  repaymentRows.next = 1;
+  for (const part of PARTS) {
+    loanRows[part] = 1;
+    repaymentRows[part] = 1;
+  }
   element("formSections").replaceChildren(...sections);
   state.targets = new Set([...element("formSections").querySelectorAll("[data-error-target]")].map((node) => node.dataset.errorTarget));
   state.targets.add(WORKED_TAX_ID);
@@ -936,11 +1049,13 @@ async function ensureBundle() {
   return state.bundlePromise;
 }
 
-// The financial year the period ends in and the one before it: a loan lent in the earlier tax year is charged at that year's rate.
-async function ensureTaxData(periodEnd) {
+// The financial years the period covers and the one before the last: a loan lent in the earlier tax year is charged at that year's rate.
+async function ensureTaxData(periodStart, periodEnd) {
   if (!isIsoDate(periodEnd) || !state.bundle) return;
-  const financialYear = financialYearOf(periodEnd);
-  const missing = [financialYear - 1, financialYear].filter((year) => !(year in state.taxData));
+  const lastYear = financialYearOf(periodEnd);
+  const firstYear = Math.min(lastYear - 1, isIsoDate(periodStart) ? financialYearOf(periodStart) : lastYear - 1);
+  const years = Array.from({ length: Math.max(lastYear - firstYear + 1, 0) }, (_, index) => firstYear + index);
+  const missing = years.filter((year) => !(year in state.taxData));
   if (missing.length === 0) return;
   for (const year of missing) state.taxData[year] = null;
   await Promise.all(
@@ -959,17 +1074,64 @@ function taxDataByYear() {
   return Object.fromEntries(Object.entries(state.taxData).filter(([, data]) => data));
 }
 
+// The company's name and number come from the lookup, so the form has no field for them.
+const WHOLE_PERIOD_PROBLEM_FIELDS = ["companyName", "companyNumber"];
+
+function modelProblem(problem, part = 1) {
+  if (WHOLE_PERIOD_PROBLEM_FIELDS.includes(problem.field)) return null;
+  const target = targetOfModelProblem(problem.field, state.targets);
+  const partTarget = part === 2 && isSecondColumnTarget(target) ? periodFieldId(target, 2) : target;
+  return {
+    target: state.targets.has(partTarget) ? partTarget : target,
+    message: isSecondColumnTarget(target) ? `Return ${part} of 2: ${problem.message}` : problem.message,
+    refusal: problem.refusal,
+  };
+}
+
+function isSecondColumnTarget(target) {
+  return PER_PERIOD_FIELD_IDS.includes(target) || PER_PERIOD_LOAN_QUESTION_IDS.includes(target) || target === DONATIONS_PAID_FIELD.id;
+}
+
+// A long period of account is checked as the two returns it files: each accounting period's own figures,
+// then the tax of both worked together, because return 2's loss can reach return 1.
+function longPeriodModelProblems(figures) {
+  const options = { today: today(), taxDataByYear: taxDataByYear() };
+  let split;
+  try {
+    split = state.bundle.splitLongPeriodFigures(figures);
+  } catch (error) {
+    if (error.field === undefined) throw error;
+    return [modelProblem({ field: error.field, message: error.message, refusal: true })];
+  }
+  const [first, second] = split;
+  const problems = [
+    ...state.bundle.validateCt600Figures(first, options).map((problem) => modelProblem(problem, 1)),
+    ...state.bundle.validateCt600Figures(second, { today: options.today }).map((problem) => modelProblem(problem, 2)),
+  ].filter(Boolean);
+  if (problems.length > 0) return problems;
+  try {
+    state.bundle.deriveLongPeriodReturns(figures, options.taxDataByYear, { today: options.today });
+  } catch (error) {
+    if (error.field === undefined) throw error;
+    let part = 2;
+    try {
+      state.bundle.deriveCt600FromFigures(first, options.taxDataByYear, { today: options.today });
+    } catch {
+      part = 1;
+    }
+    problems.push(modelProblem({ field: error.field, message: error.message, refusal: true }, part));
+  }
+  return problems;
+}
+
 function modelProblems(values) {
   if (!state.bundle) return [];
   const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
-  const problems = state.bundle.validateCt600Figures(figures, { today: today(), taxDataByYear: taxDataByYear() });
-  return problems
-    .filter((problem) => !["companyName", "companyNumber"].includes(problem.field))
-    .map((problem) => ({
-      target: targetOfModelProblem(problem.field, state.targets),
-      message: problem.message,
-      refusal: problem.refusal,
-    }));
+  if (figures.accountingPeriods) return longPeriodModelProblems(figures);
+  return state.bundle
+    .validateCt600Figures(figures, { today: today(), taxDataByYear: taxDataByYear() })
+    .map((problem) => modelProblem(problem))
+    .filter(Boolean);
 }
 
 function orderOfTarget(target) {
@@ -1006,14 +1168,7 @@ function percentText(rate) {
 
 // The supplementary page CT600A boxes the tax is worked from, and the rate each loan uses.
 function loansWorkedRows(page) {
-  const row = (term, value, hint, id) =>
-    create(
-      "div",
-      { class: "worked-tax__row", ...(id ? { id } : {}) },
-      create("dt", {}, term),
-      create("dd", {}, value),
-      ...(hint ? [create("dd", { class: "hint" }, hint)] : []),
-    );
+  const row = workedRow;
   const rows = [
     row("Box A15: total of the loans still owed", `£${formatPounds(page.totalLoans)}`, "The loans you entered"),
     row("Box A20: tax on the loans", `£${formatPounds(page.taxChargeable)}`, "Each loan at its section 455 rate, to the penny"),
@@ -1051,83 +1206,150 @@ function loansWorkedRows(page) {
   return rows;
 }
 
-function renderWorkedTax(values) {
-  const rows = element("workedTaxRows");
-  if (!state.bundle) {
-    rows.replaceChildren();
-    return;
+function workedRow(term, value, hint, id) {
+  return create(
+    "div",
+    { class: "worked-tax__row", ...(id ? { id } : {}) },
+    create("dt", {}, term),
+    create("dd", {}, value),
+    ...(hint ? [create("dd", { class: "hint" }, hint)] : []),
+  );
+}
+
+// The rows of one return: its adjusted profit, each worked box, the loans page, and the loss carried forward or back.
+function workedItems(derived) {
+  const items = [
+    workedRow(
+      "Adjusted profit or loss in the computation",
+      `£${formatPounds(derived.computationLines.adjustedProfit)}`,
+      "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
+    ),
+  ];
+  for (const row of CT600_BOX_ROWS.filter(
+    (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
+  )) {
+    items.push(workedRow(`Box ${row.box}: ${row.label}`, workedValue(row.box, derived.boxes[row.box]), row.rule));
   }
-  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
-  const placeholders = {
+  if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
+  if (derived.losses.totalCarriedForward > 0) {
+    items.push(
+      workedRow(
+        "Trading losses carried forward",
+        `£${formatPounds(derived.losses.totalCarriedForward)}`,
+        "The loss of this period and the losses brought forward that no claim uses",
+        "workedCarriedForward",
+      ),
+    );
+  }
+  if (derived.carryBack) {
+    items.push(
+      workedRow(
+        "Corporation Tax repayable on the carry-back claim",
+        `£${formatPounds(derived.carryBack.taxRepayable)}`,
+        `Claimed against the period ${derived.carryBack.priorPeriodStart} to ${derived.carryBack.priorPeriodEnd}. That return carries the loss in box 275 with box 280 ticked.`,
+        "workedCarryBack",
+      ),
+    );
+  }
+  return items;
+}
+
+function placeholdersFor(figures) {
+  return {
     utr: figures.utr || PLACEHOLDER_UTR,
     companyName: figures.companyName || PLACEHOLDER_TEXT,
     companyNumber: figures.companyNumber || "00000000",
     declarantName: figures.declarantName || PLACEHOLDER_TEXT,
     declarantStatus: figures.declarantStatus || PLACEHOLDER_TEXT,
   };
+}
+
+// Both returns side by side: the days and the split, the limits of each period, and the dates tax and the returns fall due.
+function longPeriodWorkedTax(values, derivedReturns, periods) {
+  const holder = element("workedTaxLong");
+  const wholeDays = periods.days;
+  const columns = derivedReturns.map((derived, index) => {
+    const period = periods.periods[index];
+    const proportion = period.days / wholeDays;
+    const years = new Map();
+    for (const year of [financialYearOf(period.periodStart), financialYearOf(period.periodEnd)]) years.set(year, taxDataByYear()[year]);
+    const limits = [...years].flatMap(([year, data]) => {
+      const rates = data?.corporation_tax;
+      if (!rates?.small_profits_limit) return [];
+      const yearDays = Math.round((Date.UTC(year + 1, 3, 1) - Date.UTC(year, 3, 1)) / 86_400_000);
+      const scale = period.days / Math.max(yearDays, period.days);
+      return [
+        workedRow(
+          `Limits for the financial year ${year}`,
+          `£${formatPounds(Math.round(rates.small_profits_limit * scale * 100) / 100)} and £${formatPounds(Math.round(rates.main_rate_limit * scale * 100) / 100)}`,
+          `The small profits limit and the upper limit, scaled to the ${period.days} days of this accounting period`,
+        ),
+      ];
+    });
+    return create(
+      "section",
+      { "class": "worked-tax__return", "aria-labelledby": `workedReturn${index + 1}Heading` },
+      create(
+        "h4",
+        { id: `workedReturn${index + 1}Heading` },
+        `Return ${index + 1} of 2: ${longDateText(period.periodStart)} to ${longDateText(period.periodEnd)}`,
+      ),
+      create(
+        "dl",
+        { class: "worked-tax__list" },
+        workedRow(
+          "Days in this accounting period",
+          `${period.days} of ${wholeDays} days`,
+          `Turnover, bank interest and the adjusted profit are shared by days: ${Math.round(proportion * 10000) / 100}% of the period of account.`,
+        ),
+        ...workedItems(derived),
+        ...limits,
+        workedRow(
+          "Tax due",
+          longDateText(taxDueDate(period.periodEnd)),
+          "The day after nine months from the end of this accounting period",
+        ),
+        workedRow(
+          "Return due",
+          longDateText(returnDueDate(periods.periods[1].periodEnd)),
+          "Both returns are due 12 months after the period of account ends",
+        ),
+      ),
+    );
+  });
+  holder.replaceChildren(...columns);
+  holder.hidden = false;
+  element("workedTaxRows").hidden = true;
+}
+
+function renderWorkedTax(values) {
+  const rows = element("workedTaxRows");
+  element("workedTaxLong").hidden = true;
+  rows.hidden = false;
+  if (!state.bundle) {
+    rows.replaceChildren();
+    return;
+  }
+  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
+  const placeholders = placeholdersFor(figures);
+  const periods = longPeriodOf(values);
   let derived;
   try {
-    derived = state.bundle.deriveCt600FromFigures({ ...figures, ...placeholders }, taxDataByYear(), { today: today() });
+    derived = figures.accountingPeriods
+      ? state.bundle.deriveLongPeriodReturns({ ...figures, ...placeholders }, taxDataByYear(), { today: today() })
+      : state.bundle.deriveCt600FromFigures({ ...figures, ...placeholders }, taxDataByYear(), { today: today() });
   } catch {
     element("workedTaxEmpty").style.display = "block";
     rows.replaceChildren();
     return;
   }
   element("workedTaxEmpty").style.display = "none";
-  const items = [
-    create(
-      "div",
-      { class: "worked-tax__row" },
-      create("dt", {}, "Adjusted profit or loss in the computation"),
-      create("dd", {}, `£${formatPounds(derived.computationLines.adjustedProfit)}`),
-      create(
-        "dd",
-        { class: "hint" },
-        "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
-      ),
-    ),
-  ];
-  for (const row of CT600_BOX_ROWS.filter(
-    (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
-  )) {
-    items.push(
-      create(
-        "div",
-        { class: "worked-tax__row" },
-        create("dt", {}, `Box ${row.box}: ${row.label}`),
-        create("dd", {}, workedValue(row.box, derived.boxes[row.box])),
-        create("dd", { class: "hint" }, row.rule),
-      ),
-    );
+  if (figures.accountingPeriods) {
+    longPeriodWorkedTax(values, derived, periods);
+    rows.replaceChildren();
+    return;
   }
-  if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
-  if (derived.losses.totalCarriedForward > 0) {
-    items.push(
-      create(
-        "div",
-        { class: "worked-tax__row", id: "workedCarriedForward" },
-        create("dt", {}, "Trading losses carried forward"),
-        create("dd", {}, `£${formatPounds(derived.losses.totalCarriedForward)}`),
-        create("dd", { class: "hint" }, "The loss of this period and the losses brought forward that no claim uses"),
-      ),
-    );
-  }
-  if (derived.carryBack) {
-    items.push(
-      create(
-        "div",
-        { class: "worked-tax__row", id: "workedCarryBack" },
-        create("dt", {}, "Corporation Tax repayable on the carry-back claim"),
-        create("dd", {}, `£${formatPounds(derived.carryBack.taxRepayable)}`),
-        create(
-          "dd",
-          { class: "hint" },
-          `Claimed against the period ${derived.carryBack.priorPeriodStart} to ${derived.carryBack.priorPeriodEnd}. That return carries the loss in box 275 with box 280 ticked.`,
-        ),
-      ),
-    );
-  }
-  rows.replaceChildren(...items);
+  rows.replaceChildren(...workedItems(derived));
 }
 
 // --- Showing problems -----------------------------------------------------------------------
@@ -1206,15 +1428,113 @@ function updateSummary() {
   else summary.querySelector(".error-summary__list").replaceChildren(...summaryItems(state.problems));
 }
 
+const TAX_ACCOUNTING_PERIOD_GUIDE = "https://www.gov.uk/corporation-tax-accounting-period";
+
+function periodRangeText(period) {
+  return `${longDateText(period.periodStart)} to ${longDateText(period.periodEnd)}`;
+}
+
+function longPeriodPanelContent(long) {
+  const [first, second] = long.periods;
+  return [
+    create("h3", { id: "longPeriodHeading" }, "This period of account files as two returns"),
+    paragraph(
+      `A Company Tax Return covers at most 12 months, so HMRC takes these ${long.days} days as two accounting periods. Both returns carry the same accounts.`,
+    ),
+    create(
+      "ul",
+      {},
+      create("li", {}, paragraph({ strong: "Return 1 of 2: " }, `${periodRangeText(first)} (${first.days} days)`)),
+      create("li", {}, paragraph({ strong: "Return 2 of 2: " }, `${periodRangeText(second)} (${second.days} days)`)),
+    ),
+    paragraph("You send return 1 first. HMRC must accept it before you send return 2. The two returns cost one token between them."),
+    create(
+      "p",
+      {},
+      "Before the original filing date, tell HMRC the company's new accounting period dates. ",
+      create("a", { href: TAX_ACCOUNTING_PERIOD_GUIDE, target: "_blank", rel: "noopener" }, "How to update the dates on GOV.UK"),
+      ".",
+    ),
+    ...(state.workingSheet
+      ? [
+          paragraph(
+            "The book covers 12 months, so its own tax working is not checked against a longer period. Type the figures for the whole period of account.",
+          ),
+        ]
+      : []),
+  ];
+}
+
+// The text that follows a hint when the period is long: each column's allowance limit and main pool rate.
+function periodHintText(id, period) {
+  if (id === "annualInvestmentAllowance") {
+    const maximum = Math.floor(state.bundle.annualInvestmentAllowanceMaximum(period.periodStart, period.periodEnd));
+    return ` The most for ${periodRangeText(period)} is £${maximum.toLocaleString("en-GB")}.`;
+  }
+  const data = taxDataByYear();
+  const years = new Map();
+  for (let day = period.periodStart; day <= period.periodEnd; day = addDay(day))
+    years.set(financialYearOf(day), (years.get(financialYearOf(day)) ?? 0) + 1);
+  const rates = [...years].map(([year, days]) => ({ year, days, rate: data[year]?.capital_allowances?.writing_down_allowance_main }));
+  if (rates.some(({ rate }) => rate === undefined)) return "";
+  const distinct = [...new Set(rates.map(({ rate }) => rate))];
+  if (distinct.length === 1) return ` The main pool rate for this period is ${percentText(distinct[0])}.`;
+  const days = rates.reduce((total, { days: count }) => total + count, 0);
+  const hybrid = rates.reduce((total, { days: count, rate }) => total + rate * count, 0) / days;
+  return ` The period spans a change of the main pool rate (${distinct.map(percentText).join(" then ")}), so the rate is a hybrid of ${percentText(hybrid)}.`;
+}
+
+function addDay(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+// A period of account over 12 months shows its panel, the second column of each per-period field, the donations paid and the second set of loans.
+function updateLongPeriod(values) {
+  const long = longPeriodOf(values);
+  const form = element("returnForm");
+  const showing = Boolean(long);
+  form.classList.toggle("long-period", showing);
+  for (const node of form.querySelectorAll(".period-pair__second, #donationsPaidGroup, #loansPart2, #firstPeriodStartGroup")) {
+    node.hidden = !showing;
+  }
+  for (const node of form.querySelectorAll(".long-only")) node.hidden = !showing;
+  const panel = element("longPeriodPanel");
+  const panelShown = Boolean(long) && !long.tooLong;
+  panel.hidden = !panelShown;
+  // The panel is a live region, so it changes only when what it says changes.
+  const panelKey = panelShown ? `${values.periodStart}|${values.periodEnd}|${Boolean(state.workingSheet)}` : "";
+  if (panel.dataset.key !== panelKey) {
+    panel.dataset.key = panelKey;
+    panel.replaceChildren(...(panelShown ? longPeriodPanelContent(long) : []));
+  }
+  element("firstPeriodStart").textContent = long
+    ? `Does the first accounting period start on ${longDateText(values.periodStart)}?`
+    : "Does the first accounting period start on the first day of the accounts?";
+  const donations = form.querySelector('label[for="donations"]');
+  if (donations)
+    donations.textContent = showing ? LONG_PERIOD_DONATIONS_LABEL : CT600_FORM_FIELDS.find((field) => field.id === "donations").label;
+  if (long && state.bundle) {
+    for (const node of form.querySelectorAll("[data-period-hint]")) {
+      const [id, part] = node.dataset.periodHint.split(":");
+      node.textContent = periodHintText(id, long.periods[Number(part) - 1]);
+    }
+  } else {
+    for (const node of form.querySelectorAll("[data-period-hint]")) node.textContent = "";
+  }
+}
+
 function refresh() {
   if (!element("formSections").firstChild) return;
   const values = readValues();
+  updateLongPeriod(values);
   showLoanDetail(values);
   state.problems = evaluate(values);
   renderWorkedTax(values);
   showTouchedErrors();
   updateSummary();
-  ensureTaxData(values.periodEnd);
+  ensureTaxData(values.periodStart, values.periodEnd);
 }
 
 function targetOf(control) {
@@ -1461,39 +1781,144 @@ function renderSendTo(values) {
   element("reviewSendTo").replaceChildren(table);
 }
 
+function sortBoxes(keys) {
+  return [...keys].sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || String(a).localeCompare(String(b)));
+}
+
+function boxTableRows(boxes, values, part, idSuffix) {
+  return sortBoxes(Object.keys(boxes)).map((box) => {
+    const label = boxRow(box).label;
+    const target = boxChangeTarget(box, values, part);
+    const change = target ? changeLink(target, `box ${box}, ${label}`) : companyChangeLink();
+    const row = tableRow(box, label, "", change);
+    if (box === "340" || box === "390") amountCell(row.children[2], `${boxes[box]}%`);
+    else if (box === "329") row.children[2].textContent = "Yes";
+    else if (TEXT_BOXES.has(Number(box)) || TEXT_BOXES.has(box)) row.children[2].textContent = boxes[box];
+    else amountCell(row.children[2], formatPounds(boxes[box]));
+    row.children[2].classList.add("review-table__value-cell");
+    row.id = `review-box-${box}${idSuffix}`;
+    return row;
+  });
+}
+
+function computationTableRows(lines, values, part, idSuffix, lineLabels = {}) {
+  return COMPUTATION_LINES.filter(({ field }) => lines[field] !== undefined || !LONG_ONLY_LINES.has(field)).map(
+    ({ field, meaning, deduction, style }) => {
+      const label = lineLabels[field] ?? meaning;
+      const row = tableRow(label, "", changeLink(lineChangeTarget(field, values, part), label));
+      amountCell(row.children[1], formatPounds(lines[field], deduction), style);
+      row.id = `review-line-${field}${idSuffix}`;
+      return row;
+    },
+  );
+}
+
 function renderReview(preview) {
   const values = readValues();
   renderSendTo(values);
   renderAnswers(values);
-  const boxRows = Object.keys(preview.boxes)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .map((box) => {
-      const label = boxRow(box).label;
-      const source = BOX_SOURCE_FIELD[box];
-      const change = source ? changeLink(changeTargetFor(source, values), `box ${box}, ${label}`) : companyChangeLink();
-      const row = tableRow(box, label, "", change);
-      if (box === 340 || box === 390) amountCell(row.children[2], `${preview.boxes[box]}%`);
-      else if (box === 329) row.children[2].textContent = "Yes";
-      else if (TEXT_BOXES.has(box)) row.children[2].textContent = preview.boxes[box];
-      else amountCell(row.children[2], formatPounds(preview.boxes[box]));
-      row.children[2].classList.add("review-table__value-cell");
-      row.id = `review-box-${box}`;
-      return row;
-    });
+  const long = Array.isArray(preview.returns);
+  element("singleReview").hidden = long;
+  element("longReviews").hidden = !long;
+  element("longReviews").replaceChildren();
+  if (long) {
+    renderLongReviews(preview, values);
+    element("previewIxbrl").textContent = preview.returns.map((part) => part.computationsIxbrl).join("\n");
+    return;
+  }
   element("ct600Table")
     .querySelector("tbody")
-    .replaceChildren(...boxRows);
-  const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) => {
-    const row = tableRow(meaning, "", changeLink(changeTargetFor(COMPUTATION_SOURCE_FIELD[field], values), meaning));
-    amountCell(row.children[1], formatPounds(preview.computationLines[field], deduction), style);
-    row.id = `review-line-${field}`;
-    return row;
-  });
+    .replaceChildren(...boxTableRows(preview.boxes, values, 1, ""));
   element("computationsTable")
     .querySelector("tbody")
-    .replaceChildren(...lineRows);
+    .replaceChildren(...computationTableRows(preview.computationLines, values, 1, ""));
   element("previewIxbrl").textContent = preview.computationsIxbrl;
+}
+
+function reviewTables(index) {
+  const boxes = create(
+    "table",
+    { id: `ct600Table${index}`, class: "results-table review-table review-table--boxes" },
+    create(
+      "colgroup",
+      {},
+      create("col", { class: "review-table__box" }),
+      create("col"),
+      create("col", { class: "review-table__value" }),
+      create("col", { class: "review-table__change" }),
+    ),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        create("th", { scope: "col" }, "Box"),
+        create("th", { scope: "col" }, "Meaning"),
+        create("th", { scope: "col", class: "amount" }, "Value (amounts in £)"),
+        create("th", { scope: "col" }, "Change"),
+      ),
+    ),
+    create("tbody"),
+  );
+  const computations = create(
+    "table",
+    { id: `computationsTable${index}`, class: "results-table review-table" },
+    create(
+      "colgroup",
+      {},
+      create("col"),
+      create("col", { class: "review-table__value" }),
+      create("col", { class: "review-table__change" }),
+    ),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        create("th", { scope: "col" }, "Line"),
+        create("th", { scope: "col", class: "amount" }, "£"),
+        create("th", { scope: "col" }, "Change"),
+      ),
+    ),
+    create("tbody"),
+  );
+  return { boxes, computations };
+}
+
+// The computation lines only a long period of account has.
+const LONG_ONLY_LINES = new Set(["adjustedProfitBeforeAccountingPeriodAdjustments", "timeApportionment"]);
+
+function renderLongReviews(preview, values) {
+  const periodDays = longPeriodOf(values).days;
+  const sections = preview.returns.map((part, position) => {
+    const suffix = position === 0 ? "" : "Ap2";
+    const days = longPeriodOf(values).periods[position].days;
+    const { boxes, computations } = reviewTables(part.part);
+    boxes.querySelector("tbody").replaceChildren(...boxTableRows(part.boxes, values, part.part, suffix));
+    computations.querySelector("tbody").replaceChildren(
+      ...computationTableRows(part.computationLines, values, part.part, suffix, {
+        adjustedProfitBeforeAccountingPeriodAdjustments: `Adjusted profit for the ${periodDays} days of the period of account`,
+        timeApportionment: `Time apportionment: ${days} of ${periodDays} days`,
+      }),
+    );
+    return create(
+      "section",
+      { "id": `review-return-${part.part}`, "class": "return-review", "aria-labelledby": `reviewReturn${part.part}Heading` },
+      create("h3", { id: `reviewReturn${part.part}Heading` }, `Return ${part.part} of 2: ${periodRangeText(part)}`),
+      create(
+        "p",
+        { class: "hint" },
+        `Tax is due on ${longDateText(part.taxDueDate)}. The return is due on ${longDateText(part.returnDueDate)}.`,
+      ),
+      create("h4", {}, `CT600 boxes, return ${part.part}`),
+      boxes,
+      create("h4", {}, `Computations, return ${part.part}`),
+      computations,
+    );
+  });
+  element("longReviews").replaceChildren(...sections);
 }
 
 async function handleReturnFormSubmit(event) {
@@ -1518,6 +1943,7 @@ async function handleReturnFormSubmit(event) {
     previewRequest = { ...ct600RequestFromValues(values, company, state.workingSheet), ...agentFields() };
     reviewedValues = values;
     const preview = await window.previewCtReturn(previewRequest);
+    if (Array.isArray(preview.returns) && !chooseAmendedReturns(preview)) return;
     renderReview(preview);
     reviewedPreview = preview;
     reviewReached = true;
@@ -1700,18 +2126,29 @@ function companiesHouseAccepted() {
 }
 
 // The review opens one joint filing: both sends carry its id. Once the accounts are with Companies House
-// the choice is fixed, so a later review keeps it.
+// the choice is fixed, so a later review keeps it. A period of account over 12 months names its two
+// returns with one filing id, which is the joint filing id when the accounts go to Companies House.
 function chooseSending(values) {
-  if (sending.companiesHouse) return;
-  sending.mode = sendToOf(values);
-  sending.copy = copyOf(values);
-  sending.jointFilingId = sending.mode === "both" ? (sending.jointFilingId ?? crypto.randomUUID()) : null;
+  if (!sending.companiesHouse) {
+    sending.mode = sendToOf(values);
+    sending.copy = copyOf(values);
+  }
+  if (longPeriodOf(values)) {
+    const filingId = sending.longPeriod?.filingId ?? sending.jointFilingId ?? crypto.randomUUID();
+    sending.longPeriod = { filingId, parts: sending.longPeriod?.parts ?? [null, null] };
+    sending.jointFilingId = sending.mode === "both" ? filingId : null;
+    return;
+  }
+  sending.longPeriod = null;
+  if (!sending.companiesHouse) sending.jointFilingId = sending.mode === "both" ? (sending.jointFilingId ?? crypto.randomUUID()) : null;
 }
 
 // The accounts still need sending when none went yet or Companies House rejected the last send.
 function accountsStillToSend() {
   return sending.mode === "both" && (!sending.companiesHouse || sending.companiesHouse.statusCode === "REJECT");
 }
+
+const GATEWAY_STORED_ONCE = "They are sent once with this return and never stored.";
 
 function configureSendStep() {
   const accountsFirst = accountsStillToSend();
@@ -1736,6 +2173,78 @@ function configureSendStep() {
     : amending
       ? "Submit the amended return to HMRC"
       : "Submit to HMRC";
+  configureLongSendStep({ accountsFirst, amending });
+  showSendCost(accountsFirst);
+}
+
+// The tokens the send step will charge and the sentence that says what for. The accounts cost one
+// token when they are still to send. The returns cost one token together: return 1 takes it and
+// return 2 takes none, so a send that leaves only return 2 costs nothing.
+function sendCostOf(accountsFirst) {
+  const queue = longQueue();
+  const returnsCost = sending.longPeriod && !queue.includes(1) ? 0 : 1;
+  const cost = (accountsFirst ? 1 : 0) + returnsCost;
+  if (accountsFirst) {
+    const returns = sending.longPeriod ? (queue.length === 2 ? "the two returns" : `return ${queue[0]} of 2`) : "the return";
+    return { cost, lead: `The accounts and ${returns} cost ${cost} ${cost === 1 ? "token" : "tokens"}.` };
+  }
+  if (cost === 0) return { cost, lead: "Return 2 of 2 costs no token. Return 1 used the token for both." };
+  if (queue.length === 2) return { cost, lead: "The two returns cost 1 token between them." };
+  return { cost, lead: "This return costs 1 token." };
+}
+
+function showSendCost(accountsFirst) {
+  const container = element("submissionCost");
+  const { cost, lead } = sendCostOf(accountsFirst);
+  container.dataset.tokenCost = String(cost);
+  container.dataset.costLead = lead;
+  window.SubmissionCost?.refresh();
+}
+
+// A refusal for no token left: the balance on the page is out of date, and the send step is where
+// the customer can see what is left.
+function showTokensExhausted(message) {
+  showView("previewView");
+  window.hideStatus();
+  window.showStatus(message, "error");
+  window.dispatchEvent(new CustomEvent("bundle-changed"));
+  element("statusMessagesContainer").scrollIntoView({ block: "start" });
+}
+
+// Two returns go one after the other: the accounts when they go to Companies House, then return 1, then return 2.
+function configureLongSendStep({ accountsFirst, amending }) {
+  const note = element("longSendOrder");
+  const queue = longQueue();
+  note.style.display = sending.longPeriod ? "block" : "none";
+  element("gatewayStored").textContent = GATEWAY_STORED_ONCE;
+  if (!sending.longPeriod) return;
+  const amended = amending ? "amended " : "";
+  const order = accountsFirst ? "the accounts, then " : "";
+  const returnWord = amending ? "the amended return" : "return";
+  const leftWord = amending ? "The amended return" : "Return";
+  note.textContent =
+    queue.length === 2
+      ? `You send ${order}${returnWord} 1 of 2, then ${returnWord} 2 of 2. Each waits for the one before to be accepted. You type the Government Gateway user ID and password once for both.`
+      : `${leftWord} ${queue[0] ?? 2} of 2 is the one left to send. You type the Government Gateway password again.`;
+  element("gatewayStored").textContent =
+    queue.length === 2 ? "They are sent with each of the two returns and never stored." : GATEWAY_STORED_ONCE;
+  if (queue.length === 0) return;
+  const heading = amending ? "amended return" : "return";
+  if (!accountsFirst) {
+    element("sendStepHeading").textContent =
+      queue.length === 2
+        ? `Send ${amending ? "the amended returns" : "two returns"} to HMRC`
+        : `Send ${amending ? "the amended return" : "return"} ${queue[0]} of 2 to HMRC`;
+    element("submitReturnBtn").textContent =
+      queue.length === 2 ? `Submit ${heading} 1 of 2, then ${heading} 2 of 2` : `Submit ${heading} ${queue[0]} of 2 to HMRC`;
+  }
+}
+
+// The returns still to send, in order: both, or return 2 once return 1 is accepted. An amendment sends only the returns whose boxes change.
+function longQueue() {
+  if (!sending.longPeriod) return [];
+  if (sending.amendment?.parts) return sending.amendment.parts.filter((part) => !sending.amendment.done.includes(part));
+  return [1, 2].filter((part) => sending.longPeriod.parts[part - 1]?.statusCode !== "ACCEPT");
 }
 
 function scenarioHeaders() {
@@ -1757,10 +2266,11 @@ function companiesHouseRequest(companyAuthCode) {
   };
 }
 
-function taxReturnRequest(gatewayUserId, gatewayPassword) {
+function taxReturnRequest(gatewayUserId, gatewayPassword, part) {
   return {
     ...previewRequest,
-    reviewedBoxes: reviewedPreview.boxes,
+    reviewedBoxes: part ? reviewedPreview.returns[part - 1].boxes : reviewedPreview.boxes,
+    ...(part ? { longPeriod: { filingId: sending.longPeriod.filingId, part } } : {}),
     formValues: reviewedValues,
     gatewayUserId,
     gatewayPassword,
@@ -1797,6 +2307,13 @@ function lockAccounts() {
 
 // Amending the accounts reopens them: the figures and the approval date change, and the revised
 // accounts replace the ones Companies House holds.
+// The dates HMRC holds for each accounting period stay as filed when a return is amended.
+function lockPeriodDates() {
+  for (const control of element("returnForm").querySelectorAll('#periodStart, #periodEnd, input[name="firstPeriodStart"]')) {
+    control.disabled = true;
+  }
+}
+
 function unlockAccounts() {
   for (const control of accountsControls()) control.disabled = false;
   element("accountsLockNote")?.remove();
@@ -1817,11 +2334,41 @@ function todayText() {
 
 // --- Amending an accepted filing -------------------------------------------------------------
 
+function boxesDiffer(filed, current) {
+  const keys = new Set([...Object.keys(filed ?? {}), ...Object.keys(current ?? {})]);
+  return [...keys].some((key) => String(filed?.[key]) !== String(current?.[key]));
+}
+
+// An amendment of a long period sends ReturnType="amended" only for a return whose boxes differ from the
+// ones HMRC holds. Amending the accounts changes the accounts both returns carry, so it amends both.
+function chooseAmendedReturns(preview) {
+  if (!sending.amendment || !sending.longPeriod) return true;
+  const changed = [1, 2].filter(
+    (part) => sending.amendment.accounts || boxesDiffer(filedLongBoxes[part - 1], preview.returns[part - 1].boxes),
+  );
+  if (changed.length === 0) {
+    window.showStatus(
+      "Neither return changes with these answers, so there is nothing to amend. Change an answer and preview again.",
+      "error",
+    );
+    return false;
+  }
+  sending.amendment.parts = changed;
+  sending.amendment.done = [];
+  return true;
+}
+
 // The return is accepted, and so are the accounts when they went too: the customer can amend.
 function showAmendPanel() {
   const accepted = sending.taxReturnAccepted && (sending.mode === "hmrc" || companiesHouseAccepted());
   element("amendPanel").style.display = accepted ? "block" : "none";
   element("amendAccountsBtn").style.display = accepted && sending.mode === "both" ? "inline-block" : "none";
+  const firstReturnChanged =
+    Boolean(sending.longPeriod) &&
+    !sending.amendment &&
+    Boolean(reviewedPreview?.returns) &&
+    boxesDiffer(filedLongBoxes[0], reviewedPreview.returns[0].boxes);
+  element("amendLongNote").hidden = !(accepted && firstReturnChanged);
 }
 
 function hideAmendPanel() {
@@ -1833,14 +2380,20 @@ function hideAmendPanel() {
 function startAmendment({ accounts }) {
   companiesHousePollWindow++;
   hideAmendPanel();
-  sending.amendment = { accounts };
+  sending.amendment = { accounts, done: [] };
   sending.taxReturnSent = false;
   sending.taxReturnAccepted = false;
+  if (sending.longPeriod) {
+    sending.longPeriod = { filingId: sending.longPeriod.filingId, parts: [null, null] };
+    longErrors = [null, null];
+    unlockFirstReturn();
+  }
   if (accounts) {
     sending.revision = { originalDateOfApproval: element("directorDateApproved").value, differences: "" };
     sending.companiesHouse = null;
     unlockAccounts();
   }
+  if (sending.longPeriod) lockPeriodDates();
   element("revisionDifferences").value = "";
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
@@ -1859,9 +2412,18 @@ function revisionDifferencesProblem() {
   return { input, message: "Say what the revised accounts change" };
 }
 
+// What a reload needs of the two returns: which each has reached, never a code or a password.
+function savedSending() {
+  if (!sending.longPeriod) return sending;
+  const parts = sending.longPeriod.parts.map((entry) =>
+    entry ? { correlationId: entry.correlationId, statusCode: entry.statusCode, irmark: entry.irmark, receiptId: entry.receiptId } : null,
+  );
+  return { ...sending, longPeriod: { filingId: sending.longPeriod.filingId, parts } };
+}
+
 function persistJoint() {
   try {
-    sessionStorage.setItem(JOINT_STORAGE_KEY, JSON.stringify({ company, values: readValues(), sending }));
+    sessionStorage.setItem(JOINT_STORAGE_KEY, JSON.stringify({ company, values: readValues(), sending: savedSending() }));
   } catch {
     // Storage can be unavailable; the filing carries on without a resume point.
   }
@@ -1878,22 +2440,30 @@ function forgetJoint() {
 function readSavedJoint() {
   try {
     const saved = JSON.parse(sessionStorage.getItem(JOINT_STORAGE_KEY));
-    return saved?.company && saved.values && saved.sending?.companiesHouse ? saved : null;
+    const sent = saved?.sending?.companiesHouse || saved?.sending?.longPeriod?.parts?.some(Boolean);
+    return saved?.company && saved.values && sent ? saved : null;
   } catch {
     return null;
   }
 }
 
 function fillValues(values) {
-  while (loanRowNumbers(values).some((row) => !element("loanRows").querySelector(`[data-loan-row="${row}"]`))) {
-    const missing = loanRowNumbers(values).find((row) => !element("loanRows").querySelector(`[data-loan-row="${row}"]`));
-    loanRows.next = missing;
-    addLoanRow();
-  }
-  while (repaymentRowNumbers(values).some((row) => !element("repaymentRows").querySelector(`[data-repayment-row="${row}"]`))) {
-    const missing = repaymentRowNumbers(values).find((row) => !element("repaymentRows").querySelector(`[data-repayment-row="${row}"]`));
-    repaymentRows.next = missing;
-    addRepaymentRow();
+  for (const part of PARTS) {
+    const missingRow = (numbers, container, attribute) =>
+      numbers.find((row) => !element(container).querySelector(`[${attribute}="${row}"]`));
+    for (let missing = missingRow(loanRowNumbers(values, part), periodFieldId("loanRows", part), "data-loan-row"); missing;) {
+      loanRows[part] = missing;
+      addLoanRow(part);
+      missing = missingRow(loanRowNumbers(values, part), periodFieldId("loanRows", part), "data-loan-row");
+    }
+    for (
+      let missing = missingRow(repaymentRowNumbers(values, part), periodFieldId("repaymentRows", part), "data-repayment-row");
+      missing;
+    ) {
+      repaymentRows[part] = missing;
+      addRepaymentRow(part);
+      missing = missingRow(repaymentRowNumbers(values, part), periodFieldId("repaymentRows", part), "data-repayment-row");
+    }
   }
   for (const control of element("returnForm").querySelectorAll("input, textarea")) {
     if (control.type === "radio") {
@@ -1911,6 +2481,7 @@ function fillValues(values) {
   }
   toggleSections();
   applyRegime();
+  showLoanDetail(readValues());
 }
 
 // A reload mid-filing: refill the form, rebuild the review and show where the two filings stand.
@@ -1935,6 +2506,10 @@ async function resumeJoint() {
     element("previewBtn").textContent = RETURN_TO_REVIEW;
     if (companiesHouseAccepted()) lockAccounts();
     configureSendStep();
+    if (sending.longPeriod && (sending.mode === "hmrc" || companiesHouseAccepted())) {
+      await resumeLongReturns();
+      return;
+    }
     if (companiesHouseAccepted()) {
       showView("previewView", { push: false });
       return;
@@ -1949,6 +2524,35 @@ async function resumeJoint() {
   } finally {
     window.hideLoading();
   }
+}
+
+// A reload between the two sends: show where each return stands, poll one that is still with HMRC, and
+// offer the next send. The saved entry holds no password, so the customer types it again.
+async function resumeLongReturns() {
+  const parts = sending.longPeriod.parts;
+  parts.forEach((entry, index) => {
+    if (entry?.statusCode === "ACCEPT") filedLongBoxes[index] = reviewedPreview.returns[index].boxes;
+  });
+  if (parts[0]?.statusCode === "ACCEPT" && !sending.amendment) lockFirstReturn();
+  showJointResult();
+  if (sending.mode === "both") renderCompaniesHouse();
+  renderLongOutcome();
+  const pending = [1, 2].find((part) => parts[part - 1] && !["ACCEPT", "REJECT"].includes(parts[part - 1].statusCode));
+  if (pending) {
+    const outcome = await pollUntilSettled(parts[pending - 1].correlationId, 1, scenarioHeaders());
+    if (!(await settleLongReturn(pending, outcome))) return;
+  }
+  if (parts.some((entry) => entry?.statusCode === "REJECT")) {
+    element("tryAgainBtn").style.display = "inline-block";
+    return;
+  }
+  if (longQueue().length === 0) {
+    sending.taxReturnAccepted = true;
+    await renderLongRecords();
+    showAmendPanel();
+    return;
+  }
+  showView("previewView", { push: false });
 }
 
 function renderCompaniesHouse() {
@@ -1977,9 +2581,11 @@ function renderCompaniesHouse() {
             create(
               "p",
               { id: "jointAccepted" },
-              sending.amendment
-                ? "Both amended filings are accepted. Your receipts show them under the filing they amend: "
-                : "Both filings are accepted. Your receipts show them as one filing: ",
+              sending.longPeriod
+                ? `The accounts and ${sending.amendment ? "both amended Company Tax Returns are" : "both Company Tax Returns are"} accepted. Your receipts show them as one filing: `
+                : sending.amendment
+                  ? "Both amended filings are accepted. Your receipts show them under the filing they amend: "
+                  : "Both filings are accepted. Your receipts show them as one filing: ",
               create("a", { href: "../hmrc/receipt/receipts.html" }, "Your receipts"),
               ".",
             ),
@@ -2108,6 +2714,191 @@ async function sendCompanyTaxReturn(headers) {
   await showOutcome(outcome);
 }
 
+// --- Sending the two returns of a long period of account --------------------------------------
+
+function sendTaxReturns(headers) {
+  return sending.longPeriod ? sendLongReturns(headers) : sendCompanyTaxReturn(headers);
+}
+
+// The Government Gateway user ID and password are read once and held in this call only. They cover both
+// sends and are gone when it ends, whether the returns were accepted, rejected or never sent.
+async function sendLongReturns(headers) {
+  const credentials = readGatewayCredentials();
+  if (!credentials) return;
+  for (const part of longQueue()) {
+    const accepted = await sendLongReturn(part, headers, credentials);
+    if (!accepted) return;
+  }
+}
+
+async function sendLongReturn(part, headers, credentials) {
+  const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword, part), headers);
+  element("gatewayPassword").value = "";
+  sending.taxReturnSent = true;
+  sending.longPeriod.parts[part - 1] = { correlationId: submission.correlationId, statusCode: "PENDING", irmark: submission.irmark };
+  longErrors[part - 1] = null;
+  if (sending.mode === "both") renderCompaniesHouse();
+  persistJoint();
+  renderLongOutcome();
+  element("tryAgainBtn").style.display = "none";
+  showView("resultView");
+  const outcome = await pollUntilSettled(submission.correlationId, submission.pollIntervalSeconds, headers);
+  return settleLongReturn(part, outcome);
+}
+
+async function settleLongReturn(part, outcome) {
+  const parts = sending.longPeriod.parts;
+  parts[part - 1] = { ...outcome, statusCode: outcome.statusCode };
+  if (outcome.statusCode === "ACCEPT") {
+    filedLongBoxes[part - 1] = reviewedPreview.returns[part - 1].boxes;
+    sending.amendment?.done.push(part);
+    longErrors[part - 1] = null;
+  } else if (outcome.statusCode === "REJECT") {
+    longErrors[part - 1] = outcome;
+    sending.taxReturnSent = false;
+  }
+  const finished = outcome.statusCode === "ACCEPT" && longQueue().length === 0;
+  sending.taxReturnAccepted = finished;
+  renderLongOutcome();
+  if (outcome.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
+  if (outcome.statusCode === "ACCEPT") await renderLongRecords();
+  if (sending.mode === "both") renderCompaniesHouse();
+  if (finished && (!sending.companiesHouse || companiesHouseAccepted())) forgetJoint();
+  else persistJoint();
+  if (parts[0]?.statusCode === "ACCEPT" && !sending.amendment && !finished) lockFirstReturn();
+  if (finished) showAmendPanel();
+  return outcome.statusCode === "ACCEPT";
+}
+
+function returnTitle(part) {
+  return `Company Tax Return ${part} of 2`;
+}
+
+function renderLongOutcome() {
+  const parts = sending.longPeriod.parts;
+  const amended = sending.amendment ? "amended " : "";
+  element("returnErrors").replaceChildren();
+  element("returnIrmark").replaceChildren();
+  const blocks = [];
+  const irmarks = [];
+  const errors = [];
+  for (const part of [1, 2]) {
+    const entry = parts[part - 1];
+    if (!entry) continue;
+    if (entry.statusCode === "ACCEPT") {
+      blocks.push(outcomeTitle(`HMRC accepted the ${amended}${returnTitle(part)}`));
+      irmarks.push(create("p", {}, `Return ${part} of 2 IRmark: `, create("code", {}, entry.irmark)));
+    } else if (entry.statusCode === "REJECT") {
+      blocks.push(outcomeTitle(`HMRC rejected the ${amended}${returnTitle(part)}`));
+      const outcome = longErrors[part - 1];
+      const entries = [...(outcome?.errors ?? []), ...(outcome?.businessErrors ?? [])];
+      errors.push(
+        create("p", { role: "alert" }, `Return ${part} of 2 was not accepted.`),
+        create("ul", {}, ...entries.map((item) => create("li", {}, `Error ${item.number}: ${item.text}`))),
+        create("p", {}, `Check the answers these errors name, change them in the review, and send return ${part} of 2 again.`),
+      );
+    } else {
+      blocks.push(
+        paragraph(`Return ${part} of 2 `, { strong: entry.correlationId }, " is ", { strong: entry.statusCode }, ". Checking again..."),
+      );
+    }
+  }
+  element("returnResult").replaceChildren(...blocks);
+  const anyRejected = parts.some((entry) => entry?.statusCode === "REJECT");
+  const anyAccepted = parts.some((entry) => entry?.statusCode === "ACCEPT");
+  setOutcome(anyRejected ? "error" : anyAccepted && longQueue().length === 0 ? "ok" : undefined);
+  if (errors.length > 0) {
+    element("returnErrors").replaceChildren(...errors);
+    element("returnErrors").style.display = "block";
+  } else {
+    element("returnErrors").style.display = "none";
+  }
+  if (irmarks.length > 0) {
+    element("returnIrmark").replaceChildren(
+      ...irmarks,
+      create("p", {}, "Keep the IRmarks. They are HMRC's record of exactly what you sent."),
+      create(
+        "p",
+        { id: "receiptProof" },
+        "The receipts below are the company's proof that it filed these returns. Keep them with the company's records.",
+      ),
+    );
+    element("returnIrmark").style.display = "block";
+  } else {
+    element("returnIrmark").style.display = "none";
+  }
+  element("startAgainBtn").style.display = longQueue().length === 0 && anyAccepted ? "inline-block" : "none";
+}
+
+async function renderLongRecords() {
+  const { ctResultCopyHtml, todayText: dateText } = await import("../lib/filing-result-record.js");
+  const records = [];
+  for (const part of [1, 2]) {
+    const entry = sending.longPeriod.parts[part - 1];
+    if (entry?.statusCode !== "ACCEPT" || !reviewedPreview?.returns) continue;
+    const filed = reviewedPreview.returns[part - 1];
+    const html = ctResultCopyHtml({
+      company,
+      utr: previewRequest.utr,
+      boxes: filed.boxes,
+      computation: COMPUTATION_LINES.filter(({ field }) => filed.computationLines[field] !== undefined).map(
+        ({ field, meaning, deduction, style }) => ({
+          label: meaning,
+          value: filed.computationLines[field],
+          deduction,
+          style,
+        }),
+      ),
+      outcome: entry,
+      dateText: dateText(),
+      longPeriod: { part, parts: 2 },
+    });
+    records.push(...new DOMParser().parseFromString(html, "text/html").body.childNodes);
+  }
+  element("returnRecord").replaceChildren(...records);
+}
+
+// Return 1 is filed with HMRC, so the accounts, the 15-month figures and the first column no longer change here.
+const LOCKED_LONG_FIELDS = [
+  "periodStart",
+  "periodEnd",
+  FIRST_PERIOD_START_FIELD,
+  "nonTradingLoanRelationshipCredits",
+  "depreciation",
+  "amortisation",
+  "entertaining",
+  "donations",
+  "lossOutsideUk",
+  "lossesBroughtForward",
+  "priorPeriodChargeableProfits",
+  "tradeName",
+  "sendTo",
+];
+
+function firstColumnControls() {
+  const firstColumnIds = new Set([...PER_PERIOD_FIELD_IDS, DONATIONS_PAID_FIELD.id, ...PER_PERIOD_LOAN_QUESTION_IDS]);
+  const named = [...element("returnForm").querySelectorAll("input, select, button")].filter((control) => {
+    const id = control.name || control.id;
+    if (control.closest("[data-part]")?.dataset.part === "1" || control.dataset.part === "1") return true;
+    return firstColumnIds.has(id) || LOCKED_LONG_FIELDS.includes(id);
+  });
+  return [...named, ...accountsControls()];
+}
+
+const FIRST_RETURN_LOCK_NOTE = "Return 1 is filed with HMRC. Send return 2 first, then amend return 1 from its receipt.";
+
+function lockFirstReturn() {
+  for (const control of firstColumnControls()) control.disabled = true;
+  element("booksImport").hidden = true;
+  element("firstReturnLockNote")?.remove();
+  element("formSections").prepend(create("p", { id: "firstReturnLockNote", class: "hint", role: "status" }, FIRST_RETURN_LOCK_NOTE));
+}
+
+function unlockFirstReturn() {
+  for (const control of firstColumnControls()) control.disabled = false;
+  element("firstReturnLockNote")?.remove();
+}
+
 function companyAuthCodeProblem() {
   const input = element("companyAuthCode");
   const length = input.value.trim().length;
@@ -2123,6 +2914,11 @@ async function runSend(send) {
     await send();
   } catch (error) {
     console.error("Filing failed:", error);
+    if (error.reason === "tokens_exhausted") {
+      const accountsFiled = sending.companiesHouse?.statusCode === "ACCEPT";
+      showTokensExhausted(accountsFiled ? `The accounts are filed with Companies House. ${error.message}` : error.message);
+      return;
+    }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || "Failed to file with HMRC.", "error");
   } finally {
@@ -2161,6 +2957,10 @@ async function handleSubmitReturn() {
       } catch (error) {
         // The accounts never reached Companies House, so nothing is filed and the review stays open.
         if (!sending.companiesHouse) {
+          if (error.reason === "tokens_exhausted") {
+            showTokensExhausted(error.message);
+            return;
+          }
           showView("previewView");
           window.showStatus(companiesHouseErrorText(error), "error");
           return;
@@ -2169,13 +2969,13 @@ async function handleSubmitReturn() {
       }
       if (!accepted) return;
     }
-    await sendCompanyTaxReturn(headers);
+    await sendTaxReturns(headers);
   });
 }
 
 // Companies House has not settled the accounts, so the customer sends the Company Tax Return now.
 async function handleSendCtNow() {
-  await runSend(() => sendCompanyTaxReturn(scenarioHeaders()));
+  await runSend(() => sendTaxReturns(scenarioHeaders()));
 }
 
 // Keep asking Companies House. A return not yet sent follows once the accounts are accepted.
@@ -2183,7 +2983,7 @@ async function handleWaitForCompaniesHouse() {
   await runSend(async () => {
     const headers = scenarioHeaders();
     const accepted = await waitForCompaniesHouse(headers);
-    if (accepted && !sending.taxReturnSent) await sendCompanyTaxReturn(headers);
+    if (accepted && !sending.taxReturnSent) await sendTaxReturns(headers);
   });
 }
 
@@ -2209,7 +3009,10 @@ function startAgain() {
     taxReturnAccepted: false,
     amendment: null,
     revision: null,
+    longPeriod: null,
   });
+  filedLongBoxes = [null, null];
+  longErrors = [null, null];
   forgetJoint();
   hideAmendPanel();
   agentClient = null;
@@ -2245,6 +3048,32 @@ const AMENDABLE_KINDS = new Set(["company-tax-return", "companies-house-accounts
 
 function refuseAmendment(text) {
   window.showStatus(text, "error");
+}
+
+// An amendment of a long period compares each return with the boxes HMRC holds for it, so it reads the
+// latest accepted receipt of both returns of the filing.
+async function loadFiledLongReturns(receipt) {
+  const list = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  const { receipts = [] } = list.ok ? await list.json() : {};
+  const filed = [null, null];
+  for (const part of [1, 2]) {
+    const entry = receipts.find(
+      (candidate) =>
+        candidate.kind === "company-tax-return" &&
+        candidate.longPeriod?.filingId === receipt.longPeriod.filingId &&
+        candidate.longPeriod.part === part,
+    );
+    const detail = entry ? await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(entry.name)}`, {}) : null;
+    filed[part - 1] = detail?.ok ? ((await detail.json()).filed?.boxes ?? null) : null;
+  }
+  if (!filed[0] || !filed[1]) {
+    refuseAmendment(
+      "Only one of the two returns of this filing has an accepted receipt. Send the other return first, then amend from its receipt.",
+    );
+    return false;
+  }
+  filedLongBoxes = filed;
+  return true;
 }
 
 // The receipt holds the answers the filing was made from. The form refills from them, the amended
@@ -2288,6 +3117,7 @@ async function loadAmendment(receiptName) {
       );
       return;
     }
+    if (receipt.longPeriod && !(await loadFiledLongReturns(receipt))) return;
     company = receipt.formRequest.company;
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
@@ -2298,6 +3128,7 @@ async function loadAmendment(receiptName) {
       mode: receipt.jointFilingId ? "both" : "hmrc",
       copy: copyOf(receipt.formRequest.values),
       jointFilingId: receipt.jointFilingId ?? null,
+      longPeriod: receipt.longPeriod ? { filingId: receipt.longPeriod.filingId, parts: [null, null] } : null,
     });
     startAmendment({ accounts: Boolean(receipt.jointFilingId) });
   } catch (error) {

@@ -100,6 +100,8 @@ export async function setGovTestScenario(page, scenario, screenshotPath = defaul
 export async function enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters the company authentication code and submits the filing", async () => {
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
+    await expect(page.locator("#submissionCost")).toContainText("This submission costs 1 token.", { timeout: 15000 });
+    await expect(page.locator("#submitFilingBtn")).toBeEnabled();
     await loggedClick(page, "#submitFilingBtn", "Submitting the accounts filing", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 15000 });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submitted.png`, readerView: true });

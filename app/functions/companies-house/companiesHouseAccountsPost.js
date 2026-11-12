@@ -69,6 +69,7 @@ import {
   sanitiseFormRequest,
   formRequestFields,
 } from "../../services/jointFiling.js";
+import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -483,6 +484,26 @@ export async function ingestHandler(event) {
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
   const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
 
+  const chargeActivityId = accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts";
+  // A joint filing sends the accounts and then the return, so the whole filing must be paid for
+  // before Companies House receives anything.
+  const tokenRefusal = await refuseWhenOutOfTokens({
+    request,
+    headers: responseHeaders,
+    userId: userSub,
+    activityId: chargeActivityId,
+    alsoActivityIds: jointFilingId ? ["file-company-tax-return"] : [],
+  });
+  if (tokenRefusal) {
+    await recordSubmissionFailure({
+      failure: "tokens-exhausted",
+      summary: "Companies House accounts blocked: submission allowance used up",
+      userSub,
+      clientId,
+    });
+    return tokenRefusal;
+  }
+
   let submissionNumber;
   try {
     const ixbrl = buildAccountsIxbrl(accounts);
@@ -495,7 +516,7 @@ export async function ingestHandler(event) {
       "pending",
       {
         filedDocument: ixbrl,
-        chargeActivityId: accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts",
+        chargeActivityId,
         ...jointFilingFields(jointFilingId),
         ...amendedFields(Boolean(accounts.revision)),
         ...formRequestFields(formRequest),

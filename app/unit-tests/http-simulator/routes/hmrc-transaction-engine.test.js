@@ -14,6 +14,7 @@ import {
   TRANSIENT_POLL_ERROR_SCENARIO,
   LOST_REPLY_SCENARIO,
   LOST_REQUEST_SCENARIO,
+  REJECT_SECOND_RETURN_SCENARIO,
   resetTransactionEngineSubmissions,
 } from "@app/http-simulator/routes/hmrc-transaction-engine.js";
 import {
@@ -102,6 +103,64 @@ describe("HMRC Transaction Engine simulator", () => {
     const response = await post(server, POLL_PATH, pollRequest);
     expect(response.qualifier).toBe("error");
     expect(response.businessErrors[0].number).toBe("2021");
+  });
+
+  describe("business validation of the return", () => {
+    const envelopeForPeriod = (from, to) =>
+      IR_ENVELOPE.replace(
+        '<CompanyTaxReturn ReturnType="new"/>',
+        `<CompanyTaxReturn ReturnType="new"><CompanyInformation><PeriodCovered><From>${from}</From><To>${to}</To></PeriodCovered></CompanyInformation></CompanyTaxReturn>`,
+      );
+
+    async function finalAnswer(server, irEnvelopeXml, headers = {}) {
+      const acknowledgement = await post(server, SUBMISSION_PATH, submissionXml(irEnvelopeXml).xml, headers);
+      const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+      expect((await post(server, POLL_PATH, pollRequest)).qualifier).toBe("acknowledgement");
+      return post(server, POLL_PATH, pollRequest);
+    }
+
+    test("answers business error 9101 for a return period longer than 12 months", async () => {
+      const response = await finalAnswer(app(), envelopeForPeriod("2025-01-01", "2026-03-31"));
+      expect(response.qualifier).toBe("error");
+      expect(response.businessErrors).toHaveLength(1);
+      expect(response.businessErrors[0].number).toBe("9101");
+      expect(response.businessErrors[0].text).toBe("The return period covered in Boxes 30 and 35 must not be longer than 12 months");
+    });
+
+    test("accepts a return period of exactly 12 months", async () => {
+      const response = await finalAnswer(app(), envelopeForPeriod("2025-01-01", "2025-12-31"));
+      expect(response.qualifier).toBe("response");
+      expect(response.irmarkReceipt).toBeTruthy();
+    });
+
+    test("accepts the first submission of the second-return scenario and answers 9043 to the next", async () => {
+      const server = app();
+      const headers = { "Gov-Test-Scenario": REJECT_SECOND_RETURN_SCENARIO };
+      const first = await finalAnswer(server, envelopeForPeriod("2025-01-01", "2025-12-31"), headers);
+      expect(first.qualifier).toBe("response");
+      const second = await finalAnswer(server, envelopeForPeriod("2026-01-01", "2026-03-31"), headers);
+      expect(second.qualifier).toBe("error");
+      expect(second.businessErrors[0].number).toBe("9043");
+      expect(second.businessErrors[0].text).toBe(
+        "For V3 submissions - Check that Box 435 agrees with the result of the computation of marginal relief.",
+      );
+    });
+
+    test("a submission without the second-return scenario is accepted after the scenario has rejected one", async () => {
+      const server = app();
+      const headers = { "Gov-Test-Scenario": REJECT_SECOND_RETURN_SCENARIO };
+      await finalAnswer(server, IR_ENVELOPE, headers);
+      await finalAnswer(server, IR_ENVELOPE, headers);
+      expect((await finalAnswer(server, IR_ENVELOPE)).qualifier).toBe("response");
+    });
+
+    test("a reset forgets the first submission of the scenario", async () => {
+      const server = app();
+      const headers = { "Gov-Test-Scenario": REJECT_SECOND_RETURN_SCENARIO };
+      await finalAnswer(server, IR_ENVELOPE, headers);
+      resetTransactionEngineSubmissions();
+      expect((await finalAnswer(server, IR_ENVELOPE, headers)).qualifier).toBe("response");
+    });
   });
 
   test("answers Gateway error 1000 on the second poll for the transient scenario, then the receipt", async () => {

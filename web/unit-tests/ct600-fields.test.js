@@ -10,6 +10,7 @@ import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { loadTaxDataForBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveCt600FromFigures, validateCt600Figures, ct600FiguresFromResults } from "@app/services/ct600Figures.js";
+import { ACCOUNTING_PERIOD_FIELDS, deriveLongPeriodReturns } from "@app/services/ct600LongPeriod.js";
 import { ltdTaxDataForPeriodEnd } from "@app/services/ct600Xml.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
@@ -24,6 +25,15 @@ import {
   qualifiesAsMicroEntity,
   BOX_SOURCE_FIELD,
   COMPUTATION_SOURCE_FIELD,
+  LETTERED_BOX_SOURCE_FIELD,
+  DONATIONS_PAID_FIELD,
+  FIRST_PERIOD_START_REFUSAL,
+  PER_PERIOD_FIELD_IDS,
+  boxChangeTarget,
+  lineChangeTarget,
+  longPeriodOf,
+  loanId,
+  periodFieldId,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
   STATEMENT_FIELDS,
@@ -49,10 +59,15 @@ const COMPANY = {
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
 };
 
+function sortedBoxes(boxes) {
+  return [...boxes].sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || String(a).localeCompare(String(b)));
+}
+
 // Every box the envelope builder reads, as b[<box>], is a box the return can fill.
 function boxesTheBuilderEmits() {
   const envelope = builderSource.slice(builderSource.indexOf("export function buildCt600IrEnvelope"));
-  return [...new Set([...envelope.matchAll(/\bb\[(\d+)\]/g)].map((match) => Number(match[1])))].sort((a, b) => a - b);
+  const boxes = [...envelope.matchAll(/\bb\[(?:(\d+)|"(\d+[A-Z])")\]/g)].map((match) => (match[1] ? Number(match[1]) : match[2]));
+  return sortedBoxes([...new Set(boxes)]);
 }
 
 function derive(figures) {
@@ -84,7 +99,7 @@ describe("the box rows", () => {
     expect(emitted.length).toBeGreaterThan(30);
   });
 
-  test.each(emitted)("box %i has a row with a label and a guide anchor", (box) => {
+  test.each(emitted)("box %s has a row with a label and a guide anchor", (box) => {
     const row = CT600_BOX_ROWS.find((candidate) => candidate.box === box);
     expect(row.label.length).toBeGreaterThan(3);
     expect(row.anchor).toMatch(/^[a-z0-9-]+$/);
@@ -93,7 +108,7 @@ describe("the box rows", () => {
 
   test("no row names a box the builder does not emit, and each box has one row", () => {
     const boxes = CT600_BOX_ROWS.map((row) => row.box);
-    expect([...boxes].sort((a, b) => a - b)).toEqual(emitted);
+    expect(sortedBoxes(boxes)).toEqual(emitted);
     expect(new Set(boxes).size).toBe(boxes.length);
   });
 
@@ -441,8 +456,8 @@ describe("the form's own checks", () => {
     expect(targetOfModelProblem("corporationTax", known)).toBe("workedTax");
   });
 
-  test("a model problem for a bad UTR, associated companies and a long period comes back through the form's values", () => {
-    const values = { ...complete(), utr: "123", associatedCompanies: "-1", periodEnd: "2026-04-01" };
+  test("a model problem for a bad UTR, associated companies and a period that ends before it starts comes back through the form's values", () => {
+    const values = { ...complete(), utr: "123", associatedCompanies: "-1", periodEnd: "2025-03-31" };
     const problems = validateCt600Figures(figuresFromValues(values, COMPANY));
     expect(problems.map((problem) => problem.field)).toEqual(expect.arrayContaining(["utr", "associatedCompanies", "period"]));
   });
@@ -517,7 +532,9 @@ describe("the review", () => {
   });
 
   test("every box the page can show has a Change target, but the company's name and number", () => {
-    const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter((box) => !(box in BOX_SOURCE_FIELD));
+    const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter(
+      (box) => !(box in BOX_SOURCE_FIELD) && !(box in LETTERED_BOX_SOURCE_FIELD),
+    );
     expect(withoutTarget).toEqual([1, 2]);
   });
 });
@@ -620,5 +637,174 @@ describe("a micro-entity's accounts", () => {
     const idSet = new Set(ids);
     for (const [box, id] of Object.entries(BOX_SOURCE_FIELD)) expect(idSet.has(changeTargetFor(id, values)), `box ${box}`).toBe(true);
     for (const [line, id] of Object.entries(COMPUTATION_SOURCE_FIELD)) expect(idSet.has(changeTargetFor(id, values)), line).toBe(true);
+  });
+});
+
+describe("a period of account longer than 12 months", () => {
+  const company = { companyName: "Long Period Example Ltd", companyNumber: "09999993" };
+
+  // The worked example: 1 January 2025 to 31 March 2026, 455 days, with a loan in the second accounting period.
+  function longValues(extra = {}) {
+    const values = Object.fromEntries(bookEntries);
+    Object.assign(values, {
+      utr: "8596148860",
+      companyType: "no",
+      periodStart: "2025-01-01",
+      periodEnd: "2026-03-31",
+      includeComparatives: false,
+      includeFixedAssetNote: false,
+      currentTurnover: "250000",
+      currentCostOfSales: "50000",
+      currentAdministrativeExpenses: "81000",
+      currentInterestReceivable: "1000",
+      currentTax: "24962",
+      associatedCompanies: "0",
+      associatedCompaniesAp2: "0",
+      nonTradingLoanRelationshipCredits: "1000",
+      depreciation: "6000",
+      amortisation: "0",
+      entertaining: "0",
+      donations: "2000",
+      donationsPaid: "2000",
+      donationsPaidAp2: "0",
+      annualInvestmentAllowance: "12000",
+      annualInvestmentAllowanceAp2: "0",
+      mainPoolAllowances: "1800",
+      mainPoolAllowancesAp2: "363",
+      loansMade: "no",
+      loansMadeAp2: "yes",
+      releasedBeforeEndAp2: "no",
+      repaidSinceAp2: "no",
+      loanName1Ap2: "Alex Example",
+      loanAmount1Ap2: "15000",
+      declarantStatus: "Director",
+      declarationAccepted: true,
+      ...extra,
+    });
+    for (const { id } of STATEMENT_FIELDS) values[id] = true;
+    return values;
+  }
+
+  const taxData = { ...ltdTaxDataForPeriodEnd("2025-12-31"), ...ltdTaxDataForPeriodEnd("2026-03-31") };
+
+  test("is long from 12 months and a day, and not at 12 months", () => {
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "2025-12-31" })).toBeUndefined();
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "2026-01-01" })).toMatchObject({ days: 366, tooLong: false });
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "2026-03-31" }).periods).toEqual([
+      { periodStart: "2025-01-01", periodEnd: "2025-12-31", days: 365 },
+      { periodStart: "2026-01-01", periodEnd: "2026-03-31", days: 90 },
+    ]);
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "2026-06-30" }).tooLong).toBe(false);
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "2026-07-01" }).tooLong).toBe(true);
+    expect(longPeriodOf({ periodStart: "2025-01-01", periodEnd: "" })).toBeUndefined();
+  });
+
+  test("the figures hold each column's answers in accountingPeriods and keep the whole period's answers at the top", () => {
+    const figures = figuresFromValues(longValues(), company);
+    expect(figures.accountingPeriods).toHaveLength(2);
+    expect(figures.accountingPeriods[0]).toMatchObject({
+      associatedCompanies: 0,
+      annualInvestmentAllowance: 12000,
+      mainPoolAllowances: 1800,
+      donationsPaid: 2000,
+    });
+    expect(figures.accountingPeriods[0].loansToParticipators).toBeUndefined();
+    expect(figures.accountingPeriods[1]).toMatchObject({ mainPoolAllowances: 363, donationsPaid: 0 });
+    expect(figures.accountingPeriods[1].loansToParticipators.loans).toEqual([{ name: "Alex Example", amount: 15000 }]);
+    expect(figures).toMatchObject({ periodStart: "2025-01-01", periodEnd: "2026-03-31", depreciation: 6000, donations: 2000 });
+    for (const field of ACCOUNTING_PERIOD_FIELDS) expect(figures, field).not.toHaveProperty(field);
+  });
+
+  test("a book's working sheet is left out, and a period of 12 months keeps today's shape", () => {
+    expect(figuresFromValues(longValues(), company, { tradingProfit: 1, corporationTax: 1 })).not.toHaveProperty("workingSheet");
+    const short = figuresFromValues(longValues({ periodEnd: "2025-12-31" }), company);
+    expect(short).not.toHaveProperty("accountingPeriods");
+    expect(short.associatedCompanies).toBe(0);
+  });
+
+  test("the figures work to the worked example's two returns", () => {
+    const [first, second] = deriveLongPeriodReturns(figuresFromValues(longValues(), company), taxData, { today: "2026-11-12" });
+    expect(first.boxes).toMatchObject({
+      30: "2025-01-01",
+      35: "2025-12-31",
+      145: 200549,
+      305: 2000,
+      435: 2446.79,
+      440: 19273.46,
+      690: 12000,
+      705: 13800,
+    });
+    expect(second.boxes).toMatchObject({ 30: "2026-01-01", 35: "2026-03-31", 145: 49451, 440: 5688.68, 480: 5062.5, 705: 363 });
+    expect(second.boxes[305]).toBeUndefined();
+  });
+
+  test("the request carries the two columns and the period of account's dates", () => {
+    const request = ct600RequestFromValues(longValues(), company);
+    expect(request.figures.accountingPeriods).toHaveLength(2);
+    expect(request.figures.periodStart).toBe("2025-01-01");
+    expect(request.periodStart).toBe("2025-01-01");
+    expect(request.figures.loansMade).toBeUndefined();
+  });
+
+  test("the second column's loans have their own ids, rows and checks", () => {
+    expect(loanId("Name", 1)).toBe("loanName1");
+    expect(loanId("Name", 1, 2)).toBe("loanName1Ap2");
+    const problems = formProblems(longValues({ loanAmount1Ap2: "0", loanName1Ap2: "A" }), { today: "2026-11-12" });
+    expect(problems.map((problem) => problem.target)).toEqual(expect.arrayContaining(["loanAmount1Ap2", "loanName1Ap2"]));
+  });
+
+  test("a typed amount in the second column is checked beside its own field", () => {
+    const problems = formProblems(longValues({ mainPoolAllowancesAp2: "abc", donationsPaidAp2: "x" }), { today: "2026-11-12" });
+    expect(problems.map((problem) => problem.target)).toEqual(expect.arrayContaining(["mainPoolAllowancesAp2", "donationsPaidAp2"]));
+  });
+
+  test("a first accounting period that does not start on the first day is refused with Submit's message", () => {
+    expect(formProblems(longValues(), { today: "2026-11-12" })).toEqual([]);
+    const problems = formProblems(longValues({ firstPeriodStart: "no" }), { today: "2026-11-12" });
+    expect(problems).toContainEqual({ target: "firstPeriodStart", message: FIRST_PERIOD_START_REFUSAL, refusal: true });
+  });
+
+  test("the review lists each column and the donations paid, and each Change target is a row", () => {
+    const values = longValues();
+    const rows = reviewAnswers(values).flatMap((section) => section.rows);
+    const ids = new Set(rows.map((row) => row.id));
+    expect(ids.size).toBe(rows.length);
+    for (const id of [
+      "annualInvestmentAllowance",
+      "annualInvestmentAllowanceAp2",
+      "donationsPaid",
+      "donationsPaidAp2",
+      "loansMadeAp2",
+      "loanName1Ap2",
+    ]) {
+      expect(ids.has(id), id).toBe(true);
+    }
+    expect(rows.find((row) => row.id === "donationsPaidAp2").value).toBe("£0");
+    for (const part of [1, 2]) {
+      for (const box of [...Object.keys(BOX_SOURCE_FIELD), ...Object.keys(LETTERED_BOX_SOURCE_FIELD)])
+        expect(ids.has(boxChangeTarget(box, values, part)), `box ${box} return ${part}`).toBe(true);
+      for (const line of Object.keys(COMPUTATION_SOURCE_FIELD)) expect(ids.has(lineChangeTarget(line, values, part)), line).toBe(true);
+    }
+    expect(boxChangeTarget(305, values, 1)).toBe("donationsPaid");
+    expect(boxChangeTarget(305, values, 2)).toBe("donationsPaidAp2");
+    expect(boxChangeTarget(705, values, 2)).toBe("mainPoolAllowancesAp2");
+    expect(boxChangeTarget(305, { ...values, periodEnd: "2025-12-31" }, 2)).toBe("donations");
+  });
+
+  test("a period of 12 months reviews and checks exactly as before", () => {
+    const rows = reviewAnswers(longValues({ periodEnd: "2025-12-31" })).flatMap((section) => section.rows);
+    expect(rows.map((row) => row.id)).not.toContain("annualInvestmentAllowanceAp2");
+    expect(rows.map((row) => row.id)).not.toContain("donationsPaid");
+    expect(rows.map((row) => row.id)).not.toContain("firstPeriodStart");
+  });
+
+  test("the second column covers every per-period figure the model takes, and the donations paid", () => {
+    const fieldFigures = CT600_FORM_FIELDS.filter((field) => PER_PERIOD_FIELD_IDS.includes(field.id)).map((field) => field.figure);
+    const typed = new Set([...fieldFigures, DONATIONS_PAID_FIELD.figure, "loansToParticipators"]);
+    const notTyped = ACCOUNTING_PERIOD_FIELDS.filter((field) => !typed.has(field));
+    expect(notTyped).toEqual(["directorsLoanOverdrawn", "directorsLoanOpeningOverdrawn"]);
+    for (const figure of typed) expect(ACCOUNTING_PERIOD_FIELDS, figure).toContain(figure);
+    expect(periodFieldId("mainPoolAllowances", 2)).toBe("mainPoolAllowancesAp2");
+    expect(periodFieldId("mainPoolAllowances", 1)).toBe("mainPoolAllowances");
   });
 });

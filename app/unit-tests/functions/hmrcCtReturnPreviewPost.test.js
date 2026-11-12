@@ -6,7 +6,12 @@ import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
-import { buildCtReturnBodyFromBook, LOANS_FIXTURE_ANSWERS, LOANS_FIXTURE_BOOK_DIRECTORY } from "@app/test-helpers/ctReturnFixture.js";
+import {
+  buildCtReturnBodyFromBook,
+  buildLongPeriodRequestBody,
+  LOANS_FIXTURE_ANSWERS,
+  LOANS_FIXTURE_BOOK_DIRECTORY,
+} from "@app/test-helpers/ctReturnFixture.js";
 
 const mockSend = vi.fn();
 
@@ -110,6 +115,71 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     expect(body.boxes["3"]).toBe(baseBody.utr);
     expect(body.boxes["975"]).toBe(baseBody.declarant.name);
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+  });
+
+  describe("a period of account longer than 12 months", () => {
+    test("returns both returns, each with its boxes, computations and due dates, and the accounts once", async () => {
+      const { longPeriod: _longPeriod, ...body } = buildLongPeriodRequestBody(1);
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(200);
+      const data = parseResponseBody(response);
+      expect(data.periodOfAccount).toEqual({ periodStart: "2025-01-01", periodEnd: "2026-03-31" });
+      expect(data.accountsIxbrl).toContain("ix:header");
+      expect(data).not.toHaveProperty("boxes");
+      expect(data.returns.map((part) => [part.part, part.periodStart, part.periodEnd])).toEqual([
+        [1, "2025-01-01", "2025-12-31"],
+        [2, "2026-01-01", "2026-03-31"],
+      ]);
+      expect(data.returns.map((part) => part.taxDueDate)).toEqual(["2026-10-01", "2027-01-01"]);
+      expect(data.returns.map((part) => part.returnDueDate)).toEqual(["2027-03-31", "2027-03-31"]);
+      expect(data.returns.map((part) => part.boxes[440])).toEqual([19273.46, 5688.68]);
+      expect(data.returns[1].boxes[480]).toBe(5062.5);
+      expect(data.returns[0].ct600Xml).toContain("<To>2025-12-31</To>");
+      expect(data.returns[1].ct600Xml).toContain("<From>2026-01-01</From>");
+      expect(data.returns[0].computationsIxbrl).toContain("ct-comp:AdjustedProfitForThePeriod");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers the same two returns when the request names a part", async () => {
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body: buildLongPeriodRequestBody(2) }));
+      expect(parseResponseBody(response).returns).toHaveLength(2);
+    });
+
+    test("answers 400 when the first accounting period does not start on the first day of the accounts", async () => {
+      const body = buildLongPeriodRequestBody(1);
+      body.figures.periodStart = "2025-02-01";
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(
+        "Submit files a long period when the first accounting period starts on the first day of the accounts.",
+      );
+    });
+
+    test("answers 400 for a period over 18 months", async () => {
+      const body = buildLongPeriodRequestBody(1);
+      body.figures.periodEnd = "2026-07-01";
+      body.periodEnd = "2026-07-01";
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("18 months at most");
+    });
+
+    test("answers 400 for a return longer than 12 months that carries no accounting periods", async () => {
+      const body = buildLongPeriodRequestBody(1);
+      delete body.longPeriod;
+      delete body.figures.accountingPeriods;
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("a long period of account files two returns");
+    });
+
+    test("answers 400 when the annual investment allowance of a part is over its maximum", async () => {
+      const body = buildLongPeriodRequestBody(1);
+      body.figures.accountingPeriods[1].annualInvestmentAllowance = 300000;
+      const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("annual investment allowance");
+    });
   });
 
   test("takes the typed company facts over the book export's", async () => {

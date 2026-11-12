@@ -142,6 +142,19 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts[0].clientId).toBeNull();
     });
 
+    test("reads every page of the query, so the newest receipt of a long list is not lost", async () => {
+      const lastKeyOfPageOne = { hashedSub: "hashed-practice-sub", receiptId: "2026-01-01T00:00:00.000Z-FB1" };
+      mockSend.mockResolvedValueOnce({ Items: [items[0]], Count: 1, LastEvaluatedKey: lastKeyOfPageOne }).mockResolvedValueOnce({
+        Items: [{ hashedSub: "hashed-practice-sub", receiptId: "2026-01-04T00:00:00.000Z-FB4", createdAt: "2026-01-04T00:00:00.000Z" }],
+        Count: 1,
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map((receipt) => receipt.receiptId)).toEqual(["2026-01-04T00:00:00.000Z-FB4", "2026-01-01T00:00:00.000Z-FB1"]);
+      expect(mockQueryCommand.mock.calls.map(([params]) => params.ExclusiveStartKey)).toEqual([undefined, lastKeyOfPageOne]);
+    });
+
     test("with a client id, returns only that client's receipts", async () => {
       mockSend.mockResolvedValueOnce({ Items: items });
 
@@ -149,6 +162,36 @@ describe("data/dynamoDbReceiptRepository", () => {
 
       expect(receipts.map((receipt) => receipt.receiptId)).toEqual(["2026-01-02T00:00:00.000Z-FB2"]);
       expect(receipts[0].clientId).toBe("client-1");
+    });
+
+    test("each receipt carries the long period of its return, or null", async () => {
+      const longPeriod = {
+        filingId: "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10",
+        part: 1,
+        parts: 2,
+        periodOfAccountStart: "2025-01-01",
+        periodOfAccountEnd: "2026-03-31",
+      };
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-01T00:00:00.000Z-FB1",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            receipt: { kind: "company-tax-return", longPeriod },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-02T00:00:00.000Z-FB2",
+            createdAt: "2026-01-02T00:00:00.000Z",
+            receipt: { kind: "company-tax-return" },
+          },
+        ],
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map((receipt) => receipt.longPeriod)).toEqual([null, longPeriod]);
     });
 
     test("each receipt carries the byte size of its stored record, whatever its kind", async () => {

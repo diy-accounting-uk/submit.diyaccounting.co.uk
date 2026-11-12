@@ -216,4 +216,70 @@ test.describe("Submission cost widget", () => {
     await expect(page.locator("#submissionCost")).toHaveText("This submission costs 1 token. You have 87 left.");
     await expect(page.locator("#submitBtn")).toBeDisabled();
   });
+  const RESIDENT_BALANCE = (remaining, extra = {}) => ({
+    bundles: [
+      { bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 100 - remaining, tokensRemaining: remaining, ...extra },
+    ],
+    tokensRemaining: remaining,
+  });
+
+  test("a cost and lead set by the page replace the catalogue cost, even on a free activity", async ({ page }) => {
+    await setupRoutes(page, { bundleResponse: RESIDENT_BALANCE(7) });
+    await page.goto("http://localhost:3000/free-activity.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#submissionCost")).toHaveText("This submission is free. It does not use a token.");
+
+    await page.evaluate(() => {
+      const container = document.getElementById("submissionCost");
+      container.dataset.tokenCost = "2";
+      container.dataset.costLead = "The accounts and the return cost 2 tokens.";
+      window.SubmissionCost.refresh();
+    });
+
+    await expect(page.locator("#submissionCost")).toHaveText("The accounts and the return cost 2 tokens. You have 7 left.");
+  });
+
+  test("a page cost of zero names its reason and still shows the balance", async ({ page }) => {
+    await setupRoutes(page, { bundleResponse: RESIDENT_BALANCE(7) });
+    await page.goto("http://localhost:3000/activity.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      const container = document.getElementById("submissionCost");
+      container.dataset.tokenCost = "0";
+      container.dataset.costLead = "Return 2 of 2 costs no token. Return 1 used the token for both.";
+      window.SubmissionCost.refresh();
+    });
+
+    await expect(page.locator("#submissionCost")).toHaveText(
+      "Return 2 of 2 costs no token. Return 1 used the token for both. You have 7 left.",
+    );
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+  });
+
+  test("a page cost above the balance disables the button and says what is left and what the filing costs", async ({ page }) => {
+    await setupRoutes(page, { bundleResponse: RESIDENT_BALANCE(1, { tokenResetAt: "2026-12-01T00:00:00.000Z" }) });
+    await page.goto("http://localhost:3000/activity.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+
+    await page.evaluate(() => {
+      const container = document.getElementById("submissionCost");
+      container.dataset.tokenCost = "2";
+      container.dataset.costLead = "The accounts and the return cost 2 tokens.";
+      window.SubmissionCost.refresh();
+    });
+
+    await expect(page.locator("#submissionCost")).toContainText(
+      "You have 1 token left and this filing costs 2. Your allowance refreshes on 1 December 2026, or you can add a bundle.",
+    );
+    await expect(page.locator("#submitBtn")).toBeDisabled();
+  });
+
+  test("a page cost with no lead uses the plain cost sentence", async ({ page }) => {
+    await setupRoutes(page, { bundleResponse: RESIDENT_BALANCE(7) });
+    await page.goto("http://localhost:3000/activity.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      document.getElementById("submissionCost").dataset.tokenCost = "3";
+      window.SubmissionCost.refresh();
+    });
+
+    await expect(page.locator("#submissionCost")).toHaveText("This submission costs 3 tokens. You have 7 left.");
+  });
 });

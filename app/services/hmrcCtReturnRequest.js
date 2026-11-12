@@ -9,11 +9,12 @@
 // computations attached as iXBRL. The boxes and computation lines are worked here, from the figures. Shared by the preview and the submit Lambdas.
 
 import { parseRequestBody } from "../lib/httpResponseHelper.js";
-import { readAmended } from "./jointFiling.js";
+import { readAmended, readLongPeriod } from "./jointFiling.js";
 import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "../functions/companies-house/companiesHouseAccountsPost.js";
 import { buildCt600IrEnvelope, ltdTaxDataForPeriodEnd } from "./ct600Xml.js";
-import { deriveCt600FromFigures, validateCt600Figures } from "./ct600Figures.js";
+import { Ct600RefusedError, addDays, addMonths, deriveCt600FromFigures, validateCt600Figures } from "./ct600Figures.js";
+import { accountingPeriodsOf, deriveLongPeriodReturns } from "./ct600LongPeriod.js";
 import { buildCtComputations } from "./ctComputationsIxbrl.js";
 import { MICRO_PROFIT_AND_LOSS_LINES, microProfitAndLossProblems } from "./microEntityAccountsIxbrl.js";
 
@@ -64,7 +65,27 @@ const FIGURES_FIELDS = [
 // Fields the rest of the request already validates under their own names.
 const REQUEST_VALIDATED_FIELDS = new Set(["utr", "companyName", "companyNumber", "declarantName", "declarantStatus"]);
 
-function readFigures(figures, { accounts, utr, declarant }, errorMessages) {
+const LONG_PERIOD_FIRST_DAY_MESSAGE =
+  "Submit files a long period when the first accounting period starts on the first day of the accounts.";
+
+// The periods of a long period of account, or undefined with the reason in errorMessages when the
+// request's dates cannot be one.
+function longPeriodAccountingPeriods(figures, errorMessages) {
+  try {
+    const periods = accountingPeriodsOf(figures.periodStart, figures.periodEnd);
+    if (periods.length === 1) {
+      errorMessages.push("longPeriod and figures.accountingPeriods are for a period of account longer than 12 months");
+      return undefined;
+    }
+    return periods;
+  } catch (error) {
+    if (!(error instanceof Ct600RefusedError)) throw error;
+    errorMessages.push(error.message);
+    return undefined;
+  }
+}
+
+function readFigures(figures, { accounts, utr, declarant, longPeriod, longPeriodSent, requireLongPeriod }, errorMessages) {
   if (!figures || typeof figures !== "object" || Array.isArray(figures)) {
     errorMessages.push("Missing figures - the CT600 figures from the book export or the form");
     return undefined;
@@ -87,11 +108,41 @@ function readFigures(figures, { accounts, utr, declarant }, errorMessages) {
     errorMessages.push("figures.workingSheet needs a numeric tradingProfit and corporationTax");
     return stitched;
   }
-  if (!accounts.profitAndLoss) return stitched;
-  for (const problem of validateCt600Figures(stitched)) {
+  const isLongPeriod = longPeriod !== undefined || figures.accountingPeriods !== undefined;
+  if (!isLongPeriod) {
+    if (!accounts.profitAndLoss) return stitched;
+    for (const problem of validateCt600Figures(stitched)) {
+      if (!REQUEST_VALIDATED_FIELDS.has(problem.field)) errorMessages.push(problem.message);
+    }
+    return stitched;
+  }
+
+  if (!longPeriodSent && requireLongPeriod) {
+    errorMessages.push(
+      "Missing longPeriod - a period of account longer than 12 months files as two returns: send longPeriod.filingId and longPeriod.part",
+    );
+  }
+  if (figures.accountingPeriods === undefined) {
+    errorMessages.push("Missing figures.accountingPeriods - the figures of the two accounting periods of a long period of account");
+    return stitched;
+  }
+  const periods = longPeriodAccountingPeriods(stitched, errorMessages);
+  if (!periods) return stitched;
+  if (accounts.periodStart && accounts.periodStart !== stitched.periodStart) errorMessages.push(LONG_PERIOD_FIRST_DAY_MESSAGE);
+  const longFigures = { ...stitched, accountingPeriods: figures.accountingPeriods };
+  if (!accounts.profitAndLoss) return longFigures;
+  // The first accounting period is checked as a return of its own; deriveLongPeriodReturns checks
+  // both when the documents are built.
+  const firstPeriodFigures = figures.accountingPeriods[0];
+  const firstReturnFigures = {
+    ...stitched,
+    ...(firstPeriodFigures && typeof firstPeriodFigures === "object" ? firstPeriodFigures : {}),
+    ...periods[0],
+  };
+  for (const problem of validateCt600Figures(firstReturnFigures)) {
     if (!REQUEST_VALIDATED_FIELDS.has(problem.field)) errorMessages.push(problem.message);
   }
-  return stitched;
+  return longFigures;
 }
 
 function readMicroProfitAndLossYear(values, label, errorMessages) {
@@ -132,7 +183,7 @@ function readReviewedBoxes(reviewedBoxes, required, errorMessages) {
     return undefined;
   }
   for (const [box, value] of Object.entries(reviewedBoxes)) {
-    if (!/^\d{1,4}$/.test(box) || !(typeof value === "number" ? Number.isFinite(value) : typeof value === "string")) {
+    if (!/^\d{1,4}[A-Z]?$/.test(box) || !(typeof value === "number" ? Number.isFinite(value) : typeof value === "string")) {
       errorMessages.push(`Invalid reviewedBoxes entry for box ${box}`);
     }
   }
@@ -160,12 +211,13 @@ export function boxesThatDiffer(reviewedBoxes, workedBoxes) {
  * @param {object} [options]
  * @param {boolean} [options.requireGatewayCredentials] - true for the submit, false for the preview
  * @param {boolean} [options.requireReviewedBoxes] - true for the submit, false for the preview
+ * @param {boolean} [options.requireLongPeriod] - true for the submit, false for the preview: a period of account longer than 12 months names its filing and part
  * @param {{clientId: string, identifiers: {companyNumber: string, utr: string}}} [options.client] - the practice's client row, for a client-scoped request
  */
 export function extractAndValidateCtReturnParameters(
   event,
   errorMessages,
-  { requireGatewayCredentials = true, requireReviewedBoxes = true, client } = {},
+  { requireGatewayCredentials = true, requireReviewedBoxes = true, requireLongPeriod = true, client } = {},
 ) {
   const body = parseRequestBody(event) || {};
   const clientId = client?.clientId;
@@ -206,7 +258,19 @@ export function extractAndValidateCtReturnParameters(
 
   if (body.declarationAccepted !== true) errorMessages.push("The declarant must accept the declaration");
 
-  const figures = readFigures(body.figures, { accounts, utr, declarant: { name: declarantName, status: declarantStatus } }, errorMessages);
+  const longPeriod = readLongPeriod(body, errorMessages);
+  const figures = readFigures(
+    body.figures,
+    {
+      accounts,
+      utr,
+      declarant: { name: declarantName, status: declarantStatus },
+      longPeriod,
+      longPeriodSent: body.longPeriod !== undefined && body.longPeriod !== null,
+      requireLongPeriod,
+    },
+    errorMessages,
+  );
   if (figures && accounts.periodStart && accounts.periodEnd && isValidIsoDate(figures.periodStart) && isValidIsoDate(figures.periodEnd)) {
     if (accounts.periodEnd < figures.periodStart || accounts.periodStart > figures.periodEnd) {
       errorMessages.push("The accounts period does not overlap the return period");
@@ -227,6 +291,7 @@ export function extractAndValidateCtReturnParameters(
 
   return {
     amended,
+    longPeriod,
     accounts,
     utr,
     tradeName,
@@ -239,27 +304,19 @@ export function extractAndValidateCtReturnParameters(
   };
 }
 
-/**
- * Build the CT600 IRenvelope and the two attachments for a validated request. The server works
- * every box and computation line from the figures, so the return, the accounts and the
- * computations name the same company, UTR and declarant. An amended request builds the return
- * with ReturnType="amended", which replaces the return HMRC holds for the period.
- * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
- * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
- */
-export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amended, agent }) {
-  const { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
-    figures,
-    ltdTaxDataForPeriodEnd(figures.periodEnd),
-    { today: new Date().toISOString().slice(0, 10) },
-  );
-  const accountsIxbrl = buildAccountsIxbrl(accounts);
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function documentsOf({ accounts, utr, tradeName, figures, amended, agent }, derived, accountsIxbrl) {
+  const { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd, periodOfAccount } = derived;
   const computationsIxbrl = buildCtComputations({
     companyName: accounts.companyName,
     companyNumber: accounts.companyNumber,
     utr,
     periodStart,
     periodEnd,
+    ...(periodOfAccount ? { periodOfAccount } : {}),
     tradeName,
     lines: computationLines,
     losses,
@@ -267,5 +324,66 @@ export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amen
     tradeOutsideUk: figures.lossOutsideUk === true,
   });
   const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
-  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, ct600a, computationLines, losses, carryBack, worked };
+  return {
+    irEnvelopeXml,
+    accountsIxbrl,
+    computationsIxbrl,
+    boxes,
+    ct600a,
+    computationLines,
+    losses,
+    carryBack,
+    worked,
+    periodStart,
+    periodEnd,
+  };
+}
+
+// Tax is due the day after nine months from the end of the accounting period (TMA 1970 s59D(1)): a
+// period that ends on the last day of a month is due on the first day of the tenth month after it.
+function taxDueDate(periodEnd) {
+  const endsOnMonthEnd = addDays(periodEnd, 1).endsWith("-01");
+  return endsOnMonthEnd ? addMonths(addDays(periodEnd, 1), 9) : addDays(addMonths(periodEnd, 9), 1);
+}
+
+// Both returns of a long period of account file 12 months after the period of account ends
+// (FA 1998 Sch 18 para 14(1)(b)).
+function returnDueDate(periodOfAccountEnd) {
+  return addMonths(periodOfAccountEnd, 12);
+}
+
+/**
+ * Build the two returns of a long period of account, in order, each with its CT600 IRenvelope, its
+ * computations, its boxes and its two due dates. Both carry the same accounts iXBRL, built once.
+ * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request - a request with figures.accountingPeriods
+ * @returns {Array<ReturnType<typeof buildCtReturnDocuments> & {part: 1|2, periodStart: string, periodEnd: string, taxDueDate: string, returnDueDate: string}>}
+ */
+export function buildLongPeriodReturnDocuments(request) {
+  const { figures, accounts } = request;
+  const [first] = accountingPeriodsOf(figures.periodStart, figures.periodEnd);
+  const taxData = { ...ltdTaxDataForPeriodEnd(first.periodEnd), ...ltdTaxDataForPeriodEnd(figures.periodEnd) };
+  const accountsIxbrl = buildAccountsIxbrl(accounts);
+  return deriveLongPeriodReturns(figures, taxData, { today: todayIso() }).map((derived, index) => ({
+    part: index + 1,
+    ...documentsOf(request, derived, accountsIxbrl),
+    taxDueDate: taxDueDate(derived.periodEnd),
+    returnDueDate: returnDueDate(figures.periodEnd),
+  }));
+}
+
+/**
+ * Build the CT600 IRenvelope and the two attachments for a validated request. The server works
+ * every box and computation line from the figures, so the return, the accounts and the
+ * computations name the same company, UTR and declarant. An amended request builds the return
+ * with ReturnType="amended", which replaces the return HMRC holds for the period. A request of a
+ * long period of account builds both returns, because the second one's carry-back reaches the
+ * first, and answers the part the request names.
+ * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
+ * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: object, periodStart: string, periodEnd: string}}
+ */
+export function buildCtReturnDocuments(request) {
+  if (request.longPeriod) return buildLongPeriodReturnDocuments(request)[request.longPeriod.part - 1];
+  const { figures, accounts } = request;
+  const derived = deriveCt600FromFigures(figures, ltdTaxDataForPeriodEnd(figures.periodEnd), { today: todayIso() });
+  return documentsOf(request, derived, buildAccountsIxbrl(accounts));
 }

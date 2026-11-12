@@ -298,3 +298,18 @@ describe("System: dynamoDbReceiptStore with local dynalite", () => {
     });
   });
 });
+
+// Last in the file: its receipts fill more than one page, and the scans above read a single page.
+describe("System: dynamoDbReceiptStore lists across query pages", () => {
+  it("lists every receipt when the receipts are larger than one 1 MB query page", async () => {
+    const userSub = "user-large-receipts";
+    const filedCopy = "x".repeat(300_000);
+    const receiptIds = [1, 2, 3, 4, 5].map((day) => `2025-12-0${day}T09:00:00.000Z-LARGE-${day}`);
+    for (const receiptId of receiptIds)
+      await store.putReceipt(userSub, receiptId, { formBundleNumber: receiptId, filed: { copy: filedCopy } });
+
+    const listed = await store.listUserReceipts(userSub);
+
+    expect(listed.map((receipt) => receipt.receiptId)).toEqual([...receiptIds].reverse());
+  });
+});

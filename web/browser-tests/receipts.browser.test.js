@@ -92,6 +92,60 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(1)).toContainText("BBB");
   });
 
+  test("lists the accounts and both returns of a long period of account under one row, titled by return and dates", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const filingId = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+      const poa = { filingId, parts: 2, periodOfAccountStart: "2025-01-01", periodOfAccountEnd: "2026-03-31" };
+      const items = [
+        {
+          name: "2026-10-03T09:00:00.000Z-HM1.json",
+          timestamp: "2026-10-03T09:00:00.000Z",
+          formBundleNumber: "HM1",
+          kind: "company-tax-return",
+          longPeriod: { ...poa, filingId: "11111111-2222-4333-8444-555555555555", part: 1 },
+          amended: true,
+        },
+        {
+          name: "2026-10-02T09:10:00.000Z-CT2.json",
+          timestamp: "2026-10-02T09:10:00.000Z",
+          formBundleNumber: "CT2",
+          kind: "company-tax-return",
+          jointFilingId: filingId,
+          longPeriod: { ...poa, part: 2 },
+        },
+        {
+          name: "2026-10-02T09:05:00.000Z-CT1.json",
+          timestamp: "2026-10-02T09:05:00.000Z",
+          formBundleNumber: "CT1",
+          kind: "company-tax-return",
+          jointFilingId: filingId,
+          longPeriod: { ...poa, part: 1 },
+        },
+        {
+          name: "2026-10-02T09:00:00.000Z-ACC1.json",
+          timestamp: "2026-10-02T09:00:00.000Z",
+          formBundleNumber: "ACC1",
+          kind: "companies-house-accounts",
+          jointFilingId: filingId,
+        },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+      await window.fetchReceipts();
+    });
+
+    await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
+    const filing = page.locator("#receiptsTable tbody tr").nth(1).locator("td.receipt-cell .receipt-entry");
+    await expect(filing).toHaveCount(3);
+    await expect(filing.nth(0)).toContainText("Accounts: ACC1");
+    await expect(filing.nth(1)).toContainText("Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025): CT1");
+    await expect(filing.nth(2)).toContainText("Company Tax Return 2 of 2 (1 January 2026 to 31 March 2026): CT2");
+    await expect(page.locator("#receiptsTable tbody tr").nth(0)).toContainText(
+      "Amended Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025): HM1",
+    );
+  });
+
   test("lists the accounts and the Company Tax Return of one joint filing under one row, and a lone half with no title", async ({
     page,
   }) => {

@@ -210,4 +210,97 @@ describe("System: token consumption with dynalite", () => {
       expect(afterReset.tokensRemaining).toBe(2);
     });
   });
+
+  describe("filing accounts and a Company Tax Return from the catalogue", () => {
+    const userId3 = "token-test-user-3";
+    const request = { pathname: "/api/v1/companies-house/accounts" };
+
+    async function balance(user) {
+      const bundles = await store.getUserBundles(user);
+      const bundle = bundles.find((b) => b.bundleId === "resident-ltd");
+      return bundle.tokensGranted - bundle.tokensConsumed;
+    }
+
+    it("charges one token for each kind of filing and then refuses before sending", async () => {
+      await store.putBundle(userId3, { bundleId: "resident-ltd", tokensGranted: 3, tokensConsumed: 0 });
+      await tokenEnforcement.chargeTokenOnSuccess(userId3, "file-micro-entity-accounts");
+      await tokenEnforcement.chargeTokenOnSuccess(userId3, "file-small-company-accounts");
+      await tokenEnforcement.chargeTokenOnSuccess(userId3, "file-company-tax-return");
+      expect(await balance(userId3)).toBe(0);
+
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId3,
+        activityId: "file-company-tax-return",
+      });
+      expect(refusal.statusCode).toBe(403);
+      expect(JSON.parse(refusal.body)).toMatchObject({ reason: "tokens_exhausted", tokensRemaining: 0 });
+    });
+
+    it("lets a filing through while a token is left and charges nothing at the check", async () => {
+      const userId4 = "token-test-user-4";
+      await store.putBundle(userId4, { bundleId: "resident-ltd", tokensGranted: 1, tokensConsumed: 0 });
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId4,
+        activityId: "file-micro-entity-accounts",
+      });
+      expect(refusal).toBeUndefined();
+      const bundles = await store.getUserBundles(userId4);
+      expect(bundles.find((b) => b.bundleId === "resident-ltd").tokensConsumed).toBe(0);
+    });
+
+    it("refuses accounts that start a joint filing when one token is left, and lets accounts alone through", async () => {
+      const userId6 = "token-test-user-6";
+      await store.putBundle(userId6, { bundleId: "resident-ltd", tokensGranted: 1, tokensConsumed: 0 });
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId6,
+        activityId: "file-micro-entity-accounts",
+        alsoActivityIds: ["file-company-tax-return"],
+      });
+      expect(refusal.statusCode).toBe(403);
+      expect(JSON.parse(refusal.body)).toMatchObject({ reason: "tokens_exhausted", tokensRemaining: 1, tokenCost: 2 });
+      expect(await balance(userId6)).toBe(1);
+
+      const alone = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId6,
+        activityId: "file-micro-entity-accounts",
+      });
+      expect(alone).toBeUndefined();
+    });
+
+    it("lets a joint filing through with two tokens left", async () => {
+      const userId7 = "token-test-user-7";
+      await store.putBundle(userId7, { bundleId: "resident-ltd", tokensGranted: 2, tokensConsumed: 0 });
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId7,
+        activityId: "file-micro-entity-accounts",
+        alsoActivityIds: ["file-company-tax-return"],
+      });
+      expect(refusal).toBeUndefined();
+    });
+
+    it("never refuses or counts a filing for an unlimited grant", async () => {
+      const userId5 = "token-test-user-5";
+      await store.putBundle(userId5, { bundleId: "resident-tax-agent", tokensGranted: "unlimited", tokensConsumed: 0 });
+      await tokenEnforcement.chargeTokenOnSuccess(userId5, "file-company-tax-return");
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId5,
+        activityId: "file-company-tax-return",
+      });
+      expect(refusal).toBeUndefined();
+      const bundles = await store.getUserBundles(userId5);
+      expect(bundles.find((b) => b.bundleId === "resident-tax-agent").tokensConsumed).toBe(0);
+    });
+  });
 });

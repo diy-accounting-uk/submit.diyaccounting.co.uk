@@ -420,12 +420,35 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       expect(receipt.input.Item.receipt).not.toHaveProperty("amended");
     });
 
-    test("a filing with no jointFilingId writes none and charges nothing", async () => {
-      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts" });
+    test("a filing with no jointFilingId writes none and charges its own token once", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-micro-entity-accounts" });
       gatewayAnswers("ACCEPT");
       await companiesHouseAccountsGetHandler(buildEvent());
       const [receipt] = await puts();
       expect(receipt.input.Item.receipt).not.toHaveProperty("jointFilingId");
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-micro-entity-accounts");
+    });
+
+    test("a filing with no jointFilingId charges nothing on a rejection", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-micro-entity-accounts" });
+      gatewayAnswers("REJECT");
+      await companiesHouseAccountsGetHandler(buildEvent());
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("a poll after acceptance answers from the stored result and charges nothing more", async () => {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand) {
+          return { Item: { requestId: cmd.input.Key.requestId, status: "completed", data: { statusCode: "ACCEPT", receiptId: "r-1" } } };
+        }
+        return {};
+      });
+      const response = await companiesHouseAccountsGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", receiptId: "r-1" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
       expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     });
   });

@@ -107,10 +107,8 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     const data = { ...status, ...jointFiling, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
     await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
-    // A filing sent as half of a pair costs its own token; the pair costs two.
-    if (jointFiling.jointFilingId && persistedRequest.data?.chargeActivityId) {
-      await chargeTokenOnSuccess(userSub, persistedRequest.data.chargeActivityId);
-    }
+    // Each accepted filing costs its own token, alone or as half of a pair; the pair costs two.
+    if (persistedRequest.data?.chargeActivityId) await chargeTokenOnSuccess(userSub, persistedRequest.data.chargeActivityId);
     return { data };
   }
 

@@ -36,6 +36,60 @@ export function jointFilingFields(jointFilingId) {
   return jointFilingId ? { jointFilingId } : {};
 }
 
+/**
+ * Read the optional longPeriod of a Company Tax Return request: the filing id that names the two
+ * returns of one period of account longer than 12 months, and which of the two this request is.
+ * When the request also carries a jointFilingId (the accounts go to Companies House), it is the
+ * same UUID as the filing id.
+ * @param {object|undefined} body
+ * @param {string[]} errorMessages - a malformed value adds a message here
+ * @returns {{filingId: string, part: 1|2}|undefined} undefined when the request is a single return
+ */
+export function readLongPeriod(body, errorMessages) {
+  const value = body?.longPeriod;
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid longPeriod - must be an object with filingId and part");
+    return undefined;
+  }
+  let valid = true;
+  if (typeof value.filingId !== "string" || !UUID_PATTERN.test(value.filingId)) {
+    errorMessages.push("Invalid longPeriod.filingId - must be a UUID");
+    valid = false;
+  }
+  if (value.part !== 1 && value.part !== 2) {
+    errorMessages.push("Invalid longPeriod.part - must be 1 or 2");
+    valid = false;
+  }
+  if (!valid) return undefined;
+  const filingId = value.filingId.toLowerCase();
+  const jointFilingId = body.jointFilingId;
+  if (typeof jointFilingId === "string" && UUID_PATTERN.test(jointFilingId) && jointFilingId.toLowerCase() !== filingId) {
+    errorMessages.push("jointFilingId must be the same UUID as longPeriod.filingId");
+  }
+  return { filingId, part: value.part };
+}
+
+/**
+ * What a stored record or receipt holds for one of the two returns of a long period of account.
+ * @param {{filingId: string, part: 1|2}} longPeriod
+ * @param {string} periodOfAccountStart - ISO date
+ * @param {string} periodOfAccountEnd - ISO date
+ * @returns {{filingId: string, part: 1|2, parts: 2, periodOfAccountStart: string, periodOfAccountEnd: string}}
+ */
+export function longPeriodRecord({ filingId, part }, periodOfAccountStart, periodOfAccountEnd) {
+  return { filingId, part, parts: 2, periodOfAccountStart, periodOfAccountEnd };
+}
+
+/**
+ * The field a stored record or receipt repeats for a return that is one of the two of a long period.
+ * @param {object|undefined} longPeriodRecordValue - the value longPeriodRecord returned
+ * @returns {{longPeriod: object}|{}}
+ */
+export function longPeriodFields(longPeriodRecordValue) {
+  return longPeriodRecordValue ? { longPeriod: longPeriodRecordValue } : {};
+}
+
 const MAX_REVISION_DIFFERENCES_LENGTH = 2000;
 
 /**

@@ -18,7 +18,7 @@ export async function handle403Error(response) {
 
     // One message: what failed, the cause, and a link to the bundles page
     if (typeof window !== "undefined" && window.showFailure) {
-      window.showFailure({ status: 403, code: errorBody.code, message }, "You cannot use this yet");
+      window.showFailure({ status: 403, code: errorBody.code || errorBody.reason, message }, "You cannot use this yet");
     }
   } catch (e) {
     console.warn("Failed to handle 403 error:", e);

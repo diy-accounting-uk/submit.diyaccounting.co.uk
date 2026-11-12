@@ -14,6 +14,10 @@
 // 1000, after which the polls carry on as normal. A scenario of CT600_LOST_REPLY keeps the
 // submission but answers the submit with HTTP 504; CT600_LOST_REQUEST answers 504 and keeps
 // nothing. Both leave the client with no CorrelationID.
+// A return whose period (boxes 30 and 35) is longer than 12 months gets business error 9101 in its
+// final response, as on HMRC's Third Party Validation Service. A Gov-Test-Scenario of
+// CT600_REJECT_SECOND_RETURN accepts the first submission that carries it and answers business
+// error 9043 to each later submission that carries it.
 // A DATA_REQUEST (Function list) to either path is answered with a DATA_RESPONSE listing the
 // submissions held. A poll or delete sent to the submission path is served as on the poll path.
 // The response shapes copy what HMRC's Third Party Validation Service returned on 2026-10-05.
@@ -22,6 +26,7 @@ import express from "express";
 import { randomBytes } from "node:crypto";
 import { parseXmlDocument, firstElementText, firstElement, escapeXmlText } from "../../lib/xmlDom.js";
 import { computeIrmark, CT600_CLASS, CT600_TEST_IN_LIVE_CLASS } from "../../services/hmrcTransactionEngine.js";
+import { lastDayOfTwelveMonths } from "../../services/ct600Figures.js";
 
 export const SUBMISSION_PATH = "/hmrc-transaction-engine/submission";
 export const POLL_PATH = "/hmrc-transaction-engine/poll";
@@ -30,11 +35,26 @@ export const REJECT_IRMARK_SCENARIO = "CT600_REJECT_IRMARK";
 export const TRANSIENT_POLL_ERROR_SCENARIO = "CT600_TRANSIENT_POLL_ERROR";
 export const LOST_REPLY_SCENARIO = "CT600_LOST_REPLY";
 export const LOST_REQUEST_SCENARIO = "CT600_LOST_REQUEST";
+export const REJECT_SECOND_RETURN_SCENARIO = "CT600_REJECT_SECOND_RETURN";
+
+const IRMARK_INCORRECT = { number: "2021", text: "The supplied IRmark is incorrect.", location: "IRmark" };
+const RETURN_PERIOD_TOO_LONG = {
+  number: "9101",
+  text: "The return period covered in Boxes 30 and 35 must not be longer than 12 months",
+  location: "PeriodCovered",
+};
+const MARGINAL_RELIEF_DISAGREES = {
+  number: "9043",
+  text: "For V3 submissions - Check that Box 435 agrees with the result of the computation of marginal relief.",
+  location: "CalculationOfTax",
+};
 
 const submissions = new Map();
+let secondReturnScenarioSeen = false;
 
 export function resetTransactionEngineSubmissions() {
   submissions.clear();
+  secondReturnScenarioSeen = false;
 }
 
 function envelope({
@@ -64,7 +84,7 @@ function fatalError(text, number) {
   });
 }
 
-function irmarkErrorResponse(messageClass, correlationId) {
+function businessErrorResponse(messageClass, correlationId, { number, text, location }) {
   return envelope({
     messageClass,
     qualifier: "error",
@@ -72,8 +92,7 @@ function irmarkErrorResponse(messageClass, correlationId) {
     correlationId,
     errorsXml:
       "<GovTalkErrors><Error><RaisedBy>ChRIS</RaisedBy><Number>3001</Number><Type>business</Type><Text>Your submission failed due to business validation errors. Please see below for details.</Text></Error></GovTalkErrors>",
-    bodyXml:
-      '<ErrorResponse xmlns="http://www.govtalk.gov.uk/CM/errorresponse" SchemaVersion="2.0"><Application><MessageCount>1</MessageCount></Application><Error><RaisedBy>ChRIS</RaisedBy><Number>2021</Number><Type>business</Type><Text>The supplied IRmark is incorrect.</Text><Location>IRmark</Location></Error></ErrorResponse>',
+    bodyXml: `<ErrorResponse xmlns="http://www.govtalk.gov.uk/CM/errorresponse" SchemaVersion="2.0"><Application><MessageCount>1</MessageCount></Application><Error><RaisedBy>ChRIS</RaisedBy><Number>${number}</Number><Type>business</Type><Text>${escapeXmlText(text)}</Text><Location>${location}</Location></Error></ErrorResponse>`,
   });
 }
 
@@ -150,12 +169,14 @@ export function apiEndpoint(app) {
     const correlationId = randomBytes(16).toString("hex").toUpperCase();
     const scenario = req.get("Gov-Test-Scenario");
     if (scenario === LOST_REQUEST_SCENARIO) return res.status(504).send("");
+    const returnError = returnBusinessError(document, scenario);
     submissions.set(correlationId, {
       messageClass,
       transactionId: firstElementText(document, "TransactionID") || "",
       utr: firstElementText(document, "Key") || "",
       irmark,
       irmarkMatches: suppliedIrmark === irmark.base64 && req.get("Gov-Test-Scenario") !== REJECT_IRMARK_SCENARIO,
+      returnError,
       polls: 0,
       transientPollError: req.get("Gov-Test-Scenario") === TRANSIENT_POLL_ERROR_SCENARIO,
       receivedAt: new Date().toISOString().replace("Z", ""),
@@ -181,6 +202,20 @@ export function apiEndpoint(app) {
     }
     return followOn(res, document);
   });
+}
+
+// The business error HMRC's validation would raise on the return, apart from the IRmark check.
+function returnBusinessError(document, scenario) {
+  const periodCovered = firstElement(document, "PeriodCovered");
+  const from = periodCovered && firstElementText(periodCovered, "From");
+  const to = periodCovered && firstElementText(periodCovered, "To");
+  if (from && to && to > lastDayOfTwelveMonths(from)) return RETURN_PERIOD_TOO_LONG;
+  if (scenario !== REJECT_SECOND_RETURN_SCENARIO) return undefined;
+  if (!secondReturnScenarioSeen) {
+    secondReturnScenarioSeen = true;
+    return undefined;
+  }
+  return MARGINAL_RELIEF_DISAGREES;
 }
 
 function followOn(res, document) {
@@ -213,10 +248,7 @@ function followOn(res, document) {
   if (submission.transientPollError && submission.polls === 2) {
     return sendXml(res, fatalError("System failure. The submission of this document has failed due to an internal system error.", 1000));
   }
-  return sendXml(
-    res,
-    submission.irmarkMatches
-      ? successResponse(submission.messageClass, correlationId, submission)
-      : irmarkErrorResponse(submission.messageClass, correlationId),
-  );
+  if (!submission.irmarkMatches) return sendXml(res, businessErrorResponse(submission.messageClass, correlationId, IRMARK_INCORRECT));
+  if (submission.returnError) return sendXml(res, businessErrorResponse(submission.messageClass, correlationId, submission.returnError));
+  return sendXml(res, successResponse(submission.messageClass, correlationId, submission));
 }

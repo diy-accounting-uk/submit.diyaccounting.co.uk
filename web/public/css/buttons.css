@@ -162,8 +162,8 @@
 .btn-small:disabled:hover,
 .action-button:disabled:hover,
 .form-actions button.primary:disabled:hover {
-  background-color: var(--c-brand);
-  border-color: var(--c-brand);
+  background-color: var(--c-rule-subtle);
+  border-color: var(--c-rule);
 }
 
 .btn-small,

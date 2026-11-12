@@ -7,6 +7,11 @@
 // GET /api/v1/bundle. Never blocks a submission on its own - only a confirmed, known-exhausted
 // balance disables the submit control, and a slow or failed balance read just shows the price
 // with no number, leaving the button enabled.
+//
+// A page whose cost depends on what it is about to send (one return, two returns, accounts and a
+// return) sets data-token-cost and data-cost-lead on the container and calls
+// window.SubmissionCost.refresh(). The container's own cost then replaces the catalogue's, and the
+// lead is the sentence that says what the cost is for.
 
 (function () {
   "use strict";
@@ -110,9 +115,10 @@
     return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   }
 
-  // The container sits directly above the submit control in document order (the page's only
-  // job besides the script tag), so its next sibling is that control.
+  // The control is the container's next sibling, or the button named by data-submit-button
+  // when the page groups it with others (a Back button beside a Submit button).
   function findSubmitButton(container) {
+    if (container.dataset.submitButton) return document.getElementById(container.dataset.submitButton);
     const next = container.nextElementSibling;
     return next && next.tagName === "BUTTON" ? next : null;
   }
@@ -131,6 +137,21 @@
     }
   }
 
+  function tokenWord(count) {
+    return `${count} token${count === 1 ? "" : "s"}`;
+  }
+
+  // The cost a page computed for itself, or undefined when the container leaves it to the catalogue.
+  function pageCost(container) {
+    if (container.dataset.tokenCost === undefined) return undefined;
+    const cost = Number(container.dataset.tokenCost);
+    return Number.isInteger(cost) && cost >= 0 ? cost : undefined;
+  }
+
+  function costLead(container, tokenCost) {
+    return container.dataset.costLead || `This submission costs ${tokenWord(tokenCost)}.`;
+  }
+
   function renderFree(container) {
     container.className = "submission-cost hint";
     container.textContent = "This submission is free. It does not use a token.";
@@ -138,38 +159,44 @@
 
   function renderCostOnly(container, tokenCost) {
     container.className = "submission-cost hint";
-    container.textContent = `This submission costs ${tokenCost} token${tokenCost === 1 ? "" : "s"}.`;
+    container.textContent = costLead(container, tokenCost);
   }
 
   function renderCostAndBalance(container, tokenCost, tokensRemaining) {
     container.className = "submission-cost hint";
-    container.textContent = `This submission costs ${tokenCost} token${tokenCost === 1 ? "" : "s"}. You have ${tokensRemaining} left.`;
+    container.textContent = `${costLead(container, tokenCost)} You have ${tokensRemaining} left.`;
   }
 
   function renderUnlimitedBalance(container, tokenCost) {
     container.className = "submission-cost hint";
-    container.textContent = `This submission costs ${tokenCost} token${tokenCost === 1 ? "" : "s"}. You have unlimited tokens.`;
+    container.textContent = `${costLead(container, tokenCost)} You have unlimited tokens.`;
   }
 
-  function renderExhausted(container, resetDate) {
+  function renderExhausted(container, resetDate, tokensRemaining, tokenCost) {
     container.className = "submission-cost status-message status-warning";
     container.textContent = "";
-    const lead = resetDate
-      ? `You have no tokens left. Your allowance refreshes on ${resetDate}, or you can `
-      : "You have no tokens left. You can ";
-    container.appendChild(document.createTextNode(lead));
+    // One span, so the warning's flex layout keeps the sentence and its link in one run of text.
+    const message = document.createElement("span");
+    const balance =
+      tokensRemaining > 0 ? `You have ${tokenWord(tokensRemaining)} left and this filing costs ${tokenCost}.` : "You have no tokens left.";
+    const lead = resetDate ? `${balance} Your allowance refreshes on ${resetDate}, or you can ` : `${balance} You can `;
+    message.appendChild(document.createTextNode(lead));
     const link = document.createElement("a");
     link.href = "/bundles.html";
     link.textContent = "add a bundle";
-    container.appendChild(link);
-    container.appendChild(document.createTextNode("."));
+    message.appendChild(link);
+    message.appendChild(document.createTextNode("."));
+    container.appendChild(message);
   }
 
   async function renderContainer(container) {
     const catalog = await fetchCatalog();
     const activity = findActivity(catalog, window.location.pathname);
-    const tokenCost = activity?.tokenCost || 0;
-    if (tokenCost === 0) {
+    const computedCost = pageCost(container);
+    const tokenCost = computedCost ?? (activity?.tokenCost || 0);
+    // A computed cost of zero still names its reason and shows the balance; only a catalogue
+    // activity with no price is simply free.
+    if (tokenCost === 0 && computedCost === undefined) {
       renderFree(container);
       return;
     }
@@ -193,7 +220,7 @@
 
     const tokensRemaining = qualifyingBundle.tokensRemaining ?? 0;
     if (tokensRemaining < tokenCost) {
-      renderExhausted(container, formatResetDate(qualifyingBundle.tokenResetAt));
+      renderExhausted(container, formatResetDate(qualifyingBundle.tokenResetAt), tokensRemaining, tokenCost);
       setBlockedByTokens(button, true);
     } else {
       renderCostAndBalance(container, tokenCost, tokensRemaining);

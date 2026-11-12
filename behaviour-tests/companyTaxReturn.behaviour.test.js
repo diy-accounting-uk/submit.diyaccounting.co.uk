@@ -79,6 +79,12 @@ import {
   verifyRevisedAccountsAndAmendedReturnAccepted,
   verifyAmendedReturnAccepted,
   verifyRevisedAccountsRejected,
+  typeInLongPeriodCompanyTaxReturnForm,
+  verifyTwoReviews,
+  verifyBothReturnsAccepted,
+  verifyReturnOneAcceptedAndReturnTwoRejected,
+  fixASecondColumnFieldAndPreview,
+  verifyBothReceiptsOnTheReceiptsPage,
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 import {
@@ -618,6 +624,53 @@ test("Click through: Companies House rejects the revised accounts, the amended r
   await verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath);
   expect(returnPosts.bodies).toHaveLength(2);
   expect(returnPosts.bodies[1].amended).toBe(true);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: type a 15 month period of account, send its two Company Tax Returns one after the other and see both receipts under one filing", async ({
+  page,
+}, testInfo) => {
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachCompanyForm(page, testInfo);
+  await typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyTwoReviews(page, screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyBothReturnsAccepted(page, screenshotPath);
+
+  expect(returnPosts.bodies.map((body) => body.longPeriod.part)).toEqual([1, 2]);
+  expect(returnPosts.bodies[1].longPeriod.filingId).toBe(returnPosts.bodies[0].longPeriod.filingId);
+  expect(returnPosts.bodies[0].reviewedBoxes[440]).toBe(19273.46);
+  expect(returnPosts.bodies[1].reviewedBoxes[440]).toBe(5688.68);
+  const { filingId } = returnPosts.bodies[0].longPeriod;
+  const receipts = (await readReceiptsOfTheFilings(page)).filter((entry) => entry.receipt.longPeriod?.filingId === filingId);
+  expect(receipts).toHaveLength(2);
+  expect(receipts.map((entry) => entry.receipt.longPeriod.part).sort()).toEqual([1, 2]);
+  await verifyBothReceiptsOnTheReceiptsPage(page, baseUrl, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: HMRC rejects the second return of a 15 month period, and a fixed second-column answer sends return 2 again", async ({
+  page,
+}, testInfo) => {
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachCompanyForm(page, testInfo);
+  await typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await setCtGovTestScenario(page, "CT600_REJECT_SECOND_RETURN", screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnOneAcceptedAndReturnTwoRejected(page, { errorNumber: "9043" }, screenshotPath);
+
+  await clearGovTestScenario(page);
+  await fixASecondColumnFieldAndPreview(page, { fieldId: "mainPoolAllowancesAp2", value: "300" }, screenshotPath);
+  await resendTheTaxReturn(page, { password: gatewayCredentials.password }, screenshotPath);
+  await verifyBothReturnsAccepted(page, screenshotPath);
+
+  expect(returnPosts.bodies.map((body) => body.longPeriod.part)).toEqual([1, 2, 2]);
+  expect(returnPosts.bodies[2].reviewedBoxes[705]).toBe(300);
+  expect(returnPosts.bodies[1].reviewedBoxes[705]).toBe(363);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

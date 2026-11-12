@@ -294,7 +294,14 @@ async function handleSubmitFiling() {
     submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
+    const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";
+    // The request layer already showed its own refusal; the page's message replaces it.
+    if (tokensExhausted) hideStatus();
     showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+    if (tokensExhausted) {
+      window.dispatchEvent(new CustomEvent("bundle-changed"));
+      document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });
+    }
     hideLoading();
     return;
   }

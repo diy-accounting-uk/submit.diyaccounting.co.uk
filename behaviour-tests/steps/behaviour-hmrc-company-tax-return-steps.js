@@ -255,8 +255,9 @@ export async function previewCompanyTaxReturn(page, screenshotPath = defaultScre
     await loggedClick(page, "#previewBtn", "Previewing the return", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
-    await expect(page.locator("#ct600Table tbody tr").first()).toBeVisible();
-    await expect(page.locator("#computationsTable tbody tr").first()).toBeVisible();
+    // A period of account over 12 months shows one pair of tables for each return.
+    await expect(page.locator("#ct600Table tbody tr, #ct600Table1 tbody tr").first()).toBeVisible();
+    await expect(page.locator("#computationsTable tbody tr, #computationsTable1 tbody tr").first()).toBeVisible();
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview.png`, readerView: true });
   });
 }
@@ -280,6 +281,9 @@ export async function enterGatewayCredentialsAndSubmit(
   await test.step("The user enters the Government Gateway credentials and submits the return", async () => {
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    await expect(page.locator("#submissionCost")).toContainText(
+      /This return costs 1 token\.|The two returns cost 1 token between them\.|The accounts and (the return|the two returns) cost 2 tokens\./,
+    );
     if (sendStepPictureName) await takeApprovalBriefScreenshot(page, sendStepPictureName, { locator: ".send-step" });
     await loggedClick(page, "#submitReturnBtn", "Submitting the Company Tax Return", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
@@ -420,6 +424,7 @@ export async function submitJointExpectingGatewayError(
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    await expect(page.locator("#submissionCost")).toContainText(/The accounts and (the return|the two returns) cost 2 tokens\./);
     await loggedClick(page, "#submitReturnBtn", "Sending both filings", { screenshotPath });
   });
 }
@@ -660,5 +665,125 @@ export async function verifyRevisedAccountsRejected(page, screenshotPath = defau
     await expect(page.locator("#returnResult")).toBeEmpty();
     await expect(page.locator("#tryAgainBtn")).toBeVisible();
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-revised-accounts-rejected.png`, readerView: true });
+  });
+}
+
+// --- A period of account longer than 12 months, filed as two returns -------------------------------
+
+// The 15 month example: 1 January 2025 to 31 March 2026, with a loan to a director in the second accounting period.
+const LONG_PERIOD_ANSWERS = {
+  utr: "8596148860",
+  periodStart: "2025-01-01",
+  periodEnd: "2026-03-31",
+  currentTurnover: "250000",
+  currentCostOfSales: "50000",
+  currentAdministrativeExpenses: "81000",
+  currentInterestReceivable: "1000",
+  currentTax: "24962",
+  currentDebtors: "10000",
+  currentCashAtBank: "116100",
+  currentTradeCreditors: "5000",
+  currentCorporationTax: "24962",
+  currentTaxationSocialSecurity: "1000",
+  currentCalledUpShareCapital: "100",
+  currentProfitAndLossAccount: "95038",
+  principalActivity: "Software consultancy",
+  accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
+  directors: "Alex Example",
+  averageEmployees: "2",
+  directorName: "Alex Example",
+  directorDateApproved: "2026-06-30",
+  declarantName: "Alex Example",
+  nonTradingLoanRelationshipCredits: "1000",
+  depreciation: "6000",
+  donations: "2000",
+  donationsPaid: "2000",
+  donationsPaidAp2: "0",
+  annualInvestmentAllowance: "12000",
+  mainPoolAllowances: "1800",
+  mainPoolAllowancesAp2: "363",
+};
+
+export async function typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user types a 15 month period of account, both accounting periods' figures and a loan in the second period", async () => {
+    for (const [id, value] of Object.entries(LONG_PERIOD_ANSWERS)) {
+      await loggedFill(page, `#${id}`, value, id);
+    }
+    await expect(page.locator("#longPeriodPanel")).toContainText("This period of account files as two returns");
+    await expect(page.locator("#longPeriodPanel")).toContainText("Return 2 of 2: 1 January 2026 to 31 March 2026 (90 days)");
+    await page.check("#loansMadeAp2Yes");
+    await loggedFill(page, "#loanName1Ap2", "Alex Example", "Return 2 participator");
+    await loggedFill(page, "#loanAmount1Ap2", "15000", "Return 2 loan amount");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await page.check("#declarationAccepted");
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-form-typed.png`, readerView: true });
+  });
+}
+
+export async function verifyTwoReviews(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees return 1 of 2 and return 2 of 2 in the review, each with its own boxes, due dates and the send order", async () => {
+    await expect(page.locator("#reviewReturn1Heading")).toHaveText("Return 1 of 2: 1 January 2025 to 31 December 2025");
+    await expect(page.locator("#reviewReturn2Heading")).toHaveText("Return 2 of 2: 1 January 2026 to 31 March 2026");
+    await expect(page.locator("#review-box-440")).toContainText("19,273.46");
+    await expect(page.locator("#review-box-440Ap2")).toContainText("5,688.68");
+    await expect(page.locator("#review-box-480Ap2")).toContainText("5,062.5");
+    await expect(page.locator("#review-return-1")).toContainText("Tax is due on 1 October 2026");
+    await expect(page.locator("#review-return-2")).toContainText("Tax is due on 1 January 2027");
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send two returns to HMRC");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-reviews.png`, readerView: true });
+  });
+}
+
+export async function verifyBothReturnsAccepted(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees HMRC accept return 1 of 2 and return 2 of 2, each with its IRmark and customer copy", async () => {
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2", { timeout: 90000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 2 of 2", { timeout: 90000 });
+    await expect(page.locator("#returnIrmark")).toContainText(/Return 1 of 2 IRmark: [A-Z2-7]{32}/);
+    await expect(page.locator("#returnIrmark")).toContainText(/Return 2 of 2 IRmark: [A-Z2-7]{32}/);
+    await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(2);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-accepted.png`, readerView: true });
+  });
+}
+
+export async function verifyReturnOneAcceptedAndReturnTwoRejected(page, { errorNumber }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user sees return 1 of 2 accepted and return 2 of 2 rejected with error ${errorNumber}`, async () => {
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2", { timeout: 90000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC rejected the Company Tax Return 2 of 2", { timeout: 90000 });
+    await expect(page.locator("#returnErrors")).toContainText(`Error ${errorNumber}`);
+    await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(1);
+    await expect(page.locator("#tryAgainBtn")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-second-rejected.png`, readerView: true });
+  });
+}
+
+export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user returns to the form, sees return 1's answers locked, fixes ${fieldId} and goes to the review`, async () => {
+    await page.evaluate(() => document.getElementById("tryAgainBtn").click());
+    await page.evaluate(() => document.getElementById("backToFormBtn").click());
+    await expect(page.locator("#firstReturnLockNote")).toContainText("Return 1 is filed with HMRC. Send return 2 first");
+    await expect(page.locator("#currentTurnover")).toBeDisabled();
+    await expect(page.locator("#annualInvestmentAllowance")).toBeDisabled();
+    await expect(page.locator(`#${fieldId}`)).toBeEnabled();
+    await loggedFill(page, `#${fieldId}`, value, fieldId);
+    await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send return 2 of 2 to HMRC");
+    await expect(page.locator("#submissionCost")).toContainText("Return 2 of 2 costs no token. Return 1 used the token for both.");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-fixed.png`, readerView: true });
+  });
+}
+
+export async function verifyBothReceiptsOnTheReceiptsPage(page, baseUrl, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user opens the receipts page and sees both returns' receipts under one filing", async () => {
+    await page.goto(`${baseUrl}hmrc/receipt/receipts.html`);
+    const entry = page.locator("#receiptsTable tbody tr", { hasText: "Company Tax Return 1 of 2" }).first();
+    await expect(entry).toBeVisible({ timeout: 30000 });
+    await expect(entry).toContainText("Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025)");
+    await expect(entry).toContainText("Company Tax Return 2 of 2 (1 January 2026 to 31 March 2026)");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-long-period-receipts.png`, readerView: true });
   });
 }

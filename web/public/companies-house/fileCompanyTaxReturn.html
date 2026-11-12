@@ -127,46 +127,50 @@
         <h3>Your answers</h3>
         <div id="reviewSendTo"></div>
         <div id="reviewAnswers"></div>
-        <h3>CT600 boxes</h3>
-        <table id="ct600Table" class="results-table review-table review-table--boxes">
-          <colgroup>
-            <col class="review-table__box" />
-            <col />
-            <col class="review-table__value" />
-            <col class="review-table__change" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th scope="col">Box</th>
-              <th scope="col">Meaning</th>
-              <th scope="col" class="amount">Value (amounts in £)</th>
-              <th scope="col">Change</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <h3>Computations</h3>
-        <table id="computationsTable" class="results-table review-table">
-          <colgroup>
-            <col />
-            <col class="review-table__value" />
-            <col class="review-table__change" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th scope="col">Line</th>
-              <th scope="col" class="amount">£</th>
-              <th scope="col">Change</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div id="singleReview">
+          <h3>CT600 boxes</h3>
+          <table id="ct600Table" class="results-table review-table review-table--boxes">
+            <colgroup>
+              <col class="review-table__box" />
+              <col />
+              <col class="review-table__value" />
+              <col class="review-table__change" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">Box</th>
+                <th scope="col">Meaning</th>
+                <th scope="col" class="amount">Value (amounts in £)</th>
+                <th scope="col">Change</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <h3>Computations</h3>
+          <table id="computationsTable" class="results-table review-table">
+            <colgroup>
+              <col />
+              <col class="review-table__value" />
+              <col class="review-table__change" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">Line</th>
+                <th scope="col" class="amount">£</th>
+                <th scope="col">Change</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="longReviews" hidden></div>
         <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
 
         <section class="send-step" aria-labelledby="sendStepHeading">
           <h3 id="sendStepHeading">Send to HMRC</h3>
           <p class="hint">How we protect your filing data is in the <a href="../security.html">security statement</a>.</p>
           <p id="sendStepOrder" class="hint" style="display: none"></p>
+          <p id="longSendOrder" class="hint" style="display: none"></p>
           <div class="form-group" id="companyAuthCodeGroup" style="display: none">
             <label for="companyAuthCode">Company authentication code</label>
             <p id="companyAuthCode-hint" class="hint">
@@ -199,7 +203,7 @@
             <span id="gatewayWhose"
               >Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.</span
             >
-            They are sent once with this return and never stored.
+            <span id="gatewayStored">They are sent once with this return and never stored.</span>
           </p>
           <div class="form-group">
             <label for="gatewayUserId">Government Gateway user ID</label>
@@ -221,9 +225,10 @@
             <label for="govTestScenario">Gov-Test-Scenario</label>
             <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
           </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitReturnBtn"></div>
           <div class="button-group">
             <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
-            <button type="button" id="submitReturnBtn" class="btn">Submit to HMRC</button>
+            <button type="button" id="submitReturnBtn" class="btn" aria-describedby="submissionCost">Submit to HMRC</button>
           </div>
         </section>
       </div>
@@ -254,6 +259,9 @@
           <p class="hint">
             Amend the return when a tax answer was wrong. Amend the accounts and the return when a figure in the accounts was wrong:
             Companies House gets revised accounts, then HMRC gets an amended return. Your receipts show the amendments under this filing.
+          </p>
+          <p id="amendLongNote" class="hint" hidden>
+            The loss claimed in return 2 changes return 1. Amend return 1 so HMRC holds the figures you sent with return 2.
           </p>
           <div class="button-group">
             <button type="button" id="amendReturnBtn" class="secondary-button">Amend the return</button>
@@ -298,6 +306,7 @@
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/submission-cost.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/status-messages.js"></script>

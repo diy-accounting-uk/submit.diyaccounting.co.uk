@@ -265,6 +265,7 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     const response = await hmrcCtReturnGetHandler(buildEvent());
     expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", receiptId: "r-1" });
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });
 
   test("answers 404 without polling when the caller has no request for the correlation id", async () => {
@@ -413,11 +414,32 @@ describe("hmrcCtReturnGet ingestHandler", () => {
       expect(receipt.input.Item.receipt).not.toHaveProperty("amended");
     });
 
-    test("a return sent alone writes no jointFilingId and charges nothing", async () => {
+    test("a return sent alone writes no jointFilingId and charges its own token once", async () => {
       engineReturns(SUCCESS, DELETE_RESPONSE);
       await hmrcCtReturnGetHandler(buildEvent());
       const [receipt] = await commands("PutCommand");
       expect(receipt.input.Item.receipt).not.toHaveProperty("jointFilingId");
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-company-tax-return");
+    });
+
+    test("a return sent alone charges nothing on a rejection", async () => {
+      engineReturns(IRMARK_ERROR, DELETE_RESPONSE);
+      await hmrcCtReturnGetHandler(buildEvent());
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("return 1 of a long period charges a token and return 2 charges none", async () => {
+      const filingId = JOINT_FILING_ID;
+      storedRecord = pendingRecord({ data: { longPeriod: { filingId, part: 1 } } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      await hmrcCtReturnGetHandler(buildEvent());
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      mockChargeTokenOnSuccess.mockClear();
+      storedRecord = pendingRecord({ data: { longPeriod: { filingId, part: 2 } } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT" });
       expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     });
   });

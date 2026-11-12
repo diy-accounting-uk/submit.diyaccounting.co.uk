@@ -234,7 +234,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       return {};
     });
@@ -569,7 +569,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident-tax-agent", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-tax-agent", subscriptionStatus: "active", tokensGranted: "unlimited" }], Count: 1 };
       }
       if (cmd instanceof lib.GetCommand) {
         if (cmd.input?.TableName === CLIENT_TABLE) {
@@ -756,7 +756,8 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   test("uses the body companyNumber as before when no clientId is given", async () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+      if (cmd instanceof lib.QueryCommand)
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       return {};
     });
 
@@ -765,6 +766,60 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     expect(response.statusCode).toBe(201);
     const [generatorInput] = mockBuildMicroEntityAccounts.mock.calls[0];
     expect(generatorInput.companyNumber).toBe("00000001");
+  });
+
+  describe("the token balance", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+    function holdBundle(bundle) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ subscriptionStatus: "active", ...bundle }], Count: 1 };
+        return {};
+      });
+    }
+
+    test("refuses with 403 tokens_exhausted and sends nothing when no token is left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 100 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ message: "Token limit reached", reason: "tokens_exhausted", tokensRemaining: 0 });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+    });
+
+    test("refuses a small company filing the same way", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 100 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("sends the filing when one token is left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 99 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("refuses a joint filing with one token left, charges nothing and sends nothing", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 99 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ reason: "tokens_exhausted", tokensRemaining: 1, tokenCost: 2 });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+    });
+
+    test("sends a joint filing when two tokens are left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 98 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("sends the filing for an unlimited grant whatever it has consumed", async () => {
+      holdBundle({ bundleId: "resident-tax-agent", tokensGranted: "unlimited", tokensConsumed: 5000 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
   });
 
   describe("small company filings", () => {

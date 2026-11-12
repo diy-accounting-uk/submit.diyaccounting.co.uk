@@ -26,6 +26,11 @@ export function companiesHouseScope(companyNumber, resource) {
   return `${LIVE_IDENTITY_HOST}/user/profile.read ${LIVE_API_HOST}/company/${companyNumber}/${resource}.update`;
 }
 
+// Shown when the server refuses a filing because the account has no token left. The refusal comes
+// before anything is sent, so the message says so.
+const NOTHING_SENT_TO_COMPANIES_HOUSE_MESSAGE =
+  "No tokens remaining. Your token allowance has been used, so nothing was sent to Companies House. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
+
 /**
  * Build an Error carrying the response status and parsed body, so a caller can branch on a
  * specific status (422 validation, 409 conflict, 401 expired token) without re-parsing the body.
@@ -34,10 +39,14 @@ export function companiesHouseScope(companyNumber, resource) {
  * @returns {Error}
  */
 function filingErrorFromResponse(response, body) {
-  const message = body?.message || `Request failed with status ${response.status}`;
+  const tokensExhausted = body?.reason === "tokens_exhausted";
+  const message = tokensExhausted
+    ? NOTHING_SENT_TO_COMPANIES_HOUSE_MESSAGE
+    : body?.message || `Request failed with status ${response.status}`;
   const error = new Error(message);
   error.status = response.status;
   error.body = body;
+  error.reason = body?.reason;
   return error;
 }
 
