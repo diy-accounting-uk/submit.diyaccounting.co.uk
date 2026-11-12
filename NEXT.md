@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-f86fc83** (PR #811's merge f86fc838d, deploy run 43187971599, 2026-11-12 09:41 UTC: the WAF attack alarms fire at 50 blocked requests in 5 minutes, and a confirmation statement costs no token).
-**ci**: no ci set stands (the operator had ci-set1 destroyed, run 43195507044); `/submit/ci/last-known-good-deployment` is `None`; no slot is held. The next branch deploy creates a set.
+**ci**: PR #812's deploy (run 43211031255) is creating ci-set1 and holds its slot; `/submit/ci/last-known-good-deployment` is `None` until that deploy ends green.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
