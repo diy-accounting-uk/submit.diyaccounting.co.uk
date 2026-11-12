@@ -10,12 +10,12 @@ const CT_RETURN_JSON_HEADERS = { "Content-Type": "application/json" };
 
 // Shown when the server refuses a filing because the account has no token left. The refusal comes
 // before anything is sent, so the message says so.
-const TOKENS_EXHAUSTED_MESSAGE =
+const NOTHING_SENT_TO_HMRC_MESSAGE =
   "No tokens remaining. Your token allowance has been used, so nothing was sent to HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
 
 function ctReturnErrorFromResponse(response, body) {
   const tokensExhausted = body?.reason === "tokens_exhausted";
-  const message = tokensExhausted ? TOKENS_EXHAUSTED_MESSAGE : body?.message || `Request failed with status ${response.status}`;
+  const message = tokensExhausted ? NOTHING_SENT_TO_HMRC_MESSAGE : body?.message || `Request failed with status ${response.status}`;
   const error = new Error(message);
   error.status = response.status;
   error.body = body;
