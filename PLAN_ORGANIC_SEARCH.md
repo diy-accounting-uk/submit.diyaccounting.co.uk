@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 44 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 43 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 37 of 44 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 33 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 36 of 43 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 33 machine-only, 4 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -130,7 +130,7 @@ One advisory needs a change (OS6). Five describe pages that are excluded or redi
 | 2026-11-04 | New owner for diyaccounting.co.uk | The service account `ga4-report-pull` verified the property. Expected: it is the Search Console sync. |
 | 2025-02-25 | Google Business Profile: reminder about profile policies | A Business Profile exists for the company (path L1). |
 
-No message from Bing Webmaster Tools exists, because no site is registered there (OOS5). No Core Web Vitals, structured data or manual action message was sent.
+No message from Bing Webmaster Tools exists; the four sites were registered there on 2026-11-12. No Core Web Vitals, structured data or manual action message was sent.
 
 ## 3. Demand
 
@@ -211,7 +211,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | A8 Links from the spreadsheets site into Submit | partial | 2 | 1 | 5 | OS6, OS45, OS35 |
 | A9 Pages for dated demand events | partial (`mtd-calendar.html` and `rates.html` exist) | 2 | 1 | 4 | OS11 |
 | A10 Knowledge-base articles from the support corpus | open (marketing plan MK-18) | 3 | 2 | 4 | OS35 |
-| A11 Bing Webmaster Tools and IndexNow | absent | 2 | 2 | 4 | OS5, OOS5 |
+| A11 Bing Webmaster Tools and IndexNow | registered; IndexNow in flight | 2 | 2 | 4 | OS5 |
 | A12 Landing pages in other languages | Welsh on four pages; the operator has assessed further languages and chose none (2026-11-12) | 3 | 2 | 2 | none |
 | A13 A comparison page we publish | absent | 3 | 2 | 5 | OS40 |
 | A14 YouTube as a search surface | partial | 2 | 1 | 3 | OS7, OS41 |
@@ -793,7 +793,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | D2 Trustpilot | 4 | 1 | 2 | OS24, OS25 |
 | F3 MTD Income Tax scope checker with an embed | 4 | 2 | 1 | OS33 |
 | A4 Render JavaScript-only content into the HTML at build | 4 | 3 | 1 | OS7 |
-| A11 Bing Webmaster Tools and IndexNow | 4 | 2 | 2 | OS5, OOS5 |
+| A11 Bing Webmaster Tools and IndexNow | 4 | 2 | 2 | OS5 |
 | F8 Review invitation after a filing | 4 | 2 | 2 | OS25 |
 | A10 Knowledge-base articles from the support corpus | 4 | 3 | 2 | OS35 |
 | F5 Quarterly-update workbook and article | 4 | 3 | 2 | OS35 |
@@ -821,7 +821,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS3 | Count visits and fetches that come from AI assistants | Y1, X1, X2 | A daily floor for human visits from each assistant across all four sites (consented sessions), and the pages each assistant fetched on Submit. The other three sites' fetches come from a log query in the monthly read. | Both views return rows by assistant; the monthly read (OS41) quotes them. | machine-only; on the board |
 | OS4 | Load Search Console data into the lake each night | A1, A3 | Clicks, impressions and position by page and query as a table, so each page family in this plan has a trend line. | A partition for yesterday in the lake table each morning. | machine-only; on the board |
 | OS5 | IndexNow on every deploy | A11 | Bing learns of a changed page within minutes of a deploy. Bing's index serves Copilot, DuckDuckGo and ChatGPT search. | The deploy log shows an accepted IndexNow call (HTTP 200 or 202) per site. | machine-only; on the board |
-| OOS5 | Register the sites in Bing Webmaster Tools | A11 | Bing's index reports, its AI Performance report (citations in Copilot answers) and sitemap submission. | Both domains show as verified in Bing Webmaster Tools. | human-driven; on the board |
 | OS12 | State the crawler policy in every robots.txt | Y1, Z7 | Every documented search, user-fetch and training agent is named and allowed. Access itself works: each agent string got 200 on 2026-11-12. | The SEO test asserts no named agent is disallowed from a sitemap URL. | machine-only; on the board |
 
 **Wave 2: Pages that answer the query**
@@ -894,7 +893,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
 | 5 | GOV.UK software finders | 15 to 90 | Submit | OOS22 |
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
-| 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
+| 7 | Bing and IndexNow | 10 to 25 | all sites | OS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
 | 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13 |
 | 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41a, OS41 |
