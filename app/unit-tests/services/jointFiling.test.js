@@ -7,6 +7,9 @@ import { describe, expect, test } from "vitest";
 import {
   readJointFilingId,
   jointFilingFields,
+  readLongPeriod,
+  longPeriodRecord,
+  longPeriodFields,
   readRevision,
   readAmended,
   amendedFields,
@@ -179,5 +182,66 @@ describe("sanitiseFormRequest", () => {
   test("adds the field only when there is a form request", () => {
     expect(formRequestFields({ values: {} })).toEqual({ formRequest: { values: {} } });
     expect(formRequestFields(undefined)).toEqual({});
+  });
+
+  describe("long period", () => {
+    test("reads the filing id in lower case and the part", () => {
+      const errors = [];
+      expect(readLongPeriod({ longPeriod: { filingId: JOINT_FILING_ID.toUpperCase(), part: 2 } }, errors)).toEqual({
+        filingId: JOINT_FILING_ID,
+        part: 2,
+      });
+      expect(errors).toEqual([]);
+    });
+
+    test("returns undefined and no error when the body names none", () => {
+      const errors = [];
+      expect(readLongPeriod({}, errors)).toBeUndefined();
+      expect(readLongPeriod({ longPeriod: null }, errors)).toBeUndefined();
+      expect(errors).toEqual([]);
+    });
+
+    test("refuses a value that is not an object", () => {
+      const errors = [];
+      expect(readLongPeriod({ longPeriod: "1" }, errors)).toBeUndefined();
+      expect(errors).toEqual(["Invalid longPeriod - must be an object with filingId and part"]);
+    });
+
+    test.each([0, 3, "1", 1.5, undefined])("refuses the part %s", (part) => {
+      const errors = [];
+      expect(readLongPeriod({ longPeriod: { filingId: JOINT_FILING_ID, part } }, errors)).toBeUndefined();
+      expect(errors).toEqual(["Invalid longPeriod.part - must be 1 or 2"]);
+    });
+
+    test("refuses a filing id that is not a UUID", () => {
+      const errors = [];
+      expect(readLongPeriod({ longPeriod: { filingId: "12345", part: 1 } }, errors)).toBeUndefined();
+      expect(errors).toEqual(["Invalid longPeriod.filingId - must be a UUID"]);
+    });
+
+    test("refuses a jointFilingId that is another UUID and accepts the same one", () => {
+      const other = "9a1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+      const refused = [];
+      readLongPeriod({ jointFilingId: other, longPeriod: { filingId: JOINT_FILING_ID, part: 1 } }, refused);
+      expect(refused).toEqual(["jointFilingId must be the same UUID as longPeriod.filingId"]);
+      const accepted = [];
+      readLongPeriod({ jointFilingId: JOINT_FILING_ID.toUpperCase(), longPeriod: { filingId: JOINT_FILING_ID, part: 1 } }, accepted);
+      expect(accepted).toEqual([]);
+    });
+
+    test("the record names the filing, the part, the two parts and the period of account", () => {
+      expect(longPeriodRecord({ filingId: JOINT_FILING_ID, part: 1 }, "2025-01-01", "2026-03-31")).toEqual({
+        filingId: JOINT_FILING_ID,
+        part: 1,
+        parts: 2,
+        periodOfAccountStart: "2025-01-01",
+        periodOfAccountEnd: "2026-03-31",
+      });
+    });
+
+    test("adds the field only when there is a long period", () => {
+      expect(longPeriodFields({ filingId: JOINT_FILING_ID, part: 1 })).toEqual({ longPeriod: { filingId: JOINT_FILING_ID, part: 1 } });
+      expect(longPeriodFields(undefined)).toEqual({});
+    });
   });
 });

@@ -7,7 +7,8 @@ import { readFileSync } from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
-import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { buildCtReturnBodyFromBook, buildLongPeriodRequestBody } from "@app/test-helpers/ctReturnFixture.js";
+import { hashSub } from "@app/services/subHasher.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL, CT_MESSAGE_MAX_BYTES } from "@app/services/hmrcTransactionEngine.js";
 
@@ -514,6 +515,151 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid jointFilingId");
       expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("one of the two returns of a long period of account", () => {
+    const FILING_ID = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+    let receiptItems;
+
+    function longPeriodBody(part, { reviewedPart = part } = {}) {
+      const body = buildLongPeriodRequestBody(part);
+      const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+        requireGatewayCredentials: false,
+        requireReviewedBoxes: false,
+      });
+      const reviewed = buildCtReturnDocuments({ ...request, longPeriod: { ...request.longPeriod, part: reviewedPart } });
+      return { ...body, reviewedBoxes: reviewed.boxes, gatewayUserId: USER_ID, gatewayPassword: PASSWORD };
+    }
+
+    function firstReturnReceipt(overrides = {}, hashedSub = hashSub("test-sub")) {
+      return {
+        hashedSub,
+        receiptId: "2026-11-01T10:00:00.000Z-ABC",
+        createdAt: "2026-11-01T10:00:00.000Z",
+        receipt: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          longPeriod: {
+            filingId: FILING_ID,
+            part: 1,
+            parts: 2,
+            periodOfAccountStart: "2025-01-01",
+            periodOfAccountEnd: "2026-03-31",
+            ...overrides,
+          },
+        },
+      };
+    }
+
+    // The receipts query reads the table by the caller's hashed sub, as the real one does.
+    beforeEach(() => {
+      receiptItems = [];
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) {
+          if (cmd.input.TableName === "test-receipts-table") {
+            const items = receiptItems.filter((item) => item.hashedSub === cmd.input.ExpressionAttributeValues[":hashedSub"]);
+            return { Items: items, Count: items.length };
+          }
+          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        }
+        return {};
+      });
+    });
+
+    async function storedData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      return update?.input.ExpressionAttributeValues[":data"];
+    }
+
+    test("sends part 1 and stores the long period with the pending request", async () => {
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(1) }));
+      expect(response.statusCode).toBe(201);
+      expect((await storedData()).longPeriod).toEqual({
+        filingId: FILING_ID,
+        part: 1,
+        parts: 2,
+        periodOfAccountStart: "2025-01-01",
+        periodOfAccountEnd: "2026-03-31",
+      });
+      const [, xml] = mockPostToTransactionEngine.mock.calls[0];
+      expect(xml).toContain("<To>2025-12-31</To>");
+    });
+
+    test("refuses part 2 with 409 and sends nothing when part 1 of the filing is not accepted", async () => {
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(409);
+      expect(parseResponseBody(response)).toMatchObject({
+        message: "Return 2 of 2 files after return 1 of 2 is accepted. Send return 1 first.",
+        code: "LONG_PERIOD_FIRST_RETURN_NOT_ACCEPTED",
+        filingId: FILING_ID,
+      });
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("sends part 2 and stores the long period when part 1 of the filing is accepted", async () => {
+      receiptItems = [firstReturnReceipt()];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(201);
+      expect((await storedData()).longPeriod).toMatchObject({ filingId: FILING_ID, part: 2, parts: 2 });
+      const [, xml] = mockPostToTransactionEngine.mock.calls[0];
+      expect(xml).toContain("<From>2026-01-01</From>");
+    });
+
+    test("refuses part 2 when part 1 was filed by another user", async () => {
+      receiptItems = [firstReturnReceipt({}, hashSub("another-user"))];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(409);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("refuses part 2 when the accepted part 1 belongs to another filing", async () => {
+      receiptItems = [firstReturnReceipt({ filingId: "9a1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11" })];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(409);
+    });
+
+    test("refuses part 2 when the accepted part 1 is for another period of account", async () => {
+      receiptItems = [firstReturnReceipt({ periodOfAccountEnd: "2026-02-28" })];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(409);
+    });
+
+    test("refuses part 2 when the only receipt of the filing is a part 2", async () => {
+      receiptItems = [firstReturnReceipt({ part: 2 })];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(409);
+    });
+
+    test("answers 409 with the differing boxes when the reviewed boxes are the other part's", async () => {
+      receiptItems = [firstReturnReceipt()];
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2, { reviewedPart: 1 }) }));
+      expect(response.statusCode).toBe(409);
+      expect(parseResponseBody(response).differingBoxes).toContain("30");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("answers 400 when a period over 12 months names no filing and part", async () => {
+      const { longPeriod: _longPeriod, ...body } = longPeriodBody(1);
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Missing longPeriod");
+    });
+
+    test("answers 400 for a part that is not 1 or 2", async () => {
+      const body = { ...longPeriodBody(1), longPeriod: { filingId: FILING_ID, part: 3 } };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid longPeriod.part");
+    });
+
+    test("answers 400 when the jointFilingId is not the long period's filing id", async () => {
+      const body = { ...longPeriodBody(1), jointFilingId: "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11" };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("jointFilingId must be the same UUID as longPeriod.filingId");
     });
   });
 

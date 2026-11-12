@@ -3,8 +3,17 @@
 
 // app/unit-tests/services/hmrcCtReturnRequest.test.js
 import { describe, test, beforeAll, expect } from "vitest";
-import { buildCtReturnBodyFromBook, buildMicroCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
-import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "@app/services/hmrcCtReturnRequest.js";
+import {
+  buildCtReturnBodyFromBook,
+  buildLongPeriodRequestBody,
+  buildMicroCtReturnBodyFromBook,
+} from "@app/test-helpers/ctReturnFixture.js";
+import {
+  extractAndValidateCtReturnParameters,
+  buildCtReturnDocuments,
+  buildLongPeriodReturnDocuments,
+  boxesThatDiffer,
+} from "@app/services/hmrcCtReturnRequest.js";
 import { parseXmlDocument, firstElementText } from "@app/lib/xmlDom.js";
 
 let baseBody;
@@ -206,5 +215,125 @@ describe("a micro-entity's Company Tax Return", () => {
     const broken = { currentYear: { ...microBody.profitAndLoss.currentYear, profit: 1 } };
     expect(extractMicro({ profitAndLoss: broken }).errors.join("\n")).toMatch(/profit must equal profitBeforeTax less tax/);
     expect(extractMicro({ dormant: true }).errors.join("\n")).toMatch(/dormant/);
+  });
+});
+
+describe("a period of account longer than 12 months", () => {
+  const FILING_ID = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+
+  function extractLong(part, change = () => {}, options = {}) {
+    const body = { ...buildLongPeriodRequestBody(part), gatewayUserId: "user", gatewayPassword: "pass" };
+    change(body);
+    const errors = [];
+    const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, errors, {
+      requireReviewedBoxes: false,
+      ...options,
+    });
+    return { request, errors };
+  }
+
+  test("reads the long period and the figures of both accounting periods", () => {
+    const { request, errors } = extractLong(2);
+    expect(errors).toEqual([]);
+    expect(request.longPeriod).toEqual({ filingId: FILING_ID, part: 2 });
+    expect(request.figures.periodStart).toBe("2025-01-01");
+    expect(request.figures.periodEnd).toBe("2026-03-31");
+    expect(request.figures.accountingPeriods).toHaveLength(2);
+  });
+
+  test("builds both returns, with the same accounts in each, and answers the part the request names", () => {
+    const { request } = extractLong(2);
+    const [first, second] = buildLongPeriodReturnDocuments(request);
+    expect([first.part, first.periodStart, first.periodEnd]).toEqual([1, "2025-01-01", "2025-12-31"]);
+    expect([second.part, second.periodStart, second.periodEnd]).toEqual([2, "2026-01-01", "2026-03-31"]);
+    expect(first.accountsIxbrl).toBe(second.accountsIxbrl);
+    expect([first.boxes[440], second.boxes[440]]).toEqual([19273.46, 5688.68]);
+    expect(buildCtReturnDocuments(request).boxes).toEqual(second.boxes);
+    expect(buildCtReturnDocuments(extractLong(1).request).boxes).toEqual(first.boxes);
+  });
+
+  test("works out the tax due date of each return and one return due date for both", () => {
+    const [first, second] = buildLongPeriodReturnDocuments(extractLong(1).request);
+    expect([first.taxDueDate, second.taxDueDate]).toEqual(["2026-10-01", "2027-01-01"]);
+    expect([first.returnDueDate, second.returnDueDate]).toEqual(["2027-03-31", "2027-03-31"]);
+  });
+
+  test("a part carries boxes 50 and 85A and its own period in boxes 30 and 35", () => {
+    const [first, second] = buildLongPeriodReturnDocuments(extractLong(1).request);
+    expect([first.boxes[50], first.boxes["85A"], first.boxes[30], first.boxes[35]]).toEqual(["yes", "yes", "2025-01-01", "2025-12-31"]);
+    expect([second.boxes[30], second.boxes[35]]).toEqual(["2026-01-01", "2026-03-31"]);
+  });
+
+  test("the submit names the filing and part; the preview does not need them", () => {
+    const missing = extractLong(1, (body) => delete body.longPeriod);
+    expect(missing.errors.join(" ")).toContain("Missing longPeriod");
+    expect(extractLong(1, (body) => delete body.longPeriod, { requireLongPeriod: false }).errors).toEqual([]);
+  });
+
+  test("an invalid longPeriod is reported once", () => {
+    const { errors } = extractLong(1, (body) => {
+      body.longPeriod = { filingId: FILING_ID, part: 3 };
+    });
+    expect(errors).toEqual(["Invalid longPeriod.part - must be 1 or 2"]);
+  });
+
+  test("refuses a long period with no accounting periods", () => {
+    const { errors } = extractLong(1, (body) => delete body.figures.accountingPeriods);
+    expect(errors.join(" ")).toContain("Missing figures.accountingPeriods");
+  });
+
+  test("refuses a period of account of 12 months or less", () => {
+    const { errors } = extractLong(1, (body) => {
+      body.periodEnd = "2025-12-31";
+      body.figures.periodEnd = "2025-12-31";
+    });
+    expect(errors.join(" ")).toContain("for a period of account longer than 12 months");
+  });
+
+  test("refuses a period over 18 months", () => {
+    const { errors } = extractLong(1, (body) => {
+      body.periodEnd = "2026-07-01";
+      body.figures.periodEnd = "2026-07-01";
+    });
+    expect(errors.join(" ")).toContain("A period of account can be 18 months at most (Companies Act 2006 s392).");
+  });
+
+  test("refuses a first accounting period that starts after the first day of the accounts", () => {
+    const { errors } = extractLong(1, (body) => {
+      body.figures.periodStart = "2025-02-01";
+    });
+    expect(errors).toContain("Submit files a long period when the first accounting period starts on the first day of the accounts.");
+  });
+
+  test("refuses a return over 12 months sent without accounting periods or a long period", () => {
+    const { errors } = extractLong(1, (body) => {
+      delete body.longPeriod;
+      delete body.figures.accountingPeriods;
+    });
+    expect(errors.join(" ")).toContain("a long period of account files two returns");
+  });
+
+  test("builds nothing for an accounting period figure typed for the whole period", () => {
+    const { request } = extractLong(1, (body) => {
+      body.figures.mainPoolAllowances = 100;
+    });
+    expect(() => buildLongPeriodReturnDocuments(request)).toThrow(/typed for each accounting period/);
+  });
+
+  test("a return of 12 months or less builds as before and shows no time apportionment", () => {
+    const small = buildCtReturnDocuments(extract().request);
+    expect(small.computationsIxbrl).not.toContain("Time apportionment");
+    expect(extract().request.longPeriod).toBeUndefined();
+  });
+
+  test("a box number with a letter is a reviewed box", () => {
+    const { errors } = extractLong(
+      1,
+      (body) => {
+        body.reviewedBoxes = { "50": "yes", "85A": "yes" };
+      },
+      { requireReviewedBoxes: true },
+    );
+    expect(errors).toEqual([]);
   });
 });

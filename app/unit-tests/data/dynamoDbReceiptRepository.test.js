@@ -151,6 +151,36 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts[0].clientId).toBe("client-1");
     });
 
+    test("each receipt carries the long period of its return, or null", async () => {
+      const longPeriod = {
+        filingId: "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10",
+        part: 1,
+        parts: 2,
+        periodOfAccountStart: "2025-01-01",
+        periodOfAccountEnd: "2026-03-31",
+      };
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-01T00:00:00.000Z-FB1",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            receipt: { kind: "company-tax-return", longPeriod },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-02T00:00:00.000Z-FB2",
+            createdAt: "2026-01-02T00:00:00.000Z",
+            receipt: { kind: "company-tax-return" },
+          },
+        ],
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map((receipt) => receipt.longPeriod)).toEqual([null, longPeriod]);
+    });
+
     test("each receipt carries the byte size of its stored record, whatever its kind", async () => {
       const vatReceipt = { formBundleNumber: "FB1" };
       const ctReceipt = { kind: "company-tax-return", formBundleNumber: "FB2", figures: { turnover: 1000 } };

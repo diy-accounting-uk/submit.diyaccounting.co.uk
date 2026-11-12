@@ -212,6 +212,7 @@ export async function listUserReceipts(userSub, clientId) {
           clientId: item.clientId || null,
           kind: item.receipt?.kind || null,
           jointFilingId: item.receipt?.jointFilingId || null,
+          longPeriod: item.receipt?.longPeriod || null,
           amended: item.receipt?.amended === true,
           size: Buffer.byteLength(JSON.stringify(item.receipt ?? {})),
         };

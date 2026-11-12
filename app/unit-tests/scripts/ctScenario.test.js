@@ -156,7 +156,7 @@ describe("runScenario for the two returns of a long period of account", () => {
       post: async () => ({ status: 200, data: TPVS_SUCCESS }),
     });
     expect(exitCode).toBe(REFUSED_EXIT_CODE);
-    expect(result.message).toMatch(/part must be 1 or 2/);
+    expect(result.message).toMatch(/longPeriod.part - must be 1 or 2/);
   });
 
   it("refuses a period over 18 months and posts nothing", async () => {
@@ -186,7 +186,7 @@ describe("runScenario for the two returns of a long period of account", () => {
       post: async () => ({ status: 200, data: TPVS_SUCCESS }),
     });
     expect(exitCode).toBe(REFUSED_EXIT_CODE);
-    expect(result.field).toBe("accountingPeriods");
+    expect(result.message).toMatch(/Missing figures.accountingPeriods/);
   });
 });
 

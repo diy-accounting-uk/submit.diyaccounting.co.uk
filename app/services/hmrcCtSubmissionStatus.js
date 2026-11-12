@@ -30,7 +30,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { recordFiledReceipt } from "./filedReceipt.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
+import { jointFilingFields, longPeriodFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 import { clientAuthorisationMessage } from "./ctClientScope.js";
 
@@ -219,7 +219,11 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   const pending = persistedRequest.data;
-  const jointFiling = { ...jointFilingFields(pending.jointFilingId), ...amendedFields(pending.amended === true) };
+  const jointFiling = {
+    ...jointFilingFields(pending.jointFilingId),
+    ...longPeriodFields(pending.longPeriod),
+    ...amendedFields(pending.amended === true),
+  };
   const now = Date.now();
   if (pending.nextPollAt && Date.parse(pending.nextPollAt) > now) {
     return {
@@ -337,7 +341,8 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     userSub,
     clientId: pending.clientId,
   });
-  // A return sent as half of a pair costs its own token; the pair costs two.
-  if (jointFiling.jointFilingId) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);
+  // A return sent as half of a pair costs its own token; the pair costs two. The two returns of a
+  // long period of account cost one token between them: part 1 takes it and part 2 takes none.
+  if (jointFiling.jointFilingId && pending.longPeriod?.part !== 2) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);
   return { data };
 }

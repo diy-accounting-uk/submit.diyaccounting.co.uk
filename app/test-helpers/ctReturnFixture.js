@@ -120,3 +120,14 @@ export async function buildMicroCtReturnBodyFromBook({ bookDirectory = FIXTURE_B
     },
   };
 }
+
+/**
+ * A request body for one of the two returns of a period of account longer than 12 months: the
+ * fixtures/ct-scenarios/long-period-part-<part>.json request with a UTR, without credentials.
+ * @param {1|2} part
+ * @returns {object}
+ */
+export function buildLongPeriodRequestBody(part) {
+  const scenario = JSON.parse(readFileSync(join("fixtures", "ct-scenarios", `long-period-part-${part}.json`), "utf8"));
+  return { ...scenario.request, utr: FIXTURE_UTR };
+}

@@ -40,6 +40,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOrigi
 
 import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
 import { CT_RETURN_KIND } from "@app/services/hmrcTransactionEngine.js";
+import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
 
 const CORRELATION_ID = "46DCD4CC7E194088B99857931C185829";
 // base64 of 20 bytes 0x00..0x13 and the same bytes in base32
@@ -226,6 +227,55 @@ describe("pollCtSubmission", () => {
       mockPost.mockResolvedValueOnce(message("response", "submit", { body: "<SuccessResponse/>" })).mockResolvedValueOnce(deleteResponse());
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.irmarkReceiptMismatch).toBe(true);
+    });
+  });
+
+  describe("one of the two returns of a long period of account", () => {
+    const FILING_ID = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+    const longPeriod = (part) => ({
+      filingId: FILING_ID,
+      part,
+      parts: 2,
+      periodOfAccountStart: "2025-01-01",
+      periodOfAccountEnd: "2026-03-31",
+    });
+    const pendingPart = (part) => {
+      const request = pendingRequest();
+      return { ...request, data: { ...request.data, jointFilingId: FILING_ID, longPeriod: longPeriod(part) } };
+    };
+
+    test("part 1 writes the long period into the receipt and the result, and charges one token", async () => {
+      mockGetAsyncRequest.mockResolvedValue(pendingPart(1));
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(data).toMatchObject({ statusCode: "ACCEPT", longPeriod: longPeriod(1) });
+      expect(mockPutReceipt.mock.calls[0][2].longPeriod).toEqual(longPeriod(1));
+      expect(chargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      expect(chargeTokenOnSuccess).toHaveBeenCalledWith("u", "file-company-tax-return");
+    });
+
+    test("part 2 writes the long period into the receipt and charges no token", async () => {
+      mockGetAsyncRequest.mockResolvedValue(pendingPart(2));
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(data).toMatchObject({ statusCode: "ACCEPT", longPeriod: longPeriod(2) });
+      expect(mockPutReceipt.mock.calls[0][2].longPeriod).toEqual(longPeriod(2));
+      expect(chargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("a rejection keeps the long period on the result and charges nothing", async () => {
+      mockGetAsyncRequest.mockResolvedValue(pendingPart(1));
+      mockPost.mockResolvedValueOnce(gatewayError("3000")).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(data).toMatchObject({ statusCode: "REJECT", longPeriod: longPeriod(1) });
+      expect(chargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("a return that is not part of a long period writes no long period", async () => {
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(data).not.toHaveProperty("longPeriod");
+      expect(mockPutReceipt.mock.calls[0][2]).not.toHaveProperty("longPeriod");
     });
   });
 });
