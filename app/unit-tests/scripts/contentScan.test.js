@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { addedLines, scanEntries, scanDiff, parseAllowList } from "../../../scripts/content-scan.mjs";
+import { addedLines, scanEntries, scanDiff, parseAllowList, PUBLISHED_ADDRESS_RANGE_FILES } from "../../../scripts/content-scan.mjs";
 
 const SCRIPT_PATH = fileURLToPath(new URL("../../../scripts/content-scan.mjs", import.meta.url));
 const fakeAwsAccessKeyId = "AKIA" + "0".repeat(16);
@@ -283,5 +283,28 @@ describe("content-scan.mjs CLI", () => {
     const diff = diffAdding("NOTES.md", "nothing sensitive here");
     const result = runCli(diff, ["--allow-list", "/nonexistent/does-not-exist.txt"]);
     expect(result.status).toBe(0);
+  });
+});
+
+describe("published vendor address ranges", () => {
+  const publicAddress = "20.171.206.0/24";
+  const neighbours = ["infra/main/resources/analytics/views/v_other.sql", "infra/analytics/other.json"];
+
+  test.each(PUBLISHED_ADDRESS_RANGE_FILES)("a public IPv4 in %s gives no hit", (file) => {
+    expect(scanDiff(diffAdding(file, `('GPTBot', '${publicAddress}')`), [])).toEqual([]);
+  });
+
+  test.each(neighbours)("the same address in %s still gives a public-ipv4 hit", (file) => {
+    expect(scanDiff(diffAdding(file, `('GPTBot', '${publicAddress}')`), [])).toEqual([{ file, lineNumber: 1, label: "public-ipv4" }]);
+  });
+
+  test.each(PUBLISHED_ADDRESS_RANGE_FILES)("an email address in %s still gives an email hit", (file) => {
+    const hits = scanDiff(diffAdding(file, "contact someone@gmail.com"), []);
+    expect(hits.map((hit) => hit.label)).toEqual(["email"]);
+  });
+
+  test.each(PUBLISHED_ADDRESS_RANGE_FILES)("a secret in %s still gives its hit", (file) => {
+    const hits = scanDiff(diffAdding(file, fakeAwsAccessKeyId), []);
+    expect(hits.map((hit) => hit.label)).toEqual(["aws-access-key-id"]);
   });
 });

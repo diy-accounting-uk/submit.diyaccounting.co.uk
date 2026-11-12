@@ -156,6 +156,13 @@ const PERSONAL_DATA_PATTERNS = [
   },
 ];
 
+// These files hold address ranges that AI vendors publish; a visitor's address never reaches them.
+// Only the public-ipv4 pattern is skipped, and only for these exact paths.
+export const PUBLISHED_ADDRESS_RANGE_FILES = [
+  "infra/analytics/ai-vendor-ranges.json",
+  "infra/main/resources/analytics/views/v_ai_fetches_daily.sql",
+];
+
 function isExemptFromPersonalDataScan(file) {
   if (!file) return false;
   if (file.startsWith("fixtures/") || file.includes("/fixtures/")) return true;
@@ -249,7 +256,8 @@ export function scanEntries(entries, allowList) {
     // they stop matching everywhere else; scanning its own lines against those same patterns
     // is circular, so it is exempt from every pattern, not just personal data.
     if (file === ALLOW_LIST_REPO_PATH) continue;
-    const patterns = isExemptFromPersonalDataScan(file) ? SECRET_PATTERNS : [...SECRET_PATTERNS, ...PERSONAL_DATA_PATTERNS];
+    let patterns = isExemptFromPersonalDataScan(file) ? SECRET_PATTERNS : [...SECRET_PATTERNS, ...PERSONAL_DATA_PATTERNS];
+    if (PUBLISHED_ADDRESS_RANGE_FILES.includes(file)) patterns = patterns.filter((pattern) => pattern.label !== "public-ipv4");
     for (const { label, matchedText } of findHits(text, patterns)) {
       if (!isAllowed(matchedText, allowList)) {
         hits.push({ file, lineNumber, label });
