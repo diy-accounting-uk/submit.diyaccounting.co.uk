@@ -5,7 +5,7 @@
 
 A customer files amended (revised) accounts for a micro-entity, a small company and a dormant company on prod. Every channel that files original accounts files the revision. Every publication point says so. Companies House has approved what it must approve. The GOV.UK page "Find software for filing company accounts" shows Yes in its "Amended accounts" column for DIY Accounting Submit. Facts checked 2026-11-12.
 
-**Status**: 26 tasks. 19 machine-only, 3 machine-ask, 4 human-driven. None is on `NEXT.md` yet. The first two to start are AA9 (the questions for Companies House) and AA3 with AA1 (the environment rule and the document fix).
+**Status**: 28 tasks. 21 machine-only, 3 machine-ask, 4 human-driven. None is on `NEXT.md` yet. The first two to start are AA9 (the questions for Companies House) and AA3 with AA1 (the environment rule and the document fix).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -121,6 +121,8 @@ The table is `AVAILABILITY` in `scripts/build-mtd-calendar.mjs` (about line 106)
 | The gateway knows revised accounts by one iXBRL fact, and by nothing in the envelope | Accounts specification 6.2, section "Revised Accounts" |
 | An accounts submission uses the `FormSubmission` schema alone; its document category is `ACCOUNTS` | General specification 5.3; `FormSubmission-v2-11.xsd` |
 | The Companies House REST filing API has no accounts resource | https://developer-specs.company-information.service.gov.uk/manipulate-company-data-api-filing/reference |
+| The public data API lists a company's filings, with a `category` filter and an API key | https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference/filing-history/list |
+| The Document API returns a filed document in the type that `Accept` names, with an API key | https://developer-specs.company-information.service.gov.uk/document-api/reference/document-location/fetch-a-document |
 | Test submissions stay pending until the XML team reviews them | "Important information for software developers" |
 | A new release that involves a covered document type is tested again; Companies House says how | General specification 5.3, "Future Testing Requirements" |
 | The register shows an accepted revision as "Amended micro company accounts", "Amended accounts for a small company" or "Amended accounts for a dormant company" | `filing_history_descriptions.yml` in `companieshouse/api-enumerations` |
@@ -159,6 +161,7 @@ The six concepts are in `fixtures/frc-taxonomy/frs-102-2026-concepts.json`:
 | A new submission type or flag on the XML Gateway | None. The form stays `Accounts` and the envelope does not change | none |
 | Test submissions and a review before live | Open. The live package covers the form types tested, and a new release of a covered type is tested again | AA9, OAA1, then AA10 to AA13 and OAA2 |
 | A new REST API scope or application | None. The REST filing API covers transactions, the registered office, the registered email and insolvency | none |
+| Reading the filed accounts of a company | No approval. The filing history and the Document API take the API key that the company lookup uses | AA23 |
 | A change to the live package's form list | Open, same question as the review | AA9, OAA1 |
 | The finder listing | Open. The page states no route for a supplier. Board row OOS22 asked on 2026-11-12, with the answer No | AA19, OAA4 |
 
@@ -175,7 +178,7 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 
 One point is settled from examples before any question. AA1 reads amended examples in the Accounts Data Product to see which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. It becomes a question only when the examples disagree.
 
-Until Q2 has an answer, Submit offers a revision only for accounts that it filed. A customer whose accounts went another way reads the paper route on the GOV.UK page.
+Until Q2 has an answer, Submit offers a revision only for accounts that it filed. AA23 and AA24 read the sets that the register holds, so that a revision can start from accounts filed another way when Q2 allows it. A customer whose accounts went another way reads the paper route on the GOV.UK page.
 
 ## 3. Channels
 
@@ -263,6 +266,8 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | OAA2 | Send the review request | The email, then the XML team's verdict | The verdict is in the correspondence folder | human-driven |
 | AA14 | Prove a revision through the Submit API | One revised filing from MCP to the test service | The proof script's transcript | machine-ask |
 | AA15 | A revision with no receipt | The form's own revised option; a change of regime | Simulator behaviour tests | machine-only |
+| AA23 | The company's filed accounts from the register | Two Submit API routes: the list and one document | Unit, simulator and system tests | machine-only |
+| AA24 | Choose the filed set from the register | The list on both forms; the form fills from the set | Browser tests; a simulator journey | machine-only |
 
 **Wave 3: publication and launch**
 
@@ -454,6 +459,32 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Tests.** Browser tests of the choice on both forms; two behaviour journeys; simulator unit tests for the Q3 answers.
 - **Waits on**: AA22, AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
+#### AA23. The company's filed accounts from the register
+
+- **Goal.** A Submit API route lists the sets of accounts that Companies House holds for a company, and a second route returns one filed document.
+- **What Companies House offers.** `GET https://api.company-information.service.gov.uk/company/{company_number}/filing-history` takes a `category` filter and an API key. `GET https://document-api.company-information.service.gov.uk/document/{document_id}/content` takes an `Accept` header and an API key, and answers 302 to the file, or 406 when the document has no such type. A filing history item links its document metadata.
+- **First step.** Read the document metadata of one software-filed set and one paper-filed set of real companies through ci's key (`COMPANIES_HOUSE_API_KEY_ARN`), and never print the key. Record which content types each lists. The design below assumes that a software-filed set lists `application/xhtml+xml`. When the metadata says otherwise, stop and report.
+- **Client.** `app/services/companiesHouseApi.js` holds the public data client (`COMPANIES_HOUSE_BASE_URI`). Add the filing history call there. Add the Document API calls with a new setting `COMPANIES_HOUSE_DOCUMENT_BASE_URI`; set it wherever `COMPANIES_HOUSE_BASE_URI` is set (`grep -rn "COMPANIES_HOUSE_BASE_URI" .env.* infra app`).
+- **Routes.** Follow `app/functions/companies-house/companiesHouseOfficersGet.js` for the handler, the Express route and the API Gateway route; the two must match. `GET /api/v1/companies-house/company/{companyNumber}/filed-accounts` answers a list: for each set the made-up date, the filing date, the accounts type, whether it is an amended set, and whether an iXBRL document exists. `GET /api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document` fetches the iXBRL on the server and answers JSON that holds the document text. It answers a JSON error for a set with no iXBRL and for a document over the response limit of the API.
+- **Where it is offered.** Add both paths to the `paths` of the activity `file-revised-accounts` (AA3), so prod serves them from AA18.
+- **Simulator.** `app/http-simulator/routes/companies-house.js` and `app/http-simulator/scenarios/companies.js` answer a filing history with one iXBRL set and one PDF-only set, and serve the iXBRL from an accounts builder's output.
+- **Infrastructure.** A new Lambda and two routes raise the counts in the tests that assert them: `grep -rn "resourceCountIs" infra/test/java`. Name the stack's resource total against CloudFormation's limit of 500 in the pull request. `./mvnw clean verify` regenerates `web/public/docs/api/openapi.json`.
+- **Tests.** Unit tests of the client and both handlers (a list, an iXBRL set, a PDF-only set, a 406, an unknown company); simulator unit tests; a system test of the two routes.
+- **Run.** `npm run bundle`; `npx vitest run app/unit-tests/services app/unit-tests/functions app/unit-tests/http-simulator`; `./mvnw clean verify`.
+- **Waits on**: AA3. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~18 files.
+
+#### AA24. Choose the filed set from the register
+
+- **Goal.** On each accounts form, a customer who revises accounts with no receipt chooses the set to amend from the register, and the form fills from it.
+- **Where.** The choice "These accounts replace accounts already filed" of AA15, in `web/public/lib/accounts-revision.js`. After the company lookup, the page asks AA23's list route and shows one row for each set: the made-up date, the filing date, the type, and a mark on an amended set.
+- **Fill.** For a set with an iXBRL document, the page asks AA23's document route and maps the answer with `mapIxbrlAccounts` (`expect.regime` `"any"`), as the amend link of AA4 does with a receipt. The original approval date comes from the document. For a set with a PDF only, the page takes the period from the list and says that the customer types the figures and the original approval date.
+- **Guards.** When the register holds no accounts for the period, the page says so and files nothing. When an amended set is already there, the page says that this revision replaces it.
+- **Copy.** The FAQ entry of AA16 gains one sentence: Submit reads the accounts that Companies House holds, so accounts filed another way can be the starting point.
+- **Tests.** Browser tests on both forms: the list, an iXBRL set fills the form, a PDF-only set, no accounts for the period. One behaviour journey on the simulator: revise accounts chosen from the register.
+- **Run.** `npm run bundle`; the browser test files of the two forms; `lockf -k /tmp/submit-simulator.lock npm run test:fileMicroEntityAccountsBehaviour-simulator`.
+- **Visual definition of done.** Run the `visual-review` skill on the passing run's screenshots.
+- **Waits on**: AA23, AA15. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~9 files.
+
 #### AA16. Submit's copy
 
 - **FAQ.** Add one entry to `web/public/faqs.toml` after `companies-house-accounts-filings`: id `revised-accounts`, `activity = "file-revised-accounts"`, question "How do I correct accounts I have filed with Companies House?". The answer: open the filing from the receipts, choose Amend, say what was wrong and what changes; Companies House keeps the original; one token when accepted; the 28 days. `web/public/lib/help-page.js` shows an entry only where its activity is listed, so prod shows it after AA18.
@@ -543,6 +574,9 @@ graph TD
   AA10 --> AA14
   AA22 --> AA15
   AA5 --> AA15
+  AA3 --> AA23
+  AA23 --> AA24
+  AA15 --> AA24
   AA4 --> AA16
   AA4 --> AA17
   AA17 --> OAA3
@@ -569,7 +603,7 @@ graph TD
 - AA11: blocked by AA10. AA12: blocked by AA11 and the operator's go. AA13: blocked by AA12.
 - AA14: blocked by AA7 and AA10.
 - OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
-- AA15: blocked by AA22 and AA5.
+- AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
 - AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, OAA3 and the operator's approval.
 - AA19, AA20 and AA21: blocked by AA18. AA19 also by OS21 on `main`; AA21 also by OS9 on `main`. OAA4: blocked by AA19.
 - AA8 and AA9 wait on nothing.
@@ -580,7 +614,7 @@ graph TD
 - **Worktrees.** Create each one with `scripts/worktree-add.sh <path> <branch> <base>`, which links `node_modules` and `mcp/node_modules` from the main checkout. `npm run bundle` comes before the unit tests. Every Bash call starts with `cd <worktree>`, and every file tool takes an absolute path under it.
 - **Gates for each change.** `npx eslint <files>` and `npx prettier --check <files>` for JavaScript; `./mvnw spotless:check` for Java, with any `spotless:apply` kept to the task's files. A new file carries the licence header. Comments and test names name no plan, task label or date.
 - **Generated files.** `web/public/mtd-calendar.html` comes from `npm run build:mtd-calendar`. `REPORT_CAPABILITIES.md` comes from `npm run capabilities:generate`. `web/developer/mcp-api.html` comes from `node scripts/build-developer-site.mjs`. `web/public/docs/api/openapi.json` comes from `./mvnw clean verify`. When board row OS7 is on `main`, `web/public/help.html` and `web/public/guide.html` come from `npm run build:static-content` and hold only what prod lists; `web/unit-tests/staticContentPages.test.js` fails when either is stale. Two branches that both regenerate one of these land one after the other, and the second regenerates.
-- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA15. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: board row OS14, then AA7. `web/public/faqs.toml` and `web/public/guide.page.js`: board row OS7, then AA16 and AA17. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
+- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA15, then AA24. `web/public/submit.catalogue.toml`: AA3, then AA23, then AA18. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: board row OS14, then AA7. `web/public/faqs.toml` and `web/public/guide.page.js`: board row OS7, then AA16 and AA17. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
 - **The revision request.** After AA1, `revision` is `{originalDateOfApproval, nonCompliance, amendments}`. `director.dateApproved` is the date of the revision. The route refuses a revision whose original date is after it.
 - **Cost.** An accepted revision costs one token of `file-micro-entity-accounts` or `file-small-company-accounts`. A rejected one costs nothing. `file-revised-accounts` has `tokenCost = 0` and decides only where a revision is offered.
 - **Environments.** ci files to the Companies House test service, which accepts nothing until the XML team reviews it. Prod files to the live gateway. The simulator is the one place where an amend journey reaches an accepted revision without a person.
@@ -596,7 +630,7 @@ graph TD
 1. AA9, then OAA1. The questions go first, because the reply takes the longest.
 2. AA3 with AA1, then AA2.
 3. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
-4. AA10, then AA11.
+4. AA10, then AA11. AA23 runs beside them after AA3.
 5. AA16 and AA17 after AA4, then OAA3.
 
 **With the operator's go, and no answer needed.** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
@@ -604,7 +638,7 @@ graph TD
 **After the reply to OAA1.**
 
 1. AA22 records the answers. Then OAA2, when Q1's answer asks for test submissions.
-2. AA15, from the answers to Q2 and Q3.
+2. AA15, from the answers to Q2 and Q3, then AA24.
 3. AA18, the launch. It is the one change that offers a revision on prod.
 4. AA19, OAA4, AA20 and AA21.
 
@@ -617,6 +651,7 @@ graph TD
 - Which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. AA1 reads the examples.
 - How a supplier's entry on the finder is set or changed. The listing request of board row OOS22 asks; no reply is on record.
 - Whether a spreadsheets workbook or a package zip fills the accounts forms. AA6 tests it.
+- Whether the Document API offers the iXBRL of every software-filed set of accounts. AA23 reads the metadata first.
 
 ## 10. Sources
 
@@ -632,6 +667,7 @@ graph TD
 | Information for software developers | https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software/important-information-for-software-developers-read-first |
 | The submission schema | http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-11.xsd |
 | The REST API specifications | https://developer-specs.company-information.service.gov.uk/ |
+| The Document API | https://developer-specs.company-information.service.gov.uk/document-api/reference |
 | The test validator | https://test-validator.companieshouse.gov.uk/xbrl_validate |
 | Filing history descriptions | https://github.com/companieshouse/api-enumerations/blob/master/filing_history_descriptions.yml |
 | The XML team's review process and the live package | `../private.diyaccounting.co.uk/companies-house/correspondence/`, `.claude/skills/companies-house-review/SKILL.md` |
