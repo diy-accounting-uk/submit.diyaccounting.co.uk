@@ -1,0 +1,83 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   A period of account longer than 12 months
+
+   Each per-period field has a second column. Below 48rem the two
+   columns stack, return 1 above return 2, and each label names its
+   return so the order is clear without the layout.
+   ============================================ */
+
+.allowance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  column-gap: var(--space-5);
+}
+
+.long-period .allowance-grid {
+  grid-template-columns: 1fr;
+}
+
+.period-pair {
+  display: block;
+}
+
+.long-period .period-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--space-5);
+}
+
+@media (min-width: 48rem) {
+  .long-period .period-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.period-pair__second[hidden],
+.long-only[hidden] {
+  display: none;
+}
+
+.long-period-panel {
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border: 2px solid var(--c-info);
+  border-radius: var(--radius-control);
+  background: var(--c-info-tint);
+}
+
+.long-period-panel[hidden] {
+  display: none;
+}
+
+.long-period-panel h3 {
+  margin-top: 0;
+}
+
+.worked-tax__returns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 64rem) {
+  .worked-tax__returns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.worked-tax__return h4 {
+  margin-top: 0;
+}
+
+.return-review {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--c-rule);
+}
+
+.return-status {
+  margin: 0 0 var(--space-2);
+}

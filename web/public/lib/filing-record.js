@@ -134,6 +134,11 @@ function boxValueCell(box, value) {
   return `<td class="figure positive">£${html}</td>`;
 }
 
+// " 1 of 2" for one of the two returns of a period of account over 12 months.
+function longPeriodTitleSuffix(receipt) {
+  return receipt.longPeriod ? ` ${receipt.longPeriod.part} of ${receipt.longPeriod.parts}` : "";
+}
+
 function ct600Record(receipt, dateText) {
   const heading = recordHeading({
     nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? "Company Tax Return"),
@@ -141,14 +146,14 @@ function ct600Record(receipt, dateText) {
       receipt.utr ? `Unique Taxpayer Reference ${escapeRecordText(receipt.utr)}` : "",
       receipt.filed?.boxes?.[2] ? `Company number ${escapeRecordText(receipt.filed.boxes[2])}` : "",
     ].filter(Boolean),
-    title: "Company Tax Return (CT600)",
+    title: `Company Tax Return (CT600)${longPeriodTitleSuffix(receipt)}`,
     subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
   });
   const boxes = receipt.filed?.boxes ?? {};
   const rows = Object.keys(boxes)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .map((box) => {
+    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
+    .map((key) => {
+      const box = /^\d+$/.test(key) ? Number(key) : key;
       const label = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? "Box";
       const boxLabel = escapeRecordText("Box " + box + ": " + label);
       return `<tr id="ct600Box${box}"><td class="label">${boxLabel}</td>${boxValueCell(box, boxes[box])}</tr>`;
@@ -221,7 +226,7 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: "Your copy of the Company Tax Return",
+    title: `Your copy of the Company Tax Return${longPeriodTitleSuffix(receipt)}`,
     reference: { label: "IRmark receipt", value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT) },
     status: { kind: "accepted", text: "Accepted by HMRC" },
     date: dateText,

@@ -91,7 +91,7 @@ export const COMPANY_YEARLY_FACTS = [
   {
     id: "ct600-12-months",
     title: "Company Tax Return (CT600)",
-    text: "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers.",
+    text: "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers. A period of account longer than 12 months, up to 18 months, files as two returns, both due 12 months after the period of account ends.",
   },
   {
     id: "ct-payment-9-months-1-day",
@@ -137,7 +137,14 @@ export const AVAILABILITY = [
     web: "companies-house/fileCompanyTaxReturn.html",
     activity: "file-company-tax-return",
     video: "ZoUTlFPvUes",
-    cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+    cells: [
+      ["preview", "period of account up to 18 months"],
+      ["preview", "book export file"],
+      NOT_OFFERED,
+      NOT_OFFERED,
+      NOT_OFFERED,
+      NOT_OFFERED,
+    ],
   },
   {
     filing: "HMRC Assist check on a VAT return",

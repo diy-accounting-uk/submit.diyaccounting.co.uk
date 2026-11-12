@@ -160,6 +160,11 @@ test.describe("File Company Tax Return entry form", () => {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
         return;
       }
+      if (url.pathname === "/api/v1/hmrc/ct/return/preview" && submission.previewBody) {
+        previewRequests.push(JSON.parse(route.request().postData()));
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.previewBody) });
+        return;
+      }
       if (url.pathname === "/api/v1/hmrc/ct/return/preview") {
         previewRequests.push(JSON.parse(route.request().postData()));
         const computationLines = Object.fromEntries(
@@ -176,16 +181,33 @@ test.describe("File Company Tax Return entry form", () => {
         return;
       }
       if (url.pathname === "/api/v1/hmrc/ct/return" && route.request().method() === "POST") {
-        submission.requests.push(JSON.parse(route.request().postData()));
-        await route.fulfill({ status: submission.status, contentType: "application/json", body: JSON.stringify(submission.body) });
+        const body = JSON.parse(route.request().postData());
+        submission.requests.push(body);
+        submission.headers?.push(route.request().headers());
+        const reply = submission.reply?.(body) ?? { status: submission.status, body: submission.body };
+        await route.fulfill({ status: reply.status, contentType: "application/json", body: JSON.stringify(reply.body) });
         return;
       }
-      if (url.pathname.startsWith("/api/v1/hmrc/receipt/") && submission.receipt) {
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.receipt) });
+      if (url.pathname === "/api/v1/hmrc/receipt" && submission.receiptList) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ receipts: submission.receiptList }) });
         return;
       }
-      if (url.pathname.startsWith("/api/v1/hmrc/ct/return/") && route.request().method() === "GET" && submission.pollBody) {
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.pollBody) });
+      if (url.pathname.startsWith("/api/v1/hmrc/receipt/") && (submission.receipt || submission.receiptsByName)) {
+        const name = decodeURIComponent(url.pathname.split("/").pop());
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(submission.receiptsByName?.[name] ?? submission.receipt),
+        });
+        return;
+      }
+      if (
+        url.pathname.startsWith("/api/v1/hmrc/ct/return/") &&
+        route.request().method() === "GET" &&
+        (submission.poll || submission.pollBody)
+      ) {
+        const polled = submission.poll?.(url.pathname.split("/").pop()) ?? submission.pollBody;
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(polled) });
         return;
       }
       if (url.pathname.startsWith("/api/")) {
@@ -477,6 +499,465 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#formView")).toBeHidden();
   });
 
+  // --- A period of account longer than 12 months: two returns -----------------------------------
+
+  const LONG_ANSWERS = {
+    utr: "8596148860",
+    periodStart: "2025-01-01",
+    periodEnd: "2026-03-31",
+    currentTurnover: "250000",
+    currentCostOfSales: "50000",
+    currentAdministrativeExpenses: "81000",
+    currentInterestReceivable: "1000",
+    currentTax: "24962",
+    currentDebtors: "10000",
+    currentCashAtBank: "116100",
+    currentTradeCreditors: "5000",
+    currentCorporationTax: "24962",
+    currentTaxationSocialSecurity: "1000",
+    currentCalledUpShareCapital: "100",
+    currentProfitAndLossAccount: "95038",
+    principalActivity: "Software consultancy",
+    accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
+    directors: "Alex Example",
+    averageEmployees: "2",
+    directorName: "Alex Example",
+    directorDateApproved: "2026-06-30",
+    declarantName: "Alex Example",
+    nonTradingLoanRelationshipCredits: "1000",
+    depreciation: "6000",
+    donations: "2000",
+    donationsPaid: "2000",
+    donationsPaidAp2: "0",
+    annualInvestmentAllowance: "12000",
+    mainPoolAllowances: "1800",
+    mainPoolAllowancesAp2: "363",
+  };
+
+  async function typeLongForm(page, extra = {}) {
+    for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) await page.locator(`#${id}`).fill(value);
+    await page.locator("#loansMadeAp2Yes").check();
+    await page.locator("#loanName1Ap2").fill("Alex Example");
+    await page.locator("#loanAmount1Ap2").fill("15000");
+    for (const id of [
+      "statementSection477Exemption",
+      "statementMembersNotRequiredAudit",
+      "statementDirectorsResponsibilities",
+      "statementSmallCompaniesRegime",
+      "declarationAccepted",
+    ]) {
+      await page.locator(`#${id}`).check();
+    }
+  }
+
+  const LONG_COMPUTATION_LINES = {
+    profitLossPerAccounts: 120000,
+    nonTradingLoanRelationshipCredits: 1000,
+    depreciation: 6000,
+    amortisation: 0,
+    entertaining: 0,
+    donations: 2000,
+    adjustedProfitBeforeAccountingPeriodAdjustments: 127000,
+    totalCapitalAllowances: 13800,
+  };
+  const FIRST_RETURN_BOXES = {
+    "3": "8596148860",
+    "30": "2025-01-01",
+    "35": "2025-12-31",
+    "50": "yes",
+    "85A": "yes",
+    "305": 2000,
+    "440": 19273.46,
+    "475": 19273.46,
+  };
+  const SECOND_RETURN_BOXES = {
+    "3": "8596148860",
+    "30": "2026-01-01",
+    "35": "2026-03-31",
+    "50": "yes",
+    "85A": "yes",
+    "440": 5688.68,
+    "480": 5062.5,
+    "475": 5688.68,
+  };
+  const LONG_PREVIEW = (secondBoxes = SECOND_RETURN_BOXES) => ({
+    periodOfAccount: { periodStart: "2025-01-01", periodEnd: "2026-03-31" },
+    accountsIxbrl: "<html/>",
+    returns: [
+      {
+        part: 1,
+        periodStart: "2025-01-01",
+        periodEnd: "2025-12-31",
+        boxes: FIRST_RETURN_BOXES,
+        computationsIxbrl: "<html/>",
+        computationLines: {
+          ...LONG_COMPUTATION_LINES,
+          timeApportionment: -25121,
+          adjustedProfitBeforeCapitalAllowances: 101879,
+          adjustedProfit: 88079,
+        },
+        taxDueDate: "2026-10-01",
+        returnDueDate: "2027-03-31",
+      },
+      {
+        part: 2,
+        periodStart: "2026-01-01",
+        periodEnd: "2026-03-31",
+        boxes: secondBoxes,
+        computationsIxbrl: "<html/>",
+        computationLines: {
+          ...LONG_COMPUTATION_LINES,
+          totalCapitalAllowances: 363,
+          timeApportionment: -101879,
+          adjustedProfitBeforeCapitalAllowances: 25121,
+          adjustedProfit: 24758,
+        },
+        taxDueDate: "2027-01-01",
+        returnDueDate: "2027-03-31",
+      },
+    ],
+  });
+  const IRMARKS = { A1: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", A2: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" };
+
+  // The server's answers to each send: return 1 is accepted, return 2 gets the answer the test names.
+  function longSubmission({ secondOutcome = "ACCEPT", secondPostStatus = 200 } = {}) {
+    const submission = {
+      requests: [],
+      headers: [],
+      status: 200,
+      body: {},
+      previewBody: LONG_PREVIEW(),
+      reply: (body) => {
+        const part = body.longPeriod?.part;
+        if (part === 2 && secondPostStatus !== 200)
+          return {
+            status: secondPostStatus,
+            body: { message: "Return 2 of 2 files after return 1 of 2 is accepted. Send return 1 first." },
+          };
+        return { status: 200, body: { correlationId: `CORR000${part}`, irmark: IRMARKS[`A${part}`], pollIntervalSeconds: 1 } };
+      },
+      poll: (correlationId) => {
+        const part = Number(correlationId.slice(-1));
+        if (part === 2 && secondOutcome === "REJECT") {
+          return {
+            statusCode: "REJECT",
+            correlationId,
+            irmark: IRMARKS.A2,
+            businessErrors: [{ number: "9043", text: "Check that Box 435 agrees with the result of the computation of marginal relief" }],
+          };
+        }
+        return {
+          statusCode: "ACCEPT",
+          correlationId,
+          irmark: IRMARKS[`A${part}`],
+          irmarkReceipt: IRMARKS[`A${part}`],
+          receiptId: `2026-11-12T10:0${part}:00.000Z-CORR000${part}`,
+        };
+      },
+    };
+    return submission;
+  }
+
+  async function reachLongReview(page, submission = longSubmission(), previewRequests = []) {
+    await openForm(page, previewRequests, submission);
+    await typeLongForm(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+  }
+
+  async function sendBoth(page) {
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+  }
+
+  test("the long period panel shows at 12 months and a day and not at 12 months", async ({ page }) => {
+    await openForm(page);
+    const panel = page.locator("#longPeriodPanel");
+    await page.locator("#periodStart").fill("2025-01-01");
+    await page.locator("#periodEnd").fill("2025-12-31");
+    await expect(panel).toBeHidden();
+    await expect(page.locator("#mainPoolAllowancesAp2")).toBeHidden();
+    await page.locator("#periodEnd").fill("2026-01-01");
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText("This period of account files as two returns");
+    await expect(panel).toContainText("Return 1 of 2: 1 January 2025 to 31 December 2025 (365 days)");
+    await expect(panel).toContainText("Return 2 of 2: 1 January 2026 to 1 January 2026 (1 days)");
+    await expect(panel.getByRole("link", { name: /update the dates/ })).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/corporation-tax-accounting-period",
+    );
+    await page.locator("#periodEnd").fill("2026-10-01");
+    await expect(panel).toBeHidden();
+    await expect(page.locator("#period-error")).toContainText("18 months at most");
+  });
+
+  test("a long period shows two columns, the second with the suffix Ap2 and each limit in its hint", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#periodStart").fill("2025-01-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeVisible();
+    await expect(page.locator("#annualInvestmentAllowanceAp2")).toBeVisible();
+    await expect(page.locator('label[for="annualInvestmentAllowanceAp2"]')).toContainText("(return 2)");
+    await expect(page.locator('label[for="annualInvestmentAllowance"]')).toContainText("(return 1)");
+    await expect(page.locator("#annualInvestmentAllowance-hint")).toContainText(
+      "The most for 1 January 2025 to 31 December 2025 is £1,000,000",
+    );
+    await expect(page.locator("#annualInvestmentAllowanceAp2-hint")).toContainText(
+      "The most for 1 January 2026 to 31 March 2026 is £246,575",
+    );
+    await expect(page.locator("#mainPoolAllowances-hint")).toContainText("main pool rate for this period is 18%");
+    await expect(page.locator("#loansPart2")).toBeVisible();
+    await expect(page.locator("#donationsPaidGroup")).toBeVisible();
+    await expect(page.locator("#firstPeriodStart")).toHaveText("Does the first accounting period start on 1 January 2025?");
+    for (const id of ["annualInvestmentAllowance", "annualInvestmentAllowanceAp2", "donationsPaidAp2", "associatedCompaniesAp2"]) {
+      await expect(page.locator(`#${id}`)).toHaveAttribute("aria-describedby", `${id}-hint`);
+    }
+  });
+
+  test("a period that spans the main pool rate change shows the hybrid rate", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#periodStart").fill("2025-10-01");
+    await page.locator("#periodEnd").fill("2026-12-31");
+    await expect(page.locator("#mainPoolAllowances-hint")).toContainText("hybrid");
+    await expect(page.locator("#mainPoolAllowancesAp2-hint")).toContainText("main pool rate for this period is 14%");
+  });
+
+  test("a first accounting period that does not start on the first day is refused beside its question", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#periodStart").fill("2025-01-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await page.locator("#firstPeriodStartNo").check();
+    await expect(page.locator("#firstPeriodStart-error")).toContainText(
+      "Submit files a long period when the first accounting period starts on the first day of the accounts.",
+    );
+  });
+
+  test("a long period previews the two columns, shows two reviews, and sends return 1 then return 2 with one sign-in and one filing id", async ({
+    page,
+  }) => {
+    const submission = longSubmission();
+    const previewRequests = [];
+    await reachLongReview(page, submission, previewRequests);
+
+    expect(previewRequests[0].figures.accountingPeriods).toHaveLength(2);
+    expect(previewRequests[0].figures.accountingPeriods[1]).toMatchObject({ mainPoolAllowances: 363 });
+    expect(previewRequests[0].figures.accountingPeriods[1].loansToParticipators.loans).toEqual([{ name: "Alex Example", amount: 15000 }]);
+    expect(previewRequests[0].longPeriod).toBeUndefined();
+    await expect(page.locator("#reviewReturn1Heading")).toHaveText("Return 1 of 2: 1 January 2025 to 31 December 2025");
+    await expect(page.locator("#reviewReturn2Heading")).toHaveText("Return 2 of 2: 1 January 2026 to 31 March 2026");
+    await expect(page.locator("#review-return-1")).toContainText("Tax is due on 1 October 2026. The return is due on 31 March 2027.");
+    await expect(page.locator("#review-return-2")).toContainText("Tax is due on 1 January 2027. The return is due on 31 March 2027.");
+    await expect(page.locator("#review-box-85A")).toContainText("Accounts attached are for a different period");
+    await expect(page.locator("#review-box-440")).toContainText("19,273.46");
+    await expect(page.locator("#review-box-440Ap2")).toContainText("5,688.68");
+    await expect(page.locator("#review-line-timeApportionment")).toContainText("Time apportionment: 365 of 455 days");
+    await expect(page.locator("#review-line-timeApportionmentAp2")).toContainText("Time apportionment: 90 of 455 days");
+    await expect(page.locator("#review-row-mainPoolAllowancesAp2")).toContainText("£363");
+    await expect(page.locator("#review-box-480Ap2 a.review-change")).toHaveAttribute("data-field", "loansMadeAp2");
+    await expect(page.locator("#review-box-305 a.review-change")).toHaveAttribute("data-field", "donationsPaid");
+
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send two returns to HMRC");
+    await expect(page.locator("#longSendOrder")).toContainText("return 1 of 2, then the return 2 of 2");
+    await sendBoth(page);
+
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2", { timeout: 30_000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 2 of 2", { timeout: 30_000 });
+    await expect(page.locator("#returnIrmark")).toContainText(`Return 1 of 2 IRmark: ${IRMARKS.A1}`);
+    await expect(page.locator("#returnIrmark")).toContainText(`Return 2 of 2 IRmark: ${IRMARKS.A2}`);
+    await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(2);
+    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText("Your copy of the Company Tax Return 1 of 2");
+    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText("Your copy of the Company Tax Return 2 of 2");
+
+    expect(submission.requests).toHaveLength(2);
+    const [first, second] = submission.requests;
+    expect(first.longPeriod.part).toBe(1);
+    expect(second.longPeriod).toEqual({ filingId: first.longPeriod.filingId, part: 2 });
+    expect(first.reviewedBoxes).toEqual(FIRST_RETURN_BOXES);
+    expect(second.reviewedBoxes).toEqual(SECOND_RETURN_BOXES);
+    expect(second.gatewayPassword).toBe("gateway-password");
+    expect(first).not.toHaveProperty("jointFilingId");
+    expect(await page.locator("#gatewayPassword").inputValue()).toBe("");
+    expect(await page.evaluate(() => JSON.stringify(sessionStorage))).not.toContain("gateway-password");
+  });
+
+  test("the scenario header goes on both sends", async ({ page }) => {
+    const submission = longSubmission();
+    await reachLongReview(page, submission);
+    await page.evaluate(() => {
+      sessionStorage.setItem("showDeveloperOptions", "true");
+      window.dispatchEvent(new Event("developer-mode-changed"));
+    });
+    await page.locator("#govTestScenario").fill("CT600_REJECT_SECOND_RETURN");
+    await sendBoth(page);
+    await expect.poll(() => submission.requests.length, { timeout: 30_000 }).toBe(2);
+    expect(submission.headers.map((headers) => headers["gov-test-scenario"])).toEqual([
+      "CT600_REJECT_SECOND_RETURN",
+      "CT600_REJECT_SECOND_RETURN",
+    ]);
+  });
+
+  test("once return 1 is accepted its accounts, 15 month figures and first column lock, and return 2's column stays open", async ({
+    page,
+  }) => {
+    const submission = longSubmission({ secondOutcome: "REJECT" });
+    await reachLongReview(page, submission);
+    await sendBoth(page);
+
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2", { timeout: 30_000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC rejected the Company Tax Return 2 of 2", { timeout: 30_000 });
+    await expect(page.locator("#returnErrors")).toContainText("Error 9043");
+    await expect(page.locator("#returnErrors")).toContainText("send return 2 of 2 again");
+    await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(1);
+    await expect(page.locator("#tryAgainBtn")).toBeVisible();
+
+    await page.locator("#tryAgainBtn").click();
+    await page.locator("#backToFormBtn").click();
+    await expect(page.locator("#firstReturnLockNote")).toHaveText(
+      "Return 1 is filed with HMRC. Send return 2 first, then amend return 1 from its receipt.",
+    );
+    for (const id of ["currentTurnover", "periodEnd", "depreciation", "mainPoolAllowances", "donationsPaid", "annualInvestmentAllowance"]) {
+      await expect(page.locator(`#${id}`), id).toBeDisabled();
+    }
+    for (const id of ["mainPoolAllowancesAp2", "annualInvestmentAllowanceAp2", "donationsPaidAp2", "loanAmount1Ap2"]) {
+      await expect(page.locator(`#${id}`), id).toBeEnabled();
+    }
+    await expect(page.locator("#declarantName")).toBeEnabled();
+
+    await page.locator("#mainPoolAllowancesAp2").fill("300");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send the return 2 of 2 to HMRC");
+    await expect(page.locator("#submitReturnBtn")).toHaveText("Submit return 2 of 2 to HMRC");
+  });
+
+  test("a reload between the sends resumes at return 2 with no password kept", async ({ page }) => {
+    const submission = longSubmission({ secondPostStatus: 502 });
+    await reachLongReview(page, submission);
+    await sendBoth(page);
+    await expect(page.locator("#statusMessagesContainer")).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => submission.requests.length).toBe(2);
+
+    const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem("jointFiling")).sending.longPeriod);
+    expect(saved.filingId).toBe(submission.requests[0].longPeriod.filingId);
+    expect(saved.parts[0]).toMatchObject({ correlationId: "CORR0001", statusCode: "ACCEPT", irmark: IRMARKS.A1 });
+    expect(saved.parts[1]).toBeNull();
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send the return 2 of 2 to HMRC");
+    await expect(page.locator("#longSendOrder")).toContainText("The return 2 of 2 is the one left to send");
+    await expect(page.locator("#gatewayPassword")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toBeDisabled();
+    await expect(page.locator("#mainPoolAllowancesAp2")).toHaveValue("363");
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2");
+  });
+
+  test("?amend= on return 2's receipt refills both columns and amends only the return whose boxes change", async ({ page }) => {
+    const filingId = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+    const list = [
+      { name: "2026-11-12T10:02:00.000Z-CORR0002.json", kind: "company-tax-return", longPeriod: { filingId, part: 2, parts: 2 } },
+      { name: "2026-11-12T10:01:00.000Z-CORR0001.json", kind: "company-tax-return", longPeriod: { filingId, part: 1, parts: 2 } },
+    ];
+    const submission = longSubmission();
+    await openForm(page, [], submission);
+    await typeLongForm(page);
+    const values = await formValuesOnThePage(page);
+    const company = { companyNumber: "12345678", companyName: "Precision Code Ltd" };
+    const base = { kind: "company-tax-return", statusCode: "ACCEPT", formRequest: { company, values } };
+    const changedSecond = { ...SECOND_RETURN_BOXES, 705: 300, 440: 5000 };
+    const amendment = longSubmission();
+    amendment.previewBody = LONG_PREVIEW(changedSecond);
+    amendment.receiptList = list;
+    amendment.receiptsByName = {
+      [list[0].name]: { ...base, longPeriod: { filingId, part: 2, parts: 2 }, filed: { boxes: SECOND_RETURN_BOXES } },
+      [list[1].name]: { ...base, longPeriod: { filingId, part: 1, parts: 2 }, filed: { boxes: FIRST_RETURN_BOXES } },
+    };
+    await serveRealSite(page, [], amendment);
+    await page.goto(`${PAGE_URL}?amend=${encodeURIComponent(list[0].name)}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#formView")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("#mainPoolAllowancesAp2")).toHaveValue("363");
+    await expect(page.locator("#loanName1Ap2")).toHaveValue("Alex Example");
+    await expect(page.locator("#periodStart")).toBeDisabled();
+    await expect(page.locator("#periodEnd")).toBeDisabled();
+    await page.locator("#mainPoolAllowancesAp2").fill("300");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send the amended return 2 of 2 to HMRC");
+    await sendBoth(page);
+
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the amended Company Tax Return 2 of 2", { timeout: 30_000 });
+    expect(amendment.requests).toHaveLength(1);
+    expect(amendment.requests[0]).toMatchObject({ amended: true, longPeriod: { filingId, part: 2 } });
+    expect(amendment.requests[0].reviewedBoxes).toEqual(changedSecond);
+  });
+
+  test("?amend= on a long filing with only one accepted return says so and starts nothing", async ({ page }) => {
+    const filingId = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
+    const name = "2026-11-12T10:01:00.000Z-CORR0001.json";
+    const submission = longSubmission();
+    submission.receiptList = [{ name, kind: "company-tax-return", longPeriod: { filingId, part: 1, parts: 2 } }];
+    submission.receiptsByName = {
+      [name]: {
+        kind: "company-tax-return",
+        statusCode: "ACCEPT",
+        longPeriod: { filingId, part: 1, parts: 2 },
+        filed: { boxes: FIRST_RETURN_BOXES },
+        formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values: {} },
+      },
+    };
+    await serveRealSite(page, [], submission);
+    await page.goto(`${PAGE_URL}?amend=${encodeURIComponent(name)}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#statusMessagesContainer")).toContainText(
+      "Only one of the two returns of this filing has an accepted receipt",
+    );
+    await expect(page.locator("#formView")).toBeHidden();
+  });
+
+  for (const width of [1280, 390]) {
+    test(`the long period panel, the columns and the two reviews at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await reachLongReview(page);
+      await page.locator("#returnForm").evaluate(() => {});
+      await page.locator("#backToFormBtn").click();
+      await page.locator("#section-period").screenshot({ path: recordScreenshotPath("ct600-long-period-panel", width) });
+      await page.locator("#section-allowances").screenshot({ path: recordScreenshotPath("ct600-long-period-columns", width) });
+      await page.locator("#section-loans").screenshot({ path: recordScreenshotPath("ct600-long-period-loans", width) });
+      await page.locator("#workedTax").screenshot({ path: recordScreenshotPath("ct600-long-period-worked-tax", width) });
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#longReviews").screenshot({ path: recordScreenshotPath("ct600-long-period-reviews", width) });
+      await page.locator(".send-step").screenshot({ path: recordScreenshotPath("ct600-long-period-send", width) });
+      expect(await pageScrollsSideways(page)).toBe(false);
+    });
+  }
+
+  for (const scheme of ["light", "dark"]) {
+    test(`the long period form, both reviews and the second rejection pass axe at WCAG A and AA in ${scheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await reachLongReview(page, longSubmission({ secondOutcome: "REJECT" }));
+      await page.addScriptTag({ path: path.join(process.cwd(), "node_modules/axe-core/axe.min.js") });
+      const violations = (selector) =>
+        page.evaluate(async (scope) => {
+          const results = await window.axe.run(document.querySelector(scope), {
+            runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
+          });
+          return results.violations.map(
+            (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`,
+          );
+        }, selector);
+      expect(await violations("#previewView")).toEqual([]);
+      await page.locator("#backToFormBtn").click();
+      expect(await violations("#formView")).toEqual([]);
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await sendBoth(page);
+      await expect(page.locator("#returnErrors")).toContainText("Error 9043", { timeout: 30_000 });
+      expect(await violations("#resultView")).toEqual([]);
+    });
+  }
+
   for (const scheme of ["light", "dark"]) {
     test(`the result view gives its buttons one width and the HMRC heading a gap at 390 px in ${scheme}`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 900 });
@@ -622,9 +1103,9 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#associatedCompanies").blur();
     await expect(page.locator("#associatedCompanies-error")).toContainText("whole number");
 
-    await page.locator("#periodEnd").fill("2026-04-01");
+    await page.locator("#periodEnd").fill("2025-03-31");
     await page.locator("#periodEnd").dispatchEvent("change");
-    await expect(page.locator("#period-error")).toContainText("12 months");
+    await expect(page.locator("#period-error")).toContainText("The period cannot end before it starts");
 
     await page.locator("#loansMadeYes").check();
     await page.locator("#loanName1").focus();
@@ -644,7 +1125,14 @@ test.describe("File Company Tax Return entry form", () => {
     const summary = page.locator("#ct600-error-summary");
     await expect(summary).toBeFocused();
     await expect(summary).toHaveAttribute("role", "alert");
-    for (const text of ["10 digits", "whole number", "12 months", "participator's name", "does not balance", "declaration"]) {
+    for (const text of [
+      "10 digits",
+      "whole number",
+      "cannot end before it starts",
+      "participator's name",
+      "does not balance",
+      "declaration",
+    ]) {
       await expect(summary).toContainText(text);
     }
     await summary.getByRole("link", { name: /10 digits/ }).click();

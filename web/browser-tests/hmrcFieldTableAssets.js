@@ -22,11 +22,19 @@ export async function serveHmrcFieldTableAssets(page) {
   await serveFile(page, "**/lib/money-format.js", "lib/money-format.js", "application/javascript");
   await serveFile(page, "**/lib/hmrc-field-table.js", "lib/hmrc-field-table.js", "application/javascript");
   await serveFile(page, "**/lib/hmrc-field-table.css", "lib/hmrc-field-table.css", "text/css");
+  await serveFile(page, "**/lib/long-period.js", "lib/long-period.js", "application/javascript");
 }
 
 // The real filing result record and the Companies House lane banner, for a Companies House filing page whose other scripts are stubbed out.
 export async function serveFilingResultRecord(page) {
-  for (const name of ["filing-result-record", "filing-record", "submission-record", "ct600-fields", "companies-house-lane"]) {
+  for (const name of [
+    "filing-result-record",
+    "filing-record",
+    "submission-record",
+    "ct600-fields",
+    "long-period",
+    "companies-house-lane",
+  ]) {
     await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
   }
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");

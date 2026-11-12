@@ -149,14 +149,16 @@ export const IRMARK_MISMATCH_WARNING =
  * @param {{label: string, value: number, deduction?: boolean, style?: string}[]} filed.computation - the tax computation lines
  * @param {object} filed.outcome - HMRC's accepted answer: correlationId, irmark, irmarkReceipt, receiptId
  * @param {string} filed.dateText
+ * @param {{part: number, parts: number}} [filed.longPeriod] - set when the return is one of the two of a period of account over 12 months
  * @returns {string}
  */
-export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, dateText }) {
+export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, dateText, longPeriod }) {
+  const ofParts = longPeriod ? ` ${longPeriod.part} of ${longPeriod.parts}` : "";
   const periodEnd = String(boxes[35] ?? "");
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
     referenceHtml: [`Unique Taxpayer Reference ${escapeRecordText(utr)}`, `Company number ${escapeRecordText(company.companyNumber)}`],
-    title: "Company Tax Return (CT600)",
+    title: `Company Tax Return (CT600)${ofParts}`,
     subtitleHtml: `Return period ${escapeRecordText(longDate(boxes[30]))} to ${escapeRecordText(longDate(periodEnd))}`,
   });
   const taxRows = TAX_BOXES.filter((box) => boxes[box] !== undefined).map((box) => ({
@@ -179,7 +181,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
   });
   const receipt = { ...outcome, utr, successMessage: undefined };
   return customerCopyHtml({
-    title: "Your copy of the Company Tax Return",
+    title: `Your copy of the Company Tax Return${ofParts}`,
     reference: { label: "IRmark receipt", value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT) },
     status: { kind: "accepted", text: "Accepted by HMRC" },
     date: dateText,

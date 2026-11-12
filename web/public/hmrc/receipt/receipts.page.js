@@ -28,6 +28,13 @@ async function fetchReceipts() {
   }
   const json = await res.json();
   const items = Array.isArray(json.receipts) ? json.receipts : [];
+  const { accountingPeriodDates, longDateText } = await import("../../lib/long-period.js");
+  describeLongPeriodReturn = (longPeriod) => {
+    const periods = accountingPeriodDates(longPeriod.periodOfAccountStart, longPeriod.periodOfAccountEnd)?.periods;
+    const period = periods?.[longPeriod.part - 1];
+    const dates = period ? ` (${longDateText(period.periodStart)} to ${longDateText(period.periodEnd)})` : "";
+    return `${longPeriod.part} of ${longPeriod.parts}${dates}`;
+  };
   tbody.innerHTML = "";
   if (items.length === 0) {
     table.style.display = "none";
@@ -60,20 +67,34 @@ async function fetchReceipts() {
   }
 }
 
-// The accounts and the Company Tax Return filed together share a jointFilingId and show as one entry.
+let describeLongPeriodReturn = (longPeriod) => `${longPeriod.part} of ${longPeriod.parts}`;
+
+// One id names a filing: the jointFilingId when the accounts went with the return, and the long period's
+// filingId for the two returns of a period of account over 12 months. Its receipts show as one entry.
+function filingIdOf(it) {
+  return it.jointFilingId ?? it.longPeriod?.filingId;
+}
+
+// Inside a long period's filing the accounts come first, then return 1, then return 2.
+function filingOrder(it) {
+  return it.kind === "companies-house-accounts" ? 0 : (it.longPeriod?.part ?? 0);
+}
+
 function groupByJointFiling(items) {
   const groups = [];
-  const byJointFilingId = new Map();
+  const byFilingId = new Map();
   for (const it of items) {
-    const existing = it.jointFilingId ? byJointFilingId.get(it.jointFilingId) : undefined;
+    const filingId = filingIdOf(it);
+    const existing = filingId ? byFilingId.get(filingId) : undefined;
     if (existing) {
       existing.push(it);
       continue;
     }
     const group = [it];
     groups.push(group);
-    if (it.jointFilingId) byJointFilingId.set(it.jointFilingId, group);
+    if (filingId) byFilingId.set(filingId, group);
   }
+  for (const group of groups) if (group.some((it) => it.longPeriod)) group.sort((a, b) => filingOrder(a) - filingOrder(b));
   return groups;
 }
 
@@ -83,7 +104,12 @@ const AMENDED_RECEIPT_TITLES = { "companies-house-accounts": "Revised accounts",
 function receiptEntry(it, inJointFiling) {
   const entry = document.createElement("div");
   entry.className = "receipt-entry";
-  const kindTitle = it.amended ? AMENDED_RECEIPT_TITLES[it.kind] : inJointFiling ? JOINT_RECEIPT_TITLES[it.kind] : undefined;
+  const returnLabel = it.longPeriod ? ` ${describeLongPeriodReturn(it.longPeriod)}` : "";
+  const kindTitle = it.amended
+    ? `${AMENDED_RECEIPT_TITLES[it.kind]}${returnLabel}`
+    : inJointFiling || it.longPeriod
+      ? `${JOINT_RECEIPT_TITLES[it.kind]}${returnLabel}`
+      : undefined;
   if (kindTitle) {
     const title = document.createElement("span");
     title.className = "receipt-kind";

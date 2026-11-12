@@ -8,6 +8,8 @@
 // that read the form's values into the figures model and check what the model does not.
 // The form, the review and the help read this one table, so a box has one label everywhere.
 
+import { accountingPeriodDates } from "./long-period.js";
+
 export const COMPANY_TAX_RETURN_GUIDE_URL = "https://www.gov.uk/guidance/the-company-tax-return-guide";
 export const COMPUTATIONS_GUIDE_ANCHOR = "and-90-accounts-and-computations";
 
@@ -47,6 +49,14 @@ export const CT600_BOX_ROWS = [
     section: "period",
     rule: "Box 50 is ticked on each return of a period of account longer than 12 months",
     anchor: "making-more-than-one-return-now",
+  },
+  {
+    box: "85A",
+    label: "Accounts attached are for a different period",
+    kind: "worked",
+    section: "accounts",
+    rule: "Box 85A is ticked on each return of a period of account longer than 12 months, because the attached accounts cover the whole period of account",
+    anchor: COMPUTATIONS_GUIDE_ANCHOR,
   },
   {
     box: 95,
@@ -494,7 +504,7 @@ export const CT600_BOX_ROWS = [
 ];
 
 export function boxRow(box) {
-  return CT600_BOX_ROWS.find((row) => row.box === Number(box));
+  return CT600_BOX_ROWS.find((row) => String(row.box) === String(box));
 }
 
 export function guideUrl(anchor) {
@@ -502,7 +512,7 @@ export function guideUrl(anchor) {
 }
 
 // Boxes the review shows as typed or coded text; every other box is an amount in pounds.
-export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, "85A", 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: "Company" },
@@ -522,6 +532,56 @@ const WHOLE = "whole-pounds";
 function boxLabel(box) {
   return `Box ${box}: ${boxRow(box).label}`;
 }
+
+// The fields that hold one answer for each accounting period when a period of account is longer than
+// 12 months. The first column keeps the field's own id; the second adds this suffix.
+export const SECOND_PERIOD_SUFFIX = "Ap2";
+
+export const PER_PERIOD_FIELD_IDS = [
+  "associatedCompanies",
+  "annualInvestmentAllowance",
+  "mainPoolAllowances",
+  "mainPoolBalancingCharges",
+  "fullExpensingAllowances",
+  "fullExpensingBalancingCharges",
+  "specialRateAllowances",
+  "specialRateBalancingCharges",
+  "specialRateAllowanceExpenditure",
+  "specialRatePoolAllowances",
+  "specialRatePoolAnnualInvestmentAllowance",
+  "specialRatePoolBalancingCharges",
+  "annualInvestmentAllowanceOutsideTrade",
+  "firstYearAllowanceExpenditure",
+  "otherMachineryAndPlantExpenditure",
+  "lossAgainstTotalProfits",
+  "lossesBroughtForwardAgainstTotalProfits",
+  "lossCarriedBack",
+  "frankedInvestmentIncome",
+  "incomeTaxDeducted",
+  "taxAlreadyPaid",
+  "ownCorporationTax",
+];
+
+// The questions about loans to participators are asked for each accounting period too.
+export const PER_PERIOD_LOAN_QUESTION_IDS = ["loansMade", "releasedBeforeEnd", "repaidSince"];
+
+export const LONG_PERIOD_DONATIONS_LABEL = "Donations added back (whole period of account)";
+
+/** Whether a field has a second column for a period of account longer than 12 months. */
+export function isPerPeriodField(id) {
+  return PER_PERIOD_FIELD_IDS.includes(id) || PER_PERIOD_LOAN_QUESTION_IDS.includes(id);
+}
+
+/** The element id of a per-period field for return 1 or return 2. */
+export function periodFieldId(id, part) {
+  return part === 2 ? `${id}${SECOND_PERIOD_SUFFIX}` : id;
+}
+
+/** The question that confirms the first accounting period starts on the first day of the accounts. */
+export const FIRST_PERIOD_START_FIELD = "firstPeriodStart";
+
+export const FIRST_PERIOD_START_REFUSAL =
+  "Submit files a long period when the first accounting period starts on the first day of the accounts.";
 
 // The typed fields. type: text, date, count, whole-pounds, pounds-and-pence, choice, checkbox.
 // figure is the key in the figures model; target is the id the model's problems for that key show beside.
@@ -565,7 +625,7 @@ export const CT600_FORM_FIELDS = [
     box: 30,
     type: "dates",
     label: "Period of account",
-    hint: "The accounts, the return and the computations all cover this one period. It starts on or after 1 April 2015, lasts no more than 12 months and ends before today.",
+    hint: "The accounts cover this period. It starts on or after 1 April 2015, ends before today and lasts up to 18 months. A period over 12 months files as two returns.",
     focus: "periodStart",
   },
   {
@@ -906,6 +966,19 @@ export const CT600_FORM_FIELDS = [
       "I declare that the information in this return and the attached accounts and computations is correct and complete to the best of my knowledge and belief.",
   },
 ];
+
+// The donations claimed in box 305 are the donations paid in each accounting period. A period of
+// account of 12 months or less claims what it adds back, so only a long one asks for them.
+export const DONATIONS_PAID_FIELD = {
+  id: "donationsPaid",
+  section: "reliefs",
+  figure: "donationsPaid",
+  box: 305,
+  type: WHOLE,
+  label: "Box 305: Qualifying donations paid in the accounting period",
+  hint: `${MONEY_HINT}. Qualifying donations to charity paid in this accounting period. They are claimed against total profits in this return's box 305.`,
+  default: "0",
+};
 
 export const STATEMENT_FIELDS = [
   {
@@ -1309,7 +1382,40 @@ export function accountsFromValues(values) {
 }
 
 /**
- * The figures model from the form's values. The company's name and number come from the lookup.
+ * The accounting periods of the period the form holds, or undefined when it is 12 months or less or
+ * its dates are not both dates.
+ * @param {Record<string, string|boolean>} values
+ */
+export function longPeriodOf(values) {
+  return accountingPeriodDates(values.periodStart, values.periodEnd);
+}
+
+const FIELD_BY_ID = new Map([...CT600_FORM_FIELDS, DONATIONS_PAID_FIELD].map((field) => [field.id, field]));
+
+// What one accounting period of a long period of account holds: the answers of its column.
+function accountingPeriodFigures(values, part) {
+  const figures = {};
+  for (const id of [...PER_PERIOD_FIELD_IDS, DONATIONS_PAID_FIELD.id]) {
+    const field = FIELD_BY_ID.get(id);
+    const key = periodFieldId(id, part);
+    if (field.id === "associatedCompanies") {
+      figures[field.figure] = isBlank(values[key]) ? 0 : Number(String(values[key]).trim());
+    } else if (field.type === WHOLE) {
+      figures[field.figure] = amountOf(values, key, true);
+    } else if (field.optional) {
+      if (!isBlank(values[key])) figures[field.figure] = amountOf(values, key, false);
+    } else {
+      figures[field.figure] = amountOf(values, key, false);
+    }
+  }
+  if (values[periodFieldId("loansMade", part)] === "yes") figures.loansToParticipators = loansFromValues(values, part);
+  return figures;
+}
+
+/**
+ * The figures model from the form's values. The company's name and number come from the lookup. A
+ * period of account longer than 12 months carries the answers of its two accounting periods in
+ * accountingPeriods, and no working sheet: a book covers 12 months.
  * @param {Record<string, string|boolean>} values
  * @param {{companyName: string, companyNumber: string}} company
  * @param {object} [workingSheet] - the book's own trading profit and Corporation Tax, when a book filled the form
@@ -1317,12 +1423,12 @@ export function accountsFromValues(values) {
 export function figuresFromValues(values, company, workingSheet) {
   const accounts = accountsFromValues(values);
   const profitAndLoss = accounts.smallCompany?.profitAndLoss ?? accounts.profitAndLoss;
+  const long = longPeriodOf(values);
   const figures = {
     companyName: company.companyName,
     companyNumber: company.companyNumber,
     utr: String(values.utr ?? "").trim(),
     companyType: values.companyType === "yes" ? 1 : 0,
-    associatedCompanies: isBlank(values.associatedCompanies) ? 0 : Number(String(values.associatedCompanies).trim()),
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
     profitAndLoss: profitAndLoss.priorYear
@@ -1331,11 +1437,17 @@ export function figuresFromValues(values, company, workingSheet) {
     declarantName: String(values.declarantName ?? "").trim(),
     declarantStatus: String(values.declarantStatus ?? "").trim(),
   };
+  if (!long) figures.associatedCompanies = isBlank(values.associatedCompanies) ? 0 : Number(String(values.associatedCompanies).trim());
   for (const field of CT600_FORM_FIELDS) {
+    if (long && PER_PERIOD_FIELD_IDS.includes(field.id)) continue;
     if (field.type === WHOLE) figures[field.figure] = amountOf(values, field.id, true);
     if (field.type === "pounds-and-pence" && !field.optional) figures[field.figure] = amountOf(values, field.id, false);
   }
   if (values.lossOutsideUk === true) figures.lossOutsideUk = true;
+  if (long) {
+    figures.accountingPeriods = [accountingPeriodFigures(values, 1), accountingPeriodFigures(values, 2)];
+    return figures;
+  }
   if (!isBlank(values.ownCorporationTax)) figures.ownCorporationTax = amountOf(values, "ownCorporationTax", false);
   if (workingSheet) figures.workingSheet = workingSheet;
   if (values.loansMade === "yes") figures.loansToParticipators = loansFromValues(values);
@@ -1398,26 +1510,26 @@ export function ct600RequestFromValues(values, company, workingSheet) {
 export const LOAN_ROW_FIELDS = ["Name", "Amount", "Lent", "Rate"];
 export const REPAYMENT_ROW_FIELDS = ["Name", "Date", "Repaid", "Released"];
 
-export function loanId(field, row) {
-  return `loan${field}${row}`;
+export function loanId(field, row, part = 1) {
+  return periodFieldId(`loan${field}${row}`, part);
 }
 
-export function repaymentId(field, row) {
-  return `repayment${field}${row}`;
+export function repaymentId(field, row, part = 1) {
+  return periodFieldId(`repayment${field}${row}`, part);
 }
 
-function rowNumbers(values, idOf, field) {
+function rowNumbers(values, idOf, field, part) {
   const numbers = [];
-  for (let row = 1; row <= 999; row += 1) if (idOf(field, row) in values) numbers.push(row);
+  for (let row = 1; row <= 999; row += 1) if (idOf(field, row, part) in values) numbers.push(row);
   return numbers;
 }
 
-export function loanRowNumbers(values) {
-  return rowNumbers(values, loanId, "Name");
+export function loanRowNumbers(values, part = 1) {
+  return rowNumbers(values, loanId, "Name", part);
 }
 
-export function repaymentRowNumbers(values) {
-  return rowNumbers(values, repaymentId, "Name");
+export function repaymentRowNumbers(values, part = 1) {
+  return rowNumbers(values, repaymentId, "Name", part);
 }
 
 /** A rate typed as a percentage ("35.75" or "35.75%") as a fraction (0.3575); null when it is not one. */
@@ -1441,73 +1553,76 @@ function wholeOrBlank(values, id) {
  * repayments up to today and the answer to whether any were repaid before the period end.
  * @param {Record<string, string|boolean>} values
  */
-export function loansFromValues(values) {
-  const rows = loanRowNumbers(values).map((row) => {
-    const lent = wholeOrBlank(values, loanId("Lent", row));
-    const rate = rateFromPercent(values[loanId("Rate", row)]);
+export function loansFromValues(values, part = 1) {
+  const rows = loanRowNumbers(values, part).map((row) => {
+    const lent = wholeOrBlank(values, loanId("Lent", row, part));
+    const rate = rateFromPercent(values[loanId("Rate", row, part)]);
     return {
-      name: String(values[loanId("Name", row)] ?? "").trim(),
-      amount: amountOf(values, loanId("Amount", row), true),
+      name: String(values[loanId("Name", row, part)] ?? "").trim(),
+      amount: amountOf(values, loanId("Amount", row, part), true),
       ...(lent > 0 ? { lentFromRateChange: lent } : {}),
       ...(rate === null ? {} : { rate }),
     };
   });
   const repayments =
-    values.repaidSince === "yes"
-      ? repaymentRowNumbers(values).map((row) => ({
-          name: String(values[repaymentId("Name", row)] ?? "").trim(),
-          date: String(values[repaymentId("Date", row)] ?? ""),
-          repaid: wholeOrBlank(values, repaymentId("Repaid", row)),
-          releasedOrWrittenOff: wholeOrBlank(values, repaymentId("Released", row)),
+    values[periodFieldId("repaidSince", part)] === "yes"
+      ? repaymentRowNumbers(values, part).map((row) => ({
+          name: String(values[repaymentId("Name", row, part)] ?? "").trim(),
+          date: String(values[repaymentId("Date", row, part)] ?? ""),
+          repaid: wholeOrBlank(values, repaymentId("Repaid", row, part)),
+          releasedOrWrittenOff: wholeOrBlank(values, repaymentId("Released", row, part)),
         }))
       : [];
-  return { releasedBeforeEnd: values.releasedBeforeEnd === "yes", loans: rows, repayments };
+  return { releasedBeforeEnd: values[periodFieldId("releasedBeforeEnd", part)] === "yes", loans: rows, repayments };
 }
 
-function loanRowProblems(values, problem, today) {
+function loanRowProblems(values, problem, today, part = 1) {
   const names = new Set();
-  for (const row of loanRowNumbers(values)) {
-    const name = String(values[loanId("Name", row)] ?? "").trim();
+  for (const row of loanRowNumbers(values, part)) {
+    const name = String(values[loanId("Name", row, part)] ?? "").trim();
     if (name.length < 2 || name.length > 56 || /[<>|"\\]/.test(name) || [...name].some((character) => character < " ")) {
-      problem(loanId("Name", row), "Enter the participator's name, 2 to 56 characters");
+      problem(loanId("Name", row, part), "Enter the participator's name, 2 to 56 characters");
     } else if (names.has(name)) {
-      problem(loanId("Name", row), `${name} is already in the list; enter one loan for each participator`);
+      problem(loanId("Name", row, part), `${name} is already in the list; enter one loan for each participator`);
     }
     names.add(name);
-    const amount = amountOf(values, loanId("Amount", row), true);
-    if (!Number.isInteger(amount) || amount <= 0) problem(loanId("Amount", row), "Enter the amount still owed in whole pounds, above 0");
-    const lent = wholeOrBlank(values, loanId("Lent", row));
-    if (!Number.isInteger(lent) || lent < 0 || lent > amount) {
-      problem(loanId("Lent", row), "Enter the part lent on or after the rate change in whole pounds, no more than the amount owed");
+    const amount = amountOf(values, loanId("Amount", row, part), true);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      problem(loanId("Amount", row, part), "Enter the amount still owed in whole pounds, above 0");
     }
-    if (!isBlank(values[loanId("Rate", row)]) && rateFromPercent(values[loanId("Rate", row)]) === null) {
-      problem(loanId("Rate", row), "Enter the rate as a percentage with at most two decimal places, like 33.75");
+    const lent = wholeOrBlank(values, loanId("Lent", row, part));
+    if (!Number.isInteger(lent) || lent < 0 || lent > amount) {
+      problem(loanId("Lent", row, part), "Enter the part lent on or after the rate change in whole pounds, no more than the amount owed");
+    }
+    if (!isBlank(values[loanId("Rate", row, part)]) && rateFromPercent(values[loanId("Rate", row, part)]) === null) {
+      problem(loanId("Rate", row, part), "Enter the rate as a percentage with at most two decimal places, like 33.75");
     }
   }
-  repaymentRowProblems(values, problem, today);
+  repaymentRowProblems(values, problem, today, part);
 }
 
-function repaymentRowProblems(values, problem, today) {
-  if (values.repaidSince !== "yes") return;
-  const names = new Set(loanRowNumbers(values).map((row) => String(values[loanId("Name", row)] ?? "").trim()));
-  for (const row of repaymentRowNumbers(values)) {
-    if (!names.has(String(values[repaymentId("Name", row)] ?? "").trim())) {
-      problem(repaymentId("Name", row), "Choose a participator from the loans");
+function repaymentRowProblems(values, problem, today, part) {
+  if (values[periodFieldId("repaidSince", part)] !== "yes") return;
+  const names = new Set(loanRowNumbers(values, part).map((row) => String(values[loanId("Name", row, part)] ?? "").trim()));
+  const periodEnd = longPeriodOf(values)?.periods[part - 1].periodEnd ?? values.periodEnd;
+  for (const row of repaymentRowNumbers(values, part)) {
+    if (!names.has(String(values[repaymentId("Name", row, part)] ?? "").trim())) {
+      problem(repaymentId("Name", row, part), "Choose a participator from the loans");
     }
-    const date = String(values[repaymentId("Date", row)] ?? "");
+    const date = String(values[repaymentId("Date", row, part)] ?? "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      problem(repaymentId("Date", row), "Enter the date of the repayment");
-    } else if (values.periodEnd && date <= values.periodEnd) {
-      problem(repaymentId("Date", row), "A repayment on or before the end of the period belongs in the period's own books");
+      problem(repaymentId("Date", row, part), "Enter the date of the repayment");
+    } else if (periodEnd && date <= periodEnd) {
+      problem(repaymentId("Date", row, part), "A repayment on or before the end of the period belongs in the period's own books");
     } else if (date > today) {
-      problem(repaymentId("Date", row), "A repayment cannot be dated after today");
+      problem(repaymentId("Date", row, part), "A repayment cannot be dated after today");
     }
-    const repaid = wholeOrBlank(values, repaymentId("Repaid", row));
-    const released = wholeOrBlank(values, repaymentId("Released", row));
+    const repaid = wholeOrBlank(values, repaymentId("Repaid", row, part));
+    const released = wholeOrBlank(values, repaymentId("Released", row, part));
     if (!Number.isInteger(repaid) || repaid < 0 || !Number.isInteger(released) || released < 0) {
-      problem(repaymentId("Repaid", row), "Enter whole pounds, or leave it empty for none");
+      problem(repaymentId("Repaid", row, part), "Enter whole pounds, or leave it empty for none");
     } else if (repaid + released === 0) {
-      problem(repaymentId("Repaid", row), "Enter the amount repaid, or the amount released or written off");
+      problem(repaymentId("Repaid", row, part), "Enter the amount repaid, or the amount released or written off");
     }
   }
 }
@@ -1515,6 +1630,18 @@ function repaymentRowProblems(values, problem, today) {
 // --- Checks the model does not run ---------------------------------------------------------
 
 const AMOUNT_PROBLEM = "Enter an amount in pounds, like £600 or £1,200";
+
+/** The second column of a per-period field: its own id and a label that names the return. */
+export function secondPeriodField(field) {
+  return { ...field, id: periodFieldId(field.id, 2), label: `${field.label} (return 2)` };
+}
+
+// The typed amounts to check: every field, and for a period over 12 months the donations paid and the second column.
+function typedAmountFields(values) {
+  if (!longPeriodOf(values)) return CT600_FORM_FIELDS;
+  const perPeriod = CT600_FORM_FIELDS.filter((field) => PER_PERIOD_FIELD_IDS.includes(field.id));
+  return [...CT600_FORM_FIELDS, DONATIONS_PAID_FIELD, secondPeriodField(DONATIONS_PAID_FIELD), ...perPeriod.map(secondPeriodField)];
+}
 
 function amountProblems(values, problem) {
   const micro = regimeOf(values) === "micro";
@@ -1526,7 +1653,7 @@ function amountProblems(values, problem) {
     if (id.startsWith("note") && values.includeFixedAssetNote !== true) continue;
     if (parsePounds(values[id], true) === null) problem(id, AMOUNT_PROBLEM);
   }
-  for (const { id, label, type } of CT600_FORM_FIELDS) {
+  for (const { id, label, type } of typedAmountFields(values)) {
     if ((type !== WHOLE && type !== "pounds-and-pence") || isBlank(values[id])) continue;
     if (parsePounds(values[id], type === WHOLE) === null) {
       problem(id, `${label}: ${type === WHOLE ? AMOUNT_PROBLEM : "Enter an amount in pounds and pence, like £600 or £193.54"}`);
@@ -1654,6 +1781,10 @@ export function formProblems(values, { today = new Date().toISOString().slice(0,
     fixedAssetNoteProblems(values, problem);
   }
   if (values.loansMade === "yes") loanRowProblems(values, problem, today);
+  if (longPeriodOf(values)) {
+    if (values.loansMadeAp2 === "yes") loanRowProblems(values, problem, today, 2);
+    if (values[FIRST_PERIOD_START_FIELD] === "no") problem(FIRST_PERIOD_START_FIELD, FIRST_PERIOD_START_REFUSAL, true);
+  }
   answerProblems(values, problem);
   return problems;
 }
@@ -1935,6 +2066,8 @@ export function changeTargetFor(fieldId, values) {
   return fieldId === TURNOVER_FIELD && regimeOf(values) === "micro" ? MICRO_TURNOVER_FIELD : fieldId;
 }
 
+const SECOND_COLUMN_SOURCES = new Set([...PER_PERIOD_FIELD_IDS, DONATIONS_PAID_FIELD.id, ...PER_PERIOD_LOAN_QUESTION_IDS]);
+
 export const BOX_SOURCE_FIELD = {
   3: "utr",
   4: "companyType",
@@ -2006,10 +2139,38 @@ export const COMPUTATION_SOURCE_FIELD = {
   amortisation: "amortisation",
   entertaining: "entertaining",
   donations: "donations",
+  adjustedProfitBeforeAccountingPeriodAdjustments: TURNOVER_FIELD,
+  timeApportionment: "period",
   adjustedProfitBeforeCapitalAllowances: TURNOVER_FIELD,
   totalCapitalAllowances: "annualInvestmentAllowance",
   adjustedProfit: TURNOVER_FIELD,
 };
+
+function partTarget(field, values, part) {
+  return longPeriodOf(values) && part === 2 && SECOND_COLUMN_SOURCES.has(field) ? periodFieldId(field, 2) : field;
+}
+
+/**
+ * The field a Change link for a box opens in return `part`. A period of account over 12 months
+ * claims box 305 from the donations paid, and return 2's per-period boxes come from the second column.
+ * @param {string|number} box
+ * @param {Record<string, string|boolean>} values
+ * @param {1|2} [part]
+ */
+export function boxChangeTarget(box, values, part = 1) {
+  const source = BOX_SOURCE_FIELD[box] ?? LETTERED_BOX_SOURCE_FIELD[box];
+  if (!source) return undefined;
+  const field = longPeriodOf(values) && Number(box) === 305 ? DONATIONS_PAID_FIELD.id : source;
+  return changeTargetFor(partTarget(field, values, part), values);
+}
+
+/** The field a Change link for a computation line opens in return `part`. */
+export function lineChangeTarget(line, values, part = 1) {
+  return changeTargetFor(partTarget(COMPUTATION_SOURCE_FIELD[line], values, part), values);
+}
+
+// Boxes whose number carries a letter, which a numeric key cannot hold.
+export const LETTERED_BOX_SOURCE_FIELD = { "85A": "period" };
 
 const NOT_GIVEN = "Not given";
 
@@ -2077,50 +2238,52 @@ function accountsTextRows(values) {
   });
 }
 
-function loanRows(values) {
-  if (values.loansMade !== "yes") return [];
+function loanRows(values, part = 1, titlePrefix = "") {
+  if (values[periodFieldId("loansMade", part)] !== "yes") return [];
   const rows = [];
-  for (const row of loanRowNumbers(values)) {
-    const name = String(values[loanId("Name", row)] ?? "").trim() || NOT_GIVEN;
-    rows.push({ id: loanId("Name", row), label: `Loan ${row}: participator`, value: name });
+  for (const row of loanRowNumbers(values, part)) {
+    const name = String(values[loanId("Name", row, part)] ?? "").trim() || NOT_GIVEN;
+    rows.push({ id: loanId("Name", row, part), label: `${titlePrefix}Loan ${row}: participator`, value: name });
     rows.push({
-      id: loanId("Amount", row),
-      label: `Loan ${row}: amount still owed`,
-      value: answerText({ id: loanId("Amount", row), type: WHOLE }, values),
+      id: loanId("Amount", row, part),
+      label: `${titlePrefix}Loan ${row}: amount still owed`,
+      value: answerText({ id: loanId("Amount", row, part), type: WHOLE }, values),
     });
-    if (!isBlank(values[loanId("Lent", row)])) {
+    if (!isBlank(values[loanId("Lent", row, part)])) {
       rows.push({
-        id: loanId("Lent", row),
-        label: `Loan ${row}: lent on or after the rate change`,
-        value: answerText({ id: loanId("Lent", row), type: WHOLE }, values),
+        id: loanId("Lent", row, part),
+        label: `${titlePrefix}Loan ${row}: lent on or after the rate change`,
+        value: answerText({ id: loanId("Lent", row, part), type: WHOLE }, values),
       });
     }
-    if (!isBlank(values[loanId("Rate", row)])) {
+    if (!isBlank(values[loanId("Rate", row, part)])) {
       rows.push({
-        id: loanId("Rate", row),
-        label: `Loan ${row}: section 455 rate you entered`,
-        value: `${String(values[loanId("Rate", row)]).trim().replace(/%$/, "")}%`,
+        id: loanId("Rate", row, part),
+        label: `${titlePrefix}Loan ${row}: section 455 rate you entered`,
+        value: `${String(values[loanId("Rate", row, part)])
+          .trim()
+          .replace(/%$/, "")}%`,
       });
     }
   }
-  if (values.repaidSince === "yes") {
-    for (const row of repaymentRowNumbers(values)) {
-      const name = String(values[repaymentId("Name", row)] ?? "").trim() || NOT_GIVEN;
-      rows.push({ id: repaymentId("Name", row), label: `Repayment ${row}: participator`, value: name });
+  if (values[periodFieldId("repaidSince", part)] === "yes") {
+    for (const row of repaymentRowNumbers(values, part)) {
+      const name = String(values[repaymentId("Name", row, part)] ?? "").trim() || NOT_GIVEN;
+      rows.push({ id: repaymentId("Name", row, part), label: `${titlePrefix}Repayment ${row}: participator`, value: name });
       rows.push({
-        id: repaymentId("Date", row),
-        label: `Repayment ${row}: date`,
-        value: String(values[repaymentId("Date", row)] || NOT_GIVEN),
+        id: repaymentId("Date", row, part),
+        label: `${titlePrefix}Repayment ${row}: date`,
+        value: String(values[repaymentId("Date", row, part)] || NOT_GIVEN),
       });
       rows.push({
-        id: repaymentId("Repaid", row),
-        label: `Repayment ${row}: amount repaid`,
-        value: answerText({ id: repaymentId("Repaid", row), type: WHOLE }, values),
+        id: repaymentId("Repaid", row, part),
+        label: `${titlePrefix}Repayment ${row}: amount repaid`,
+        value: answerText({ id: repaymentId("Repaid", row, part), type: WHOLE }, values),
       });
       rows.push({
-        id: repaymentId("Released", row),
-        label: `Repayment ${row}: amount released or written off`,
-        value: answerText({ id: repaymentId("Released", row), type: WHOLE }, values),
+        id: repaymentId("Released", row, part),
+        label: `${titlePrefix}Repayment ${row}: amount released or written off`,
+        value: answerText({ id: repaymentId("Released", row, part), type: WHOLE }, values),
       });
     }
   }
@@ -2169,14 +2332,37 @@ function accountsRows(values) {
  * @returns {Array<{id: string, title: string, rows: Array<{id: string, label: string, value: string}>}>}
  */
 export function reviewAnswers(values) {
+  const long = Boolean(longPeriodOf(values));
   return SECTIONS.map(({ id, title }) => {
-    const rows = CT600_FORM_FIELDS.filter((field) => field.section === id).map((field) => ({
-      id: field.id,
-      label: field.label,
-      value: answerText(field, values),
-    }));
+    const rows = CT600_FORM_FIELDS.filter((field) => field.section === id).flatMap((field) => {
+      if (!long || !isPerPeriodField(field.id)) {
+        const label = long && field.id === "donations" ? LONG_PERIOD_DONATIONS_LABEL : field.label;
+        return [{ id: field.id, label, value: answerText(field, values) }];
+      }
+      const second = secondPeriodField(field);
+      return [
+        { id: field.id, label: `${field.label} (return 1)`, value: answerText(field, values) },
+        { id: second.id, label: second.label, value: answerText(second, values) },
+      ];
+    });
+    if (long && id === "period") {
+      rows.push({
+        id: FIRST_PERIOD_START_FIELD,
+        label: `Does the first accounting period start on ${values.periodStart}?`,
+        value: values[FIRST_PERIOD_START_FIELD] === "no" ? "No" : "Yes",
+      });
+    }
+    if (long && id === "reliefs") {
+      for (const field of [DONATIONS_PAID_FIELD, secondPeriodField(DONATIONS_PAID_FIELD)]) {
+        const part = field.id === DONATIONS_PAID_FIELD.id ? 1 : 2;
+        rows.push({ id: field.id, label: part === 1 ? `${field.label} (return 1)` : field.label, value: answerText(field, values) });
+      }
+    }
     if (id === "accounts") rows.push(...accountsRows(values));
-    if (id === "loans") rows.push(...loanRows(values));
+    if (id === "loans") {
+      if (long) rows.push(...loanRows(values, 1, "Return 1, "), ...loanRows(values, 2, "Return 2, "));
+      else rows.push(...loanRows(values));
+    }
     if (id === "declaration") {
       rows.push(
         ...statementFieldsFor(values).map((statement) => ({
