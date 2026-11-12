@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 47 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 46 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 40 of 47 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 36 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 39 of 46 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 35 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -262,7 +262,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | B1 HMRC software finder for VAT | listed, with four VAT features and the free version | 1 | 4 | 5 | |
 | B2 HMRC software finder for MTD Income Tax | not listed; owned by `PLAN_ITSA_APPROVAL.md` | 1 | 4 | 5 | none |
 | B3 HMRC Corporation Tax software suppliers list | not listed; owned by `PLAN_HMRC_CT_APPROVAL.md` | 1 | 4 | 5 | none |
-| B4 GOV.UK finder for accounts filing software | not listed | 1 | 3 | 5 | OS22 |
+| B4 GOV.UK finder for accounts filing software | not listed | 1 | 3 | 5 | OOS22 |
 
 - **B1.** Submit is listed. The entry lacks the "free version" flag, and a feature update was requested on 2026-10-03.
 - **B2.** No entry. The listing follows HMRC's recognition of the Income Tax filing.
@@ -431,7 +431,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | ---: | ---: | ---: | --- |
 | Y1 Crawler access for AI search and user fetches | allowed and working; not stated | 1 | 1 | 4 | OS3, OS12 |
 | Y2 Facts in the page text that assistants quote | partial (the price and the filings are in JavaScript-rendered blocks) | 3 | 1 | 5 | OS7, OS9 |
-| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OS22, OS24, OS26 |
+| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OOS22, OS24, OS26 |
 
 - **Y1.** Each assistant documents its agents: OAI-SearchBot and ChatGPT-User, Claude-SearchBot and Claude-User, PerplexityBot and Perplexity-User, Googlebot, Bingbot. No robots.txt names them. A request with each agent's string returned 200 from three sites on 2026-11-12, and the web ACL's limit is 2,000 requests in five minutes per IP.
 - **Y2.** Price, what it files, who it is for and the status of each filing, as dated sentences in the HTML. Google states that AI Overviews and AI Mode need no special file or markup.
@@ -780,7 +780,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | F1 VAT due-date and penalty-points calculator | 5 | 2 | 1 | OS31 |
 | A3 Static landing page per filing on Submit | 5 | 3 | 1 | OS4, OS9 |
 | A16 Refresh articles that rank on pages two to five | 5 | 2 | 2 | OS45 |
-| B4 GOV.UK finder for accounts filing software | 5 | 1 | 3 | OS22 |
+| B4 GOV.UK finder for accounts filing software | 5 | 1 | 3 | OOS22 |
 | F2 Company deadline lookup with no sign-in | 5 | 3 | 1 | OS32 |
 | F4 Nine-box checker with no sign-in | 5 | 3 | 1 | none |
 | Q1 Answers in forums, posted by a person | 5 | 1 | 3 | OS41 |
@@ -865,8 +865,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS21 | A listing register, a copy pack and a monthly check | D1, D3, D5, L3, E2 | One file that holds every product fact a directory asks for and every place we are listed; a page of ready-to-paste text per directory; a check that our recorded price text matches the catalogue. The microsite stops being indexable. | Listings recorded as live; the monthly check passes; the microsite answers with `noindex`. | machine-only; on the board |
-| OS22 | Draft the email that asks Companies House how a supplier joins the accounts software finder | B4, Y3 | The draft, ready for the operator to send. | The draft is committed in the private repository. | machine-only; on the board |
-| OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity page lists 117 products. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
+| OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OS25 | Invite a review after each accepted filing | F8, D1, D2 | A steady supply of reviews on the two sites where the leading competitor has about 2,051 and 220. | Reviews per month on each profile. | machine-only; on the board |
 | OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | human-driven |
@@ -895,7 +894,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 2 | Result lines for pages that rank | 80 to 170 | spreadsheets | OS44 |
 | 3 | Submit pages that answer filing queries | 40 to 200 | Submit | OS7, OS9, OS10, OS11, OS40 |
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
-| 5 | GOV.UK software finders | 15 to 90 | Submit | OS22, OOS22 |
+| 5 | GOV.UK software finders | 15 to 90 | Submit | OOS22 |
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OS43a, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
@@ -906,7 +905,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 2. **Result lines for pages that rank.** The spreadsheets home page shows 9,760 times a month on page one and is clicked 1.2% of the time. A rate of 2% to 3% gives the range. Six files, and a result within about six weeks.
 3. **Submit pages that answer filing queries.** Submit has no such page and 3 clicks a month on its home page. Our own MTD bridging article draws 236 impressions a month from position 31. The range is wide because competitors hold page one. These visits have the highest intent to file.
 4. **Free tools.** Three competitors rank with a company deadline lookup, and 1,077,000 people join MTD Income Tax in April 2027. GOV.UK runs its own tools for two of these questions, which caps the share.
-5. **GOV.UK software finders.** The accounts finder's micro-entity page lists 117 products and we are absent. The HMRC VAT finder shows Submit with the free version, so its free filter includes us. The outcome is Companies House's to give.
+5. **GOV.UK software finders.** The accounts finder's micro-entity result page holds 117 entries and we are absent. The HMRC VAT finder shows Submit with the free version, so its free filter includes us. The outcome is Companies House's to give.
 6. **Assistant connector.** 19 fetches in 15 days came from the address ranges OpenAI and Anthropic publish, about one a day, and who asked is not known. The steady figure starts after the listings are submitted (OOS17, OOS18).
 7. **Bing and IndexNow.** Bing and the engines that use its index add roughly 5% to 10% on top of Google clicks, so this grows with groups 1 to 4.
 8. **Listing register and reviews.** Referral clicks from review profiles. OS24 is the sitting that creates the profiles; no visit arrives before it.
@@ -949,7 +948,6 @@ flowchart LR
   OS42 --> OOS18
   OS21 --> OS24
   OS21 --> OS25
-  OS22 --> OOS22
   OS9 --> OS26
   OS8 --> OS29
   OS42 --> OS30
@@ -983,7 +981,7 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 #### Wave 3: Assistants and agents
 
-- [ ] **OOS16. Operator's go: publish the hosted connector to the MCP Registry.** When OS14 is on prod, the operator says go and a session dispatches the publish of the hosted connector's entry (`gh workflow run <workflow> -f apply=true` in the submit repository). Smithery and PulseMCP read the official registry, so their pages follow with no further step. **Waits on**: OS16b, OS14. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OOS16. Operator's go: publish the hosted connector to the MCP Registry.** When OS14 is on prod, the operator says go and a session dispatches the publish of the hosted connector's entry (`publish-mcp-registry.yml` in the submit repository). Smithery and PulseMCP read the official registry, so their pages follow with no further step. Version 0.1.2 of the npm package is published without `mcpName`, and the registry compares the two, so raise the version in `mcp/package.json` and `mcp/server.json` together, push the tag `diya-submit-mcp-v<version>` so that `publish-mcp.yml` publishes it, and only then dispatch `gh workflow run publish-mcp-registry.yml --ref main -f apply=true`. **Waits on**: OS16b, OS14. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **OOS20. Prove the connector in each assistant and write the steps that worked.** With the operator's accounts, a session adds `https://submit.diyaccounting.co.uk/mcp` as a custom connector in ChatGPT, Gemini, Perplexity and Copilot Studio in Chrome, signs in, and runs one tool. Each product that completes gets a section on `mcp.html` with the steps that worked; a product that fails gets no section and a line in the PR with the error. Whether ChatGPT's Plus plan allows a custom connector's tools is not confirmed; this run settles it. **Waits on**: OS14, OS20. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 1 file.
 
@@ -1001,7 +999,7 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 ## 9. Not confirmed
 
-- How a supplier joins the GOV.UK accounts software finder: the page states no route (OS22 asks).
+- How a supplier joins the GOV.UK accounts software finder: the page states no route (OOS22 asks).
 - Whether Cognito threat protection challenges the demo sign-in that the MCP Lambda makes (OS43a settles it).
 - Whether MCP SDK 1.32.2 supports `skill://` and `ui://` resources (OS19 and OS46 check first).
 - Homebrew core's star thresholds: the current documentation page does not state them.
