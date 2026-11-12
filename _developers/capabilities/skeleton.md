@@ -462,6 +462,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-211 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
+<!-- capability OPS-212 -->
 <!-- capability OPS-48 -->
 <!-- capability OPS-49 -->
 <!-- capability OPS-50 -->

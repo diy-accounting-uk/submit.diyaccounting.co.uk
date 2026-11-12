@@ -556,3 +556,56 @@ header {
 .affiliate-apply {
   font-weight: 700;
 }
+
+.listing-state {
+  margin-left: auto;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--mk-border);
+  border-radius: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.listing-state[data-state="live"] {
+  color: var(--mk-ok);
+  border-color: var(--mk-ok);
+}
+.listing-fields {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+}
+.listing-fields dt {
+  font-weight: 700;
+}
+.listing-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.listing-product h5 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+}
+.listing-field button {
+  min-height: 2.75rem;
+  padding: 0.25rem 0.9rem;
+  border: 2px solid var(--mk-brand);
+  border-radius: 4px;
+  background: var(--mk-surface);
+  color: var(--mk-brand);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+:where(.listing-fields) a {
+  color: var(--mk-brand);
+}
+@media (max-width: 40rem) {
+  .listing-fields {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+  .listing-fields dd {
+    margin-bottom: 0.6rem;
+  }
+}

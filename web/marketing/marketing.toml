@@ -955,3 +955,644 @@ DIY Accounting™ is a family company. Our founder, Terry Cartwright, was a Char
 Terry died in December 2009, and his children have run the company since. We make DIY Accounting Spreadsheets™, DIYA-GL™ for books in the browser, and DIY Accounting Submit™ for Making Tax Digital.
 
 {link}"""
+
+# ---------------------------------------------------------------------------------------------
+# Listings
+# ---------------------------------------------------------------------------------------------
+# The register of the places that list our products, and the copy pack each form is filled from.
+# scripts/listings-register.mjs reads both; scripts/listings-check.mjs checks them against
+# web/public/submit.catalogue.toml, and the Listings section of the page prints them.
+#
+# [[listing]] fields: id; place; group (a [[listingGroup]] id); products (ids of [[listingProduct]];
+# empty means the company link); url (our page at the place, empty until it exists); state (planned,
+# submitted, live); date (YYYY-MM-DD, the day it was submitted or last read); terms (what the place
+# asks, read when its form is opened); priceText (the price text we gave there, empty until given);
+# utmSource (the utm_source of the link we gave).
+#
+# [[listingProduct]] description160 and description500 take {price}, the price text of the
+# product's catalogue bundle (priceBundle). A product with no priceBundle has no {price}.
+
+[[listingGroup]]
+id = "review"
+label = "Review, comparison and editorial sites"
+
+[[listingGroup]]
+id = "launch"
+label = "Launch and company-profile directories"
+
+[[listingGroup]]
+id = "citation"
+label = "Local and citation directories"
+
+[[listingGroup]]
+id = "professional"
+label = "Professional bodies and trade directories"
+
+[[listingProduct]]
+id = "submit"
+name = "DIY Accounting Submit"
+link = "https://submit.diyaccounting.co.uk/"
+category = "Tax and VAT filing software"
+priceBundle = "resident-vat"
+logo = "images/submit-all/square.png"
+screenshot = "brand/shots/submit/vat-form-light.png"
+oneLine = "Send your VAT return to HMRC under Making Tax Digital from the figures you already keep."
+description160 = "DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital from the figures you already keep. Free day pass, then {price}."
+description500 = """DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital. Type the nine boxes, or drop a DIY Accounting spreadsheet or a DIYA-GL book on the page to fill them in. HMRC's receipt comes back with its Form Bundle Number, and we keep it with your account. You can see which VAT periods are due and look up any return you have sent. It is listed on HMRC's software finder for Making Tax Digital VAT. Start with a free day pass, then {price}."""
+
+[[listingProduct]]
+id = "spreadsheets"
+name = "DIY Accounting Spreadsheets"
+link = "https://spreadsheets.diyaccounting.co.uk/"
+category = "Bookkeeping spreadsheets"
+logo = "images/spreadsheets-all/square.png"
+screenshot = "brand/shots/spreadsheets/product-card-light.png"
+oneLine = "Free Excel bookkeeping and accounts workbooks for UK small businesses."
+description160 = "Excel workbooks for UK small business bookkeeping and accounts, for sole traders, the self-employed, limited companies and taxi drivers. Free to download."
+description500 = """DIY Accounting Spreadsheets are Excel workbooks for UK small business bookkeeping and accounts, designed by a Chartered Management Accountant. There is a package for sole traders, the self-employed, limited companies and taxi drivers, and one for payslips. Each covers sales, purchases, profit and loss and the tax figures for that kind of business. They work in Microsoft Excel and OpenOffice Calc, come with step-by-step guides, and are free to download."""
+
+[[listingProduct]]
+id = "diya-gl"
+name = "DIYA-GL"
+link = "https://diya-gl.co.uk/"
+category = "Bookkeeping software"
+logo = "images/diya-gl-all/square.png"
+screenshot = "brand/shots/diya-gl/book-light.png"
+oneLine = "Open your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser."
+description160 = "DIYA-GL opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser."
+description500 = """DIYA-GL opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser. It comes from the family company behind DIY Accounting Spreadsheets and DIY Accounting Submit."""
+
+[[listingProduct]]
+id = "company"
+name = "DIY Accounting Limited"
+link = "https://diyaccounting.co.uk/"
+category = "Accounting software and spreadsheets"
+logo = "images/limited-all/square.png"
+screenshot = "brand/shots/limited/summary-light.png"
+oneLine = "The family company behind DIY Accounting Spreadsheets, DIYA-GL and DIY Accounting Submit."
+description160 = "DIY Accounting Limited is the family company behind DIY Accounting Spreadsheets, DIYA-GL and DIY Accounting Submit."
+description500 = """DIY Accounting Limited is a family company. Our founder, Terry Cartwright, started designing our accounting spreadsheets in 2006. We make DIY Accounting Spreadsheets, free Excel bookkeeping and accounts workbooks for UK small businesses; DIYA-GL, which opens those books free in your browser; and DIY Accounting Submit, which sends your VAT return to HMRC under Making Tax Digital."""
+
+[[listing]]
+id = "capterra"
+place = "Capterra, GetApp and Software Advice"
+group = "review"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "A real product and a business email. Free tier exists. One profile serves all three sites."
+priceText = ""
+utmSource = "capterra"
+
+[[listing]]
+id = "trustpilot"
+place = "Trustpilot"
+group = "review"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Domain verification. Reviews come from customers."
+priceText = ""
+utmSource = "trustpilot"
+
+[[listing]]
+id = "alternativeto"
+place = "AlternativeTo"
+group = "review"
+products = ["submit", "spreadsheets", "diya-gl"]
+url = ""
+state = "planned"
+date = ""
+terms = "Manual approval; the queue runs to months."
+priceText = ""
+utmSource = "alternativeto"
+
+[[listing]]
+id = "saashub"
+place = "SaaSHub"
+group = "review"
+products = ["submit", "spreadsheets", "diya-gl"]
+url = ""
+state = "planned"
+date = ""
+terms = "Manual approval."
+priceText = ""
+utmSource = "saashub"
+
+[[listing]]
+id = "g2"
+place = "G2"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Self-serve profile; rank needs reviews."
+priceText = ""
+utmSource = "g2"
+
+[[listing]]
+id = "trustradius"
+place = "TrustRadius"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Self-serve profile; rank needs reviews."
+priceText = ""
+utmSource = "trustradius"
+
+[[listing]]
+id = "softwarereview"
+place = "SoftwareReview"
+group = "review"
+products = ["spreadsheets"]
+url = ""
+state = "live"
+date = ""
+terms = "Unclaimed page for the spreadsheets with one rating. Claiming needs a domain email."
+priceText = ""
+utmSource = "softwarereview"
+
+[[listing]]
+id = "featuredcustomers"
+place = "FeaturedCustomers"
+group = "review"
+products = []
+url = ""
+state = "live"
+date = ""
+terms = "Vendor page exists. Claiming needs a domain email."
+priceText = ""
+utmSource = "featuredcustomers"
+
+[[listing]]
+id = "crozdesk"
+place = "Crozdesk"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "crozdesk"
+
+[[listing]]
+id = "saasworthy"
+place = "SaaSworthy"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "saasworthy"
+
+[[listing]]
+id = "softwaresuggest"
+place = "SoftwareSuggest"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "softwaresuggest"
+
+[[listing]]
+id = "goodfirms"
+place = "GoodFirms"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "goodfirms"
+
+[[listing]]
+id = "serchen"
+place = "Serchen"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "serchen"
+
+[[listing]]
+id = "cuspera"
+place = "Cuspera"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "cuspera"
+
+[[listing]]
+id = "tekpon"
+place = "Tekpon"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "tekpon"
+
+[[listing]]
+id = "softwareworld"
+place = "SoftwareWorld"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "softwareworld"
+
+[[listing]]
+id = "peerpush"
+place = "PeerPush"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "peerpush"
+
+[[listing]]
+id = "sourceforge"
+place = "SourceForge and Slashdot"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "sourceforge"
+
+[[listing]]
+id = "financesonline"
+place = "FinancesOnline"
+group = "review"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+priceText = ""
+utmSource = "financesonline"
+
+[[listing]]
+id = "producthunt"
+place = "Product Hunt"
+group = "launch"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Open to post; the vote decides reach."
+priceText = ""
+utmSource = "producthunt"
+
+[[listing]]
+id = "showhn"
+place = "Show HN"
+group = "launch"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Open to post; the vote decides reach."
+priceText = ""
+utmSource = "showhn"
+
+[[listing]]
+id = "betalist"
+place = "BetaList"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "betalist"
+
+[[listing]]
+id = "uneed"
+place = "Uneed"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "uneed"
+
+[[listing]]
+id = "peerlist"
+place = "Peerlist"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "peerlist"
+
+[[listing]]
+id = "microlaunch"
+place = "Microlaunch"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "microlaunch"
+
+[[listing]]
+id = "tinylaunch"
+place = "TinyLaunch"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "tinylaunch"
+
+[[listing]]
+id = "fazier"
+place = "Fazier"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "fazier"
+
+[[listing]]
+id = "devhunt"
+place = "DevHunt"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "devhunt"
+
+[[listing]]
+id = "indiehackers"
+place = "Indie Hackers"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Open or a free queue."
+priceText = ""
+utmSource = "indiehackers"
+
+[[listing]]
+id = "theresanaiforthat"
+place = "There's An AI For That"
+group = "launch"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Free tier with a slow queue."
+priceText = ""
+utmSource = "theresanaiforthat"
+
+[[listing]]
+id = "futurepedia"
+place = "Futurepedia"
+group = "launch"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Free tier with a slow queue."
+priceText = ""
+utmSource = "futurepedia"
+
+[[listing]]
+id = "toolify"
+place = "Toolify"
+group = "launch"
+products = ["submit"]
+url = ""
+state = "planned"
+date = ""
+terms = "Free tier with a slow queue."
+priceText = ""
+utmSource = "toolify"
+
+[[listing]]
+id = "linkedin"
+place = "LinkedIn company page"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "A person creates the page."
+priceText = ""
+utmSource = "linkedin"
+
+[[listing]]
+id = "crunchbase"
+place = "Crunchbase"
+group = "launch"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "A person creates the page."
+priceText = ""
+utmSource = "crunchbase"
+
+[[listing]]
+id = "yell"
+place = "Yell"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "yell"
+
+[[listing]]
+id = "freeindex"
+place = "FreeIndex"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "freeindex"
+
+[[listing]]
+id = "cylex"
+place = "Cylex"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "cylex"
+
+[[listing]]
+id = "brownbook"
+place = "Brownbook"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "brownbook"
+
+[[listing]]
+id = "hotfrog"
+place = "Hotfrog"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "hotfrog"
+
+[[listing]]
+id = "thomsonlocal"
+place = "Thomson Local"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "thomsonlocal"
+
+[[listing]]
+id = "scoot"
+place = "Scoot"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "scoot"
+
+[[listing]]
+id = "centralindex"
+place = "Central Index"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "centralindex"
+
+[[listing]]
+id = "yelp"
+place = "Yelp"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "yelp"
+
+[[listing]]
+id = "192com"
+place = "192.com"
+group = "citation"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Free basic listings."
+priceText = ""
+utmSource = "192com"
+
+[[listing]]
+id = "accountingweb"
+place = "AccountingWEB"
+group = "professional"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Reviewed by hand; cost not confirmed."
+priceText = ""
+utmSource = "accountingweb"
+
+[[listing]]
+id = "accountingfirms"
+place = "accountingfirms.co.uk"
+group = "professional"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Reviewed by hand; cost not confirmed. The form is List your software."
+priceText = ""
+utmSource = "accountingfirms"
+
+[[listing]]
+id = "insightfulaccountant"
+place = "Insightful Accountant"
+group = "professional"
+products = []
+url = ""
+state = "planned"
+date = ""
+terms = "Reviewed by hand; cost not confirmed."
+priceText = ""
+utmSource = "insightfulaccountant"
