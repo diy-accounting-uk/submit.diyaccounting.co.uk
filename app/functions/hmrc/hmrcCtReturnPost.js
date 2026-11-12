@@ -37,7 +37,7 @@ import {
   CT600_CLASS,
   CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
-import { findHeldCtSubmission } from "../../services/hmrcCtSubmissionStatus.js";
+import { findHeldCtSubmission, CT_RETURN_ACTIVITY_ID } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -50,6 +50,7 @@ import {
   longPeriodRecord,
   longPeriodFields,
 } from "../../services/jointFiling.js";
+import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
 import { listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
@@ -158,6 +159,25 @@ export async function ingestHandler(event) {
       message: `The figures changed after you reviewed them (box ${differingBoxes.join(", box ")}). Review the return again before you file it.`,
       error: { differingBoxes },
     });
+  }
+
+  // Return 2 of a long period of account costs no token: return 1 took the one token for the pair.
+  if (longPeriod?.part !== 2) {
+    const tokenRefusal = await refuseWhenOutOfTokens({
+      request,
+      headers: responseHeaders,
+      userId: userSub,
+      activityId: CT_RETURN_ACTIVITY_ID,
+    });
+    if (tokenRefusal) {
+      await recordSubmissionFailure({
+        failure: "tokens-exhausted",
+        summary: "HMRC Company Tax Return blocked: submission allowance used up",
+        userSub,
+        clientId,
+      });
+      return tokenRefusal;
+    }
   }
 
   // Forwarded so the simulator's Gov-Test-Scenario handling can be driven from the page's

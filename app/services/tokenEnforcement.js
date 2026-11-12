@@ -15,7 +15,8 @@
 
 import { createLogger } from "../lib/logger.js";
 import { consumeToken, getUserBundles, recordTokenEvent, BUNDLE_MISSING } from "../data/dynamoDbBundleRepository.js";
-import { isUnlimitedTokenGrant } from "./productCatalog.js";
+import { isUnlimitedTokenGrant, loadCatalogFromRoot } from "./productCatalog.js";
+import { http403ForbiddenResponse, http500ServerErrorResponse } from "../lib/httpResponseHelper.js";
 
 const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
 
@@ -180,5 +181,35 @@ export async function chargeTokenOnSuccess(userId, activityId) {
   } catch (error) {
     logger.error({ message: "Token charge failed after HMRC success", userId, activityId, error: error.message });
     return { consumed: false, reason: "charge_error" };
+  }
+}
+
+/**
+ * The pre-flight gate of a filing that costs a token: answer the 403 (or the 500 when the check
+ * itself fails) that stops the request before anything is sent, or undefined when the caller may
+ * go on. Nothing is decremented here; the charge comes from chargeTokenOnSuccess on acceptance.
+ * The status, error reason and message match the VAT submission route.
+ *
+ * @param {Object} params
+ * @param {Object} params.request - The parsed request, for the response
+ * @param {Object} params.headers - Response headers
+ * @param {string} params.userId - User sub that pays for the filing
+ * @param {string} params.activityId - Activity ID from the catalogue
+ * @returns {Promise<Object|undefined>} The refusal response, or undefined when a token is available
+ */
+export async function refuseWhenOutOfTokens({ request, headers, userId, activityId }) {
+  try {
+    const tokenCheck = await hasTokensForActivity(userId, activityId, loadCatalogFromRoot());
+    if (tokenCheck.available) return undefined;
+    logger.info({ message: "Token enforcement blocked filing", activityId, reason: tokenCheck.reason });
+    return http403ForbiddenResponse({
+      request,
+      headers,
+      message: "Token limit reached",
+      error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+    });
+  } catch (error) {
+    logger.error({ message: "Token enforcement error", activityId, error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({ request, headers: { ...headers }, message: "Token enforcement failed" });
   }
 }

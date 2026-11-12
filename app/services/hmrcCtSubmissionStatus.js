@@ -37,7 +37,7 @@ import { clientAuthorisationMessage } from "./ctClientScope.js";
 const logger = createLogger({ source: "app/services/hmrcCtSubmissionStatus.js" });
 
 const DEFAULT_POLL_INTERVAL_SECONDS = 10;
-const CT_RETURN_ACTIVITY_ID = "file-company-tax-return";
+export const CT_RETURN_ACTIVITY_ID = "file-company-tax-return";
 
 function secondsUntil(isoTime, now) {
   return Math.max(Math.ceil((Date.parse(isoTime) - now) / 1000), 0);
@@ -341,8 +341,8 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     userSub,
     clientId: pending.clientId,
   });
-  // A return sent as half of a pair costs its own token; the pair costs two. The two returns of a
-  // long period of account cost one token between them: part 1 takes it and part 2 takes none.
-  if (jointFiling.jointFilingId && pending.longPeriod?.part !== 2) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);
+  // Each accepted return costs its own token, alone or as half of a pair; the pair costs two. The two
+  // returns of a long period of account cost one token between them: part 1 takes it and part 2 takes none.
+  if (pending.longPeriod?.part !== 2) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);
   return { data };
 }

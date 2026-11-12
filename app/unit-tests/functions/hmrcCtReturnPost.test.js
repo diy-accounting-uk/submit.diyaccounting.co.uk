@@ -163,7 +163,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
       }
       return {};
     });
@@ -518,6 +518,36 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
   });
 
+  describe("the token balance", () => {
+    function holdBundle(bundle) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ subscriptionStatus: "active", ...bundle }], Count: 1 };
+        return {};
+      });
+    }
+
+    test("refuses with 403 tokens_exhausted and sends nothing when no token is left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 100 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ message: "Token limit reached", reason: "tokens_exhausted", tokensRemaining: 0 });
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("sends the return when one token is left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 99 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("sends the return for an unlimited grant whatever it has consumed", async () => {
+      holdBundle({ bundleId: "resident-tax-agent", tokensGranted: "unlimited", tokensConsumed: 5000 });
+      const response = await hmrcCtReturnPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+  });
+
   describe("one of the two returns of a long period of account", () => {
     const FILING_ID = "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10";
     let receiptItems;
@@ -562,7 +592,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
             const items = receiptItems.filter((item) => item.hashedSub === cmd.input.ExpressionAttributeValues[":hashedSub"]);
             return { Items: items, Count: items.length };
           }
-          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
         }
         return {};
       });
@@ -596,6 +626,33 @@ describe("hmrcCtReturnPost ingestHandler", () => {
         code: "LONG_PERIOD_FIRST_RETURN_NOT_ACCEPTED",
         filingId: FILING_ID,
       });
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+
+    test("sends part 2 with no token left, because part 1 took the one token of the pair", async () => {
+      receiptItems = [firstReturnReceipt()];
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) {
+          if (cmd.input.TableName === "test-receipts-table") return { Items: receiptItems, Count: receiptItems.length };
+          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 100 }], Count: 1 };
+        }
+        return {};
+      });
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(2) }));
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("refuses part 1 with no token left and sends nothing", async () => {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) {
+          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active", tokensGranted: 100, tokensConsumed: 100 }], Count: 1 };
+        }
+        return {};
+      });
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: longPeriodBody(1) }));
+      expect(response.statusCode).toBe(403);
       expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     });
 
@@ -713,7 +770,8 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     function mockPractice({ bundleId = "resident-tax-agent", client = CLIENT_ROW } = {}) {
       mockSend.mockImplementation(async (cmd) => {
         const lib = await import("@aws-sdk/lib-dynamodb");
-        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId, subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.QueryCommand)
+          return { Items: [{ bundleId, subscriptionStatus: "active", tokensGranted: "unlimited" }], Count: 1 };
         if (cmd instanceof lib.GetCommand && cmd.input?.TableName === CLIENT_TABLE) return { Item: client };
         return {};
       });
