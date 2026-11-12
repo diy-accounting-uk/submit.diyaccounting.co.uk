@@ -42,8 +42,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
-- [ ] **CF2. Commit the fraud prevention header record for October 2026.** `data/compliance/fraud-prevention-headers/2026-10.json` is untracked in the main checkout. The launchd check (`scripts/fraud-header-email-check.js`) wrote it on 2026-11-12 08:00 UTC from HMRC's report of 2026-11-04 10:30: status correct, no advisories, no errors. `.github/workflows/fraud-header-check.yml` runs on 2026-11-15 08:23 UTC and goes red when the month's record is not on `main`. The change is that one file on a `claude/*` branch and a PR; a push that changes only `data/` starts no `deploy.yml` run. Proof: a `fraud-header-check.yml` dispatch on `main` after the merge. **Source**: capability HMRC-26 (`REPORT_CAPABILITIES.md`). **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
 ## Machine-ask
 
 ## Human-driven
