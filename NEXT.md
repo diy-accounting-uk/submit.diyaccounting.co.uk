@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-896dcf2** (PR #807's merge 896dcf29d, deploy run 43156642450, 2026-11-12 05:21 UTC: a long period of account as two returns on the CT600 page, a token charged for each accepted accounts filing or return, the token cost on the accounts and CT600 pages, the receipts list reading every query page, and the joint filing guide frames from the recording).
-**ci**: ci-set1 is `/submit/ci/last-known-good-deployment`; no slot is held; ci-set2 is destroyed.
+**ci**: ci-set1 is `/submit/ci/last-known-good-deployment`; PR #808's deploy of `claude/eagle-guide` (head 243439648) takes a slot; ci-set2 is destroyed.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,7 +40,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-- [ ] **GUIDE1. Guide frames for the token cost line, and a guide journey and video for a long period of account.** Built on the batch `claude/eagle-guide` (243439648, local): the frames of `file-micro-entity-accounts`, `file-small-company-accounts`, `file-company-tax-return-book`, `file-company-tax-return-typed` and `file-company-tax-return-with-accounts` cut again from simulator stills, each keeping its `videoId`, chapters and times; in four of the scene scripts the send step has its own captioned frame on the cost line; and the new journey `file-company-tax-return-long-period` (scene script, 27 frames, the guide entry in the CT600 group, the id in `video-capture.yml`, the publish entry with its `videoId`). Left: the batch's gates, PR and merge. **Source**: the definition of done for anything a person sees (`CLAUDE.md`); PR #807. **Owner**: Claude Code. **Model**: Sonnet. **Size**: the frames and 8 files.
+- [ ] **GUIDE1. Guide frames for the token cost line, and a guide journey and video for a long period of account.** Built on the batch `claude/eagle-guide` (243439648; PR #808): the frames of `file-micro-entity-accounts`, `file-small-company-accounts`, `file-company-tax-return-book`, `file-company-tax-return-typed` and `file-company-tax-return-with-accounts` cut again from simulator stills, each keeping its `videoId`, chapters and times; in four of the scene scripts the send step has its own captioned frame on the cost line; and the new journey `file-company-tax-return-long-period` (scene script, 27 frames, the guide entry in the CT600 group, the id in `video-capture.yml`, the publish entry with its `videoId`). Left: PR #808's checks and merge. **Source**: the definition of done for anything a person sees (`CLAUDE.md`); PR #807. **Owner**: Claude Code. **Model**: Sonnet. **Size**: the frames and 8 files.
 
 ## Machine-only
 
