@@ -27,7 +27,7 @@ export async function serveSubmissionRecordAssets(page) {
 // The helpers and stylesheet of the record a filing page shows after the authority answers.
 export async function serveFilingResultAssets(page) {
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
-  for (const library of ["submission-record.js", "filing-record.js", "filing-result-record.js", "ct600-fields.js"]) {
+  for (const library of ["submission-record.js", "filing-record.js", "filing-result-record.js", "ct600-fields.js", "long-period.js"]) {
     await serveFile(page, `**/lib/${library}`, `lib/${library}`, "application/javascript");
   }
 }
