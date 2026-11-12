@@ -31,6 +31,7 @@ export async function serveFilingResultRecord(page) {
     "filing-result-record",
     "filing-record",
     "submission-record",
+    "review-links",
     "ct600-fields",
     "long-period",
     "companies-house-lane",
