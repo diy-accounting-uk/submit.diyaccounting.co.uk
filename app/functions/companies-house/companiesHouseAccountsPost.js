@@ -485,7 +485,15 @@ export async function ingestHandler(event) {
   const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
 
   const chargeActivityId = accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts";
-  const tokenRefusal = await refuseWhenOutOfTokens({ request, headers: responseHeaders, userId: userSub, activityId: chargeActivityId });
+  // A joint filing sends the accounts and then the return, so the whole filing must be paid for
+  // before Companies House receives anything.
+  const tokenRefusal = await refuseWhenOutOfTokens({
+    request,
+    headers: responseHeaders,
+    userId: userSub,
+    activityId: chargeActivityId,
+    alsoActivityIds: jointFilingId ? ["file-company-tax-return"] : [],
+  });
   if (tokenRefusal) {
     await recordSubmissionFailure({
       failure: "tokens-exhausted",

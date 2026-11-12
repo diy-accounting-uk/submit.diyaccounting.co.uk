@@ -252,6 +252,42 @@ describe("System: token consumption with dynalite", () => {
       expect(bundles.find((b) => b.bundleId === "resident-ltd").tokensConsumed).toBe(0);
     });
 
+    it("refuses accounts that start a joint filing when one token is left, and lets accounts alone through", async () => {
+      const userId6 = "token-test-user-6";
+      await store.putBundle(userId6, { bundleId: "resident-ltd", tokensGranted: 1, tokensConsumed: 0 });
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId6,
+        activityId: "file-micro-entity-accounts",
+        alsoActivityIds: ["file-company-tax-return"],
+      });
+      expect(refusal.statusCode).toBe(403);
+      expect(JSON.parse(refusal.body)).toMatchObject({ reason: "tokens_exhausted", tokensRemaining: 1, tokenCost: 2 });
+      expect(await balance(userId6)).toBe(1);
+
+      const alone = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId6,
+        activityId: "file-micro-entity-accounts",
+      });
+      expect(alone).toBeUndefined();
+    });
+
+    it("lets a joint filing through with two tokens left", async () => {
+      const userId7 = "token-test-user-7";
+      await store.putBundle(userId7, { bundleId: "resident-ltd", tokensGranted: 2, tokensConsumed: 0 });
+      const refusal = await tokenEnforcement.refuseWhenOutOfTokens({
+        request,
+        headers: {},
+        userId: userId7,
+        activityId: "file-micro-entity-accounts",
+        alsoActivityIds: ["file-company-tax-return"],
+      });
+      expect(refusal).toBeUndefined();
+    });
+
     it("never refuses or counts a filing for an unlimited grant", async () => {
       const userId5 = "token-test-user-5";
       await store.putBundle(userId5, { bundleId: "resident-tax-agent", tokensGranted: "unlimited", tokensConsumed: 0 });

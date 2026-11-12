@@ -50,15 +50,17 @@ function findQualifyingBundle(userBundles, activity, tokenCost) {
  * @param {string} userId - User sub
  * @param {string} activityId - Activity ID from catalogue (e.g. "submit-vat")
  * @param {Object} catalog - Parsed catalogue
+ * @param {Array<string>} [alsoActivityIds] - Further activities the same request will charge; their costs add to the activity's own and the bundle list is the activity's
  * @returns {Promise<Object>} { available: true, cost } or { available: false, reason, tokensRemaining }
  */
-export async function hasTokensForActivity(userId, activityId, catalog) {
+export async function hasTokensForActivity(userId, activityId, catalog, alsoActivityIds = []) {
   const activity = catalog?.activities?.find((a) => a.id === activityId);
   if (!activity) {
     return { available: true, cost: 0 };
   }
 
-  const tokenCost = activity.tokenCost || 0;
+  const alsoCost = alsoActivityIds.reduce((sum, id) => sum + (catalog.activities.find((a) => a.id === id)?.tokenCost || 0), 0);
+  const tokenCost = (activity.tokenCost || 0) + alsoCost;
   if (tokenCost === 0) {
     return { available: true, cost: 0 };
   }
@@ -68,7 +70,10 @@ export async function hasTokensForActivity(userId, activityId, catalog) {
 
   if (!qualifyingBundle) {
     logger.info({ message: "No qualifying bundle with tokens remaining", userId, activityId });
-    return { available: false, reason: "tokens_exhausted", tokensRemaining: 0 };
+    const activityBundleIds = new Set(activity.bundles || []);
+    const held = userBundles.find((b) => activityBundleIds.has(b.bundleId) && b.tokensGranted !== undefined);
+    const tokensRemaining = held ? Math.max(0, held.tokensGranted - (held.tokensConsumed || 0)) : 0;
+    return { available: false, reason: "tokens_exhausted", tokensRemaining, cost: tokenCost };
   }
 
   return { available: true, cost: tokenCost };
@@ -195,18 +200,19 @@ export async function chargeTokenOnSuccess(userId, activityId) {
  * @param {Object} params.headers - Response headers
  * @param {string} params.userId - User sub that pays for the filing
  * @param {string} params.activityId - Activity ID from the catalogue
- * @returns {Promise<Object|undefined>} The refusal response, or undefined when a token is available
+ * @param {Array<string>} [params.alsoActivityIds] - Activities the same filing will charge later; the check needs the sum of all costs
+ * @returns {Promise<Object|undefined>} The refusal response, or undefined when the tokens are available
  */
-export async function refuseWhenOutOfTokens({ request, headers, userId, activityId }) {
+export async function refuseWhenOutOfTokens({ request, headers, userId, activityId, alsoActivityIds = [] }) {
   try {
-    const tokenCheck = await hasTokensForActivity(userId, activityId, loadCatalogFromRoot());
+    const tokenCheck = await hasTokensForActivity(userId, activityId, loadCatalogFromRoot(), alsoActivityIds);
     if (tokenCheck.available) return undefined;
     logger.info({ message: "Token enforcement blocked filing", activityId, reason: tokenCheck.reason });
     return http403ForbiddenResponse({
       request,
       headers,
       message: "Token limit reached",
-      error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+      error: { reason: "tokens_exhausted", tokensRemaining: tokenCheck.tokensRemaining ?? 0, tokenCost: tokenCheck.cost },
     });
   } catch (error) {
     logger.error({ message: "Token enforcement error", activityId, error: error.message, stack: error.stack });

@@ -758,7 +758,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#review-box-305 a.review-change")).toHaveAttribute("data-field", "donationsPaid");
 
     await expect(page.locator("#sendStepHeading")).toHaveText("Send two returns to HMRC");
-    await expect(page.locator("#longSendOrder")).toContainText("return 1 of 2, then the return 2 of 2");
+    await expect(page.locator("#longSendOrder")).toContainText("return 1 of 2, then return 2 of 2");
     await sendBoth(page);
 
     await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return 1 of 2", { timeout: 30_000 });
@@ -827,7 +827,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#mainPoolAllowancesAp2").fill("300");
     await page.locator("#previewBtn").click();
     await expect(page.locator("#previewView")).toBeVisible();
-    await expect(page.locator("#sendStepHeading")).toHaveText("Send the return 2 of 2 to HMRC");
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send return 2 of 2 to HMRC");
     await expect(page.locator("#submitReturnBtn")).toHaveText("Submit return 2 of 2 to HMRC");
   });
 
@@ -845,8 +845,8 @@ test.describe("File Company Tax Return entry form", () => {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator("#sendStepHeading")).toHaveText("Send the return 2 of 2 to HMRC");
-    await expect(page.locator("#longSendOrder")).toContainText("The return 2 of 2 is the one left to send");
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send return 2 of 2 to HMRC");
+    await expect(page.locator("#longSendOrder")).toContainText("Return 2 of 2 is the one left to send");
     await expect(page.locator("#gatewayPassword")).toHaveValue("");
     await expect(page.locator("#currentTurnover")).toBeDisabled();
     await expect(page.locator("#mainPoolAllowancesAp2")).toHaveValue("363");

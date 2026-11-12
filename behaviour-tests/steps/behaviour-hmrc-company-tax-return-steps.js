@@ -281,6 +281,9 @@ export async function enterGatewayCredentialsAndSubmit(
   await test.step("The user enters the Government Gateway credentials and submits the return", async () => {
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    await expect(page.locator("#submissionCost")).toContainText(
+      /This return costs 1 token\.|The two returns cost 1 token between them\.|The accounts and (the return|the two returns) cost 2 tokens\./,
+    );
     if (sendStepPictureName) await takeApprovalBriefScreenshot(page, sendStepPictureName, { locator: ".send-step" });
     await loggedClick(page, "#submitReturnBtn", "Submitting the Company Tax Return", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
@@ -421,6 +424,7 @@ export async function submitJointExpectingGatewayError(
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    await expect(page.locator("#submissionCost")).toContainText(/The accounts and (the return|the two returns) cost 2 tokens\./);
     await loggedClick(page, "#submitReturnBtn", "Sending both filings", { screenshotPath });
   });
 }
@@ -767,7 +771,8 @@ export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, 
     await loggedFill(page, `#${fieldId}`, value, fieldId);
     await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
-    await expect(page.locator("#sendStepHeading")).toHaveText("Send the return 2 of 2 to HMRC");
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send return 2 of 2 to HMRC");
+    await expect(page.locator("#submissionCost")).toContainText("Return 2 of 2 costs no token. Return 1 used the token for both.");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-long-period-fixed.png`, readerView: true });
   });
 }

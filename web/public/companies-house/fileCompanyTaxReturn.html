@@ -203,7 +203,7 @@
             <span id="gatewayWhose"
               >Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.</span
             >
-            They are sent once with this return and never stored.
+            <span id="gatewayStored">They are sent once with this return and never stored.</span>
           </p>
           <div class="form-group">
             <label for="gatewayUserId">Government Gateway user ID</label>
@@ -225,9 +225,10 @@
             <label for="govTestScenario">Gov-Test-Scenario</label>
             <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
           </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitReturnBtn"></div>
           <div class="button-group">
             <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
-            <button type="button" id="submitReturnBtn" class="btn">Submit to HMRC</button>
+            <button type="button" id="submitReturnBtn" class="btn" aria-describedby="submissionCost">Submit to HMRC</button>
           </div>
         </section>
       </div>
@@ -305,6 +306,7 @@
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/submission-cost.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/status-messages.js"></script>

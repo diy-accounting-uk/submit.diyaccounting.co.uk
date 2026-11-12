@@ -96,6 +96,9 @@ function failureCause(error) {
   if (code.endsWith("INSOLVENT_TRADER")) {
     return { cause: "HMRC will not release records for a trader it lists as insolvent.", next: { label: "Back to activities", href: "/" } };
   }
+  if (code === "tokens_exhausted") {
+    return { cause: "You have no tokens left.", next: { label: "Add a bundle", href: "/bundles.html" } };
+  }
   if (code === "BUNDLE_ENTITLEMENT_REQUIRED" || (status === 403 && /bundle/i.test(error.message))) {
     return { cause: "Your account has no bundle that allows this.", next: { label: "Add a bundle", href: "/bundles.html" } };
   }

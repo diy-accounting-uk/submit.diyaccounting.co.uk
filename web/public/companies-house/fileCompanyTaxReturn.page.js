@@ -2148,6 +2148,8 @@ function accountsStillToSend() {
   return sending.mode === "both" && (!sending.companiesHouse || sending.companiesHouse.statusCode === "REJECT");
 }
 
+const GATEWAY_STORED_ONCE = "They are sent once with this return and never stored.";
+
 function configureSendStep() {
   const accountsFirst = accountsStillToSend();
   const amending = Boolean(sending.amendment);
@@ -2172,6 +2174,41 @@ function configureSendStep() {
       ? "Submit the amended return to HMRC"
       : "Submit to HMRC";
   configureLongSendStep({ accountsFirst, amending });
+  showSendCost(accountsFirst);
+}
+
+// The tokens the send step will charge and the sentence that says what for. The accounts cost one
+// token when they are still to send. The returns cost one token together: return 1 takes it and
+// return 2 takes none, so a send that leaves only return 2 costs nothing.
+function sendCostOf(accountsFirst) {
+  const queue = longQueue();
+  const returnsCost = sending.longPeriod && !queue.includes(1) ? 0 : 1;
+  const cost = (accountsFirst ? 1 : 0) + returnsCost;
+  if (accountsFirst) {
+    const returns = sending.longPeriod ? (queue.length === 2 ? "the two returns" : `return ${queue[0]} of 2`) : "the return";
+    return { cost, lead: `The accounts and ${returns} cost ${cost} ${cost === 1 ? "token" : "tokens"}.` };
+  }
+  if (cost === 0) return { cost, lead: "Return 2 of 2 costs no token. Return 1 used the token for both." };
+  if (queue.length === 2) return { cost, lead: "The two returns cost 1 token between them." };
+  return { cost, lead: "This return costs 1 token." };
+}
+
+function showSendCost(accountsFirst) {
+  const container = element("submissionCost");
+  const { cost, lead } = sendCostOf(accountsFirst);
+  container.dataset.tokenCost = String(cost);
+  container.dataset.costLead = lead;
+  window.SubmissionCost?.refresh();
+}
+
+// A refusal for no token left: the balance on the page is out of date, and the send step is where
+// the customer can see what is left.
+function showTokensExhausted(message) {
+  showView("previewView");
+  window.hideStatus();
+  window.showStatus(message, "error");
+  window.dispatchEvent(new CustomEvent("bundle-changed"));
+  element("statusMessagesContainer").scrollIntoView({ block: "start" });
 }
 
 // Two returns go one after the other: the accounts when they go to Companies House, then return 1, then return 2.
@@ -2179,20 +2216,25 @@ function configureLongSendStep({ accountsFirst, amending }) {
   const note = element("longSendOrder");
   const queue = longQueue();
   note.style.display = sending.longPeriod ? "block" : "none";
+  element("gatewayStored").textContent = GATEWAY_STORED_ONCE;
   if (!sending.longPeriod) return;
   const amended = amending ? "amended " : "";
   const order = accountsFirst ? "the accounts, then " : "";
+  const returnWord = amending ? "the amended return" : "return";
+  const leftWord = amending ? "The amended return" : "Return";
   note.textContent =
     queue.length === 2
-      ? `You send ${order}the ${amended}return 1 of 2, then the ${amended}return 2 of 2. Each waits for the one before to be accepted. You type the Government Gateway user ID and password once for both.`
-      : `The ${amended}return ${queue[0] ?? 2} of 2 is the one left to send. You type the Government Gateway password again.`;
+      ? `You send ${order}${returnWord} 1 of 2, then ${returnWord} 2 of 2. Each waits for the one before to be accepted. You type the Government Gateway user ID and password once for both.`
+      : `${leftWord} ${queue[0] ?? 2} of 2 is the one left to send. You type the Government Gateway password again.`;
+  element("gatewayStored").textContent =
+    queue.length === 2 ? "They are sent with each of the two returns and never stored." : GATEWAY_STORED_ONCE;
   if (queue.length === 0) return;
   const heading = amending ? "amended return" : "return";
   if (!accountsFirst) {
     element("sendStepHeading").textContent =
       queue.length === 2
         ? `Send ${amending ? "the amended returns" : "two returns"} to HMRC`
-        : `Send the ${heading} ${queue[0]} of 2 to HMRC`;
+        : `Send ${amending ? "the amended return" : "return"} ${queue[0]} of 2 to HMRC`;
     element("submitReturnBtn").textContent =
       queue.length === 2 ? `Submit ${heading} 1 of 2, then ${heading} 2 of 2` : `Submit ${heading} ${queue[0]} of 2 to HMRC`;
   }
@@ -2872,6 +2914,11 @@ async function runSend(send) {
     await send();
   } catch (error) {
     console.error("Filing failed:", error);
+    if (error.reason === "tokens_exhausted") {
+      const accountsFiled = sending.companiesHouse?.statusCode === "ACCEPT";
+      showTokensExhausted(accountsFiled ? `The accounts are filed with Companies House. ${error.message}` : error.message);
+      return;
+    }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || "Failed to file with HMRC.", "error");
   } finally {
@@ -2910,6 +2957,10 @@ async function handleSubmitReturn() {
       } catch (error) {
         // The accounts never reached Companies House, so nothing is filed and the review stays open.
         if (!sending.companiesHouse) {
+          if (error.reason === "tokens_exhausted") {
+            showTokensExhausted(error.message);
+            return;
+          }
           showView("previewView");
           window.showStatus(companiesHouseErrorText(error), "error");
           return;

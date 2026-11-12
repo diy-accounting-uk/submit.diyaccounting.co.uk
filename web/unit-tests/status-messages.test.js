@@ -67,4 +67,11 @@ describe("failure message", () => {
     showFailure({ status: 403, code: "BUNDLE_ENTITLEMENT_REQUIRED", message: "Forbidden" }, "Could not retrieve VAT obligations");
     expect(document.querySelector("a.status-message-next").getAttribute("href")).toBe("/bundles.html");
   });
+
+  it("says a refusal for no token left is about tokens and links the bundles page", async () => {
+    const { showFailure } = await import("../public/lib/utils/dom-utils.js");
+    showFailure({ status: 403, code: "tokens_exhausted", message: "Token limit reached" }, "You cannot use this yet");
+    expect(document.querySelector(".status-message-cause").textContent).toBe("You have no tokens left.");
+    expect(document.querySelector("a.status-message-next").getAttribute("href")).toBe("/bundles.html");
+  });
 });

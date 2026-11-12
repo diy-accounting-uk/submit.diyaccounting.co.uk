@@ -769,6 +769,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   });
 
   describe("the token balance", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
     function holdBundle(bundle) {
       mockSend.mockImplementation(async (cmd) => {
         const lib = await import("@aws-sdk/lib-dynamodb");
@@ -796,6 +797,21 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     test("sends the filing when one token is left", async () => {
       holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 99 });
       const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("refuses a joint filing with one token left, charges nothing and sends nothing", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 99 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ reason: "tokens_exhausted", tokensRemaining: 1, tokenCost: 2 });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+    });
+
+    test("sends a joint filing when two tokens are left", async () => {
+      holdBundle({ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 98 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
       expect(response.statusCode).toBe(201);
     });
 
