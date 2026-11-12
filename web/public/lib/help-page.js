@@ -10,6 +10,7 @@
 import { FAQSearch, debounce } from "./faq-search.js";
 import { submitSupportTicket } from "./support-api.js";
 import { fetchActivityListing } from "./services/content-listing.js";
+import { renderFaqItem } from "./faq-markdown.js";
 
 /**
  * Help Page class managing the FAQ display and support form
@@ -141,25 +142,8 @@ class HelpPage {
       return;
     }
 
-    // eslint-disable-next-line no-unsanitized/property -- each FAQ's text goes through escapeHtml; the id comes from the site's own faqs.toml
-    this.faqList.innerHTML = faqs
-      .map(
-        (faq) => `
-      <div class="faq-item" data-id="${faq.id}">
-        <button class="faq-question" aria-expanded="false">
-          <span class="faq-category-badge">${this.formatCategory(faq.category)}</span>
-          <span class="faq-question-text">${this.escapeHtml(faq.question)}</span>
-          <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </button>
-        <div class="faq-answer" hidden>
-          ${this.renderMarkdown(faq.answer)}
-        </div>
-      </div>
-    `,
-      )
-      .join("");
+    // eslint-disable-next-line no-unsanitized/property -- each FAQ's text goes through escapeFaqHtml; the id comes from the site's own faqs.toml
+    this.faqList.innerHTML = faqs.map(renderFaqItem).join("");
 
     // Accordion click handlers
     this.faqList.querySelectorAll(".faq-question").forEach((btn) => {
@@ -190,186 +174,6 @@ class HelpPage {
     button.setAttribute("aria-expanded", !isOpen);
     answer.hidden = isOpen;
     this.openFaqId = isOpen ? null : id;
-  }
-
-  /**
-   * Format category label
-   * @param {string} cat - Category ID
-   * @returns {string} Human-readable category label
-   */
-  formatCategory(cat) {
-    const labels = {
-      "connection": "Connection",
-      "submission": "Submission",
-      "bundles": "Bundles",
-      "receipts": "Receipts",
-      "vat-basics": "VAT Basics",
-      "errors": "Errors",
-    };
-    return labels[cat] || cat;
-  }
-
-  /**
-   * Escape HTML special characters
-   * @param {string} str - Input string
-   * @returns {string} Escaped HTML string
-   */
-  escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  /**
-   * Render simple markdown to HTML
-   * @param {string} text - Markdown text
-   * @returns {string} HTML string
-   */
-  renderMarkdown(text) {
-    // Process text line by line for better control
-    const lines = text.trim().split("\n");
-    const result = [];
-    let inList = false;
-    let inTable = false;
-    let tableRows = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Check for table row
-      if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
-        if (!inTable) {
-          inTable = true;
-          tableRows = [];
-        }
-        // Skip separator row
-        if (!/^\|[-\s|]+\|$/.test(line.trim())) {
-          tableRows.push(line);
-        }
-        continue;
-      } else if (inTable) {
-        // End of table
-        result.push(this.renderTable(tableRows));
-        inTable = false;
-        tableRows = [];
-      }
-
-      // Check for numbered list
-      if (/^\d+\.\s+/.test(line.trim())) {
-        if (!inList) {
-          inList = true;
-          result.push("<ol>");
-        }
-        const content = line.trim().replace(/^\d+\.\s+/, "");
-        result.push(`<li>${this.renderInline(content)}</li>`);
-        continue;
-      } else if (inList && line.trim() === "") {
-        result.push("</ol>");
-        inList = false;
-      }
-
-      // Check for unordered list
-      if (line.trim().startsWith("- ")) {
-        if (!inList) {
-          inList = true;
-          result.push("<ul>");
-        }
-        const content = line.trim().substring(2);
-        result.push(`<li>${this.renderInline(content)}</li>`);
-        continue;
-      } else if (inList && !line.trim().startsWith("- ") && line.trim() !== "") {
-        result.push("</ul>");
-        inList = false;
-      }
-
-      // Empty line - paragraph break
-      if (line.trim() === "") {
-        continue;
-      }
-
-      // Regular paragraph
-      if (!inList) {
-        result.push(`<p>${this.renderInline(line.trim())}</p>`);
-      }
-    }
-
-    // Close any open lists
-    if (inList) {
-      result.push("</ol>");
-    }
-    if (inTable) {
-      result.push(this.renderTable(tableRows));
-    }
-
-    return result.join("\n");
-  }
-
-  /**
-   * Render inline markdown (bold, links)
-   * @param {string} text - Inline text
-   * @returns {string} HTML string
-   */
-  renderInline(text) {
-    // Bold text: **text**
-    const result = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-
-    // Markdown links: [text](url)
-    // Process character by character to avoid regex backtracking issues
-    let output = "";
-    let i = 0;
-    while (i < result.length) {
-      if (result[i] === "[") {
-        // Look for closing bracket
-        const closeBracket = result.indexOf("]", i + 1);
-        if (closeBracket !== -1 && result[closeBracket + 1] === "(") {
-          // Look for closing parenthesis
-          const closeParen = result.indexOf(")", closeBracket + 2);
-          if (closeParen !== -1) {
-            const linkText = result.slice(i + 1, closeBracket);
-            const url = result.slice(closeBracket + 2, closeParen);
-            output += `<a href="${url}" target="_blank" rel="noopener">${linkText}</a>`;
-            i = closeParen + 1;
-            continue;
-          }
-        }
-      }
-      output += result[i];
-      i++;
-    }
-    return output;
-  }
-
-  /**
-   * Render markdown table
-   * @param {Array} rows - Array of table row strings
-   * @returns {string} HTML table string
-   */
-  renderTable(rows) {
-    if (rows.length === 0) return "";
-
-    const parseRow = (row) => {
-      return row
-        .split("|")
-        .filter((c) => c.trim())
-        .map((c) => c.trim());
-    };
-
-    const headerCells = parseRow(rows[0]);
-    const bodyRows = rows.slice(1);
-
-    let html = '<table class="faq-table"><thead><tr>';
-    html += headerCells.map((c) => `<th>${this.renderInline(c)}</th>`).join("");
-    html += "</tr></thead><tbody>";
-
-    for (const row of bodyRows) {
-      const cells = parseRow(row);
-      html += "<tr>";
-      html += cells.map((c) => `<td>${this.renderInline(c)}</td>`).join("");
-      html += "</tr>";
-    }
-
-    html += "</tbody></table>";
-    return html;
   }
 
   /**

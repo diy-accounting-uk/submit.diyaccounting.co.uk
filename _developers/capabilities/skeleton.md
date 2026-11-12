@@ -44,6 +44,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-28 -->
 <!-- capability SITE-29 -->
 <!-- capability SITE-30 -->
+<!-- capability SITE-31 -->
 ### Server and API plumbing (SITE)
 
 <!-- generated:group server-and-api-plumbing-site -->
@@ -359,6 +360,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-136 -->
 <!-- capability OPS-137 -->
 <!-- capability OPS-143 -->
+<!-- capability OPS-213 -->
 <!-- capability OPS-144 -->
 <!-- capability OPS-145 -->
 <!-- capability OPS-147 -->

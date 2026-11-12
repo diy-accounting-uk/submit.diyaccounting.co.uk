@@ -38,6 +38,11 @@
   overflow: hidden;
 }
 
+.faq-heading {
+  margin: 0;
+  font: inherit;
+}
+
 .faq-question {
   width: 100%;
   padding: var(--space-4);
