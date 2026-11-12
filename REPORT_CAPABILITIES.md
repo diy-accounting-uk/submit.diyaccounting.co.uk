@@ -3054,10 +3054,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-163 Submit the declared sitemaps to Search Console daily
 
 - **Use when:** a sitemap that searchconsole.toml declares must be resubmitted to Search Console, or a sitemap error must raise a failed run.
-- **Does:** searchconsole-sitemaps.yml runs daily and on dispatch; the prod deploy.yml job resubmit-sitemap runs the same script without --fail-on-errors after the apex promotion and cannot fail a deploy. It authenticates to Google by workload identity federation, then runs searchconsole-sync.js with --sitemaps-only --apply --fail-on-errors. The script submits each declared sitemap that Search Console does not hold, prints the last download, errors, warnings and contents of each, and the run fails when a sitemap shows errors.
+- **Does:** searchconsole-sitemaps.yml runs daily and on dispatch; the prod deploy.yml job resubmit-sitemap runs the same script without --fail-on-errors after the apex promotion and cannot fail a deploy. It authenticates to Google by workload identity federation, then runs searchconsole-sync.js with --sitemaps-only --apply --fail-on-errors. The script submits each declared sitemap that Search Console does not hold, prints the last download, errors, warnings and contents of each, and the run fails when a sitemap shows errors. The run then writes the Search Console report as JSON and uploads it as the searchconsole-report artifact, so a session with no SSO reads it with `gh run download`.
 - **Run:** `gh workflow run searchconsole-sitemaps.yml`
 - **Entry:** `.github/workflows/searchconsole-sitemaps.yml`
-- **Files:** .github/workflows/searchconsole-sitemaps.yml, infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole.toml
+- **Files:** .github/workflows/searchconsole-sitemaps.yml, infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole-report.js, infra/google/searchconsole/searchconsole.toml
 - **Keywords:** sitemap submission, search console sitemaps, daily sitemap, sitemap errors, searchconsole-sitemaps.yml
 - **Related:** DATA-67, OPS-67
 
