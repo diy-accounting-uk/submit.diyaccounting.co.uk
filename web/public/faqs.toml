@@ -594,7 +594,7 @@ question = "Can I file accounts or a confirmation statement with Companies House
 answer = """
 Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **production**. A filing goes to Companies House.
 
-Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle. An accounts filing costs one token. A confirmation statement costs no token and carries a £61.35 charge for each filing.
 
 The PSC verification statement is in **sandbox**: it goes to the Companies House test service and files nothing real.
 

@@ -1371,11 +1371,12 @@ public class EdgeStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
-        // Common Rule Set alarm - SQL injection, XSS attacks
+        // Common Rule Set alarm - SQL injection, XSS attacks. One scan for secret files is 5 to 30 blocks in
+        // a few seconds and needs no action, so this alarm and the next fire at 50, as the rate limit one does.
         Alarm commonRuleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CommonRuleAlarm")
                 .alarmName(props.resourceNamePrefix() + "-waf-attack-signatures")
                 .alarmDescription(
-                        "WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
+                        "WAF detected attack patterns (SQLi/XSS) - 50+ blocks in 5min - review sampled requests")
                 .metric(Metric.Builder.create()
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
@@ -1384,7 +1385,7 @@ public class EdgeStack extends Stack {
                         .statistic("Sum")
                         .period(software.amazon.awscdk.Duration.minutes(5))
                         .build())
-                .threshold(5)
+                .threshold(50)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
@@ -1393,7 +1394,7 @@ public class EdgeStack extends Stack {
         // Known Bad Inputs alarm
         Alarm badInputsAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-BadInputsAlarm")
                 .alarmName(props.resourceNamePrefix() + "-waf-known-bad-inputs")
-                .alarmDescription("WAF blocked known bad inputs (5+ in 5min) - review sampled requests in WAF console")
+                .alarmDescription("WAF blocked known bad inputs (50+ in 5min) - review sampled requests in WAF console")
                 .metric(Metric.Builder.create()
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")
@@ -1405,7 +1406,7 @@ public class EdgeStack extends Stack {
                         .statistic("Sum")
                         .period(software.amazon.awscdk.Duration.minutes(5))
                         .build())
-                .threshold(5)
+                .threshold(50)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
