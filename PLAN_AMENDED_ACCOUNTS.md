@@ -718,7 +718,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Open point 4, the members request.** The general specification names a `MembersRegisterDataRequest` beside `CompanyDataRequest`. Read its schema on the gateway's schema page and say whether it gives the shareholders better. Submit sends no such request today.
 - **Open point 5, the date of the shareholder list.** Say as at which date `CompanyDataRequest` states the shareholdings, and what its `MadeUpDate` input changes. Read the schema and one answer of the test service. When neither says, write the question into section 2.3 for the XML team.
 - **Open point 6, a PDF set and a first period.** State the book for a company whose last set is a PDF, and for a company with no accounts yet.
-- **Reads only.** The design reads the package source, the schemas and the simulator's `CompanyData` answer. A request to the test service uses the existing run script's `company-data-request` case and needs the operator's go.
+- **Reads only.** The design reads the package source, the schemas and the simulator's `CompanyData` answer. It also reads one recorded answer of the test service: `gh run download 36264617953 -n companies-house-test-service-36264617953` gives the redacted exchange of the case `company-data-request`, while GitHub still holds that artifact. The design sends no request. A point that these sources do not settle goes into section 2.3 as a question for the XML team.
 - **Waits on**: nothing. **Class**: machine-only. **Repository**: submit (this plan), spreadsheets (read). **Model**: Opus. **Size**: 1 file.
 
 #### AA26. Build the book from the register in diya-gl
