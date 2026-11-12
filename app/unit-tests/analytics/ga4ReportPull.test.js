@@ -32,6 +32,12 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
+const mockPullSearchConsole = vi.fn();
+vi.mock("@app/lib/searchConsolePull.js", () => ({
+  pullSearchConsole: (...args) => mockPullSearchConsole(...args),
+  searchConsolePullDays: () => ["2026-08-17", "2026-08-18", "2026-08-19"],
+}));
+
 import { handler, formatGa4Date, rowToRecord, toNdjsonGzip } from "@app/functions/analytics/ga4ReportPull.js";
 
 function emptyReport() {
@@ -54,6 +60,8 @@ describe("ga4ReportPull", () => {
     mockRunReport.mockResolvedValue(emptyReport());
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockPullSearchConsole.mockReset();
+    mockPullSearchConsole.mockResolvedValue({ written: [], errors: [] });
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake-bucket";
     process.env.GA4_PROPERTY_ID = "523400333";
     Object.assign(process.env, FEDERATION_ENV);
@@ -161,6 +169,23 @@ describe("ga4ReportPull", () => {
         "curated/ga4/report=events/dt=2026-08-20/events.json.gz",
         "curated/ga4/report=sources/dt=2026-08-20/sources.json.gz",
       ]);
+    });
+
+    test("pulls Search Console after the GA4 reports, for its own window or the explicit day", async () => {
+      await handler();
+      expect(mockPullSearchConsole.mock.calls[0][0].days).toEqual(["2026-08-17", "2026-08-18", "2026-08-19"]);
+      expect(mockPullSearchConsole.mock.calls[0][0].bucket).toBe("test-lake-bucket");
+
+      await handler({ date: "2026-08-10" });
+      expect(mockPullSearchConsole.mock.calls[1][0].days).toEqual(["2026-08-10"]);
+    });
+
+    test("a Search Console failure still writes every GA4 report, then fails the run", async () => {
+      mockPullSearchConsole.mockResolvedValue({ written: [], errors: ["sc-domain:diya-gl.co.uk 2026-08-19: answered 403"] });
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/Search Console pull failed: sc-domain:diya-gl.co.uk/);
+
+      expect(mockS3Send).toHaveBeenCalledTimes(4);
     });
 
     test("requests the configured property id, and each report's own dimensions and metrics", async () => {

@@ -178,6 +178,10 @@ public class BusinessViews extends Construct {
                             + " address is in the vendor's published ranges",
                     List.of("cloudfront_requests")),
             new ViewDefinition(
+                    "v_search_console_pages_daily",
+                    "Search Console clicks, impressions and average position each day, by host and page family",
+                    List.of("search_console_queries")),
+            new ViewDefinition(
                     "v_visitors_by_kind_daily",
                     "Sessions and users each day, by hostname and visitor kind (human, bot, synthetic)",
                     List.of("sessions_by_host_source_daily")),

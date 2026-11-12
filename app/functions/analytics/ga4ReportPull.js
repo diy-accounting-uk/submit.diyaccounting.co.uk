@@ -3,21 +3,21 @@
 
 // @capability DATA-06 Pull GA4 reports and BigQuery event export
 // - **Use when:** the previous day's GA4 Data API reports or raw BigQuery event export must land in the lake.
-// - **Does:** ga4ReportPull.js pulls three GA4 Data API reports (traffic, pages, events) via BetaAnalyticsDataClient and writes gzipped NDJSON. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
+// - **Does:** ga4ReportPull.js pulls four GA4 Data API reports (traffic, pages, events, sources) via BetaAnalyticsDataClient and writes gzipped NDJSON, then calls searchConsolePull.js for Search Console search analytics of both domain properties. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/ga4ReportPull.js:handler`; `app/functions/analytics/ga4EventExportPull.js:handler`
-// - **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
+// - **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/lib/searchConsolePull.js, app/unit-tests/lib/searchConsolePull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/SearchConsoleTables.java, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
 // - **Keywords:** ga4 data api, betaanalyticsdataclient, event export, session funnel, traffic report, pages report, workload identity federation
 // - **Related:** DATA-05, DATA-43
 // @end-capability
 
 // app/functions/analytics/ga4ReportPull.js
 //
-// Nightly job that pulls three GA4 Data API reports — traffic, pages and events — for the
+// Nightly job that pulls the GA4 Data API reports (traffic, pages, events, sources) for the
 // previous day and writes them as gzipped NDJSON under the lake's curated/ga4/ prefix. GA4's
 // `date` dimension comes back as "YYYYMMDD" with no separators, and every metric value comes
 // back as a string regardless of its declared type; both are converted here so a downstream
-// Athena query never has to.
+// Athena query never has to. The same run then pulls Search Console (app/lib/searchConsolePull.js).
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -25,6 +25,7 @@ import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
 import { recentPullDays } from "../../lib/dateUtils.js";
+import { pullSearchConsole, searchConsolePullDays } from "../../lib/searchConsolePull.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4ReportPull.js" });
 
@@ -191,7 +192,19 @@ export async function handler(event = {}) {
   for (const targetDate of days) {
     results.push(await pullDay(client, s3Client, bucket, propertyId, targetDate));
   }
-  return { days: results };
+
+  // After the GA4 reports, so a Search Console failure loses none of them; the error is raised
+  // once everything else is written, so the Lambda still reports the failure.
+  const searchConsole = await pullSearchConsole({
+    s3Client,
+    bucket,
+    days: event.date ? [event.date] : searchConsolePullDays(),
+  });
+  logger.info({ message: "Search Console pull complete", written: searchConsole.written, errors: searchConsole.errors });
+  if (searchConsole.errors.length > 0) {
+    throw new Error(`Search Console pull failed: ${searchConsole.errors.join("; ")}`);
+  }
+  return { days: results, searchConsole: searchConsole.written };
 }
 
 async function pullDay(client, s3Client, bucket, propertyId, targetDate) {

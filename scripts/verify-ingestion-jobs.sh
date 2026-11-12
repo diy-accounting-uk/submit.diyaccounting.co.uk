@@ -226,6 +226,7 @@ check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stri
 check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required" 1
 check_source "PayPal receipts"        "paypal_donations"     "dt"  "curated/paypal/paypal_donations/dt="     "optional" 1
 check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required" 2
+check_source "Search Console queries" "search_console_queries" "dt"  "curated/searchconsole/report=queries/dt="  "required" 2
 check_source "CloudFront requests"    "cloudfront_requests"  "day_prefix" "raw/cloudfront/"                                    "required" 1
 
 if [ "${OVERALL_STATUS}" -eq 0 ]; then

@@ -4484,10 +4484,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-06 Pull GA4 reports and BigQuery event export
 
 - **Use when:** the previous day's GA4 Data API reports or raw BigQuery event export must land in the lake.
-- **Does:** ga4ReportPull.js pulls three GA4 Data API reports (traffic, pages, events) via BetaAnalyticsDataClient and writes gzipped NDJSON. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
+- **Does:** ga4ReportPull.js pulls four GA4 Data API reports (traffic, pages, events, sources) via BetaAnalyticsDataClient and writes gzipped NDJSON, then calls searchConsolePull.js for Search Console search analytics of both domain properties. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/ga4ReportPull.js:handler`; `app/functions/analytics/ga4EventExportPull.js:handler`
-- **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
+- **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/lib/searchConsolePull.js, app/unit-tests/lib/searchConsolePull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/SearchConsoleTables.java, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
 - **Keywords:** ga4 data api, betaanalyticsdataclient, event export, session funnel, traffic report, pages report, workload identity federation
 - **Related:** DATA-05, DATA-43
 

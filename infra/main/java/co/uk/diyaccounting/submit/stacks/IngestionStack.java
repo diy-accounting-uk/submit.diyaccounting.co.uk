@@ -407,12 +407,17 @@ public class IngestionStack extends Stack {
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
                 .build());
+        ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/searchconsole/*"))
+                .build());
 
         registerIngestionJob(
                 "Ga4ReportPull",
                 ga4ReportPullFunctionName,
                 ga4ReportPullLambda,
-                "Pull yesterday's GA4 traffic, pages and events reports into the analytics lake");
+                "Pull yesterday's GA4 reports and the last three days of Search Console data into the analytics lake");
 
         // ============================================================================
         // GA4 BigQuery event export pull job

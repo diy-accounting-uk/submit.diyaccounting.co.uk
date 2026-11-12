@@ -45,6 +45,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.PassFiguresPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.PayPalDonationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
+import co.uk.diyaccounting.submit.stacks.analytics.SearchConsoleTables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.WorkflowRunTables;
@@ -473,7 +474,17 @@ public class AnalyticsStack extends Stack {
         ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.sourcesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.bqEventsTable.addResourceDependency(this.glueDatabase);
+
+        var searchConsoleTables = new SearchConsoleTables(
+                this,
+                SearchConsoleTables.SearchConsoleTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.analytics.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
+                        .build());
+        searchConsoleTables.queriesTable.addResourceDependency(this.glueDatabase);
 
         var ga4DailyTables = new Ga4DailyTables(
                 this,

@@ -236,6 +236,8 @@
       "app/unit-tests/analytics/stripeReconcile.test.js",
       "app/functions/analytics/ga4ReportPull.js",
       "app/unit-tests/analytics/ga4ReportPull.test.js",
+      "app/lib/searchConsolePull.js",
+      "app/unit-tests/lib/searchConsolePull.test.js",
       "app/functions/analytics/ga4EventExportPull.js",
       "app/unit-tests/analytics/ga4EventExportPull.test.js",
       "app/functions/analytics/ga4DailyPull.js",
@@ -297,7 +299,12 @@
   {
     "family": "prod-env-ga4-report-pull-errors",
     "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/ga4ReportPull.js", "app/unit-tests/analytics/ga4ReportPull.test.js"],
+    "paths": [
+      "app/functions/analytics/ga4ReportPull.js",
+      "app/unit-tests/analytics/ga4ReportPull.test.js",
+      "app/lib/searchConsolePull.js",
+      "app/unit-tests/lib/searchConsolePull.test.js"
+    ],
     "budgetPerDay": 2,
     "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
   },
