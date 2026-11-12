@@ -26,8 +26,8 @@ import {
   financialYearsInPeriod,
 } from "@diy-accounting-uk/diya-gl/dist/app/lib/tax/corporation-tax.js";
 
-export const EARLIEST_PERIOD_START = "2015-04-01";
-export const WORKING_SHEET_TOLERANCE_POUNDS = 5;
+const EARLIEST_PERIOD_START = "2015-04-01";
+const WORKING_SHEET_TOLERANCE_POUNDS = 5;
 
 const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
 const DAY_MS = 86_400_000;
@@ -807,7 +807,7 @@ function rimRate() {
  * @param {{today?: string}} [options] - ISO date; a repayment cannot come after it
  * @returns {{ct600a: object|undefined, a80Pence: number}}
  */
-export function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today } = {}) {
+function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today } = {}) {
   const loans = figures.loansToParticipators;
   if (!loans) return { ct600a: undefined, a80Pence: 0 };
   const problems = loansProblems(figures, { today });

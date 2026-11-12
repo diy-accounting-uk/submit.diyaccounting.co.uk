@@ -18,19 +18,19 @@ import path from "node:path";
 import TOML from "@iarna/toml";
 
 export const ADS_CONFIG_PATH = "infra/microsoft/ads/ads.toml";
-export const MAX_HEADLINE_LENGTH = 30;
-export const MAX_DESCRIPTION_LENGTH = 90;
-export const MIN_HEADLINES = 3;
-export const MAX_HEADLINES = 15;
-export const MIN_DESCRIPTIONS = 2;
-export const MAX_DESCRIPTIONS = 4;
-export const MAX_NEGATIVE_KEYWORDS_PER_REQUEST = 20000;
-export const CAMPAIGN_TIME_ZONE = "GreenwichMeanTimeDublinEdinburghLisbonLondon";
+const MAX_HEADLINE_LENGTH = 30;
+const MAX_DESCRIPTION_LENGTH = 90;
+const MIN_HEADLINES = 3;
+const MAX_HEADLINES = 15;
+const MIN_DESCRIPTIONS = 2;
+const MAX_DESCRIPTIONS = 4;
+const MAX_NEGATIVE_KEYWORDS_PER_REQUEST = 20000;
+const CAMPAIGN_TIME_ZONE = "GreenwichMeanTimeDublinEdinburghLisbonLondon";
 export const LOCATION_IDS = { GB: 188 };
-export const KEYWORD_MATCH_TYPES = { PHRASE: "Phrase", EXACT: "Exact", BROAD: "Broad" };
+const KEYWORD_MATCH_TYPES = { PHRASE: "Phrase", EXACT: "Exact", BROAD: "Broad" };
 export const GOAL_TYPES = ["Event", "OfflineConversion"];
-export const NETWORK_OWNED_ONLY = "OwnedAndOperatedOnly";
-export const NETWORK_WITH_PARTNERS = "OwnedAndOperatedAndSyndicatedSearch";
+const NETWORK_OWNED_ONLY = "OwnedAndOperatedOnly";
+const NETWORK_WITH_PARTNERS = "OwnedAndOperatedAndSyndicatedSearch";
 export const MSCLKID_AUTO_TAGGING = "MSCLKIDAutoTaggingEnabled";
 
 // --- Declared state ---
@@ -166,7 +166,7 @@ export function shapeGoal(goal) {
 
 const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 
-export function goalRevenue(goal) {
+function goalRevenue(goal) {
   return goal.revenue === "variable" ? { Type: "VariableValue", CurrencyCode: "GBP" } : { Type: "NoValue" };
 }
 
@@ -204,11 +204,11 @@ export function buildCampaignBody(campaign) {
   };
 }
 
-export function buildAdGroupBody(adGroup) {
+function buildAdGroupBody(adGroup) {
   return { Name: adGroup.name, Status: "Active", CpcBid: { Amount: adGroup.cpcBid }, Network: adGroup.network };
 }
 
-export function buildKeywordBody(keyword, adGroup) {
+function buildKeywordBody(keyword, adGroup) {
   return { Text: keyword.text, MatchType: keyword.matchType, Status: "Active", Bid: { Amount: adGroup.cpcBid } };
 }
 
@@ -389,7 +389,7 @@ export function planChanges(desired, live) {
   return { actions, unmanaged, tagId: tag?.id ?? desired.uet.tagId };
 }
 
-export function describeAction(a) {
+function describeAction(a) {
   switch (a.kind) {
     case "create-uet":
       return `create UET tag "${a.uet.name}"`;

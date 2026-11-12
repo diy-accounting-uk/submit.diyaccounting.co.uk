@@ -21,7 +21,6 @@ import { ct600FiguresFromResults, deriveCt600FromFigures } from "./ct600Figures.
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- XML namespace, compared byte for byte, not fetched
 export const CT600_NAMESPACE = "http://www.govtalk.gov.uk/taxation/CT/5";
-export const CT600_RIM_ARTEFACT_VERSION = "V1.994";
 
 // Where each box the builder fills sits in the return, as HMRC's CT-specDoc names it. The unit
 // tests read every box back from the built XML by these paths and check them against diya-gl's

@@ -38,7 +38,7 @@ const COMPANIES_HOUSE_SCHEME = "http://www.companieshouse.gov.uk/";
 
 // Each trading line, in the order the computation shows it, with its ct-comp concept and whether
 // it adds to or takes from the profit per accounts.
-export const TRADING_LINES = [
+const TRADING_LINES = [
   {
     key: "nonTradingLoanRelationshipCredits",
     concept: "AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts",
@@ -53,7 +53,7 @@ export const TRADING_LINES = [
 
 // The capital allowance classes shown beside the totals, from section 2 of the computations
 // format: full expensing, the special rate allowance and the special rate pool.
-export const CAPITAL_ALLOWANCE_CLASS_LINES = [
+const CAPITAL_ALLOWANCE_CLASS_LINES = [
   { key: "fullExpensingAllowances", concept: "MainPoolTotalFullExpensingAllowance", label: "Full expensing: allowances" },
   {
     key: "fullExpensingBalancingCharges",

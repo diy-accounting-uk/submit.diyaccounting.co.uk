@@ -20,7 +20,7 @@ import {
   lastDayOfTwelveMonths,
 } from "./ct600Figures.js";
 
-export const LONGEST_PERIOD_OF_ACCOUNT_MONTHS = 18;
+const LONGEST_PERIOD_OF_ACCOUNT_MONTHS = 18;
 
 // The figures an accounting period carries for itself: the capital allowances, the donations paid,
 // the associated companies, the loans to participators and the loss and tax claims. Every other

@@ -56,7 +56,7 @@ export function _resetS3Client() {
   __s3Client = null;
 }
 
-export function bookPrefix(ownerPrefix, bookId) {
+function bookPrefix(ownerPrefix, bookId) {
   return `users/${ownerPrefix}/books/${bookId}/`;
 }
 
@@ -75,7 +75,7 @@ export function versionKey(ownerPrefix, bookId, version) {
  * @param {string} etag
  * @returns {string}
  */
-export function normaliseETag(etag) {
+function normaliseETag(etag) {
   if (!etag) return etag;
   return etag.replace(/^"|"$/g, "").replace(/-\d+$/, "");
 }

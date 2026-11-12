@@ -73,7 +73,7 @@ export function getCatalogBundleById(catalog, bundleId) {
 // (the resident-tax-agent practice licence): exempt from token counting rather than a large numeric
 // cap. Token enforcement (app/services/tokenEnforcement.js) and the subscription token refresh
 // (app/functions/billing/billingWebhookPost.js) both check this before touching the count.
-export const UNLIMITED_TOKENS_GRANTED = "unlimited";
+const UNLIMITED_TOKENS_GRANTED = "unlimited";
 
 export function isUnlimitedTokenGrant(tokensGranted) {
   return tokensGranted === UNLIMITED_TOKENS_GRANTED;

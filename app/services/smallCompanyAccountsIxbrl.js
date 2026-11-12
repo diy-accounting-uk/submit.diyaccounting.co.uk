@@ -87,14 +87,10 @@ export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
 ];
 
 // A year that shows any of these splits `debtors`: the three lines then add up to it.
-export const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "amountsOwedByDirectors", "prepayments"];
+const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "amountsOwedByDirectors", "prepayments"];
 
 // The lines that split `creditorsAfterOneYear`; the rest of the total is other creditors.
-export const SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES = [
-  "bankLoansAfterOneYear",
-  "amountsOwedToDirectors",
-  "amountsOwedToGroupUndertakings",
-];
+const SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES = ["bankLoansAfterOneYear", "amountsOwedToDirectors", "amountsOwedToGroupUndertakings"];
 
 /**
  * The balance sheet breakdown rules a year's figures must hold, as messages; empty when they hold.
@@ -148,7 +144,7 @@ export const SMALL_COMPANY_POLICY_FIELDS = [
   { field: "dividendPolicy", heading: "Dividends", conceptKey: "dividendPolicy" },
 ];
 
-export const SMALL_COMPANY_PROFIT_AND_LOSS_LINES = [
+const SMALL_COMPANY_PROFIT_AND_LOSS_LINES = [
   "turnover",
   "costOfSales",
   "grossProfit",
@@ -200,7 +196,7 @@ export function intangibleAssetClosingFigures(figures) {
 
 export const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 
-export const FIXED_ASSET_CLASS_LABEL = {
+const FIXED_ASSET_CLASS_LABEL = {
   landBuildings: "Land and buildings",
   plantMachinery: "Plant and machinery",
   furnitureFittings: "Fixtures and fittings",
@@ -240,7 +236,7 @@ export const SMALL_COMPANY_MANDATORY_CONCEPT_KEYS = [
   "applicableLegislation",
 ];
 
-export const PROFIT_AND_LOSS_CONCEPT_KEY = {
+const PROFIT_AND_LOSS_CONCEPT_KEY = {
   turnover: "turnoverRevenue",
   costOfSales: "costSales",
   grossProfit: "grossProfitLoss",

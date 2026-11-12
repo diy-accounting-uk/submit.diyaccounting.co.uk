@@ -19,7 +19,7 @@ import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManage
 
 const logger = createLogger({ source: "app/services/companiesHouseApi.js" });
 
-export function getCompaniesHouseBaseUrl() {
+function getCompaniesHouseBaseUrl() {
   const base = process.env.COMPANIES_HOUSE_BASE_URI;
   if (!base || String(base).trim() === "") {
     throw new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI");
@@ -27,7 +27,7 @@ export function getCompaniesHouseBaseUrl() {
   return base;
 }
 
-export async function resolveApiKey() {
+async function resolveApiKey() {
   if (process.env.COMPANIES_HOUSE_API_KEY) {
     return process.env.COMPANIES_HOUSE_API_KEY;
   }
@@ -38,7 +38,7 @@ export async function resolveApiKey() {
   return readSecret(secretArn);
 }
 
-export function buildCompaniesHouseHeaders(apiKey) {
+function buildCompaniesHouseHeaders(apiKey) {
   const basicAuth = Buffer.from(`${apiKey}:`).toString("base64");
   return {
     Authorization: `Basic ${basicAuth}`,

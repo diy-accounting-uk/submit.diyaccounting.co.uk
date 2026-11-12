@@ -34,8 +34,6 @@ import { z } from "zod";
 
 import { callSubmitApi, hmrcGrantFor, HMRC_ACCOUNTS, requireField } from "./submit-tools.js";
 
-export { QUARTERLY_PERIOD_TYPES };
-
 function requireLoaded(session) {
   if (!session.book || !session.lines) {
     throw new Error("No book is loaded. Call open_book first.");

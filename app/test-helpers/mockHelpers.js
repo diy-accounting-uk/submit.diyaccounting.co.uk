@@ -109,20 +109,6 @@ export function setupTestEnv(customEnv = {}) {
 }
 
 /**
- * Setup bundle mock mode
- */
-export function enableBundleMock() {
-  process.env.TEST_BUNDLE_MOCK = "true";
-}
-
-/**
- * Disable bundle mock mode
- */
-export function disableBundleMock() {
-  delete process.env.TEST_BUNDLE_MOCK;
-}
-
-/**
  * Extract response body as JSON
  */
 export function parseResponseBody(response) {

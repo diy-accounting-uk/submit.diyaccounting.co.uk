@@ -6,7 +6,7 @@ import { vi } from "vitest";
 // Singleton mock function shared across all test files in the same process
 export const mockSend = vi.fn();
 
-export const mockDynamoDbClient = {
+const mockDynamoDbClient = {
   send: mockSend,
 };
 

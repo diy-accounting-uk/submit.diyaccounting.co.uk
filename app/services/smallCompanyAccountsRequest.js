@@ -24,7 +24,7 @@ import {
 import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
 
-export const SMALL_COMPANY_STATEMENT_FIELDS = [
+const SMALL_COMPANY_STATEMENT_FIELDS = [
   "section477Exemption",
   "membersNotRequiredAudit",
   "directorsResponsibilities",

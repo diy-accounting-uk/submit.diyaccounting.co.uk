@@ -210,7 +210,7 @@ export function roundSmallCompanyBalanceSheet(lines) {
  * notes, in whole pounds with each class's closing net book value rounded from its own movements.
  * @param {Object} sheet - results.PubNotes
  */
-export function fixedAssetNoteFromPublishedNotes(sheet) {
+function fixedAssetNoteFromPublishedNotes(sheet) {
   const note = {};
   for (const className of Object.keys(NOTE_COLUMN_OF_CLASS)) {
     const column = NOTE_COLUMN_OF_CLASS[className];
