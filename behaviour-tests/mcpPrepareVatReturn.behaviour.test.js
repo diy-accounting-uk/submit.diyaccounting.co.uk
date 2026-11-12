@@ -163,8 +163,8 @@ test("the assistant derives a VAT return, hands the figures to the browser, and 
     for (const [field, figure] of Object.entries(prepared.figures)) {
       await expect(page.locator(`#${field}`)).toHaveValue(String(figure));
     }
-    await expect(page.locator("#totalVatDue")).toHaveValue(String(derived.hmrc.totalVatDue));
-    await expect(page.locator("#netVatDue")).toHaveValue(String(derived.hmrc.netVatDue));
+    await expect(page.locator("#totalVatDue")).toHaveValue(derived.hmrc.totalVatDue.toFixed(2));
+    await expect(page.locator("#netVatDue")).toHaveValue(derived.hmrc.netVatDue.toFixed(2));
     await page.screenshot({ path: `${screenshotPath}/handoff-form-filled.png` });
   });
 
