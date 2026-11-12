@@ -24,6 +24,7 @@ export const HOSTED_TOOL_NAMES = [
   "list_books",
   "open_book",
   "derive_vat_return",
+  "prepare_vat_return",
   "derive_micro_entity_accounts",
   "derive_small_company_accounts",
   "derive_itsa_quarterly_update",

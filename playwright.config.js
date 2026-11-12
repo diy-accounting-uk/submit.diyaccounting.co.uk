@@ -340,6 +340,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "mcpPrepareVatReturnBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/mcpPrepareVatReturn.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 600_000,
+    },
+    {
       name: "diyaGlSubscriptionBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/diyaGlSubscription.behaviour.test.js"],

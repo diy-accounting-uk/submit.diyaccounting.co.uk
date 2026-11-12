@@ -27,6 +27,7 @@ import { createSession, listBooks, openBook, saveBook, SAVE_FORMATS } from "./bo
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
+import { prepareVatReturn } from "./handoff-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
@@ -420,6 +421,26 @@ export const TOOLS = {
       periodKey: z.string().optional().describe("The obligation's period key, echoed back for the submit call"),
     },
     handler: deriveVatReturn,
+  },
+  prepare_vat_return: {
+    title: "Prepare a VAT return to file in the browser",
+    annotations: READS,
+    description:
+      "Derives the VAT return for the quarter ending on periodEnd from the session's loaded book, exactly as " +
+      "derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in " +
+      "(the form works out boxes 3 and 5 itself). This tool never files anything and reaches no outside service. The " +
+      "person opens the link, checks the figures on the page, ticks the declaration and files there; the figures filed " +
+      "are the figures the page shows. Show the person the figures this tool answers, give them the link, and tell " +
+      "them to check, declare and file on the page.",
+    inputSchema: {
+      periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
+      periodStart: z
+        .string()
+        .optional()
+        .describe("The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd"),
+      periodKey: z.string().optional().describe("The obligation's period key"),
+    },
+    handler: prepareVatReturn,
   },
   derive_micro_entity_accounts: {
     title: "Derive micro-entity accounts",
