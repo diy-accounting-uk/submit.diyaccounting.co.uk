@@ -3,7 +3,7 @@
 
 // behaviour-tests/helpers/playwrightTestWithout.js
 import { test as base } from "@playwright/test";
-import { fetchWithResetRetry } from "./fetchWithResetRetry.js";
+import { fetchWithResetRetry, isContextClosedError } from "./fetchWithResetRetry.js";
 
 // Blocks RUM / GA / gtag / GTM endpoints / HMRC all.js so behaviour tests aren't
 // slowed down or polluted by real analytics calls. Shared by any fixture that
@@ -64,14 +64,19 @@ export function blockAnalyticsRequests(context) {
       });
     }
     if (isCacheableStaticRequest(route.request())) {
-      let cached = staticResponses.get(url);
-      if (!cached) {
-        const response = await fetchWithResetRetry(route);
-        if (response.status() !== 200) return route.fulfill({ response });
-        cached = { response, body: await response.body() };
-        staticResponses.set(url, cached);
+      try {
+        let cached = staticResponses.get(url);
+        if (!cached) {
+          const response = await fetchWithResetRetry(route);
+          if (response.status() !== 200) return await route.fulfill({ response });
+          cached = { response, body: await response.body() };
+          staticResponses.set(url, cached);
+        }
+        return await route.fulfill({ response: cached.response, body: cached.body });
+      } catch (error) {
+        if (isContextClosedError(error)) return undefined;
+        throw error;
       }
-      return route.fulfill({ response: cached.response, body: cached.body });
     }
     return route.continue();
   });

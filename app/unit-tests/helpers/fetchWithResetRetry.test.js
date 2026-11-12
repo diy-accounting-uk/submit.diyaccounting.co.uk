@@ -5,7 +5,7 @@
 // Unit tests for the behaviour-test static-asset fetch retry
 
 import { describe, test, expect, vi } from "vitest";
-import { fetchWithResetRetry } from "../../../behaviour-tests/helpers/fetchWithResetRetry.js";
+import { fetchWithResetRetry, isContextClosedError } from "../../../behaviour-tests/helpers/fetchWithResetRetry.js";
 
 describe("fetchWithResetRetry", () => {
   test("returns the response when the first fetch succeeds", async () => {
@@ -36,5 +36,17 @@ describe("fetchWithResetRetry", () => {
     const route = { fetch: vi.fn().mockRejectedValue(new Error("read ECONNRESET")) };
     await expect(fetchWithResetRetry(route)).rejects.toThrow("read ECONNRESET");
     expect(route.fetch).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("isContextClosedError", () => {
+  test("is true for a fetch that outlived its test", () => {
+    expect(isContextClosedError(new Error("route.fetch: Request context disposed."))).toBe(true);
+    expect(isContextClosedError(new Error("route.fulfill: Target page, context or browser has been closed"))).toBe(true);
+  });
+
+  test("is false for a network failure", () => {
+    expect(isContextClosedError(new Error("read ECONNRESET"))).toBe(false);
+    expect(isContextClosedError(new Error("net::ERR_NAME_NOT_RESOLVED"))).toBe(false);
   });
 });
