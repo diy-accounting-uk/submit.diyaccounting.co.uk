@@ -387,10 +387,29 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
 }
 
 /**
+ * Stripe's hosted checkout page draws its form in the page itself or in a frame of the page.
+ * Returns a locator for the selector in the first frame that holds a match, the main frame
+ * included. Waits up to `timeout` milliseconds for a match, then answers the page's own locator.
+ */
+async function stripeLocator(page, selector, timeout = 0) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    for (const frame of page.frames()) {
+      const locator = frame.locator(selector);
+      const matches = await locator.count().catch(() => 0);
+      if (matches > 0) return locator;
+    }
+    if (Date.now() >= deadline) return page.locator(selector);
+    await page.waitForTimeout(500);
+  }
+}
+
+/**
  * Fills in a Stripe test card (4242 4242 4242 4242 unless `cardNumber` says otherwise) on a real Stripe Checkout hosted page and
  * submits it. Stripe Checkout is a JS SPA with an accordion UI for payment methods: card inputs
  * are not rendered until the "Card" accordion item is clicked/expanded, and after expansion
- * card/expiry/CVC/name appear as direct <input> elements on the page. Leaves the caller to wait
+ * card/expiry/CVC/name appear as <input> elements, in the page or in the frame that holds the
+ * form (`stripeLocator` finds them in either). Leaves the caller to wait
  * for its own redirect target, since that differs between the main checkout flow (bundles.html)
  * and a DIYA-GL checkout (the spreadsheets page the subscriber started from).
  */
@@ -399,7 +418,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     console.log("Stripe test checkout: waiting for Stripe form to render...");
 
     // Wait for the submit button (proves the SPA has loaded).
-    const submitButton = page.locator('[data-testid="hosted-payment-submit-button"], button[type="submit"]');
+    const submitButton = await stripeLocator(page, '[data-testid="hosted-payment-submit-button"], button[type="submit"]', 60_000);
     await submitButton.first().waitFor({ state: "visible", timeout: 60_000 });
     console.log("Stripe checkout form rendered (submit button visible)");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png`, readerView: true });
@@ -415,13 +434,13 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
 
     // Click the "Card" payment method to expand the accordion and reveal card inputs.
     // Use force:true because Stripe overlays (Link, express checkout) can obscure the radio.
-    const cardRadio = page.locator("#payment-method-accordion-item-title-card");
+    const cardRadio = await stripeLocator(page, "#payment-method-accordion-item-title-card");
     if (await cardRadio.isVisible({ timeout: 5000 }).catch(() => false)) {
       await cardRadio.click({ force: true });
       console.log("Clicked Card payment method accordion");
     } else {
       // Try clicking by label text as fallback
-      const cardLabel = page.locator("text=Card").first();
+      const cardLabel = (await stripeLocator(page, "text=Card")).first();
       if (await cardLabel.isVisible({ timeout: 3000 }).catch(() => false)) {
         await cardLabel.click({ force: true });
         console.log("Clicked Card label text");
@@ -431,7 +450,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     }
 
     // Wait for card number input to appear (proves accordion expanded)
-    const cardNumberInput = page.locator('#cardNumber, input[name="cardNumber"], input[autocomplete="cc-number"]');
+    const cardNumberInput = await stripeLocator(page, '#cardNumber, input[name="cardNumber"], input[autocomplete="cc-number"]', 15_000);
     await cardNumberInput.first().waitFor({ state: "visible", timeout: 15_000 });
     console.log("Card number input visible");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png`, readerView: true });
@@ -446,7 +465,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     console.log("Card number filled (pressSequentially)");
 
     // Fill expiry — Tab from card number to move naturally between fields
-    const expiryInput = page.locator('#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
+    const expiryInput = await stripeLocator(page, '#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
     if (
       await expiryInput
         .first()
@@ -461,7 +480,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     }
 
     // Fill CVC
-    const cvcInput = page.locator('#cardCvc, input[name="cardCvc"], input[autocomplete="cc-csc"]');
+    const cvcInput = await stripeLocator(page, '#cardCvc, input[name="cardCvc"], input[autocomplete="cc-csc"]');
     if (
       await cvcInput
         .first()
@@ -476,7 +495,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     }
 
     // Fill cardholder name
-    const nameInput = page.locator('#billingName, input[name="billingName"], input[autocomplete="cc-name"]');
+    const nameInput = await stripeLocator(page, '#billingName, input[name="billingName"], input[autocomplete="cc-name"]');
     if (
       await nameInput
         .first()
@@ -493,7 +512,10 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     // Select country — Stripe defaults to "United States" which requires ZIP code.
     // Change to "United Kingdom" (appropriate for a UK accounting service) which requires
     // a postal code. The country dropdown is a <select> element.
-    const countrySelect = page.locator('#billingCountry, select[name="billingCountry"], select[autocomplete="billing country"]');
+    const countrySelect = await stripeLocator(
+      page,
+      '#billingCountry, select[name="billingCountry"], select[autocomplete="billing country"]',
+    );
     if (
       await countrySelect
         .first()
@@ -508,7 +530,8 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
 
     // Fill postal code / ZIP — this field is REQUIRED by Stripe for most countries.
     // Without it, form validation silently prevents submission (the root cause of CI failures).
-    const postalInput = page.locator(
+    const postalInput = await stripeLocator(
+      page,
       '#billingPostalCode, input[name="billingPostalCode"], input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]',
     );
     if (
@@ -549,7 +572,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
 
     // Check for Stripe error messages before waiting for redirect
-    const stripeError = page.locator('.StripeError, [data-testid="error-message"], .p-FieldError');
+    const stripeError = await stripeLocator(page, '.StripeError, [data-testid="error-message"], .p-FieldError');
     if (await stripeError.isVisible({ timeout: 5000 }).catch(() => false)) {
       const errorText = await stripeError.textContent().catch(() => "unknown");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-05c-stripe-error.png`, fullPage: true });
