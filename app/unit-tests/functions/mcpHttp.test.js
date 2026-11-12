@@ -8,8 +8,14 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockVerify = vi.fn();
+const verifierConfigs = vi.hoisted(() => []);
 vi.mock("aws-jwt-verify", () => ({
-  JwtVerifier: { create: vi.fn().mockReturnValue({ verify: (...args) => mockVerify(...args) }) },
+  JwtVerifier: {
+    create: (config) => {
+      verifierConfigs.push(config);
+      return { verify: (...args) => mockVerify(...args) };
+    },
+  },
 }));
 
 const mockCreateMcpSession = vi.fn();
@@ -85,6 +91,17 @@ describe("mcpHttp ingestHandler", () => {
     expect(result.headers["WWW-Authenticate"]).toBe(WWW_AUTHENTICATE_NO_TOKEN);
     expect(JSON.parse(result.body)).toMatchObject({ jsonrpc: "2.0", id: null });
     expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it("binds the token by issuer and by the MCP's own app client, and refuses a token from another client", async () => {
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "s-1" });
+    await ingestHandler(mcpEvent({ body: INITIALIZE }));
+    const config = verifierConfigs.at(-1);
+    expect(config.issuer).toBe("https://issuer.test.example");
+    expect(config.audience).toBeNull();
+    expect(() => config.customJwtCheck({ payload: { token_use: "access", client_id: "mcp-client" } })).not.toThrow();
+    expect(() => config.customJwtCheck({ payload: { token_use: "access", client_id: "web-client" } })).toThrow(/another client/);
+    expect(() => config.customJwtCheck({ payload: { token_use: "id", client_id: "mcp-client" } })).toThrow(/token_use/);
   });
 
   it("adds error=invalid_token to the challenge when the token does not verify", async () => {

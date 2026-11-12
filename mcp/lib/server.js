@@ -31,6 +31,7 @@ import { deriveVatReturn } from "./vat-tools.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
+import { ADDS, CHANGES, CHANGES_OUTSIDE, READS, READS_OUTSIDE } from "./tool-annotations.js";
 import {
   listVatObligations,
   listVatLiabilities,
@@ -307,6 +308,8 @@ function vatEnquirySchema() {
 
 export const TOOLS = {
   sign_in: {
+    title: "Sign in",
+    annotations: CHANGES,
     description:
       "Sign in to DIY Accounting Submit as the MCP's own Cognito app client: opens the pool's hosted UI in the " +
       "operator's browser (or prints the URL, when it cannot open one) with a PKCE code challenge, catches the " +
@@ -318,6 +321,8 @@ export const TOOLS = {
     handler: (_session, _params) => signIn(),
   },
   sign_out: {
+    title: "Sign out",
+    annotations: CHANGES,
     description:
       "Ends the MCP's own session: revokes the refresh token at Cognito, tells DIY Accounting Submit's sign-out " +
       "route to close it server-side too, then deletes the local credentials file. Best-effort on both network " +
@@ -326,6 +331,8 @@ export const TOOLS = {
     handler: (_session, _params) => signOut(),
   },
   open_book: {
+    title: "Open a book",
+    annotations: READS,
     description:
       "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
       "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). With cloud: true, opens " +
@@ -344,6 +351,8 @@ export const TOOLS = {
     handler: openBook,
   },
   list_books: {
+    title: "List saved books",
+    annotations: READS,
     description:
       "List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each " +
       "row carries the bookId open_book takes. With clientId, lists that practice client's books instead of the practice's own.",
@@ -353,6 +362,8 @@ export const TOOLS = {
     handler: listBooks,
   },
   save_book: {
+    title: "Save the book",
+    annotations: CHANGES,
     description:
       "Save the session's loaded book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
       "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
@@ -370,6 +381,8 @@ export const TOOLS = {
     handler: saveBook,
   },
   write_finance_package: {
+    title: "Write a finance package",
+    annotations: CHANGES,
     description:
       "Writes a diya-gl book and its lines as the unzipped spreadsheets package directory a completed year's package " +
       "holds: one workbook for a single-file product (Basic Sole Trader, Taxi Driver), the whole named set for a " +
@@ -390,6 +403,8 @@ export const TOOLS = {
     handler: (_session, params) => writeFinancePackage(params),
   },
   derive_vat_return: {
+    title: "Derive a VAT return",
+    annotations: READS,
     description:
       "The nine VAT boxes for one obligation period from the session's loaded book, read from the engine's own VAT " +
       "interface: the quarter ending on periodEnd (a month end the book carries), with HMRC's field names and " +
@@ -407,6 +422,8 @@ export const TOOLS = {
     handler: deriveVatReturn,
   },
   derive_micro_entity_accounts: {
+    title: "Derive micro-entity accounts",
+    annotations: READS,
     description:
       "The seven FRS 105 balance-sheet lines the accounts filing takes, from the session's loaded book: the current " +
       "year from the engine's published balance sheet and the prior year from the book's opening balance, in whole " +
@@ -416,6 +433,8 @@ export const TOOLS = {
     handler: deriveMicroEntityAccounts,
   },
   derive_small_company_accounts: {
+    title: "Derive small-company accounts",
+    annotations: READS,
     description:
       "The figures a small company's FRS 102 section 1A accounts filing takes, from the session's loaded book: the " +
       "full profit and loss account and the balance sheet sub-lines for the current year from the engine's published " +
@@ -427,6 +446,8 @@ export const TOOLS = {
     handler: deriveSmallCompanyAccounts,
   },
   derive_company_tax_return: {
+    title: "Derive a Company Tax Return",
+    annotations: READS,
     description:
       "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
       "computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, " +
@@ -440,6 +461,8 @@ export const TOOLS = {
     handler: deriveCompanyTaxReturn,
   },
   request_hmrc_authorisation: {
+    title: "Request HMRC authorisation",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Answers HMRC's sign-in link for this session, so the VAT tools can call HMRC without a token in the chat. " +
       "Answers {url, expiresAt, scope, hmrcAccount}: show the user the url, wait for them to say HMRC access is " +
@@ -458,6 +481,8 @@ export const TOOLS = {
     handler: requestHmrcAuthorisation,
   },
   list_vat_obligations: {
+    title: "List VAT obligations",
+    annotations: READS_OUTSIDE,
     description:
       "The open and fulfilled VAT obligations HMRC holds for one VRN, or for one practice client's VRN when clientId " +
       "is given instead of vrn, over the deployed API. Uses the session's HMRC authorisation: call " +
@@ -477,6 +502,8 @@ export const TOOLS = {
     handler: listVatObligations,
   },
   list_vat_liabilities: {
+    title: "List VAT liabilities",
+    annotations: READS_OUTSIDE,
     description:
       "What HMRC says the business owes for VAT, by period, for one VRN over the deployed API. Uses the session's HMRC " +
       "authorisation: call request_hmrc_authorisation first if this tool says none is held.",
@@ -484,6 +511,8 @@ export const TOOLS = {
     handler: listVatLiabilities,
   },
   list_vat_payments: {
+    title: "List VAT payments",
+    annotations: READS_OUTSIDE,
     description:
       "The VAT payments HMRC has received from the business, by date, for one VRN over the deployed API. Uses the " +
       "session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.",
@@ -491,6 +520,8 @@ export const TOOLS = {
     handler: listVatPayments,
   },
   list_vat_penalties: {
+    title: "List VAT penalties",
+    annotations: READS_OUTSIDE,
     description:
       "The VAT penalties and late-submission points HMRC holds for one VRN over the deployed API. Uses the session's " +
       "HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.",
@@ -498,6 +529,8 @@ export const TOOLS = {
     handler: listVatPenalties,
   },
   get_vat_return: {
+    title: "Get a submitted VAT return",
+    annotations: READS_OUTSIDE,
     description:
       "One past VAT return as HMRC holds it, by its period key (the periodKey list_vat_obligations answers for a " +
       "fulfilled obligation), over the deployed API. Use it to see what HMRC holds; to read Submit's stored copy of a " +
@@ -512,6 +545,8 @@ export const TOOLS = {
     handler: getVatReturn,
   },
   submit_vat_return: {
+    title: "Submit a VAT return",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files the nine VAT boxes the user has confirmed (derive_vat_return's hmrc fields) over the deployed API, for " +
       "vatNumber or, when clientId is given instead, for that practice client's own VRN. Boxes 3 and 5 are HMRC's own " +
@@ -543,6 +578,8 @@ export const TOOLS = {
     handler: submitVatReturn,
   },
   get_vat_receipt: {
+    title: "Get a VAT receipt",
+    annotations: READS,
     description:
       "A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. To read " +
       "HMRC's copy of a return by period key, use get_vat_return. clientId, when given, narrows the fetch to " +
@@ -554,6 +591,8 @@ export const TOOLS = {
     handler: getVatReceipt,
   },
   list_vat_receipts: {
+    title: "List VAT receipts",
+    annotations: READS,
     description:
       "The receipts Submit has stored for the signed-in account, the list its receipts page shows: each row carries the " +
       "name get_vat_receipt takes. Use it to find a receipt this chat did not just file. clientId narrows the list to one of the " +
@@ -564,6 +603,8 @@ export const TOOLS = {
     handler: listVatReceipts,
   },
   render_micro_entity_accounts_sandbox: {
+    title: "Render micro-entity accounts",
+    annotations: READS,
     description:
       "The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the " +
       "deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a " +
@@ -572,6 +613,8 @@ export const TOOLS = {
     handler: renderMicroEntityAccounts,
   },
   submit_micro_entity_accounts_sandbox: {
+    title: "Submit micro-entity accounts (sandbox)",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for " +
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
@@ -589,6 +632,8 @@ export const TOOLS = {
     handler: submitMicroEntityAccounts,
   },
   render_small_company_accounts_sandbox: {
+    title: "Render small-company accounts",
+    annotations: READS,
     description:
       "The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, " +
       "with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML " +
@@ -598,6 +643,8 @@ export const TOOLS = {
     handler: renderSmallCompanyAccounts,
   },
   submit_small_company_accounts_sandbox: {
+    title: "Submit small-company accounts (sandbox)",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for " +
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
@@ -616,6 +663,8 @@ export const TOOLS = {
     handler: submitSmallCompanyAccounts,
   },
   request_companies_house_codes: {
+    title: "Request Companies House codes",
+    annotations: ADDS,
     description:
       "Answers a link where the user types the Companies House codes a filing needs, so the codes never appear in " +
       "the chat. Answers {entryId, url, expiresAt}: show the user the url, wait for them to say they have saved the " +
@@ -641,6 +690,8 @@ export const TOOLS = {
     handler: requestCompaniesHouseCodes,
   },
   get_confirmation_statement_data_sandbox: {
+    title: "Get confirmation statement data",
+    annotations: READS_OUTSIDE,
     description:
       "The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, " +
       "RegisteredEmailAddress, officers, PSCs, StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC " +
@@ -658,6 +709,8 @@ export const TOOLS = {
     handler: getConfirmationStatementData,
   },
   render_confirmation_statement_sandbox: {
+    title: "Render a confirmation statement",
+    annotations: READS,
     description:
       "The rendered ConfirmationAndVerificationStatement body for confirmed answers, over the deployed API. Never " +
       "reaches the Companies House XML Gateway; every director's personal code is masked in the rendered body before " +
@@ -666,6 +719,8 @@ export const TOOLS = {
     handler: renderConfirmationStatement,
   },
   submit_confirmation_statement_sandbox: {
+    title: "Submit a confirmation statement (sandbox)",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files a confirmed confirmation statement through the Companies House XML Gateway, over the deployed API; " +
       "returns the submission number. The company authentication code and every director's personal code are not " +
@@ -680,6 +735,8 @@ export const TOOLS = {
     handler: submitConfirmationStatement,
   },
   poll_submission: {
+    title: "Check a Companies House submission",
+    annotations: READS_OUTSIDE,
     description:
       "Accepted, rejected with reasons, or pending, for a submitted Companies House filing, over the deployed API. kind " +
       "accounts is a micro-entity or small-company accounts filing (submit_micro_entity_accounts_sandbox, submit_small_company_accounts_sandbox); kind confirmation-statement is " +
@@ -691,6 +748,8 @@ export const TOOLS = {
     handler: pollSubmission,
   },
   move_book_to_client: {
+    title: "Move a book to a client",
+    annotations: CHANGES,
     description:
       "Move one of the practice's own books to a client's book set (during migration from sole trader to practice). " +
       "Calls DIY Accounting Submit's own move route, which copies the book and every kept version, verifies each copy, " +
@@ -702,6 +761,8 @@ export const TOOLS = {
     handler: moveBookToClient,
   },
   list_clients: {
+    title: "List clients",
+    annotations: READS,
     description:
       "The signed-in practice's own client list over the deployed API: each client's id, display name, identifiers " +
       "(VRN, NINO, UTR, company number) and current HMRC authorisation state per service. Archived clients are excluded.",
@@ -709,6 +770,8 @@ export const TOOLS = {
     handler: listClients,
   },
   add_client: {
+    title: "Add a client",
+    annotations: ADDS,
     description:
       "Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one " +
       "must match its HMRC or Companies House format.",
@@ -722,6 +785,8 @@ export const TOOLS = {
     handler: addClient,
   },
   invite_client: {
+    title: "Invite a client",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Sends an HMRC Agent Authorisation invitation for one client and one service, over the deployed API. The " +
       "client's own VRN or NINO comes from the client row, not from this call. Uses the session's HMRC " +
@@ -738,6 +803,8 @@ export const TOOLS = {
     handler: inviteClient,
   },
   client_authorisation_status: {
+    title: "Check a client's authorisation",
+    annotations: READS_OUTSIDE,
     description:
       "One client's current authorisation status for one HMRC service, over the deployed API: re-reads a pending " +
       "invitation's own status, or HMRC's relationships endpoint when none is pending. Uses the session's HMRC " +
@@ -749,6 +816,8 @@ export const TOOLS = {
     handler: clientAuthorisationStatus,
   },
   run_for_clients: {
+    title: "Run a tool for every client",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
@@ -783,13 +852,17 @@ export function createServer(session = createSession(), { toolNames, overrides =
   for (const name of names) {
     const tool = overrides[name] ?? known[name];
     if (!tool) throw new Error(`Unknown tool: ${name}`);
-    server.registerTool(name, { description: tool.description, inputSchema: tool.inputSchema }, async (params) => {
-      try {
-        return asToolResult(await tool.handler(session, params));
-      } catch (err) {
-        return asToolError(err);
-      }
-    });
+    server.registerTool(
+      name,
+      { title: tool.title, description: tool.description, inputSchema: tool.inputSchema, annotations: tool.annotations },
+      async (params) => {
+        try {
+          return asToolResult(await tool.handler(session, params));
+        } catch (err) {
+          return asToolError(err);
+        }
+      },
+    );
   }
   return server;
 }

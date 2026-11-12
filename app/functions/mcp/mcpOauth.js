@@ -219,18 +219,21 @@ function errorPage(description) {
   return htmlPage(
     400,
     "Sign-in request refused",
-    `<h1>Sign-in request refused</h1><p>${escapeHtml(description)}</p><p>Close this window and try again from Claude.</p>`,
+    `<h1>Sign-in request refused</h1><p>${escapeHtml(description)}</p><p>Close this window and try again from the application.</p>`,
   );
 }
 
-function consentPage({ redirectUri, consentBlob, cookieNonce }) {
+function consentPage({ redirectUri, clientName, consentBlob, cookieNonce }) {
   const host = redirectHost(redirectUri);
+  const asker = clientName
+    ? `${escapeHtml(clientName)} (<strong>${escapeHtml(host)}</strong>)`
+    : `An application at <strong>${escapeHtml(host)}</strong>`;
   const loopbackLine = isLoopbackRedirectUri(redirectUri) ? "<p>The answer goes to a program on this computer.</p>" : "";
   return htmlPage(
     200,
     "Allow access to DIY Accounting Submit",
     `<h1>Allow access</h1>` +
-      `<p>Claude (<strong>${escapeHtml(host)}</strong>) is asking to use DIY Accounting Submit as you.</p>` +
+      `<p>${asker} is asking to use DIY Accounting Submit as you.</p>` +
       loopbackLine +
       `<form method="post" action="/mcp/oauth/authorize">` +
       `<input type="hidden" name="consent" value="${escapeHtml(consentBlob)}">` +
@@ -328,7 +331,7 @@ async function handleAuthorizeGet({ event, host }) {
     { typ: "consent", ttlSeconds: CONSENT_TTL_SECONDS },
   );
   logOutcome({ endpoint: "authorize", clientId, redirectHost: redirectHost(redirectUri), outcome: "consent_shown", kind: accepted.kind });
-  return consentPage({ redirectUri, consentBlob, cookieNonce });
+  return consentPage({ redirectUri, clientName: accepted.clientName, consentBlob, cookieNonce });
 }
 
 // A blob that fails its MAC may have been signed under a key version this container has not read

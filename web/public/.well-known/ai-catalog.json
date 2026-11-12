@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "type": "mcp-server",
+      "name": "diya-submit",
+      "title": "DIY Accounting Submit",
+      "url": "https://submit.diyaccounting.co.uk/.well-known/mcp/server-card.json"
+    }
+  ]
+}

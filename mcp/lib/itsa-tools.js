@@ -33,6 +33,7 @@ import { QUARTERLY_PERIOD_TYPES } from "@diy-accounting-uk/diya-gl/dist/app/lib/
 import { z } from "zod";
 
 import { callSubmitApi, hmrcGrantFor, HMRC_ACCOUNTS, requireField } from "./submit-tools.js";
+import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 
 function requireLoaded(session) {
   if (!session.book || !session.lines) {
@@ -169,6 +170,8 @@ export async function submitItsaAnnualSubmission(session, params = {}) {
  */
 export const ITSA_TOOLS = {
   derive_itsa_quarterly_update: {
+    title: "Derive an ITSA quarterly update",
+    annotations: READS,
     description:
       "One period of HMRC's Self Employment Business API from the loaded self-employed book: the period's own figures " +
       "in a tax year filed as dated period summaries, a running total from 6 April in a year filed as cumulative period " +
@@ -182,6 +185,8 @@ export const ITSA_TOOLS = {
     handler: deriveItsaQuarterlyUpdate,
   },
   derive_itsa_annual_submission: {
+    title: "Derive an ITSA annual submission",
+    annotations: READS,
     description:
       "The year's allowances and adjustments for HMRC's Self Employment Business API annual submission from the loaded " +
       "self-employed book, restricted to the fields HMRC accepts for that tax year. With a path, also writes the answer " +
@@ -193,6 +198,8 @@ export const ITSA_TOOLS = {
     handler: deriveItsaAnnualSubmission,
   },
   derive_uk_property_period: {
+    title: "Derive a UK property period",
+    annotations: READS,
     description:
       "One period of HMRC's UK property income and expenses from the loaded landlord book whose chart names the property " +
       "accounts: the period's own figures, both ends inclusive; a cumulative year's running total is the same call with the " +
@@ -205,6 +212,8 @@ export const ITSA_TOOLS = {
     handler: deriveUkPropertyPeriod,
   },
   derive_uk_property_annual: {
+    title: "Derive a UK property annual submission",
+    annotations: READS,
     description:
       "The year's adjustments and allowances for HMRC's UK property annual submission from the loaded landlord book whose " +
       "chart names the property accounts. The elections and the landlord facts are left to the annual submission page and named in leftToPage.",
@@ -214,6 +223,8 @@ export const ITSA_TOOLS = {
     handler: deriveUkPropertyAnnual,
   },
   submit_itsa_quarterly_update: {
+    title: "Submit an ITSA quarterly update",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files one period of HMRC's Self Employment Business API (derive_itsa_quarterly_update's figures, once the user " +
       "has confirmed them) over the deployed API. In a tax year filed as cumulative period summaries (2025-26 on) the " +
@@ -241,6 +252,8 @@ export const ITSA_TOOLS = {
     handler: submitItsaQuarterlyUpdate,
   },
   submit_itsa_annual_submission: {
+    title: "Submit an ITSA annual submission",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Files the year's allowances and adjustments for HMRC's Self Employment Business API annual submission " +
       "(derive_itsa_annual_submission's figures, once the user has confirmed them) over the deployed API. Uses the " +

@@ -194,7 +194,7 @@ export function clearClientMetadataCache() {
  * Accept a client id and redirect URI pair: the redirect must pass the allowlist, and the client
  * is either the DCR id or a CIMD URL whose document lists the redirect.
  *
- * @returns {Promise<{ok: true, kind: "dcr"|"cimd"} | {ok: false, reason: string}>}
+ * @returns {Promise<{ok: true, kind: "dcr"|"cimd", clientName?: string} | {ok: false, reason: string}>}
  */
 export async function acceptClient({ clientId, redirectUri, now }) {
   if (typeof clientId !== "string" || !clientId) return { ok: false, reason: "client_id_missing" };
@@ -205,5 +205,10 @@ export async function acceptClient({ clientId, redirectUri, now }) {
   const fetched = await fetchClientMetadataDocument(clientId, { now });
   if (!fetched.ok) return fetched;
   if (!fetched.document.redirect_uris.includes(redirectUri)) return { ok: false, reason: "redirect_uri_not_in_metadata" };
-  return { ok: true, kind: "cimd" };
+  const { client_name: clientName } = fetched.document;
+  return {
+    ok: true,
+    kind: "cimd",
+    clientName: typeof clientName === "string" && clientName.trim() ? clientName.trim().slice(0, 80) : undefined,
+  };
 }

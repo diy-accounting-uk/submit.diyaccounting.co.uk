@@ -29,6 +29,29 @@ describe("the hosted tool set", () => {
     expect(Object.keys(HOSTED_OVERRIDES.derive_itsa_annual_submission.inputSchema)).toEqual(["taxYear"]);
   });
 
+  it("gives every registered tool a title and all three hints, with the filing tools destructive and open-world", () => {
+    const tables = { ...TOOLS, ...ITSA_TOOLS, ...HOSTED_OVERRIDES };
+    for (const [name, tool] of Object.entries(tables)) {
+      expect(tool.title, name).toMatch(/\S/);
+      expect(Object.keys(tool.annotations ?? {}).sort(), name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
+      for (const hint of Object.values(tool.annotations)) expect(typeof hint, name).toBe("boolean");
+      expect(tool.annotations.readOnlyHint && tool.annotations.destructiveHint, name).toBe(false);
+    }
+    for (const name of Object.keys(tables).filter(
+      (n) => /^submit_/.test(n) || ["invite_client", "run_for_clients", "sign_out", "save_book"].includes(n),
+    )) {
+      expect(tables[name].annotations.destructiveHint, name).toBe(true);
+    }
+    for (const name of Object.keys(tables).filter((n) =>
+      /^(submit_|list_vat_(obligations|liabilities|payments|penalties)|get_vat_return|poll_submission)/.test(n),
+    )) {
+      expect(tables[name].annotations.openWorldHint, name).toBe(true);
+    }
+    for (const name of Object.keys(tables).filter((n) => /^(derive_|list_books|open_book)/.test(n))) {
+      expect(tables[name].annotations.readOnlyHint, name).toBe(true);
+    }
+  });
+
   it("refuses the company tax return with no book loaded", async () => {
     await expect(HOSTED_OVERRIDES.derive_company_tax_return.handler(createSession(), {})).rejects.toThrow(/No book is loaded/);
   });

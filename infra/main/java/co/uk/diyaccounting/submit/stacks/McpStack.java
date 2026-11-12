@@ -162,7 +162,9 @@ public class McpStack extends Stack {
                 .with("DIYA_SUBMIT_BASE_URL", sharedNames.baseUrl)
                 .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
                 .with("MCP_PUBLIC_HOSTS", publicHostsCsv)
-                .with("MCP_ALLOWED_ORIGINS", "https://claude.ai,https://claude.com," + baseUrlWithoutSlash)
+                .with(
+                        "MCP_ALLOWED_ORIGINS",
+                        "https://claude.ai,https://claude.com,https://chatgpt.com," + baseUrlWithoutSlash)
                 .with("MCP_TOKEN_ISSUER", issuer)
                 .with("MCP_TOKEN_JWKS_URI", issuer + "/.well-known/jwks.json")
                 .with("MCP_TOKEN_CLIENT_ID", props.mcpUserPoolClientId());

@@ -272,6 +272,10 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
     try {
       const { tools } = await client.listTools();
       expect(tools.map((tool) => tool.name).sort()).toEqual([...HOSTED_TOOL_NAMES].sort());
+      for (const tool of tools) {
+        expect(tool.title, tool.name).toMatch(/\S/);
+        expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
+      }
 
       const opened = await client.callTool({ name: "open_book", arguments: { bookId } });
       expect(opened.isError, JSON.stringify(opened.content)).toBeFalsy();

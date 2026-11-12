@@ -271,7 +271,7 @@ describe("mcpOauth authorize GET", () => {
     expect(result.headers["Set-Cookie"]).toMatch(
       /^__Host-mcp_consent=[A-Za-z0-9_-]+; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=600$/,
     );
-    expect(result.body).toContain("Claude (<strong>claude.ai</strong>) is asking to use DIY Accounting Submit as you");
+    expect(result.body).toContain("An application at <strong>claude.ai</strong> is asking to use DIY Accounting Submit as you");
     expect(result.body).toContain('<form method="post" action="/mcp/oauth/authorize">');
     expect(result.body).not.toContain("a program on this computer");
 
@@ -354,6 +354,21 @@ describe("mcpOauth authorize GET", () => {
     expect(fetchMock.mock.calls[0][1].redirect).toBe("manual");
     await authorize({ client_id: CIMD_ID });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the client from its metadata document on the consent page, escaped", async () => {
+    fetchMock.mockResolvedValue(
+      respond(
+        200,
+        { client_id: CIMD_ID, client_name: "<b>Chat</b> Assistant", redirect_uris: [CLAUDE_REDIRECT] },
+        { "cache-control": "max-age=60" },
+      ),
+    );
+    const result = await authorize({ client_id: CIMD_ID });
+    expect(result.body).toContain(
+      "&lt;b&gt;Chat&lt;/b&gt; Assistant (<strong>claude.ai</strong>) is asking to use DIY Accounting Submit as you",
+    );
+    expect(result.body).not.toContain("<b>Chat</b>");
   });
 
   it("refuses a CIMD document whose client_id does not match the URL", async () => {
