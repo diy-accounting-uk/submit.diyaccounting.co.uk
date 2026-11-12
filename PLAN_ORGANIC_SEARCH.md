@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 44 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 36 of 44 tasks are rows on `NEXT.md`, where each row carries its brief. 8 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS24, OS26, OS29, OOS30. 33 machine-only, 3 machine-ask, 8 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 37 of 44 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 33 machine-only, 3 machine-ask, 8 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -865,7 +865,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS21 | A listing register, a copy pack and a monthly check | D1, D3, D5, L3, E2 | One file that holds every product fact a directory asks for and every place we are listed; a page of ready-to-paste text per directory; a check that our recorded price text matches the catalogue. The microsite stops being indexable. | Listings recorded as live; the monthly check passes; the microsite answers with `noindex`. | machine-only; on the board |
 | OS22 | Ask Companies House to add Submit to the accounts software finder | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. 41 suppliers are on it. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS23 | Complete the HMRC VAT finder entry | B1 | The "free version" filter on HMRC's finder includes Submit. | The finder shows Submit with the free filter on; sessions with a `tax.service.gov.uk` referrer. | human-driven; on the board |
-| OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask |
+| OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OS25 | Invite a review after each accepted filing | F8, D1, D2 | A steady supply of reviews on the two sites where the leading competitor has about 2,051 and 220. | Reviews per month on each profile. | machine-only; on the board |
 | OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | human-driven |
 | OS29 | Operator: one Wikidata entry for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | human-driven |
@@ -895,7 +895,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 5 | GOV.UK software finders | 15 to 90 | Submit | OS22, OS23 |
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
-| 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS25 |
+| 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
 | 9 | Technical repairs | 2 to 10 | all sites | OS2, OS8, OS12, OS13 |
 | 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41 |
 
@@ -906,7 +906,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 5. **GOV.UK software finders.** The accounts finder lists 44 suppliers and we are absent. The HMRC VAT finder's free-version filter leaves us out. The outcome is Companies House's and HMRC's to give.
 6. **Assistant connector.** 19 fetches in 15 days came from the address ranges OpenAI and Anthropic publish, about one a day, and who asked is not known. The steady figure starts after the listings are submitted (OOS17, OOS18).
 7. **Bing and IndexNow.** Bing and the engines that use its index add roughly 5% to 10% on top of Google clicks, so this grows with groups 1 to 4.
-8. **Listing register and reviews.** Referral clicks from review profiles. Neither task brings a visit until the profiles exist (OS24).
+8. **Listing register and reviews.** Referral clicks from review profiles. OS24 is the sitting that creates the profiles; no visit arrives before it.
 9. **Technical repairs.** OS2 recovers the clicks that land on a 403. The agents in OS12 already get 200, and `llms.txt` files are rarely read.
 10. **Measurement.** These bring no visits. They are how every figure above gets checked.
 
@@ -982,8 +982,6 @@ The brief of a boarded task is its row on `NEXT.md`.
 - [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: OS14, OS43 and OS42 are on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OS42. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 4: Listings
-
-- [ ] **OS24. Create and claim the profiles.** One sitting with the listing pack open. A session fills each form in Chrome from the pack; the operator creates the account, passes the verification and approves each submit. Batch 1, by relevance: Capterra (one profile serves GetApp and Software Advice), Trustpilot, AlternativeTo, SaaSHub, the two claims (SoftwareReview, FeaturedCustomers), the LinkedIn company page (marketing plan MK-27), accountingfirms.co.uk. Batch 2, the long tail: G2, TrustRadius, Crunchbase, the eleven small software directories, the ten citation directories. The Google Business Profile is not touched and Bing Places is not created (operator, 2026-11-12): Google lists online-only businesses as ineligible, and an edit invites re-verification. A directory that asks for payment to list is skipped and recorded so. Each result goes into the listing register as `submitted` with its date and the terms read. **Waits on**: OS21. **Class**: machine-ask. **Repository**: none. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **OS26. Write to the editors and the tax bodies.** Drafts with the `email-draft` skill, one per recipient, each under 120 words with one fact the editor can check and one link: money.co.uk (MTD software guide, 32 products), Finder UK, Simply Business, smallbusiness.co.uk, Startups.co.uk, LITRG, ATT, and one enquiry each to FSB and Enterprise Nation. The facts: 99p a month or £9.99 a year with a free day pass; the HMRC listing; the page from OS9 that shows the filing. The operator sends each from his own address, after OS9, so the link lands on a page that answers the editor's reader. Replies and inclusions are recorded in the listing register. **Waits on**: OS9. **Class**: human-driven. **Repository**: none. **Model**: Opus (drafts). **Size**: 0 files.
 
