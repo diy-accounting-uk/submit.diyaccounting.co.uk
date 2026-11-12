@@ -42,6 +42,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
+- [ ] **DEP184. Clear the `basic-ftp` advisory that `npm audit` reports.** `npm audit` in the main checkout reports 12 high-severity findings, all one advisory: GHSA-c475-qrg2-pj4r, a slow directory-listing parser in `basic-ftp` 6.2.0 and earlier. One copy is installed, `basic-ftp@5.3.1`, through `@axe-core/cli@4.14.0` > `chromedriver` > `proxy-agent` > `pac-proxy-agent` > `get-uri@8.0.1`; the other 11 findings are its parents (`lighthouse`, `pa11y`, `pa11y-ci`, `puppeteer`). It is a development tool path and no deployed code loads it. Dependabot shows no open alert. `npm audit fix` offers only major downgrades of the tools, so the change is an entry in `package.json`'s `overrides` (line 496) for `basic-ftp` at `^6.2.1` (6.2.6 is the latest) and the lock file. Proof: `npm audit` reports 0 high findings, `npm ls basic-ftp` shows one 6.2.x copy, and `npm run accessibility:axe-proxy` still starts its browser. A push that changes `package.json` starts `deploy.yml`. **Source**: `/clean`, 2026-11-12. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
+
 ## Machine-ask
 
 ## Human-driven
