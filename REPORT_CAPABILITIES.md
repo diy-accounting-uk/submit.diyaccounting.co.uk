@@ -401,6 +401,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
     - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes: use when a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
     - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events: use when Athena reads too many small activity_events objects, or a day's compacted copy must be checked or written again.
+    - [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month: use when `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
     - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup: use when a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
     - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena: use when CloudFront access logs must be queryable by Athena for the traffic views.
     - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard: use when accessibility or fraud-header check output must be queryable for the compliance panel.
@@ -4404,7 +4405,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
-- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
+- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
@@ -4546,6 +4547,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks
 - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes
 - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events
+- [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month
 - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup
 - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena
 - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard
@@ -4593,6 +4595,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/activityEventsCompact.js, app/unit-tests/analytics/activityEventsCompact.test.js, infra/main/resources/analytics/views/activity_events_lake.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompaction.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompactionTest.java
 - **Keywords:** compaction, small files, activity_events_lake, activity_events_compacted, unload, s3 get requests, guardduty s3 events, generation
 - **Related:** DATA-10, DATA-12, DATA-22, DATA-27
+
+#### DATA-75 Refresh the AI vendors' published address ranges each month
+
+- **Use when:** `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
+- **Does:** ai-vendor-ranges.yml runs monthly and on dispatch. It runs scripts/ai-vendor-ranges.mjs refresh, which fetches each vendor list, rewrites infra/analytics/ai-vendor-ranges.json and generates the VALUES list in v_ai_fetches_daily.sql. A fetch error or an empty list fails the run. When the files changed, the job commits them to a branch through the GitHub API as the agent App and opens a pull request. The unit test web/unit-tests/ai-vendor-ranges.test.js fails when the view is stale against the JSON.
+- **Run:** `gh workflow run ai-vendor-ranges.yml`; `npm run ai-ranges:refresh`; `npm run ai-ranges:check`
+- **Entry:** `.github/workflows/ai-vendor-ranges.yml`; `scripts/ai-vendor-ranges.mjs:refreshRanges`; `scripts/ai-vendor-ranges.mjs:renderViewSql`
+- **Files:** .github/workflows/ai-vendor-ranges.yml, scripts/ai-vendor-ranges.mjs, infra/analytics/ai-vendor-ranges.json, infra/main/resources/analytics/views/v_ai_fetches_daily.sql, web/unit-tests/ai-vendor-ranges.test.js
+- **Keywords:** ai crawler ranges, chatgpt-user, gptbot, oai-searchbot, perplexitybot, claude-user, claudebot, verified fetch, vendor ip ranges, ai fetches
+- **Related:** DATA-05
 
 #### DATA-12 Provision the analytics lake and Athena workgroup
 
@@ -6938,6 +6950,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - aggregate tables: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - ai agent: [SITE-04](#site-04-track-visits-via-session-beacon)
 - ai assistant vat return: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
+- ai crawler ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
+- ai fetches: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - ai-agent crawler: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - alarm evidence: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - alarm family: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
@@ -7264,6 +7278,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - chat routing: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
+- chatgpt-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - check pass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - checkout: [BILL-24](#bill-24-create-a-stripe-checkout-session)
@@ -7292,6 +7307,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
+- claude-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
+- claudebot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - clean skill: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
@@ -8008,6 +8025,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
+- gptbot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - grant: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - grant flow: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - grantbundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
@@ -8502,6 +8520,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - npx diya-gl: [SS-05](#ss-05-run-the-diya-gl-cli)
 - null-tolerant map: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - oac: [SS-35](#ss-35-cdk-spreadsheetsstack)
+- oai-searchbot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - oauth: [SITE-01](#site-01-sign-customers-in-via-cognito), [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-02](#dev-02-simulate-local-app-oauth)
 - oauth authorize: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - oauth blob: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
@@ -8651,6 +8670,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- perplexitybot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - personal code: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
@@ -9516,11 +9536,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vendor assert: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - vendor console: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
+- vendor ip ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
 - verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
 - verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
+- verified fetch: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - verified owner: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify issue: [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result)

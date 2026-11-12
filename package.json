@@ -51,6 +51,8 @@
     "generate:submission-record": "node scripts/generate-submission-record.mjs",
     "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
     "build:rates-page": "node scripts/build-rates-page.mjs",
+    "ai-ranges:refresh": "node scripts/ai-vendor-ranges.mjs refresh",
+    "ai-ranges:check": "node scripts/ai-vendor-ranges.mjs check",
     "build:welsh": "node scripts/build-welsh-pages.mjs",
     "verify:tax-sources": "node scripts/verify-tax-sources.mjs",
     "videos:manifest": "node scripts/copy-videos-manifest.js",

@@ -44,6 +44,11 @@ const REPORTS = [
     dimensions: ["date", "eventName"],
     metrics: ["eventCount", "activeUsers", "eventValue"],
   },
+  {
+    name: "sources",
+    dimensions: ["date", "sessionSource", "hostName"],
+    metrics: ["sessions", "activeUsers", "engagedSessions"],
+  },
 ];
 
 let cachedS3Client = null;

@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability DATA-75 Refresh the AI vendors' published address ranges each month
+# - **Use when:** `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
+# - **Does:** ai-vendor-ranges.yml runs monthly and on dispatch. It runs scripts/ai-vendor-ranges.mjs refresh, which fetches each vendor list, rewrites infra/analytics/ai-vendor-ranges.json and generates the VALUES list in v_ai_fetches_daily.sql. A fetch error or an empty list fails the run. When the files changed, the job commits them to a branch through the GitHub API as the agent App and opens a pull request. The unit test web/unit-tests/ai-vendor-ranges.test.js fails when the view is stale against the JSON.
+# - **Run:** `gh workflow run ai-vendor-ranges.yml`; `npm run ai-ranges:refresh`; `npm run ai-ranges:check`
+# - **Entry:** `.github/workflows/ai-vendor-ranges.yml`; `scripts/ai-vendor-ranges.mjs:refreshRanges`; `scripts/ai-vendor-ranges.mjs:renderViewSql`
+# - **Files:** .github/workflows/ai-vendor-ranges.yml, scripts/ai-vendor-ranges.mjs, infra/analytics/ai-vendor-ranges.json, infra/main/resources/analytics/views/v_ai_fetches_daily.sql, web/unit-tests/ai-vendor-ranges.test.js
+# - **Keywords:** ai crawler ranges, chatgpt-user, gptbot, oai-searchbot, perplexitybot, claude-user, claudebot, verified fetch, vendor ip ranges, ai fetches
+# - **Related:** DATA-05
+# @end-capability
+
+name: ai-vendor-ranges
+run-name: "ai vendor ranges from ${{ github.ref_name }}"
+
+concurrency:
+  group: ai-vendor-ranges
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # The first of each month, off the top-of-hour queue.
+    - cron: '17 6 1 * *'
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: refresh
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Generate a token for diya-agent
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Fetch the vendors' lists and write the view
+        run: node scripts/ai-vendor-ranges.mjs refresh
+
+      - name: Open a pull request when the ranges changed
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "the vendors' ranges are unchanged"
+            exit 0
+          fi
+          git diff --stat
+          BRANCH="claude/ops-ai-ranges-$(date -u +%Y%m%d)"
+          BASE_SHA=$(git rev-parse HEAD)
+          printf 'Refresh the AI vendors address ranges\n\nThe monthly run of ai-vendor-ranges.yml fetched new ranges and regenerated v_ai_fetches_daily.sql.\n\nAgent-Run: %s/%s/actions/runs/%s' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/commit-message.txt
+          scripts/github-api-commit.sh --repo "$GITHUB_REPOSITORY" --branch "$BRANCH" \
+            --base-sha "$BASE_SHA" --message-file /tmp/commit-message.txt
+          gh pr create --base main --head "$BRANCH" \
+            --title "Refresh the AI vendors address ranges" \
+            --body "The vendors' published ranges changed. This pull request holds the new infra/analytics/ai-vendor-ranges.json and the regenerated v_ai_fetches_daily.sql. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

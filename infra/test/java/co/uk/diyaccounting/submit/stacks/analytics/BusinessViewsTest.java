@@ -10,10 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -29,7 +33,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 71;
+    private static final int VIEW_COUNT = 73;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -117,6 +121,8 @@ class BusinessViewsTest {
                 "v_activity_started_hourly",
                 "v_submissions_by_activity_hourly",
                 "v_traffic_sources_daily",
+                "v_ai_referrals_daily",
+                "v_ai_fetches_daily",
                 "v_visitors_by_kind_hourly",
                 "v_integration_calls",
                 "v_integration_calls_daily",
@@ -474,5 +480,29 @@ class BusinessViewsTest {
                 }
             }
         }
+    }
+
+    @Test
+    void aiFetchesViewUsesTheClientAddressOnlyInsideTheRangeTest() throws IOException {
+        Path file = Path.of("main/resources/analytics/views/v_ai_fetches_daily.sql");
+        if (!Files.exists(file)) {
+            file = Path.of("infra").resolve(file);
+        }
+        String code = Files.readString(file)
+                .lines()
+                .filter(line -> !line.stripLeading().startsWith("--"))
+                .reduce("", (all, line) -> all + line + "\n");
+
+        assertTrue(code.contains("c_ip"), "expected the view to read c_ip for the range test");
+        assertTrue(
+                code.contains("contains(v.cidr, try_cast(n.c_ip AS ipaddress))"),
+                "expected c_ip to be used only as the address in the range test");
+        String finalSelect = code.substring(code.lastIndexOf("SELECT CAST(date_parse"));
+        assertFalse(finalSelect.contains("c_ip"), "the final select must not carry c_ip");
+        assertFalse(
+                Pattern.compile("md5|sha1|sha256|sha512|xxhash|to_hex|hmac|crc32", Pattern.CASE_INSENSITIVE)
+                        .matcher(code)
+                        .find(),
+                "the view must not hash c_ip");
     }
 }

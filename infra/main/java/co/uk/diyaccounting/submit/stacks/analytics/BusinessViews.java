@@ -168,6 +168,16 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
             new ViewDefinition(
+                    "v_ai_referrals_daily",
+                    "GA4 sessions each day from AI assistants, search engines and gov.uk sources, by host, a"
+                            + " floor because only visitors who accept the banner are counted",
+                    List.of("ga4_sources")),
+            new ViewDefinition(
+                    "v_ai_fetches_daily",
+                    "Requests each day by the AI or search agent a user agent names, by path, with whether the"
+                            + " address is in the vendor's published ranges",
+                    List.of("cloudfront_requests")),
+            new ViewDefinition(
                     "v_visitors_by_kind_daily",
                     "Sessions and users each day, by hostname and visitor kind (human, bot, synthetic)",
                     List.of("sessions_by_host_source_daily")),

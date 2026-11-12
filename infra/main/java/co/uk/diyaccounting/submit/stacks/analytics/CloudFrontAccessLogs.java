@@ -68,7 +68,7 @@ public class CloudFrontAccessLogs {
 
     // Standard CloudFront access-log (v2) field set. c_ip is personal data under UK GDPR; the
     // table description below says so. A view may use c_ip only inside an aggregate, as a salted
-    // hash, and never selects it or its hash as a column.
+    // hash, or in a range test whose output is a boolean, and never selects it or its hash as a column.
     private static final List<String> FIELD_ORDER = List.of(
             "date",
             "time",
@@ -201,8 +201,9 @@ public class CloudFrontAccessLogs {
                         .name(TABLE_NAME)
                         .description("CloudFront standard access logs delivered as Parquet (CloudWatch Logs "
                                 + "delivery v2). Operational data only: c_ip is personal data under UK GDPR. "
-                                + "A view may use c_ip only inside an aggregate, as a salted hash, and "
-                                + "must never select it or its hash as a column.")
+                                + "A view may use c_ip only inside an aggregate, as a salted hash, or in a "
+                                + "range test whose output is a boolean, and must never select it or "
+                                + "its hash as a column.")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(tableParameters)
                         .partitionKeys(List.of(CfnTable.ColumnProperty.builder()
