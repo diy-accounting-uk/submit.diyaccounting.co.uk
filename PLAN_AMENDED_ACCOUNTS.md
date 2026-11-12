@@ -5,7 +5,7 @@
 
 A customer files amended (revised) accounts for a micro-entity, a small company and a dormant company on prod. Every channel that files original accounts files the revision. Every publication point says so. Companies House has approved what it must approve. The GOV.UK page "Find software for filing company accounts" shows Yes in its "Amended accounts" column for DIY Accounting Submit. Facts checked 2026-11-12.
 
-**Status**: 24 tasks. 17 machine-only, 3 machine-ask, 4 human-driven. None is on `NEXT.md` yet. The first two to start are AA9 (the questions for Companies House) and AA3 with AA1 (the environment rule and the document fix).
+**Status**: 26 tasks. 19 machine-only, 3 machine-ask, 4 human-driven. None is on `NEXT.md` yet. The first two to start are AA9 (the questions for Companies House) and AA3 with AA1 (the environment rule and the document fix).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -168,7 +168,7 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 
 | Id | Question | Blocks |
 | --- | --- | --- |
-| Q1 | Must revised accounts under the `Accounts` form pass test submissions and a review before the live package files them? If yes, how many for each accounts type? | AA18 |
+| Q1 | Must revised accounts under the `Accounts` form pass test submissions and a review before the live package files them? If yes, how many for each accounts type? | OAA2, AA18 |
 | Q2 | Does the gateway accept revised accounts by software when the original accounts came by paper, WebFiling or other software? | AA15 |
 | Q3 | What does the gateway answer when a second set of accounts arrives for a period and the revised fact is `false`? What does it answer when the fact is `true` and it holds no accounts for the period? | AA15, AA2 |
 | Q4 | Does the gateway refuse revised accounts for a period after some time? | AA4 copy |
@@ -202,8 +202,8 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | --- | --- | --- | --- |
 | Availability table | `scripts/build-mtd-calendar.mjs`, `web/public/mtd-calendar.html` | A row for revised accounts; the drop cells of the accounts row | AA4, AA6, AA7, AA18 |
 | Calendar dates | same, and `.claude/skills/tax-sources/sources/` | The 28 day delivery rule | AA8 |
-| FAQ and help | `web/public/faqs.toml`, `web/public/help.html` | One new entry, keyed to the activity | AA16 |
-| Guide and screenshots | `web/public/guide.page.js`, `npm run video:walkthrough` | One journey | AA17 |
+| FAQ and help | `web/public/faqs.toml`, `web/public/help.html` | One new entry, keyed to the activity; the page gains it at launch | AA16, AA18 |
+| Guide and screenshots | `web/public/guide.page.js`, `web/public/guide.html`, `npm run video:walkthrough` | One journey; the page gains it at launch | AA17, AA18 |
 | Videos | `videos/`, `web/public/videos/publish.json` | One scene script, recorded on the simulator | AA17, OAA3, AA18 |
 | MCP page | `web/public/mcp.html` | The tools take a revision | AA7 |
 | Developer site | `web/developer/mcp-api.html` | Generated from the tool schemas | AA7 |
@@ -213,9 +213,9 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-20 | AA4, AA16 |
 | Terms | `web/public/terms.html` | Two sentences name revised accounts | AA18 |
 | Customer copy and receipts | `web/public/lib/filing-record.js`, `web/public/hmrc/receipt/receipts.page.js` | The title and the amend link | AA4 |
-| Filing landing pages | `scripts/build-filing-pages.mjs` (board row OS9, not on `main`) | A section on each accounts page | AA20 |
-| Knowledge base | `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.toml` | One article | AA20 |
-| Listing register | `web/marketing/marketing.toml` (board row OS21, on `claude/husky-search`) | An entry for the GOV.UK finder | AA19 |
+| Filing landing pages | `scripts/build-filing-pages.mjs` (board row OS9, not on `main`) | A section on each accounts page | AA21 |
+| Knowledge base | `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/` | One article, as `.html` with its `.md` copy | AA20 |
+| Listing register | `[[listing]]` tables in `web/marketing/marketing.toml`, read by `scripts/listings-register.mjs` (board row OS21, on `claude/husky-search`) | An entry for the GOV.UK finder | AA19 |
 | GOV.UK finder | the listing request of board row OOS22 | "Amended accounts: Yes" in place of No | AA19, OAA4 |
 
 Places read and left as they are:
@@ -254,7 +254,8 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | Label | Task | Delivers | Verified by | Class |
 | --- | --- | --- | --- | --- |
 | AA9 | Draft the questions for the XML team | One draft with Q1 to Q4 | The `email-draft` skill's facts pass | machine-only |
-| OAA1 | Send the questions | The email, then the reply on record | The reply is in the correspondence folder | human-driven |
+| OAA1 | Send the questions | The email to the XML team | The send date is in this plan | human-driven |
+| AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q4 | machine-only |
 | AA10 | Revised cases for the review | Four fixture cases; the review script judges a revision | Unit tests of the review script | machine-only |
 | AA11 | Review and judge the four cases | A review folder with the judge's verdicts | The judge passes all four | machine-only |
 | AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-ask |
@@ -273,7 +274,8 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | AA18 | Launch on prod | `prod` on the activity; the table says production | Prod shows the amend link; the route accepts | machine-ask |
 | AA19 | The finder answer and the register | A draft that says Yes; a register entry | The draft and the entry exist | machine-only |
 | OAA4 | Send the finder answer | The email to Companies House | The finder page shows Yes | human-driven |
-| AA20 | Pages outside the app | A knowledge-base article; a section on each landing page | SEO tests of both repositories | machine-only |
+| AA20 | Knowledge-base article | One article on the spreadsheets site | That repository's SEO tests | machine-only |
+| AA21 | Landing page sections | A section on each accounts landing page | The generator's staleness test | machine-only |
 
 ### 5.2 Briefs
 
@@ -323,7 +325,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Copy the law requires.** One sentence says a revision corrects what was wrong and its necessary consequences (section 454). One sentence says the directors deliver revised accounts within 28 days of approving them. A note shows when the approval date is more than 28 days old. The original accounts stay on the register.
 - **Refusals.** The page refuses a receipt that is not accounts, not accepted, or part of a joint filing, with one sentence each. It hides the option and says so when `isRevisedAccountsOffered` is false.
 - **Send.** `buildAccountsPayload` adds `revision`. The result headline is "Companies House accepted the revised accounts." or "Companies House rejected the revised accounts.".
-- **Record.** In `web/public/lib/filing-record.js`, `accountsFilingCopyHtml` titles an amended receipt "Your copy of the revised accounts filed at Companies House". Its first link becomes "Amend these accounts" and opens the amend form. The filings page script passes the link through `linksTo`. The house style is `customerCopyHtml` in `web/public/lib/submission-record.js`.
+- **Record.** In `web/public/lib/filing-record.js`, `accountsFilingCopyHtml` titles an amended receipt "Your copy of the revised accounts filed at Companies House". Its first link becomes "Amend these accounts" and opens the amend form. `accountsFilingCopyHtml(receipt, { receiptName, linksTo })` takes the link as `linksTo.correct`, and the filings page script passes it. The house style is `customerCopyHtml` in `web/public/lib/submission-record.js`.
 - **Joint filing text.** In `loadAmendment`, the refusal for accounts filed on their own names the accounts form's amend link.
 - **Availability.** Add a row to `AVAILABILITY` in `scripts/build-mtd-calendar.mjs`. Its `filing` is "Companies House revised accounts (micro-entity, small company, dormant)". Its `web` is the micro-entity form and its `activity` is `file-revised-accounts`. The Web form cell is `["preview", "from an accepted filing"]` and the other cells are `NOT_OFFERED`. Run `npm run build:mtd-calendar`.
 - **Tests.** New `web/browser-tests/fileMicroEntityAccounts.amend.browser.test.js`: the form fills from a receipt; the revision texts are required; the date rule; each refusal. Extend `web/browser-tests/filings.browser.test.js` for the link and the title. In `behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js` add three journeys: file and amend micro-entity accounts and see the revision accepted; the same for dormant accounts; Companies House rejects the revision (`ACCOUNTS_REJECTED`) and the fixed revision is accepted. Put the steps in `behaviour-tests/steps/behaviour-companies-house-accounts-steps.js`. Each journey asserts that the filed document holds "These are revised accounts" and that the receipt is listed as "Revised accounts". Add one case to `app/system-tests/tokenConsumption.system.test.js`: an accepted revision charges one token of `file-micro-entity-accounts`. That tier needs Docker (`npm run test:system`).
@@ -379,16 +381,22 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Goal.** One short email that asks Q1 to Q4 of section 2.3.
 - **How.** Use the `email-draft` skill on Opus. It reads the thread and the operator's sent mail from corpus-loom. The email is a reply on the XML team's accounts testing thread, which `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` names.
 - **Facts the draft may state.** Submit files micro-entity, small company and dormant accounts under its live package. It builds revised accounts by replacement with the six facts of the accounts specification's "Revised Accounts" section. GOV.UK says software can file an amendment "if you used it to file your annual accounts".
-- **Rules.** Four questions, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines.
+- **Rules.** Four questions, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
 - **Output.** `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REVISED_ACCOUNTS.md`, committed in the private repository.
 - **Waits on**: nothing. AA1's date question joins the draft when it arises before the send. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
 
 #### OAA1. Send the questions
 
-- The operator reads AA9's draft and sends it from his own address as a reply on the XML team's thread.
-- When the reply arrives, a session records it beside the draft as `EMAIL_XMLGW_REVISED_ACCOUNTS_REPLY.md` and writes each answer into section 2.3 of this plan.
-- The answer to Q1 decides OAA2. The answers to Q2 and Q3 start AA15.
+- The operator reads AA9's draft and sends it from his own address to the XML team.
+- A session renames the draft to `EMAIL_XMLGW_REVISED_ACCOUNTS.md`, adds the `Sent:` line and writes the send date here.
 - **Waits on**: AA9. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+
+#### AA22. Record the XML team's answers
+
+- **Goal.** The reply to OAA1 is on record, and section 2.3 of this plan holds each answer.
+- **How.** Find the reply in the mail mirror with the `corpus-loom` `search` tool (source `mail-antony`, the subject of OAA1's email). Write it beside the sent email as `EMAIL_XMLGW_REVISED_ACCOUNTS_REPLY.md` in `../private.diyaccounting.co.uk/companies-house/correspondence/`, in the form of `EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` there. Write each answer into section 2.3 in one sentence, with no name and no quoted text.
+- **What the answers start.** The answer to Q1 decides OAA2: test submissions and a review, or neither. The answers to Q2 and Q3 start AA15. The answer to Q4 gives AA4's copy its time limit, or removes the sentence.
+- **Waits on**: the reply to OAA1. **Class**: machine-only. **Repository**: private, submit. **Model**: Sonnet. **Size**: 2 files.
 
 #### AA10. Revised cases for the review
 
@@ -412,8 +420,8 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Goal.** Four submission numbers on the Companies House test service.
 - **How.** After the operator's go, dispatch `.github/workflows/companies-house-test-service.yml` once for each revised case: `gh workflow run companies-house-test-service.yml --ref main -f case=<case name>`. The run builds each request with the route's own functions and sets `GatewayTest`. Its artifact holds the redacted exchanges.
 - **Proof.** The gateway acknowledges each submission. It parses the iXBRL at submit, so an acknowledgement shows that the document passed its rules. Each poll answers pending until the XML team reviews.
-- **Record.** Write each submission number into the case's `expectedOutcome.note` in the fixture.
-- **Waits on**: AA11, and AA10 on `main`. **Class**: machine-ask (the operator's go for four test submissions). **Repository**: submit. **Model**: Sonnet. **Size**: 1 file.
+- **Record.** Write the run id and the date into each case's `expectedOutcome.note` in the fixture, in the form the other cases use ("Observed OK on the test service, run <run id> (<date>)."). The four submission numbers go into AA13's draft in the private repository.
+- **Waits on**: AA11, and AA10 on `main`. **Class**: machine-ask (the operator's go for four test submissions). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
 
 #### AA13. Draft the review request
 
@@ -424,10 +432,10 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### OAA2. Send the review request
 
-- The operator sends AA13's draft when the reply to OAA1 asks for test submissions.
-- When that reply says that no test is needed, this task closes with nothing sent.
+- The operator sends AA13's draft when the answer to Q1 (AA22) asks for test submissions.
+- When that answer says that no test is needed, this task closes with nothing sent.
 - A session records the XML team's verdict in the correspondence folder. A fail goes back to AA1 and AA11.
-- **Waits on**: OAA1's reply, AA13. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- **Waits on**: AA22, AA13. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### AA14. Prove a revision through the Submit API
 
@@ -444,12 +452,12 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Shaped by the answers.** Q2 decides whether the choice is offered for accounts first filed another way. Q3 gives the gateway's answers for a second original and for a revision with no original. The page words its errors from them, and AA2's simulator returns them.
 - **Until then.** The amend link on a receipt is the one way in. The page names the paper route on https://www.gov.uk/annual-accounts/corrections-and-amendments for other accounts.
 - **Tests.** Browser tests of the choice on both forms; two behaviour journeys; simulator unit tests for the Q3 answers.
-- **Waits on**: OAA1's reply, AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: AA22, AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### AA16. Submit's copy
 
 - **FAQ.** Add one entry to `web/public/faqs.toml` after `companies-house-accounts-filings`: id `revised-accounts`, `activity = "file-revised-accounts"`, question "How do I correct accounts I have filed with Companies House?". The answer: open the filing from the receipts, choose Amend, say what was wrong and what changes; Companies House keeps the original; one token when accepted; the 28 days. `web/public/lib/help-page.js` shows an entry only where its activity is listed, so prod shows it after AA18.
-- **Help page.** Board row OS7 writes the FAQ text into `web/public/help.html`. When that has landed, regenerate the page by OS7's method and follow its rule for an entry that prod does not list.
+- **Help page.** Board row OS7 (on `claude/husky-search`) makes `web/public/help.html` a generated page: `npm run build:static-content` writes into it the FAQ entries whose activity prod lists. This entry's activity lists no `prod` until AA18, so the page does not change here. When OS7 is on `main`, run the command and `npx vitest run web/unit-tests/staticContentPages.test.js` to prove that.
 - **API description.** In `infra/main/java/co/uk/diyaccounting/submit/names/CompaniesHouseNames.java`, the summary "Submit a micro-entity accounts filing" and its description name micro-entity, small company and revised accounts. `./mvnw clean verify` runs `OpenApiGenerator`, which rewrites `web/public/docs/api/openapi.json` and `web/public/docs/api/openapi.yaml`.
 - **Capability text.** The `@capability CH-08` header in `app/functions/companies-house/companiesHouseAccountsPost.js` says that a request with `revision` files revised accounts. Run `npm run capabilities:generate`; `npm run capabilities:check` passes.
 - **Tests.** Update any test that counts FAQ entries (`grep -rn "faqs.toml" web/unit-tests behaviour-tests`). `npx vitest run web/unit-tests`.
@@ -457,12 +465,13 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA17. Guide, screenshots and video
 
-- **Scene script.** Create `videos/amend-company-accounts.json` on the pattern of `videos/file-company-tax-return-with-accounts.json`: `environments` is `["simulator"]`; `pages` lists the micro-entity form and `web/public/companies-house/filings.html`. The scenes: the receipt, Amend, the corrected figure, the two texts, the preview with the revision page, the accepted result, the receipts list. It records on the simulator and never on prod.
+- **Scene script.** Create `videos/amend-company-accounts.json` on the pattern of `videos/file-company-tax-return-with-accounts.json`: `environments` is `["simulator"]`; `pages` lists the micro-entity form and `web/public/companies-house/filings.html`. The scenes: the receipt, Amend, the corrected figure, the two texts, the preview with the revision page, the accepted result, the receipts list. It records on the simulator and never on prod. The scripts for original accounts list `["ci"]`; this journey needs an accepted receipt, which only the simulator gives without a person.
 - **Guide.** In `web/public/guide.page.js`, add `{ video: "amend-company-accounts" }` after `{ video: "file-small-company-accounts" }`. The guide shows a journey only where its activity is listed. Give the video the activity `file-revised-accounts` in `web/public/videos/publish.json`.
 - **Record and upload.** Follow the `site-video-capture` skill to record. Follow the `video-publish` skill to check and upload the recording unlisted. Stop there. The public flip is AA18's, after OAA3.
 - **Screenshots.** Run `npm run video:walkthrough` for the guide screenshots. Run the `visual-review` skill on them, and the `ui-ux-pro-max` skill on the guide screenshots of the amend journey.
+- **Static guide.** When board row OS7 is on `main`, `web/public/guide.html` is generated by `npm run build:static-content` and holds only the journeys prod lists. Run the command; the page gains this journey at AA18.
 - **Tests.** `npx vitest run app/unit-tests/video/scriptSchema.test.js`; `npm run video:embed-check`.
-- **Waits on**: AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
+- **Waits on**: AA4. The scenes use the micro-entity form and the filings page only, so AA17 runs beside AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
 #### OAA3. Watch the video
 
@@ -471,8 +480,8 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA18. Launch on prod
 
-- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The reply to OAA1 is on record. When it asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approves the launch.
-- **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `file-revised-accounts` and drop "preview" from its name. In `scripts/build-mtd-calendar.mjs`, set the revised row's cells to `production` where the accounts row says production, and add the row's `video` id. Run `npm run build:mtd-calendar`.
+- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The answers to OAA1 are on record (AA22). When Q1's answer asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approves the launch.
+- **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `file-revised-accounts` and drop "preview" from its name. In `scripts/build-mtd-calendar.mjs`, set the revised row's cells to `production` where the accounts row says production, and add the row's `video` id. Run `npm run build:mtd-calendar`. Run `npm run build:static-content`, which now writes the FAQ entry of AA16 into `web/public/help.html` and the journey of AA17 into `web/public/guide.html`, because the activity lists `prod`.
 - **Terms.** In `web/public/terms.html`, two sentences name what Submit files. One holds "micro-entity accounts, small company accounts and confirmation statements". The other starts "Companies House accounts and confirmation statements:". Add revised accounts to both.
 - **Video.** Flip the video public by the `video-publish` skill.
 - **Tests.** `npx vitest run app/unit-tests/services/prodSurface.test.js web/unit-tests`; the simulator suites of AA4 and AA5.
@@ -482,7 +491,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 #### AA19. The finder answer and the register
 
 - **Draft.** The listing request of board row OOS22 went to the XML team on 2026-11-12 with "Amended accounts: No". Its record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_ACCOUNTS_SOFTWARE_FINDER.md`. Write a two-sentence follow-up on that thread with the `email-draft` skill on Opus. It says that the answer for the three tables is now Yes. Save it beside the record as `DRAFT_EMAIL_ACCOUNTS_SOFTWARE_FINDER_AMENDED.md`. When the reply to OOS22 names another route for a listing change, prepare the answer for that route.
-- **Register.** When the listing register is on `main` (board row OS21; `[[listing]]` tables in `web/marketing/marketing.toml`), add an entry for the GOV.UK accounts software finder with its state and date.
+- **Register.** When the listing register is on `main` (board row OS21; `[[listing]]` tables in `web/marketing/marketing.toml`), add an entry for the GOV.UK accounts software finder. Copy the fields of an entry there (`id`, `place`, `group`, `products`, `url`, `state`, `date`, `terms`); `state` is one of `LISTING_STATES` in `scripts/listings-register.mjs` (`planned`, `submitted`, `live`). Run that row's listings check on the file.
 - **Board.** OOS22's row says to change the answer when the joint filing is on prod. When this plan is boarded, that row takes the new condition: Yes when AA18 is on prod.
 - **Waits on**: AA18. **Class**: machine-only. **Repository**: private, submit. **Model**: Opus (the draft). **Size**: 1 to 2 files.
 
@@ -492,11 +501,21 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - A session records the send date, the reply and the day the finder page shows Yes on the three tables.
 - **Waits on**: AA19. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
-#### AA20. Pages outside the app
+#### AA20. Knowledge-base article
 
-- **Knowledge base.** In the spreadsheets repository, add one article: "How to correct company accounts after you have filed them". Follow an existing company article: `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/annual-return-dormant-company.html`, its Markdown copy beside it, its entry in the knowledge-base file that section 4 names, and its file `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/data/ref-additions/annual-return-dormant-company.toml`. The article states the routes that the GOV.UK page gives, the five statements and the 28 days. It links to Submit's micro-entity form. Run `npm run build:sitemaps` and `npx vitest run web/unit-tests/seo-validation.test.js` in that repository.
-- **Landing pages.** Board row OS9 adds `scripts/build-filing-pages.mjs` and pages for micro-entity, small company and dormant accounts. When they are on `main`, add a section "Correct accounts you have filed" to each, from the generator's data file.
-- **Waits on**: AA18; board row OS9 for the second part. **Class**: machine-only. **Repository**: spreadsheets, submit. **Model**: Sonnet. **Size**: ~6 files.
+- **Goal.** One article on the spreadsheets site: "How to correct company accounts after you have filed them".
+- **Pattern.** Follow an existing company article: `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/annual-return-dormant-company.html`, its Markdown copy beside it, and its file `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/data/ref-additions/annual-return-dormant-company.toml`.
+- **The list of articles.** `knowledge-base.toml` in that folder is generated (`npm run build:knowledge-base`, from a content folder outside the repository) and git ignores it. No entry there is edited. Board row OS35 writes the first new article and settles how the knowledge-base page lists one; follow the method OS35 lands. When OS35 is not on `main`, read how the page lists an article before you write this one.
+- **Content.** The article states the routes that the GOV.UK page gives, the five statements and the 28 days. It links to Submit's micro-entity form.
+- **Run.** In that repository: `npm run build:sitemaps` and `npx vitest run web/unit-tests/seo-validation.test.js`. Create the worktree with that repository's `scripts/worktree-add.sh`.
+- **Waits on**: AA18. Board rows OS35 and OS45 edit the same folder, so this task lands after them or in their agent. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~4 files.
+
+#### AA21. Landing page sections
+
+- **Goal.** Each accounts landing page on Submit has a section "Correct accounts you have filed".
+- **Where.** Board row OS9 adds `scripts/build-filing-pages.mjs`, its data file of copy, and pages for micro-entity, small company and dormant accounts. Add the section to each of the three from the data file, and run the generator and its staleness test as OS9's brief names them.
+- **Copy.** Two sentences: open the filing from the receipts and choose Amend; Companies House keeps the original accounts on the register. Link to the FAQ entry of AA16.
+- **Waits on**: AA18, and board row OS9 on `main`. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
 ## 6. Dependency graph
 
@@ -513,18 +532,19 @@ graph TD
   AA3 --> AA7
   OS14["OS14 on main"] --> AA7
   AA9 --> OAA1
+  OAA1 --> AA22
   AA1 --> AA10
   AA10 --> AA11
   AA11 --> AA12
   AA12 --> AA13
   AA13 --> OAA2
-  OAA1 --> OAA2
+  AA22 --> OAA2
   AA7 --> AA14
   AA10 --> AA14
-  OAA1 --> AA15
+  AA22 --> AA15
   AA5 --> AA15
   AA4 --> AA16
-  AA5 --> AA17
+  AA4 --> AA17
   AA17 --> OAA3
   AA6 --> AA18
   AA7 --> AA18
@@ -532,34 +552,35 @@ graph TD
   AA12 --> AA18
   AA14 --> AA18
   AA16 --> AA18
-  OAA1 --> AA18
+  AA22 --> AA18
   OAA2 --> AA18
   OAA3 --> AA18
   AA18 --> AA19
   OS21["OS21 on main"] --> AA19
   AA19 --> OAA4
   AA18 --> AA20
-  OS9["OS9 on main"] --> AA20
+  AA18 --> AA21
+  OS9["OS9 on main"] --> AA21
 ```
 
 - AA1: its merge follows AA3, or shares its pull request.
 - AA2, AA4, AA7, AA10: blocked by AA1. AA4 also by AA2 and AA3. AA7 also by AA3 and by OS14 on `main`.
-- AA5: blocked by AA4. AA6 and AA17: blocked by AA5. AA16: blocked by AA4.
+- AA5, AA16 and AA17: blocked by AA4. AA6: blocked by AA5.
 - AA11: blocked by AA10. AA12: blocked by AA11 and the operator's go. AA13: blocked by AA12.
 - AA14: blocked by AA7 and AA10.
-- OAA1: blocked by AA9. OAA2: blocked by AA13 and by OAA1's reply.
-- AA15: blocked by OAA1's reply and AA5.
-- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, OAA1's reply, OAA2's outcome when the reply asks for tests, OAA3 and the operator's approval.
-- AA19 and AA20: blocked by AA18. OAA4: blocked by AA19.
+- OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
+- AA15: blocked by AA22 and AA5.
+- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, OAA3 and the operator's approval.
+- AA19, AA20 and AA21: blocked by AA18. AA19 also by OS21 on `main`; AA21 also by OS9 on `main`. OAA4: blocked by AA19.
 - AA8 and AA9 wait on nothing.
 
 ## 7. Shared facts
 
 - **The simulator lane.** Every behaviour suite on the simulator takes one port. Run one suite at a time under `lockf -k /tmp/submit-simulator.lock <command>`.
-- **Worktrees.** `npm run bundle` comes before the unit tests. Link `node_modules` once with an absolute `ln -sfn`. Run `npm ci` in `mcp/` before the MCP tests.
+- **Worktrees.** Create each one with `scripts/worktree-add.sh <path> <branch> <base>`, which links `node_modules` and `mcp/node_modules` from the main checkout. `npm run bundle` comes before the unit tests. Every Bash call starts with `cd <worktree>`, and every file tool takes an absolute path under it.
 - **Gates for each change.** `npx eslint <files>` and `npx prettier --check <files>` for JavaScript; `./mvnw spotless:check` for Java, with any `spotless:apply` kept to the task's files. A new file carries the licence header. Comments and test names name no plan, task label or date.
-- **Generated files.** `web/public/mtd-calendar.html` comes from `npm run build:mtd-calendar`. `REPORT_CAPABILITIES.md` comes from `npm run capabilities:generate`. `web/developer/mcp-api.html` comes from `node scripts/build-developer-site.mjs`. `web/public/docs/api/openapi.json` comes from `./mvnw clean verify`. Two branches that both regenerate one of these land one after the other, and the second regenerates.
-- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA15. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: board row OS14, then AA7. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
+- **Generated files.** `web/public/mtd-calendar.html` comes from `npm run build:mtd-calendar`. `REPORT_CAPABILITIES.md` comes from `npm run capabilities:generate`. `web/developer/mcp-api.html` comes from `node scripts/build-developer-site.mjs`. `web/public/docs/api/openapi.json` comes from `./mvnw clean verify`. When board row OS7 is on `main`, `web/public/help.html` and `web/public/guide.html` come from `npm run build:static-content` and hold only what prod lists; `web/unit-tests/staticContentPages.test.js` fails when either is stale. Two branches that both regenerate one of these land one after the other, and the second regenerates.
+- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA15. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: board row OS14, then AA7. `web/public/faqs.toml` and `web/public/guide.page.js`: board row OS7, then AA16 and AA17. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
 - **The revision request.** After AA1, `revision` is `{originalDateOfApproval, nonCompliance, amendments}`. `director.dateApproved` is the date of the revision. The route refuses a revision whose original date is after it.
 - **Cost.** An accepted revision costs one token of `file-micro-entity-accounts` or `file-small-company-accounts`. A rejected one costs nothing. `file-revised-accounts` has `tokenCost = 0` and decides only where a revision is offered.
 - **Environments.** ci files to the Companies House test service, which accepts nothing until the XML team reviews it. Prod files to the live gateway. The simulator is the one place where an amend journey reaches an accepted revision without a person.
@@ -576,16 +597,16 @@ graph TD
 2. AA3 with AA1, then AA2.
 3. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
 4. AA10, then AA11.
-5. AA16 and AA17, then OAA3.
+5. AA16 and AA17 after AA4, then OAA3.
 
 **With the operator's go, and no answer needed.** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
 
 **After the reply to OAA1.**
 
-1. OAA2, when the reply asks for test submissions.
+1. AA22 records the answers. Then OAA2, when Q1's answer asks for test submissions.
 2. AA15, from the answers to Q2 and Q3.
 3. AA18, the launch. It is the one change that offers a revision on prod.
-4. AA19, OAA4 and AA20.
+4. AA19, OAA4, AA20 and AA21.
 
 `PLAN_HMRC_CT_APPROVAL.md` UH8 puts the joint filing on prod. It can land before or after AA18. Before AA18, the joint filing on prod amends the return alone, by AA3's rule.
 
