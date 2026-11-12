@@ -46,6 +46,34 @@ function parseRobotsTxt(content) {
   return directives;
 }
 
+// Helper: split robots.txt into groups of consecutive User-agent lines and the rules that follow
+function parseRobotsGroups(content) {
+  const groups = [];
+  let current = null;
+  let collectingAgents = false;
+  for (const raw of content.split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith("#") || line === "") continue;
+    const [key, ...valueParts] = line.split(":");
+    const keyLower = key.toLowerCase().trim();
+    const value = valueParts.join(":").trim();
+    if (keyLower === "user-agent") {
+      if (!collectingAgents) {
+        current = { agents: [], allows: [], disallows: [] };
+        groups.push(current);
+      }
+      current.agents.push(value);
+      collectingAgents = true;
+    } else {
+      collectingAgents = false;
+      if (!current) continue;
+      if (keyLower === "allow") current.allows.push(value);
+      else if (keyLower === "disallow") current.disallows.push(value);
+    }
+  }
+  return groups;
+}
+
 // Helper: check if a path is disallowed by robots.txt rules
 function isDisallowed(urlPath, disallows) {
   return disallows.some((rule) => urlPath.startsWith(rule));
@@ -139,6 +167,35 @@ describe("robots.txt validation", () => {
       expect(robots.disallows).toContain("/auth/");
       expect(robots.disallows).toContain("/activities/");
       expect(robots.disallows).toContain("/errors/");
+    });
+
+    it("blocks no sitemap URL for any named agent", () => {
+      const groups = parseRobotsGroups(readFile(path.join(sites.submit.dir, "robots.txt")));
+      const urls = extractSitemapUrls(readFile(path.join(sites.submit.dir, "sitemap.xml")));
+      const named = groups.filter((group) => !group.agents.includes("*"));
+      expect(named.flatMap((group) => group.agents)).toEqual(expect.arrayContaining(["OAI-SearchBot", "ClaudeBot", "GPTBot"]));
+      for (const group of named) {
+        for (const url of urls) {
+          const urlPath = new URL(url).pathname;
+          expect(isDisallowed(urlPath, group.disallows), `${group.agents.join(", ")} is blocked from ${url}`).toBe(false);
+        }
+      }
+    });
+
+    it("repeats the six Disallow lines in every named group", () => {
+      const groups = parseRobotsGroups(readFile(path.join(sites.submit.dir, "robots.txt")));
+      const star = groups.find((group) => group.agents.includes("*"));
+      expect(star.disallows).toHaveLength(6);
+      for (const group of groups.filter((candidate) => !candidate.agents.includes("*"))) {
+        expect(group.disallows, `${group.agents.join(", ")} should repeat the * Disallow lines`).toEqual(star.disallows);
+      }
+    });
+
+    it("states the content signal once", () => {
+      const lines = readFile(path.join(sites.submit.dir, "robots.txt")).split("\n");
+      expect(lines.filter((line) => line.startsWith("Content-Signal:"))).toEqual([
+        "Content-Signal: search=yes, ai-input=yes, ai-train=yes",
+      ]);
     });
   });
 });
