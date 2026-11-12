@@ -293,6 +293,21 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void signOutDeletesTheCallersGrantThroughTheTokenLambdaBehindTheJwtAuthorizer() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        var deleteRoutes = stack.lambdaFunctionProps.stream()
+                .filter(p -> p.httpMethod() == HttpMethod.DELETE)
+                .toList();
+        assertEquals(1, deleteRoutes.size());
+        var deleteRoute = deleteRoutes.get(0);
+        assertEquals("/api/v1/companies-house/grants/{grantId}", deleteRoute.urlPath());
+        assertEquals(true, deleteRoute.jwtAuthorizer());
+        assertEquals(false, deleteRoute.customAuthorizer());
+        assertEquals(stack.companiesHouseTokenPostLambdaProps.ingestFunctionName(), deleteRoute.ingestFunctionName());
+    }
+
+    @Test
     void sixFilingLambdasSitBehindTheCustomAuthorizerAndRegisteredOfficeAddressReadSitsBehindJwt() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
@@ -358,15 +373,16 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTwentyFourForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllTwentyFiveRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(24, stack.lambdaFunctionProps.size());
+        assertEquals(25, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
                         "/api/v1/companies-house/company/{companyNumber}",
                         "/api/v1/companies-house/token",
+                        "/api/v1/companies-house/grants/{grantId}",
                         "/api/v1/companies-house/transaction",
                         "/api/v1/companies-house/transaction/{transactionId}",
                         "/api/v1/companies-house/transaction/{transactionId}",

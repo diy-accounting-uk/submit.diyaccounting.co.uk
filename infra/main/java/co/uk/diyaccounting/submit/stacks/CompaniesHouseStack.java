@@ -36,6 +36,7 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
@@ -450,6 +451,13 @@ public class CompaniesHouseStack extends Stack {
         this.companiesHouseTokenPostLambda = companiesHouseTokenPostLambdaUrlOrigin.ingestLambda;
         this.companiesHouseTokenPostLambdaLogGroup = companiesHouseTokenPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.companiesHouseTokenPostLambdaProps);
+        // Sign-out deletes the caller's own grant through the same Lambda: a further route, no
+        // further function.
+        this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                .from(this.companiesHouseTokenPostLambdaProps)
+                .httpMethod(HttpMethod.DELETE)
+                .urlPath(props.sharedNames().companiesHouse.companiesHouseGrantItemUrlPath)
+                .build());
         infof(
                 "Created Lambda %s for Companies House token exchange with ingestHandler %s",
                 this.companiesHouseTokenPostLambda.getNode().getId(),
@@ -462,6 +470,7 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseTokenLambdaAccess(
                 this.companiesHouseTokenPostLambda, region, account, props, activityBusArn);
         grantGrantCreate(this.companiesHouseTokenPostLambda, mcpSessionsTable, codesSealKeySecret);
+        grantGrantDelete(this.companiesHouseTokenPostLambda, mcpSessionsTable);
 
         // The six OAuth filing Lambdas: they carry the user's Companies House access token as a
         // Bearer header (via the custom authorizer, matching the HMRC VAT routes) and call
@@ -1790,6 +1799,11 @@ public class CompaniesHouseStack extends Stack {
     private static void grantGrantCreate(Function fn, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
         mcpSessionsTable.grant(fn, "dynamodb:PutItem");
         codesSealKeySecret.grantRead(fn);
+    }
+
+    // Sign-out deletes a grant: one read to check its owner, then the delete.
+    private static void grantGrantDelete(Function fn, ITable mcpSessionsTable) {
+        mcpSessionsTable.grant(fn, "dynamodb:GetItem", "dynamodb:DeleteItem");
     }
 
     // A filing Lambda opens a grant: one read of the item and the sealing key.

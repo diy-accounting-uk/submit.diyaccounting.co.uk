@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-197 Check the runner's browser install in one job
+# - **Use when:** a change touches runner setup (`scripts/playwright-install-chromium.sh`, the `setup-toolchain` action, a job's packages) and the change should be tried before a push starts the full test and deploy runs.
+# - **Does:** runner-install-check.yml runs one job on the runner image and toolchain setup of the browser test shards. It runs the Chromium install script, then opens one page in Chromium. The job takes minutes where a push costs about 450 job-minutes.
+# - **Run:** `gh workflow run runner-install-check.yml --ref <branch>`
+# - **Entry:** `.github/workflows/runner-install-check.yml`
+# - **Files:** .github/workflows/runner-install-check.yml, scripts/playwright-install-chromium.sh
+# - **Keywords:** runner install, chromium install, playwright install, runner setup, toolchain check, one job check
+# - **Related:** OPS-159, OPS-144
+# @end-capability
+
+name: runner install check
+run-name: "runner install check of ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: runner-install-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  install-chromium:
+    name: 'install chromium and open a page'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+
+      - name: Install Chromium
+        run: scripts/playwright-install-chromium.sh
+
+      - name: Open one page in Chromium
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            await page.setContent('<title>runner install check</title>');
+            console.log('Chromium opened a page titled: ' + (await page.title()));
+            await browser.close();
+          })().catch((error) => { console.error(error.message); process.exit(1); });
+          "

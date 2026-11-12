@@ -35,10 +35,12 @@ exits on the condition is lighter: one notification, no filter to get wrong.
 **main, plus the head branch of every open pull request**, re-read each cycle:
 
 ```bash
-{ echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName'; } | sort -u
+{ echo main; gh api "repos/{owner}/{repo}/pulls?state=open&per_page=50" --jq '.[].head.ref'; } | sort -u
 ```
 
-A PR merging or opening changes the scope, and picking that up is this skill's job.
+A PR merging or opening changes the scope, and picking that up is this skill's job. The script
+reads the list over REST. When that read fails it prints `PR LIST FAILED` each cycle, keeps the
+watch alive and never prints a tally, so a failed read never looks like a scope of main alone.
 
 ## The monitor's brief
 
@@ -46,13 +48,16 @@ Arm `scripts/watch-ci.sh <state-dir>` under the `Monitor` tool (`persistent: tru
 every 75 seconds, seeds silently on its first pass (one `SEEDED` line with the counts), emits one
 `RED <branch> <workflow> run <id> (<conclusion>)` per newly failed latest run, one
 `MERGEABLE #<n> <branch> (<sha>)` per PR per head once its latest runs are all terminal and none
-failed, and exits 0 with one `TALLY` line when nothing in scope is still running. It gives up with
+failed, one `CANCELLED <branch> <workflow> run <id>` per latest run that ended `cancelled`, and exits 0 with one
+`TALLY: all terminal, <n> latest runs, <r> red, <c> cancelled` line when nothing in scope is still running. It gives up with
 `NO DATA` after three empty cycles. Re-arm it after each push, because a new head means new runs.
 
 What it covers, so the brief need not be rewritten per session:
 
 - **Every terminal state**: `failure`, `timed_out`, `action_required` and `startup_failure` are
-  red; `success`, `skipped`, `cancelled` and `neutral` are not.
+  red; `success`, `skipped` and `neutral` are not. A `cancelled` latest run is its own event and its
+  own count, because no later run of that workflow and event replaced it: the workflow did not run.
+  A cancelled run that a later run replaced is not a latest run and stays quiet.
 - **Low volume**: reds once each, readiness once per head, one tally.
 - **State from the API**: `gh run list --json` with `jq`, never a log grep.
 - **Empty result sets counted**, not read as green.
@@ -69,9 +74,10 @@ What it covers, so the brief need not be rewritten per session:
   do not affect merge readiness, preventing hand-dispatched workflows from blocking ready PRs.
 
   Incomplete is `queued` or `in_progress`. Failed is `failure`, `timed_out` or `action_required`.
-  Anything else — `success`, and also `skipped`, `cancelled` or `neutral` — does not hold the PR
-  back, because a workflow can legitimately skip under a `paths:` filter and a cancelled run is
-  usually a supersession. Requiring a literal `success` from every workflow that has ever touched
+  A latest run that is `cancelled` also holds the PR back: nothing replaced it. Anything else —
+  `success`, `skipped` or `neutral` — does not hold the PR back, because a workflow can
+  legitimately skip under a `paths:` filter. A cancelled run that a later run replaced is not a
+  latest run. Requiring a literal `success` from every workflow that has ever touched
   the branch would leave a PR never ready for reasons that are not defects.
 
   A shell loop cannot invoke a skill, so the probe's job is only to notice and say so: emit
@@ -90,6 +96,13 @@ early. `/auto-merge` is what settles it.
 
 If `/auto-merge` merges anything, the scope changes — the PR's branch leaves it and `main` gains a
 deploy. Re-read the scope on the next cycle rather than carrying the old one.
+
+## A runner-setup change is tried in one job first
+
+Before a push whose only purpose is a change to runner setup (an install script, the toolchain
+action, a job's packages), dispatch `runner-install-check.yml` on the branch with
+`gh workflow run runner-install-check.yml --ref <branch>`. Push the PR only when it passes. One
+push re-runs about 160 test and 290 deploy job-minutes; the check is one job of a few minutes.
 
 ## When a red arrives
 

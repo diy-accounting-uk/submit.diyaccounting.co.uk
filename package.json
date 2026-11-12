@@ -477,6 +477,7 @@
     "structured-data-testing-tool": "^4.5.0",
     "supertest": "^7.3.1",
     "vitest": "^5.0.5",
+    "xmllint-wasm": "5.3.0",
     "yaml": "^2.9.0"
   },
   "optionalDependencies": {

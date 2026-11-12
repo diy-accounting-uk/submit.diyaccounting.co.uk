@@ -4,7 +4,7 @@
 
 # @capability OPS-134 Monitor GitHub Actions CI from the CLI
 # - **Use when:** main and every open PR's head branch need polling until CI is green, with each red and each PR's readiness reported once.
-# - **Does:** watch-ci.sh polls the GitHub API to watch every CI workflow run on main and each open PR's head branch until it completes. It reports each red once, each PR's merge-readiness once per head, and one tally when the whole scope is terminal.
+# - **Does:** watch-ci.sh polls the GitHub API to watch every CI workflow run on main and each open PR's head branch until it completes. It reports each red and each unreplaced cancelled run once, each PR's merge-readiness once per head, and one tally when the whole scope is terminal.
 # - **Run:** `./scripts/watch-ci.sh [state-dir]`
 # - **Entry:** `scripts/watch-ci.sh`
 # - **Files:** scripts/watch-ci.sh
@@ -21,8 +21,17 @@ READY="$STATE_DIR/ready"        # one "<pr> <headsha>" per line already reported
 NOTGATING="$STATE_DIR/notgating"  # one "<branch>:<databaseIds>" per line already reported
 touch "$SEEN" "$READY" "$NOTGATING"
 
-scope() {
-  { echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null; } | sort -u
+SLEEP_SECONDS="${WATCH_CI_SLEEP:-75}"
+RED_CONCLUSIONS='.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure"'
+
+# Open pull requests as "<number> <headRef> <headSha> <isDraft>" lines, read over REST. Exits
+# non-zero when the read fails, so a failed listing is never taken for "no open pull requests".
+list_prs() {
+  gh api "repos/{owner}/{repo}/pulls?state=open&per_page=50" --jq '.[] | "\(.number) \(.head.ref) \(.head.sha) \(.draft)"' 2>/dev/null
+}
+
+scope() { # stdin: pull request lines -> branches in scope
+  { echo main; awk '{print $2}'; } | sort -u
 }
 
 raw_runs() { # branch -> json array of all runs
@@ -44,13 +53,20 @@ empty=0
 quiet=0
 while true; do
   cycle=$((cycle + 1))
-  total=0; running=0; red=0; failed=0
-  for branch in $(scope); do
+  total=0; running=0; red=0; cancelled=0; failed=0
+  if prs=$(list_prs); then
+    :
+  else
+    prs=""
+    failed=1
+    echo "PR LIST FAILED: open pull requests not read this cycle, scope is main only"
+  fi
+  for branch in $(echo "$prs" | scope); do
     runs=$(latest_runs "$branch") || { failed=1; continue; }
     n=$(echo "$runs" | jq 'length')
     total=$((total + n))
     running=$((running + $(echo "$runs" | jq '[.[] | select(.status != "completed")] | length')))
-    echo "$runs" | jq -r '.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure")) | "\(.databaseId) \(.conclusion) \(.workflowName)"' \
+    echo "$runs" | jq -r '.[] | select(.status == "completed" and ('"$RED_CONCLUSIONS"')) | "\(.databaseId) \(.conclusion) \(.workflowName)"' \
     | while read -r id concl wf; do
         [ -z "$id" ] && continue
 
@@ -59,7 +75,19 @@ while true; do
           [ "$cycle" -gt 1 ] && echo "RED $branch $wf run $id ($concl)"
         fi
       done
-    red=$((red + $(echo "$runs" | jq '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure"))] | length')))
+    red=$((red + $(echo "$runs" | jq '[.[] | select(.status == "completed" and ('"$RED_CONCLUSIONS"'))] | length')))
+
+    # A latest run that was cancelled has no later run of its workflow and event, so nothing
+    # superseded it: the workflow did not run.
+    echo "$runs" | jq -r '.[] | select(.status == "completed" and .conclusion == "cancelled") | "\(.databaseId) \(.workflowName)"' \
+    | while read -r id wf; do
+        [ -z "$id" ] && continue
+        if ! grep -q "^$id cancelled" "$SEEN"; then
+          echo "$id cancelled" >> "$SEEN"
+          [ "$cycle" -gt 1 ] && echo "CANCELLED $branch $wf run $id"
+        fi
+      done
+    cancelled=$((cancelled + $(echo "$runs" | jq '[.[] | select(.status == "completed" and .conclusion == "cancelled")] | length')))
 
     # Report non-gating runs (workflow_dispatch, schedule, issues, etc.) once per distinct set
     non_gating=$(non_gating_runs "$branch")
@@ -81,8 +109,8 @@ while true; do
     empty=0
   fi
   # merge-readiness, once per PR per head sha
-  gh pr list --state open --limit 50 --json number,headRefName,headRefOid,isDraft --jq '.[] | select(.isDraft | not) | "\(.number) \(.headRefName) \(.headRefOid)"' 2>/dev/null \
-  | while read -r num br sha; do
+  echo "$prs" | while read -r num br sha draft; do
+      [ "$draft" = "true" ] && continue
       [ -z "$num" ] && continue
       runs=$(latest_runs "$br")
       [ -z "$runs" ] && continue
@@ -90,25 +118,25 @@ while true; do
       total=$(echo "$runs" | jq 'length')
       on_head=$(echo "$runs" | jq '[.[] | select(.headSha == "'"$sha"'")] | length')
       # No runs are red/failed
-      ok=$(echo "$runs" | jq '[.[] | select(.status != "completed" or .conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure")] | length')
+      ok=$(echo "$runs" | jq '[.[] | select(.status != "completed" or '"$RED_CONCLUSIONS"' or .conclusion == "cancelled")] | length')
       if [ "$on_head" -eq "$total" ] && [ "$ok" -eq 0 ] && ! grep -q "^$num $sha$" "$READY"; then
         echo "$num $sha" >> "$READY"
         echo "MERGEABLE #$num $br ($sha)"
       fi
     done
   if [ "$cycle" -eq 1 ]; then
-    echo "SEEDED: $total latest runs in scope, $running in flight, $red red already"
+    echo "SEEDED: $total latest runs in scope, $running in flight, $red red already, $cancelled cancelled already"
   fi
   if [ "$failed" -eq 1 ]; then
     quiet=0
   elif [ "$running" -eq 0 ]; then
     quiet=$((quiet + 1))
     if [ "$quiet" -ge 2 ]; then
-      echo "TALLY: all terminal, $total latest runs, $red red"
+      echo "TALLY: all terminal, $total latest runs, $red red, $cancelled cancelled"
       exit 0
     fi
   else
     quiet=0
   fi
-  sleep 75
+  sleep "$SLEEP_SECONDS"
 done

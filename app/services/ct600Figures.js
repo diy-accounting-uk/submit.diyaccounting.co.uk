@@ -52,7 +52,37 @@ function isIsoDate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && utcDate(value).toISOString().slice(0, 10) === value;
 }
 
-function lastDayOfTwelveMonths(isoStart) {
+export function daysInclusive(isoStart, isoEnd) {
+  return Math.round((utcDate(isoEnd).getTime() - utcDate(isoStart).getTime()) / DAY_MS) + 1;
+}
+
+/**
+ * The most annual investment allowance a return can claim: 1,000,000 for a year, increased or
+ * reduced in proportion to the return's days over the days in the 12 months from its start
+ * (CAA 2001 section 51A(6)).
+ */
+export function annualInvestmentAllowanceMaximum(periodStart, periodEnd) {
+  const daysInTwelveMonths = daysInclusive(periodStart, lastDayOfTwelveMonths(periodStart));
+  return (1_000_000 * daysInclusive(periodStart, periodEnd)) / daysInTwelveMonths;
+}
+
+/**
+ * Each financial year's small profits and marginal relief limits, scaled to the accounting period
+ * (CTA 2010 section 18D(4)). The apportioning code multiplies a year's limits by that year's share
+ * of the period, so the limits here carry the period's days over the larger of the financial year's
+ * days and the period's days: a period of 90 days gets 90/365 of each limit, and a period of 12
+ * months or more keeps the full limits. This is HMRC's marginal relief calculator's ratio.
+ */
+function limitsScaledToPeriod(perYear, years, totalDays) {
+  return perYear.map((rates, index) => {
+    const financialYear = years[index].year;
+    const daysInFinancialYear = daysInclusive(`${financialYear}-04-01`, `${financialYear + 1}-03-31`);
+    const scale = totalDays / Math.max(daysInFinancialYear, totalDays);
+    return { ...rates, lowerLimit: rates.lowerLimit * scale, upperLimit: rates.upperLimit * scale };
+  });
+}
+
+export function lastDayOfTwelveMonths(isoStart) {
   const date = utcDate(isoStart);
   date.setUTCFullYear(date.getUTCFullYear() + 1);
   date.setUTCDate(date.getUTCDate() - 1);
@@ -107,6 +137,8 @@ const WHOLE_POUND_FIELDS = [
   ["lossCarriedBack", "Trading loss carried back against the previous period's profits"],
   ["priorPeriodChargeableProfits", "The previous period's chargeable profits (box 315 of its return)"],
   ["frankedInvestmentIncome", "Franked investment income or exempt ABGH distributions (box 620)"],
+  ["donationsPaid", "Qualifying donations paid in the period (box 305)"],
+  ["lossCarriedBackFromLaterPeriod", "Trading loss carried back from the next accounting period (box 275)"],
 ];
 
 const PENCE_FIELDS = [
@@ -201,6 +233,16 @@ function figureProblems(figures, { today } = {}) {
   ) {
     problem("donations", "Donations added back are more than the cost of sales and administrative expenses");
   }
+  if (isIsoDate(figures.periodStart) && isIsoDate(figures.periodEnd) && figures.periodEnd >= figures.periodStart) {
+    const maximum = Math.floor(annualInvestmentAllowanceMaximum(figures.periodStart, figures.periodEnd));
+    if (numberOrZero(figures.annualInvestmentAllowance) > maximum) {
+      problem(
+        "annualInvestmentAllowance",
+        `The annual investment allowance of a ${daysInclusive(figures.periodStart, figures.periodEnd)}-day period can be ${maximum.toLocaleString("en-GB")} at most.`,
+        true,
+      );
+    }
+  }
   if (numberOrZero(figures.specialRatePoolAnnualInvestmentAllowance) > numberOrZero(figures.annualInvestmentAllowance)) {
     problem(
       "specialRatePoolAnnualInvestmentAllowance",
@@ -278,7 +320,11 @@ function capitalAllowanceClassLines(figures) {
  * above it, so the computation adds up.
  *
  * @param {object} figures
- * @returns {{profitLossPerAccounts: number, nonTradingLoanRelationshipCredits: number, depreciation: number, amortisation: number, entertaining: number, donations: number, adjustedProfitBeforeCapitalAllowances: number, totalCapitalAllowances: number, adjustedProfit: number}} a loss is a negative adjustedProfit
+ * A return that is one accounting period of a longer period of account (figures.periodOfAccount)
+ * keeps the lines of the whole period of account down to adjustedProfitBeforeAccountingPeriodAdjustments,
+ * then timeApportionment takes the profit to the accounting period's share of it.
+ *
+ * @returns {{profitLossPerAccounts: number, nonTradingLoanRelationshipCredits: number, depreciation: number, amortisation: number, entertaining: number, donations: number, adjustedProfitBeforeAccountingPeriodAdjustments?: number, timeApportionment?: number, adjustedProfitBeforeCapitalAllowances: number, totalCapitalAllowances: number, adjustedProfit: number}} a loss is a negative adjustedProfit
  */
 export function computationLinesFromFigures(figures) {
   const lines = {
@@ -291,6 +337,12 @@ export function computationLinesFromFigures(figures) {
   };
   lines.adjustedProfitBeforeCapitalAllowances =
     lines.profitLossPerAccounts + COMPUTATION_ADJUSTMENTS.reduce((total, [key, effect]) => total + effect * lines[key], 0);
+  if (figures.periodOfAccount) {
+    const apportioned = figures.periodOfAccount.apportioned.adjustedProfitBeforeCapitalAllowances;
+    lines.adjustedProfitBeforeAccountingPeriodAdjustments = lines.adjustedProfitBeforeCapitalAllowances;
+    lines.timeApportionment = apportioned - lines.adjustedProfitBeforeCapitalAllowances;
+    lines.adjustedProfitBeforeCapitalAllowances = apportioned;
+  }
   Object.assign(lines, capitalAllowanceClassLines(figures));
   lines.totalCapitalAllowances =
     numberOrZero(figures.annualInvestmentAllowance) +
@@ -440,7 +492,11 @@ function workLosses({ figures, tradingLoss, profitsBeforeOtherDeductions, losses
 }
 
 function corporationTaxPenceOn(profits, years, totalDays, { taxData, fileFinancialYear, associatedCompanies }) {
-  const perYear = years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days));
+  const perYear = limitsScaledToPeriod(
+    years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days)),
+    years,
+    totalDays,
+  );
   const charge = apportionCorporationTax(profits, years, totalDays, { perYear, associatedCompanies });
   const firstShare = years[1].days > 0 ? Math.round((profits * years[0].days) / totalDays) : profits;
   const shares = [firstShare, profits - firstShare];
@@ -512,7 +568,7 @@ function rimRateOn(isoDate) {
   return rate;
 }
 
-function addDays(isoDate, days) {
+export function addDays(isoDate, days) {
   const date = utcDate(isoDate);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
@@ -523,7 +579,7 @@ function isMonthEnd(isoDate) {
 }
 
 // The same day of the month `months` later, or its last day when that month is shorter.
-function addMonths(isoDate, months) {
+export function addMonths(isoDate, months) {
   const date = utcDate(isoDate);
   const day = date.getUTCDate();
   date.setUTCDate(1);
@@ -963,7 +1019,9 @@ function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
     boxes[165] = tradingProfit - broughtForwardUsedAgainstTrading;
     worked[165] = workedEntry(["155", "160"]);
   }
-  const bankInterest = computationLines.nonTradingLoanRelationshipCredits;
+  const bankInterest = figures.periodOfAccount
+    ? figures.periodOfAccount.apportioned.nonTradingLoanRelationshipCredits
+    : computationLines.nonTradingLoanRelationshipCredits;
   if (bankInterest > 0) boxes[170] = bankInterest;
   const profitsBeforeOtherDeductions = (boxes[165] ?? 0) + (boxes[170] ?? 0);
   if (profitsBeforeOtherDeductions > 0) {
@@ -979,19 +1037,32 @@ function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
       "The loss arising is the computation's adjusted loss",
     );
   }
-  if (losses.usedAgainstTotalProfits > 0) boxes[275] = losses.usedAgainstTotalProfits;
+  const lossFromLaterPeriod = numberOrZero(figures.lossCarriedBackFromLaterPeriod);
+  if (lossFromLaterPeriod > profitsBeforeOtherDeductions - losses.usedAgainstTotalProfits - losses.broughtForwardAgainstTotalProfits) {
+    refuseLoss(
+      `The loss carried back from the next accounting period ${lossFromLaterPeriod} is more than the profits this period's other claims leave`,
+      "lossCarriedBackFromLaterPeriod",
+    );
+  }
+  const claimedAgainstTotalProfits = losses.usedAgainstTotalProfits + lossFromLaterPeriod;
+  if (claimedAgainstTotalProfits > 0) boxes[275] = claimedAgainstTotalProfits;
+  if (lossFromLaterPeriod > 0) boxes[280] = "yes";
   if (losses.broughtForwardAgainstTotalProfits > 0) boxes[285] = losses.broughtForwardAgainstTotalProfits;
-  const deductionsAndReliefs = losses.usedAgainstTotalProfits + losses.broughtForwardAgainstTotalProfits;
+  const deductionsAndReliefs = claimedAgainstTotalProfits + losses.broughtForwardAgainstTotalProfits;
   if (deductionsAndReliefs > 0) {
     boxes[295] = deductionsAndReliefs;
-    worked[295] = workedEntry(["lossAgainstTotalProfits", "lossesBroughtForwardAgainstTotalProfits"], "Box 295 is boxes 275 and 285");
+    worked[295] = workedEntry(
+      ["lossAgainstTotalProfits", "lossCarriedBackFromLaterPeriod", "lossesBroughtForwardAgainstTotalProfits"],
+      "Box 295 is boxes 275 and 285",
+    );
   }
   const profitsBeforeDonations = profitsBeforeOtherDeductions - deductionsAndReliefs;
   if (profitsBeforeOtherDeductions > 0) {
     boxes[300] = profitsBeforeDonations;
     worked[300] = workedEntry(["235", "295"], "Box 300 is box 235 less box 295");
   }
-  const qualifyingDonations = Math.min(computationLines.donations, Math.max(profitsBeforeDonations, 0));
+  const donationsPaid = figures.donationsPaid === undefined ? computationLines.donations : figures.donationsPaid;
+  const qualifyingDonations = Math.min(donationsPaid, Math.max(profitsBeforeDonations, 0));
   if (qualifyingDonations > 0) {
     boxes[305] = qualifyingDonations;
     worked[305] = workedEntry(["donations", "300"], "Donations are claimed up to the profits in box 300");
@@ -1013,7 +1084,7 @@ function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
  * @param {Record<number, object>} taxDataByYear - parsed ltd-<FY>.toml files by financial year; the one named for the period end's financial year is required
  * @param {object} [options]
  * @param {string} [options.today] - ISO date; a repayment of a loan to a participator cannot come after it
- * @returns {{boxes: Record<number, string|number>, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string}}
+ * @returns {{boxes: Record<number|string, string|number>, ct600a: object|undefined, computationLines: object, losses: object, carryBack: object|undefined, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string, periodOfAccount?: {periodStart: string, periodEnd: string, days: number}}}
  */
 export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
   const problems = figureProblems(figures);
@@ -1032,10 +1103,15 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
     4: numberOrZero(figures.companyType),
     30: periodStart,
     35: periodEnd,
-    145: figures.profitAndLoss.current.turnover,
+    145: figures.periodOfAccount ? figures.periodOfAccount.apportioned.turnover : figures.profitAndLoss.current.turnover,
     975: figures.declarantName.trim(),
     985: figures.declarantStatus.trim(),
   };
+
+  if (figures.periodOfAccount) {
+    boxes[50] = "yes";
+    boxes["85A"] = "yes";
+  }
 
   const workingSheet = figures.workingSheet;
   if (workingSheet && Math.abs(computationLines.adjustedProfit - workingSheet.tradingProfit) > WORKING_SHEET_TOLERANCE_POUNDS) {
@@ -1069,7 +1145,11 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
     const fileFinancialYear = financialYearNumber(utcDate(periodEnd));
     const taxData = taxDataByYear?.[fileFinancialYear];
     if (!taxData) throw new Ct600RefusedError(`No tax data is held for the financial year ${fileFinancialYear}`, "period");
-    const perYear = years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days));
+    const perYear = limitsScaledToPeriod(
+      years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days)),
+      years,
+      totalDays,
+    );
     const charge = apportionCorporationTax(chargeableProfits, years, totalDays, { perYear, associatedCompanies, frankedInvestmentIncome });
     const firstShare = straddles ? Math.round((chargeableProfits * years[0].days) / totalDays) : chargeableProfits;
     const shares = [firstShare, chargeableProfits - firstShare];
@@ -1171,5 +1251,18 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
   worked[600] = workedEntry(["525", "595"]);
 
   const carryBack = workCarryBack(figures, losses, taxDataByYear);
-  return { boxes, ct600a, computationLines, losses, carryBack, worked, periodStart, periodEnd };
+  const periodOfAccount = figures.periodOfAccount
+    ? { periodStart: figures.periodOfAccount.periodStart, periodEnd: figures.periodOfAccount.periodEnd, days: figures.periodOfAccount.days }
+    : undefined;
+  return {
+    boxes,
+    ct600a,
+    computationLines,
+    losses,
+    carryBack,
+    worked,
+    periodStart,
+    periodEnd,
+    ...(periodOfAccount ? { periodOfAccount } : {}),
+  };
 }

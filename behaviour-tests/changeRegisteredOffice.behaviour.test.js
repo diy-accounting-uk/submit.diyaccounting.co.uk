@@ -3,6 +3,7 @@
 
 // behaviour-tests/changeRegisteredOffice.behaviour.test.js
 
+import { expect } from "@playwright/test";
 import { test } from "./helpers/playwrightTestWithout.js";
 import fs from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -223,5 +224,25 @@ test("Click through: change registered office address re-authorises with Compani
   await authoriseWithCompaniesHouse(page, companiesHouseCredentials, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 
+  // The grant is usable while signed in, and signing out ends it on the server: the same grant id
+  // and the same sign-in token are refused by a filing route afterwards.
+  const heldGrantId = await page.evaluate(() => sessionStorage.getItem("companiesHouseGrantId"));
+  const heldAccessToken = await page.evaluate(() => localStorage.getItem("cognitoAccessToken"));
+  expect(heldGrantId).toBeTruthy();
+  const probeFilingRoute = () =>
+    page.request.post(new URL("/api/v1/companies-house/transaction", testUrl).toString(), {
+      headers: {
+        "X-Authorization": `Bearer ${heldAccessToken}`,
+        "x-companies-house-grant": heldGrantId,
+        "Content-Type": "application/json",
+      },
+      data: { companyNumber: existingCompanyNumber, description: "Sign-out probe" },
+    });
+  const statusBeforeSignOut = (await probeFilingRoute()).status();
+  expect(statusBeforeSignOut).toBeLessThan(400);
+
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  await expect.poll(async () => (await probeFilingRoute()).status(), { timeout: 15000 }).not.toBe(statusBeforeSignOut);
+  expect((await probeFilingRoute()).status()).toBeGreaterThanOrEqual(400);
 });

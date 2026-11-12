@@ -207,3 +207,76 @@ describe("buildCtComputations", () => {
     expect(() => buildCtComputations({ ...INPUT, tradeName: " " })).toThrow(/trade name/);
   });
 });
+
+describe("buildCtComputations for one accounting period of a longer period of account", () => {
+  // The 15 months 1 January 2025 to 31 March 2026 (455 days), the first return's 365 days.
+  const LONG_LINES = {
+    profitLossPerAccounts: 120000,
+    nonTradingLoanRelationshipCredits: 1000,
+    depreciation: 6000,
+    amortisation: 0,
+    entertaining: 0,
+    donations: 2000,
+    adjustedProfitBeforeAccountingPeriodAdjustments: 127000,
+    timeApportionment: -25121,
+    adjustedProfitBeforeCapitalAllowances: 101879,
+    totalCapitalAllowances: 13800,
+    adjustedProfit: 88079,
+  };
+  const LONG_INPUT = {
+    ...INPUT,
+    periodStart: "2025-01-01",
+    periodEnd: "2025-12-31",
+    periodOfAccount: { periodStart: "2025-01-01", periodEnd: "2026-03-31" },
+    lines: LONG_LINES,
+  };
+
+  test("dates the return period to the accounting period and the period of account to the accounts", () => {
+    const byName = facts(parseXmlDocument(buildCtComputations(LONG_INPUT)));
+    expect(byName["ct-comp:StartOfPeriodCoveredByReturn"].value).toBe("1 January 2025");
+    expect(byName["ct-comp:EndOfPeriodCoveredByReturn"].value).toBe("31 December 2025");
+    expect(byName["ct-comp:PeriodOfAccountStartDate"].value).toBe("1 January 2025");
+    expect(byName["ct-comp:PeriodOfAccountEndDate"].value).toBe("31 March 2026");
+  });
+
+  test("shows the apportionment row as plain text with its days, and tags nothing on it", () => {
+    const xml = buildCtComputations(LONG_INPUT);
+    const row = xml.match(/<tr><td class="label">Time apportionment: 365 of 455 days<\/td>.*?<\/tr>/)[0];
+    expect(row).toContain("(25,121)");
+    expect(row).not.toContain("ix:nonFraction");
+    expect(xml).toContain('Adjusted profit before capital allowances</td><td class="figure positive">101,879</td>');
+  });
+
+  test("tags the lines down to the adjusted profit in a context dated to the period of account, and the rest to the accounting period", () => {
+    const xml = buildCtComputations(LONG_INPUT);
+    const byName = facts(parseXmlDocument(xml));
+    for (const concept of [
+      "ProfitLossPerAccounts",
+      "AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts",
+      "AdjustmentsDepreciation",
+      "AdjustmentsDonations",
+      "AdjustedProfitOrLossBeforeAccountingPeriodAdjustments",
+    ]) {
+      expect(byName[`ct-comp:${concept}`].contextRef, concept).toBe("tradePeriodOfAccount");
+    }
+    expect(byName["ct-comp:AdjustedProfitOrLossBeforeAccountingPeriodAdjustments"].value).toBe("127,000");
+    expect(byName["ct-comp:TotalCapitalAllowances"]).toMatchObject({ value: "13,800", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "88,079", contextRef: "tradePeriod" });
+    expect(contextXml(xml, "tradePeriodOfAccount")).toContain(
+      "<xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2026-03-31</xbrli:endDate>",
+    );
+    expect(contextXml(xml, "tradePeriod")).toContain(
+      "<xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2025-12-31</xbrli:endDate>",
+    );
+    expect(contextXml(xml, "companyInstant")).toContain("<xbrli:instant>2025-12-31</xbrli:instant>");
+  });
+
+  test("a computation of 12 months or less has no period of account context", () => {
+    expect(buildCtComputations(INPUT)).not.toContain("tradePeriodOfAccount");
+    expect(buildCtComputations(INPUT)).not.toContain("Time apportionment");
+  });
+
+  test("refuses a computation whose time apportionment does not reach the adjusted profit", () => {
+    expect(() => buildCtComputations({ ...LONG_INPUT, lines: { ...LONG_LINES, timeApportionment: -25000 } })).toThrow(/does not add up/);
+  });
+});

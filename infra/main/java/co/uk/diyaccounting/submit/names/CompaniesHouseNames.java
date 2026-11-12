@@ -40,6 +40,7 @@ public class CompaniesHouseNames {
     public String companiesHouseTokenPostLambdaUrlPath;
     public boolean companiesHouseTokenPostLambdaJwtAuthorizer;
     public boolean companiesHouseTokenPostLambdaCustomAuthorizer;
+    public String companiesHouseGrantItemUrlPath;
 
     public String companiesHouseTransactionPostIngestLambdaHandler;
     public String companiesHouseTransactionPostIngestLambdaFunctionName;
@@ -302,6 +303,14 @@ public class CompaniesHouseNames {
                 "Exchange Companies House authorization code for access token",
                 "Exchanges a Companies House OAuth authorisation code for an access token",
                 "exchangeCompaniesHouseToken"));
+        this.companiesHouseGrantItemUrlPath = "/api/v1/companies-house/grants/{grantId}";
+        root.publishedApiLambdas.add(new PublishedLambda(
+                HttpMethod.DELETE,
+                this.companiesHouseGrantItemUrlPath,
+                "End a Companies House grant",
+                "Ends the signed-in user's own Companies House grant, so its sealed access token is dropped at sign-out",
+                "deleteCompaniesHouseGrant",
+                List.of(new ApiParameter("grantId", "path", true, "The grant id the token exchange answered"))));
 
         this.companiesHouseTransactionPostLambdaHttpMethod = HttpMethod.POST;
         this.companiesHouseTransactionPostLambdaUrlPath = "/api/v1/companies-house/transaction";

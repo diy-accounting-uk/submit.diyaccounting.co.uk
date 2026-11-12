@@ -69,6 +69,34 @@ function argument(name, fallback) {
   return index === -1 ? fallback : process.argv[index + 1];
 }
 
+// The script posts to HMRC as soon as it has built a return, so a flag it does not know stops it
+// before anything is sent.
+const KNOWN_FLAGS = [
+  "--agent",
+  "--amended",
+  "--book",
+  "--ets",
+  "--loans",
+  "--micro",
+  "--out",
+  "--prior",
+  "--registered-office-line1",
+  "--registered-office-postcode",
+  "--registered-office-town",
+  "--scenario",
+  "--tamper-irmark",
+  "--utr",
+];
+const unknownFlags = process.argv.slice(2).filter((value) => value.startsWith("-") && !KNOWN_FLAGS.includes(value));
+if (unknownFlags.length > 0) {
+  console.error(`Unknown option ${unknownFlags.join(", ")}. Nothing was sent to HMRC.`);
+  console.error("Usage: node scripts/hmrc-tpvs-ct600.js --scenario <file> [--out <dir>] [--utr <10 digits>] [--ets]");
+  console.error(
+    "       node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]",
+  );
+  process.exit(2);
+}
+
 if (process.argv.includes("--scenario")) {
   const { runScenarioCommand } = await import("./lib/ctScenarioCommand.js");
   process.exit(await runScenarioCommand({ argv: process.argv, env: process.env }));

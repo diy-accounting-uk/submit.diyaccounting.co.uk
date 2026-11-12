@@ -200,7 +200,7 @@ export default Ajv2020Stub;`,
 }
 
 // The bundle's public surface: the engine read, the three derivations, the CT600 figures
-// model (ct600Figures.js, the module the server works the boxes with), the two accounts derivations, and the schemas
+// model (ct600Figures.js and ct600LongPeriod.js, the modules the server works the boxes with), the two accounts derivations, and the schemas
 // registered so the read validates with no further setup.
 const ENTRY_SOURCE = `
 import bookSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json";
@@ -221,7 +221,8 @@ import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount 
 import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
 import { microEntityAccountsFromResults } from "./app/services/microEntityAccountsFromResults.js";
 export { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
-export { deriveCt600FromFigures, validateCt600Figures, section455RateChangeDate } from "./app/services/ct600Figures.js";
+export { annualInvestmentAllowanceMaximum, deriveCt600FromFigures, validateCt600Figures, section455RateChangeDate } from "./app/services/ct600Figures.js";
+export { accountingPeriodsOf, deriveLongPeriodReturns, splitLongPeriodFigures } from "./app/services/ct600LongPeriod.js";
 export async function ltdTaxData(financialYear) {
   return parseToml(readFileSync("data/ltd-" + financialYear + ".toml", "utf8"));
 }

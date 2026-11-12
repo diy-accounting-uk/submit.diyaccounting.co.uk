@@ -4,7 +4,7 @@
 // app/unit-tests/functions/companiesHouseTokenPost.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildAuthorizerContext } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, setupFetchMock, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { FakeCodesEntryTable } from "@app/test-helpers/fakeCodesEntryTable.js";
 import { openFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "@app/lib/codesSeal.js";
@@ -32,7 +32,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 const { ingestHandler: companiesHouseTokenPostHandler } = await import("@app/functions/companies-house/companiesHouseTokenPost.js");
-const { hashSub } = await import("@app/services/subHasher.js");
+const { hashSub, initializeSalt } = await import("@app/services/subHasher.js");
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -265,5 +265,70 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     } finally {
       global.fetch = originalFetch;
     }
+  });
+
+  describe("DELETE a grant at sign-out", () => {
+    const GRANT_ID = "11111111-1111-4111-8111-111111111111";
+    const OWNER_SUB = "owner-sub";
+    const GRANT_PATH = `/api/v1/companies-house/grants/${GRANT_ID}`;
+
+    async function seedGrant(ownerSub, grantId = GRANT_ID) {
+      await initializeSalt();
+      table.items.set(`ch-grant:${grantId}`, {
+        sessionId: `ch-grant:${grantId}`,
+        hashedSub: hashSub(ownerSub),
+        scope: null,
+        companyNumber: "01234567",
+        sealed: "sealed-value",
+        accessExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+        ttl: Math.floor(Date.now() / 1000) + 3600,
+      });
+    }
+
+    function deleteEvent(sub, grantId = GRANT_ID) {
+      return buildLambdaEvent({
+        method: "DELETE",
+        path: `/api/v1/companies-house/grants/${grantId}`,
+        pathParameters: { grantId },
+        authorizer: buildAuthorizerContext(sub),
+      });
+    }
+
+    test("the owner ends the grant: 204 and the grant is gone", async () => {
+      await seedGrant(OWNER_SUB);
+      const response = await companiesHouseTokenPostHandler(deleteEvent(OWNER_SUB));
+      expect(response.statusCode).toBe(204);
+      expect(response.body).toBe("");
+      expect(table.items.has(`ch-grant:${GRANT_ID}`)).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test("another user's grant answers 404 and stays", async () => {
+      await seedGrant(OWNER_SUB);
+      const response = await companiesHouseTokenPostHandler(deleteEvent("someone-else"));
+      expect(response.statusCode).toBe(404);
+      expect(parseResponseBody(response).message).toContain("does not exist");
+      expect(table.items.has(`ch-grant:${GRANT_ID}`)).toBe(true);
+    });
+
+    test("a grant that does not exist answers the same 404", async () => {
+      const response = await companiesHouseTokenPostHandler(deleteEvent(OWNER_SUB, "22222222-2222-4222-8222-222222222222"));
+      expect(response.statusCode).toBe(404);
+    });
+
+    test("a path value that is not a grant id answers 404 without touching the table", async () => {
+      await seedGrant(OWNER_SUB);
+      const response = await companiesHouseTokenPostHandler(deleteEvent(OWNER_SUB, "not-a-grant-id"));
+      expect(response.statusCode).toBe(404);
+      expect(table.items.has(`ch-grant:${GRANT_ID}`)).toBe(true);
+    });
+
+    test("a request with no signed-in user answers 401", async () => {
+      await seedGrant(OWNER_SUB);
+      const event = buildLambdaEvent({ method: "DELETE", path: GRANT_PATH, pathParameters: { grantId: GRANT_ID }, authorizer: {} });
+      const response = await companiesHouseTokenPostHandler(event);
+      expect(response.statusCode).toBe(401);
+      expect(table.items.has(`ch-grant:${GRANT_ID}`)).toBe(true);
+    });
   });
 });

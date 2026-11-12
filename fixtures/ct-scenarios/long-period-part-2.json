@@ -1,0 +1,126 @@
+{
+  "name": "long-period-part-2",
+  "description": "Made-up small company with a 15-month period of account (1 January 2025 to 31 March 2026, 455 days) filed as two returns; this file is return 2 of 2: 1 January to 31 March 2026, with a 15,000 loan to a director (CT600A). FRS 102 section 1A accounts for the whole period of account on both returns.",
+  "sender": "company",
+  "request": {
+    "registeredOffice": {
+      "addressLine1": "1 Example Road",
+      "cityOrTown": "London",
+      "postalCode": "EC1A 1AA"
+    },
+    "periodStart": "2025-01-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 2,
+    "declarationAccepted": true,
+    "companyNumber": "09999993",
+    "companyName": "Long Period Example Ltd",
+    "tradeName": "Software consultancy",
+    "director": {
+      "name": "Alex Example",
+      "dateApproved": "2026-06-30"
+    },
+    "declarant": {
+      "name": "Alex Example",
+      "status": "Director"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "principalActivity": "Software consultancy",
+      "accountingPolicies": "The accounts are prepared under FRS 102 section 1A.",
+      "directors": ["Alex Example"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 10000,
+          "tradeDebtors": 10000,
+          "otherDebtors": 0,
+          "amountsOwedByDirectors": 0,
+          "cashAtBank": 116100,
+          "bankLoansOverdrafts": 0,
+          "tradeCreditors": 5000,
+          "corporationTax": 24962,
+          "taxationSocialSecurity": 1000,
+          "otherCreditors": 0,
+          "creditorsAfterOneYear": 0,
+          "amountsOwedToDirectors": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 95038,
+          "capitalAndReserves": 95138
+        },
+        "priorYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 0,
+          "tradeDebtors": 0,
+          "otherDebtors": 0,
+          "amountsOwedByDirectors": 0,
+          "cashAtBank": 100,
+          "bankLoansOverdrafts": 0,
+          "tradeCreditors": 0,
+          "corporationTax": 0,
+          "taxationSocialSecurity": 0,
+          "otherCreditors": 0,
+          "creditorsAfterOneYear": 0,
+          "amountsOwedToDirectors": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 0,
+          "capitalAndReserves": 100
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 250000,
+          "costOfSales": 50000,
+          "grossProfit": 200000,
+          "administrativeExpenses": 81000,
+          "operatingProfit": 119000,
+          "interestReceivable": 1000,
+          "profitBeforeTax": 120000,
+          "tax": 24962,
+          "profit": 95038
+        }
+      }
+    },
+    "figures": {
+      "periodStart": "2025-01-01",
+      "periodEnd": "2026-03-31",
+      "companyType": 0,
+      "nonTradingLoanRelationshipCredits": 1000,
+      "depreciation": 6000,
+      "donations": 2000,
+      "accountingPeriods": [
+        {
+          "associatedCompanies": 0,
+          "annualInvestmentAllowance": 12000,
+          "mainPoolAllowances": 1800,
+          "donationsPaid": 2000
+        },
+        {
+          "associatedCompanies": 0,
+          "mainPoolAllowances": 363,
+          "donationsPaid": 0,
+          "loansToParticipators": {
+            "releasedBeforeEnd": false,
+            "loans": [
+              {
+                "name": "Alex Example",
+                "amount": 15000
+              }
+            ],
+            "repayments": []
+          }
+        }
+      ]
+    },
+    "longPeriod": {
+      "filingId": "0b8f3a52-6f1e-4c8e-9a47-5d2f7c1e4b10",
+      "part": 2
+    }
+  }
+}

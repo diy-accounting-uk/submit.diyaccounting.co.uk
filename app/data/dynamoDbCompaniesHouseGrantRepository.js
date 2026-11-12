@@ -60,3 +60,12 @@ export async function getCompaniesHouseGrant(grantId) {
   delete grant.sessionId;
   return { grantId, ...grant };
 }
+
+/**
+ * Deletes a grant. Deleting a grant that does not exist is not an error.
+ * @param {string} grantId
+ * @returns {Promise<void>}
+ */
+export async function deleteCompaniesHouseGrant(grantId) {
+  await executeDynamoDbCommand((module) => new module.DeleteCommand({ TableName: tableName(), Key: keyFor(grantId) }));
+}

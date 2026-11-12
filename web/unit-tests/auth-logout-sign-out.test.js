@@ -14,6 +14,7 @@ describe("logout revoke and sign-out", () => {
   let fetchMock;
   let gtagMock;
   let sessionGrantId;
+  let sessionCompaniesHouseGrantId;
 
   function loadWidget() {
     // eslint-disable-next-line no-new-func
@@ -23,6 +24,7 @@ describe("logout revoke and sign-out", () => {
   beforeEach(() => {
     store = {};
     sessionGrantId = null;
+    sessionCompaniesHouseGrantId = null;
     fetchMock = vi.fn().mockResolvedValue({ ok: true });
     gtagMock = vi.fn();
 
@@ -36,7 +38,7 @@ describe("logout revoke and sign-out", () => {
       },
     };
     const sessionStorageStub = {
-      getItem: (key) => (key === "hmrcGrantId" ? sessionGrantId : null),
+      getItem: (key) => (key === "hmrcGrantId" ? sessionGrantId : key === "companiesHouseGrantId" ? sessionCompaniesHouseGrantId : null),
       setItem: () => {},
       removeItem: () => {},
     };
@@ -95,6 +97,35 @@ describe("logout revoke and sign-out", () => {
     expect(fetchMock.mock.calls[deleteIndex][1].headers["X-Authorization"]).toBeUndefined();
     expect(fetchMock.mock.calls[deleteIndex][1].keepalive).toBe(true);
     expect(deleteIndex).toBeLessThan(urls.indexOf("https://auth.example.com/oauth2/revoke"));
+  });
+
+  it("deletes the held Companies House grant with the access token as a bearer, keepalive, before the refresh token is revoked", async () => {
+    store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+    store.cognitoAccessToken = "the-access-token";
+    store.cognitoRefreshToken = "the-refresh-token";
+    sessionCompaniesHouseGrantId = "00000000-0000-4000-8000-000000000002";
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    const urls = fetchMock.mock.calls.map(([url]) => url);
+    const deleteIndex = urls.indexOf("/api/v1/companies-house/grants/00000000-0000-4000-8000-000000000002");
+    expect(deleteIndex).toBeGreaterThanOrEqual(0);
+    const [, init] = fetchMock.mock.calls[deleteIndex];
+    expect(init.method).toBe("DELETE");
+    expect(init.headers.Authorization).toBe("Bearer the-access-token");
+    expect(init.headers["X-Authorization"]).toBeUndefined();
+    expect(init.keepalive).toBe(true);
+    expect(deleteIndex).toBeLessThan(urls.indexOf("https://auth.example.com/oauth2/revoke"));
+  });
+
+  it("sends no Companies House grant delete when the page holds no grant", async () => {
+    store.cognitoAccessToken = "the-access-token";
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/v1/companies-house/grants/"))).toBe(false);
   });
 
   it("posts to the sign-out route with the access token, keepalive", async () => {

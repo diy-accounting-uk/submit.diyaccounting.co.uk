@@ -58,8 +58,12 @@ const GROUPS = [
   },
   {
     title: "Company Tax Return (CT600)",
-    intro: "File the corporation tax return from the company's book.",
-    journeys: [{ video: "file-company-tax-return-book" }, { video: "file-company-tax-return-typed" }],
+    intro: "File the corporation tax return from the company's book, or send it with the accounts to Companies House and HMRC together.",
+    journeys: [
+      { video: "file-company-tax-return-book" },
+      { video: "file-company-tax-return-typed" },
+      { video: "file-company-tax-return-with-accounts" },
+    ],
   },
   {
     title: "Receipts",
