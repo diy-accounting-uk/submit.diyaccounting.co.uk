@@ -31,7 +31,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (40)</h2>
+        <h2>Tools (41)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -860,6 +860,42 @@
   &quot;required&quot;: [
     &quot;kind&quot;,
     &quot;submissionNumber&quot;
+  ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_vat_return">
+        <summary><code>prepare_vat_return</code></summary>
+        <p>Derives the VAT return for the quarter ending on periodEnd from the session's loaded book, exactly as derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in (the form works out boxes 3 and 5 itself). This tool never files anything and reaches no outside service. The person opens the link, checks the figures on the page, ticks the declaration and files there; the figures filed are the figures the page shows. Show the person the figures this tool answers, give them the link, and tell them to check, declare and file on the page.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>periodEnd</code></td><td>string</td><td>yes</td><td>The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries</td></tr>
+            <tr><td><code>periodStart</code></td><td>string</td><td>no</td><td>The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd</td></tr>
+            <tr><td><code>periodKey</code></td><td>string</td><td>no</td><td>The obligation's period key</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;periodEnd&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;description&quot;: &quot;The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries&quot;
+    },
+    &quot;periodStart&quot;: {
+      &quot;description&quot;: &quot;The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;periodKey&quot;: {
+      &quot;description&quot;: &quot;The obligation's period key&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;periodEnd&quot;
   ],
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
