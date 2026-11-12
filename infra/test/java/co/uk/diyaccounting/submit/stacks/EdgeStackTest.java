@@ -113,6 +113,18 @@ class EdgeStackTest {
     }
 
     @Test
+    void wafAttackAlarmsFireAtFiftyBlocksSoOneBlockedScanDoesNotAlarm() {
+        Template template = Template.fromStack(synthEdgeStack("prod"));
+
+        for (String alarmSuffix : List.of("waf-rate-limit", "waf-attack-signatures", "waf-known-bad-inputs")) {
+            template.hasResourceProperties(
+                    "AWS::CloudWatch::Alarm",
+                    Match.objectLike(Map.of(
+                            "AlarmName", Match.stringLikeRegexp(".*-" + alarmSuffix), "Threshold", 50, "Period", 300)));
+        }
+    }
+
+    @Test
     void wafScanBurstsTableIsPayPerRequestWithClientIpKeyTtlAndDestroy() {
         Template template = Template.fromStack(synthEdgeStack());
 
