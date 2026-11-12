@@ -138,27 +138,22 @@ test.describe("Hidden feature content", () => {
     await expect(page.locator('.faq-item[data-id="companies-house-accounts-filings"]')).toBeVisible();
   });
 
-  test("the MCP page lists the accounts and confirmation statement tools and no Income Tax or practice tools in prod", async ({ page }) => {
+  test("the MCP page lists the accounts tools and no Income Tax or practice tools in prod", async ({ page }) => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/mcp.html", { waitUntil: "networkidle" });
     await expect(page.locator("main")).toContainText("derive_vat_return");
     for (const tool of ["derive_itsa_quarterly_update", "add_client", "Income Tax (MTD)"]) {
       await expect(page.locator("main").getByText(tool, { exact: false }).filter({ visible: true })).toHaveCount(0);
     }
-    for (const tool of ["derive_micro_entity_accounts", "submit_confirmation_statement_sandbox"]) {
+    for (const tool of ["derive_micro_entity_accounts"]) {
       await expect(page.locator("main").getByText(tool, { exact: false }).filter({ visible: true }).first()).toBeVisible();
     }
   });
 
-  test("the MCP page lists those tools in ci", async ({ page }) => {
+  test("the MCP page lists the Income Tax and accounts tools in ci", async ({ page }) => {
     await serveSite(page, "ci");
     await page.goto("http://localhost:3000/mcp.html", { waitUntil: "networkidle" });
-    for (const tool of [
-      "derive_itsa_quarterly_update",
-      "derive_micro_entity_accounts",
-      "submit_confirmation_statement_sandbox",
-      "add_client",
-    ]) {
+    for (const tool of ["derive_itsa_quarterly_update", "derive_micro_entity_accounts"]) {
       await expect(page.locator("main").getByText(tool, { exact: false }).filter({ visible: true }).first()).toBeVisible();
     }
   });

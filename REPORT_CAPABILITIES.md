@@ -486,7 +486,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book: use when the operator asks for DIY Accounting Limited's accounts, P&L or book, or wants Cowork to read the finances.
   - [Documentation and disclaimer](#documentation-and-disclaimer-mcp)
     - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference: use when starting work on the submission MCP: what is built, planned, and how to run it.
-    - [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site: use when checking or editing the public claim that DIY Accounting Submit has no MCP server.
+    - [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site: use when checking or editing what the public site says about the hosted connector, the diya-gl MCP server and the submission MCP.
     - [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers: use when a stdio MCP call to an HMRC route needs the device data of HMRC's desktop connection method, or a new device header must be added.
     - [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry: use when mcp/server.json changes, or the hosted connector needs listing in the official MCP Registry.
 - **[Developer workflow](#developer-workflow-dev)**
@@ -5201,7 +5201,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
-- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers · [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
+- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers · [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
 <!-- /generated:area MCP -->
 
 ### Server and CLI (MCP)
@@ -5437,7 +5437,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group documentation-and-disclaimer-mcp -->
 - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference
-- [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
+- [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site
 - [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers
 - [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
 <!-- /generated:group documentation-and-disclaimer-mcp -->
@@ -5452,14 +5452,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** plan submission mcp, mcp readme, milestones, field mappings, plan of record
 - **Related:** MCP-01
 
-#### MCP-15 Disclaim an MCP server on the marketing site
+#### MCP-15 Explain the MCP connector and servers on the public site
 
-- **Use when:** checking or editing the public claim that DIY Accounting Submit has no MCP server.
-- **Does:** web/public/mcp.html is a static page on the public site that explains what MCP is in general terms. It states DIY Accounting Submit has no MCP server and points visitors elsewhere. It is not wired to the mcp/ package the other capabilities here describe.
+- **Use when:** checking or editing what the public site says about the hosted connector, the diya-gl MCP server and the submission MCP.
+- **Does:** web/public/mcp.html is a static page. It answers whether an AI assistant can file a VAT return, gives the hosted connector URL with the tools prod registers (PROD_HOSTED_TOOL_NAMES in mcp/lib/hosted-tools.js), and shows how to run the diya-gl and submission MCP servers from npm or Docker. Blocks tagged with an activity appear only where the catalogue lists it.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/mcp.html`
 - **Files:** web/public/mcp.html
-- **Keywords:** mcp.html, marketing page, mcp disclaimer, public site, no mcp server claim
+- **Keywords:** mcp.html, hosted connector, connector url, mcp tools, ai assistant vat return, public site
 
 #### MCP-22 Read the machine for HMRC fraud prevention headers
 
@@ -6925,6 +6925,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - agent.md: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - aggregate tables: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - ai agent: [SITE-04](#site-04-track-visits-via-session-beacon)
+- ai assistant vat return: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - ai-agent crawler: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - alarm evidence: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - alarm family: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
@@ -7393,6 +7394,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
+- connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent denied default: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -8084,6 +8086,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - holds: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - homebrew tap: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - homepage cta: [SITE-03](#site-03-capture-feedback-interest)
+- hosted connector: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - hosted mcp: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hotspots: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
@@ -8343,7 +8346,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
-- marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - marketing session: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
@@ -8354,7 +8356,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp blob key: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - mcp demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
-- mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mcp harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp hmrc token: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
@@ -8367,10 +8368,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp state: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp tests: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
-- mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp-publisher: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
-- mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp.html: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - mcpcodes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - mcpname: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - mcpstack: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
@@ -8457,7 +8458,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - no customer value: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
-- no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - no sign-in: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
@@ -8757,7 +8757,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
-- public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - public surfaces: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - public videos: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
