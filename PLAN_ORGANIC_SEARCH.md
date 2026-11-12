@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 61 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 55 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: proposed. No task is on `NEXT.md`. 41 machine-only, 5 machine-ask, 15 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: proposed. No task is on `NEXT.md`. 39 machine-only, 5 machine-ask, 11 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -18,7 +18,7 @@ Every path that brings a customer to the DIY Accounting sites with no payment fo
 - **Organic means no payment for placement.** No ads, no sponsored listing, no paid review. A one-off account fee that a store charges every developer is named in the row that meets it, and the operator decides it.
 - **Nothing is posted to a site we do not own by automation.** A person posts, submits and sends. A session drafts, fills and prepares. This is the `/campaign` skill's rule and the reason is there: forum bans, the DMCC Act 2024 and the CAP Code.
 - **A page, a listing or a skill states only what prod offers.** The source of truth is `AVAILABILITY` in `scripts/build-mtd-calendar.mjs`. Today that is VAT, Companies House accounts, the confirmation statement, and registered office and email changes.
-- **The hosted connector's public listing is board row MCP1's step** (operator, 2026-10-30). This plan builds what the listings need and stops at the submission. Decision D1 states the alternative.
+- **The hosted connector is listed in the assistant directories with its VAT tool set** (operator, 2026-11-12). The assistant derives the figures and the user files in the browser. A tool for another filing joins the listing when that filing is live on prod, under board row MCP1.
 - **The tasks in this plan are not on `NEXT.md`.** The operator moves a row to the board when it is to be worked.
 
 The marketing strategy is `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md`. Its organic rows are carried here with their ids: MK-10 (OS41), MK-14 (OS6), MK-18 (OS35), MK-19 (OS4), MK-20 (OS23), MK-32 (OS16). Its goal stands: paid Submit subscribers.
@@ -102,7 +102,7 @@ The reading. Organic search today is the spreadsheets site and the brand name. T
 - Any count of visits or fetches from AI assistants. Submit's CloudFront logs are in the lake; the other three sites log in their own accounts.
 - A named AI agent in any robots.txt (each agent string does get 200 from the sites); `llms.txt`.
 - A `server.json`, a registry entry, a directory listing, or a `title` and annotations on any MCP tool.
-- A reviewer account with sample books for the assistant directories. Native users need TOTP; a federated account does not.
+- A sign-in for directory reviewers. OpenAI requires a login and password with no second factor; the pool's native users need TOTP, and a Google or Microsoft sign-in can ask a reviewer to verify.
 - Listings on the GOV.UK accounts software finder, Capterra, Trustpilot, AlternativeTo, Product Hunt; topics and homepage URLs on the GitHub repositories; a `noindex` on the marketing microsite.
 - Search Console data in the lake; any backlink report.
 - Working redirects for old gateway URLs (`/feature.html`, `/product.html`, `/article.html`): the handlers exist and are switched off, and the URLs answer 403.
@@ -212,7 +212,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | A9 Pages for dated demand events | partial (`mtd-calendar.html` and `rates.html` exist) | 2 | 1 | 4 | OS11 |
 | A10 Knowledge-base articles from the support corpus | open (marketing plan MK-18) | 3 | 2 | 4 | OS35 |
 | A11 Bing Webmaster Tools and IndexNow | absent | 2 | 2 | 4 | OS5, OOS5 |
-| A12 Landing pages in other languages | partial | 3 | 2 | 2 | OS39, OOS39 |
+| A12 Landing pages in other languages | Welsh on four pages; the operator has assessed further languages and chose none (2026-11-12) | 3 | 2 | 2 | none |
 | A13 A comparison page we publish | absent | 3 | 2 | 5 | OS40 |
 | A14 YouTube as a search surface | partial | 2 | 1 | 3 | OS7, OS41 |
 
@@ -323,7 +323,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
-| L1 Google Business Profile | exists; left untouched (decision D7) | 1 | 5 | 3 | none |
+| L1 Google Business Profile | exists; left untouched (operator, 2026-11-12) | 1 | 5 | 3 | none |
 | L2 Bing Places and Apple Business Connect | not created | 1 | 5 | 2 | none |
 | L3 UK citation directories | not listed | 2 | 2 | 1 | OS21, OS24 |
 
@@ -355,7 +355,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | ---: | ---: | ---: | --- |
 | S1 Microsoft Marketplace for Excel add-ins | not listed | 5 | 3 | 5 | OS36a, OS36b, OOS36 |
 | S2 Google Workspace Marketplace | not listed | 5 | 3 | 4 | OS37, OOS37 |
-| S3 Microsoft Store and Google Play | not listed | 2 | 3 | 2 | OS38, OOS38b, OOS38 |
+| S3 Microsoft Store and Google Play | not listed; not pursued for now (operator, 2026-11-12) | 2 | 3 | 2 | none |
 | S4 Apple App Store | not listed | 4 | 4 | 3 | none |
 | S5 Zapier and Make | not built | 4 | 3 | 2 | none |
 | S6 Accounting-suite app stores | not listed | 4 | 4 | 2 | none |
@@ -374,11 +374,11 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
 | K1 One consistent entity record | partial | 1 | 1 | 2 | OS8 |
-| K2 Wikidata item | absent | 1 | 4 | 2 | OS29 |
+| K2 Wikidata item | absent | 1 | 3 | 2 | OS29 |
 | K3 Wikipedia | absent | 1 | 5 | 2 | none |
 
 - **K1.** Organization markup with the same name, address, company number and `sameAs` links on all four sites. Today `sameAs` holds the Companies House record only.
-- **K2.** An item for the company and one for each product, with references.
+- **K2.** One item for the company, referenced to its Companies House record. Product items wait for independent coverage.
 - **K3.** An article about the company or product.
 
 ### Q. Community and content platforms
@@ -397,8 +397,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
-| X1 Claude Connectors Directory | connector URL is live at `/mcp`; not in the directory | 3 | 3 | 4 | OS3, OS14, OOS43, OS43, OS42, OS46, OS17, OOS17 |
-| X2 ChatGPT Plugin Directory | not listed | 4 | 4 | 4 | OS3, OS14, OOS43, OS43, OS42, OS46, OS18, OOS18 |
+| X1 Claude Connectors Directory | connector URL is live at `/mcp`; not in the directory | 3 | 3 | 4 | OS3, OS14, OS43, OS42, OS46, OS17, OOS17 |
+| X2 ChatGPT Plugin Directory | not listed | 4 | 4 | 4 | OS3, OS14, OS43, OS42, OS46, OS18, OOS18 |
 | X3 Claude plugin with an Agent Skill | absent | 2 | 3 | 3 | OS19, OOS17 |
 | X4 Connector added by the user, per assistant | partial | 1 | 1 | 3 | OS20, OOS20, OS42 |
 | X5 Microsoft Copilot certification and Agent Store | not listed | 4 | 4 | 3 | OOS36 |
@@ -422,7 +422,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | R1 Official MCP Registry | absent (no `server.json`; marketing plan MK-32 covers diya-gl) | 2 | 2 | 3 | OS16, OS16b, OOS16 |
 | R2 Downstream MCP catalogues | absent | 2 | 2 | 2 | OS16, OOS16, OS28 |
 
-- **R1.** The registry at registry.modelcontextprotocol.io (preview). A `server.json` per server, published with a namespace proved through GitHub or DNS. diya-gl can publish now; the hosted connector waits on decision D1.
+- **R1.** The registry at registry.modelcontextprotocol.io (preview). A `server.json` per server, published with a namespace proved through GitHub or DNS. diya-gl can publish now; the hosted connector publishes when OS14 is on prod.
 - **R2.** Smithery, Glama, PulseMCP, the GitHub MCP Registry, the Docker MCP Catalog, mcp.so, Cline's marketplace, the Cursor directory.
 
 ### Y. AI search inclusion
@@ -462,7 +462,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 - **Z4.** SEP-1865 (Final): a tool returns an interactive view. Claude, ChatGPT and Copilot chat render it. The nine VAT boxes show as a card with the hand-off to file.
 - **Z5.** A Markdown index of the site for language models. A study in May 2026 found that 97% of such files receive no AI request; coding agents read one when a user points them to it.
 - **Z6.** A `.md` copy of each page and `Accept: text/markdown` negotiation. The knowledge-base articles already have `.md` copies; Submit's pages do not.
-- **Z7.** Cloudflare's `Content-Signal` line and the IETF `Content-Usage` draft state what a crawler may do with the content.
+- **Z7.** Cloudflare's `Content-Signal` line and the IETF `Content-Usage` draft state what a crawler may do with the content. Ours says search, AI answers and training are all allowed.
 - **Z8.** SEP-2640 (Final): the server lists `skill://` resources, so a client learns the filing procedure from the connector itself.
 - **Z9.** A Chrome origin trial: a form declares itself as a tool (`toolname`, `tooldescription`) so an in-browser agent can use it. Gemini in Chrome is the one reader.
 - **Z10.** `/.well-known/agent-card.json` describes an agent to other agents. The Gemini Enterprise gallery requires it.
@@ -495,7 +495,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 16 | A4 Render JavaScript-only content into the HTML at build | 3 | Two committed builds and two deploy-time renders, because the lists differ between ci and prod. |
 | 17 | A10 Knowledge-base articles from the support corpus | 3 | About 12 files, machine-drafted, then the operator's tax check. |
 | 18 | F5 Quarterly-update workbook and article | 3 | A workbook in the package pipeline and one article. |
-| 19 | X1 Claude Connectors Directory | 3 | A `title` and annotations on every tool (none has them today), a reviewer sign-in, a documentation page, an icon. |
+| 19 | X1 Claude Connectors Directory | 3 | A `title` and annotations on every tool (none has them today), a demo sign-in for reviewers, a documentation page, an icon. |
 | 20 | C3 ICAEW Technology Accreditation | 3 | An evaluation pack and a review cycle. |
 | 21 | Z4 MCP Apps: a review card inside the assistant | 3 | A `ui://` resource and the tool metadata; the server registers no resources today, and the SDK version must support them. |
 | 22 | A12 Landing pages in other languages | 3 | The Welsh build (`scripts/build-welsh-pages.mjs`) generalises; each language needs a translation file and a review. |
@@ -594,20 +594,20 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 17 | S4 Apple App Store | 4 | Apple | An annual fee and a review that rejects thin web wrappers. | Uncertain. |
 | 18 | X5 Microsoft Copilot certification and Agent Store | 4 | Microsoft | Partner Center business verification and an intake queue that takes a limited number. | Yes in part. The same Partner Center account serves the Excel add-in (F6). |
 | 19 | X7 Perplexity connector proposal | 4 | Perplexity | Their team chooses; criteria are not published. | Unknown. |
-| 20 | K2 Wikidata item | 4 | Wikidata editors | Serious public references, and conflict-of-interest rules for a company that writes its own item. | Partly. The Companies House record and the HMRC listing are references; independent coverage is thin. |
-| 21 | S6 Accounting-suite app stores | 4 | Each vendor | Certification, yearly re-checks, and no clear place for an app that repeats a built-in feature. | Uncertain. |
-| 22 | V5 Homebrew core | 4 | Homebrew maintainers | A notability test on stars, forks and watchers; the current documentation page no longer states the numbers. | Not by a build. It follows adoption. |
-| 23 | B4 GOV.UK finder for accounts filing software | 3 | GOV.UK and Companies House | The page states no criteria and no route. A live software filing package is the likely precondition, and Submit holds one. | Yes. Ask the XML team for the route and send what they ask for. |
-| 24 | F6 Excel add-in | 3 | Microsoft | Partner Center account with business verification, then validation against published policies. | Yes. The company holds a D-U-N-S number; the policies are testable before submission. |
-| 25 | Q1 Answers in forums, posted by a person | 3 | Each forum's rules | Rules on self-promotion; AccountingWEB removes it. | Yes. Drafts carry the disclosure and follow each place's rules. |
-| 26 | S1 Microsoft Marketplace for Excel add-ins | 3 | Microsoft | Partner Center verification and add-in validation. | Yes, with F6. |
-| 27 | F7 Google Sheets add-on | 3 | Google | OAuth verification and a listing review; 24 to 72 hours typical. | Yes. Use the current-sheet scope so the sensitive-scope review does not apply. |
-| 28 | S2 Google Workspace Marketplace | 3 | Google | OAuth verification and listing review. | Yes, with F7. |
-| 29 | X1 Claude Connectors Directory | 3 | Anthropic | Published requirements and an automatic scan. Finance is a named high-risk area that needs a person to confirm each action. | Yes. The filing step already asks for confirmation; the annotations and the reviewer account are a build. |
-| 30 | C2 Accountant software directories | 3 | Each publisher | Reviewed by hand; cost not confirmed. | Yes where free. |
-| 31 | D3 AlternativeTo and SaaSHub | 3 | Site moderators | Manual approval; AlternativeTo's queue runs to months. | Yes, with a wait. |
-| 32 | X3 Claude plugin with an Agent Skill | 3 | Anthropic | A person reviews each new listing. | Yes. |
-| 33 | S3 Microsoft Store and Google Play | 3 | Microsoft, Google | Developer accounts with a one-off fee (decision D4), then review. | Yes. |
+| 20 | S6 Accounting-suite app stores | 4 | Each vendor | Certification, yearly re-checks, and no clear place for an app that repeats a built-in feature. | Uncertain. |
+| 21 | V5 Homebrew core | 4 | Homebrew maintainers | A notability test on stars, forks and watchers; the current documentation page no longer states the numbers. | Not by a build. It follows adoption. |
+| 22 | B4 GOV.UK finder for accounts filing software | 3 | GOV.UK and Companies House | The page states no criteria and no route. A live software filing package is the likely precondition, and Submit holds one. | Yes. Ask the XML team for the route and send what they ask for. |
+| 23 | F6 Excel add-in | 3 | Microsoft | Partner Center account with business verification, then validation against published policies. | Yes. The company holds a D-U-N-S number; the policies are testable before submission. |
+| 24 | Q1 Answers in forums, posted by a person | 3 | Each forum's rules | Rules on self-promotion; AccountingWEB removes it. | Yes. Drafts carry the disclosure and follow each place's rules. |
+| 25 | S1 Microsoft Marketplace for Excel add-ins | 3 | Microsoft | Partner Center verification and add-in validation. | Yes, with F6. |
+| 26 | F7 Google Sheets add-on | 3 | Google | OAuth verification and a listing review; 24 to 72 hours typical. | Yes. Use the current-sheet scope so the sensitive-scope review does not apply. |
+| 27 | S2 Google Workspace Marketplace | 3 | Google | OAuth verification and listing review. | Yes, with F7. |
+| 28 | X1 Claude Connectors Directory | 3 | Anthropic | Published requirements and an automatic scan. Finance is a named high-risk area that needs a person to confirm each action. | Yes. The filing step already asks for confirmation; the annotations and the reviewer account are a build. |
+| 29 | C2 Accountant software directories | 3 | Each publisher | Reviewed by hand; cost not confirmed. | Yes where free. |
+| 30 | D3 AlternativeTo and SaaSHub | 3 | Site moderators | Manual approval; AlternativeTo's queue runs to months. | Yes, with a wait. |
+| 31 | X3 Claude plugin with an Agent Skill | 3 | Anthropic | A person reviews each new listing. | Yes. |
+| 32 | K2 Wikidata item | 3 | Wikidata editors | A registered company with its register entry as the reference is accepted; a company that writes its own item discloses the interest. | Yes for the company item. |
+| 33 | S3 Microsoft Store and Google Play | 3 | Microsoft, Google | Developer accounts, then review. Microsoft's is free since May 2026; Google Play charges $25 once. | Yes. |
 | 34 | S5 Zapier and Make | 3 | Zapier, Make | Public integration review. | Yes. |
 | 35 | S7 Chrome Web Store | 3 | Google | A small registration fee and review. | Yes. |
 | 36 | V3 Curated lists that take a pull request | 3 | List maintainers | Contribution rules; a maintainer merges. | Yes. |
@@ -742,11 +742,11 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 67 | Z8 Skills served by the MCP server | 2 | Which hosts read it is not confirmed. |
 | 68 | D5 Long tail of software directories | 2 | Few UK small-business readers. The value is a consistent product record that crawlers and assistants read. |
 | 69 | E1 Product Hunt and Show HN | 2 | Readers are developers and founders. A few run UK companies. |
-| 70 | R2 Downstream MCP catalogues | 2 | Readers are developers picking tools for an agent. |
-| 71 | V3 Curated lists that take a pull request | 2 | Developers and plain-text accounting users, the audience for diya-gl. |
-| 72 | V6 Developer writing | 2 | Developers who build on HMRC's APIs, and the assistants that read those posts. |
-| 73 | A12 Landing pages in other languages | 2 | The app itself is in English and Welsh. Demand in other languages is not measured. |
-| 74 | K2 Wikidata item | 2 | Models and knowledge panels read Wikidata. |
+| 70 | K2 Wikidata item | 2 | Models and knowledge panels read Wikidata. |
+| 71 | R2 Downstream MCP catalogues | 2 | Readers are developers picking tools for an agent. |
+| 72 | V3 Curated lists that take a pull request | 2 | Developers and plain-text accounting users, the audience for diya-gl. |
+| 73 | V6 Developer writing | 2 | Developers who build on HMRC's APIs, and the assistants that read those posts. |
+| 74 | A12 Landing pages in other languages | 2 | The app itself is in English and Welsh. Demand in other languages is not measured. |
 | 75 | S3 Microsoft Store and Google Play | 2 | The packaged app is the bookkeeping tool, not the filing product. An app-store result did appear for "free MTD bridging software". |
 | 76 | K3 Wikipedia | 2 | A strong source for assistants. |
 | 77 | L2 Bing Places and Apple Business Connect | 2 | Brand searches on Bing and on Apple devices. |
@@ -796,7 +796,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | F8 Review invitation after a filing | 4 | 2 | 2 | OS25 |
 | A10 Knowledge-base articles from the support corpus | 4 | 3 | 2 | OS35 |
 | F5 Quarterly-update workbook and article | 4 | 3 | 2 | OS35 |
-| X1 Claude Connectors Directory | 4 | 3 | 3 | OS3, OS14, OOS43, OS43, OS42, OS46, OS17, OOS17 |
+| X1 Claude Connectors Directory | 4 | 3 | 3 | OS3, OS14, OS43, OS42, OS46, OS17, OOS17 |
 
 ## 7. Surfaces their owners have retired
 
@@ -822,7 +822,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS4 | Load Search Console data into the lake each night | A1, A3 | Clicks, impressions and position by page and query as a table, so each page family in this plan has a trend line. | A partition for yesterday in the lake table each morning. | machine-only |
 | OS5 | IndexNow on every deploy | A11 | Bing learns of a changed page within minutes of a deploy. Bing's index serves Copilot, DuckDuckGo and ChatGPT search. | The deploy log shows an accepted IndexNow call (HTTP 200 or 202) per site. | machine-only |
 | OOS5 | Register the sites in Bing Webmaster Tools | A11 | Bing's index reports, its AI Performance report (citations in Copilot answers) and sitemap submission. | Both domains show as verified in Bing Webmaster Tools. | human-driven |
-| OS12 | State the crawler policy in every robots.txt | Y1, Z7 | Every documented search and user-fetch agent is named and allowed. Access itself works: each agent string got 200 on 2026-11-12. Training agents stay as they are until decision D3. | The SEO test asserts no named agent is disallowed from a sitemap URL. | machine-only |
+| OS12 | State the crawler policy in every robots.txt | Y1, Z7 | Every documented search, user-fetch and training agent is named and allowed. Access itself works: each agent string got 200 on 2026-11-12. | The SEO test asserts no named agent is disallowed from a sitemap URL. | machine-only |
 
 **Wave 2: Pages that answer the query**
 
@@ -837,8 +837,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS10 | Home page: a heading that names the product, static copy, less blocking script | A7 | The page that takes the brand query states what the product does in its heading and its first paragraph, and loads without four seconds of blocked main thread. | Lighthouse mobile performance against 56 and total blocking time against 3,990 ms (2026-11-03). | machine-only |
 | OS11 | Pages for the dated events | A9 | A dated page for each event that sends a known population to search, each ending in the filing that is live. | Impressions per event page in the month before each date. | machine-only |
 | OS40 | A comparison page with sourced prices | A13, Y3 | A page of our own for "best" and "cheapest MTD bridging software", the queries every vendor roundup targets. | Impressions for queries containing "best" or "cheapest". | machine-only |
-| OS39 | Landing pages in further languages | A12 | The landing and get-started pages in the languages UK sole traders search in. | Impressions by page language. | machine-only |
-| OOS39 | Operator: choose the translation route per language | A12 | The decision OS39 waits on. | A language and a route are written into OS39's row. | human-driven |
 
 **Wave 3: Assistants and agents**
 
@@ -846,8 +844,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS13 | llms.txt, Markdown copies and a feed, generated at build | Z5, Z6, Z12 | One Markdown page per site that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only |
 | OS14 | Make the hosted MCP pass every directory's technical checks | X1, X2, X6, Z1, Z2, Z3 | A connector that any assistant can add and that passes the Claude scan and the OpenAI review checks on the first submission. | The conformance test passes; the MCP inspector lists a title and annotations on every tool; `/.well-known/mcp/server-card.json` answers 200. | machine-only |
-| OOS43 | Operator: create the reviewer's federated account | X1, X2 | A Microsoft or Google account for directory reviewers, with no second factor (decision D2). | The account has signed in to Submit once and its credentials are stored for OS43. | human-driven |
-| OS43 | Seed the reviewer account and prove its sign-in | X1, X2 | A reviewer account with sample books that signs in to the connector with a password alone. | A connector sign-in from a new machine completes on ci and lists the sample books. | machine-only |
+| OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only |
 | OS16 | `server.json` and a Gemini extension file for diya-gl | R1, R2, X8 | diya-gl is ready to publish to the registry, and the Gemini CLI gallery can find it in a 55 KB repository. | The workflow validates both files; a dispatch without `apply` prints what it would publish. | machine-only |
 | OS16b | `server.json` for the hosted connector | R1 | The hosted connector's registry entry, validated and ready for the day it may be listed. | The workflow validates the file. | machine-only |
 | OOS16 | Operator's go: publish diya-gl to the registry and claim the catalogue listings | R1, R2 | A registry entry for diya-gl, and listings on Glama, Smithery and mcp.so that read from it. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya` returns the entry. | machine-ask |
@@ -857,9 +854,9 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS42 | A tool that hands the figures to the browser to file | X1, X2, X4 | The assistant ends its answer with one link that opens Submit's VAT form with the nine boxes filled, using the page's existing `#books=` hand-off. No figures are stored on a server. | Hand-off links opened, and filings that follow one. | machine-only |
 | OS46 | A review card inside the assistant | Z4, X1, X2 | Claude and ChatGPT show the nine boxes as the product's own card with the hand-off button. | The card renders in the MCP inspector and in Claude on ci. | machine-only |
 | OS17 | The submission pack for the Claude directory | X1, X7 | Everything the directory portal asks for, ready to paste, so the submission is one sitting. | The pack is complete against the portal's field list. | machine-only |
-| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The listing itself. | The connector shows in the directory as a Community connector. | human-driven |
+| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | human-driven |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only |
-| OOS18 | Operator: verify the business with OpenAI and submit the plugin | X2 | The listing itself. | The plugin shows in the ChatGPT directory for GB. | human-driven |
+| OOS18 | Operator: verify the business with OpenAI and submit the plugin | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | human-driven |
 
 **Wave 4: Listings**
 
@@ -874,7 +871,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS27 | npm package keywords | V1, V2 | Both npm packages carry the terms a developer searches: mcp, vat, hmrc, excel. | `npm search mcp vat` shows the packages. | machine-only |
 | OOS27 | Operator's go: homepage URL and topics on the five repositories | V2, X8 | Each repository links to its site and appears on GitHub's topic pages; the Gemini CLI gallery finds diya-gl by its topic. | `gh repo view <repo> --json repositoryTopics,homepageUrl` shows them. | machine-ask |
 | OS28 | Pull requests to the curated lists | V3, V4, R2 | Entries for diya-gl on awesome-mcp-servers and the plaintextaccounting.org list, and for the hosted connector on awesome-remote-mcp-servers when it may be listed. | Merged pull requests. | machine-ask |
-| OS29 | Wikidata items | K2 | A machine-readable record of the company and its products in the source that knowledge panels and models read. | The items exist and survive 30 days. | human-driven |
+| OS29 | Operator: one Wikidata entry for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | human-driven |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only |
 | OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven |
 
@@ -899,23 +896,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OOS36 | Operator: Partner Center account and the add-in submission | S1, X5 | The marketplace listing, and the verified publisher account that Copilot certification also needs. | The add-in shows in Excel's add-in store. | human-driven |
 | OS37 | Google Sheets add-on | F7, S2 | Filing from inside Google Sheets and a listing in its add-on store. | Add-on installs; filings with the add-on as the client. | machine-only |
 | OOS37 | Operator: approve the consent screen and the Marketplace listing | S2 | The Workspace Marketplace listing. | The add-on shows in Google Sheets' add-on store. | human-driven |
-| OS38 | Package diya-gl.co.uk for the Microsoft Store and Google Play | S3 | The app that is already installable from the browser, as a result in two app stores. | Store installs. | machine-only |
-| OOS38b | Operator: submit the store packages | S3 | The two store listings. | Store installs. | human-driven |
-| OOS38 | Operator: decide the store fees and open the accounts | S3 | The decision and the two developer accounts (decision D4). | Yes with two accounts, or no with OS38 closed. | human-driven |
 
-### 8.2 Decisions for the operator
-
-| Id | Decision | Alternatives | Recommendation | Rows it gates |
-| --- | --- | --- | --- | --- |
-| D1 | When the hosted connector is listed in the assistant directories | (a) Board row MCP1's rule of 2026-10-30: list when every tool is on prod, which waits on HMRC's Income Tax and Corporation Tax recognition and has no date. (b) List the VAT tool set once OS14, OS43 and OS42 are on prod: the assistant derives the figures and hands off to the browser to file. | (a) stands until the operator changes it. (b) is the route if the ChatGPT and Claude listings are wanted before the recognitions; each later tool is then an update to a live listing. | OS16b's publish, OOS17, OOS18, OOS30, part of OS28 |
-| D2 | How a directory reviewer signs in | (a) A reviewer grant in the MCP OAuth facade for one demo account; the facade then needs a way to mint a token for a user whose pool requires TOTP. (b) Pool MFA made optional with a trigger. (c) A second user pool. (d) A federated Microsoft or Google account made for reviewers, with sample books; federated users do not pass through the pool's TOTP. | (d). It needs no change to authentication. (a) is the fallback if the provider challenges a sign-in from a new place. | OOS43, OS43, OS17, OS18 |
-| D3 | Training crawlers | (a) Keep allowing GPTBot, ClaudeBot, Google-Extended and CCBot, as `User-agent: *` does today, and name them. (b) Disallow them and keep only the search and user-fetch agents. | (a). The pages are public marketing and reference text, and the operator asked for presence in models. | A follow-up line in each robots.txt after OS12 |
-| D4 | Store account fees | (a) Pay the one-off developer fees for the Microsoft Store and Google Play. (b) Keep to stores with no fee. | (b) until the Excel add-in has shown that a store listing brings filings. | OOS38, OS38, OOS38b |
-| D5 | Translations | (a) A paid human translation at £140 to £200 a language. (b) Machine translation with a named native reader. (c) No further languages yet. | (c) until OS4 shows impressions by language; then (b) for Polish first. | OOS39 |
-| D6 | Wikidata items written by the company | (a) Create them with the interest disclosed. (b) Leave them until independent coverage exists. | (b). The references that exist are primary records. | OS29 |
-| D7 | The Google Business Profile that exists | (a) Leave it untouched. (b) Remove it. Google lists online-only businesses as ineligible, and an edit invites re-verification. | (a). It costs nothing while it stands, and its removal cannot be undone. | OS24 |
-
-### 8.3 Order of work
+### 8.2 Order of work
 
 Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file run in one agent or in sequence; each brief names the rows it shares with.
 
@@ -926,10 +908,8 @@ flowchart LR
   OS7 --> OS10
   OS9 --> OS11
   OS9 --> OS40
-  OS9 --> OS39
-  OOS39 --> OS39
   OS8 --> OS13
-  OOS43 --> OS43
+  OS14 --> OS43
   OS14 --> OS16b
   OS16 --> OOS16
   OS14 --> OS19
@@ -941,18 +921,18 @@ flowchart LR
   OS14 --> OS17
   OS43 --> OS17
   OS17 --> OOS17
-  D1 --> OOS17
+  OS42 --> OOS17
   OS14 --> OS18
   OS43 --> OS18
   OS18 --> OOS18
-  D1 --> OOS18
+  OS42 --> OOS18
   OS21 --> OS24
   OS24 --> OS25
   OS9 --> OS26
   OS8 --> OS29
   OS42 --> OS30
   OS30 --> OOS30
-  D1 --> OOS30
+  OOS17 --> OOS30
   OS9 --> OS31
   OS9 --> OS32
   OOS32 --> OS32
@@ -966,11 +946,9 @@ flowchart LR
   OS36b --> OOS36
   OS36b --> OS37
   OS37 --> OOS37
-  OOS38 --> OS38
-  OS38 --> OOS38b
 ```
 
-### 8.4 Facts several rows share
+### 8.3 Facts several rows share
 
 - Search Console data is readable today: `GOOGLE_CLOUD_PROJECT=diyaccounting-ga4 scripts/gcp-as-sso.sh node infra/google/searchconsole/searchconsole-report.js --out target/searchconsole-report.json` (run 2026-11-12, 90 days to 2026-11-09). Its JSON holds `queries`, `pages` and `inspections` per property; OS2, OS44 and OS45 read it.
 - A new public page on Submit needs five things in the same change: an entry in `web/public/sitemap.xml` (`scripts/publish-sitemap.mjs` filters it and adds `lastmod` at deploy), a title, a description and a canonical (asserted by `web/unit-tests/seo-validation.test.js`), the path in the CloudFront invalidation list (`infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java` and `scripts/deploy-app.js`), a link from a page that is already indexed, and the visual definition of done in `CLAUDE.md`. OS7, OS9, OS11, OS31, OS32, OS33, OS34 and OS40 all do this; they land in that order or carry the earlier row's changes.
@@ -982,7 +960,7 @@ flowchart LR
 - Rows that can start together and edit one file run in one agent or in the order given: the spreadsheets `index.html` (OS6, OS44, OS8); Submit's `mcp.html` (OS8, then OS20, then OS13); Submit's `videos-*.html` (OS8, then OS7); Submit's `index.html` (OS7, then OS10, then OS13). A row that adds a capability comment changes the generated `REPORT_CAPABILITIES.md`, which `npm run capabilities:check` compares, so two such branches conflict; they land one after the other.
 - Every Submit page is served with `frame-ancestors 'none'` and `X-Frame-Options: DENY` (`EdgeStack.java`, lines 357 and 369). A page that another site or an Office or Google host must frame (OS33's embed, OS36b's pane, OS37's sidebar) needs its own CloudFront behaviour and response headers policy, with a CDK test.
 
-### 8.5 Briefs
+### 8.4 Briefs
 
 #### Wave 1: Measure and repair
 
@@ -998,7 +976,7 @@ flowchart LR
 
 - [ ] **OOS5. Register the sites in Bing Webmaster Tools.** The operator opens https://www.bing.com/webmasters, signs in with the Microsoft account that holds the Microsoft Advertising account, and chooses "Import your sites from GSC" for `diyaccounting.co.uk` and `diya-gl.co.uk`. Bing copies the verification and the sitemaps. About five minutes. Afterwards the AI Performance report in the same tool shows citations in Copilot answers; OS41 reads it monthly. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
-- [ ] **OS12. State the crawler policy in every robots.txt.** Checked on 2026-11-12: a request with each of seven agent strings (OAI-SearchBot, ChatGPT-User, Claude-User, ClaudeBot, PerplexityBot, bingbot, GPTBot) returns 200 from the submit, spreadsheets and gateway hosts. The web ACL's rate rule is 2,000 requests in five minutes per IP (`EdgeStack.java`, `RateLimitRule`), far above a crawl of a 26-URL sitemap. So access works; what is missing is the stated policy. In each `robots.txt` add one group that names the search and user-fetch agents (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User, Bingbot, Googlebot, Applebot) with the same rules as `*`, and one `Content-Signal: search=yes, ai-input=yes` line. The training agents (GPTBot, ClaudeBot, Google-Extended, CCBot, Applebot-Extended) stay under `*`, which allows them today; decision D3 adds a named group or a `Disallow` for them. A named group replaces `*` for that agent, so the Submit groups repeat the six `Disallow` lines. Files: `web/public/robots.txt`, `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/robots.txt`, `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/robots.txt`, `../www.diyaccounting.co.uk/web/www.diyaccounting.co.uk/public/robots.txt`. Extend each repository's `web/unit-tests/seo-validation.test.js`: no named agent is disallowed from a sitemap URL, and every named group on Submit carries the six `Disallow` lines. The marketing microsite's `robots.txt` is OS21's. OS8 extends the same test file; one agent per repository takes both rows. **Waits on**: nothing. **Class**: machine-only. **Repository**: SUB, SS, WWW. **Model**: Sonnet. **Size**: ~8 files.
+- [ ] **OS12. State the crawler policy in every robots.txt.** Checked on 2026-11-12: a request with each of seven agent strings (OAI-SearchBot, ChatGPT-User, Claude-User, ClaudeBot, PerplexityBot, bingbot, GPTBot) returns 200 from the submit, spreadsheets and gateway hosts. The web ACL's rate rule is 2,000 requests in five minutes per IP (`EdgeStack.java`, `RateLimitRule`), far above a crawl of a 26-URL sitemap. So access works; what is missing is the stated policy. In each `robots.txt` add one group that names the search and user-fetch agents (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User, Bingbot, Googlebot, Applebot) with the same rules as `*`, a second group that names the training agents (GPTBot, ClaudeBot, Google-Extended, CCBot, Applebot-Extended) with the same rules, and one `Content-Signal: search=yes, ai-input=yes, ai-train=yes` line. Training agents are allowed by the operator's choice of 2026-11-12, so that models learn the products. A named group replaces `*` for that agent, so the Submit groups repeat the six `Disallow` lines. Files: `web/public/robots.txt`, `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/robots.txt`, `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/robots.txt`, `../www.diyaccounting.co.uk/web/www.diyaccounting.co.uk/public/robots.txt`. Extend each repository's `web/unit-tests/seo-validation.test.js`: no named agent is disallowed from a sitemap URL, and every named group on Submit carries the six `Disallow` lines. The marketing microsite's `robots.txt` is OS21's. OS8 extends the same test file; one agent per repository takes both rows. **Waits on**: nothing. **Class**: machine-only. **Repository**: SUB, SS, WWW. **Model**: Sonnet. **Size**: ~8 files.
 
 #### Wave 2: Pages that answer the query
 
@@ -1020,25 +998,19 @@ flowchart LR
 
 - [ ] **OS40. A comparison page with sourced prices.** A data file `web/public/compare/vendors.toml`: one entry per named tool (name, URL, what it files, headline price, the URL and the date the price was read). A generator on the OS9 pattern writes `mtd-vat-bridging-software-compared.html` and `company-accounts-filing-software-compared.html` as tables sorted by price, with the stated inclusion rule: on HMRC's or Companies House's public list, with a public price. A monthly workflow fetches each price URL and opens an issue when the price text changes. Prices seen on 2026-11-12 in third-party pages (123 Sheets about £19.56 a year, VitalTax about £30, Absolute about £40, GoFile £49.99, TinyTax £50) are leads only; read each from the vendor's own page. A comparison names competitors, so each figure must be accurate and verifiable under the CAP Code; the operator reads the page in the PR. **Waits on**: OS9. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **OS39. Landing pages in further languages.** Generalise `scripts/build-welsh-pages.mjs` from the one file `i18n/cy.toml` to a file per language, with the hreflang set in each page head and in the sitemap, as the four Welsh URLs have now. Start with the home page, `get-started.html` and the VAT filing page from OS9. The app stays English and Welsh, and each translated page says so in its first screen. Nothing publishes for a language until OOS39 names its translation route. **Waits on**: OS9, OOS39. **Class**: machine-only. **Repository**: SUB, WWW. **Model**: Sonnet. **Size**: ~10 files.
-
-- [ ] **OOS39. Operator: choose the translation route per language.** The operator decides, per language, between a paid human translation of the landing pages (£140 to £200 a language, `../private.diyaccounting.co.uk/strategy/RESEARCH_MULTILINGUAL_SITES.md`) and a machine translation with a native reader's check, and names the reader. The research ranks the need: Polish, Romanian, Panjabi, Bengali, Urdu. The answer goes into OS39's row. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
 #### Wave 3: Assistants and agents
 
 - [ ] **OS13. llms.txt, Markdown copies and a feed, generated at build.** A build step writes `llms.txt` (the site's name, one paragraph, then a linked list of pages with one line each) and `llms-full.txt` (the text of the public pages as Markdown) for submit, spreadsheets, the gateway and diya-gl.co.uk. It reads the built sitemap, the catalogue and `faqs.toml`, so a page that a later row adds appears with no change here. The same step writes a `.md` copy of each static Submit page and adds `<link rel="alternate" type="text/markdown">` to the page. The spreadsheets articles already have `.md` copies served with `X-Robots-Tag: noindex` (`../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/SpreadsheetsStack.java`, line 292); give Submit's copies the same header in `EdgeStack.java`. Add an Atom feed `feed.xml` on the spreadsheets site from `recently-updated.toml`. A study in May 2026 found that 97% of `llms.txt` files receive no AI request, so the proof is a measurement after 28 days: OS3's `v_ai_fetches_daily` for Submit's paths, and OS41's Logs Insights query for the other three sites. It edits `mcp.html` and `index.html` heads, as OS8, OS10 and OS20 do; it lands after them. **Waits on**: OS8. **Class**: machine-only. **Repository**: SUB, SS, WWW. **Model**: Sonnet. **Size**: ~10 files.
 
 - [ ] **OS14. Make the hosted MCP pass every directory's technical checks.** Present already: protected-resource metadata (`app/functions/mcp/mcpOauth.js`, `ROUTES`, lines 523 to 524), a 401 that names it (`app/functions/mcp/mcpHttp.js` line 90), PKCE S256, dynamic registration and client metadata documents (`client_id_metadata_document_supported: true`, line 269). Missing: no tool has a `title` or an annotation. The one registration call is `server.registerTool(name, { description, inputSchema }, …)` at `mcp/lib/server.js` line 786; add `title` and `annotations` there from two new fields on each entry of the tool table (lines 309 to 751) and of `HOSTED_OVERRIDES` in `mcp/lib/hosted-tools.js`. Every filing, save, invite and sign-out tool is `destructiveHint: true`; every read and derive tool is `readOnlyHint: true`; every tool that reaches HMRC or Companies House is `openWorldHint: true`. Token audience: `getTokenVerifier` (`mcpHttp.js` lines 57 to 70) sets `audience: null` because a Cognito access token has no `aud`; it binds the token by issuer and by `client_id` equal to `MCP_TOKEN_CLIENT_ID`, an app client that only the MCP facade uses. Assert that binding in a test and state it in the Server Card. API Gateway has routes for `/mcp` and `/mcp/oauth/{action}` only (`infra/main/java/co/uk/diyaccounting/submit/names/McpNames.java`), so `/mcp/server-card` would answer 404. SEP-2127 allows any unreserved URI: serve the card as the static file `web/public/.well-known/mcp/server-card.json`, the path Smithery reads, and list it in a static `web/public/.well-known/ai-catalog.json`. EdgeStack sends only `/.well-known/oauth-*` to the Lambda (line 656), so both files are served from the site bucket with no infrastructure change. Make the consent page name the client that asked in place of "Claude" (`mcpOauth.js` lines 222 and 233). Add `https://chatgpt.com` to `MCP_ALLOWED_ORIGINS` in `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java` (line 165) and its test `McpStackTest.java`. In a worktree run `npm ci` in `mcp/` first. Proof: a test in `app/unit-tests/functions/` walks 401, metadata, authorize, token and the tool list and asserts a title and annotations on every tool; then one MCP inspector run against ci. **Waits on**: nothing. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~10 files.
 
-- [ ] **OOS43. Operator: create the reviewer's federated account.** Both directories test with a reviewer account: OpenAI requires credentials with no second factor, email code or magic link; Anthropic asks for an account with data in it. `Mfa.REQUIRED` in `IdentityStack.java` (line 202) applies to native Cognito users only. A federated Google or Microsoft user passes through with whatever its provider asks (line 200), native sign-in is off by default, and the MCP app client accepts every provider. So a reviewer can sign in today with a federated account; what is missing is an account made for it, with sample books. The operator creates one Microsoft personal account (or Google account) for reviewers, with no second factor, signs in to Submit with it once, and gives its credentials to the session through the secrets path. If the provider challenges a sign-in from a new place, the fallback is decision D2's design (a), which needs a way for the OAuth facade to mint a token for a demo user: the user's TOTP seed held by the facade, or custom-auth triggers on the pool. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-- [ ] **OS43. Seed the reviewer account and prove its sign-in.** With the reviewer account from OOS43: seed it on ci and on prod with two sample books (one VAT, one micro-entity company) through the cloud book API, give it the bundle the hosted tools need, and prove a full connector sign-in on ci from a machine and network the account has never used: metadata, authorize, the provider's page, token, `list_books`. Record whether the provider asked for anything beyond the password. The account holds no HMRC or Companies House grant, and prod's hosted set has no filing tool (`PROD_HOSTED_TOOL_NAMES`). Write the reviewer steps (the URL, the provider button, the credentials' location) for OS17 and OS18. **Waits on**: OOS43. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **OS43. A demo sign-in for directory reviewers, on our own page.** Directory reviewers need a login and a password that work at once. OpenAI's rule: the account "should work immediately without MFA approval, email or SMS codes, magic links", and a Google or Microsoft sign-in can ask a reviewer to verify from a new place. The pool requires TOTP for native users (`IdentityStack.java` line 202). So the sign-in is our own: a "Reviewer sign-in" form on the MCP consent page (`handleAuthorizeGet` and `handleAuthorizePost` in `app/functions/mcp/mcpOauth.js`) takes a user name and a password and signs in one native demo user. The Lambda calls Cognito `InitiateAuth` for that user and answers the `SOFTWARE_TOKEN_MFA` challenge with a code computed from the user's TOTP seed in Secrets Manager, as `scripts/ensure-cognito-test-user.js` does for the test lanes; it then issues the same signed code blob that `handleCallback` issues after the hosted UI. Opus writes the design in the PR first and settles: the auth flow to enable on the MCP app client (`mcpUserPoolClient` in `IdentityStack.java` has the authorization-code grant only; a push that touches that file deploys the ci environment); whether Cognito threat protection (`FULL_FUNCTION`) challenges a sign-in made from the Lambda; a rate limit on the form; the two secrets, each with a rotation tag and an entry in `secrets-rotation.toml` (`scripts/put-secret-with-rotation-tag.sh` refuses an empty value, so the secrets exist on ci and prod before the deploy step that reads them); and the log line for each use. Sonnet builds from it, and seeds the demo account on ci and prod with two sample books (one VAT, one micro-entity company) and a bundle that lets it hold books. The demo account holds no HMRC or Companies House grant, and a test asserts that every hosted tool outside prod's set (`PROD_HOSTED_TOOL_NAMES`) refuses it. No real user's sign-in changes. Proof on ci: the form signs in from a machine with no session and `list_books` returns the two books. The row writes the reviewer steps for OS17 and OS18. **Waits on**: OS14. **Class**: machine-only. **Repository**: SUB. **Model**: Opus (design), Sonnet (build). **Size**: ~8 files.
 
 - [ ] **OS16. `server.json` and a Gemini extension file for diya-gl.** `../spreadsheets.diyaccounting.co.uk/diya-gl/server.json` for the stdio server: name `io.github.diy-accounting-uk/diya-gl`, package `@diy-accounting-uk/diya-gl`, and the same `mcpName` in `../spreadsheets.diyaccounting.co.uk/diya-gl/package.json`. A workflow job in the spreadsheets repository installs `mcp-publisher`, validates the file on every push that changes it, and on a dispatch with `apply=true` logs in with GitHub OIDC and publishes. The registry is in preview with its API frozen at v0.1; read https://github.com/modelcontextprotocol/registry for the schema on the day. The registry checks that the published npm package carries the same `mcpName`, so the npm version with `mcpName` is published before the registry publish. In the same change add `gemini-extension.json` for diya-gl to the `homebrew-diya-gl` repository, not the spreadsheets repository: the Gemini CLI gallery clones the whole repository on install, and the spreadsheets repository is 1.36 GB against 55 KB for the tap. **Waits on**: nothing. **Class**: machine-only. **Repository**: SS, homebrew-diya-gl. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **OS16b. `server.json` for the hosted connector.** `mcp/server.json` for the hosted server: name `io.github.diy-accounting-uk/diya-submit`, a `remotes` entry of type `streamable-http` at `https://submit.diyaccounting.co.uk/mcp`, the npm package `@diy-accounting-uk/diya-submit`, and `mcpName` in `mcp/package.json`. The same validate-and-dispatch job as OS16, in the submit repository. It waits on OS14 so that the entry describes tools with titles and annotations. The publish itself is OOS16's second step and waits on decision D1. **Waits on**: OS14. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~3 files.
+- [ ] **OS16b. `server.json` for the hosted connector.** `mcp/server.json` for the hosted server: name `io.github.diy-accounting-uk/diya-submit`, a `remotes` entry of type `streamable-http` at `https://submit.diyaccounting.co.uk/mcp`, the npm package `@diy-accounting-uk/diya-submit`, and `mcpName` in `mcp/package.json`. The same validate-and-dispatch job as OS16, in the submit repository. It waits on OS14 so that the entry describes tools with titles and annotations. The publish itself is OOS16's second step, when OS14 is on prod. **Waits on**: OS14. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **OOS16. Operator's go: publish diya-gl to the registry and claim the catalogue listings.** The operator says go, and a session dispatches the publish for diya-gl (`gh workflow run <workflow> -f apply=true` in the spreadsheets repository); marketing plan row MK-32. Then, each on the operator's go: claim the Glama listing with a static `/.well-known/glama.json`, publish at Smithery, submit the mcp.so form. PulseMCP reads the registry. The hosted Submit entry (OS16b) publishes the same way when decision D1 allows. **Waits on**: OS16. **Class**: machine-ask. **Repository**: SS. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OOS16. Operator's go: publish diya-gl to the registry and claim the catalogue listings.** The operator says go, and a session dispatches the publish for diya-gl (`gh workflow run <workflow> -f apply=true` in the spreadsheets repository); marketing plan row MK-32. Then, each on the operator's go: claim the Glama listing with a static `/.well-known/glama.json`, publish at Smithery, submit the mcp.so form. PulseMCP reads the registry. The hosted Submit entry (OS16b) publishes the same way when OS14 is on prod. **Waits on**: OS16. **Class**: machine-ask. **Repository**: SS. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **OS19. A plugin and a skill for filing a UK VAT return.** A public folder `plugins/diya-submit/` in the submit repository: `skills/file-a-uk-vat-return/SKILL.md` (open the book, derive the nine boxes, show them, hand off to file in the browser, read the receipt; what the skill never does), and the plugin manifest that names the connector URL. The skill text states only what prod offers and follows the wording guidance (shared fact). Read the plugin manifest format at https://claude.com/docs/directory/publish.md on the day. Serving the same text as a `skill://` resource (SEP-2640) is a second step with a check first: `mcp/lib/server.js` registers no resources today and the MCP SDK in use is 1.32.2; read the SDK's changelog for `skills/list`, and leave the step out if that version lacks it. The plugin goes to the Claude directory with OOS17. **Waits on**: OS14. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~6 files.
 
@@ -1052,11 +1024,11 @@ flowchart LR
 
 - [ ] **OS17. The submission pack for the Claude directory.** Build the submission pack for https://claude.ai/directory/manage ("MCP connector") as one file in `../private.diyaccounting.co.uk/strategy/marketing/`: the server URL, the documentation URL (`mcp.html`), the privacy policy URL, a support contact, the reviewer steps and account from OS43 and what its sample books hold, and the answers to the seven compliance acknowledgements, one of which is financial transactions (the answer: no tool files or pays; a person files in the browser). A square icon goes in `web/public/images/`. When OS46's view exists, add three to five PNG screenshots at 1,000 px or wider. The same pack answers Perplexity's "Submit a Connector Proposal" form. **Waits on**: OS14, OS43. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. Waits on decision D1: board row MCP1 holds the connector's public listing until its tool set is whole. **Waits on**: OS17, D1. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OS14, OS43 and OS42 are on prod and `prepare_vat_return` is in prod's hosted set. Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OS42. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 - [ ] **OS18. The plugin package for the ChatGPT directory.** Build the plugin package for the OpenAI Platform: the plugin ZIP that names the one MCP server; the domain challenge as a static file `web/public/.well-known/openai-apps-challenge` (the site bucket serves `.well-known` paths other than `oauth-*`); five positive and three negative test cases; a walk-through recording made with the `site-video-capture` skill against the simulator; the reviewer credentials from OS43; `publication.countries` with GB; website, support, privacy and terms URLs; a display name of 30 characters or fewer. Rules the plugin meets: every tool sets `readOnlyHint`, `destructiveHint` and `openWorldHint` (OS14); the plugin shows no plan, starts no subscription and links to no checkout, so a user with no bundle gets a link to `bundles.html` as an information page; an OpenAI project with EU data residency cannot submit, so the operator's project uses global residency. Read https://developers.openai.com/plugins/deploy/submission.md on the day for the package format. **Waits on**: OS14, OS43. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~8 files.
 
-- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. Waits on decision D1, as OOS17 does. **Waits on**: OS18, D1. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: OS14, OS43 and OS42 are on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OS42. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 4: Listings
 
@@ -1066,7 +1038,7 @@ flowchart LR
 
 - [ ] **OS23. Complete the HMRC VAT finder entry.** The operator asked HMRC on 2026-10-03 to add liabilities, payments and penalties to the entry (`../private.diyaccounting.co.uk/hmrc/correspondence/DRAFT_EMAIL_SOFTWARE_CHOICES_LISTING.md`). First a session reads the live entry at https://www.tax.service.gov.uk/making-tax-digital-software in Chrome and records the features and flags it shows. If the "free version" flag is absent, draft a reply on the same thread with the `email-draft` skill that asks for it and cites the free day pass (3 submissions). Whether a pass limited to three submissions meets HMRC's meaning of a free version is HMRC's answer to give; the email asks. Marketing plan row MK-20. The operator sends it. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: Opus (draft). **Size**: 0 files.
 
-- [ ] **OS24. Create and claim the profiles.** One sitting with the listing pack open. A session fills each form in Chrome from the pack; the operator creates the account, passes the verification and approves each submit. Batch 1, by relevance: Capterra (one profile serves GetApp and Software Advice), Trustpilot, AlternativeTo, SaaSHub, the two claims (SoftwareReview, FeaturedCustomers), the LinkedIn company page (marketing plan MK-27), accountingfirms.co.uk. Batch 2, the long tail: G2, TrustRadius, Crunchbase, the eleven small software directories, the ten citation directories. The Google Business Profile is not touched and Bing Places is not created (decision D7): Google lists online-only businesses as ineligible, and an edit invites re-verification. A directory that asks for payment to list is skipped and recorded so. Each result goes into the listing register as `submitted` with its date and the terms read. **Waits on**: OS21. **Class**: machine-ask. **Repository**: none. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OS24. Create and claim the profiles.** One sitting with the listing pack open. A session fills each form in Chrome from the pack; the operator creates the account, passes the verification and approves each submit. Batch 1, by relevance: Capterra (one profile serves GetApp and Software Advice), Trustpilot, AlternativeTo, SaaSHub, the two claims (SoftwareReview, FeaturedCustomers), the LinkedIn company page (marketing plan MK-27), accountingfirms.co.uk. Batch 2, the long tail: G2, TrustRadius, Crunchbase, the eleven small software directories, the ten citation directories. The Google Business Profile is not touched and Bing Places is not created (operator, 2026-11-12): Google lists online-only businesses as ineligible, and an edit invites re-verification. A directory that asks for payment to list is skipped and recorded so. Each result goes into the listing register as `submitted` with its date and the terms read. **Waits on**: OS21. **Class**: machine-ask. **Repository**: none. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **OS25. Invite a review after each accepted filing.** After HMRC or Companies House accepts a filing, the result view shows every customer one line and link: "Leave a review" to the Trustpilot profile, with the Capterra link second. No reward, no filter on who is asked, no ask before acceptance (DMCC Act 2024 and each site's rules). The shared record widgets are `web/public/lib/filing-result-record.js`, `web/public/lib/submission-record.js` and `web/public/lib/vat-return-record.js`; add the line once, in the widget every accepted result renders through, and in the receipt email if one is sent. The profile URLs come from the listing register (OS21) through the build, so no URL is typed twice. A `review_link_clicked` event counts the clicks. The visual definition of done applies. Waits on OS24 for the profile URLs. **Waits on**: OS24. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~6 files.
 
@@ -1076,13 +1048,13 @@ flowchart LR
 
 - [ ] **OOS27. Operator's go: homepage URL and topics on the five repositories.** On the operator's go, a session sets a homepage URL and topics on the five active public repositories; the archived `diy-accounting-archive` is left as it is. The commands, one per repository: `gh repo edit diy-accounting-uk/submit.diyaccounting.co.uk --homepage https://submit.diyaccounting.co.uk --add-topic making-tax-digital --add-topic hmrc --add-topic vat --add-topic companies-house --add-topic mcp-server`; `gh repo edit diy-accounting-uk/spreadsheets.diyaccounting.co.uk --homepage https://spreadsheets.diyaccounting.co.uk --add-topic bookkeeping --add-topic excel --add-topic plaintext-accounting --add-topic mcp-server`; `gh repo edit diy-accounting-uk/www.diyaccounting.co.uk --homepage https://diyaccounting.co.uk`; `gh repo edit diy-accounting-uk/root.diyaccounting.co.uk --homepage https://diyaccounting.co.uk`; `gh repo edit diy-accounting-uk/homebrew-diya-gl --homepage https://diya-gl.co.uk --add-topic homebrew-tap --add-topic gemini-cli-extension`. **Waits on**: nothing. **Class**: machine-ask. **Repository**: none. **Model**: Haiku. **Size**: 0 files.
 
-- [ ] **OS28. Pull requests to the curated lists.** Pull requests to repositories we do not own, each opened on the operator's go from his GitHub identity. (1) `punkpeye/awesome-mcp-servers`, Finance section, for diya-gl: its contribution file asks for a public repository that a reader installs and runs. (2) The plaintextaccounting.org software list (`plaintextaccounting/plaintextaccounting`) for diya-gl. (3) `awesome-remote-mcp-servers` for the hosted connector, when decision D1 allows. (4) `docker/mcp-registry`: it takes a source repository that Docker builds into an image, so read its contribution file first and submit diya-gl only if the Apache-2.0 `diya-gl/` folder of a PolyForm repository meets its licence rule. A session reads each repository's contribution file on the day, prepares the change on a fork, and shows the diff before the pull request opens. **Waits on**: nothing. **Class**: machine-ask. **Repository**: third-party. **Model**: Sonnet. **Size**: up to 4 pull requests.
+- [ ] **OS28. Pull requests to the curated lists.** Pull requests to repositories we do not own, each opened on the operator's go from his GitHub identity. (1) `punkpeye/awesome-mcp-servers`, Finance section, for diya-gl: its contribution file asks for a public repository that a reader installs and runs. (2) The plaintextaccounting.org software list (`plaintextaccounting/plaintextaccounting`) for diya-gl. (3) `awesome-remote-mcp-servers` for the hosted connector, when OS14 is on prod. (4) `docker/mcp-registry`: it takes a source repository that Docker builds into an image, so read its contribution file first and submit diya-gl only if the Apache-2.0 `diya-gl/` folder of a PolyForm repository meets its licence rule. A session reads each repository's contribution file on the day, prepares the change on a fork, and shows the diff before the pull request opens. **Waits on**: nothing. **Class**: machine-ask. **Repository**: third-party. **Model**: Sonnet. **Size**: up to 4 pull requests.
 
-- [ ] **OS29. Wikidata items.** Wikidata accepts an item with serious public references, and treats a company that writes its own item as a conflict of interest. The operator decides whether to create the items (the company; Submit; the spreadsheets) with the references that exist: the Companies House record, the HMRC software finder entry, the npm packages. On a yes, a session prepares the statements and the operator saves them from his own Wikidata account with the interest disclosed on his user page; OS8's `sameAs` list then gains the item URLs. On a no, the row closes. **Waits on**: OS8. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OS29. Operator: one Wikidata entry for the company.** One Wikidata item, for the company only (operator, 2026-11-12): DIY Accounting Limited, instance of business, country United Kingdom, inception 2006, official website, and its Companies House number 06846849 as the identifier and the reference. A registered company with its register entry as the reference is the kind of item Wikidata keeps; product items wait for independent coverage. A session prepares the statements as text. The operator saves them from his own Wikidata account and states on his user page that he is a director of the company. Then OS8's `sameAs` list gains the item URL. **Waits on**: OS8. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 - [ ] **OS30. A launch pack for the assistant connector.** A folder `web/marketing/launch/` with the text for Product Hunt, a Show HN post, the three AI tool directories and one dev.to post ("A VAT return from an AI assistant: what the assistant does and what the browser does"), the gallery images at each site's sizes, and a 60-second recording made with the `site-video-capture` skill from OS42's behaviour walk. The text states only what prod offers on launch day. **Waits on**: OS42. **Class**: machine-only. **Repository**: SUB. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **OOS30. A person posts the launch.** A person posts each item of the launch pack on the day the connector is listed, and answers the comments. Show HN needs a product a reader can try at once: the free day pass covers it. Waits on decision D1. **Waits on**: OS30, D1. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS30. A person posts the launch.** A person posts each item of the launch pack on the day the connector is listed in the first directory, and answers the comments. Show HN needs a product a reader can try at once: the free day pass covers it. **Waits on**: OS30, OOS17. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 5: Free tools
 
@@ -1112,18 +1084,12 @@ flowchart LR
 
 - [ ] **OOS37. Operator: approve the consent screen and the Marketplace listing.** The operator approves the OAuth consent screen and the Marketplace listing in the Google Cloud project, on a session's walk-through of the console steps researched on the day. **Waits on**: OS37. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
-- [ ] **OS38. Package diya-gl.co.uk for the Microsoft Store and Google Play.** diya-gl.co.uk is already an installable web app: `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/` holds `manifest.webmanifest`, `sw.js` and `pwa.js`. Package it with PWABuilder for the Microsoft Store and as a Trusted Web Activity for Google Play, with a static `.well-known/assetlinks.json`, and take the store text from the listing pack (OS21). Submit is not packaged: its signed-in pages are the same files as its signed-out pages, so an offline cache cannot leave them out by path, and a cached page after a deploy is a version-skew risk. **Waits on**: OOS38. **Class**: machine-only. **Repository**: SS. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **OOS38b. Operator: submit the store packages.** The operator submits the two packages from OS38 in the store consoles, on a session's walk-through of the steps researched on the day. **Waits on**: OS38. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-- [ ] **OOS38. Operator: decide the store fees and open the accounts.** The operator decides whether the plan's no-spend rule admits the two one-off developer account fees (decision D4). On a yes he opens the Microsoft Store and Google Play developer accounts; an organisation account on Google Play avoids the tester requirement that applies to new personal accounts. On a no, OS38 and S3 close. **Waits on**: nothing. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
 ## 9. Not confirmed
 
 - How a supplier joins the GOV.UK accounts software finder: the page states no route (OS22 asks).
 - Whether a task pane inside Excel can collect the fraud-prevention headers HMRC requires, and whether HMRC wants a new channel's headers checked again (OS36a settles both before any build).
 - Whether a day pass limited to three submissions meets HMRC's meaning of a free version (OS23 asks).
-- Whether a federated reviewer account is challenged when it signs in from a new place (OS43 proves it).
+- Whether Cognito threat protection challenges the demo sign-in that the MCP Lambda makes (OS43's design settles it).
 - Whether MCP SDK 1.32.2 supports `skill://` and `ui://` resources (OS19 and OS46 check first).
 - Homebrew core's star thresholds: the current documentation page does not state them.
 - Whether the HMRC VAT finder entry shows the features asked for on 2026-10-03 and the free flag (OS23 reads it).
