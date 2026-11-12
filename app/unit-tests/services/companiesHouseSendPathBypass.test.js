@@ -15,7 +15,7 @@ import { join, relative } from "node:path";
 const REPO_ROOT = process.cwd();
 const SCANNED_DIRECTORIES = ["app/functions", "app/services", "app/lib"];
 
-const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors|fetchJsonWithTimeout|fetchTextWithTimeout)\s*\(/g;
+const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors)\s*\(/g;
 const COMPANIES_HOUSE_REFERENCE = /COMPANIES_HOUSE_|companieshouse\.gov\.uk|company-information\.service/;
 
 const SEND_FUNCTION = /\b(sendJsonToCompaniesHouse|sendXmlToCompaniesHouse)\s*\(/g;

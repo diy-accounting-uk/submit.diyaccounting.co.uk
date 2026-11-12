@@ -14,7 +14,7 @@ import { join, relative } from "node:path";
 const REPO_ROOT = process.cwd();
 const SCANNED_DIRECTORIES = ["app/functions", "app/services", "app/lib"];
 
-const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors|fetchJsonWithTimeout|fetchTextWithTimeout)\s*\(/g;
+const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors)\s*\(/g;
 const HMRC_REFERENCE =
   /HMRC_BASE_URI|HMRC_SANDBOX_BASE_URI|HMRC_AGENT_AUTHORISATION_BASE_URI|hmrc\.gov\.uk|getHmrcBaseUrl|getAgentAuthorisationBaseUrl/;
 

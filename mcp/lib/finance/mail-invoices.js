@@ -5,7 +5,7 @@
 // - **Use when:** supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
 // - **Does:** invoiceLinesForPeriod in mcp/lib/finance/mail-invoices.js shells out to the corpus CLI, searching both mailboxes (mail-antony, then mail-support) for each supplier within a date range, and keeps one line when the same invoice sits in both. It fetches each hit's extracted text and extracts a total amount and currency. Each recognisable hit becomes one purchases invoice line.
 // - **Run:** no command; see Does and Entry
-// - **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`; `mcp/lib/finance/mail-invoices.js:runCorpus`
+// - **Entry:** `mcp/lib/finance/mail-invoices.js:invoiceLinesForPeriod`
 // - **Files:** mcp/lib/finance/mail-invoices.js, mcp/test/mail-invoices.test.js
 // - **Keywords:** supplier invoices, corpus cli, mail-antony, mail-support, invoice de-duplication, invoice import, purchases lines, mail index search
 // - **Related:** MCP-10, MCP-11
@@ -101,7 +101,7 @@ function resolveCorpusPaths() {
  *   ["search", "--source", "mail-antony", ..., "--json", query]
  * @returns {Promise<Object|Array>} the parsed JSON the CLI printed
  */
-export async function runCorpus(args) {
+async function runCorpus(args) {
   const { bin, config } = resolveCorpusPaths();
   const [command, ...rest] = args;
   const { stdout } = await execFileAsync(bin, [command, "--config", config, ...rest], { maxBuffer: 32 * 1024 * 1024 });

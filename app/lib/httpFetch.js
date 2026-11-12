@@ -5,7 +5,7 @@
 // - **Use when:** any outbound Companies House API call needs a bounded wait instead of hanging.
 // - **Does:** httpFetch.js wraps the native fetch function with a configurable timeout. Every Companies House API, filing and XML Gateway service uses it for outbound calls.
 // - **Run:** no command; see Does and Entry
-// - **Entry:** `app/lib/httpFetch.js:fetchWithTimeout`; `app/lib/httpFetch.js:fetchJsonWithTimeout`
+// - **Entry:** `app/lib/httpFetch.js:fetchWithTimeout`
 // - **Files:** app/lib/httpFetch.js
 // - **Keywords:** fetch, timeout, http client, companies house, outbound call, abort
 // - **Related:** CH-11
@@ -144,40 +144,6 @@ export function normalizeHeaders(headers) {
   }
 
   return result;
-}
-
-/**
- * Perform an HTTP fetch and parse JSON response with timeout
- *
- * @param {string} url - The URL to fetch
- * @param {Object} options - Fetch options (method, headers, body, etc.)
- * @param {number} timeoutMs - Timeout in milliseconds (default: 30000)
- * @returns {Promise<{ok: boolean, status: number, data: Object, headers: Object, duration: number}>}
- *
- * @example
- * const result = await fetchJsonWithTimeout(
- *   'https://api.example.com/data',
- *   { method: 'GET' },
- *   10000
- * );
- * if (result.ok) {
- *   console.log(result.data);
- * }
- */
-export async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 30000) {
-  const { response, duration } = await fetchWithTimeout(url, options, timeoutMs);
-
-  // Try to parse JSON body, fallback to empty object
-  const data = await response.json().catch(() => ({}));
-
-  return {
-    ok: response.ok,
-    status: response.status,
-    data,
-    headers: normalizeHeaders(response.headers),
-    duration,
-    response,
-  };
 }
 
 // Default timeout values for different use cases

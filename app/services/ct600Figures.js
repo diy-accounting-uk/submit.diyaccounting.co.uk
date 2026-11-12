@@ -59,7 +59,8 @@ export function daysInclusive(isoStart, isoEnd) {
 /**
  * The most annual investment allowance a return can claim: 1,000,000 for a year, increased or
  * reduced in proportion to the return's days over the days in the 12 months from its start
- * (CAA 2001 section 51A(6)).
+ * (CAA 2001 section 51A(6)). The books bundle re-exports it (`scripts/build-books-bundle.mjs`).
+ * @public
  */
 export function annualInvestmentAllowanceMaximum(periodStart, periodEnd) {
   const daysInTwelveMonths = daysInclusive(periodStart, lastDayOfTwelveMonths(periodStart));
@@ -752,6 +753,7 @@ function section455RateOf(taxDataByYear, year) {
  * @param {string} periodEnd - ISO date
  * @param {Record<number, object>} taxDataByYear
  * @returns {string|undefined}
+ * @public The books bundle re-exports it (`scripts/build-books-bundle.mjs`).
  */
 export function section455RateChangeDate(periodStart, periodEnd, taxDataByYear) {
   const startYear = taxYearStartOf(periodStart);
