@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-ca77ecb** (PR #812's merge ca77ecb88, deploy run 43218501428, 2026-11-12 13:16 UTC: 127 unused exports removed and the `basic-ftp` advisory cleared; no change for a customer). `destroy-prod.yml` run 43225664673 is removing prod-f86fc83.
+**Prod runs deployment prod-ca77ecb** (PR #812's merge ca77ecb88, deploy run 43218501428, 2026-11-12 13:16 UTC: 127 unused exports removed and the `basic-ftp` advisory cleared; no change for a customer).
 **ci**: ci-set1 is `/submit/ci/last-known-good-deployment` and carries PR #812's head; no deploy holds a slot.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
