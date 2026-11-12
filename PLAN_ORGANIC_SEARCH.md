@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 46 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 45 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 39 of 46 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 35 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 38 of 45 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 34 machine-only, 4 machine-ask, 7 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -845,8 +845,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS13 | llms.txt, Markdown copies and a feed, generated at build | Z5, Z6, Z12 | One Markdown page per site that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS14 | Make the hosted MCP pass every directory's technical checks | X1, X2, X6, Z1, Z2, Z3 | A connector that any assistant can add and that passes the Claude scan and the OpenAI review checks on the first submission. | The conformance test passes; the MCP inspector lists a title and annotations on every tool; `/.well-known/mcp/server-card.json` answers 200. | machine-only; on the board |
-| OS43a | Design the reviewer sign-in | X1, X2 | The auth flow, the threat-protection answer, the rate limit, the two secret names and the log line, written into OS43's row as its brief. | OS43's row carries the design. | machine-only; on the board |
-| OOS43 | Set the demo user's two secrets on ci and prod | X1, X2 | The two GitHub environment secrets exist on ci and prod before the deploy step that reads them. | `gh secret list --env ci` and `--env prod` show both names. | machine-ask; on the board |
+| OOS43 | Set the reviewer's password secret, and give the go for the first prod seed | X1, X2 | The GitHub environment secret `MCP_REVIEWER_PASSWORD` exists on ci and prod before the deploy step that reads it; the demo user and its sample books exist on prod. | `gh secret list --env ci` and `--env prod` show the name; the prod seed run is green. | machine-ask; on the board |
 | OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only; on the board |
 | OS16b | `server.json` for the hosted connector | R1 | The hosted connector's registry entry, validated, with a dispatch that publishes it. | The workflow validates the file. | machine-only; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask |
@@ -895,7 +894,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 3 | Submit pages that answer filing queries | 40 to 200 | Submit | OS7, OS9, OS10, OS11, OS40 |
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
 | 5 | GOV.UK software finders | 15 to 90 | Submit | OOS22 |
-| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OS43a, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
+| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5, OOS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
 | 9 | Technical repairs | 2 to 10 | all sites | OS2, OS8, OS12, OS13 |
@@ -925,8 +924,6 @@ flowchart LR
   OS9 --> OS40
   OS8 --> OS13
   OS14 --> OS43
-  OS43a --> OS43
-  OS43a --> OOS43
   OOS43 --> OS43
   OS16b --> OOS16
   OS14 --> OOS16
@@ -1000,7 +997,6 @@ The brief of a boarded task is its row on `NEXT.md`.
 ## 9. Not confirmed
 
 - How a supplier joins the GOV.UK accounts software finder: the page states no route (OOS22 asks).
-- Whether Cognito threat protection challenges the demo sign-in that the MCP Lambda makes (OS43a settles it).
 - Whether MCP SDK 1.32.2 supports `skill://` and `ui://` resources (OS19 and OS46 check first).
 - Homebrew core's star thresholds: the current documentation page does not state them.
 - About half of the review, launch and citation directories were not opened on 2026-11-12; their free tiers are from general knowledge. OS21 records the terms of each when its form is opened.
