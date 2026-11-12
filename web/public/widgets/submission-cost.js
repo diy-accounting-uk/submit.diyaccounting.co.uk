@@ -110,9 +110,10 @@
     return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   }
 
-  // The container sits directly above the submit control in document order (the page's only
-  // job besides the script tag), so its next sibling is that control.
+  // The control is the container's next sibling, or the button named by data-submit-button
+  // when the page groups it with others (a Back button beside a Submit button).
   function findSubmitButton(container) {
+    if (container.dataset.submitButton) return document.getElementById(container.dataset.submitButton);
     const next = container.nextElementSibling;
     return next && next.tagName === "BUTTON" ? next : null;
   }
@@ -154,15 +155,18 @@
   function renderExhausted(container, resetDate) {
     container.className = "submission-cost status-message status-warning";
     container.textContent = "";
+    // One span, so the warning's flex layout keeps the sentence and its link in one run of text.
+    const message = document.createElement("span");
     const lead = resetDate
       ? `You have no tokens left. Your allowance refreshes on ${resetDate}, or you can `
       : "You have no tokens left. You can ";
-    container.appendChild(document.createTextNode(lead));
+    message.appendChild(document.createTextNode(lead));
     const link = document.createElement("a");
     link.href = "/bundles.html";
     link.textContent = "add a bundle";
-    container.appendChild(link);
-    container.appendChild(document.createTextNode("."));
+    message.appendChild(link);
+    message.appendChild(document.createTextNode("."));
+    container.appendChild(message);
   }
 
   async function renderContainer(container) {

@@ -295,6 +295,10 @@ async function handleSubmitFiling() {
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
     showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+    if (error.status === 403 && error.reason === "tokens_exhausted") {
+      window.dispatchEvent(new CustomEvent("bundle-changed"));
+      document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });
+    }
     hideLoading();
     return;
   }
