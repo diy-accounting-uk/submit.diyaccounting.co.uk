@@ -129,7 +129,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## npm scripts
 
 <!-- scripts-table:start -->
-391 scripts in package.json. A group is the text before the first colon; a name below follows it.
+392 scripts in package.json. A group is the text before the first colon; a name below follows it.
 
 | Group | Scripts | Names |
 |-------|---------|-------|
@@ -137,8 +137,8 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run accessibility:` | 39 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `pa11y-proxy` `pa11y-ci` `pa11y-prod` `pa11y-proxy-report` `pa11y-ci-report` `pa11y-prod-report` `axe-proxy` `axe-ci` `axe-prod` `axe-proxy-report` `axe-ci-report` `axe-prod-report` `axe-wcag22-proxy` `axe-wcag22-ci` `axe-wcag22-prod` `axe-wcag22-proxy-report` `axe-wcag22-ci-report` `axe-wcag22-prod-report` `lighthouse-proxy` `lighthouse-ci` `lighthouse-prod` `lighthouse-proxy-report` `lighthouse-ci-report` `lighthouse-prod-report` `lighthouse-multi-proxy` `lighthouse-multi-ci` `lighthouse-multi-prod` `text-spacing-proxy` `text-spacing-ci` `text-spacing-prod` `text-spacing-proxy-report` `text-spacing-ci-report` `text-spacing-prod-report` |
 | `npm run penetration:` | 21 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `eslint` `eslint-report` `audit` `audit-report` `audit-dev` `audit-dev-report` `retire` `retire-report` `zap-proxy` `zap-ci` `zap-prod` `zap-urls-check` `zap-proxy-report` `zap-ci-report` `zap-prod-report` |
 | `npm run compliance:` | 9 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `proxy-report-md` `ci-report-md` `prod-report-md` |
+| `npm run build:` | 8 | `build` `static-content` `mtd-calendar` `chatgpt-plugin` `review-links` `rates-page` `filing-pages` `welsh` |
 | `npm run video:` | 8 | `mcp-diya-gl` `accounting-diya-gl-profit` `accounting-spreadsheet-profit` `publish` `embed-check` `walkthrough` `stale` `record` |
-| `npm run build:` | 7 | `build` `static-content` `mtd-calendar` `review-links` `rates-page` `filing-pages` `welsh` |
 | `npm run diagram:` | 7 | `app-all` `app-auth-billing` `app-hmrc` `app-account` `app-ops` `app-delivery` `environment` |
 | `npm run ads:` | 5 | `inventory` `sync` `report` `conversions-upload` `forecast` |
 | `npm run formatting:` | 5 | `formatting` `js` `js-fix` `java` `java-fix` |

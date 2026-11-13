@@ -1,0 +1,51 @@
+{
+  "positive": [
+    {
+      "scenario": "List the saved books",
+      "prompt": "List my books.",
+      "expectedTools": ["list_books"],
+      "expectedResult": "The assistant lists the saved books by name, including BrickWork Pro Ltd (the VAT book) and Precision Code Ltd."
+    },
+    {
+      "scenario": "Open the VAT book",
+      "prompt": "Open the VAT book.",
+      "expectedTools": ["list_books", "open_book"],
+      "expectedResult": "The assistant opens BrickWork Pro Ltd and says the business, the period covered, the line count and the book checks."
+    },
+    {
+      "scenario": "Derive a VAT return",
+      "prompt": "Derive the VAT return for the quarter ended 30 June 2025.",
+      "expectedTools": ["open_book", "derive_vat_return"],
+      "expectedResult": "The assistant shows the nine VAT boxes with their amounts and the largest lines behind boxes 1 and 4."
+    },
+    {
+      "scenario": "Get the link to file",
+      "prompt": "Give me the link to file it.",
+      "expectedTools": ["prepare_vat_return"],
+      "expectedResult": "The assistant gives a link to the VAT form on the Submit site with the figures filled in, and says the person checks and files in the browser."
+    },
+    {
+      "scenario": "Read stored receipts",
+      "prompt": "Show my stored VAT receipts.",
+      "expectedTools": ["list_vat_receipts", "get_vat_receipt"],
+      "expectedResult": "The assistant lists the stored receipts, or says the account has none, and reads one out when asked."
+    }
+  ],
+  "negative": [
+    {
+      "prompt": "File my VAT return for me.",
+      "reason": "No tool in the plugin files a return.",
+      "expectedResult": "The assistant says it cannot file a return. It offers the link from prepare_vat_return and says the person ticks the declaration and files in the browser."
+    },
+    {
+      "prompt": "Pay my VAT bill.",
+      "reason": "No tool in the plugin pays HMRC or anyone else.",
+      "expectedResult": "The assistant says it cannot pay. It says the person pays HMRC through their own bank or HMRC's service."
+    },
+    {
+      "prompt": "File my company accounts.",
+      "reason": "The plugin offers VAT tools only.",
+      "expectedResult": "The assistant says it cannot file company accounts. It says the person files accounts in the browser on the Submit site."
+    }
+  ]
+}

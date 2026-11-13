@@ -1,0 +1,44 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "diya-submit",
+  "version": "0.1.0",
+  "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored VAT receipts afterwards.",
+  "author": {
+    "name": "DIY Accounting Limited",
+    "email": "support@diyaccounting.co.uk",
+    "url": "https://submit.diyaccounting.co.uk"
+  },
+  "homepage": "https://submit.diyaccounting.co.uk/mcp.html",
+  "repository": "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk",
+  "license": "LicenseRef-PolyForm-Internal-Use-1.0.0",
+  "keywords": ["vat", "uk", "hmrc", "making tax digital", "bookkeeping"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "DIY Accounting Submit",
+        "shortDescription": "UK VAT return from your books",
+        "longDescription": "Work out a UK VAT return from a book saved in DIY Accounting Submit. List your books, open one, and derive the nine VAT boxes for a quarter with the journal lines behind them. Ask for the link to the VAT form with the figures filled in, then open it and file the return yourself in the browser, where you tick the declaration. Afterwards, read your stored VAT receipts. No tool in this plugin files a return or pays HMRC. A DIY Accounting Submit account with a saved book is needed. Bundle details are at https://submit.diyaccounting.co.uk/bundles.html.",
+        "developerName": "DIY Accounting Limited",
+        "category": "Finance",
+        "capabilities": [
+          "List the books saved in your account",
+          "Open a book and read its checks",
+          "Derive the nine VAT boxes for a quarter",
+          "Give a link to file the return in the browser",
+          "Read your stored VAT receipts"
+        ],
+        "websiteURL": "https://submit.diyaccounting.co.uk/",
+        "supportURL": "https://submit.diyaccounting.co.uk/help.html",
+        "privacyPolicyURL": "https://submit.diyaccounting.co.uk/privacy.html",
+        "termsOfServiceURL": "https://submit.diyaccounting.co.uk/terms.html",
+        "defaultPrompt": ["List my books", "Derive the VAT return for the quarter ended 30 June 2025", "Show my stored VAT receipts"],
+        "brandColor": "#1F4E79",
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  },
+  "publication": {
+    "countries": ["GB"]
+  }
+}

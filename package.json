@@ -51,6 +51,7 @@
     "generate:submission-record": "node scripts/generate-submission-record.mjs",
     "build:static-content": "node scripts/build-static-content.mjs",
     "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
+    "build:chatgpt-plugin": "node scripts/build-chatgpt-plugin.mjs",
     "build:review-links": "node scripts/build-review-links.mjs",
     "build:rates-page": "node scripts/build-rates-page.mjs",
     "build:filing-pages": "node scripts/build-filing-pages.mjs",
