@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 26 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 28 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 22 of 26 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 17 machine-only, 3 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 28 tasks are rows on `NEXT.md`, where each row carries its brief. 19 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -838,9 +838,9 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OS42b | `prepare_vat_return` on prod's hosted connector | X1, X2, X4 | Prod's connector offers the hand-off to the browser, which both directory submissions wait for. | `tools/list` for prod holds six tools, and a prod session gets a link that fills the VAT form. | machine-ask; on the board |
 | OS17 | The submission pack for the Claude directory | X1, X7 | Everything the directory portal asks for, ready to paste, so the submission is one sitting. | The pack is complete against the portal's field list. | machine-only; on the board |
-| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | human-driven |
+| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only; on the board |
-| OOS18 | Operator: verify the business with OpenAI and submit the plugin | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | human-driven |
+| OOS18 | Operator: verify the business with OpenAI and submit the plugin | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | human-driven; on the board |
 
 **Wave 4: Listings**
 
@@ -849,9 +849,11 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
-| OS29 | Operator: one Wikidata entry for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | human-driven |
+| OS29 | Prepare the Wikidata statements for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | machine-only; on the board |
+| OOS29 | Save the Wikidata item | K2 | The item exists, saved from the operator's own account with his disclosure. | The item's URL answers 200. | human-driven; on the board |
+| OS29b | The Wikidata item in each site's entity record | K2 | Each site's Organization record names the item, so the record and the item point at each other. | The block on each home page holds the URL. | machine-only; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
-| OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven |
+| OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven; on the board |
 
 **Wave 5: Free tools**
 
@@ -902,6 +904,9 @@ flowchart LR
   OS42b --> OOS18
   OS17 --> OOS17
   OS18 --> OOS18
+  OS30 --> OOS18
+  OS29 --> OOS29
+  OOS29 --> OS29b
   OS42b --> OOS16
   OS47 --> OOS47
   OS30 --> OOS30
@@ -927,19 +932,7 @@ flowchart LR
 
 ### 8.5 Briefs of the tasks that are not yet on the board
 
-The brief of a boarded task is its row on `NEXT.md`.
-
-#### Wave 3: Assistants and agents
-
-- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OS42b has put `prepare_vat_return` in prod's hosted set (the reviewer's prod seed ran on 2026-11-13). Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: the hand-off tool on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-#### Wave 4: Listings
-
-- [ ] **OS29. Operator: one Wikidata entry for the company.** One Wikidata item, for the company only (operator, 2026-11-12): DIY Accounting Limited, instance of business, country United Kingdom, inception 2006, official website, and its Companies House number 06846849 as the identifier and the reference. A registered company with its register entry as the reference is the kind of item Wikidata keeps; product items wait for independent coverage. A session prepares the statements as text. The operator saves them from his own Wikidata account and states on his user page that he is a director of the company. Then the `sameAs` list of the Organization record on all four sites gains the item URL. **Waits on**: nothing; OS8 is on prod. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-- [ ] **OOS30. A person posts the launch.** A person posts each item of the launch pack on the day the connector is listed in the first directory, and answers the comments. Show HN needs a product a reader can try at once: the free day pass covers it. **Waits on**: OS30, OOS17. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+The brief of a boarded task is its row on `NEXT.md`. Every task is boarded.
 
 ## 9. Not confirmed
 
