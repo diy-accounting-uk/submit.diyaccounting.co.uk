@@ -340,6 +340,50 @@ public class EdgeStack extends Stack {
                 S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
         // infof("Created BucketOrigin with bucket: %s", this.originBucket.getBucketName());
 
+        // The Content-Security-Policy of the web pages, up to its frame-ancestors directive. The
+        // framed copy of the checker keeps every directive here and changes only frame-ancestors.
+        String webContentSecurityPolicyUntilFrameAncestors = "default-src 'self'; "
+                + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com https://bat.bing.com https://bat.bing.net; "
+                + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://bat.bing.com https://bat.bing.net; "
+                // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
+                // beacon lands on a region-specific subdomain (e.g.
+                // region1.google-analytics.com),
+                // which the literal host doesn't match and CSP then silently drops the pixel.
+                + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com https://bat.bing.com https://bat.bing.net; "
+                + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; ";
+
+        // Security headers that securityHeadersBehavior does not cover, shared by the web policy
+        // and the policy of the framed checker.
+        List<ResponseCustomHeader> webCustomHeaders = List.of(
+                ResponseCustomHeader.builder()
+                        .header("Permissions-Policy")
+                        .value("camera=(), microphone=(), geolocation=()")
+                        .override(true)
+                        .build(),
+                ResponseCustomHeader.builder()
+                        .header("Cross-Origin-Opener-Policy")
+                        .value("same-origin-allow-popups")
+                        .override(true)
+                        .build(),
+                ResponseCustomHeader.builder()
+                        .header("Cross-Origin-Embedder-Policy")
+                        // Security scanner please leave
+                        .value("unsafe-none")
+                        // Necessary for the YouTube iframe to load
+                        .override(true)
+                        .build(),
+                ResponseCustomHeader.builder()
+                        .header("Cross-Origin-Resource-Policy")
+                        .value("same-origin")
+                        .override(true)
+                        .build(),
+                ResponseCustomHeader.builder()
+                        .header("Server")
+                        .value("DIY-Accounting")
+                        .override(true)
+                        .build());
+
         // Define a custom Response Headers Policy with CSP that allows AWS RUM client + dataplane
         ResponseHeadersPolicy webResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-WHP")
@@ -357,16 +401,7 @@ public class EdgeStack extends Stack {
                         .build())
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com https://bat.bing.com https://bat.bing.net; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://bat.bing.com https://bat.bing.net; "
-                                        // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
-                                        // beacon lands on a region-specific subdomain (e.g.
-                                        // region1.google-analytics.com),
-                                        // which the literal host doesn't match and CSP then silently drops the pixel.
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com https://bat.bing.com https://bat.bing.net; "
-                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
+                                .contentSecurityPolicy(webContentSecurityPolicyUntilFrameAncestors
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)
@@ -397,34 +432,7 @@ public class EdgeStack extends Stack {
                         .build())
                 // Custom headers for security policies not covered by securityHeadersBehavior
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Permissions-Policy")
-                                        .value("camera=(), microphone=(), geolocation=()")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin-allow-popups")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Embedder-Policy")
-                                        // Security scanner please leave
-                                        .value("unsafe-none")
-                                        // Necessary for the YouTube iframe to load
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Resource-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
+                        .customHeaders(webCustomHeaders)
                         .build())
                 .build();
 
@@ -622,6 +630,61 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        // The framed copy of the MTD Income Tax checker is the one page another site may frame.
+        // It keeps the web policy's headers and changes two things: frame-ancestors allows any
+        // site, and X-Robots-Tag stops a search engine from indexing it as a copy of the full page.
+        List<ResponseCustomHeader> embedCustomHeaders = new ArrayList<>(webCustomHeaders);
+        embedCustomHeaders.add(ResponseCustomHeader.builder()
+                .header("X-Robots-Tag")
+                .value("noindex")
+                .override(true)
+                .build());
+        ResponseHeadersPolicy embedResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-EmbedWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-embed-headers")
+                .comment("Security headers as the web pages, framing allowed by any site, noindex")
+                .corsBehavior(ResponseHeadersCorsBehavior.builder()
+                        .accessControlAllowCredentials(false)
+                        .accessControlAllowHeaders(List.of("*"))
+                        .accessControlAllowMethods(List.of("GET", "HEAD", "OPTIONS"))
+                        .accessControlAllowOrigins(
+                                List.of(props.sharedNames().publicBaseUrl.replaceAll("/$", "")))
+                        .accessControlExposeHeaders(List.of())
+                        .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
+                        .originOverride(true)
+                        .build())
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy(webContentSecurityPolicyUntilFrameAncestors
+                                        + "frame-ancestors *; "
+                                        + "form-action 'self';")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
+                                .override(true)
+                                .build())
+                        .build())
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(embedCustomHeaders)
+                        .build())
+                .build();
+
         // Custom error pages are served as static files via CloudFront error responses
         // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
         // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
@@ -753,6 +816,19 @@ public class EdgeStack extends Stack {
                         .compress(true)
                         .build());
         infof("Added *.md behavior with the noindex response headers policy");
+
+        // The checker script and its framed page sit in the web origin under /embed/.
+        additionalBehaviors.put(
+                "/embed/*",
+                BehaviorOptions.builder()
+                        .origin(localOrigin)
+                        .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                        .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                        .responseHeadersPolicy(embedResponseHeadersPolicy)
+                        .compress(true)
+                        .build());
+        infof("Added /embed/* behavior with the framing-allowed response headers policy");
 
         // Add behaviour for /tests/* and /docs/* with short TTL cache policy
         additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);

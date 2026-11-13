@@ -430,6 +430,60 @@ class EdgeStackTest {
     }
 
     @Test
+    void embedPathsMayBeFramedByAnySiteAndAreNotIndexedWhileEveryOtherPathStaysUnframeable() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> noindex = Map.of("Header", "X-Robots-Tag", "Value", "noindex", "Override", true);
+        Map<String, Object> permissions = Map.of("Header", "Permissions-Policy", "Override", true);
+        Map<String, Object> embedConfig = Map.of(
+                "Name",
+                Match.stringLikeRegexp("-embed-headers$"),
+                "CustomHeadersConfig",
+                Match.objectLike(Map.of(
+                        "Items", Match.arrayWith(List.of(Match.objectLike(permissions), Match.objectLike(noindex))))),
+                "SecurityHeadersConfig",
+                Match.objectLike(Map.of(
+                        "ContentSecurityPolicy",
+                        Match.objectLike(Map.of(
+                                "ContentSecurityPolicy",
+                                Match.stringLikeRegexp(
+                                        "^default-src 'self'; .*frame-ancestors \\*; form-action 'self';$"))),
+                        "StrictTransportSecurity",
+                        Match.anyValue(),
+                        "ContentTypeOptions",
+                        Match.anyValue())));
+        template.hasResourceProperties(
+                "AWS::CloudFront::ResponseHeadersPolicy",
+                Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(embedConfig))));
+        Map<String, Object> noFrameOptions = Map.of(
+                "SecurityHeadersConfig",
+                Match.objectLike(Map.of("FrameOptions", Match.absent())),
+                "Name",
+                Match.stringLikeRegexp("-embed-headers$"));
+        template.hasResourceProperties(
+                "AWS::CloudFront::ResponseHeadersPolicy",
+                Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(noFrameOptions))));
+        Map<String, Object> webConfig = Map.of(
+                "Name",
+                Match.stringLikeRegexp("-whp$"),
+                "SecurityHeadersConfig",
+                Match.objectLike(Map.of(
+                        "ContentSecurityPolicy",
+                        Match.objectLike(Map.of(
+                                "ContentSecurityPolicy", Match.stringLikeRegexp(".*frame-ancestors 'none'; .*"))),
+                        "FrameOptions",
+                        Match.objectLike(Map.of("FrameOption", "DENY")))));
+        template.hasResourceProperties(
+                "AWS::CloudFront::ResponseHeadersPolicy",
+                Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(webConfig))));
+        Map<String, Object> embedBehaviour =
+                Map.of("PathPattern", "/embed/*", "ResponseHeadersPolicyId", Match.anyValue());
+        Map<String, Object> distribution =
+                Map.of("CacheBehaviors", Match.arrayWith(List.of(Match.objectLike(embedBehaviour))));
+        template.hasResourceProperties(
+                "AWS::CloudFront::Distribution", Match.objectLike(Map.of("DistributionConfig", distribution)));
+    }
+
+    @Test
     void mcpRoutesKeepTheFacadesContentSecurityPolicyWhileApiRoutesTakeCloudFronts() {
         Template template = Template.fromStack(synthEdgeStack());
         for (Map.Entry<String, Boolean> expected :

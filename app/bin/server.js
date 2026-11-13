@@ -244,7 +244,16 @@ app.use((req, res, next) => {
   // is a local http origin and its redirect lands on the VAT callback page; HMRC's own pages and
   // every https base URI stay unframed.
   const framedByHarness = req.path === "/companies-house/mcpCodes.html" || req.path === "/activities/submitVatCallback.html";
-  res.setHeader("X-Frame-Options", framedByHarness ? "SAMEORIGIN" : "DENY");
+  // The pages under /embed/ are the ones other sites frame, as the /embed/* CloudFront behaviour allows.
+  const framedByAnySite = req.path.startsWith("/embed/");
+  if (framedByAnySite) {
+    res.setHeader("X-Robots-Tag", "noindex");
+  } else {
+    res.setHeader("X-Frame-Options", framedByHarness ? "SAMEORIGIN" : "DENY");
+  }
+  let frameAncestors = "'none'";
+  if (framedByAnySite) frameAncestors = "*";
+  else if (framedByHarness) frameAncestors = "'self'";
   // X-Content-Type-Options: Prevents MIME type sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
   // Strict-Transport-Security: Enforces HTTPS (1 year, include subdomains)
@@ -255,7 +264,7 @@ app.use((req, res, next) => {
     // img-src needs the wildcard, not just https://www.google-analytics.com: GA4's /g/collect
     // beacon lands on a region-specific subdomain (e.g. region1.google-analytics.com), which the
     // literal host doesn't match and CSP then silently drops the pixel.
-    `default-src 'self'; script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com https://i.ytimg.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://www.youtube-nocookie.com${localSimulatorFrameOrigin(req.path)}; frame-ancestors ${framedByHarness ? "'self'" : "'none'"}; form-action 'self'`,
+    `default-src 'self'; script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com https://i.ytimg.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://www.youtube-nocookie.com${localSimulatorFrameOrigin(req.path)}; frame-ancestors ${frameAncestors}; form-action 'self'`,
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");

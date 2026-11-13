@@ -246,3 +246,56 @@ test("each accounts landing page links the company deadlines page", async ({ pag
     await expect(page.locator("main a[href='company-filing-deadlines.html']")).toHaveCount(1);
   }
 });
+
+const CHECKER_PAGE = "http://localhost:3000/mtd-income-tax-checker.html";
+
+test("the Income Tax checker gives the start date, the first update deadline and the records to keep", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await page.locator("#itsaSelfEmployment-2025-to-2026").fill("20000");
+  await page.locator("#itsaProperty-2025-to-2026").fill("10,500");
+  await page.getByRole("button", { name: "Check" }).click();
+  const result = page.locator("#itsaCheckerResult");
+  await expect(result).toContainText("In scope from 6 April 2027");
+  await expect(result).toContainText("7 August 2027");
+  await expect(result).toContainText("category");
+});
+
+test("the Income Tax checker says not in scope for income under every threshold", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await page.locator("#itsaSelfEmployment-2024-to-2025").fill("10000");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.locator("#itsaCheckerResult")).toContainText("Not in scope");
+});
+
+test("the Income Tax page holds the rules as text and the embed snippet without a script", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await expect(page.locator("#itsaChecker")).toBeHidden();
+  await expect(page.locator("main")).toContainText("6 April 2028");
+  await expect(page.locator("main")).toContainText("awaits HMRC recognition");
+  await expect(page.locator("pre code")).toContainText("/embed/mtd-income-tax-checker.js");
+  await context.close();
+});
+
+test("the embed script puts the framed checker and a link to the full page on another page", async ({ page }) => {
+  await serveRealSite(page);
+  await page.route("http://partner.test/", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: '<!doctype html><title>partner</title><body><script src="http://localhost:3000/embed/mtd-income-tax-checker.js"></script></body>',
+    }),
+  );
+  await page.goto("http://partner.test/", { waitUntil: "load" });
+  const frame = page.locator("iframe[src='http://localhost:3000/embed/mtd-income-tax-checker.html']");
+  await expect(frame).toHaveCount(1);
+  await expect(page.locator("a[href='http://localhost:3000/mtd-income-tax-checker.html']")).toBeVisible();
+  const inner = page.frameLocator("iframe");
+  await inner.locator("#itsaSelfEmployment-2024-to-2025").fill("60000");
+  await inner.getByRole("button", { name: "Check" }).click();
+  await expect(inner.locator("#itsaCheckerResult")).toContainText("6 April 2026");
+});

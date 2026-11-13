@@ -84,6 +84,8 @@ export const QUARTERLY_FACT = {
     ["6 April to 5 January", "7 February"],
     ["6 April to 5 April", "7 May, in the following tax year"],
   ],
+  page: "mtd-income-tax-checker.html",
+  pageLabel: "Check whether you need Making Tax Digital for Income Tax and when you start",
 };
 
 export const FINAL_DECLARATION_FACT = {
@@ -405,7 +407,12 @@ export function renderCalendarHtml(sources) {
     QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("") +
     `</tbody></table>`;
   const yearly =
-    entryHtml(QUARTERLY_FACT, sources, escapeHtml(QUARTERLY_FACT.title), deadlineTable) +
+    entryHtml(
+      QUARTERLY_FACT,
+      sources,
+      escapeHtml(QUARTERLY_FACT.title),
+      `${deadlineTable}<p><a href="${QUARTERLY_FACT.page}">${QUARTERLY_FACT.pageLabel}</a></p>`,
+    ) +
     entryHtml(FINAL_DECLARATION_FACT, sources, escapeHtml(FINAL_DECLARATION_FACT.title)) +
     COMPANY_YEARLY_FACTS.map((f) =>
       entryHtml(f, sources, escapeHtml(f.title), f.page ? `<p><a href="${f.page}">${f.pageLabel}</a></p>` : ""),

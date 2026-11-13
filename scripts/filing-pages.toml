@@ -279,6 +279,60 @@ text = [
   "See [micro-entity accounts](micro-entity-accounts.html), [small company accounts](small-company-accounts.html), [dormant company accounts](dormant-company-accounts.html) and the [confirmation statement](confirmation-statement.html).",
 ]
 
+[[article]]
+file = "mtd-income-tax-checker.html"
+title = "Making Tax Digital for Income Tax checker - do you need it and when - DIY Accounting Submit"
+heading = "Do you need Making Tax Digital for Income Tax, and when do you start?"
+subtitle = "Give your income for three tax years and see your start date, your first update deadline and the records to keep"
+description = "Check whether Making Tax Digital for Income Tax applies to you from 6 April 2026, 2027 or 2028, the date of your first quarterly update and the records to keep. Each rule has its gov.uk source."
+summary = "Making Tax Digital for Income Tax starts on 6 April 2026, 6 April 2027 or 6 April 2028, by how much self-employment and property income you had. Give your income for each tax year below. The page shows your start date, your first quarterly update deadline and the records to keep. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
+action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
+script = "lib/itsa/scope-checker.js"
+closing_heading = "Every date"
+
+[[article.section]]
+heading = "Check your income"
+text = ["Type your income before expenses for each tax year. Leave a box empty for no income. The answer is the earliest start date that your income gives."]
+widget = "itsa-scope-checker"
+
+[[article.section]]
+heading = "What counts as qualifying income"
+text = ["The thresholds below apply to your qualifying income. Add your self-employment income and your property income, each before expenses."]
+sources = ["itsa-qualifying-income"]
+
+[[article.section]]
+heading = "Who the rule covers"
+text = ["The rule covers sole traders and landlords who are registered for Self Assessment."]
+sources = ["itsa-mtd-who-needs-to-use"]
+
+[[article.section]]
+heading = "The three start dates"
+text = ["Each start date has its own threshold and tax year."]
+sources = ["itsa-mtd-over-50k", "itsa-mtd-over-30k", "itsa-mtd-over-20k"]
+
+[[article.section]]
+heading = "Your first quarterly update"
+text = ["The first update covers 6 April to 5 July of your start year. It is due on 7 August of that year."]
+table = "quarterly"
+sources = ["itsa-quarterly-update-deadlines"]
+
+[[article.section]]
+heading = "Records to keep"
+text = ["For each item of income or expense, record the amount, the date when the income was received or expenses incurred, and the category."]
+sources = ["itsa-digital-records"]
+
+[[article.section]]
+heading = "What Submit files"
+status = [{ activity = "self-employed", label = "Income Tax (MTD)" }]
+text = ["The dates for every filing are on the [MTD calendar](mtd-calendar.html)."]
+
+[[article.section]]
+heading = "Put the checker on your site"
+text = [
+  "Add this line to a page of your site. It shows the checker in a frame, with a link to this page under it. The frame holds no sign-in and sets no cookie.",
+]
+code = '<script src="https://submit.diyaccounting.co.uk/embed/mtd-income-tax-checker.js"></script>'
+
 [[comparison]]
 file = "mtd-vat-bridging-software-compared.html"
 compares = "vat"
