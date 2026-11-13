@@ -14,6 +14,7 @@ import {
   renderHelpPage,
 } from "../../scripts/build-static-content.mjs";
 import { renderFaqMarkdown } from "../public/lib/faq-markdown.js";
+import { splitTitle } from "../public/lib/guide-journeys.js";
 
 const catalog = loadCatalog();
 
@@ -59,6 +60,13 @@ describe("the guide page", () => {
     expect(images.length).toBeGreaterThan(100);
     for (const image of images) expect(image).toMatch(/alt="Screenshot: [^"]+"/);
     expect(html).toContain("Check what is due, file the return and look up what HMRC holds.");
+  });
+
+  test("a journey title drops the site name that the video title carries for its channel", () => {
+    expect(splitTitle("How to submit a VAT return under MTD | DIY Accounting Submit").title).toBe("How to submit a VAT return under MTD");
+    const html = readFileSync(GUIDE_PAGE_PATH, "utf8");
+    expect(html).not.toContain("| DIY Accounting Submit</summary>");
+    expect(html).not.toContain("| DIY Accounting Submit</a>");
   });
 
   test("a journey whose video names an activity that prod does not list is left out", () => {

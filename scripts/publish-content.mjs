@@ -190,7 +190,11 @@ export function listedBundles(catalog, environmentName) {
 
 function bundleSummary(bundle) {
   const summary = typeof bundle.passSummary === "string" ? bundle.passSummary.trim() : "";
-  return summary ? `You can ${summary}.` : (bundle.description ?? "");
+  if (summary) return `You can ${summary}.`;
+  // The catalogue description can end with the price; the card shows the price on its own line.
+  const description = bundle.description ?? "";
+  const priceStart = description.indexOf(". £");
+  return priceStart === -1 ? description : description.slice(0, priceStart + 1);
 }
 
 /** The HTML that fills the marked block of the bundles page. */

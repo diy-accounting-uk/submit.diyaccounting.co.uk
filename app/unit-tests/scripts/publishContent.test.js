@@ -133,6 +133,13 @@ describe("publish-content bundles", () => {
     expect(html).not.toContain("Self Assessment");
   });
 
+  test("a bundle description does not repeat the price that its card shows", () => {
+    const html = renderBundlesBlock(CATALOG, "prod");
+    expect(html).toContain("File accounts and confirmation statements to Companies House.");
+    expect(html).not.toContain("/yr");
+    expect(html).not.toContain("cancel anytime");
+  });
+
   test("ci shows the tax agent price", () => {
     expect(renderBundlesBlock(CATALOG, "ci")).toContain("£199.99 a year or £19.99 a month.");
   });
