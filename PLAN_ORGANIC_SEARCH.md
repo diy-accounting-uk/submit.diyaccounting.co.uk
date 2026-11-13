@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 29 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 29 tasks are rows on `NEXT.md`, where each row carries its brief. 19 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 30 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -864,6 +864,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS35b | Quarterly updates in the Self Employed workbook: the operator's choice of design | F5 | The workbook shows each quarter's cumulative figures for the Income Tax quarterly update. | Downloads of the workbook; the reconciliation agrees with diya-gl. | machine-ask; on the board |
 | OS45b | The article sweep that OS45 found | A8, A10 | The mileage rate is current in every article, no GOV.UK link is dead, and the unindexed articles are merged, redirected or linked. | Indexed article count in Search Console. | machine-only; on the board |
 | OS45c | The package guides and one article state the mileage rate of the right year | A8 | A customer who opens a 2026 to 2027 package reads the rate the workbook uses. | The guide of each year's package states that year's rate. | machine-only; on the board |
+| OS35c | The knowledge base lists the published articles, and the references page holds every cited reference | A8, A10 | A new article is reachable from the knowledge-base page, and a citation marker opens its reference. | The knowledge-base page lists every article; no cited id lacks a record. | machine-only; on the board |
 | OS47 | A search health skill from Search Console, Bing Webmaster Tools and local checks | A14, A15 | One command that reads both webmaster tools and runs their checks locally, and ranks what to fix on each site. | The report exists after each run, and each fix is a board row. | machine-only; on the board |
 | OOS47 | The API key for Bing Webmaster Tools | A15 | Bing's figures and crawl issues are read through its API, not in Chrome. | The Bing report runs with the key. | machine-ask; on the board |
 
@@ -916,6 +917,7 @@ flowchart LR
   OS11 --> OS33
   OS45 --> OS45b
   OS45b --> OS35
+  OS35 --> OS35c
 ```
 
 ### 8.4 Facts several rows share
