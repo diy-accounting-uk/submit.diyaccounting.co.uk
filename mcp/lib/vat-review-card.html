@@ -1,0 +1,285 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>VAT return review</title>
+    <style>
+      :root {
+        --text: #1b1f23;
+        --muted: #57606a;
+        --surface: #ffffff;
+        --line: #d0d7de;
+        --accent: #0b5cad;
+        --accent-text: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text: #e6edf3;
+          --muted: #9aa4af;
+          --surface: #161b22;
+          --line: #30363d;
+          --accent: #4493f8;
+          --accent-text: #0d1117;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        color: var(--text);
+        background: var(--surface);
+      }
+      h1 {
+        margin: 0 0 2px;
+        font-size: 17px;
+      }
+      .period,
+      .note {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      td.amount {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      th.box {
+        width: 3.5em;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .actions {
+        margin-top: 14px;
+      }
+      button {
+        padding: 9px 14px;
+        border: 0;
+        border-radius: 6px;
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent-text);
+        background: var(--accent);
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid var(--text);
+        outline-offset: 2px;
+      }
+      #status {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="card" aria-live="polite">
+      <p class="note" id="waiting">Waiting for the VAT return.</p>
+    </main>
+    <script>
+      (function () {
+        "use strict";
+
+        var PROTOCOL_VERSION = "2026-01-26";
+        var BOXES = [
+          ["box1", "VAT due on sales and other outputs", 2],
+          ["box2", "VAT due on acquisitions from the EU", 2],
+          ["box3", "Total VAT due", 2],
+          ["box4", "VAT reclaimed on purchases and other inputs", 2],
+          ["box5", "Net VAT to pay HMRC or reclaim", 2],
+          ["box6", "Total value of sales, excluding VAT", 0],
+          ["box7", "Total value of purchases, excluding VAT", 0],
+          ["box8", "Total value of supplies to the EU, excluding VAT", 0],
+          ["box9", "Total value of acquisitions from the EU, excluding VAT", 0],
+        ];
+
+        var nextId = 1;
+        var pending = {};
+        var handoffLink = null;
+
+        function send(message) {
+          window.parent.postMessage(message, "*");
+        }
+
+        function request(method, params) {
+          var id = nextId++;
+          return new Promise(function (resolve, reject) {
+            pending[id] = { resolve: resolve, reject: reject };
+            send({ jsonrpc: "2.0", id: id, method: method, params: params });
+          });
+        }
+
+        function money(value, decimals) {
+          return "£" + value.toLocaleString("en-GB", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        }
+
+        function pence(value) {
+          return Math.round(value * 100) / 100;
+        }
+
+        // The derive tool answers the nine boxes. The prepare tool answers the seven figures the
+        // form takes, and the form works out boxes 3 and 5 from them.
+        function boxesOf(result) {
+          if (result.boxes && typeof result.boxes === "object") return result.boxes;
+          var figures = result.figures;
+          if (!figures || typeof figures !== "object") return null;
+          var box3 = pence(figures.vatDueSales + figures.vatDueAcquisitions);
+          return {
+            box1: figures.vatDueSales,
+            box2: figures.vatDueAcquisitions,
+            box3: box3,
+            box4: figures.vatReclaimedCurrPeriod,
+            box5: pence(Math.abs(box3 - figures.vatReclaimedCurrPeriod)),
+            box6: figures.totalValueSalesExVAT,
+            box7: figures.totalValuePurchasesExVAT,
+            box8: figures.totalValueGoodsSuppliedExVAT,
+            box9: figures.totalAcquisitionsExVAT,
+          };
+        }
+
+        function element(tag, text, className) {
+          var node = document.createElement(tag);
+          if (text !== undefined) node.textContent = text;
+          if (className) node.className = className;
+          return node;
+        }
+
+        function httpsLink(value) {
+          try {
+            var url = new URL(value);
+            return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function openLink() {
+          var status = document.getElementById("status");
+          request("ui/open-link", { url: handoffLink }).then(
+            function () {
+              status.textContent = "The form is open in your browser. Check the figures there and file the return there.";
+            },
+            function () {
+              status.textContent = "Your assistant cannot open links from here. Ask it to show you the link.";
+            },
+          );
+        }
+
+        function renderError(message) {
+          var card = document.getElementById("card");
+          card.replaceChildren(element("p", message, "note"));
+        }
+
+        function render(result) {
+          var boxes = boxesOf(result);
+          if (!boxes) {
+            renderError("This result holds no VAT return.");
+            return;
+          }
+          var card = document.getElementById("card");
+          card.replaceChildren();
+          card.appendChild(element("h1", "VAT return to check"));
+          var period = result.period || result;
+          if (period.periodStart && period.periodEnd) {
+            card.appendChild(element("p", period.periodStart + " to " + period.periodEnd, "period"));
+          }
+          var table = document.createElement("table");
+          var caption = element("caption", "The nine VAT boxes");
+          caption.style.position = "absolute";
+          caption.style.left = "-9999px";
+          table.appendChild(caption);
+          var body = document.createElement("tbody");
+          BOXES.forEach(function (box) {
+            var value = boxes[box[0]];
+            var row = document.createElement("tr");
+            var head = element("th", "Box " + box[0].slice(3), "box");
+            head.scope = "row";
+            row.appendChild(head);
+            row.appendChild(element("td", box[1]));
+            row.appendChild(element("td", typeof value === "number" ? money(value, box[2]) : "", "amount"));
+            body.appendChild(row);
+          });
+          table.appendChild(body);
+          card.appendChild(table);
+          card.appendChild(element("p", "Nothing has been filed. You check the figures, declare and file in the browser.", "note"));
+          handoffLink = typeof result.link === "string" ? httpsLink(result.link) : null;
+          if (handoffLink) {
+            var actions = element("div", undefined, "actions");
+            var button = element("button", "Open the VAT form to check and file");
+            button.type = "button";
+            button.id = "open-form";
+            button.addEventListener("click", openLink);
+            actions.appendChild(button);
+            actions.appendChild(element("p", "", "")).id = "status";
+            card.appendChild(actions);
+          }
+          send({
+            jsonrpc: "2.0",
+            method: "ui/notifications/size-changed",
+            params: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight },
+          });
+        }
+
+        window.addEventListener("message", function (event) {
+          if (event.source !== window.parent) return;
+          var message = event.data;
+          if (!message || message.jsonrpc !== "2.0") return;
+          if (message.id !== undefined && !message.method && pending[message.id]) {
+            var entry = pending[message.id];
+            delete pending[message.id];
+            if (message.error) entry.reject(message.error);
+            else entry.resolve(message.result);
+            return;
+          }
+          if (message.method === "ui/notifications/tool-result") {
+            var params = message.params || {};
+            if (params.isError) {
+              var first = params.content && params.content[0];
+              renderError((first && first.text) || "The tool answered with an error.");
+            } else if (params.structuredContent) {
+              render(params.structuredContent);
+            } else {
+              renderError("This result holds no VAT return.");
+            }
+          }
+        });
+
+        request("ui/initialize", {
+          appInfo: { name: "diya-submit-vat-review-card", version: "1.0.0" },
+          appCapabilities: {},
+          protocolVersion: PROTOCOL_VERSION,
+        }).then(
+          function () {
+            send({ jsonrpc: "2.0", method: "ui/notifications/initialized" });
+          },
+          function () {
+            renderError("Your assistant did not start the card.");
+          },
+        );
+      })();
+    </script>
+  </body>
+</html>

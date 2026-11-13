@@ -29,6 +29,7 @@ import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
 import { prepareVatReturn } from "./handoff-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
+import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
@@ -406,6 +407,7 @@ export const TOOLS = {
   derive_vat_return: {
     title: "Derive a VAT return",
     annotations: READS,
+    _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
       "The nine VAT boxes for one obligation period from the session's loaded book, read from the engine's own VAT " +
       "interface: the quarter ending on periodEnd (a month end the book carries), with HMRC's field names and " +
@@ -425,6 +427,7 @@ export const TOOLS = {
   prepare_vat_return: {
     title: "Prepare a VAT return to file in the browser",
     annotations: READS,
+    _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
       "Derives the VAT return for the quarter ending on periodEnd from the session's loaded book, exactly as " +
       "derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in " +
@@ -875,7 +878,13 @@ export function createServer(session = createSession(), { toolNames, overrides =
     if (!tool) throw new Error(`Unknown tool: ${name}`);
     server.registerTool(
       name,
-      { title: tool.title, description: tool.description, inputSchema: tool.inputSchema, annotations: tool.annotations },
+      {
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        annotations: tool.annotations,
+        _meta: tool._meta,
+      },
       async (params) => {
         try {
           return asToolResult(await tool.handler(session, params));
@@ -885,5 +894,6 @@ export function createServer(session = createSession(), { toolNames, overrides =
       },
     );
   }
+  if (names.some((name) => VAT_REVIEW_CARD_TOOLS.includes(name))) registerVatReviewCard(server);
   return server;
 }
