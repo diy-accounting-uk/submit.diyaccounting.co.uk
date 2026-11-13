@@ -92,4 +92,20 @@ describe("tax source helpers", () => {
     expect(html).toContain(">gov.uk/a?b=1&amp;c=2</a>");
     expect(html).toContain("Retrieved 30 September 2026");
   });
+
+  test("sourceQuoteHtml prints a table source as a citation line without its words", () => {
+    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "Period Rate A 1 B 2", table: true });
+    expect(html).toContain("Source: the table on <a");
+    expect(html).toContain(">gov.uk/a</a>");
+    expect(html).toContain("Retrieved 30 September 2026");
+    expect(html).toContain("<footer>");
+    expect(html).not.toContain("Period Rate");
+    expect(html).not.toContain("<p>");
+  });
+
+  test("a source with no table flag still prints its quote", () => {
+    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "The rate is 20%." });
+    expect(html).toContain("<p>The rate is 20%.</p>");
+    expect(html).not.toContain("Source: the table on");
+  });
 });

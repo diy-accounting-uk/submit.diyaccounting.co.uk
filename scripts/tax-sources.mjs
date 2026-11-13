@@ -51,10 +51,16 @@ export function quoteAppearsIn(quote, pageHtml) {
   return normaliseText(pageHtml).includes(normaliseText(quote));
 }
 
-export function sourceQuoteHtml(source) {
+function sourceFooterHtml(source, lead = "") {
   return (
-    `<blockquote class="source-quote"><p>${escapeHtml(source.quote)}</p>` +
-    `<footer><a href="${escapeHtml(source.url)}" rel="noopener">${escapeHtml(source.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
-    ` <span class="retrieved">Retrieved ${formatIsoDate(source.retrieved)}</span></footer></blockquote>`
+    `<footer>${lead}<a href="${escapeHtml(source.url)}" rel="noopener">${escapeHtml(source.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
+    ` <span class="retrieved">Retrieved ${formatIsoDate(source.retrieved)}</span></footer>`
   );
+}
+
+/** A source whose words are a table or a list read as noise in a quote, so it prints as a citation line only. */
+export function sourceQuoteHtml(source) {
+  if (source.table)
+    return `<blockquote class="source-quote source-citation">${sourceFooterHtml(source, "Source: the table on ")}</blockquote>`;
+  return `<blockquote class="source-quote"><p>${escapeHtml(source.quote)}</p>${sourceFooterHtml(source)}</blockquote>`;
 }

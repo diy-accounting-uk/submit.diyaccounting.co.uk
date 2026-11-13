@@ -276,6 +276,7 @@ function vatPenaltyCalculatorHtml() {
     .map(([id, rule]) => `<option value="${id}">${rule.label}</option>`)
     .join("");
   return (
+    `<noscript><p>The calculator needs JavaScript. The rules on this page give the same answer.</p></noscript>` +
     `<div id="vatCalculator" hidden>` +
     `<div class="form-group"><label for="vatPeriodEnd">Last day of the accounting period</label>` +
     `<input type="date" id="vatPeriodEnd" name="vatPeriodEnd" /></div>` +
@@ -297,7 +298,7 @@ function articleSectionHtml(section, sources) {
   if (section.table === "quarterly") {
     const rows = QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("");
     parts.push(
-      `<table class="deadline-table"><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table>`,
+      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table></div>`,
     );
   }
   if (section.table === "vat-penalty-rules") {
@@ -308,8 +309,8 @@ function articleSectionHtml(section, sources) {
       )
       .join("");
     parts.push(
-      `<table class="deadline-table"><thead><tr><th scope="col">Return</th><th scope="col">Penalty points threshold</th>` +
-        `<th scope="col">Period of compliance</th><th scope="col">Returns in it</th></tr></thead><tbody>${rows}</tbody></table>`,
+      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Return</th><th scope="col">Points threshold</th>` +
+        `<th scope="col">Compliance period</th><th scope="col">Returns</th></tr></thead><tbody>${rows}</tbody></table></div>`,
     );
   }
   if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());

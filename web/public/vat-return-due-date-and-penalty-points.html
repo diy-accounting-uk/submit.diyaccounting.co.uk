@@ -72,6 +72,7 @@
       <div class="form-container">
         <h2>Work it out</h2>
         <p>The date is a calculation from the rule below. Your VAT online account shows the date HMRC holds for each return.</p>
+        <noscript><p>The calculator needs JavaScript. The rules on this page give the same answer.</p></noscript>
         <div id="vatCalculator" hidden>
           <div class="form-group">
             <label for="vatPeriodEnd">Last day of the accounting period</label><input type="date" id="vatPeriodEnd" name="vatPeriodEnd" />
@@ -116,39 +117,41 @@
       <div class="form-container">
         <h2>Penalty points and the threshold</h2>
         <p>Each late return adds one point until you reach the threshold of your accounting period.</p>
-        <table class="deadline-table">
-          <thead>
-            <tr>
-              <th scope="col">Return</th>
-              <th scope="col">Penalty points threshold</th>
-              <th scope="col">Period of compliance</th>
-              <th scope="col">Returns in it</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Annually</td>
-              <td>2</td>
-              <td>24 months</td>
-              <td>2</td>
-            </tr>
-            <tr>
-              <td>Quarterly</td>
-              <td>4</td>
-              <td>12 months</td>
-              <td>4</td>
-            </tr>
-            <tr>
-              <td>Monthly</td>
-              <td>5</td>
-              <td>6 months</td>
-              <td>6</td>
-            </tr>
-          </tbody>
-        </table>
-        <blockquote class="source-quote">
-          <p>Accounting period Penalty points threshold Annually 2 Quarterly 4 Monthly 5</p>
+        <div class="table-scroll">
+          <table class="deadline-table">
+            <thead>
+              <tr>
+                <th scope="col">Return</th>
+                <th scope="col">Points threshold</th>
+                <th scope="col">Compliance period</th>
+                <th scope="col">Returns</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Annually</td>
+                <td>2</td>
+                <td>24 months</td>
+                <td>2</td>
+              </tr>
+              <tr>
+                <td>Quarterly</td>
+                <td>4</td>
+                <td>12 months</td>
+                <td>4</td>
+              </tr>
+              <tr>
+                <td>Monthly</td>
+                <td>5</td>
+                <td>6 months</td>
+                <td>6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <blockquote class="source-quote source-citation">
           <footer>
+            Source: the table on
             <a href="https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late" rel="noopener"
               >gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late</a
             >
@@ -175,12 +178,9 @@
           At the threshold, you remove the points when you meet both conditions: a period of compliance, and every outstanding return of the
           previous 24 months.
         </p>
-        <blockquote class="source-quote">
-          <p>
-            not the last day of a month — a penalty point expires on the last day of the month, 24 months after this the last day of a month
-            — a penalty point expires on the last day of the month, 25 months after this
-          </p>
+        <blockquote class="source-quote source-citation">
           <footer>
+            Source: the table on
             <a href="https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late" rel="noopener"
               >gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late</a
             >
@@ -199,9 +199,9 @@
             <span class="retrieved">Retrieved 13 November 2026</span>
           </footer>
         </blockquote>
-        <blockquote class="source-quote">
-          <p>Accounting period Period of compliance Returns to make Annual 24 months 2 Quarterly 12 months 4 Monthly 6 months 6</p>
+        <blockquote class="source-quote source-citation">
           <footer>
+            Source: the table on
             <a href="https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late" rel="noopener"
               >gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late</a
             >

@@ -131,7 +131,7 @@ describe("article pages", () => {
         const source = sources.find((candidate) => candidate.name === name);
         expect(source, name).toBeDefined();
         expect(html, name).toContain(source.url);
-        expect(html, name).toContain(source.quote);
+        if (!source.table) expect(html, name).toContain(source.quote);
       }
     }
   });
