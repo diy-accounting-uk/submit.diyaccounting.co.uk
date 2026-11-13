@@ -194,14 +194,15 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTwentyFourLambdas() {
+    void stackWiresTwentyFiveLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 24);
+        template.resourceCountIs("AWS::Lambda::Function", 25);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePublicDeadlinesGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseTokenPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseTransactionPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseTransactionGetLambdaProps.ingestFunctionName(),
@@ -277,6 +278,45 @@ class CompaniesHouseStackTest {
         assertEquals(false, stack.companiesHouseSearchGetLambdaProps.customAuthorizer());
         assertEquals(true, stack.companiesHouseCompanyGetLambdaProps.jwtAuthorizer());
         assertEquals(false, stack.companiesHouseCompanyGetLambdaProps.customAuthorizer());
+    }
+
+    @Test
+    void publicDeadlinesLambdaHasNoAuthorizerAndReadsOnlyTheCompaniesHouseKey() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        assertEquals(HttpMethod.GET, stack.companiesHousePublicDeadlinesGetLambdaProps.httpMethod());
+        assertEquals("/api/v1/public/company-deadlines", stack.companiesHousePublicDeadlinesGetLambdaProps.urlPath());
+        assertFalse(stack.companiesHousePublicDeadlinesGetLambdaProps.jwtAuthorizer());
+        assertFalse(stack.companiesHousePublicDeadlinesGetLambdaProps.customAuthorizer());
+
+        var functions = Template.fromStack(stack)
+                .findResources(
+                        "AWS::Lambda::Function",
+                        Map.of(
+                                "Properties",
+                                Map.of(
+                                        "FunctionName",
+                                        stack.companiesHousePublicDeadlinesGetLambdaProps.ingestFunctionName())));
+        assertEquals(1, functions.size());
+        var env = environmentVariablesOf(functions);
+        assertEquals("https://api.company-information.service.gov.uk", env.get("COMPANIES_HOUSE_BASE_URI"));
+        assertFalse(env.containsKey("BUNDLE_DYNAMODB_TABLE_NAME"));
+        assertFalse(env.containsKey("ACTIVITY_BUS_NAME"));
+    }
+
+    @Test
+    void publicDeadlinesLambdaNamesTheApiKeySecret() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
+        Template template = Template.fromStack(stack);
+
+        var functions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "FunctionName",
+                                stack.companiesHousePublicDeadlinesGetLambdaProps.ingestFunctionName())));
+        assertEquals(API_KEY_ARN, environmentVariablesOf(functions).get("COMPANIES_HOUSE_API_KEY_ARN"));
     }
 
     @Test
@@ -373,14 +413,15 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTwentyFiveRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllTwentySixRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(25, stack.lambdaFunctionProps.size());
+        assertEquals(26, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
                         "/api/v1/companies-house/company/{companyNumber}",
+                        "/api/v1/public/company-deadlines",
                         "/api/v1/companies-house/token",
                         "/api/v1/companies-house/grants/{grantId}",
                         "/api/v1/companies-house/transaction",
@@ -466,8 +507,9 @@ class CompaniesHouseStackTest {
             assertEquals(API_KEY_ARN, env.get("COMPANIES_HOUSE_API_KEY_ARN"));
         }
 
-        // The wildcard suffix Secrets Manager requires, granted to the four lookup Lambda roles
-        // (search, company, officers, PSCs) and no others; the registered office address read takes
+        // The wildcard suffix Secrets Manager requires, granted to the four signed-in lookup Lambda
+        // roles (search, company, officers, PSCs) and the public deadlines Lambda, and no others; the registered office
+        // address read takes
         // the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -480,7 +522,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                4);
+                5);
     }
 
     @Test
@@ -535,7 +577,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                4);
+                5);
     }
 
     @Test

@@ -23,6 +23,14 @@ public class CompaniesHouseNames {
     public boolean companiesHouseSearchGetLambdaJwtAuthorizer;
     public boolean companiesHouseSearchGetLambdaCustomAuthorizer;
 
+    public String companiesHousePublicDeadlinesGetIngestLambdaHandler;
+    public String companiesHousePublicDeadlinesGetIngestLambdaFunctionName;
+    public String companiesHousePublicDeadlinesGetIngestLambdaArn;
+    public String companiesHousePublicDeadlinesGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePublicDeadlinesGetLambdaHttpMethod;
+    public String companiesHousePublicDeadlinesGetLambdaUrlPath;
+    public boolean companiesHousePublicDeadlinesGetLambdaJwtAuthorizer;
+    public boolean companiesHousePublicDeadlinesGetLambdaCustomAuthorizer;
     public String companiesHouseCompanyGetIngestLambdaHandler;
     public String companiesHouseCompanyGetIngestLambdaFunctionName;
     public String companiesHouseCompanyGetIngestLambdaArn;
@@ -281,6 +289,22 @@ public class CompaniesHouseNames {
                 "Retrieves the Companies House profile for a company number",
                 "getCompanyProfile",
                 List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHousePublicDeadlinesGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHousePublicDeadlinesGetLambdaUrlPath = "/api/v1/public/company-deadlines";
+        this.companiesHousePublicDeadlinesGetLambdaJwtAuthorizer = false;
+        this.companiesHousePublicDeadlinesGetLambdaCustomAuthorizer = false;
+        var companiesHousePublicDeadlinesGetLambdaHandlerName = "companiesHousePublicDeadlinesGet.ingestHandler";
+        var companiesHousePublicDeadlinesGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHousePublicDeadlinesGetLambdaHandlerName);
+        this.companiesHousePublicDeadlinesGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHousePublicDeadlinesGetLambdaHandlerDashed);
+        this.companiesHousePublicDeadlinesGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHousePublicDeadlinesGetLambdaHandlerName);
+        this.companiesHousePublicDeadlinesGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHousePublicDeadlinesGetLambdaHandlerDashed);
+        this.companiesHousePublicDeadlinesGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHousePublicDeadlinesGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
 
         this.companiesHouseTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.companiesHouseTokenPostLambdaUrlPath = "/api/v1/companies-house/token";

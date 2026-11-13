@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -331,6 +332,79 @@ class EdgeStackTest {
     }
 
     @Test
+    void publicDeadlinesPathIsCachedByQueryStringAndComesBeforeTheGeneralApiBehaviour() {
+        Template template = Template.fromStack(synthEdgeStack());
+
+        template.hasResourceProperties(
+                "AWS::CloudFront::CachePolicy",
+                Match.objectLike(Map.of(
+                        "CachePolicyConfig",
+                        Match.objectLike(Map.of(
+                                "DefaultTTL",
+                                0,
+                                "MaxTTL",
+                                EdgeStack.PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS,
+                                "ParametersInCacheKeyAndForwardedToOrigin",
+                                Match.objectLike(Map.of(
+                                        "QueryStringsConfig",
+                                        Map.of("QueryStringBehavior", "all"),
+                                        "CookiesConfig",
+                                        Map.of("CookieBehavior", "none"),
+                                        "HeadersConfig",
+                                        Map.of("HeaderBehavior", "none"))))))));
+
+        @SuppressWarnings("unchecked")
+        var distribution = (Map<String, Object>) template.findResources("AWS::CloudFront::Distribution")
+                .values()
+                .iterator()
+                .next();
+        @SuppressWarnings("unchecked")
+        var config =
+                (Map<String, Object>) ((Map<String, Object>) distribution.get("Properties")).get("DistributionConfig");
+        @SuppressWarnings("unchecked")
+        var behaviours = (List<Map<String, Object>>) config.get("CacheBehaviors");
+        var patterns =
+                behaviours.stream().map(b -> (String) b.get("PathPattern")).toList();
+        int cached = patterns.indexOf("/api/v1/public/company-deadlines");
+        assertTrue(cached >= 0, "public deadlines behaviour present");
+        assertTrue(cached < patterns.indexOf("/api/v1/*"), "it must come before /api/v1/*");
+        assertEquals(List.of("GET", "HEAD"), behaviours.get(cached).get("AllowedMethods"));
+        assertNotEquals(
+                "4135ea2d-6df8-44a3-9df3-4b5a84be39ad", behaviours.get(cached).get("CachePolicyId"));
+    }
+
+    @Test
+    void publicDeadlinesPathHasItsOwnPerAddressRateRuleTighterThanTheSiteRule() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                (int) EdgeStack.PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES,
+                "AggregateKeyType",
+                "IP",
+                "EvaluationWindowSec",
+                300,
+                "ScopeDownStatement",
+                Match.objectLike(Map.of(
+                        "ByteMatchStatement",
+                        Match.objectLike(Map.of(
+                                "PositionalConstraint",
+                                "STARTS_WITH",
+                                "SearchString",
+                                "/api/v1/public/company-deadlines")))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "PublicDeadlinesRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+        assertTrue(EdgeStack.PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES < 2000L);
+    }
+
+    @Test
     void markdownCopiesAreServedWithNoindexAndTheSecurityHeadersWhileOtherPathsKeepTheirPolicies() {
         Template template = Template.fromStack(synthEdgeStack());
         Map<String, Object> noindex = Map.of("Header", "X-Robots-Tag", "Value", "noindex", "Override", true);
@@ -538,8 +612,8 @@ class EdgeStackTest {
         String reference =
                 "{{resolve:secretsmanager:prod/submit/origin/verify:SecretString:current::11111111-2222-3333-4444-555555555555}}";
 
-        assertEquals(6, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
-        assertEquals(6, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
+        assertEquals(7, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
+        assertEquals(7, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
     }
 
     @Test

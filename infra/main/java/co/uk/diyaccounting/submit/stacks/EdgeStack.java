@@ -27,6 +27,7 @@ import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -116,6 +117,18 @@ public class EdgeStack extends Stack {
     public final Permission distributionInvokeFnUrl;
     public final String aliasRecordDomainName;
     public final String aliasRecordV6DomainName;
+
+    /**
+     * Requests per five minutes from one address to the public company deadlines lookup. A person
+     * who searches and picks a match sends two or three requests, so twelve searches a minute is
+     * beyond a hand; a script that walks company numbers passes it in seconds. The site-wide rule
+     * allows 2000, and a lookup that reaches Companies House spends the one key's 600 requests per
+     * five minutes that the signed-in lookups also use.
+     */
+    static final long PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES = 60L;
+
+    /** The longest CloudFront keeps a public lookup answer, whatever the origin's Cache-Control asks. */
+    static final int PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS = 600;
 
     // private static final String CF_LOGS_SOURCE_NAME = "cf-src";
     // private static final String CF_LOGS_DEST_NAME = "cf-dest";
@@ -632,6 +645,24 @@ public class EdgeStack extends Stack {
                 .enableAcceptEncodingBrotli(true)
                 .build();
 
+        // The public company deadlines lookup is cached by its path and its whole query string
+        // (number=... or q=...). The default TTL is 0, so only an answer whose Cache-Control the
+        // Lambda sets (a found company) is kept; an error is never cached. No header or cookie is
+        // in the key, so every visitor shares one copy.
+        CachePolicy publicDeadlinesCachePolicy = CachePolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-PublicDeadlinesCP")
+                .cachePolicyName(props.resourceNamePrefix() + "-public-deadlines-cp")
+                .comment("Caches public company deadline answers by path and query string")
+                .minTtl(software.amazon.awscdk.Duration.seconds(0))
+                .defaultTtl(software.amazon.awscdk.Duration.seconds(0))
+                .maxTtl(software.amazon.awscdk.Duration.seconds(PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS))
+                .queryStringBehavior(software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.all())
+                .headerBehavior(software.amazon.awscdk.services.cloudfront.CacheHeaderBehavior.none())
+                .cookieBehavior(software.amazon.awscdk.services.cloudfront.CacheCookieBehavior.none())
+                .enableAcceptEncodingGzip(true)
+                .enableAcceptEncodingBrotli(true)
+                .build();
+
         // Behaviour options for /tests/* and /docs/* paths with short TTL
         BehaviorOptions testsAndDocsBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
@@ -729,10 +760,24 @@ public class EdgeStack extends Stack {
         additionalBehaviors.put("/docs/*", testsAndDocsBehaviorOptions);
         infof("Added /docs/* behavior with short TTL cache policy");
 
+        // CloudFront takes the first behaviour whose pattern matches, so the cached lookup path
+        // comes before /api/v1/*. The rest keep the order they had.
+        LinkedHashMap<String, BehaviorOptions> orderedBehaviors = new LinkedHashMap<String, BehaviorOptions>();
+        orderedBehaviors.put(
+                props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetLambdaUrlPath,
+                createCachedPublicBehaviorOptionsForApiGateway(
+                        props.apiGatewayUrl(),
+                        diyaGlApiResponseHeadersPolicy,
+                        fraudPreventionHeadersPolicy,
+                        apiOriginHeaders,
+                        publicDeadlinesCachePolicy));
+        orderedBehaviors.putAll(additionalBehaviors);
+        infof("Added cached API Gateway behavior for the public company deadlines lookup");
+
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
-                .additionalBehaviors(additionalBehaviors)
+                .additionalBehaviors(orderedBehaviors)
                 // Use only the deployment-scoped domain to avoid alias conflicts with existing distributions
                 .domainNames(List.of(props.sharedNames().deploymentDomainName))
                 .certificate(cert)
@@ -858,6 +903,28 @@ public class EdgeStack extends Stack {
                 .originRequestPolicy(originRequestPolicy)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(responseHeadersPolicy)
+                .build();
+    }
+
+    /** A read-only API Gateway behaviour whose answers CloudFront keeps under the given cache policy. */
+    public BehaviorOptions createCachedPublicBehaviorOptionsForApiGateway(
+            String apiGatewayUrl,
+            ResponseHeadersPolicy responseHeadersPolicy,
+            OriginRequestPolicy originRequestPolicy,
+            Map<String, String> originCustomHeaders,
+            CachePolicy cachePolicy) {
+        var origin = HttpOrigin.Builder.create(getHostFromUrl(apiGatewayUrl))
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .customHeaders(originCustomHeaders)
+                .build();
+        return BehaviorOptions.builder()
+                .origin(origin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD)
+                .cachePolicy(cachePolicy)
+                .originRequestPolicy(originRequestPolicy)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(responseHeadersPolicy)
+                .compress(true)
                 .build();
     }
 
@@ -1424,6 +1491,31 @@ public class EdgeStack extends Stack {
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
                                         .metricName("McpReviewerRateLimitRule")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
+                        // The public company deadlines lookup needs no sign-in, so each address gets
+                        // a small allowance, well under the site-wide rule.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("PublicDeadlinesRateLimitRule")
+                                .priority(9)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                .limit(PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES)
+                                                .evaluationWindowSec(300)
+                                                .aggregateKeyType("IP")
+                                                .scopeDownStatement(uriPathStartsWithStatement(props.sharedNames()
+                                                        .companiesHouse
+                                                        .companiesHousePublicDeadlinesGetLambdaUrlPath))
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("PublicDeadlinesRateLimitRule")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build()))

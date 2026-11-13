@@ -211,7 +211,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 25);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -231,6 +231,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-psc-get",
                         "companies-house-psc-verification-statement-get",
                         "companies-house-psc-verification-statement-post",
+                        "companies-house-public-deadlines-get",
                         "companies-house-search-get",
                         "companies-house-token-post",
                         "companies-house-transaction-get",
@@ -419,6 +420,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/search"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-deadlines"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/companies-house/grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
@@ -537,9 +539,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/operator/console-image sits on its own unshared path and adds a primary route and
         // an auto-HEAD route, for 222. POST /api/v1/pass/delete sits on its own unshared path and adds a
         // primary route and an auto-HEAD route, for 224. GET /api/v1/commission/mine sits on its own unshared
-        // path and adds a primary route and an auto-HEAD route, for 226 in total.
+        // path and adds a primary route and an auto-HEAD route, for 226. GET /api/v1/public/company-deadlines sits
+        // on its own unshared path with no authorizer and adds a primary route and an auto-HEAD route, which
+        // raise the total by 2 over the figure the tests held before it.
         assertEquals(
-                228,
+                230,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")
