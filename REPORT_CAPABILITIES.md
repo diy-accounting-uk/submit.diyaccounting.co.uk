@@ -45,6 +45,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
     - [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots: use when web/marketing/marketing.toml changes, a brand stylesheet changes, or the social images or brand shots of marketing.diyaccounting.co.uk need to be made again.
     - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week: use when checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
+    - [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month: use when checking whether a vendor on a comparison page still shows the price that page quotes.
   - [Frontend infrastructure](#frontend-infrastructure-site)
     - [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts: use when a page must pre-warm a Lambda or route before its own script needs the real response.
     - [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets: use when a page needs the shared header, nav and footer, or a small shared UI widget.
@@ -639,7 +640,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -779,10 +780,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-32 Write a landing page for each filing that is production on prod, and the article pages
 
 - **Use when:** a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
-- **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). The committed pages are checked against this render.
+- **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). A third entry kind, the comparison, writes a table of tools sorted by price from web/public/compare/vendors.toml, with our own row priced from the catalogue. The committed pages are checked against this render.
 - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
-- **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`
-- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js
+- **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`; `scripts/build-filing-pages.mjs:renderComparisonPage`
+- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
 - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 - **Related:** SITE-14, SITE-31
 
@@ -855,6 +856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
+- [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 <!-- /generated:group site-pages-and-content-site -->
 
 #### SITE-10 Serve general site pages
@@ -916,6 +918,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/tax-sources-check.yml, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, .claude/skills/tax-sources/SKILL.md
 - **Keywords:** tax sources check, source age, gov.uk quote, weekly check, tax-sources-check.yml
 - **Related:** SITE-22
+
+#### SITE-34 Check the compared prices each month
+
+- **Use when:** checking whether a vendor on a comparison page still shows the price that page quotes.
+- **Does:** compare-prices-check.yml runs scripts/check-compare-prices.mjs monthly. The script fetches each price page named in web/public/compare/vendors.toml and reports a tool whose price text is no longer in the page text. The run opens or refreshes one issue that names the tools.
+- **Run:** `node scripts/check-compare-prices.mjs`
+- **Entry:** `.github/workflows/compare-prices-check.yml`
+- **Files:** .github/workflows/compare-prices-check.yml, scripts/check-compare-prices.mjs, web/public/compare/vendors.toml, web/unit-tests/comparePrices.test.js
+- **Keywords:** compare prices, vendor price, comparison page, monthly check, compare-prices-check.yml
+- **Related:** SITE-32, SITE-33
 
 ### Frontend infrastructure (SITE)
 
@@ -7501,6 +7513,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- compare prices: [SITE-34](#site-34-check-the-compared-prices-each-month)
+- compare-prices-check.yml: [SITE-34](#site-34-check-the-compared-prices-each-month)
+- comparison page: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - competitor analysis: [SITE-20](#site-20-document-business-governance-and-positioning)
 - complaint: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - compliance accessibility: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
@@ -8568,7 +8583,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - module index: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - monitor tool: [DEV-31](#dev-31-watch-github-ci-to-green)
 - monthly budget: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
-- monthly check: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
+- monthly check: [SITE-34](#site-34-check-the-compared-prices-each-month), [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - monthly feedback email: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - monthly record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
@@ -9676,6 +9691,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vendor console: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - vendor ip ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
+- vendor price: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
 - verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
