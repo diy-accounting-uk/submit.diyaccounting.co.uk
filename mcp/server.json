@@ -3,7 +3,7 @@
   "name": "io.github.diy-accounting-uk/diya-submit",
   "title": "DIY Accounting Submit",
   "description": "Opens a book, derives VAT return figures and reads stored VAT receipts. Files no return.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "websiteUrl": "https://submit.diyaccounting.co.uk",
   "repository": {
     "url": "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk",
@@ -20,7 +20,7 @@
     {
       "registryType": "npm",
       "identifier": "@diy-accounting-uk/diya-submit",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "transport": {
         "type": "stdio"
       }
