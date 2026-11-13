@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 24 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 23 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 24 tasks are rows on `NEXT.md`, where each row carries its brief. 15 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 23 tasks are rows on `NEXT.md`, where each row carries its brief. 14 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -831,7 +831,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
-| OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask; on the board |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only; on the board |
