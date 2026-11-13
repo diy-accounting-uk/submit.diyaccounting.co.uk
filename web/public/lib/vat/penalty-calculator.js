@@ -38,7 +38,7 @@ function renderResult(periodEnd, frequency) {
   const result = assessLateReturns(frequency, late);
   byId("vatDueDate").textContent = formatDate(returnDueDate(periodEnd));
   byId("vatPoints").textContent = `${result.points} of ${result.threshold}`;
-  byId("vatThreshold").textContent = `${rule.label.toLowerCase()} returns: ${rule.threshold} points`;
+  byId("vatThreshold").textContent = `${rule.threshold} points for ${frequency} returns`;
   const penaltyWord = result.penalties === 1 ? "penalty" : "penalties";
   const penaltyText = `${result.penalties} ${penaltyWord} of £${PENALTY_POUNDS}, £${result.penaltyPounds} in all.`;
   byId("vatPenalties").textContent = result.penalties === 0 ? "No £200 penalty yet." : penaltyText;
