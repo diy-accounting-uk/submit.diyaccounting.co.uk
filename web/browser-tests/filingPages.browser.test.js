@@ -135,3 +135,23 @@ test("the VAT penalty page holds the rules as text without a script", async ({ b
   await expect(page.locator("table.deadline-table")).toContainText("Quarterly");
   await context.close();
 });
+
+const COMPARISON_PAGES = [
+  ["mtd-vat-bridging-software-compared.html", "MTD VAT bridging software compared by price"],
+  ["company-accounts-filing-software-compared.html", "Company accounts filing software compared by price"],
+];
+
+for (const [file, heading] of COMPARISON_PAGES) {
+  test(`${file} shows its table inside the screen with our row marked and the action`, async ({ page }) => {
+    await serveRealSite(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`http://localhost:3000/${file}`, { waitUntil: "load" });
+    await expect(page.locator("h1")).toHaveText(heading);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("table.compare-table tbody tr").first()).toBeVisible();
+    await expect(page.locator("table.compare-table tbody tr", { hasText: "our own product" })).toHaveCount(1);
+    await expect(page.locator("main a.btn").first()).toBeVisible();
+    const pageOverflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    expect(pageOverflows).toBe(false);
+  });
+}

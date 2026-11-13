@@ -1,0 +1,12 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "UrlWithCrawlIssues:#Microsoft.Bing.Webmaster.Api",
+      "HttpCode": 200,
+      "Issues": 32,
+      "Url": "http://example.com/url1.htm",
+      "InLinks": 10
+    }
+  ]
+}

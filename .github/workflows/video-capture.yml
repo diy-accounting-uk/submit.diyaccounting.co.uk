@@ -68,6 +68,7 @@ on:
           - 'mcp-cli'
           - 'mcp-docker'
           - 'mcp-hosted'
+          - 'assistant-vat-handoff'
           - 'accounting-diya-gl-profit'
           - 'accounting-spreadsheet-profit'
           - 'itsa-loss-claims'

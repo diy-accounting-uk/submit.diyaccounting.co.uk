@@ -178,22 +178,46 @@ export function activityArea(pagePath) {
   return "More";
 }
 
+const AREA_NAMES_CY = {
+  "VAT": "TAW",
+  "Income Tax": "Treth Incwm",
+  "Companies House": "Tŷ'r Cwmnïau",
+  "Passes": "Tocynnau",
+  "More": "Rhagor",
+};
+
+/** The heading of a home page group in the page's language ("cy" for Welsh, anything else English). */
+export function areaName(area, language) {
+  return language === "cy" ? AREA_NAMES_CY[area] : area;
+}
+
+/** The name of an activity in the page's language; an activity with no Welsh name keeps its English one. */
+export function activityName(activity, language) {
+  return (language === "cy" && activity.nameCy) || activity.name;
+}
+
+/** The token cost shown beside a button, e.g. " (2 tokens)". */
+export function tokenCostLabel(tokenCost, language) {
+  if (language === "cy") return ` (credyd: ${tokenCost})`;
+  return ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})`;
+}
+
 /**
  * The features the home status box names, in display order. `activity` is the catalogue
  * activity id that decides whether the feature is listed and with which status.
  */
 export const STATUS_FEATURES = [
-  { activity: "submit-vat", label: "HMRC VAT" },
-  { activity: "self-employed", label: "HMRC Income Tax (MTD)" },
-  { activity: "vat-assist-check", label: "HMRC Assist for VAT" },
-  { activity: "file-company-tax-return", label: "HMRC Company Tax Return (CT600)" },
-  { activity: "company-lookup", label: "company lookup" },
-  { activity: "change-registered-office", label: "registered office" },
-  { activity: "change-registered-email", label: "registered email" },
-  { activity: "file-confirmation-statement", label: "Companies House confirmation statement" },
-  { activity: "file-psc-verification-statement", label: "PSC verification statement" },
-  { activity: "file-micro-entity-accounts", label: "Companies House accounts" },
-  { activity: "file-small-company-accounts", label: "Companies House accounts" },
+  { activity: "submit-vat", label: "HMRC VAT", labelCy: "TAW CThEF" },
+  { activity: "self-employed", label: "HMRC Income Tax (MTD)", labelCy: "Treth Incwm CThEF (Troi Treth yn Ddigidol)" },
+  { activity: "vat-assist-check", label: "HMRC Assist for VAT", labelCy: "HMRC Assist ar gyfer TAW" },
+  { activity: "file-company-tax-return", label: "HMRC Company Tax Return (CT600)", labelCy: "Ffurflen Dreth Cwmni CThEF (CT600)" },
+  { activity: "company-lookup", label: "company lookup", labelCy: "chwilio am gwmni" },
+  { activity: "change-registered-office", label: "registered office", labelCy: "swyddfa gofrestredig" },
+  { activity: "change-registered-email", label: "registered email", labelCy: "e-bost cofrestredig" },
+  { activity: "file-confirmation-statement", label: "Companies House confirmation statement", labelCy: "datganiad cadarnhau Tŷ'r Cwmnïau" },
+  { activity: "file-psc-verification-statement", label: "PSC verification statement", labelCy: "datganiad gwirio PSC" },
+  { activity: "file-micro-entity-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
+  { activity: "file-small-company-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
 ];
 
 /**
@@ -215,16 +239,18 @@ export function activityStatus(activity) {
  * @param {object} catalog - The parsed catalog
  * @param {string|null} environmentName - The current environment name
  * @param {object} [viewer] - From viewer-settings.js fetchViewer; preview features list every feature
+ * @param {string} [language] - "cy" gives the Welsh labels
  * @returns {{groups: {status: string, labels: string[]}[]}}
  */
-export function featureStatusSummary(catalog, environmentName, viewer) {
+export function featureStatusSummary(catalog, environmentName, viewer, language) {
   const byStatus = { production: [], sandbox: [], preview: [] };
   for (const feature of STATUS_FEATURES) {
     const activity = (catalog?.activities ?? []).find((candidate) => candidate.id === feature.activity);
     if (!activity || !isActivityShown(activity, environmentName, viewer)) continue;
     const status = activityStatus(activity);
     if (!status) continue;
-    if (!byStatus[status].includes(feature.label)) byStatus[status].push(feature.label);
+    const label = language === "cy" ? feature.labelCy : feature.label;
+    if (!byStatus[status].includes(label)) byStatus[status].push(label);
   }
   const groups = Object.entries(byStatus)
     .filter(([, labels]) => labels.length > 0)
@@ -261,6 +287,9 @@ if (typeof window !== "undefined") {
   window.isBundleShown = isBundleShown;
   window.activityPagePath = activityPagePath;
   window.activityArea = activityArea;
+  window.areaName = areaName;
+  window.activityName = activityName;
+  window.tokenCostLabel = tokenCostLabel;
   window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
   window.featureStatusSummary = featureStatusSummary;
 }

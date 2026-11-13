@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability SITE-34 Check the compared prices each month
+# - **Use when:** checking whether a vendor on a comparison page still shows the price that page quotes.
+# - **Does:** compare-prices-check.yml runs scripts/check-compare-prices.mjs monthly. The script fetches each price page named in web/public/compare/vendors.toml and reports a tool whose price text is no longer in the page text. The run opens or refreshes one issue that names the tools.
+# - **Run:** `node scripts/check-compare-prices.mjs`
+# - **Entry:** `.github/workflows/compare-prices-check.yml`
+# - **Files:** .github/workflows/compare-prices-check.yml, scripts/check-compare-prices.mjs, web/public/compare/vendors.toml, web/unit-tests/comparePrices.test.js
+# - **Keywords:** compare prices, vendor price, comparison page, monthly check, compare-prices-check.yml
+# - **Related:** SITE-32, SITE-33
+# @end-capability
+
+name: compare-prices-check
+run-name: "compare prices check of ${{ github.ref_name }}"
+
+# The workflow only reports. Reading a new price needs a session that opens the vendor's page, because
+# a price change goes into the data file and the two pages in a commit.
+
+on:
+  schedule:
+    - cron: '47 7 3 * *' # Monthly on the 3rd, off the top-of-hour queue and clear of every other workflow's minute
+  workflow_dispatch: {}
+
+concurrency:
+  group: compare-prices-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-compare-prices:
+    name: check the compared prices
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Check each price page for its price text
+        id: check
+        continue-on-error: true
+        shell: bash
+        env:
+          ISSUE_BODY_FILE: ${{ runner.temp }}/compare-prices-issue-body.md
+        run: node scripts/check-compare-prices.mjs --issue-body "$ISSUE_BODY_FILE"
+
+      - name: Open or refresh the compared prices issue
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_BODY_FILE: ${{ runner.temp }}/compare-prices-issue-body.md
+        run: |
+          set -euo pipefail
+          if [ ! -f "$ISSUE_BODY_FILE" ]; then
+            echo "The check failed without a list of problems; no issue to raise."
+            exit 0
+          fi
+          TITLE="Compared prices need a new reading"
+          EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$ISSUE_BODY_FILE"
+            echo "Refreshed issue $EXISTING"
+          else
+            gh issue create --title "$TITLE" --body-file "$ISSUE_BODY_FILE" --label ops --label origin:machine
+          fi
+
+      - name: Fail the run when a price needs a new reading
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "A compared price needs a new reading. See the check step."
+          exit 1

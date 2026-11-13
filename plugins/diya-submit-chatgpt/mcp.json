@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "diya-submit": {
+      "type": "streamable-http",
+      "url": "https://submit.diyaccounting.co.uk/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": { "type": "oauth" }
+        }
+      }
+    }
+  }
+}

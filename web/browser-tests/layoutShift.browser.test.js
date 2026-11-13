@@ -12,6 +12,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveRealSite } from "./serveRealSite.js";
 import { FIXTURE_CONSOLE_INDEX, FIXTURE_DAILY_CHARTS, PIXEL_PNG, fullShapeSnapshot } from "./operatorDashboardFixtures.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -400,6 +401,21 @@ test.describe("Home page activities card after the list renders", () => {
       if (process.env.HOME_SCREENSHOT_DIR) {
         await page.screenshot({ path: path.join(process.env.HOME_SCREENSHOT_DIR, `home-signed-out-${width}.png`), fullPage: true });
       }
+    });
+  }
+});
+
+test.describe("Home page with the page script off", () => {
+  test.use({ javaScriptEnabled: false });
+
+  for (const pagePath of ["index.html", "cy/index.html"]) {
+    test(`${pagePath} reserves no height for a list that the script would fill, at 390x844`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await serveRealSite(page);
+      await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+      const container = page.locator("#dynamicActivities");
+      await expect(container).toHaveClass(/reserve-viewport-height/);
+      expect(await container.evaluate((element) => getComputedStyle(element).minHeight)).toBe("0px");
     });
   }
 });

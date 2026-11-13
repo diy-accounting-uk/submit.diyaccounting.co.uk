@@ -25,7 +25,14 @@ import {
   parseCatalog,
   getBundlePrices,
 } from "../app/services/productCatalog.js";
-import { activityArea, activityPagePath, isActivityShown } from "../web/public/lib/services/catalog-service.js";
+import {
+  activityArea,
+  activityName,
+  activityPagePath,
+  areaName,
+  isActivityShown,
+  tokenCostLabel,
+} from "../web/public/lib/services/catalog-service.js";
 import { AREA_PAGES, FEATURED_IDS } from "../web/public/widgets/video-pages.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 
@@ -225,9 +232,10 @@ const SIGNED_OUT_VIEWER = { preview: false, operatorFeatures: true, account: {} 
  * lists them: shown by the catalogue, with a page, and not display "never". A signed-out visitor
  * holds no bundle, so an activity that shows only on entitlement is left out, a display "always"
  * activity opens its page and an upsell activity opens the sign-in page.
+ * @param {string} [language] "cy" gives the Welsh names; the area stays the English key
  * @returns {{area: string, name: string, href: string}[]} in catalogue order
  */
-export function homeActivities(catalog, environmentName) {
+export function homeActivities(catalog, environmentName, language) {
   return (catalog.activities ?? [])
     .filter((activity) => Array.isArray(activity.bundles))
     .filter((activity) => isActivityShown(activity, environmentName, SIGNED_OUT_VIEWER))
@@ -236,12 +244,11 @@ export function homeActivities(catalog, environmentName) {
       const page = activityPagePath(activity);
       if (!page) return [];
       const isMetered = activity.metered === true && activity.tokenCost > 0;
-      const tokenLabel =
-        activity.display === "always" && isMetered ? ` (${activity.tokenCost} token${activity.tokenCost !== 1 ? "s" : ""})` : "";
+      const tokenLabel = activity.display === "always" && isMetered ? tokenCostLabel(activity.tokenCost, language) : "";
       return [
         {
           area: activityArea(page),
-          name: `${activity.name}${tokenLabel}`,
+          name: `${activityName(activity, language)}${tokenLabel}`,
           href: activity.display === "always" ? page : "auth/login.html",
         },
       ];
@@ -251,9 +258,10 @@ export function homeActivities(catalog, environmentName) {
 /**
  * The HTML that fills the marked block of a home page: the activity list a signed-out visitor sees.
  * @param {string} [rootPrefix] the page's distance from the site root: "" for /index.html, "../" for /cy/index.html
+ * @param {string} [language] "cy" for the Welsh page
  */
-export function renderHomeActivitiesBlock(catalog, environmentName, rootPrefix = "") {
-  const entries = homeActivities(catalog, environmentName);
+export function renderHomeActivitiesBlock(catalog, environmentName, rootPrefix = "", language) {
+  const entries = homeActivities(catalog, environmentName, language);
   let isFirst = true;
   return HOME_AREA_ORDER.filter((area) => entries.some((entry) => entry.area === area))
     .map((area) => {
@@ -265,7 +273,8 @@ export function renderHomeActivitiesBlock(catalog, environmentName, rootPrefix =
           return `<div class="activity-item"><a class="${buttonClass}" href="${escapeHtml(rootPrefix + entry.href)}">${escapeHtml(entry.name)}</a></div>`;
         })
         .join("");
-      return `<section class="activity-group" aria-label="${escapeHtml(area)}"><h2>${escapeHtml(area)}</h2>${items}</section>`;
+      const heading = escapeHtml(areaName(area, language));
+      return `<section class="activity-group" aria-label="${heading}"><h2>${heading}</h2>${items}</section>`;
     })
     .join("");
 }
@@ -358,7 +367,7 @@ export function publishContent(webRoot, environmentName, uploadDateOf = lazyUplo
   }
   fillPage(webRoot, "bundles.html", "bundle-list", renderBundlesBlock(catalog, environmentName));
   fillPage(webRoot, "index.html", "home-activities", renderHomeActivitiesBlock(catalog, environmentName));
-  fillPage(webRoot, "cy/index.html", "home-activities", renderHomeActivitiesBlock(catalog, environmentName, "../"));
+  fillPage(webRoot, "cy/index.html", "home-activities", renderHomeActivitiesBlock(catalog, environmentName, "../", "cy"));
   const sitemapPath = join(webRoot, "sitemap.xml");
   writeFileSync(sitemapPath, addVideoEntries(readFileSync(sitemapPath, "utf8"), videos, uploadDateOf));
 }

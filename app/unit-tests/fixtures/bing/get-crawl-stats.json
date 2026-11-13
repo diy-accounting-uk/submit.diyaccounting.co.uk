@@ -1,0 +1,37 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "CrawlStats:#Microsoft.Bing.Webmaster.Api",
+      "AllOtherCodes": 0,
+      "BlockedByRobotsTxt": 0,
+      "Code2xx": 9998,
+      "Code301": 0,
+      "Code302": 0,
+      "Code4xx": 1,
+      "Code5xx": 1,
+      "ContainsMalware": 5,
+      "CrawlErrors": 0,
+      "CrawledPages": 0,
+      "Date": "/Date(1316156400000-0700)/",
+      "InIndex": 1000,
+      "InLinks": 2048
+    },
+    {
+      "__type": "CrawlStats:#Microsoft.Bing.Webmaster.Api",
+      "AllOtherCodes": 2,
+      "BlockedByRobotsTxt": 3,
+      "Code2xx": 10,
+      "Code301": 4,
+      "Code302": 5,
+      "Code4xx": 6,
+      "Code5xx": 7,
+      "ContainsMalware": 0,
+      "CrawlErrors": 1,
+      "CrawledPages": 20,
+      "Date": "/Date(1316242800000-0700)/",
+      "InIndex": 1001,
+      "InLinks": 2049
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "Site:#Microsoft.Bing.Webmaster.Api",
+      "AuthenticationCode": "EXAMPLE-AUTHENTICATION-CODE",
+      "DnsVerificationCode": "example-dns-code.example.com",
+      "IsVerified": true,
+      "Url": "https://example.test/"
+    },
+    {
+      "__type": "Site:#Microsoft.Bing.Webmaster.Api",
+      "AuthenticationCode": "EXAMPLE-AUTHENTICATION-CODE",
+      "DnsVerificationCode": "example-dns-code.other.test",
+      "IsVerified": false,
+      "Url": "https://other.test/"
+    }
+  ]
+}

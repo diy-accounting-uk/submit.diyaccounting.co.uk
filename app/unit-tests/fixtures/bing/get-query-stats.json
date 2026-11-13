@@ -1,0 +1,32 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "QueryStats:#Microsoft.Bing.Webmaster.Api",
+      "AvgClickPosition": 18,
+      "AvgImpressionPosition": 10,
+      "Clicks": 3,
+      "Date": "/Date(1316156400000-0700)/",
+      "Impressions": 100,
+      "Query": "vat return software"
+    },
+    {
+      "__type": "QueryStats:#Microsoft.Bing.Webmaster.Api",
+      "AvgClickPosition": 12,
+      "AvgImpressionPosition": 20,
+      "Clicks": 1,
+      "Date": "/Date(1316761200000-0700)/",
+      "Impressions": 100,
+      "Query": "vat return software"
+    },
+    {
+      "__type": "QueryStats:#Microsoft.Bing.Webmaster.Api",
+      "AvgClickPosition": 5,
+      "AvgImpressionPosition": 4,
+      "Clicks": 2,
+      "Date": "/Date(1316156400000-0700)/",
+      "Impressions": 10,
+      "Query": "mtd bridging"
+    }
+  ]
+}

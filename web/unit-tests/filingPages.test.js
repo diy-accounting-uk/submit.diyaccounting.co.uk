@@ -12,8 +12,13 @@ import {
   loadCatalog,
   loadManifest,
   loadArticles,
+  loadComparisons,
+  loadTools,
   loadPages,
   renderArticlePages,
+  renderComparisonPages,
+  comparisonTools,
+  yearPence,
   renderFilingPages,
 } from "../../scripts/build-filing-pages.mjs";
 import { loadSources } from "../../scripts/tax-sources.mjs";
@@ -155,6 +160,88 @@ describe("article pages", () => {
       expect(sitemap, article.file).toContain(`<loc>https://submit.diyaccounting.co.uk/${article.file}</loc>`);
       expect(lighthouse, article.file).toContain(`"path": "/${article.file}"`);
       expect(calendar, article.file).toContain(`href="${article.file}"`);
+    }
+  });
+});
+
+describe("comparison pages", () => {
+  const comparisons = loadComparisons();
+  const tools = loadTools();
+
+  test("each committed comparison page equals what the build script renders", async () => {
+    const rendered = await renderComparisonPages();
+    expect([...rendered.keys()]).toEqual(comparisons.map((comparison) => comparison.file));
+    for (const [file, html] of rendered) expect(read(join("web/public", file))).toBe(html);
+  });
+
+  test("each tool that is not ours has a price in its own words, a price page, a date and a list", () => {
+    for (const tool of tools.filter((candidate) => !candidate.ours)) {
+      expect(tool.price_text, tool.name).toBeTruthy();
+      expect(tool.price_url, tool.name).toMatch(/^https:\/\//);
+      expect(tool.price_read, tool.name).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(Number.isInteger(tool.price_pence), tool.name).toBe(true);
+      expect(["year", "month", "filing"], tool.name).toContain(tool.price_period);
+      expect(tool.lists, tool.name).toBeTruthy();
+    }
+  });
+
+  test("our row carries no typed price and takes the catalogue's default price", () => {
+    for (const comparison of comparisons) {
+      const ours = tools.find((tool) => tool.compares === comparison.compares && tool.ours);
+      expect(ours.price_pence).toBeUndefined();
+      const bundle = catalog.bundles.find((candidate) => candidate.id === ours.bundle);
+      const row = comparisonTools(comparison, tools, catalog).find((tool) => tool.ours);
+      expect(row.price_text).toBe(bundlePriceText(bundle).split(" or ")[0]);
+      expect(row.price_pence).toBe(999);
+    }
+  });
+
+  test("each table lists five to twelve other tools, sorted by the price for one year", () => {
+    for (const comparison of comparisons) {
+      const rows = comparisonTools(comparison, tools, catalog);
+      const vendors = rows.filter((row) => !row.ours);
+      expect(vendors.length).toBeGreaterThanOrEqual(5);
+      expect(vendors.length).toBeLessThanOrEqual(12);
+      const years = rows.map((row) => yearPence(row, comparison.filings_per_year));
+      expect(years).toEqual([...years].sort((a, b) => a - b));
+      const html = read(join("web/public", comparison.file));
+      const table = html.slice(html.indexOf("<tbody>"));
+      const order = rows.map((row) => table.indexOf(`>${row.name}</a>`));
+      expect(order).toEqual([...order].sort((a, b) => a - b));
+      expect(order.every((position) => position >= 0)).toBe(true);
+    }
+  });
+
+  test("a monthly price counts twelve times and a price for each filing counts the filings of a year", () => {
+    expect(yearPence({ name: "a", price_pence: 500, price_period: "month" }, 4)).toBe(6000);
+    expect(yearPence({ name: "a", price_pence: 500, price_period: "filing" }, 4)).toBe(2000);
+    expect(() => yearPence({ name: "a", price_pence: 1, price_period: "week" }, 4)).toThrow(/unknown price_period/);
+  });
+
+  test("each page names its source list, shows every price page link and marks our row", () => {
+    for (const comparison of comparisons) {
+      const html = read(join("web/public", comparison.file));
+      expect(html.match(/<h1>/g), comparison.file).toHaveLength(1);
+      expect(html).toContain(comparison.list_url);
+      expect(html).toContain("<strong>(our own product)</strong>");
+      expect(html).toContain('<div class="table-scroll">');
+      expect(html).toContain("The vendor's own page is the authority");
+      for (const tool of tools.filter((candidate) => candidate.compares === comparison.compares && !candidate.ours)) {
+        expect(html, tool.name).toContain(`href="${tool.price_url}"`);
+        expect(html, tool.name).toContain(tool.price_text);
+      }
+    }
+  });
+
+  test("each comparison is in the sitemap, in the lighthouse configuration and linked from a filing page", () => {
+    const sitemap = read("web/public/sitemap.xml");
+    const lighthouse = read("lighthouse.config.json");
+    for (const comparison of comparisons) {
+      expect(sitemap, comparison.file).toContain(`<loc>https://submit.diyaccounting.co.uk/${comparison.file}</loc>`);
+      expect(lighthouse, comparison.file).toContain(`"path": "/${comparison.file}"`);
+      const linkedFrom = pages.filter((page) => page.compared_in === comparison.file);
+      expect(linkedFrom.length, comparison.file).toBeGreaterThan(0);
+      for (const page of linkedFrom) expect(read(join("web/public", page.file)), page.file).toContain(`href="${comparison.file}"`);
     }
   });
 });

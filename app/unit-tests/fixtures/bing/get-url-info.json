@@ -1,0 +1,14 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": {
+    "__type": "UrlInfo:#Microsoft.Bing.Webmaster.Api",
+    "AnchorCount": 50,
+    "DiscoveryDate": "/Date(1315349995266-0700)/",
+    "DocumentSize": 0,
+    "HttpStatus": 0,
+    "IsPage": false,
+    "LastCrawledDate": "/Date(1316213995266-0700)/",
+    "TotalChildUrlCount": 100,
+    "Url": "example.com"
+  }
+}

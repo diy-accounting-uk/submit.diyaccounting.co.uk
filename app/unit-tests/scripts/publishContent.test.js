@@ -169,6 +169,14 @@ describe("publish-content home activities", () => {
     expect(homeActivities(CATALOG, "ci").every((entry) => entry.href.endsWith(".html"))).toBe(true);
   });
 
+  test("the Welsh block holds the Welsh area heading and activity names", () => {
+    const html = renderHomeActivitiesBlock(CATALOG, "prod", "../", "cy");
+    expect(html).toContain('<section class="activity-group" aria-label="TAW"><h2>TAW</h2>');
+    expect(html).toContain(">Cyflwyno TAW (CThEF)</a>");
+    expect(html).toContain("<h2>Rhagor</h2>");
+    expect(html).not.toMatch(/Submit VAT|<h2>More<\/h2>/);
+  });
+
   test("the block groups the links by area and gives only the first link the primary style", () => {
     const html = renderHomeActivitiesBlock(CATALOG, "prod");
     expect(html).toContain('<section class="activity-group" aria-label="VAT"><h2>VAT</h2>');

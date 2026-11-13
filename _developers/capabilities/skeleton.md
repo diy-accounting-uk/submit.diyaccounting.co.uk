@@ -67,6 +67,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-22 -->
 <!-- capability SITE-25 -->
 <!-- capability SITE-33 -->
+<!-- capability SITE-34 -->
 ### Frontend infrastructure (SITE)
 
 <!-- generated:group frontend-infrastructure-site -->
@@ -670,6 +671,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DATA-38 -->
 <!-- capability DATA-67 -->
 <!-- capability DATA-69 -->
+<!-- capability DATA-76 -->
+<!-- capability DATA-77 -->
 <!-- capability DATA-39 -->
 <!-- capability DATA-40 -->
 <!-- capability DATA-41 -->
@@ -846,6 +849,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DEV-57 -->
 <!-- capability DEV-58 -->
 <!-- capability DEV-59 -->
+<!-- capability DEV-61 -->
 ## Spreadsheets and diya-gl (SS)
 
 <!-- generated:area SS -->
