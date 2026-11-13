@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 28 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 28 tasks are rows on `NEXT.md`, where each row carries its brief. 19 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 30 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -862,7 +862,9 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS31 | VAT due-date and penalty-points calculator | F1, Z9 | A working answer to "how many penalty points" and "when is my VAT return due", which no competitor offers as a tool. | Impressions and clicks on the page; clicks from it to sign-in. | machine-only; on the board |
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
-| OS35 | Quarterly-update workbook and the support articles | F5, A10, A8 | A free workbook for the Income Tax quarterly update and eleven articles that answer questions customers sent us. | Clicks per article; downloads of the workbook. | machine-only; on the board |
+| OS35 | The support articles | F5, A10, A8 | Eleven articles that answer questions customers sent us. | Clicks per article. | machine-only; on the board |
+| OS35b | Quarterly updates in the Self Employed workbook: the operator's choice of design | F5 | The workbook shows each quarter's cumulative figures for the Income Tax quarterly update. | Downloads of the workbook; the reconciliation agrees with diya-gl. | machine-ask; on the board |
+| OS45b | The article sweep that OS45 found | A8, A10 | The mileage rate is current in every article, no GOV.UK link is dead, and the unindexed articles are merged, redirected or linked. | Indexed article count in Search Console. | machine-only; on the board |
 | OS47 | A search health skill from Search Console, Bing Webmaster Tools and local checks | A14, A15 | One command that reads both webmaster tools and runs their checks locally, and ranks what to fix on each site. | The report exists after each run, and each fix is a board row. | machine-only; on the board |
 | OOS47 | The API key for Bing Webmaster Tools | A15 | Bing's figures and crawl issues are read through its API, not in Chrome. | The Bing report runs with the key. | machine-ask; on the board |
 
@@ -914,7 +916,8 @@ flowchart LR
   OS13b --> OS32
   OS42b --> OS30
   OS11 --> OS33
-  OS45 --> OS35
+  OS45 --> OS45b
+  OS45b --> OS35
 ```
 
 ### 8.4 Facts several rows share
