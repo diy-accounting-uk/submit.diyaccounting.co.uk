@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 29 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 30 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 29 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -241,7 +241,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | F2 Company deadline lookup with no sign-in | absent as a public page (a company lookup activity exists behind sign-in) | 3 | 1 | 5 | OS32 |
 | F3 MTD Income Tax scope checker with an embed | absent | 2 | 1 | 4 | OS33 |
 | F4 Nine-box checker with no sign-in | absent (the same reader runs after sign-in); not pursued (operator, 2026-11-12) | 3 | 1 | 5 | none |
-| F5 Quarterly-update workbook and article | absent | 3 | 2 | 4 | OS35 |
+| F5 Quarterly-update article | absent | 3 | 2 | 4 | OS35 |
 | F6 Excel add-in | absent; not pursued (operator, 2026-11-12) | 5 | 3 | 5 | none |
 | F7 Google Sheets add-on | absent; not pursued (operator, 2026-11-12) | 5 | 3 | 4 | none |
 | F8 Review invitation after a filing | absent | 2 | 2 | 4 | OS25 |
@@ -494,7 +494,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 15 | Y2 Facts in the page text that assistants quote | 3 | It is the page work in A3 and A4: days, not hours. |
 | 16 | A4 Render JavaScript-only content into the HTML at build | 3 | Two committed builds and two deploy-time renders, because the lists differ between ci and prod. |
 | 17 | A10 Knowledge-base articles from the support corpus | 3 | About 12 files, machine-drafted, then the operator's tax check. |
-| 18 | F5 Quarterly-update workbook and article | 3 | A workbook in the package pipeline and one article. |
+| 18 | F5 Quarterly-update article | 1 | One article. |
 | 19 | X1 Claude Connectors Directory | 3 | A `title` and annotations on every tool (none has them today), a demo sign-in for reviewers, a documentation page, an icon. |
 | 20 | C3 ICAEW Technology Accreditation | 3 | An evaluation pack and a review cycle. |
 | 21 | Z4 MCP Apps: a review card inside the assistant | 3 | A `ui://` resource and the tool metadata; the server registers no resources today, and the SDK version must support them. |
@@ -618,7 +618,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 41 | A11 Bing Webmaster Tools and IndexNow | 2 | Microsoft | Self-serve. Site ownership is proved by a file or by import from Search Console. | Publish the key file; the operator signs in once. |
 | 42 | D1 Capterra, GetApp and Software Advice | 2 | The directory's listing team | A real product and a business email. Free tier exists. | Yes. |
 | 43 | D2 Trustpilot | 2 | Trustpilot | Domain verification. Reviews come from customers. | Yes. The review invitation (F8) supplies the reviews. |
-| 44 | F5 Quarterly-update workbook and article | 2 | Operator | Tax content check. | Draft with sources; the operator reads. |
+| 44 | F5 Quarterly-update article | 2 | Operator | Tax content check. | Draft with sources; the operator reads. |
 | 45 | F8 Review invitation after a filing | 2 | Review site rules | Invitations go to every customer alike and offer no reward (DMCC Act 2024, the review site's rules). | Yes, by design of the invitation. |
 | 46 | R1 Official MCP Registry | 2 | The registry | Namespace proof only. | Yes. GitHub Actions OIDC proves `io.github.diy-accounting-uk`. |
 | 47 | Z4 MCP Apps: a review card inside the assistant | 2 | Directories | The Claude directory asks for three to five screenshots of an app. | Yes. |
@@ -704,7 +704,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 29 | A11 Bing Webmaster Tools and IndexNow | 4 | It is the documented way into the index that several assistants search. |
 | 30 | F8 Review invitation after a filing | 4 | Review count is what separates the leading competitor on Trustpilot and Capterra (about 2,051 and 220). |
 | 31 | A10 Knowledge-base articles from the support corpus | 4 | Articles already bring clicks (`easy-taxi-driver-accounting` 15 in October 2026). |
-| 32 | F5 Quarterly-update workbook and article | 4 | An open question on AccountingWEB, and it fits the audience the spreadsheets site already has. |
+| 32 | F5 Quarterly-update article | 4 | An open question on AccountingWEB, and it fits the audience the spreadsheets site already has. |
 | 33 | C1 Tax charity and institute guidance pages | 4 | Advisers and unrepresented taxpayers read them at the moment of choosing. |
 | 34 | D8 Consumer and bank editorial | 4 | High trust with sole traders. |
 | 35 | Q2 Reddit and MoneySavingExpert reference lists | 4 | Assistants weight these communities. |
@@ -796,7 +796,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | A11 Bing Webmaster Tools and IndexNow | 4 | 2 | 2 | OS5 |
 | F8 Review invitation after a filing | 4 | 2 | 2 | OS25 |
 | A10 Knowledge-base articles from the support corpus | 4 | 3 | 2 | OS35 |
-| F5 Quarterly-update workbook and article | 4 | 3 | 2 | OS35 |
+| F5 Quarterly-update article | 4 | 3 | 2 | OS35 |
 | X1 Claude Connectors Directory | 4 | 3 | 3 | OS3, OS14, OS43, OS42, OS46, OS17, OOS17 |
 
 ## 7. Surfaces their owners have retired
@@ -861,7 +861,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
 | OS35 | The support articles | F5, A10, A8 | Eleven articles that answer questions customers sent us. | Clicks per article. | machine-only; on the board |
-| OS35b | Quarterly updates in the Self Employed workbook: the operator's choice of design | F5 | The workbook shows each quarter's cumulative figures for the Income Tax quarterly update. | Downloads of the workbook; the reconciliation agrees with diya-gl. | machine-ask; on the board |
 | OS45b | The article sweep that OS45 found | A8, A10 | The mileage rate is current in every article, no GOV.UK link is dead, and the unindexed articles are merged, redirected or linked. | Indexed article count in Search Console. | machine-only; on the board |
 | OS45c | The package guides and one article state the mileage rate of the right year | A8 | A customer who opens a 2026 to 2027 package reads the rate the workbook uses. | The guide of each year's package states that year's rate. | machine-only; on the board |
 | OS35c | The knowledge base lists the published articles, and the references page holds every cited reference | A8, A10 | A new article is reachable from the knowledge-base page, and a citation marker opens its reference. | The knowledge-base page lists every article; no cited id lacks a record. | machine-only; on the board |
