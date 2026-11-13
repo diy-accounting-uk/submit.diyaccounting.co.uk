@@ -108,6 +108,10 @@ cy = '''Adolygiadau a rhestriad'''
 hash = "21d3eb53dde7"
 cy = '''<span class="proof-stars" role="img" aria-label="5 allan o 5 seren">&#9733;&#9733;&#9733;&#9733;&#9733;</span> <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad ar Google</a>'''
 
+[strings."index.reviews-featuredcustomers"]
+hash = "e031c6ffd247"
+cy = '''<a href="https://www.featuredcustomers.com/vendor/diy-accounting" target="_blank" rel="noopener">4.8 allan o 5 ar FeaturedCustomers</a>'''
+
 [strings."index.finder-label"]
 hash = "167fba46f9c4"
 cy = '''Teclyn chwilio meddalwedd CThEF'''
