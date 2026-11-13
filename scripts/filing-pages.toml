@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The copy of each filing page that scripts/build-filing-pages.mjs writes. The price, the steps
+# with their screenshots, the video and the status come from the catalogue, the video manifest
+# and AVAILABILITY. The due date comes from the source file named in `deadline.source`.
+# An entry whose activity is not production on prod writes no page.
+
+[[page]]
+file = "vat-return-from-a-spreadsheet.html"
+activity = "submit-vat"
+video = "submit-return"
+title = "VAT return from a spreadsheet - DIY Accounting Submit"
+heading = "How to file a VAT return from a spreadsheet"
+subtitle = "Send the nine boxes from your spreadsheet to HMRC under Making Tax Digital"
+description = "How to file a VAT return from a spreadsheet with HMRC under Making Tax Digital: what you need, the steps with screenshots, the price and the free pass."
+summary = "Submit sends the nine boxes of your VAT return to HMRC. You keep your records in your own spreadsheet, work out the boxes there, and enter the figures here. HMRC sends back a receipt with a Form Bundle Number."
+action = { label = "File a VAT return", href = "hmrc/vat/submitVat.html" }
+before = [
+  "Your VAT registration number.",
+  "The figures for the nine boxes of the period, worked out in your spreadsheet.",
+  "A Government Gateway user ID and password, to give Submit permission to send your returns to HMRC.",
+  "A Google or Microsoft account to sign in to Submit.",
+]
+deadline = { source = "vat-mtd-all-registered", text = "Every VAT-registered business sends its returns to HMRC through Making Tax Digital software." }
+
+[[page]]
+file = "micro-entity-accounts.html"
+activity = "file-micro-entity-accounts"
+video = "file-micro-entity-accounts"
+title = "Micro-entity accounts for Companies House - DIY Accounting Submit"
+heading = "How to file micro-entity accounts at Companies House"
+subtitle = "File your company's annual accounts online from your own figures"
+description = "How to file micro-entity accounts at Companies House online: what you need, the steps with screenshots, the price and the due date."
+summary = "Submit turns the figures you give it into micro-entity accounts and files them with Companies House. You choose the accounting period, enter the balance sheet and profit and loss figures, check the answers and file."
+action = { label = "File micro-entity accounts", href = "companies-house/fileMicroEntityAccounts.html" }
+before = [
+  "Your company number.",
+  "The accounting period and the balance sheet and profit and loss figures for it.",
+  "The name of the director who approves the balance sheet, and the date of approval.",
+  "A Google or Microsoft account to sign in to Submit.",
+]
+deadline = { source = "ch-accounts-9-months", text = "A private limited company files its annual accounts with Companies House within 9 months of the end of its financial year." }
+
+[[page]]
+file = "small-company-accounts.html"
+activity = "file-small-company-accounts"
+video = "file-small-company-accounts"
+title = "Small company accounts for Companies House - DIY Accounting Submit"
+heading = "How to file small company accounts at Companies House"
+subtitle = "File your company's annual accounts online from your own figures"
+description = "How to file small company accounts at Companies House online: what you need, the steps with screenshots, the price and the due date."
+summary = "Submit turns the figures you give it into small company accounts and files them with Companies House. You choose the accounting period, enter the figures, check the answers and file."
+action = { label = "File small company accounts", href = "companies-house/fileSmallCompanyAccounts.html" }
+before = [
+  "Your company number.",
+  "The accounting period and the figures for the format you choose: full accounts, or filleted accounts.",
+  "The name of the director who approves the balance sheet, and the date of approval.",
+  "A Google or Microsoft account to sign in to Submit.",
+]
+deadline = { source = "ch-accounts-9-months", text = "A private limited company files its annual accounts with Companies House within 9 months of the end of its financial year." }
+
+[[page]]
+file = "dormant-company-accounts.html"
+activity = "file-micro-entity-accounts"
+video = "file-micro-entity-accounts"
+title = "Dormant company accounts for Companies House - DIY Accounting Submit"
+heading = "How to file dormant company accounts at Companies House"
+subtitle = "A company with no significant accounting transaction files dormant accounts"
+description = "How to file dormant company accounts at Companies House online: what makes a company dormant, the steps with screenshots, the price and the due date."
+summary = "A company is dormant when it had no significant accounting transaction in the period. Submit files dormant accounts through the micro-entity accounts form: tick that the company was dormant throughout the period, then follow the same steps."
+action = { label = "File dormant company accounts", href = "companies-house/fileMicroEntityAccounts.html" }
+before = [
+  "Your company number.",
+  "The accounting period. The company must have had no significant accounting transaction in it.",
+  "The name of the director who approves the balance sheet, and the date of approval.",
+  "A Google or Microsoft account to sign in to Submit.",
+]
+lead_steps = [
+  { headline = "Tick that the company was dormant", caption = "On the form, tick that the company was dormant throughout the period, then choose its trading history." },
+]
+deadline = { source = "ch-accounts-9-months", text = "A private limited company files its annual accounts with Companies House within 9 months of the end of its financial year." }
+
+[[page]]
+file = "confirmation-statement.html"
+activity = "file-confirmation-statement"
+video = "file-confirmation-statement"
+title = "Confirmation statement (CS01) - DIY Accounting Submit"
+heading = "How to file a confirmation statement (CS01)"
+subtitle = "Confirm your company's details with Companies House online"
+description = "How to file a confirmation statement (CS01) with Companies House online: what you need, the steps with screenshots, the price and the due date."
+summary = "Submit shows the officers and the people with significant control that Companies House holds for your company. You check them, then file the confirmation statement."
+action = { label = "File a confirmation statement", href = "companies-house/fileConfirmationStatement.html" }
+before = [
+  "Your company number.",
+  "The register of the company's officers and people with significant control, to check it against what Companies House holds.",
+  "A Google or Microsoft account to sign in to Submit.",
+  "Optional: your own Companies House presenter id and authentication code.",
+]
+deadline = { source = "ch-confirmation-statement-12-months", text = "A company files a confirmation statement at least every 12 months." }
+fee_note = "File under your own Companies House presenter and Companies House bills its fee (currently £50) to your credit account, and Submit takes no fee of its own."

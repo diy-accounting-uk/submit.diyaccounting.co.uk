@@ -211,3 +211,20 @@ main ol.calendar {
   font-weight: var(--weight-strong);
   text-align: right;
 }
+
+/* Landing pages for each filing (build-filing-pages.mjs) */
+.filing-page .guide-steps-list {
+  padding: 0;
+}
+
+.filing-page .guide-step img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+}
+
+.filing-guides ul {
+  padding-left: var(--space-5);
+}
