@@ -166,7 +166,8 @@ The gateway's group is about 8 GB and a month scans about 1.6 GB, so run each qu
 
 **D. Search engine reports, in Chrome, read-only.**
 
-- Bing Webmaster Tools, https://www.bing.com/webmasters, AI Performance report. Read it for each of the four sites it holds: `www.diyaccounting.co.uk` (the apex is filed under it), `submit.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk` and `diya-gl.co.uk`. Record citations and cited pages for the month.
+- Bing Webmaster Tools clicks, impressions, crawl statistics and sitemap feeds: when `BING_WEBMASTER_API_KEY` is set, run `npm run bing:report -- --out target/bing-webmaster-report.json` and take the month's figures for each verified site from `traffic`, `crawl` and `feeds`; when it is not set, read them in Chrome as below and write "Bing figures from Chrome" in the table.
+- Bing Webmaster Tools, https://www.bing.com/webmasters, AI Performance report (the API has no method for it, so it is always read in Chrome). Read it for each of the four sites it holds: `www.diyaccounting.co.uk` (the apex is filed under it), `submit.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk` and `diya-gl.co.uk`. Record citations and cited pages for the month.
 - Search Console, https://search.google.com/search-console, generative AI report, for each domain property. Record what it shows for the month. When the report is absent for a property, record "report not shown".
 
 Click nothing that changes a setting, a sitemap or a verification.
