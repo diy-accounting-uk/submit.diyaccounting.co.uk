@@ -570,6 +570,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill: use when /campaign needs the last seven days of questions from UK Business Forums.
     - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board: use when the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
     - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks: use when a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
+    - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now: use when the operator asks whether a /clear or a restart of Claude Code is safe, and at the end of every /board render.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5658,7 +5659,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -6001,6 +6002,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill
 - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board
 - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
+- [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -6339,6 +6341,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/search-health/SKILL.md, infra/google/searchconsole/searchconsole-report.js, infra/bing/webmaster-report.js, scripts/search-health-check.mjs
 - **Keywords:** search health, search console, bing webmaster, seo fixes, crawl politeness, coverage drop, sitemap error, webmaster email, ranked fixes
 - **Related:** DATA-69, DATA-76, DATA-77, DEV-57
+
+#### DEV-62 Say whether a /clear or a restart is safe now
+
+- **Use when:** the operator asks whether a /clear or a restart of Claude Code is safe, and at the end of every /board render.
+- **Does:** clear-ready gathers the session's live work and prepares for each event without destroying anything. It commits work, writes NEXT.md back and writes the handover file. Then it answers yes or not yet for /clear and for a restart.
+- **Run:** `/clear-ready`
+- **Entry:** `.claude/skills/clear-ready/SKILL.md`
+- **Files:** .claude/skills/clear-ready/SKILL.md, .claude/skills/compact-ready/SKILL.md, .claude/skills/board/SKILL.md
+- **Keywords:** clear, restart, session handover, compaction alternative, break, resume, continue, handover file
+- **Related:** DEV-27
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -7331,6 +7343,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - branches: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - brand guide: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - brand shots: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
+- break: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - brief completeness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
@@ -7484,6 +7497,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clean skill: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - clean worktree: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - cleanup test users: [OPS-12](#ops-12-clean-up-expired-test-users)
+- clear: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - clear-out: [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - clicks: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
@@ -7556,6 +7570,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
+- compaction alternative: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
@@ -7615,6 +7630,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday), [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- continue: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - converse: [OPS-194](#ops-194-run-a-read-only-nova-agent)
@@ -8231,6 +8247,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hand off: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- handover file: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - hash aliases: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
@@ -9152,10 +9169,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - resource_forbidden: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - responsible disclosure: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - responsive: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
+- restart: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - restore drill: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - restore permissions: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - restore prod: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - restore salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
+- resume: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - resume work: [DEV-36](#dev-36-resume-normal-work-from-cool-down), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - retag: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - retention: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-22](#bill-22-check-diya-gl-retention-entitlement), [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
@@ -9350,6 +9369,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ses: [SITE-27](#site-27-email-the-customer-after-a-key-event), [OPS-182](#ops-182-provision-the-customer-email-sender)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
 - session funnel: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
+- session handover: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - session report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-37](#dev-37-write-the-session-report)
 - session status: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - session storage: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)

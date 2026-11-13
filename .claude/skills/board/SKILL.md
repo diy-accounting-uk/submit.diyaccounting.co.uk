@@ -1,6 +1,6 @@
 ---
 name: board
-description: Render the open-work board — one table for NEXT.md items, then one list per PLAN_*.md of the open tasks not yet on the board, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Ends with /compact-ready. Invoke when the operator asks for the board, the open items, or "what's in flight".
+description: Render the open-work board — one table for NEXT.md items, then one list per PLAN_*.md of the open tasks not yet on the board, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Ends with /unblock, /clear-ready and /compact-ready. Invoke when the operator asks for the board, the open items, or "what's in flight".
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -313,14 +313,22 @@ the end) gets a note in `Action`: rename before its next push.
 
 ## Then `/unblock`
 
-Every render runs `/unblock` after the write-back is pushed, and before `/compact-ready`. It tests
+Every render runs `/unblock` after the write-back is pushed, and before `/clear-ready`. It tests
 the blocked, machine-ask and human-driven rows against evidence, moves the stale ones, asks the
 operator's open decisions and prints the commands that move a row. Its corrections land in a second
 `NEXT.md` commit. The render's rule against changing GitHub state holds through it.
 
+## Then `/clear-ready`
+
+Every render runs `/clear-ready` after `/unblock` and before `/compact-ready`. It answers whether
+the operator can run `/clear` now and whether a restart of Claude Code is safe now. Before it answers, it
+commits work, writes `NEXT.md` back and writes the handover file
+`../private.diyaccounting.co.uk/sessions/HANDOVER_SUBMIT.md`. It prints `/clear` or the restart
+steps only for a `yes`. `/compact-ready` may use the state that it gathered.
+
 ## Then `/compact-ready`
 
-Every render ends with `/compact-ready`, after the write-back is pushed. A board render is a
+Every render ends with `/compact-ready`, after `/clear-ready`. A board render is a
 natural break: the file and the table agree, so the next thing to settle is whether the session's
 work in flight (agents, worktrees, monitors, chat decisions) is in a state a compaction keeps.
 Act on its answer as that skill says: `yes` prints the `/compact <summary>` line in full for the
