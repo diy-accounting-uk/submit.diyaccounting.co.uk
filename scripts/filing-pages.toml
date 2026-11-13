@@ -176,8 +176,9 @@ title = "Making Tax Digital for Income Tax from April 2027 - DIY Accounting Subm
 heading = "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"
 subtitle = "Who starts in April 2027 and when the quarterly updates are due"
 description = "Making Tax Digital for Income Tax reaches sole traders and landlords with qualifying income over £30,000 from 6 April 2027. Who it covers and the update dates."
-summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. Submit's Income Tax filing awaits HMRC recognition. Submit files VAT returns now."
-action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.html" }
+summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
+action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
+closing_heading = "Every date"
 
 [[article.section]]
 heading = "Who starts on 6 April 2027"

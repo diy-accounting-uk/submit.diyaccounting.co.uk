@@ -339,9 +339,9 @@ export function renderArticlePage(article, sources) {
       </div>
 ${sections}
       <div class="form-container">
-        <h2>Ready to file</h2>
+        <h2>${escapeHtml(article.closing_heading ?? "Ready to file")}</h2>
         <p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>
-        <p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>
+        ${article.action.href === "mtd-calendar.html" ? "" : `<p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>`}
       </div>
 `;
   return renderPageShell(article, main, scripts);
