@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 33 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 37 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 26 of 33 tasks are rows on `NEXT.md`, where each row carries its brief. 7 follow those rows and stay here until their turn: OOS16, OOS20, OOS17, OOS18, OS26, OS29, OOS30. 23 machine-only, 4 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 32 of 37 tasks are rows on `NEXT.md`, where each row carries its brief. 5 follow those rows and stay here until their turn: OOS17, OOS18, OS26, OS29, OOS30. 26 machine-only, 5 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -838,13 +838,17 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS13 | llms.txt, Markdown copies and a feed, generated at build | Z5, Z6, Z12 | One Markdown page per site that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
+| OS13a | llms.txt for the gateway | Z5 | One Markdown page that states what the gateway leads to. It sets the script that OS13b and OS13c copy. | Requests for `/llms.txt` by agent, from OS41's query. | machine-only; on the board |
+| OS13b | llms.txt and Markdown copies for Submit | Z5, Z6 | One Markdown page that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
+| OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
 | OOS43 | The go for the first prod seed of the demo reviewer | X1, X2 | The demo user and its sample books exist on prod. | The prod seed run is green. | machine-ask; on the board |
 | OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only; on the board |
-| OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask |
+| OS16c | Raise the MCP package to version 0.1.3 | R1 | An npm version that carries `mcpName`, which the registry requires. | `mcp/test/server-json.test.js` passes with 0.1.3 in the three files. | machine-only; on the board |
+| OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask; on the board |
 | OS19 | A plugin and a skill for filing a UK VAT return | X3, X8, Z8 | One folder that Claude, Codex, Gemini CLI, Copilot and Cursor can install, which teaches the agent the filing procedure and points at the connector. | Installs reported by the plugin listing; tool calls from the skill's client names in the MCP log. | machine-only; on the board |
-| OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask |
+| OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OS46 | A review card inside the assistant | Z4, X1, X2 | Claude and ChatGPT show the nine boxes as the product's own card with the hand-off button. | The card renders in the MCP inspector and in Claude on ci. | machine-only; on the board |
+| OS42b | `prepare_vat_return` on prod's hosted connector | X1, X2, X4 | Prod's connector offers the hand-off to the browser, which both directory submissions wait for. | `tools/list` for prod holds six tools, and a prod session gets a link that fills the VAT form. | machine-ask; on the board |
 | OS17 | The submission pack for the Claude directory | X1, X7 | Everything the directory portal asks for, ready to paste, so the submission is one sitting. | The pack is complete against the portal's field list. | machine-only; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | human-driven |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only; on the board |
@@ -882,10 +886,10 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 3 | Submit pages that answer filing queries | 40 to 200 | Submit | OS7, OS9, OS10, OS11, OS40 |
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
 | 5 | GOV.UK software finders | 15 to 90 | Submit | OOS22 |
-| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS19, OS20, OS46, OS17, OS18, OS30 |
+| 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS16c, OS19, OS20, OS46, OS42b, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
-| 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13 |
+| 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13a, OS13b, OS13c |
 | 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41a, OS41 |
 
 1. **Spreadsheet product pages and articles.** The taxi-driver product URL earns 20 clicks a month and the four other products have no page to rank. Six articles get 2,955 impressions a month at positions 27 to 43. OS6 also adds the links into Submit.
@@ -906,15 +910,16 @@ Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file r
 ```mermaid
 flowchart LR
   OS6 --> OS45
-  OS7 --> OS9
-  OS7 --> OS10
   OS9 --> OS11
   OS9 --> OS40
-  OS8 --> OS13
+  OS8 --> OS13c
   OS43 --> OOS43
-  OOS43 --> OS17
-  OOS43 --> OS18
-  OS10 --> OS13
+  OOS43 --> OOS17
+  OOS43 --> OOS18
+  OS42b --> OOS17
+  OS42b --> OOS18
+  OS10 --> OS13b
+  OS16c --> OOS16
   OS43 --> OS17
   OS17 --> OOS17
   OS43 --> OS18
@@ -932,14 +937,14 @@ flowchart LR
 ### 8.4 Facts several rows share
 
 - Search Console data is readable today: `GOOGLE_CLOUD_PROJECT=diyaccounting-ga4 scripts/gcp-as-sso.sh node infra/google/searchconsole/searchconsole-report.js --out target/searchconsole-report.json` (run 2026-11-12, 90 days to 2026-11-09). Its JSON holds `queries`, `pages` and `inspections` per property; OS2, OS44 and OS45 read it.
-- A new public page on Submit needs five things in the same change: an entry in `web/public/sitemap.xml` (`scripts/publish-sitemap.mjs` filters it and adds `lastmod` at deploy), a title, a description and a canonical (asserted by `web/unit-tests/seo-validation.test.js`), the path in the CloudFront invalidation list (`infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java` and `scripts/deploy-app.js`), a link from a page that is already indexed, and the visual definition of done in `CLAUDE.md`. OS7, OS9, OS11, OS31, OS32, OS33 and OS40 all do this; they land in that order or carry the earlier row's changes.
+- A new public page on Submit needs five things in the same change: an entry in `web/public/sitemap.xml` (`scripts/publish-sitemap.mjs` filters it and adds `lastmod` at deploy), a title, a description and a canonical (asserted by `web/unit-tests/seo-validation.test.js`), an entry in `lighthouse.config.json` (`app/unit-tests/scripts/lighthouseMulti.test.js` requires its paths to equal the sitemap's), a link from a page that is already indexed, and the visual definition of done in `CLAUDE.md`. OS7, OS9, OS11, OS31, OS32, OS33 and OS40 all do this; they land in that order or carry the earlier row's changes.
 - Generated pages follow `scripts/build-mtd-calendar.mjs` and `scripts/build-welsh-pages.mjs`: a script writes static HTML that is committed, and a check fails when the committed file is stale. Dates and thresholds come from `.claude/skills/tax-sources/sources/`; a fact with no source file gets one from the `tax-sources` skill first.
 - A page states only what prod offers. Status comes from `AVAILABILITY` in `scripts/build-mtd-calendar.mjs` (line 106) and the `environments` list of each activity in `web/public/submit.catalogue.toml`. Wording follows `../private.diyaccounting.co.uk/strategy/MARKETING_GUIDANCE.md`.
 - A new Athena view raises `AWS::Athena::NamedQuery` from 72 in `infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java` (line 351) and `infra/test/java/co/uk/diyaccounting/submit/stacks/AnalyticsStackTest.java` (line 145), and `VIEW_COUNT` from 71 in `infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java` (line 32). OS3 adds two views and OS4 one; the second to land takes the first one's counts. A new Glue table raises `AWS::Glue::Table` from 37 in the same two tests (lines 349 and 77), and a GA4 report table raises it from 4 in `infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java` (line 49). OS3 and OS4 add one table each.
 - In a worktree, `npm run bundle` comes before the unit tests. Each JS change passes `npx eslint <files>` and `npx prettier --check <files>`; each Java change passes `./mvnw spotless:check` with any `spotless:apply` kept to the row's own files; each workflow change passes `prettier --check` and a YAML parse. New files carry the licence header. Comments and test names name no plan, row or date.
 - `c_ip` in `cloudfront_requests` is personal data. A view uses it only inside an aggregate as a salted hash, or in a range test whose output is a boolean (OS3 adds the second use to the rule in `CloudFrontAccessLogs.java`), and never selects it or its hash. Athena tests a range with `contains('<cidr>', try_cast(c_ip AS ipaddress))`; it has no `ipprefix` type.
 - The MCP rows share `mcp/lib/` and `app/functions/mcp/`: OS14, then OS42, then OS46 and OS19. The hosted tool set on prod is `PROD_HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js`; a change to it is the operator's go.
-- Rows that can start together and edit one file run in one agent or in the order given: the spreadsheets `index.html` (OS6 and OS44 in one agent, then OS8 and OS12 in a second agent that starts from its commit); Submit's `mcp.html` (OS8 and OS20 in one agent, then OS13); Submit's `videos-*.html` (OS8, then OS7); Submit's `index.html` (OS7, then OS10, then OS13). A row that adds or changes a capability comment (a new workflow or script; OS1, OS3, OS16b, OS20, OS21) changes the generated `REPORT_CAPABILITIES.md`, which `npm run capabilities:check` compares, so two such branches conflict; they land one after the other, and the second runs `npm run capabilities:generate` again.
+- Rows that can start together and edit one file run in one agent or in the order given: the spreadsheets `index.html` (OS6 and OS44 in one agent, then OS8 and OS12 in a second agent that starts from its commit); Submit's `mcp.html` (OS8 and OS20 in one agent, then OS13b); Submit's `videos-*.html` (OS8, then OS7); Submit's `index.html` (OS7, then OS10, then OS13b); `EdgeStack.java` (OS43, then OS13b, then OS32, then OS33). A row that adds or changes a capability comment (a new workflow or script; OS1, OS3, OS16b, OS20, OS21) changes the generated `REPORT_CAPABILITIES.md`, which `npm run capabilities:check` compares, so two such branches conflict; they land one after the other, and the second runs `npm run capabilities:generate` again.
 - Every Submit page is served with `frame-ancestors 'none'` and `X-Frame-Options: DENY` (`EdgeStack.java`, lines 357 and 369). A page that another site must frame (OS33's embed) needs its own CloudFront behaviour and response headers policy, with a CDK test.
 
 ### 8.5 Briefs of the tasks that are not yet on the board
@@ -948,13 +953,9 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 #### Wave 3: Assistants and agents
 
-- [ ] **OOS16. Operator's go: publish the hosted connector to the MCP Registry.** When OS14 is on prod, the operator says go and a session dispatches the publish of the hosted connector's entry (`publish-mcp-registry.yml` in the submit repository). Smithery and PulseMCP read the official registry, so their pages follow with no further step. Version 0.1.2 of the npm package is published without `mcpName`, and the registry compares the two, so raise the version in `mcp/package.json` and `mcp/server.json` together, push the tag `diya-submit-mcp-v<version>` so that `publish-mcp.yml` publishes it, and only then dispatch `gh workflow run publish-mcp-registry.yml --ref main -f apply=true`. **Waits on**: OS16b, OS14. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OOS43's seed has run on prod and OS42b has put `prepare_vat_return` in prod's hosted set. Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OOS43, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
-- [ ] **OOS20. Prove the connector in each assistant and write the steps that worked.** With the operator's accounts, a session adds `https://submit.diyaccounting.co.uk/mcp` as a custom connector in ChatGPT, Gemini, Perplexity and Copilot Studio in Chrome, signs in, and runs one tool. Each product that completes gets a section on `mcp.html` with the steps that worked; a product that fails gets no section and a line in the PR with the error. Whether ChatGPT's Plus plan allows a custom connector's tools is not confirmed; this run settles it. **Waits on**: OS14, OS20. **Class**: machine-ask. **Repository**: SUB. **Model**: Sonnet. **Size**: 1 file.
-
-- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OS14, OS43 and OS42 are on prod and `prepare_vat_return` is in prod's hosted set. Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OS42. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: OS14, OS43 and OS42 are on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OS42. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: the prod seed and the hand-off tool on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OOS43, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 4: Listings
 
