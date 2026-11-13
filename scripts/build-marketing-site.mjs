@@ -15,8 +15,9 @@
 // scripts/build-marketing-site.mjs
 //
 // Usage: node scripts/build-marketing-site.mjs [data|tokens|images|brand|screens]
-//   no argument         data, then tokens
+//   no argument         data, page, then tokens
 //   data                web/marketing/marketing.toml -> web/marketing/marketing.json
+//   page                the figures, summaries and listing names of marketing.json -> web/marketing/index.html
 //   tokens              each site's :root tokens -> web/marketing/brand/tokens.css, and the fonts
 //   images              web/marketing/images/<set>/<size>.png and images/manifest.json
 //   brand               web/marketing/brand/shots/<section>/<fragment>-<theme>.png and manifest.json
@@ -30,8 +31,10 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import prettier from "prettier";
 import { chromium } from "playwright";
 
+import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 import { readListings } from "./listings-register.mjs";
 import { configuredOrigin, signIn, startSimulator } from "./site-screenshots.mjs";
 
@@ -42,6 +45,7 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 export const MARKETING_DIR = path.join(REPO_ROOT, "web", "marketing");
 export const TOML_FILE = path.join(MARKETING_DIR, "marketing.toml");
 export const JSON_FILE = path.join(MARKETING_DIR, "marketing.json");
+export const PAGE_FILE = path.join(MARKETING_DIR, "index.html");
 export const TOKENS_FILE = path.join(MARKETING_DIR, "brand", "tokens.css");
 export const IMAGES_DIR = path.join(MARKETING_DIR, "images");
 export const SHOTS_DIR = path.join(MARKETING_DIR, "brand", "shots");
@@ -103,6 +107,64 @@ export function readMarketingData() {
 
 export function renderMarketingJson() {
   return JSON.stringify(readMarketingData(), null, 2) + "\n";
+}
+
+// ---------------------------------------------------------------------------------------------
+// page
+// ---------------------------------------------------------------------------------------------
+
+/** Replaces the text between the end of the tag that holds `marker` and the next tag, for each `marker` in the page. */
+function fillElements(html, marker, textFor) {
+  let out = "";
+  let from = 0;
+  for (let at = html.indexOf(marker, from); at !== -1; at = html.indexOf(marker, from)) {
+    const tagEnd = html.indexOf(">", at) + 1;
+    const end = html.indexOf("<", tagEnd);
+    const key = html.slice(at + marker.length, html.indexOf('"', at + marker.length));
+    out += html.slice(from, tagEnd) + escapeHtml(textFor(key));
+    from = end;
+  }
+  return out + html.slice(from);
+}
+
+/** The listings as the page holds them before its script runs: one line per place with its state. */
+export function renderListingNames(data) {
+  return data.listingGroups
+    .map((group) => {
+      const listings = data.listings.filter((listing) => listing.group === group.id);
+      const items = listings
+        .map(
+          (listing) =>
+            `<li>${escapeHtml(listing.place)} <span class="listing-state" data-state="${escapeHtml(listing.state)}">${escapeHtml(listing.state)}</span></li>`,
+        )
+        .join("");
+      return `<div class="post-group"><h3>${escapeHtml(`${group.label}, ${listings.length}`)}</h3><ul>${items}</ul></div>`;
+    })
+    .join("");
+}
+
+/** web/marketing/index.html with the figures, the summaries and the listings that its script reads from marketing.json written in. */
+export async function renderMarketingPage(html, data) {
+  const figures = data.affiliates;
+  let page = fillElements(html, 'data-aff="', (key) => (key === "disclosure" ? data.disclosure : figures[key].toLocaleString("en-GB")));
+  page = fillElements(page, "data-aff-offer", () => data.offers.withPass);
+  page = page.replace(/(<a\b[^>]*?data-aff-generate[^>]*?href=")[^"]*"/, `$1${escapeHtml(data.generatePassUrl)}"`);
+  if (figures.applyUrl) {
+    const marker = "data-aff-apply>";
+    const at = page.indexOf(marker) + marker.length;
+    const link = `<a href="${escapeHtml(figures.applyUrl)}">Apply to become an affiliate</a>`;
+    page = page.slice(0, at) + link + page.slice(page.indexOf("</p>", at));
+  }
+  for (const section of data.sections) {
+    const start = page.indexOf(`id="${section.id}"`);
+    const marker = "data-summary>";
+    const at = page.indexOf(marker, start);
+    const end = page.indexOf("</p>", at);
+    page = page.slice(0, at + marker.length) + escapeHtml(section.summary) + page.slice(end);
+  }
+  page = replaceBetweenMarkers(page, "listings", renderListingNames(data));
+  const config = (await prettier.resolveConfig(PAGE_FILE)) ?? {};
+  return prettier.format(page, { ...config, filepath: PAGE_FILE });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -381,12 +443,14 @@ async function main() {
     fs.writeFileSync(JSON_FILE, renderMarketingJson());
     console.log(`Wrote ${path.relative(REPO_ROOT, JSON_FILE)}`);
   }
+  if (step === null || step === "page")
+    fs.writeFileSync(PAGE_FILE, await renderMarketingPage(fs.readFileSync(PAGE_FILE, "utf8"), readMarketingData()));
   if (step === null || step === "tokens") buildTokens(siblings);
   if (step === "images") await buildImages();
   if (step === "brand") await buildBrandShots(options);
   if (step === "screens") await buildScreens();
-  if (step !== null && !["data", "tokens", "images", "brand", "screens"].includes(step)) {
-    throw new Error(`unknown subcommand ${step}; use data, tokens, images, brand or screens`);
+  if (step !== null && !["data", "page", "tokens", "images", "brand", "screens"].includes(step)) {
+    throw new Error(`unknown subcommand ${step}; use data, page, tokens, images, brand or screens`);
   }
 }
 

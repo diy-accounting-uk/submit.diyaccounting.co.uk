@@ -303,6 +303,7 @@ function buildGuide(section, capturedAt) {
   const frame = guide.querySelector("[data-brand]");
   const darkButton = guide.querySelector('[data-scheme="dark"]');
   const note = guide.querySelector(".scheme-note");
+  guide.hidden = false;
   if (!section.hasDark) {
     darkButton.disabled = true;
     note.hidden = false;
@@ -505,6 +506,7 @@ function buildListing(listing, data) {
 
 function renderListings(data) {
   const root = document.querySelector("[data-listings]");
+  root.replaceChildren();
   for (const group of data.listingGroups) {
     const listings = data.listings.filter((l) => l.group === group.id);
     const block = el("div", { class: "post-group" }, el("h3", { text: `${group.label}, ${listings.length}` }));
