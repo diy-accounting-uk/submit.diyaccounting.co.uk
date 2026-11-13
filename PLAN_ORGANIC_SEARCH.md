@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 14 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 14 tasks are rows on `NEXT.md`, where each row carries its brief. 5 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 13 tasks are rows on `NEXT.md`, where each row carries its brief. 5 machine-only, 4 machine-ask, 4 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -262,7 +262,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | B1 HMRC software finder for VAT | listed, with four VAT features and the free version | 1 | 4 | 5 | |
 | B2 HMRC software finder for MTD Income Tax | not listed; owned by `PLAN_ITSA_APPROVAL.md` | 1 | 4 | 5 | none |
 | B3 HMRC Corporation Tax software suppliers list | not listed; owned by `PLAN_HMRC_CT_APPROVAL.md` | 1 | 4 | 5 | none |
-| B4 GOV.UK finder for accounts filing software | not listed | 1 | 3 | 5 | OOS22 |
+| B4 GOV.UK finder for accounts filing software | not listed; Companies House lists a supplier after three consecutive months of live filings on its own presenter ID and credit account, with the credit account up to date (XML team, 2026-11-13) | 1 | 3 | 5 | none yet |
 
 - **B1.** Submit is listed. The entry lacks the "free version" flag, and a feature update was requested on 2026-10-03.
 - **B2.** No entry. The listing follows HMRC's recognition of the Income Tax filing.
@@ -431,7 +431,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | ---: | ---: | ---: | --- |
 | Y1 Crawler access for AI search and user fetches | allowed and working; not stated | 1 | 1 | 4 | OS3, OS12 |
 | Y2 Facts in the page text that assistants quote | partial (the price and the filings are in JavaScript-rendered blocks) | 3 | 1 | 5 | OS7, OS9 |
-| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OOS22, OS24, OS26 |
+| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OS24, OS26 |
 
 - **Y1.** Each assistant documents its agents: OAI-SearchBot and ChatGPT-User, Claude-SearchBot and Claude-User, PerplexityBot and Perplexity-User, Googlebot, Bingbot. No robots.txt names them. A request with each agent's string returned 200 from three sites on 2026-11-12, and the web ACL's limit is 2,000 requests in five minutes per IP.
 - **Y2.** Price, what it files, who it is for and the status of each filing, as dated sentences in the HTML. Google states that AI Overviews and AI Mode need no special file or markup.
@@ -780,7 +780,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | F1 VAT due-date and penalty-points calculator | 5 | 2 | 1 | OS31 |
 | A3 Static landing page per filing on Submit | 5 | 3 | 1 | OS4, OS9 |
 | A16 Refresh articles that rank on pages two to five | 5 | 2 | 2 | OS45 |
-| B4 GOV.UK finder for accounts filing software | 5 | 1 | 3 | OOS22 |
+| B4 GOV.UK finder for accounts filing software | 5 | 1 | 3 | none yet |
 | F2 Company deadline lookup with no sign-in | 5 | 3 | 1 | OS32 |
 | F4 Nine-box checker with no sign-in | 5 | 3 | 1 | none |
 | Q1 Answers in forums, posted by a person | 5 | 1 | 3 | OS41 |
@@ -835,7 +835,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
 | OOS29 | Save the Wikidata item | K2 | The item exists, saved from the operator's own account with his disclosure. | The item's URL answers 200. | human-driven; on the board |
@@ -862,7 +861,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 2 | Result lines for pages that rank | 80 to 170 | spreadsheets | OS44 |
 | 3 | Submit pages that answer filing queries | 40 to 200 | Submit | OS7, OS9, OS10, OS11, OS40 |
 | 4 | Free tools | 25 to 120 | Submit | OS31, OS33, OS32 |
-| 5 | GOV.UK software finders | 15 to 90 | Submit | OOS22 |
+| 5 | GOV.UK software finders | 15 to 90 | Submit | none yet |
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS16c, OS19, OS20, OS46, OS42b, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
@@ -912,7 +911,7 @@ The brief of a boarded task is its row on `NEXT.md`. Every task is boarded.
 
 ## 9. Not confirmed
 
-- How a supplier joins the GOV.UK accounts software finder: the page states no route (OOS22 asks).
+- How a supplier joins the GOV.UK accounts software finder: Companies House lists a supplier after three consecutive months of live filings on its own presenter ID and credit account, with the credit account up to date (XML team, 2026-11-13). The request then goes to the XML team.
 - Whether MCP SDK 1.32.2 supports `skill://` and `ui://` resources (OS19 and OS46 check first).
 - Homebrew core's star thresholds: the current documentation page does not state them.
 - About half of the review, launch and citation directories were not opened on 2026-11-12; their free tiers are from general knowledge. OS21 records the terms of each when its form is opened.
