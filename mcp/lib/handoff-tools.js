@@ -34,9 +34,11 @@ const VAT_FIGURE_NAMES = [
   "totalAcquisitionsExVAT",
 ];
 
-function baseUrl() {
-  const value = process.env.DIYA_SUBMIT_BASE_URL;
-  if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
+// The link goes to a person, so it carries the public address of the environment, the one the
+// customer signs in on. DIYA_SUBMIT_BASE_URL is the deployment's own host, which the tools call.
+function publicBaseUrl() {
+  const value = process.env.DIY_SUBMIT_BASE_URL;
+  if (!value) throw new Error("DIY_SUBMIT_BASE_URL is not set");
   return value.replace(/\/$/, "");
 }
 
@@ -47,7 +49,7 @@ function baseUrl() {
  */
 export function vatHandoffLink(handoff) {
   const encoded = Buffer.from(JSON.stringify(handoff), "utf8").toString("base64url");
-  return `${baseUrl()}${VAT_FORM_PATH}#books=${encoded}`;
+  return `${publicBaseUrl()}${VAT_FORM_PATH}#books=${encoded}`;
 }
 
 /**

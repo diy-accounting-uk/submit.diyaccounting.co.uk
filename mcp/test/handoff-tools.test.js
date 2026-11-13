@@ -31,13 +31,18 @@ function decodeFragment(link) {
 
 describe("prepare_vat_return", () => {
   let previousBaseUrl;
+  let previousPublicBaseUrl;
   beforeEach(() => {
     previousBaseUrl = process.env.DIYA_SUBMIT_BASE_URL;
-    process.env.DIYA_SUBMIT_BASE_URL = `${SITE}/`;
+    previousPublicBaseUrl = process.env.DIY_SUBMIT_BASE_URL;
+    process.env.DIYA_SUBMIT_BASE_URL = "https://deployment-host.submit.diyaccounting.co.uk/";
+    process.env.DIY_SUBMIT_BASE_URL = `${SITE}/`;
   });
   afterEach(() => {
     if (previousBaseUrl === undefined) delete process.env.DIYA_SUBMIT_BASE_URL;
     else process.env.DIYA_SUBMIT_BASE_URL = previousBaseUrl;
+    if (previousPublicBaseUrl === undefined) delete process.env.DIY_SUBMIT_BASE_URL;
+    else process.env.DIY_SUBMIT_BASE_URL = previousPublicBaseUrl;
   });
 
   describe("over the BrickWork Pro book", () => {
@@ -51,6 +56,7 @@ describe("prepare_vat_return", () => {
       const derived = await deriveVatReturn(session, { periodEnd: "2025-06-30" });
       const answer = await prepareVatReturn(session, { periodEnd: "2025-06-30" });
       expect(answer.link.startsWith(`${SITE}/hmrc/vat/submitVat.html#books=`)).toBe(true);
+      expect(new URL(answer.link).origin).toBe(SITE);
       const decoded = decodeFragment(answer.link);
       expect(Object.keys(decoded).sort()).toEqual(["figures", "kind", "packageVersion", "period", "sourceFileName"]);
       expect(decoded.kind).toBe("vat");
