@@ -48,6 +48,8 @@ const CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 const CLAUDE_REDIRECT = "https://claude.ai/api/mcp/auth_callback";
 const LOOPBACK_REDIRECT = "http://localhost:53682/callback";
+const GEMINI_REDIRECT = "https://oauth-redirect.googleusercontent.com/r/abc123";
+const GEMINI_APP_REDIRECT = "https://oauth-redirect.googleusercontent.com/a/abc123/def";
 const CIMD_ID = "https://claude.ai/oauth/mcp-oauth-client-metadata";
 const RESOURCE = `https://${HOST}/mcp`;
 
@@ -207,6 +209,8 @@ describe("mcpOauth metadata", () => {
   });
 });
 
+const authorize = (overrides) => ingestHandler(event({ path: "/mcp/oauth/authorize", query: authorizeQuery(overrides) }));
+
 describe("mcpOauth register", () => {
   const register = (body, base64 = false) =>
     ingestHandler(event({ method: "POST", path: "/mcp/oauth/register", body, base64, headers: { "content-type": "application/json" } }));
@@ -246,6 +250,45 @@ describe("mcpOauth register", () => {
     expect(json(result).error).toBe("invalid_redirect_uri");
   });
 
+  it.each([
+    ["an r path", GEMINI_REDIRECT],
+    ["an a path", GEMINI_APP_REDIRECT],
+  ])("registers a Gemini callback with %s", async (_label, uri) => {
+    const result = await register(JSON.stringify({ redirect_uris: [uri] }));
+    expect(result.statusCode).toBe(201);
+    expect(json(result).redirect_uris).toEqual([uri]);
+  });
+
+  it.each([
+    ["a query", "https://oauth-redirect.googleusercontent.com/r/abc?x=1"],
+    ["a fragment", "https://oauth-redirect.googleusercontent.com/r/abc#x"],
+    ["a port", "https://oauth-redirect.googleusercontent.com:8443/r/abc"],
+    ["userinfo", "https://user@oauth-redirect.googleusercontent.com/r/abc"],
+    ["http", "http://oauth-redirect.googleusercontent.com/r/abc"],
+    ["the bare r path", "https://oauth-redirect.googleusercontent.com/r/"],
+    ["the bare a path", "https://oauth-redirect.googleusercontent.com/a/"],
+    ["another path", "https://oauth-redirect.googleusercontent.com/x/abc"],
+    ["the sandbox host", "https://oauth-redirect-sandbox.googleusercontent.com/r/abc"],
+    ["the test host", "https://oauth-redirect-test.googleusercontent.com/r/abc"],
+    ["a lookalike host", "https://oauth-redirect.googleusercontent.com.example.org/r/abc"],
+  ])("refuses a Gemini-like callback with %s", async (_label, uri) => {
+    const result = await register(JSON.stringify({ redirect_uris: [uri] }));
+    expect(result.statusCode).toBe(400);
+    expect(json(result).error).toBe("invalid_redirect_uri");
+    expect((await authorize({ redirect_uri: uri })).statusCode).toBe(400);
+  });
+
+  it("logs the hosts of a refused registration and no paths or queries", async () => {
+    loggedLines.length = 0;
+    await register(JSON.stringify({ redirect_uris: ["https://elsewhere.example/secret/path?code=1", GEMINI_REDIRECT] }));
+    const line = loggedLines.map((l) => l.args[0]).find((a) => a?.endpoint === "register");
+    expect(line).toMatchObject({
+      outcome: "invalid_redirect_uri",
+      redirectHosts: ["elsewhere.example", "oauth-redirect.googleusercontent.com"],
+    });
+    expect(JSON.stringify(line)).not.toContain("secret/path");
+  });
+
   it("refuses missing redirect_uris, a non-JSON body and unsupported grant types", async () => {
     expect(json(await register(JSON.stringify({}))).error).toBe("invalid_redirect_uri");
     expect(json(await register("not json")).error).toBe("invalid_client_metadata");
@@ -257,8 +300,6 @@ describe("mcpOauth register", () => {
 });
 
 describe("mcpOauth authorize GET", () => {
-  const authorize = (overrides) => ingestHandler(event({ path: "/mcp/oauth/authorize", query: authorizeQuery(overrides) }));
-
   it("shows a consent page with its security headers, the redirect host and a consent cookie", async () => {
     const result = await authorize();
     expect(result.statusCode).toBe(200);
@@ -293,6 +334,20 @@ describe("mcpOauth authorize GET", () => {
     expect(result.statusCode).toBe(200);
     expect(result.body).toContain("<strong>localhost:53682</strong>");
     expect(result.body).toContain("a program on this computer");
+  });
+
+  it.each([GEMINI_REDIRECT, GEMINI_APP_REDIRECT])("names Gemini on the consent page for %s", async (uri) => {
+    const result = await authorize({ redirect_uri: uri });
+    expect(result.statusCode).toBe(200);
+    expect(result.body).toContain(
+      "Gemini (<strong>oauth-redirect.googleusercontent.com</strong>) is asking to use DIY Accounting Submit as you",
+    );
+  });
+
+  it("names no application on the consent page for an unknown host", async () => {
+    const result = await authorize({ redirect_uri: "https://oauth-redirect.googleusercontent.com.example.org/r/abc" });
+    expect(result.statusCode).toBe(400);
+    expect(result.body).not.toContain("Gemini");
   });
 
   it("accepts a resource with an upper-case host and a trailing slash", async () => {
