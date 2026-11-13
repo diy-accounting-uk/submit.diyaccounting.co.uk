@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 23 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 18 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 23 tasks are rows on `NEXT.md`, where each row carries its brief. 14 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 18 tasks are rows on `NEXT.md`, where each row carries its brief. 9 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -822,7 +822,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS45 | Refresh the articles that rank on pages two to five | A16, A8 | Six articles with 8,866 impressions between them for filing queries move toward page one and link to the page that files. | Average position and clicks of each refreshed article. | machine-only; on the board |
 | OS10b | Home page: Welsh strings and the gap with the script off | A3 | The Welsh home page reads in Welsh, and the page has no blank gap for a reader with no script. | The look pass on prod passes both. | machine-only; on the board |
 | OS40 | A comparison page with sourced prices | A13, Y3 | A page of our own for "best" and "cheapest MTD bridging software", the queries every vendor roundup targets. | Impressions for queries containing "best" or "cheapest". | machine-only; on the board |
 
@@ -830,7 +829,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only; on the board |
@@ -854,9 +852,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
-| OS35 | The support articles | F5, A10, A8 | Eleven articles that answer questions customers sent us. | Clicks per article. | machine-only; on the board |
-| OS45b | The article sweep that OS45 found | A8, A10 | The mileage rate is current in every article, no GOV.UK link is dead, and the unindexed articles are merged, redirected or linked. | Indexed article count in Search Console. | machine-only; on the board |
-| OS45c | The package guides and one article state the mileage rate of the right year | A8 | A customer who opens a 2026 to 2027 package reads the rate the workbook uses. | The guide of each year's package states that year's rate. | machine-only; on the board |
 | OS35c | The knowledge base lists the published articles, and the references page holds every cited reference | A8, A10 | A new article is reachable from the knowledge-base page, and a citation marker opens its reference. | The knowledge-base page lists every article; no cited id lacks a record. | machine-only; on the board |
 | OS47 | A search health skill from Search Console, Bing Webmaster Tools and local checks | A14, A15 | One command that reads both webmaster tools and runs their checks locally, and ranks what to fix on each site. | The report exists after each run, and each fix is a board row. | machine-only; on the board |
 | OOS47 | The API key for Bing Webmaster Tools | A15 | Bing's figures and crawl issues are read through its API, not in Chrome. | The Bing report runs with the key. | machine-ask; on the board |
@@ -902,9 +897,6 @@ flowchart LR
   OS47 --> OOS47
   OS30 --> OOS30
   OOS17 --> OOS30
-  OS45 --> OS45b
-  OS45b --> OS35
-  OS35 --> OS35c
 ```
 
 ### 8.4 Facts several rows share
