@@ -43,12 +43,12 @@ class Ga4TablesTest {
     }
 
     @Test
-    void createsFourTablesWithDateProjectionAndNoOtherPartitionKey() {
+    void createsFiveTablesWithDateProjectionAndNoOtherPartitionKey() {
         Template template = synthTemplate();
 
-        template.resourceCountIs("AWS::Glue::Table", 4);
+        template.resourceCountIs("AWS::Glue::Table", 5);
 
-        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events", "ga4_bq_events")) {
+        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events", "ga4_sources", "ga4_bq_events")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -78,9 +78,10 @@ class Ga4TablesTest {
         Template template = synthTemplate();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertEquals(4, tables.size());
+        assertEquals(5, tables.size());
 
-        var expectedReportNames = Map.of("ga4_traffic", "traffic", "ga4_pages", "pages", "ga4_events", "events");
+        var expectedReportNames = Map.of(
+                "ga4_traffic", "traffic", "ga4_pages", "pages", "ga4_events", "events", "ga4_sources", "sources");
 
         for (var resource : tables.values()) {
             @SuppressWarnings("unchecked")
@@ -184,7 +185,7 @@ class Ga4TablesTest {
     void dateDimensionColumnIsKeptAsAPlainStringAlongsideTheDtPartition() {
         Template template = synthTemplate();
 
-        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events")) {
+        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events", "ga4_sources")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -197,5 +198,27 @@ class Ga4TablesTest {
                                             "Columns",
                                             Match.arrayWith(List.of(Map.of("Name", "date", "Type", "string"))))))))));
         }
+    }
+
+    @Test
+    void sourcesColumnsHoldTheSourceAndHostAsStringsAndTheCountsAsBigint() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "ga4_sources",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "sessionSource", "Type", "string"),
+                                                        Map.of("Name", "hostName", "Type", "string"),
+                                                        Map.of("Name", "sessions", "Type", "bigint"),
+                                                        Map.of("Name", "engagedSessions", "Type", "bigint"))))))))));
     }
 }

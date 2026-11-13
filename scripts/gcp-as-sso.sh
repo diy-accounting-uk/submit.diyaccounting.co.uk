@@ -85,7 +85,16 @@ if [ -z "$accessKeyId" ] || [ -z "$secretAccessKey" ] || [ "$accessKeyId" = "nul
   exit 1
 fi
 
+# The Search Console client looks the project up through Cloud Resource Manager unless the
+# environment names it, and that call fails with the Search Console scope alone.
+googleCloudProject="$(cd "$repoRoot" && node -e '
+  const TOML = require("@iarna/toml");
+  const fs = require("node:fs");
+  console.log(TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8")).project.id);
+')"
+
 exec env \
+  GOOGLE_CLOUD_PROJECT="$googleCloudProject" \
   AWS_ACCESS_KEY_ID="$accessKeyId" \
   AWS_SECRET_ACCESS_KEY="$secretAccessKey" \
   AWS_SESSION_TOKEN="$sessionToken" \

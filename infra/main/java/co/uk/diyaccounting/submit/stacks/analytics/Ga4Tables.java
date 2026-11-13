@@ -15,8 +15,8 @@ import software.constructs.Construct;
 
 /**
  * Glue tables over the GA4 Data API reports that {@code ga4ReportPull.js} writes nightly to
- * {@code curated/ga4/report=<name>/dt=YYYY-MM-DD/}: {@code ga4_traffic}, {@code ga4_pages} and
- * {@code ga4_events}. Also the {@code ga4_bq_events} table over the BigQuery event export that
+ * {@code curated/ga4/report=<name>/dt=YYYY-MM-DD/}: {@code ga4_traffic}, {@code ga4_pages},
+ * {@code ga4_events} and {@code ga4_sources}. Also the {@code ga4_bq_events} table over the BigQuery event export that
  * {@code ga4EventExportPull.js} writes to {@code curated/ga4_bq/events/dt=YYYY-MM-DD/}: one row
  * per event with a session id, which the Data API's aggregated reports cannot provide. The name
  * {@code ga4_events} is already taken by the Data API's aggregated event-name report, hence
@@ -50,11 +50,13 @@ public class Ga4Tables {
     private static final String TRAFFIC_TABLE_NAME = "ga4_traffic";
     private static final String PAGES_TABLE_NAME = "ga4_pages";
     private static final String EVENTS_TABLE_NAME = "ga4_events";
+    private static final String SOURCES_TABLE_NAME = "ga4_sources";
     private static final String BQ_EVENTS_TABLE_NAME = "ga4_bq_events";
 
     public final CfnTable trafficTable;
     public final CfnTable pagesTable;
     public final CfnTable eventsTable;
+    public final CfnTable sourcesTable;
     public final CfnTable bqEventsTable;
 
     @Value.Immutable
@@ -103,6 +105,15 @@ public class Ga4Tables {
                 "events",
                 "GA4 daily event counts by event name, one JSON object per line",
                 buildEventsColumns());
+
+        this.sourcesTable = buildTable(
+                scope,
+                props,
+                catalogId,
+                SOURCES_TABLE_NAME,
+                "sources",
+                "GA4 daily sessions by traffic source and host, one JSON object per line",
+                buildSourcesColumns());
 
         this.bqEventsTable = buildTableAtLocation(
                 scope,
@@ -223,6 +234,16 @@ public class Ga4Tables {
                 "eventCount", "bigint",
                 "activeUsers", "bigint",
                 "eventValue", "double");
+    }
+
+    private static List<CfnTable.ColumnProperty> buildSourcesColumns() {
+        return columnsOf(
+                "date", "string",
+                "sessionSource", "string",
+                "hostName", "string",
+                "sessions", "bigint",
+                "activeUsers", "bigint",
+                "engagedSessions", "bigint");
     }
 
     private static List<CfnTable.ColumnProperty> buildBqEventsColumns() {

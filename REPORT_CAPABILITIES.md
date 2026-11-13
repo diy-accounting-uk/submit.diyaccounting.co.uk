@@ -30,6 +30,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
     - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
     - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages: use when a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
+    - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML: use when faqs.toml, the guide's journeys or a video walkthrough changed, or a crawler or assistant must read the help page or the guide without JavaScript.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -221,6 +222,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
     - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
+    - [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment) Write the videos and the bundles into the deployed pages for the environment: use when the deployed videos pages and the bundles page must hold, in their HTML, only the videos and bundles that the environment lists, for a crawler or an assistant that runs no JavaScript.
     - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job: use when a workflow job needs Node, the npm dependencies or a JDK, and you would otherwise write the setup-node, npm ci and setup-java steps again.
     - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role: use when a workflow job needs AWS credentials, and you would otherwise write the actions-role and deploy-role configure-aws-credentials steps again.
     - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment: use when reading or changing the order in which the application stacks of one deployment deploy.
@@ -308,6 +310,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report: use when the operator asks for the security state of the estate, an all-alerts read, or a security overview.
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
+    - [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly: use when checking whether a directory listing still states the price in the catalogue.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
     - [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate: use when the holding-page domain needs a new or renewed ACM certificate.
     - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration: use when a PITR restore procedure must be drilled or tested against a real table.
@@ -400,6 +403,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
     - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes: use when a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
     - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events: use when Athena reads too many small activity_events objects, or a day's compacted copy must be checked or written again.
+    - [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month: use when `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
     - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup: use when a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
     - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena: use when CloudFront access logs must be queryable by Athena for the traffic views.
     - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard: use when accessibility or fraud-header check output must be queryable for the compliance panel.
@@ -471,6 +475,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing: use when a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
     - [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools: use when a VAT return's nine HMRC boxes must be computed from a loaded book before filing or review.
     - [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures: use when a self-employed book's quarterly update or annual submission figures are needed for HMRC's Self Employment Business API.
+    - [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file: use when an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
   - [Filing and practice tools](#filing-and-practice-tools-mcp)
     - [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API: use when confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
     - [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation: use when a practice's client list must be read or grown, or an HMRC Agent Authorisation invitation sent or checked.
@@ -486,8 +491,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book: use when the operator asks for DIY Accounting Limited's accounts, P&L or book, or wants Cowork to read the finances.
   - [Documentation and disclaimer](#documentation-and-disclaimer-mcp)
     - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference: use when starting work on the submission MCP: what is built, planned, and how to run it.
-    - [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site: use when checking or editing the public claim that DIY Accounting Submit has no MCP server.
+    - [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site: use when checking or editing what the public site says about the hosted connector, the diya-gl MCP server and the submission MCP.
     - [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers: use when a stdio MCP call to an HMRC route needs the device data of HMRC's desktop connection method, or a new device header must be added.
+    - [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry: use when mcp/server.json changes, or the hosted connector needs listing in the official MCP Registry.
 - **[Developer workflow](#developer-workflow-dev)**
   - [Simulator server & OAuth mocks](#simulator-server--oauth-mocks-dev)
     - [DEV-01](#dev-01-run-the-http-simulator-server) Run the HTTP simulator server: use when local or CI tests need HMRC, Companies House or Stripe endpoints without real calls.
@@ -626,7 +632,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -671,6 +677,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
+- [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -752,6 +759,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
 - **Keywords:** welsh, cymraeg, cy, i18n, translation, hreflang, language switch, catalogue, stale translation
 - **Related:** SITE-14
+
+#### SITE-31 Write the FAQ and the guide into the page HTML
+
+- **Use when:** faqs.toml, the guide's journeys or a video walkthrough changed, or a crawler or assistant must read the help page or the guide without JavaScript.
+- **Does:** build-static-content.mjs writes the entries of faqs.toml into web/public/help.html and the journeys of the guide, with each screenshot as an img with alt text, into web/public/guide.html, between marked comments. It writes only the entries and journeys that every environment that serves the page lists: an entry or video that names a catalogue activity must be listed on prod. The page scripts (help-page.js, guide.page.js) replace the written block when they run, so a reader sees the same page as before. The unit test fails when a committed page differs from the render.
+- **Run:** `npm run build:static-content`; `npx vitest run web/unit-tests/staticContentPages.test.js`
+- **Entry:** `scripts/build-static-content.mjs:renderHelpPage`; `scripts/build-static-content.mjs:renderGuidePage`
+- **Files:** scripts/build-static-content.mjs, scripts/page-markers.mjs, web/public/help.html, web/public/guide.html, web/public/lib/faq-markdown.js, web/public/lib/guide-journeys.js, web/unit-tests/staticContentPages.test.js
+- **Keywords:** static content, faq, guide, help page, no javascript, crawler, generated page
+- **Related:** SITE-10, SITE-22, OPS-143
 
 ### Server and API plumbing (SITE)
 
@@ -869,7 +886,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** build-marketing-site.mjs parses marketing.toml into marketing.json. It copies each site's colour tokens into brand/tokens.css and the fonts into brand/fonts. It renders every set at all 11 sizes into images/ through cards/card.html, and keeps a hash per image so a stale one shows. It captures the brand fragments of the four sites into brand/shots/, Submit through the simulator lane and the others from their live sites. It screenshots the finished page at two widths and two colour schemes.
 - **Run:** `npm run marketing:build` (data, then tokens); `npm run marketing:build -- images`; `npm run marketing:build -- brand`; `npm run marketing:build -- screens`
 - **Entry:** `scripts/build-marketing-site.mjs:main`
-- **Files:** scripts/build-marketing-site.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
+- **Files:** scripts/build-marketing-site.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
 - **Keywords:** marketing, social images, og image, brand guide, brand shots, design tokens, banners, share posts
 - **Related:** DEV-47, SITE-11
 
@@ -2460,11 +2477,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment) Write the videos and the bundles into the deployed pages for the environment · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-triage) Run alarm triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job) Check the runner's browser install in one job · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -2497,6 +2514,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
+- [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment) Write the videos and the bundles into the deployed pages for the environment
 - [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job
 - [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role
 - [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment
@@ -2702,6 +2720,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
 - **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
 - **Related:** OPS-01
+
+#### OPS-213 Write the videos and the bundles into the deployed pages for the environment
+
+- **Use when:** the deployed videos pages and the bundles page must hold, in their HTML, only the videos and bundles that the environment lists, for a crawler or an assistant that runs no JavaScript.
+- **Does:** publish-content.mjs fills the marked block of videos.html, the five videos-*.html pages and bundles.html in a built web root. A video page block holds each listed video's title, description, thumbnail and one VideoObject JSON-LD block. The bundles block holds each listed bundle's name, price and the activities it files. It adds a video:video entry per listed video to the pages' sitemap.xml entries. The listing rule is the rule of the page scripts: an item that names a catalogue activity shows where the activity lists the environment, a bundle where its listedInEnvironments lists it. The page scripts replace the block when they run. It is a pure function of the web root's files and the environment name. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-sitemap.mjs.
+- **Run:** `node scripts/publish-content.mjs <web-root> <environment-name>`
+- **Entry:** `scripts/publish-content.mjs:renderVideoPageBlock`; `scripts/publish-content.mjs:renderBundlesBlock`
+- **Files:** scripts/publish-content.mjs, scripts/page-markers.mjs, app/unit-tests/scripts/publishContent.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, web/public/videos.html, web/public/bundles.html
+- **Keywords:** videos, bundles, prices, video object, video sitemap, json-ld, no javascript, crawler, catalogue environments
+- **Related:** OPS-143, SITE-31
 
 #### OPS-144 Set up Node, npm dependencies and optionally Java for a job
 
@@ -3053,10 +3081,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-163 Submit the declared sitemaps to Search Console daily
 
 - **Use when:** a sitemap that searchconsole.toml declares must be resubmitted to Search Console, or a sitemap error must raise a failed run.
-- **Does:** searchconsole-sitemaps.yml runs daily and on dispatch; the prod deploy.yml job resubmit-sitemap runs the same script without --fail-on-errors after the apex promotion and cannot fail a deploy. It authenticates to Google by workload identity federation, then runs searchconsole-sync.js with --sitemaps-only --apply --fail-on-errors. The script submits each declared sitemap that Search Console does not hold, prints the last download, errors, warnings and contents of each, and the run fails when a sitemap shows errors.
+- **Does:** searchconsole-sitemaps.yml runs daily and on dispatch; the prod deploy.yml job resubmit-sitemap runs the same script without --fail-on-errors after the apex promotion and cannot fail a deploy. It authenticates to Google by workload identity federation, then runs searchconsole-sync.js with --sitemaps-only --apply --fail-on-errors. The script submits each declared sitemap that Search Console does not hold, prints the last download, errors, warnings and contents of each, and the run fails when a sitemap shows errors. The run then writes the Search Console report as JSON and uploads it as the searchconsole-report artifact, so a session with no SSO reads it with `gh run download`.
 - **Run:** `gh workflow run searchconsole-sitemaps.yml`
 - **Entry:** `.github/workflows/searchconsole-sitemaps.yml`
-- **Files:** .github/workflows/searchconsole-sitemaps.yml, infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole.toml
+- **Files:** .github/workflows/searchconsole-sitemaps.yml, infra/google/searchconsole/searchconsole-sync.js, infra/google/searchconsole/searchconsole-report.js, infra/google/searchconsole/searchconsole.toml
 - **Keywords:** sitemap submission, search console sitemaps, daily sitemap, sitemap errors, searchconsole-sitemaps.yml
 - **Related:** DATA-67, OPS-67
 
@@ -3447,6 +3475,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report
 - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records
 - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness
+- [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
 - [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate
 - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
@@ -3631,6 +3660,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/fraud-header-check.yml
 - **Keywords:** fraud prevention header, hmrc compliance record, launchd agent, monthly record, silent local failure
 - **Related:** OPS-40
+
+#### OPS-212 Check the listing register against the bundle catalogue monthly
+
+- **Use when:** checking whether a directory listing still states the price in the catalogue.
+- **Does:** listings-check.yml runs scripts/listings-check.mjs monthly. A listing whose recorded price text differs from the catalogue fails the run. The run opens or refreshes one issue. It fetches no third-party page.
+- **Run:** `node scripts/listings-check.mjs`
+- **Entry:** `.github/workflows/listings-check.yml`
+- **Files:** .github/workflows/listings-check.yml, scripts/listings-check.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml
+- **Keywords:** listings check, directory listing, price text, listing register, monthly check, listings-check.yml
+- **Related:** SITE-25
 
 #### OPS-48 Verify backup health daily
 
@@ -4391,7 +4430,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
-- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
+- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
@@ -4469,10 +4508,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-06 Pull GA4 reports and BigQuery event export
 
 - **Use when:** the previous day's GA4 Data API reports or raw BigQuery event export must land in the lake.
-- **Does:** ga4ReportPull.js pulls three GA4 Data API reports (traffic, pages, events) via BetaAnalyticsDataClient and writes gzipped NDJSON. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
+- **Does:** ga4ReportPull.js pulls four GA4 Data API reports (traffic, pages, events, sources) via BetaAnalyticsDataClient and writes gzipped NDJSON, then calls searchConsolePull.js for Search Console search analytics of both domain properties. ga4EventExportPull.js pulls one D-2 day of GA4's raw BigQuery event export, one row per event with a session id. Both authenticate through workload identity federation.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/ga4ReportPull.js:handler`; `app/functions/analytics/ga4EventExportPull.js:handler`
-- **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
+- **Files:** app/functions/analytics/ga4ReportPull.js, app/unit-tests/analytics/ga4ReportPull.test.js, app/lib/searchConsolePull.js, app/unit-tests/lib/searchConsolePull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/SearchConsoleTables.java, app/functions/analytics/ga4EventExportPull.js, app/unit-tests/analytics/ga4EventExportPull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4TablesTest.java, app/unit-tests/ga4BigQueryDatasetIdEnvFiles.test.js
 - **Keywords:** ga4 data api, betaanalyticsdataclient, event export, session funnel, traffic report, pages report, workload identity federation
 - **Related:** DATA-05, DATA-43
 
@@ -4533,6 +4572,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks
 - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes
 - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events
+- [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month
 - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup
 - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena
 - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard
@@ -4580,6 +4620,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/activityEventsCompact.js, app/unit-tests/analytics/activityEventsCompact.test.js, infra/main/resources/analytics/views/activity_events_lake.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompaction.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/ActivityEventsCompactionTest.java
 - **Keywords:** compaction, small files, activity_events_lake, activity_events_compacted, unload, s3 get requests, guardduty s3 events, generation
 - **Related:** DATA-10, DATA-12, DATA-22, DATA-27
+
+#### DATA-75 Refresh the AI vendors' published address ranges each month
+
+- **Use when:** `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
+- **Does:** ai-vendor-ranges.yml runs monthly and on dispatch. It runs scripts/ai-vendor-ranges.mjs refresh, which fetches each vendor list, rewrites infra/analytics/ai-vendor-ranges.json and generates the VALUES list in v_ai_fetches_daily.sql. A fetch error or an empty list fails the run. When the files changed, the job commits them to a branch through the GitHub API as the agent App and opens a pull request. The unit test web/unit-tests/ai-vendor-ranges.test.js fails when the view is stale against the JSON.
+- **Run:** `gh workflow run ai-vendor-ranges.yml`; `npm run ai-ranges:refresh`; `npm run ai-ranges:check`
+- **Entry:** `.github/workflows/ai-vendor-ranges.yml`; `scripts/ai-vendor-ranges.mjs:refreshRanges`; `scripts/ai-vendor-ranges.mjs:renderViewSql`
+- **Files:** .github/workflows/ai-vendor-ranges.yml, scripts/ai-vendor-ranges.mjs, infra/analytics/ai-vendor-ranges.json, infra/main/resources/analytics/views/v_ai_fetches_daily.sql, web/unit-tests/ai-vendor-ranges.test.js
+- **Keywords:** ai crawler ranges, chatgpt-user, gptbot, oai-searchbot, perplexitybot, claude-user, claudebot, verified fetch, vendor ip ranges, ai fetches
+- **Related:** DATA-05
 
 #### DATA-12 Provision the analytics lake and Athena workgroup
 
@@ -5197,10 +5247,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area MCP -->
 - [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
-- [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
+- [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures · [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
-- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers
+- [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers · [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
 <!-- /generated:area MCP -->
 
 ### Server and CLI (MCP)
@@ -5259,6 +5309,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing
 - [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools
 - [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
+- [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file
 <!-- /generated:group book-and-derivation-tools-mcp -->
 
 #### MCP-03 Load and save diya-gl books via MCP
@@ -5300,6 +5351,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** mcp/lib/itsa-tools.js, mcp/test/itsa-tools.test.js, mcp/test/fixtures/brickwork-pro-se-vat/book.toml
 - **Keywords:** itsa, self employment business api, quarterly update, annual submission, se-derivations, sa103, mtd it
 - **Related:** MCP-03
+
+#### MCP-24 Hand the VAT figures to the browser to file
+
+- **Use when:** an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
+- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>". It files nothing and calls no service; the fragment never reaches a server.
+- **Run:** no command; see Does and Entry
+- **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:vatHandoffLink`
+- **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js
+- **Keywords:** prepare_vat_return, hand off, books fragment, vat form link, file in the browser
+- **Related:** MCP-05
 
 ### Filing and practice tools (MCP)
 
@@ -5436,8 +5497,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group documentation-and-disclaimer-mcp -->
 - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference
-- [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
+- [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site
 - [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers
+- [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
 <!-- /generated:group documentation-and-disclaimer-mcp -->
 
 #### MCP-14 Document the submission MCP's plan and tool reference
@@ -5450,14 +5512,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** plan submission mcp, mcp readme, milestones, field mappings, plan of record
 - **Related:** MCP-01
 
-#### MCP-15 Disclaim an MCP server on the marketing site
+#### MCP-15 Explain the MCP connector and servers on the public site
 
-- **Use when:** checking or editing the public claim that DIY Accounting Submit has no MCP server.
-- **Does:** web/public/mcp.html is a static page on the public site that explains what MCP is in general terms. It states DIY Accounting Submit has no MCP server and points visitors elsewhere. It is not wired to the mcp/ package the other capabilities here describe.
+- **Use when:** checking or editing what the public site says about the hosted connector, the diya-gl MCP server and the submission MCP.
+- **Does:** web/public/mcp.html is a static page. It answers whether an AI assistant can file a VAT return, gives the hosted connector URL with the tools prod registers (PROD_HOSTED_TOOL_NAMES in mcp/lib/hosted-tools.js), and shows how to run the diya-gl and submission MCP servers from npm or Docker. Blocks tagged with an activity appear only where the catalogue lists it.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/mcp.html`
 - **Files:** web/public/mcp.html
-- **Keywords:** mcp.html, marketing page, mcp disclaimer, public site, no mcp server claim
+- **Keywords:** mcp.html, hosted connector, connector url, mcp tools, ai assistant vat return, public site
 
 #### MCP-22 Read the machine for HMRC fraud prevention headers
 
@@ -5468,6 +5530,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** mcp/lib/client-headers.js, mcp/test/client-headers.test.js
 - **Keywords:** fraud prevention headers, desktop app via server, device id, mac addresses, local ips, gov-client-screens, stdio mcp
 - **Related:** HMRC-25, MCP-07
+
+#### MCP-23 Validate and publish the MCP registry entry
+
+- **Use when:** mcp/server.json changes, or the hosted connector needs listing in the official MCP Registry.
+- **Does:** publish-mcp-registry.yml validates mcp/server.json with mcp-publisher on every push that changes it. A dispatch with apply=true on main signs in with GitHub OIDC and publishes the entry.
+- **Run:** `gh workflow run publish-mcp-registry.yml --ref main -f apply=true`
+- **Entry:** `.github/workflows/publish-mcp-registry.yml`
+- **Files:** .github/workflows/publish-mcp-registry.yml, mcp/server.json, mcp/test/server-json.test.js
+- **Keywords:** mcp registry, server.json, mcp-publisher, registry.modelcontextprotocol.io, connector listing, mcpName
 
 ## Developer workflow (DEV)
 
@@ -6914,6 +6985,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - agent.md: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - aggregate tables: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - ai agent: [SITE-04](#site-04-track-visits-via-session-beacon)
+- ai assistant vat return: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
+- ai crawler ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
+- ai fetches: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - ai-agent crawler: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - alarm evidence: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - alarm family: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
@@ -7114,6 +7188,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - book_saved: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - books api: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- books fragment: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - bounce: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -7156,7 +7231,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bundle mapping: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - bundle not granted: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - bundleentitlementerror: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
-- bundles: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- bundles: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment), [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bundles table: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - bundling: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - burst bucket: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -7200,7 +7275,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cash: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [SITE-30](#site-30-build-the-welsh-pages), [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
-- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
+- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -7240,6 +7315,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - chat routing: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
+- chatgpt-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - check pass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - checkout: [BILL-24](#bill-24-create-a-stripe-checkout-session)
@@ -7268,6 +7344,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
+- claude-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
+- claudebot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - clean skill: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
@@ -7381,6 +7459,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
+- connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent denied default: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -7436,7 +7516,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - crawl diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
-- crawler: [SITE-04](#site-04-track-visits-via-session-beacon)
+- crawler: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - create secrets: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - create-secrets: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
@@ -7612,6 +7692,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - direct api gateway: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
+- directory listing: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - dispatch backlog: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - dispute: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
@@ -7815,6 +7896,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - family affiliate: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
+- faq: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html)
 - faq search: [SITE-10](#site-10-serve-general-site-pages)
 - favicon: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - feature branch hosts: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
@@ -7828,6 +7910,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ffmpeg: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [DEV-40](#dev-40-record-a-product-demo-video)
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- file in the browser: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -7921,6 +8004,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - generate-se: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generate-taxi: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generated documentation: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
+- generated page: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html)
 - generation: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - geo state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - get /api/v1/companies-house/company: [CH-04](#ch-04-fetch-a-company-profile)
@@ -7981,6 +8065,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
+- gptbot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - grant: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - grant flow: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - grantbundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
@@ -7995,9 +8080,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - guardduty s3 events: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - guardrail: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report)
 - guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- guide: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html)
 - guide screenshots: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
+- hand off: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - hash aliases: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
@@ -8023,7 +8110,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - held for review: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review)
 - held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - held pointer: [BILL-50](#bill-50-list-the-passes-held-for-review)
-- help page: [SITE-10](#site-10-serve-general-site-pages)
+- help page: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - history scan: [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -8072,6 +8159,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - holds: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - homebrew tap: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - homepage cta: [SITE-03](#site-03-capture-feedback-interest)
+- hosted connector: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - hosted mcp: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hotspots: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
@@ -8190,6 +8278,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - js computation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - json error: [SITE-07](#site-07-format-http-responses-and-errors)
 - json export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
+- json-ld: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - json-rpc: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - jsonl: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - jszip: [SS-58](#ss-58-excel-xml-manipulation-reference)
@@ -8271,6 +8360,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- listing register: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
+- listings check: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
+- listings-check.yml: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - llm as judge: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - llm judge: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
@@ -8331,7 +8423,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
-- marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - marketing session: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
@@ -8342,7 +8433,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp blob key: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - mcp demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
-- mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mcp harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp hmrc token: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
@@ -8350,14 +8440,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp rate limit: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp readme: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - mcp recording: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
+- mcp registry: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp state: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp tests: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
-- mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
-- mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp-publisher: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
+- mcp.html: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - mcpcodes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
+- mcpname: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - mcpstack: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
 - measurement id: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
@@ -8397,6 +8490,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - module index: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - monitor tool: [DEV-31](#dev-31-watch-github-ci-to-green)
 - monthly budget: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
+- monthly check: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - monthly feedback email: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - monthly record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
@@ -8441,8 +8535,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
 - no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - no customer value: [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it)
+- no javascript: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
-- no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - no sign-in: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
@@ -8470,6 +8564,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - npx diya-gl: [SS-05](#ss-05-run-the-diya-gl-cli)
 - null-tolerant map: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - oac: [SS-35](#ss-35-cdk-spreadsheetsstack)
+- oai-searchbot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - oauth: [SITE-01](#site-01-sign-customers-in-via-cognito), [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-02](#dev-02-simulate-local-app-oauth)
 - oauth authorize: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - oauth blob: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
@@ -8619,6 +8714,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- perplexitybot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - personal code: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
@@ -8688,6 +8784,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pre-push hook: [SS-42](#ss-42-route-tests-by-blast-radius)
 - pre-tax profit: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
+- prepare_vat_return: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - presenter credential: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - presenter secret: [CH-09](#ch-09-query-and-submit-document-transactions)
 - pretest: [BILL-43](#bill-43-build-the-frontend-test-bundle)
@@ -8699,7 +8796,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - price: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - price id: [BILL-24](#bill-24-create-a-stripe-checkout-session)
 - price sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
+- price text: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - price update: [BILL-44](#bill-44-document-the-price-update-project)
+- prices: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - pricing project: [BILL-44](#bill-44-document-the-price-update-project)
 - privacy: [SITE-10](#site-10-serve-general-site-pages)
 - privacy banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
@@ -8742,7 +8841,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
-- public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - public surfaces: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - public videos: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
@@ -8844,6 +8943,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registerlambdaroute: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
+- registry.modelcontextprotocol.io: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - regression: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
@@ -9079,6 +9179,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- server.json: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - ses: [SITE-27](#site-27-email-the-customer-after-a-key-event), [OPS-182](#ops-182-provision-the-customer-email-sender)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
@@ -9190,6 +9291,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - statement table: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - static analysis: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
+- static content: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
 - status: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
@@ -9463,6 +9565,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat box config: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vat boxes: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - vat endpoints: [OPS-112](#ops-112-provision-the-api-gateway-stack)
+- vat form link: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - vat liabilities: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - vat logic: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - vat mtd: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
@@ -9481,11 +9584,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vendor assert: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - vendor console: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
+- vendor ip ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
 - verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
 - verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
+- verified fetch: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - verified owner: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify issue: [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result)
@@ -9501,7 +9606,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - video embed check: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - video encode: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - video manifest: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
+- video object: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - video publish: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
+- video sitemap: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
+- videos: [OPS-213](#ops-213-write-the-videos-and-the-bundles-into-the-deployed-pages-for-the-environment)
 - videos page: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - videos.html: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - view vat return: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)

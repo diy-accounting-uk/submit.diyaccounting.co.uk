@@ -8,6 +8,8 @@
 import {
   codeFromPassUrl,
   isPassCode,
+  listingLink,
+  listingProducts,
   nativeSharePayload,
   normaliseCode,
   passUrl,
@@ -442,6 +444,75 @@ function goToHash() {
 // Start
 // ---------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------
+// Listings
+// ---------------------------------------------------------------------------------------------
+
+function copyField(label, value, { link = false } = {}) {
+  const status = el("span", { role: "status", class: "copy-status" });
+  const button = el("button", { "type": "button", "text": "Copy", "aria-label": `Copy ${label}` });
+  button.addEventListener("click", async () => {
+    flash(status, (await copyText(value)) ? "Copied" : "Copy failed");
+  });
+  const text = link ? el("a", { href: value, text: value, rel: "noopener noreferrer", target: "_blank" }) : el("span", { text: value });
+  return [el("dt", { text: label }), el("dd", { class: "listing-field" }, text, " ", button, " ", status)];
+}
+
+function listingProductBlock(listing, product) {
+  const fields = el("dl", { class: "listing-fields" });
+  const add = (pairs) => fields.append(...pairs);
+  add(copyField("Name", product.name));
+  add(copyField("One line", product.oneLine));
+  add(copyField(`Description, ${product.description160.length} of 160 characters`, product.description160));
+  add(copyField(`Description, ${product.description500.length} of 500 characters`, product.description500));
+  add(copyField("Category", product.category));
+  if (product.priceText) add(copyField("Price text", product.priceText));
+  add(copyField("Tagged link", listingLink(product, listing), { link: true }));
+  fields.append(
+    el("dt", { text: "Logo" }),
+    el("dd", {}, el("a", { href: product.logo, download: "", text: product.logo })),
+    el("dt", { text: "Screenshot" }),
+    el("dd", {}, el("a", { href: product.screenshot, download: "", text: product.screenshot })),
+  );
+  return el("div", { class: "listing-product" }, el("h5", { text: product.name }), fields);
+}
+
+function buildListing(listing, data) {
+  const article = el("details", { id: `listing-${listing.id}`, class: "post-set" });
+  article.append(
+    el(
+      "summary",
+      {},
+      el("h4", { tabindex: "-1" }, el("a", { href: `#listing-${listing.id}`, text: listing.place })),
+      " ",
+      el("span", { "class": "listing-state", "data-state": listing.state, "text": listing.state }),
+    ),
+  );
+  const register = el("dl", { class: "listing-fields" });
+  const row = (label, node) => register.append(el("dt", { text: label }), el("dd", {}, node));
+  row(
+    "Our page",
+    listing.url ? el("a", { href: listing.url, text: listing.url, rel: "noopener noreferrer", target: "_blank" }) : "None yet",
+  );
+  row("Date", listing.date || "Not yet");
+  row("Terms", listing.terms || "Not read yet");
+  row("Price text given", listing.priceText || "None yet");
+  row("utm_source", listing.utmSource);
+  article.append(register);
+  for (const product of listingProducts(listing, data)) article.append(listingProductBlock(listing, product));
+  return article;
+}
+
+function renderListings(data) {
+  const root = document.querySelector("[data-listings]");
+  for (const group of data.listingGroups) {
+    const listings = data.listings.filter((l) => l.group === group.id);
+    const block = el("div", { class: "post-group" }, el("h3", { text: `${group.label}, ${listings.length}` }));
+    for (const listing of listings) block.append(buildListing(listing, data));
+    root.append(block);
+  }
+}
+
 function renderAffiliates(data) {
   const figures = data.affiliates;
   for (const el of document.querySelectorAll("[data-aff]")) {
@@ -469,6 +540,7 @@ async function start() {
     return;
   }
   renderAffiliates(state.data);
+  renderListings(state.data);
   try {
     const response = await fetch("brand/shots/manifest.json");
     if (response.ok) manifest = await response.json();

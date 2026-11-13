@@ -1,0 +1,23 @@
+{
+  "name": "diya-submit",
+  "title": "DIY Accounting Submit",
+  "description": "Open a saved DIYA book, derive the nine boxes of a UK VAT return and read stored VAT receipts. A person checks and files in the browser.",
+  "websiteUrl": "https://submit.diyaccounting.co.uk/mcp.html",
+  "privacyPolicyUrl": "https://submit.diyaccounting.co.uk/privacy.html",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://submit.diyaccounting.co.uk/mcp"
+    }
+  ],
+  "authentication": {
+    "type": "oauth2",
+    "protectedResourceMetadata": "https://submit.diyaccounting.co.uk/.well-known/oauth-protected-resource/mcp",
+    "authorizationServerMetadata": "https://submit.diyaccounting.co.uk/.well-known/oauth-authorization-server",
+    "pkce": "S256",
+    "dynamicClientRegistration": true,
+    "clientIdMetadataDocuments": true,
+    "scopes": ["openid", "email", "profile"],
+    "tokenBinding": "A bearer token is accepted only when it is a Cognito access token from this server's issuer and its client_id is the app client that only this server uses. A Cognito access token carries no aud claim, so the audience is not checked."
+  }
+}

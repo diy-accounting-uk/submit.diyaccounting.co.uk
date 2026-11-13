@@ -65,6 +65,11 @@ describe("the hosted HTTP transport", () => {
     });
     const body = await response.json();
     expect(body.result.tools.map((tool) => tool.name).sort()).toEqual([...HOSTED_TOOL_NAMES].sort());
+    for (const tool of body.result.tools) {
+      expect(tool.title, tool.name).toMatch(/\S/);
+      expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
+      for (const hint of Object.values(tool.annotations)) expect(typeof hint).toBe("boolean");
+    }
   });
 
   it("derives a VAT return from a session restored from a stored cloud book", async () => {

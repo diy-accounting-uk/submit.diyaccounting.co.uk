@@ -121,6 +121,7 @@ class McpStackTest {
         assertTrue(variables.get("MCP_PUBLIC_HOSTS").toString().contains(sharedNames.deploymentDomainName));
         assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://claude.ai"));
         assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://claude.com"));
+        assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://chatgpt.com"));
     }
 
     @Test

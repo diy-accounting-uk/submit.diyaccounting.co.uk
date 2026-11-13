@@ -2,13 +2,13 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-<!-- @capability MCP-15 Disclaim an MCP server on the marketing site
-- **Use when:** checking or editing the public claim that DIY Accounting Submit has no MCP server.
-- **Does:** web/public/mcp.html is a static page on the public site that explains what MCP is in general terms. It states DIY Accounting Submit has no MCP server and points visitors elsewhere. It is not wired to the mcp/ package the other capabilities here describe.
+<!-- @capability MCP-15 Explain the MCP connector and servers on the public site
+- **Use when:** checking or editing what the public site says about the hosted connector, the diya-gl MCP server and the submission MCP.
+- **Does:** web/public/mcp.html is a static page. It answers whether an AI assistant can file a VAT return, gives the hosted connector URL with the tools prod registers (PROD_HOSTED_TOOL_NAMES in mcp/lib/hosted-tools.js), and shows how to run the diya-gl and submission MCP servers from npm or Docker. Blocks tagged with an activity appear only where the catalogue lists it.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/mcp.html`
 - **Files:** web/public/mcp.html
-- **Keywords:** mcp.html, marketing page, mcp disclaimer, public site, no mcp server claim
+- **Keywords:** mcp.html, hosted connector, connector url, mcp tools, ai assistant vat return, public site
 @end-capability -->
 <html lang="en-GB">
   <head>
@@ -20,6 +20,37 @@
       content="Connect Claude to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MCP Server - DIY Accounting Submit" />
+    <meta
+      property="og:description"
+      content="Connect Claude to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
+    />
+    <meta property="og:url" content="https://submit.diyaccounting.co.uk/mcp.html" />
+    <meta property="og:site_name" content="DIY Accounting" />
+    <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "DIY Accounting Submit",
+            "item": "https://submit.diyaccounting.co.uk/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "MCP server",
+            "item": "https://submit.diyaccounting.co.uk/mcp.html"
+          }
+        ]
+      }
+    </script>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -49,6 +80,12 @@
 
       <div class="mcp-page">
         <div class="mcp-intro">
+          <h2>Can an AI assistant file my VAT return?</h2>
+          <p>
+            Not through the hosted connector. It lets an assistant such as Claude open your saved books, work out the nine VAT return boxes
+            for a period and read your stored receipts. You check the figures, then file the return yourself in the web app, in your
+            browser.
+          </p>
           <h2>What is MCP?</h2>
           <p>
             The <strong>Model Context Protocol</strong> (MCP) is an open standard for connecting AI applications to external data sources,
@@ -70,7 +107,7 @@
           <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The hosted connector</h2>
           <p>
-            The hosted connector gives a chat client your saved books and the derivation tools with nothing to install. It signs in with the
+            The hosted connector gives a chat client your saved books and the VAT derivation, with nothing to install. It signs in with the
             same account as the web app.
           </p>
           <p>The connector URL is:</p>
@@ -84,47 +121,18 @@
           <pre><code>claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp</code></pre>
           <p>Then run <code>/mcp</code> in Claude Code and choose the server to sign in.</p>
           <h3>Tools</h3>
-          <p>
-            <code>open_book</code> opens a book saved in your DIYA cloud by its id, and the other tools work on the book that is open. The
-            connector does not reach HMRC.
-          </p>
+          <p>The connector has five tools. It does not reach HMRC and it files nothing.</p>
           <dl>
+            <dt><code>list_books</code></dt>
+            <dd>List the books saved in your DIYA cloud, most recently updated first.</dd>
             <dt><code>open_book</code></dt>
-            <dd>Open a saved cloud book, for you or for a practice client.</dd>
-            <dt><code>derive_vat_return</code>, <code>get_vat_receipt</code></dt>
-            <dd>The nine VAT return boxes for a period, and a stored receipt.</dd>
-            <div data-listed-activity="self-employed" hidden>
-              <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
-              <dd>The Self Employment figures for one quarter and for the year.</dd>
-            </div>
-            <div data-listed-activity="file-micro-entity-accounts" hidden>
-              <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
-              <dd>The accounts figures for the current and prior year.</dd>
-              <dt>
-                <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
-                <code>poll_submission</code>
-              </dt>
-              <dd>Render the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
-            </div>
-            <div data-listed-activity="file-confirmation-statement" hidden>
-              <dt>
-                <code>get_confirmation_statement_data_sandbox</code>, <code>render_confirmation_statement_sandbox</code>,
-                <code>submit_confirmation_statement_sandbox</code>
-              </dt>
-              <dd>
-                Read the company's confirmation statement data, render the statement, file it, then check the outcome with
-                <code>poll_submission</code>.
-              </dd>
-            </div>
-            <div data-listed-activity="practice" hidden>
-              <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
-              <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
-            </div>
+            <dd>Open a saved cloud book by its id. It reports the product, the period covered and the book's checks.</dd>
+            <dt><code>derive_vat_return</code></dt>
+            <dd>The nine VAT return boxes for one period of the open book, with the lines that fed them.</dd>
+            <dt><code>list_vat_receipts</code>, <code>get_vat_receipt</code></dt>
+            <dd>List the VAT receipts Submit stored for your account, and read one.</dd>
           </dl>
-          <p>
-            A filing tool takes the figures its derive or render tool returned, so you see and approve the figures before anything reaches
-            Companies House. Submitting a VAT return to HMRC is done in the web app or with the submission MCP below.
-          </p>
+          <p>File the return in the web app, where you confirm the figures before anything reaches HMRC.</p>
         </div>
 
         <div class="mcp-intro">

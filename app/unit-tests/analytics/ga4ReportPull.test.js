@@ -32,6 +32,12 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
+const mockPullSearchConsole = vi.fn();
+vi.mock("@app/lib/searchConsolePull.js", () => ({
+  pullSearchConsole: (...args) => mockPullSearchConsole(...args),
+  searchConsolePullDays: () => ["2026-08-17", "2026-08-18", "2026-08-19"],
+}));
+
 import { handler, formatGa4Date, rowToRecord, toNdjsonGzip } from "@app/functions/analytics/ga4ReportPull.js";
 
 function emptyReport() {
@@ -54,6 +60,8 @@ describe("ga4ReportPull", () => {
     mockRunReport.mockResolvedValue(emptyReport());
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockPullSearchConsole.mockReset();
+    mockPullSearchConsole.mockResolvedValue({ written: [], errors: [] });
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake-bucket";
     process.env.GA4_PROPERTY_ID = "523400333";
     Object.assign(process.env, FEDERATION_ENV);
@@ -119,7 +127,7 @@ describe("ga4ReportPull", () => {
   });
 
   describe("handler", () => {
-    test("pulls yesterday and today so far by default and writes three date-partitioned reports for each", async () => {
+    test("pulls yesterday and today so far by default and writes four date-partitioned reports for each", async () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-08-21T10:15:00Z"));
       let result;
@@ -130,7 +138,7 @@ describe("ga4ReportPull", () => {
       }
 
       expect(result.days.map((d) => d.date)).toEqual(["2026-08-20", "2026-08-21"]);
-      expect(mockS3Send).toHaveBeenCalledTimes(6);
+      expect(mockS3Send).toHaveBeenCalledTimes(8);
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
       expect(keys).toEqual(
@@ -138,6 +146,7 @@ describe("ga4ReportPull", () => {
           `curated/ga4/report=traffic/dt=${date}/traffic.json.gz`,
           `curated/ga4/report=pages/dt=${date}/pages.json.gz`,
           `curated/ga4/report=events/dt=${date}/events.json.gz`,
+          `curated/ga4/report=sources/dt=${date}/sources.json.gz`,
         ]),
       );
       for (const call of mockS3Send.mock.calls) {
@@ -158,14 +167,32 @@ describe("ga4ReportPull", () => {
         "curated/ga4/report=traffic/dt=2026-08-20/traffic.json.gz",
         "curated/ga4/report=pages/dt=2026-08-20/pages.json.gz",
         "curated/ga4/report=events/dt=2026-08-20/events.json.gz",
+        "curated/ga4/report=sources/dt=2026-08-20/sources.json.gz",
       ]);
+    });
+
+    test("pulls Search Console after the GA4 reports, for its own window or the explicit day", async () => {
+      await handler();
+      expect(mockPullSearchConsole.mock.calls[0][0].days).toEqual(["2026-08-17", "2026-08-18", "2026-08-19"]);
+      expect(mockPullSearchConsole.mock.calls[0][0].bucket).toBe("test-lake-bucket");
+
+      await handler({ date: "2026-08-10" });
+      expect(mockPullSearchConsole.mock.calls[1][0].days).toEqual(["2026-08-10"]);
+    });
+
+    test("a Search Console failure still writes every GA4 report, then fails the run", async () => {
+      mockPullSearchConsole.mockResolvedValue({ written: [], errors: ["sc-domain:diya-gl.co.uk 2026-08-19: answered 403"] });
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/Search Console pull failed: sc-domain:diya-gl.co.uk/);
+
+      expect(mockS3Send).toHaveBeenCalledTimes(4);
     });
 
     test("requests the configured property id, and each report's own dimensions and metrics", async () => {
       await handler({ date: "2026-08-20" });
 
-      expect(mockRunReport).toHaveBeenCalledTimes(3);
-      const [trafficCall, pagesCall, eventsCall] = mockRunReport.mock.calls.map((call) => call[0]);
+      expect(mockRunReport).toHaveBeenCalledTimes(4);
+      const [trafficCall, pagesCall, eventsCall, sourcesCall] = mockRunReport.mock.calls.map((call) => call[0]);
 
       expect(trafficCall.property).toBe("properties/523400333");
       expect(trafficCall.dimensions).toEqual([{ name: "date" }, { name: "country" }, { name: "sessionDefaultChannelGroup" }]);
@@ -183,6 +210,9 @@ describe("ga4ReportPull", () => {
 
       expect(eventsCall.dimensions).toEqual([{ name: "date" }, { name: "eventName" }]);
       expect(eventsCall.metrics).toEqual([{ name: "eventCount" }, { name: "activeUsers" }, { name: "eventValue" }]);
+
+      expect(sourcesCall.dimensions).toEqual([{ name: "date" }, { name: "sessionSource" }, { name: "hostName" }]);
+      expect(sourcesCall.metrics).toEqual([{ name: "sessions" }, { name: "activeUsers" }, { name: "engagedSessions" }]);
     });
 
     test("string metric values from the GA4 API become numbers in the written record", async () => {

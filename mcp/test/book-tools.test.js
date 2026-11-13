@@ -139,6 +139,7 @@ describe("the server", () => {
       "move_book_to_client",
       "open_book",
       "poll_submission",
+      "prepare_vat_return",
       "render_confirmation_statement_sandbox",
       "render_micro_entity_accounts_sandbox",
       "render_small_company_accounts_sandbox",

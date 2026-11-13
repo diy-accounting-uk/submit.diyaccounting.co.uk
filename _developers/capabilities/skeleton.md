@@ -44,6 +44,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-28 -->
 <!-- capability SITE-29 -->
 <!-- capability SITE-30 -->
+<!-- capability SITE-31 -->
 ### Server and API plumbing (SITE)
 
 <!-- generated:group server-and-api-plumbing-site -->
@@ -359,6 +360,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-136 -->
 <!-- capability OPS-137 -->
 <!-- capability OPS-143 -->
+<!-- capability OPS-213 -->
 <!-- capability OPS-144 -->
 <!-- capability OPS-145 -->
 <!-- capability OPS-147 -->
@@ -462,6 +464,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-211 -->
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
+<!-- capability OPS-212 -->
 <!-- capability OPS-48 -->
 <!-- capability OPS-49 -->
 <!-- capability OPS-50 -->
@@ -596,6 +599,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DATA-11 -->
 <!-- capability DATA-54 -->
 <!-- capability DATA-70 -->
+<!-- capability DATA-75 -->
 <!-- capability DATA-12 -->
 <!-- capability DATA-13 -->
 <!-- capability DATA-14 -->
@@ -708,6 +712,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-04 -->
 <!-- capability MCP-05 -->
 <!-- capability MCP-06 -->
+<!-- capability MCP-24 -->
 ### Filing and practice tools (MCP)
 
 <!-- generated:group filing-and-practice-tools-mcp -->
@@ -737,6 +742,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-14 -->
 <!-- capability MCP-15 -->
 <!-- capability MCP-22 -->
+<!-- capability MCP-23 -->
 ## Developer workflow (DEV)
 
 <!-- generated:area DEV -->

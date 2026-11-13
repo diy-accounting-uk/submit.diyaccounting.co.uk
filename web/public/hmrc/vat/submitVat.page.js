@@ -1067,7 +1067,9 @@ onDOMReady(async function () {
 
 console.log("JS block finished loading.");
 
-window.booksImport.mount(document.getElementById("booksImport"), { kind: "vat" });
+// The card fills boxes 1, 2 and 4 as it mounts when figures were sent to this page. Boxes 3 and 5
+// follow from the input listeners, so the card mounts after the handler above attaches them.
+onDOMReady(() => window.booksImport.mount(document.getElementById("booksImport"), { kind: "vat" }));
 
 document.getElementById("addTestDataLink").addEventListener("click", (event) => {
   event.preventDefault();

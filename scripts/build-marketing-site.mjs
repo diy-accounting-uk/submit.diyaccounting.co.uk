@@ -7,7 +7,7 @@
 // - **Does:** build-marketing-site.mjs parses marketing.toml into marketing.json. It copies each site's colour tokens into brand/tokens.css and the fonts into brand/fonts. It renders every set at all 11 sizes into images/ through cards/card.html, and keeps a hash per image so a stale one shows. It captures the brand fragments of the four sites into brand/shots/, Submit through the simulator lane and the others from their live sites. It screenshots the finished page at two widths and two colour schemes.
 // - **Run:** `npm run marketing:build` (data, then tokens); `npm run marketing:build -- images`; `npm run marketing:build -- brand`; `npm run marketing:build -- screens`
 // - **Entry:** `scripts/build-marketing-site.mjs:main`
-// - **Files:** scripts/build-marketing-site.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
+// - **Files:** scripts/build-marketing-site.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
 // - **Keywords:** marketing, social images, og image, brand guide, brand shots, design tokens, banners, share posts
 // - **Related:** DEV-47, SITE-11
 // @end-capability
@@ -32,6 +32,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
+import { readListings } from "./listings-register.mjs";
 import { configuredOrigin, signIn, startSimulator } from "./site-screenshots.mjs";
 
 const require = createRequire(import.meta.url);
@@ -90,6 +91,13 @@ export function affiliateFigures() {
 export function readMarketingData() {
   const data = JSON.parse(JSON.stringify(TOML.parse(fs.readFileSync(TOML_FILE, "utf8"))));
   data.affiliates = { ...data.affiliates, ...affiliateFigures() };
+  const { groups, products, listings } = readListings();
+  delete data.listingGroup;
+  delete data.listingProduct;
+  delete data.listing;
+  data.listingGroups = groups;
+  data.listingProducts = products;
+  data.listings = listings;
   return data;
 }
 

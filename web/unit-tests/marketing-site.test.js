@@ -9,6 +9,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 import { generatePassphrase } from "../../app/lib/passphrase.js";
+import { LISTING_STATES, catalogPriceText, liveListings, listingProblems, readListings } from "../../scripts/listings-register.mjs";
 import {
   FONT_FILES,
   JSON_FILE,
@@ -28,6 +29,8 @@ import {
   carriesPass,
   codeFromPassUrl,
   isPassCode,
+  listingLink,
+  listingProducts,
   londonDate,
   nativeSharePayload,
   pageAnchors,
@@ -91,6 +94,9 @@ describe("marketing data", () => {
       "imageSizes",
       "campaigns",
       "sections",
+      "listingGroups",
+      "listingProducts",
+      "listings",
     ]) {
       expect(data, key).toHaveProperty(key);
     }
@@ -126,6 +132,7 @@ describe("marketing data", () => {
     expect(anchors).toContain("submit-vat");
     expect(anchors).toContain("submit");
     expect(anchors).toContain("affiliates");
+    expect(anchors).toContain("listings");
   });
 });
 
@@ -448,8 +455,14 @@ describe("marketing page", () => {
     expect(links.filter((link) => !resolves(link))).toEqual([]);
   });
 
+  it("asks search engines not to index it", () => {
+    expect(html).toContain('<meta name="robots" content="noindex" />');
+    expect(fs.readFileSync(path.join(MARKETING_DIR, "robots.txt"), "utf-8")).toMatch(/^User-agent: \*\nDisallow: \/$/m);
+    expect(fs.readFileSync(path.join(MARKETING_DIR, "robots.txt"), "utf-8")).not.toMatch(/^Allow:/m);
+  });
+
   it("holds the affiliate box, the affiliates section and the four section anchors", () => {
-    for (const id of ["affiliate", "affiliates", ...SECTION_IDS, ...SECTION_IDS.map((s) => `${s}-brand`)]) {
+    for (const id of ["affiliate", "affiliates", "listings", ...SECTION_IDS, ...SECTION_IDS.map((s) => `${s}-brand`)]) {
       expect(html, id).toContain(`id="${id}"`);
     }
   });
@@ -506,5 +519,114 @@ describe("affiliates section", () => {
 describe("marketing.json source", () => {
   it("reads the same data from the TOML as the committed JSON holds", () => {
     expect(readMarketingData()).toEqual(data);
+  });
+});
+
+describe("listing register", () => {
+  const catalogue = TOML.parse(fs.readFileSync(path.join(publicDir, "submit.catalogue.toml"), "utf-8"));
+  const register = readListings();
+
+  it("seeds one entry per place of groups D, E, L and C, each planned or live", () => {
+    expect(register.groups.map((g) => g.id)).toEqual(["review", "launch", "citation", "professional"]);
+    expect(register.listings.length).toBeGreaterThanOrEqual(40);
+    for (const listing of register.listings) expect(LISTING_STATES, listing.id).toContain(listing.state);
+    expect(register.listings.filter((l) => l.state === "live").map((l) => l.id)).toEqual(["softwarereview", "featuredcustomers"]);
+    for (const place of [
+      "Capterra",
+      "Trustpilot",
+      "AlternativeTo",
+      "SaaSHub",
+      "G2",
+      "TrustRadius",
+      "Product Hunt",
+      "Yell",
+      "AccountingWEB",
+    ]) {
+      expect(
+        register.listings.some((l) => l.place.startsWith(place)),
+        place,
+      ).toBe(true);
+    }
+  });
+
+  it("is sound against the catalogue", () => {
+    expect(listingProblems(register)).toEqual([]);
+  });
+
+  it("takes the price text from the catalogue, not from the copy", () => {
+    const submit = register.products.find((p) => p.id === "submit");
+    expect(submit.priceText).toBe(catalogPriceText("resident-vat", catalogue));
+    expect(submit.priceText).toMatch(/^£\d+\.\d{2}\/yr \/ £\d+\.\d{2}\/mo$/);
+    expect(submit.description160).toContain(submit.priceText);
+    expect(submit.description160.length).toBeLessThanOrEqual(160);
+    expect(submit.description500.length).toBeLessThanOrEqual(500);
+    for (const product of register.products) {
+      expect(product.description160, product.id).not.toContain("{price}");
+      expect(product.description500, product.id).not.toContain("{price}");
+    }
+  });
+
+  it("fails a listing whose recorded price text differs from the catalogue", () => {
+    const stale = structuredClone(register);
+    stale.listings[0].priceText = "£1.00/yr / £0.10/mo";
+    expect(listingProblems(stale).join("\n")).toMatch(/differs from the catalogue/);
+    const current = structuredClone(register);
+    current.listings[0].priceText = register.products.find((p) => p.id === "submit").priceText;
+    expect(listingProblems(current)).toEqual([]);
+  });
+
+  it("fails an unknown state, a repeated utm_source and a submitted listing with no date", () => {
+    const broken = structuredClone(register);
+    broken.listings[0].state = "pending";
+    broken.listings[1].utmSource = broken.listings[0].utmSource;
+    broken.listings[2].state = "submitted";
+    const text = listingProblems(broken).join("\n");
+    expect(text).toMatch(/state pending/);
+    expect(text).toMatch(/utmSource .* is used twice/);
+    expect(text).toMatch(/records its date/);
+  });
+
+  it("returns the live listings that carry a URL", () => {
+    const withUrl = structuredClone(register);
+    withUrl.listings.find((l) => l.id === "featuredcustomers").url = "https://example.com/vendor";
+    expect(liveListings(register)).toEqual([]);
+    expect(liveListings(withUrl).map((l) => l.id)).toEqual(["featuredcustomers"]);
+  });
+
+  it("tags each link with the listing's utm_source and the product", () => {
+    const listing = data.listings.find((l) => l.id === "capterra");
+    const [product] = listingProducts(listing, data);
+    const url = new URL(listingLink(product, listing));
+    expect(url.origin + url.pathname).toBe(product.link);
+    expect(url.searchParams.get("utm_source")).toBe("capterra");
+    expect(url.searchParams.get("utm_medium")).toBe("listing");
+    expect(url.searchParams.get("utm_campaign")).toBe("submit");
+  });
+
+  it("uses the company link for a listing that names no product", () => {
+    const listing = data.listings.find((l) => l.id === "yell");
+    expect(listingProducts(listing, data).map((p) => p.id)).toEqual(["company"]);
+  });
+
+  it("points every logo and screenshot at a file of the site", () => {
+    for (const product of data.listingProducts) {
+      for (const file of [product.logo, product.screenshot]) expect(fs.existsSync(path.join(MARKETING_DIR, file)), file).toBe(true);
+    }
+  });
+
+  it("names no endorsement and no Resident bundle in the copy pack", () => {
+    for (const product of data.listingProducts) {
+      for (const text of [product.oneLine, product.description160, product.description500]) {
+        expect(text).not.toMatch(/HMRC[- ](approved|accredited|certified|endorsed)|official HMRC software|recommended by HMRC|Resident/i);
+      }
+    }
+  });
+});
+
+describe("listings page", () => {
+  it("has a Listings section and its nav link", () => {
+    const html = fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf-8");
+    expect(html).toContain('id="listings"');
+    expect(html).toContain('href="#listings"');
   });
 });

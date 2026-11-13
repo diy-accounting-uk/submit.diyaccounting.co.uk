@@ -417,16 +417,39 @@ class IngestionStackTest {
         assertTrue(found, "expected an s3:PutObject statement scoped to .../curated/ga4/*");
     }
 
+    @Test
+    void ga4ReportPullCanPutSearchConsoleObjectsUnderTheirOwnPrefix() {
+        Template template = Template.fromStack(synthIngestionStack());
+
+        var found = template.findResources("AWS::IAM::Policy").values().stream().anyMatch(policy -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.get("Properties");
+            @SuppressWarnings("unchecked")
+            var policyDocument = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (List<Map<String, Object>>) policyDocument.get("Statement");
+            return statements.stream()
+                    .anyMatch(statement -> "s3:PutObject".equals(statement.get("Action"))
+                            && endsWithWildcard(statement.get("Resource"), "/curated/searchconsole/*"));
+        });
+
+        assertTrue(found, "expected an s3:PutObject statement scoped to .../curated/searchconsole/*");
+    }
+
     private static boolean endsWithCuratedGa4Wildcard(Object resource) {
+        return endsWithWildcard(resource, "/curated/ga4/*");
+    }
+
+    private static boolean endsWithWildcard(Object resource, String suffix) {
         if (resource instanceof String s) {
-            return s.endsWith("/curated/ga4/*");
+            return s.endsWith(suffix);
         }
         if (resource instanceof Map<?, ?> map) {
             var join = (List<?>) map.get("Fn::Join");
             if (join == null || join.size() < 2) return false;
             var parts = (List<?>) join.get(1);
             var last = parts.get(parts.size() - 1);
-            return last instanceof String s && s.endsWith("/curated/ga4/*");
+            return last instanceof String s && s.endsWith(suffix);
         }
         return false;
     }

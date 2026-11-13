@@ -397,11 +397,15 @@ export function renderCalendarHtml(sources) {
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <meta property="og:title" content="MTD calendar - DIY Accounting Submit" />
     <meta property="og:description" content="What you can file and how, and when Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly updates, the final declaration and the Companies House and Corporation Tax dates. Each date links to its gov.uk source." />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "DIY Accounting Submit", "item": "https://submit.diyaccounting.co.uk/"}, {"@type": "ListItem", "position": 2, "name": "Making Tax Digital calendar", "item": "https://submit.diyaccounting.co.uk/mtd-calendar.html"}]}
+    </script>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

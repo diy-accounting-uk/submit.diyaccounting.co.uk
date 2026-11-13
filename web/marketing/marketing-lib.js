@@ -131,9 +131,25 @@ export function nativeSharePayload(set, lengthId, { code }, data) {
   return { title: set.posts.headline, text: text.slice(0, text.length - link.length).trimEnd(), url: link };
 }
 
+/** The tagged link a listing gives its place: the product's link with utm_source from the listing, utm_medium listing and utm_campaign the product id. */
+export function listingLink(product, listing) {
+  const url = new URL(product.link);
+  url.searchParams.set("utm_source", listing.utmSource);
+  url.searchParams.set("utm_medium", "listing");
+  url.searchParams.set("utm_campaign", product.id);
+  return url.toString();
+}
+
+/** The copy-pack products a listing is filled from: its own products, or the company when it names none. */
+export function listingProducts(listing, data) {
+  const ids = listing.products.length ? listing.products : ["company"];
+  return ids.map((id) => data.listingProducts.find((product) => product.id === id));
+}
+
 /** Every id the page renders, in page order; the unit test checks they are unique. */
 export function pageAnchors(data) {
-  const anchors = ["affiliate", "affiliates"];
+  const anchors = ["affiliate", "affiliates", "listings"];
+  for (const listing of data.listings) anchors.push(`listing-${listing.id}`);
   for (const section of data.sections) {
     anchors.push(section.id, `${section.id}-brand`);
     for (const product of section.products ?? []) {

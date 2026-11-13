@@ -46,6 +46,34 @@ function parseRobotsTxt(content) {
   return directives;
 }
 
+// Helper: split robots.txt into groups of consecutive User-agent lines and the rules that follow
+function parseRobotsGroups(content) {
+  const groups = [];
+  let current = null;
+  let collectingAgents = false;
+  for (const raw of content.split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith("#") || line === "") continue;
+    const [key, ...valueParts] = line.split(":");
+    const keyLower = key.toLowerCase().trim();
+    const value = valueParts.join(":").trim();
+    if (keyLower === "user-agent") {
+      if (!collectingAgents) {
+        current = { agents: [], allows: [], disallows: [] };
+        groups.push(current);
+      }
+      current.agents.push(value);
+      collectingAgents = true;
+    } else {
+      collectingAgents = false;
+      if (!current) continue;
+      if (keyLower === "allow") current.allows.push(value);
+      else if (keyLower === "disallow") current.disallows.push(value);
+    }
+  }
+  return groups;
+}
+
 // Helper: check if a path is disallowed by robots.txt rules
 function isDisallowed(urlPath, disallows) {
   return disallows.some((rule) => urlPath.startsWith(rule));
@@ -140,6 +168,35 @@ describe("robots.txt validation", () => {
       expect(robots.disallows).toContain("/activities/");
       expect(robots.disallows).toContain("/errors/");
     });
+
+    it("blocks no sitemap URL for any named agent", () => {
+      const groups = parseRobotsGroups(readFile(path.join(sites.submit.dir, "robots.txt")));
+      const urls = extractSitemapUrls(readFile(path.join(sites.submit.dir, "sitemap.xml")));
+      const named = groups.filter((group) => !group.agents.includes("*"));
+      expect(named.flatMap((group) => group.agents)).toEqual(expect.arrayContaining(["OAI-SearchBot", "ClaudeBot", "GPTBot"]));
+      for (const group of named) {
+        for (const url of urls) {
+          const urlPath = new URL(url).pathname;
+          expect(isDisallowed(urlPath, group.disallows), `${group.agents.join(", ")} is blocked from ${url}`).toBe(false);
+        }
+      }
+    });
+
+    it("repeats the six Disallow lines in every named group", () => {
+      const groups = parseRobotsGroups(readFile(path.join(sites.submit.dir, "robots.txt")));
+      const star = groups.find((group) => group.agents.includes("*"));
+      expect(star.disallows).toHaveLength(6);
+      for (const group of groups.filter((candidate) => !candidate.agents.includes("*"))) {
+        expect(group.disallows, `${group.agents.join(", ")} should repeat the * Disallow lines`).toEqual(star.disallows);
+      }
+    });
+
+    it("states the content signal once", () => {
+      const lines = readFile(path.join(sites.submit.dir, "robots.txt")).split("\n");
+      expect(lines.filter((line) => line.startsWith("Content-Signal:"))).toEqual([
+        "Content-Signal: search=yes, ai-input=yes, ai-train=yes",
+      ]);
+    });
   });
 });
 
@@ -203,6 +260,46 @@ describe("Meta tag validation", () => {
   });
 });
 
+describe("Social tags and breadcrumbs on every sitemap page", () => {
+  const sitemapXml = readFile(path.join(sites.submit.dir, "sitemap.xml"));
+  const urls = extractSitemapUrls(sitemapXml);
+
+  for (const url of urls) {
+    const urlPath = new URL(url).pathname;
+    const fileName = urlPath === "/" ? "index.html" : urlPath.replace(/^\//, "");
+    const filePath = path.join(sites.submit.dir, fileName);
+
+    describe(fileName, () => {
+      const html = readFile(filePath);
+
+      it("has Open Graph and twitter:card tags", () => {
+        expect(html).toMatch(/<meta\s+property="og:title"\s+content="[^"]+"/);
+        expect(html).toMatch(/<meta\s+property="og:description"\s+content="[^"]+"/);
+        expect(html).toMatch(/<meta\s+property="og:type"\s+content="website"/);
+        expect(html).toMatch(/<meta\s+property="og:site_name"\s+content="DIY Accounting"/);
+        expect(html).toMatch(
+          /<meta\s+property="og:image"\s+content="https:\/\/submit\.diyaccounting\.co\.uk\/images\/social\/og-[a-z-]+\.png"/,
+        );
+        expect(html).toMatch(/<meta\s+name="twitter:card"\s+content="summary_large_image"/);
+        expect(html).toMatch(/<meta\s+property="og:url"\s+content="https:\/\/submit\.diyaccounting\.co\.uk\/[^"]*"/);
+      });
+
+      if (urlPath !== "/" && urlPath !== "/cy/index.html") {
+        it("has a BreadcrumbList from the home page", () => {
+          const breadcrumb = extractJsonLd(html).find((block) => block["@type"] === "BreadcrumbList");
+          expect(breadcrumb, "should have a BreadcrumbList JSON-LD block").toBeTruthy();
+          expect(breadcrumb.itemListElement[0].item).toBe("https://submit.diyaccounting.co.uk/");
+          expect(breadcrumb.itemListElement.length).toBeGreaterThan(1);
+        });
+      }
+    });
+  }
+
+  it("og-submit.png exists", () => {
+    expect(fs.existsSync(path.join(sites.submit.dir, "images/social/og-submit.png"))).toBe(true);
+  });
+});
+
 describe("Structured data validation", () => {
   it('submit index.html has JSON-LD with @type "WebApplication"', () => {
     const html = readFile(path.join(sites.submit.dir, "index.html"));
@@ -212,5 +309,27 @@ describe("Structured data validation", () => {
     expect(app, "Should have a WebApplication JSON-LD block").toBeTruthy();
     expect(app["@context"]).toBe("https://schema.org");
     expect(app.name).toBe("DIY Accounting Submit");
+  });
+
+  it("submit index.html has one Organization JSON-LD block with the company record", () => {
+    const html = readFile(path.join(sites.submit.dir, "index.html"));
+    const organizations = extractJsonLd(html).filter((block) => block["@type"] === "Organization");
+    expect(organizations).toHaveLength(1);
+    const [organization] = organizations;
+    expect(organization.name).toBe("DIY Accounting Limited");
+    expect(organization.legalName).toBe("DIY Accounting Limited");
+    expect(organization.identifier).toEqual({
+      "@type": "PropertyValue",
+      "propertyID": "Companies House company number",
+      "value": "06846849",
+    });
+    expect(organization.address.postalCode).toBe("LS8 1BY");
+    expect(organization.sameAs).toEqual([
+      "https://find-and-update.company-information.service.gov.uk/company/06846849",
+      "https://www.youtube.com/@DIYAccountingSubmit",
+      "https://github.com/diy-accounting-uk",
+      "https://www.npmjs.com/package/@diy-accounting-uk/diya-submit",
+      "https://www.npmjs.com/package/@diy-accounting-uk/diya-gl",
+    ]);
   });
 });

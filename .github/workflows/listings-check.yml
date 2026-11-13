@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability OPS-212 Check the listing register against the bundle catalogue monthly
+# - **Use when:** checking whether a directory listing still states the price in the catalogue.
+# - **Does:** listings-check.yml runs scripts/listings-check.mjs monthly. A listing whose recorded price text differs from the catalogue fails the run. The run opens or refreshes one issue. It fetches no third-party page.
+# - **Run:** `node scripts/listings-check.mjs`
+# - **Entry:** `.github/workflows/listings-check.yml`
+# - **Files:** .github/workflows/listings-check.yml, scripts/listings-check.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml
+# - **Keywords:** listings check, directory listing, price text, listing register, monthly check, listings-check.yml
+# - **Related:** SITE-25
+# @end-capability
+
+name: listings-check
+run-name: "listings check of ${{ github.ref_name }}"
+
+# Checks the register in web/marketing/marketing.toml against web/public/submit.catalogue.toml.
+# Capterra, Trustpilot, G2 and AlternativeTo refuse a scripted request, so this run opens no
+# directory page.
+
+on:
+  schedule:
+    - cron: '53 6 1 * *' # Monthly on the 1st, off the top-of-hour queue
+  workflow_dispatch: {}
+
+concurrency:
+  group: listings-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-listings:
+    name: check the listing register
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Check the register against the catalogue
+        id: check
+        continue-on-error: true
+        shell: bash
+        env:
+          ISSUE_BODY_FILE: ${{ runner.temp }}/listings-issue-body.md
+        run: node scripts/listings-check.mjs --issue-body "$ISSUE_BODY_FILE"
+
+      - name: Open or refresh the listings issue
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_BODY_FILE: ${{ runner.temp }}/listings-issue-body.md
+        run: |
+          set -euo pipefail
+          if [ ! -f "$ISSUE_BODY_FILE" ]; then
+            echo "The check failed without a list of problems; no issue to raise."
+            exit 0
+          fi
+          TITLE="Listing register disagrees with the catalogue"
+          EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$ISSUE_BODY_FILE"
+            echo "Refreshed issue $EXISTING"
+          else
+            gh issue create --title "$TITLE" --body-file "$ISSUE_BODY_FILE" --label ops --label origin:machine
+          fi
+
+      - name: Fail the run when the register is wrong
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "The listing register disagrees with the catalogue. See the check step."
+          exit 1

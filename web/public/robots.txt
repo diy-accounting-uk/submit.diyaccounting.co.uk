@@ -1,6 +1,69 @@
 # robots.txt for DIY Accounting Submit
 # https://submit.diyaccounting.co.uk
 
+# Search and user-fetch agents
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Applebot
+Allow: /
+Allow: /index.html
+Allow: /about.html
+Allow: /guide.html
+Allow: /help.html
+Allow: /spreadsheets.html
+Allow: /bundles.html
+Allow: /diy-accounting-spreadsheets.html
+Allow: /diy-accounting-limited.html
+Allow: /policybee.html
+Allow: /mcp.html
+Allow: /videos.html
+Allow: /privacy.html
+Allow: /security.html
+Allow: /terms.html
+Allow: /accessibility.html
+Disallow: /hmrc/
+Disallow: /auth/
+Disallow: /activities/
+Disallow: /errors/
+Disallow: /tests/
+Disallow: /docs/
+
+# Training agents
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: CCBot
+User-agent: Applebot-Extended
+Allow: /
+Allow: /index.html
+Allow: /about.html
+Allow: /guide.html
+Allow: /help.html
+Allow: /spreadsheets.html
+Allow: /bundles.html
+Allow: /diy-accounting-spreadsheets.html
+Allow: /diy-accounting-limited.html
+Allow: /policybee.html
+Allow: /mcp.html
+Allow: /videos.html
+Allow: /privacy.html
+Allow: /security.html
+Allow: /terms.html
+Allow: /accessibility.html
+Disallow: /hmrc/
+Disallow: /auth/
+Disallow: /activities/
+Disallow: /errors/
+Disallow: /tests/
+Disallow: /docs/
+
+# Every other agent
 User-agent: *
 
 # Public pages - allow indexing
@@ -28,6 +91,9 @@ Disallow: /activities/
 Disallow: /errors/
 Disallow: /tests/
 Disallow: /docs/
+
+# Search, AI input and AI training are all allowed
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
 # Sitemap location
 Sitemap: https://submit.diyaccounting.co.uk/sitemap.xml

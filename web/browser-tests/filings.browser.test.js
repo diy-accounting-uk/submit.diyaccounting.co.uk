@@ -55,7 +55,7 @@ const CT_RECEIPT = {
   },
 };
 
-const LIBRARIES = ["submission-record.js", "filing-record.js", "ct600-fields.js", "long-period.js"];
+const LIBRARIES = ["submission-record.js", "review-links.js", "filing-record.js", "ct600-fields.js", "long-period.js"];
 
 test.describe("Filings page - customer copy", () => {
   const html = fs.readFileSync(path.join(PUBLIC_DIR, "companies-house/filings.html"), "utf-8");

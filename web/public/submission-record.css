@@ -311,6 +311,13 @@
   align-items: center;
   min-height: 44px;
 }
+.customer-copy-review {
+  margin: 1em 0 0;
+}
+.customer-copy-review a {
+  display: inline-block;
+  padding: 0.6em 0;
+}
 
 @media (min-width: 64em) {
   .customer-copy-section {
@@ -333,7 +340,8 @@
   .customer-copy-brand,
   .customer-copy-section-heading,
   .customer-copy-explanation,
-  .customer-copy-links {
+  .customer-copy-links,
+  .customer-copy-review {
     display: none;
   }
   .customer-copy-header {

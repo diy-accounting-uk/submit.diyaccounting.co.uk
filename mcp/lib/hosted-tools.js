@@ -14,6 +14,7 @@ import { z } from "zod";
 import { deriveCompanyTaxReturn } from "./accounts-tools.js";
 import { openBook } from "./book-tools.js";
 import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
+import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 
 // The book tools read and write the server's filesystem, which a hosted caller never reaches.
@@ -23,6 +24,7 @@ export const HOSTED_TOOL_NAMES = [
   "list_books",
   "open_book",
   "derive_vat_return",
+  "prepare_vat_return",
   "derive_micro_entity_accounts",
   "derive_small_company_accounts",
   "derive_itsa_quarterly_update",
@@ -74,6 +76,8 @@ export function hostedToolNames(environmentName) {
 
 export const HOSTED_OVERRIDES = {
   open_book: {
+    title: "Open a book",
+    annotations: READS,
     description:
       "Open a book saved in the DIYA cloud by bookId (a practice client's own book with clientId), signed in as the " +
       "caller. Answers the product, the entity, the period covered, the line count and the book checks summary. " +
@@ -88,6 +92,8 @@ export const HOSTED_OVERRIDES = {
     },
   },
   derive_itsa_annual_submission: {
+    title: "Derive an ITSA annual submission",
+    annotations: READS,
     description:
       "The year's allowances and adjustments for HMRC's Self Employment Business API annual submission from the loaded " +
       "self-employed book, restricted to the fields HMRC accepts for that tax year.",
@@ -97,6 +103,8 @@ export const HOSTED_OVERRIDES = {
     handler: (session, { taxYear } = {}) => deriveItsaAnnualSubmission(session, { taxYear }),
   },
   run_for_clients: {
+    title: "Run a tool for every client",
+    annotations: CHANGES_OUTSIDE,
     description:
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
@@ -118,6 +126,8 @@ export const HOSTED_OVERRIDES = {
     },
   },
   derive_company_tax_return: {
+    title: "Derive a Company Tax Return",
+    annotations: READS,
     description:
       "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
       "computation figures, the profit and loss account from the engine's published statements, and the book's own " +

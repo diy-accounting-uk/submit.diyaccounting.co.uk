@@ -1280,6 +1280,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - name: Set up the toolchain
         timeout-minutes: 6
         uses: ./.github/actions/setup-toolchain
@@ -1308,6 +1310,10 @@ jobs:
       - name: Submit the declared sitemaps
         shell: bash
         run: node infra/google/searchconsole/searchconsole-sync.js --sitemaps-only --apply 2>&1 | tee searchconsole-sitemaps.log
+
+      - name: Tell IndexNow which pages changed
+        shell: bash
+        run: node scripts/publish-sitemap.mjs web/public prod && node scripts/indexnow-submit.mjs "${{ needs.set-origins.outputs.existing-deployment-name }}"
 
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.diy-accounting-uk/diya-submit",
+  "title": "DIY Accounting Submit",
+  "description": "Opens a book, derives VAT return figures and reads stored VAT receipts. Files no return.",
+  "version": "0.1.2",
+  "websiteUrl": "https://submit.diyaccounting.co.uk",
+  "repository": {
+    "url": "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://submit.diyaccounting.co.uk/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@diy-accounting-uk/diya-submit",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
