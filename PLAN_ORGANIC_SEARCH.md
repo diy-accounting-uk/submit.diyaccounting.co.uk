@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 26 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 26 of 30 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 21 machine-only, 3 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 22 of 26 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 17 machine-only, 3 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -817,18 +817,14 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS5 | IndexNow on every deploy | A11 | Bing learns of a changed page within minutes of a deploy. Bing's index serves Copilot, DuckDuckGo and ChatGPT search. | The deploy log shows an accepted IndexNow call (HTTP 200 or 202) per site. | machine-only; on the board |
-| OS12 | State the crawler policy in every robots.txt | Y1, Z7 | Every documented search, user-fetch and training agent is named and allowed. Access itself works: each agent string got 200 on 2026-11-12. | The SEO test asserts no named agent is disallowed from a sitemap URL. | machine-only; on the board |
 
 **Wave 2: Pages that answer the query**
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS6 | A static page per spreadsheet product, linked to Submit | A1, A2, A8 | Five indexable product pages beside the download form, each with the filing action for that product's user. The form's URL stays as it is. | Clicks on the product pages against the 17 to 19 a month the taxi-driver URL gets now; sessions from the spreadsheets site into Submit against 2 in 20 days. | machine-only; on the board |
-| OS44 | Titles and descriptions for pages that rank and are not clicked | A15 | More clicks from impressions we already have: the spreadsheets home page shows 29,279 times in 90 days on page one and is clicked 358 times. | Click rate on the changed pages 28 days after the change, against 1.2% for the home page. | machine-only; on the board |
+| OS6b | The gateway's old feature URLs go to the product pages | A1 | An old feature link lands on the product it named, not on the knowledge base. | One old URL per product answers 301 to its product page. | machine-only; on the board |
 | OS45 | Refresh the articles that rank on pages two to five | A16, A8 | Six articles with 8,866 impressions between them for filing queries move toward page one and link to the page that files. | Average position and clicks of each refreshed article. | machine-only; on the board |
 | OS10b | Home page: Welsh strings and the gap with the script off | A3 | The Welsh home page reads in Welsh, and the page has no blank gap for a reader with no script. | The look pass on prod passes both. | machine-only; on the board |
-| OS8 | Head tags and one entity record on all four sites | A5, A6, K1 | Every public page has a social preview, and every site names the same organisation with the same `sameAs` links. | The SEO validation test asserts Open Graph, twitter:card and JSON-LD on every sitemap URL, and passes. | machine-only; on the board |
 | OS11 | Pages for the dated events | A9 | A dated page for each event that sends a known population to search, each ending in the filing that is live. | Impressions per event page in the month before each date. | machine-only; on the board |
 | OS40 | A comparison page with sourced prices | A13, Y3 | A page of our own for "best" and "cheapest MTD bridging software", the queries every vendor roundup targets. | Impressions for queries containing "best" or "cheapest". | machine-only; on the board |
 
@@ -902,21 +898,18 @@ Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file r
 
 ```mermaid
 flowchart LR
-  OS6 --> OS45
-  OS8 --> OS13c
   OS42b --> OOS17
   OS42b --> OOS18
   OS17 --> OOS17
   OS18 --> OOS18
   OS42b --> OOS16
   OS47 --> OOS47
-  OS8 --> OS29
   OS30 --> OOS30
   OOS17 --> OOS30
   OS13b --> OS32
   OS42b --> OS30
   OS11 --> OS33
-  OS6 --> OS35
+  OS45 --> OS35
 ```
 
 ### 8.4 Facts several rows share
@@ -944,7 +937,7 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 #### Wave 4: Listings
 
-- [ ] **OS29. Operator: one Wikidata entry for the company.** One Wikidata item, for the company only (operator, 2026-11-12): DIY Accounting Limited, instance of business, country United Kingdom, inception 2006, official website, and its Companies House number 06846849 as the identifier and the reference. A registered company with its register entry as the reference is the kind of item Wikidata keeps; product items wait for independent coverage. A session prepares the statements as text. The operator saves them from his own Wikidata account and states on his user page that he is a director of the company. Then OS8's `sameAs` list gains the item URL. **Waits on**: OS8. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OS29. Operator: one Wikidata entry for the company.** One Wikidata item, for the company only (operator, 2026-11-12): DIY Accounting Limited, instance of business, country United Kingdom, inception 2006, official website, and its Companies House number 06846849 as the identifier and the reference. A registered company with its register entry as the reference is the kind of item Wikidata keeps; product items wait for independent coverage. A session prepares the statements as text. The operator saves them from his own Wikidata account and states on his user page that he is a director of the company. Then the `sameAs` list of the Organization record on all four sites gains the item URL. **Waits on**: nothing; OS8 is on prod. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 - [ ] **OOS30. A person posts the launch.** A person posts each item of the launch pack on the day the connector is listed in the first directory, and answers the comments. Show HN needs a product a reader can try at once: the free day pass covers it. **Waits on**: OS30, OOS17. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
