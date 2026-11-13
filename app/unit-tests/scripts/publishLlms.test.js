@@ -209,6 +209,27 @@ describe("publish-llms helpers", () => {
     expect(() => pageMarkdown("<html><body><p>x</p></body></html>", `${ORIGIN}/x.html`)).toThrow("no <main>");
   });
 
+  test("keeps a link to a page, a mailbox or a phone number, and leaves only the text of any other scheme", () => {
+    const links = [
+      "/a.html",
+      "mailto:x@example.com",
+      "tel:+441234567890",
+      "javascript:alert(1)",
+      "data:text/html,x",
+      "vbscript:x",
+      "JaVaScRiPt:alert(1)",
+    ];
+    const body = links.map((href, index) => `<p><a href="${href}">L${index}</a></p>`).join("");
+    const markdown = pageMarkdown(`<html><body><main>${body}</main></body></html>`, `${ORIGIN}/x.html`);
+    expect(markdown).toContain(`[L0](${ORIGIN}/a.html)`);
+    expect(markdown).toContain("[L1](mailto:x@example.com)");
+    expect(markdown).toContain("[L2](tel:+441234567890)");
+    for (const label of ["L3", "L4", "L5", "L6"]) {
+      expect(markdown).toContain(label);
+      expect(markdown).not.toContain(`[${label}]`);
+    }
+  });
+
   test("a Markdown copy beside a nested page lands in that page's folder", () => {
     const webRoot = mkdtempSync(join(tmpdir(), "publish-llms-nested-"));
     try {
