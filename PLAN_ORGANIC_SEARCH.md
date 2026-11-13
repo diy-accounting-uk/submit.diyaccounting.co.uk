@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 36 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 31 of 36 tasks are rows on `NEXT.md`, where each row carries its brief. 5 follow those rows and stay here until their turn: OOS17, OOS18, OS26, OS29, OOS30. 25 machine-only, 5 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 26 of 30 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 20 machine-only, 4 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -829,8 +829,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS45 | Refresh the articles that rank on pages two to five | A16, A8 | Six articles with 8,866 impressions between them for filing queries move toward page one and link to the page that files. | Average position and clicks of each refreshed article. | machine-only; on the board |
 | OS7 | Put the FAQ, the guide, the videos and the prices in the HTML | A4, A5, A14, Y2 | 36 answers, the guide steps, 48 video entries with VideoObject markup and the bundle prices become text a crawler and an assistant can read. | `curl` of each page shows the copy with no JavaScript; Search Console lists video pages as indexed with a video. | machine-only; on the board |
 | OS8 | Head tags and one entity record on all four sites | A5, A6, K1 | Every public page has a social preview, and every site names the same organisation with the same `sameAs` links. | The SEO validation test asserts Open Graph, twitter:card and JSON-LD on every sitemap URL, and passes. | machine-only; on the board |
-| OS9 | A landing page per filing on Submit | A3, Y2 | A page that can rank for each filing query: VAT from a spreadsheet, micro-entity, small-company and dormant accounts, the confirmation statement. | Impressions and clicks per landing page in Search Console, from a base of zero pages. | machine-only; on the board |
-| OS10 | Home page: a heading that names the product, static copy, less blocking script | A7 | The page that takes the brand query states what the product does in its heading and its first paragraph, and loads without four seconds of blocked main thread. | Lighthouse mobile performance against 56 and total blocking time against 3,990 ms (2026-11-03). | machine-only; on the board |
 | OS11 | Pages for the dated events | A9 | A dated page for each event that sends a known population to search, each ending in the filing that is live. | Impressions per event page in the month before each date. | machine-only; on the board |
 | OS40 | A comparison page with sourced prices | A13, Y3 | A page of our own for "best" and "cheapest MTD bridging software", the queries every vendor roundup targets. | Impressions for queries containing "best" or "cheapest". | machine-only; on the board |
 
@@ -841,12 +839,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS13b | llms.txt and Markdown copies for Submit | Z5, Z6 | One Markdown page that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
 | OOS43 | The go for the first prod seed of the demo reviewer | X1, X2 | The demo user and its sample books exist on prod. | The prod seed run is green. | machine-ask; on the board |
-| OS43 | A demo sign-in for directory reviewers, on our own page | X1, X2 | A user name and a password that sign a reviewer in to one demo account with sample books, with no second factor to pass and no change for any real user. Both assistant directories need it. | The reviewer form signs in on ci from a machine with no session, and `list_books` returns the two sample books. | machine-only; on the board |
-| OS16c | Raise the MCP package to version 0.1.3 | R1 | An npm version that carries `mcpName`, which the registry requires. | `mcp/test/server-json.test.js` passes with 0.1.3 in the three files. | machine-only; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask; on the board |
-| OS19 | A plugin and a skill for filing a UK VAT return | X3, X8, Z8 | One folder that Claude, Codex, Gemini CLI, Copilot and Cursor can install, which teaches the agent the filing procedure and points at the connector. | Installs reported by the plugin listing; tool calls from the skill's client names in the MCP log. | machine-only; on the board |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
-| OS46 | A review card inside the assistant | Z4, X1, X2 | Claude and ChatGPT show the nine boxes as the product's own card with the hand-off button. | The card renders in the MCP inspector and in Claude on ci. | machine-only; on the board |
 | OS42b | `prepare_vat_return` on prod's hosted connector | X1, X2, X4 | Prod's connector offers the hand-off to the browser, which both directory submissions wait for. | `tools/list` for prod holds six tools, and a prod session gets a link that fills the VAT form. | machine-ask; on the board |
 | OS17 | The submission pack for the Claude directory | X1, X7 | Everything the directory portal asks for, ready to paste, so the submission is one sitting. | The pack is complete against the portal's field list. | machine-only; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | human-driven |
@@ -859,7 +853,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
-| OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | human-driven |
+| OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | machine-only; on the board |
+| OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
 | OS29 | Operator: one Wikidata entry for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | human-driven |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
 | OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven |
@@ -872,7 +867,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
 | OS35 | Quarterly-update workbook and the support articles | F5, A10, A8 | A free workbook for the Income Tax quarterly update and eleven articles that answer questions customers sent us. | Clicks per article; downloads of the workbook. | machine-only; on the board |
-| OS41 | A monthly organic read in the campaign skill | Q1, A14 | One table a month: Search Console, Bing, assistant referrals, listings, and a fixed set of questions asked in each assistant. | The table exists for each month. | machine-only; on the board |
 
 ### 8.2 Groups, ranked by the visits each is expected to add
 
@@ -909,26 +903,19 @@ Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file r
 ```mermaid
 flowchart LR
   OS6 --> OS45
-  OS9 --> OS11
-  OS9 --> OS40
   OS8 --> OS13c
-  OS43 --> OOS43
   OOS43 --> OOS17
   OOS43 --> OOS18
   OS42b --> OOS17
   OS42b --> OOS18
-  OS10 --> OS13b
-  OS16c --> OOS16
-  OS43 --> OS17
   OS17 --> OOS17
-  OS43 --> OS18
   OS18 --> OOS18
-  OS9 --> OS26
+  OS26 --> OOS26
   OS8 --> OS29
   OS30 --> OOS30
   OOS17 --> OOS30
-  OS9 --> OS31
-  OS9 --> OS32
+  OS13b --> OS32
+  OS42b --> OS30
   OS11 --> OS33
   OS6 --> OS35
 ```
@@ -957,8 +944,6 @@ The brief of a boarded task is its row on `NEXT.md`.
 - [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: the prod seed and the hand-off tool on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OOS43, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 4: Listings
-
-- [ ] **OS26. Write to the editors and the tax bodies.** Drafts with the `email-draft` skill, one per recipient, each under 120 words with one fact the editor can check and one link: money.co.uk (MTD software guide, 32 products), Finder UK, Simply Business, smallbusiness.co.uk, Startups.co.uk, LITRG, ATT, and one enquiry each to FSB and Enterprise Nation. The facts: 99p a month or £9.99 a year with a free day pass; the HMRC listing; the page from OS9 that shows the filing. The operator sends each from his own address, after OS9, so the link lands on a page that answers the editor's reader. Replies and inclusions are recorded in the listing register. **Waits on**: OS9. **Class**: human-driven. **Repository**: none. **Model**: Opus (drafts). **Size**: 0 files.
 
 - [ ] **OS29. Operator: one Wikidata entry for the company.** One Wikidata item, for the company only (operator, 2026-11-12): DIY Accounting Limited, instance of business, country United Kingdom, inception 2006, official website, and its Companies House number 06846849 as the identifier and the reference. A registered company with its register entry as the reference is the kind of item Wikidata keeps; product items wait for independent coverage. A session prepares the statements as text. The operator saves them from his own Wikidata account and states on his user page that he is a director of the company. Then OS8's `sameAs` list gains the item URL. **Waits on**: OS8. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
