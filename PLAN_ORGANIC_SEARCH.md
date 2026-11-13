@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 37 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 36 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 32 of 37 tasks are rows on `NEXT.md`, where each row carries its brief. 5 follow those rows and stay here until their turn: OOS17, OOS18, OS26, OS29, OOS30. 26 machine-only, 5 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 31 of 36 tasks are rows on `NEXT.md`, where each row carries its brief. 5 follow those rows and stay here until their turn: OOS17, OOS18, OS26, OS29, OOS30. 25 machine-only, 5 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -838,7 +838,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS13a | llms.txt for the gateway | Z5 | One Markdown page that states what the gateway leads to. It sets the script that OS13b and OS13c copy. | Requests for `/llms.txt` by agent, from OS41's query. | machine-only; on the board |
 | OS13b | llms.txt and Markdown copies for Submit | Z5, Z6 | One Markdown page that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
 | OOS43 | The go for the first prod seed of the demo reviewer | X1, X2 | The demo user and its sample books exist on prod. | The prod seed run is green. | machine-ask; on the board |
@@ -889,7 +888,7 @@ Extra visits a month, six months after the group lands. These are estimates from
 | 6 | Assistant connector | 5 to 40, plus a launch spike | Submit | OS14, OOS43, OS43, OS42, OS16b, OS16c, OS19, OS20, OS46, OS42b, OS17, OS18, OS30 |
 | 7 | Bing and IndexNow | 10 to 25 | all sites | OS5 |
 | 8 | Listing register and reviews | 5 to 30 | Submit | OS21, OS24, OS25 |
-| 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13a, OS13b, OS13c |
+| 9 | Technical repairs | 2 to 10 | all sites | OS8, OS12, OS13b, OS13c |
 | 10 | Measurement | 0 | none | OS1, OS3, OS4, OS41a, OS41 |
 
 1. **Spreadsheet product pages and articles.** The taxi-driver product URL earns 20 clicks a month and the four other products have no page to rank. Six articles get 2,955 impressions a month at positions 27 to 43. OS6 also adds the links into Submit.
