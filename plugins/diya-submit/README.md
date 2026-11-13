@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # DIY Accounting Submit for Claude
 
 Work out a UK VAT return from a book you saved in DIY Accounting Submit, check the nine boxes with Claude, and read the receipt afterwards.
