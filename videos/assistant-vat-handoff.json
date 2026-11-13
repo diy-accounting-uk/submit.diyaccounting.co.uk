@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "assistant-vat-handoff",
   "title": "A VAT return from an AI assistant",
-  "description": "An assistant derives the VAT return from a saved book and hands the figures to the browser through a link. The person checks the nine boxes, makes the declaration and files the return in the browser, and the receipt shows.",
+  "description": "An assistant derives the VAT return from a saved book and hands the figures to the browser through a link. The person checks the nine boxes, makes the declaration and files the return in the browser, and the receipt shows. Sign-in, the day pass and HMRC's access grant run off camera.",
   "auth": "user",
   "pages": ["web/public/mcp.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/submitVat.html"],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
@@ -41,13 +41,50 @@
   "finalHoldMs": 2500,
   "scenes": [
     {
+      "id": "setup",
+      "chapter": "Setup",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/mcp.html"
+        },
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Day pass",
+          "testPass": true
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
       "id": "connector",
       "chapter": "The assistant",
       "steps": [
         {
           "action": "goto",
           "url": "/mcp.html",
-          "caption": "An assistant such as Claude connects to Submit with one web address.",
+          "caption": "An assistant connects to Submit with one web address.",
           "headline": "One connector address",
           "keyWord": "connector"
         },
@@ -57,71 +94,9 @@
             "role": "heading",
             "name": "Can an AI assistant file my VAT return?"
           },
-          "caption": "It opens your saved book and works out the nine VAT boxes. It files nothing.",
+          "caption": "It works out the nine VAT boxes. It files nothing.",
           "headline": "It works out the boxes",
           "keyWord": "boxes"
-        },
-        {
-          "action": "hold",
-          "ms": 1500
-        }
-      ]
-    },
-    {
-      "id": "sign-in",
-      "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
-      "steps": [
-        {
-          "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
-        },
-        {
-          "action": "login",
-          "caption": "Your account keeps your submissions in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
-        },
-        {
-          "action": "consent"
-        },
-        {
-          "action": "hold",
-          "ms": 400
-        }
-      ]
-    },
-    {
-      "id": "day-pass",
-      "chapter": "Day pass",
-      "still": true,
-      "fastForward": true,
-      "steps": [
-        {
-          "action": "click",
-          "target": {
-            "role": "link",
-            "name": "Bundles"
-          },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
-        },
-        {
-          "action": "ensureBundle",
-          "bundle": "Day pass",
-          "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day.",
-          "headline": "Get a day pass",
-          "keyWord": "pass"
-        },
-        {
-          "action": "hold",
-          "ms": 500
         }
       ]
     },
@@ -141,10 +116,7 @@
           "action": "await",
           "until": "#booksImportStatus:has-text('for the period')",
           "timeoutMs": 30000,
-          "label": "the form to fill",
-          "caption": "The nine boxes come from the book, for the period the assistant chose.",
-          "headline": "The nine boxes are filled",
-          "keyWord": "filled"
+          "label": "the form to fill"
         },
         {
           "action": "scroll",
@@ -161,7 +133,6 @@
           "action": "type",
           "target": "#vatNumber",
           "text": "{{hmrcVatNumber}}",
-          "caption": "Type your VAT registration number.",
           "headline": "Enter your VAT number",
           "keyWord": "number"
         },
@@ -181,7 +152,6 @@
     {
       "id": "submit",
       "chapter": "Submit to HMRC",
-      "still": true,
       "steps": [
         {
           "action": "checkHidden",
@@ -190,16 +160,20 @@
         {
           "action": "click",
           "target": "#submitBtn",
-          "caption": "Submitting sends you to HMRC to grant access.",
+          "caption": "Submitting sends you to HMRC, where you grant access.",
           "headline": "Submit the return",
           "keyWord": "Submit"
-        },
+        }
+      ]
+    },
+    {
+      "id": "authorise",
+      "chapter": "HMRC access",
+      "offCamera": true,
+      "steps": [
         {
           "action": "hmrcAuthorise",
-          "timeoutMs": 60000,
-          "caption": "Sign in to HMRC and say yes.",
-          "headline": "Grant HMRC access",
-          "keyWord": "HMRC"
+          "timeoutMs": 60000
         },
         {
           "action": "hold",
@@ -251,5 +225,6 @@
         }
       ]
     }
-  ]
+  ],
+  "consentAnswer": "declined"
 }

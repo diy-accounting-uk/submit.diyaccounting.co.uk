@@ -4,7 +4,12 @@
 // app/unit-tests/video/journey.test.js
 
 import { describe, test, expect, vi, afterEach } from "vitest";
-import { resolveHmrcTestUser, credentialFieldMaskInitScript, provisionSceneCompany } from "../../../scripts/lib/video/journey.js";
+import {
+  resolveHmrcTestUser,
+  credentialFieldMaskInitScript,
+  provisionSceneCompany,
+  ONE_TIME_CODE_FIELDS,
+} from "../../../scripts/lib/video/journey.js";
 
 const baseEnv = {
   TEST_HMRC_USERNAME: "user123456789",
@@ -50,6 +55,17 @@ describe("credentialFieldMaskInitScript", () => {
   function fakeDocument(documentElement) {
     return { documentElement, addEventListener: vi.fn(), querySelectorAll: vi.fn().mockReturnValue([]) };
   }
+
+  test("names every field the behaviour tests' TOTP step accepts, including the numeric text input", () => {
+    for (const selector of [
+      'input[name="totpCode"]',
+      'input[name="SOFTWARE_TOKEN_MFA_CODE"]',
+      'input[type="text"][inputmode="numeric"]',
+      'input[name="code"]',
+    ]) {
+      expect(ONE_TIME_CODE_FIELDS).toContain(selector);
+    }
+  });
 
   test("observes document.documentElement immediately when it already exists", () => {
     globalThis.document = fakeDocument({});

@@ -23,7 +23,8 @@ import {
 
 // Cognito's one-time code field, by every name its Hosted UI gives it. Masked on camera so a
 // recording never shows a code being typed, while the rest of the sign-in stays on screen.
-const ONE_TIME_CODE_FIELDS = 'input[name="totpCode"], input[name="SOFTWARE_TOKEN_MFA_CODE"], input[name="code"]';
+export const ONE_TIME_CODE_FIELDS =
+  'input[name="totpCode"], input[name="SOFTWARE_TOKEN_MFA_CODE"], input[name="code"], input[type="text"][inputmode="numeric"]';
 
 export function authProviderFrom(env) {
   const provider = env.TEST_AUTH_PROVIDER;
