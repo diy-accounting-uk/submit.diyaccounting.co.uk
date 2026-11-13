@@ -96,6 +96,7 @@ describe("the review card page", () => {
       session = createSession();
       await openBook(session, { path: join(FIXTURES, "brickwork-pro-ltd-vat") });
       process.env.DIYA_SUBMIT_BASE_URL = "https://ci-example.submit.diyaccounting.co.uk";
+      process.env.DIY_SUBMIT_BASE_URL = "https://ci-example.submit.diyaccounting.co.uk";
     });
 
     it("starts the handshake, then draws the nine boxes of derive_vat_return's result", async () => {

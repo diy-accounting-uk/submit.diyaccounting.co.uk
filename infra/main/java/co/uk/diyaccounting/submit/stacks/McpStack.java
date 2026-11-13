@@ -160,6 +160,7 @@ public class McpStack extends Stack {
         var mcpHttpEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIYA_SUBMIT_BASE_URL", sharedNames.baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", sharedNames.publicBaseUrl)
                 .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
                 .with("MCP_PUBLIC_HOSTS", publicHostsCsv)
                 .with(
@@ -278,7 +279,7 @@ public class McpStack extends Stack {
                 Table.fromTableName(this, "PracticeClientsTable", sharedNames.data.practiceClientsTableName);
         var mcpCodesEntryEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("DIY_SUBMIT_BASE_URL", sharedNames.baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", sharedNames.publicBaseUrl)
                 .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn());
