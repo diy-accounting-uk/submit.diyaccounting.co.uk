@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 29 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 24 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 29 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 24 tasks are rows on `NEXT.md`, where each row carries its brief. 15 machine-only, 4 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -824,19 +824,15 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS45 | Refresh the articles that rank on pages two to five | A16, A8 | Six articles with 8,866 impressions between them for filing queries move toward page one and link to the page that files. | Average position and clicks of each refreshed article. | machine-only; on the board |
 | OS10b | Home page: Welsh strings and the gap with the script off | A3 | The Welsh home page reads in Welsh, and the page has no blank gap for a reader with no script. | The look pass on prod passes both. | machine-only; on the board |
-| OS11 | Pages for the dated events | A9 | A dated page for each event that sends a known population to search, each ending in the filing that is live. | Impressions per event page in the month before each date. | machine-only; on the board |
 | OS40 | A comparison page with sourced prices | A13, Y3 | A page of our own for "best" and "cheapest MTD bridging software", the queries every vendor roundup targets. | Impressions for queries containing "best" or "cheapest". | machine-only; on the board |
 
 **Wave 3: Assistants and agents**
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS13b | llms.txt and Markdown copies for Submit | Z5, Z6 | One Markdown page that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask; on the board |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
-| OS42b | `prepare_vat_return` on prod's hosted connector | X1, X2, X4 | Prod's connector offers the hand-off to the browser, which both directory submissions wait for. | `tools/list` for prod holds six tools, and a prod session gets a link that fills the VAT form. | machine-ask; on the board |
-| OS17 | The submission pack for the Claude directory | X1, X7 | Everything the directory portal asks for, ready to paste, so the submission is one sitting. | The pack is complete against the portal's field list. | machine-only; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
 | OS18 | The plugin package for the ChatGPT directory | X2 | The package, the test cases and the recording that OpenAI's review asks for. | The package validates in the OpenAI Platform upload step. | machine-only; on the board |
 | OOS18 | Operator: verify the business with OpenAI and submit the plugin | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | human-driven; on the board |
@@ -857,7 +853,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS31 | VAT due-date and penalty-points calculator | F1, Z9 | A working answer to "how many penalty points" and "when is my VAT return due", which no competitor offers as a tool. | Impressions and clicks on the page; clicks from it to sign-in. | machine-only; on the board |
 | OS32 | Company deadline lookup with no sign-in | F2 | A director types a company number and sees both due dates with the filing action. Three competitors rank with this tool. | Lookups per day; lookups that end in a sign-in. | machine-only; on the board |
 | OS33 | MTD Income Tax scope checker with an embed | F3 | A page for the 1,077,000 people who join in April 2027, and an embed that puts a link to it on other sites. | Checks completed; sites that load the embed. | machine-only; on the board |
 | OS35 | The support articles | F5, A10, A8 | Eleven articles that answer questions customers sent us. | Clicks per article. | machine-only; on the board |
@@ -901,19 +896,13 @@ Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file r
 
 ```mermaid
 flowchart LR
-  OS42b --> OOS17
-  OS42b --> OOS18
-  OS17 --> OOS17
   OS18 --> OOS18
+  OS32 --> OS33
   OS30 --> OOS18
   OOS29 --> OS29b
-  OS42b --> OOS16
   OS47 --> OOS47
   OS30 --> OOS30
   OOS17 --> OOS30
-  OS13b --> OS32
-  OS42b --> OS30
-  OS11 --> OS33
   OS45 --> OS45b
   OS45b --> OS35
   OS35 --> OS35c
