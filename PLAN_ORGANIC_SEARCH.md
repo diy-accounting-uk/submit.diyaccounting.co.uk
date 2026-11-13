@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 29 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 30 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 29 tasks are rows on `NEXT.md`, where each row carries its brief. 19 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -822,7 +822,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS6b | The gateway's old feature URLs go to the product pages | A1 | An old feature link lands on the product it named, not on the knowledge base. | One old URL per product answers 301 to its product page. | machine-only; on the board |
 | OS45 | Refresh the articles that rank on pages two to five | A16, A8 | Six articles with 8,866 impressions between them for filing queries move toward page one and link to the page that files. | Average position and clicks of each refreshed article. | machine-only; on the board |
 | OS10b | Home page: Welsh strings and the gap with the script off | A3 | The Welsh home page reads in Welsh, and the page has no blank gap for a reader with no script. | The look pass on prod passes both. | machine-only; on the board |
 | OS11 | Pages for the dated events | A9 | A dated page for each event that sends a known population to search, each ending in the filing that is live. | Impressions per event page in the month before each date. | machine-only; on the board |
