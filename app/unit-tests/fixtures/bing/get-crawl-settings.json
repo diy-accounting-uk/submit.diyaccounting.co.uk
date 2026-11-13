@@ -1,0 +1,8 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": {
+    "__type": "CrawlSettings:#Microsoft.Bing.Webmaster.Api",
+    "AjaxEnabled": true,
+    "CrawlRate": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+  }
+}

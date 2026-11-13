@@ -1,0 +1,16 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "Feed:#Microsoft.Bing.Webmaster.Api",
+      "Compressed": false,
+      "FileSize": 1024,
+      "LastCrawled": "/Date(1315781995040-0700)/",
+      "Status": "Success",
+      "Submitted": "/Date(1316213995040-0700)/",
+      "Type": "Sitemap",
+      "Url": "http://example.com/sitemap.xml",
+      "UrlCount": 1023
+    }
+  ]
+}

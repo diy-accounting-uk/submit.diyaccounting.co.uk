@@ -1,0 +1,23 @@
+{
+  "_writtenFromDocumentation": "Response shape from https://learn.microsoft.com/en-us/dotnet/api/microsoft.bing.webmaster.api.interfaces.iwebmasterapi; no live call was made",
+  "d": [
+    {
+      "__type": "QueryStats:#Microsoft.Bing.Webmaster.Api",
+      "AvgClickPosition": 18,
+      "AvgImpressionPosition": 17,
+      "Clicks": 15,
+      "Date": "/Date(1316156400000-0700)/",
+      "Impressions": 100,
+      "Query": "https://example.test/"
+    },
+    {
+      "__type": "QueryStats:#Microsoft.Bing.Webmaster.Api",
+      "AvgClickPosition": 9,
+      "AvgImpressionPosition": 8,
+      "Clicks": 1,
+      "Date": "/Date(1316156400000-0700)/",
+      "Impressions": 400,
+      "Query": "https://example.test/guide.html"
+    }
+  ]
+}
