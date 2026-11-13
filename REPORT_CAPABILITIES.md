@@ -31,7 +31,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
     - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages: use when a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
     - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML: use when faqs.toml, the guide's journeys or a video walkthrough changed, or a crawler or assistant must read the help page or the guide without JavaScript.
-    - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod) Write a landing page for each filing that is production on prod: use when a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
+    - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages: use when a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -44,6 +44,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
     - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
     - [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots: use when web/marketing/marketing.toml changes, a brand stylesheet changes, or the social images or brand shots of marketing.diyaccounting.co.uk need to be made again.
+    - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week: use when checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
   - [Frontend infrastructure](#frontend-infrastructure-site)
     - [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts: use when a page must pre-warm a Lambda or route before its own script needs the real response.
     - [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets: use when a page needs the shared header, nav and footer, or a small shared UI widget.
@@ -312,6 +313,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records: use when a Lambda needs a short-TTL rate counter or mid-session geo record for security state.
     - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness: use when checking whether this month's fraud-prevention-header compliance record has landed.
     - [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly: use when checking whether a directory listing still states the price in the catalogue.
+    - [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root: use when an assistant or a crawler that reads Markdown must find the site's pages, what Submit files and what it costs, in the pages that the environment lists.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
     - [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate: use when the holding-page domain needs a new or renewed ACM certificate.
     - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration: use when a PITR restore procedure must be drilled or tested against a real table.
@@ -635,9 +637,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod) Write a landing page for each filing that is production on prod
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -681,7 +683,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
 - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML
-- [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod) Write a landing page for each filing that is production on prod
+- [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -774,13 +776,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** static content, faq, guide, help page, no javascript, crawler, generated page
 - **Related:** SITE-10, SITE-22, OPS-143
 
-#### SITE-32 Write a landing page for each filing that is production on prod
+#### SITE-32 Write a landing page for each filing that is production on prod, and the article pages
 
 - **Use when:** a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
-- **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. The committed pages are checked against this render.
+- **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). The committed pages are checked against this render.
 - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
-- **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`
-- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html
+- **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`
+- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js
 - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 - **Related:** SITE-14, SITE-31
 
@@ -852,6 +854,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
 - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots) Build the marketing site data, social images and brand shots
+- [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
 <!-- /generated:group site-pages-and-content-site -->
 
 #### SITE-10 Serve general site pages
@@ -903,6 +906,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/build-marketing-site.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml, web/marketing/marketing-lib.js, web/marketing/cards/card.html, web/unit-tests/marketing-site.test.js
 - **Keywords:** marketing, social images, og image, brand guide, brand shots, design tokens, banners, share posts
 - **Related:** DEV-47, SITE-11
+
+#### SITE-33 Check the tax sources each week
+
+- **Use when:** checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
+- **Does:** tax-sources-check.yml runs scripts/verify-tax-sources.mjs weekly with --max-age-days 23. A quote missing from its page, or a source retrieved more than 23 days ago, fails the run. The run opens or refreshes one issue that names the sources and points at the tax-sources skill.
+- **Run:** `node scripts/verify-tax-sources.mjs --max-age-days 23`
+- **Entry:** `.github/workflows/tax-sources-check.yml`
+- **Files:** .github/workflows/tax-sources-check.yml, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, .claude/skills/tax-sources/SKILL.md
+- **Keywords:** tax sources check, source age, gov.uk quote, weekly check, tax-sources-check.yml
+- **Related:** SITE-22
 
 ### Frontend infrastructure (SITE)
 
@@ -2495,7 +2508,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-triage) Run alarm triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job) Check the runner's browser install in one job · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -3490,6 +3503,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records
 - [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness
 - [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly
+- [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
 - [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate
 - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
@@ -3684,6 +3698,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/workflows/listings-check.yml, scripts/listings-check.mjs, scripts/listings-register.mjs, web/marketing/marketing.toml
 - **Keywords:** listings check, directory listing, price text, listing register, monthly check, listings-check.yml
 - **Related:** SITE-25
+
+#### OPS-214 Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root
+
+- **Use when:** an assistant or a crawler that reads Markdown must find the site's pages, what Submit files and what it costs, in the pages that the environment lists.
+- **Does:** publish-llms.mjs reads the sitemap.xml of a built web root, so it covers the pages that the environment lists and any page that a later change adds. For each page it writes `<page>.md` beside the page (the page's main content as Markdown, read from the parsed page) and adds `<link rel="alternate" type="text/markdown">` to the page's head, once. It writes llms.txt (the site name, one paragraph from the catalogue for the environment, one linked line per page) and llms-full.txt (the Markdown of every page, then the FAQ entries that the environment lists). The page files in web/public do not change. EdgeStack serves `*.md` with X-Robots-Tag: noindex. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-content.mjs.
+- **Run:** `node scripts/publish-llms.mjs <web-root> <environment-name>`
+- **Entry:** `scripts/publish-llms.mjs:publishLlms`; `scripts/publish-llms.mjs:pageMarkdown`
+- **Files:** scripts/publish-llms.mjs, app/unit-tests/scripts/publishLlms.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
+- **Keywords:** llms.txt, llms-full.txt, markdown, alternate link, assistant, crawler, noindex, sitemap, catalogue environments
+- **Related:** OPS-143, OPS-213
 
 #### OPS-48 Verify backup health daily
 
@@ -7054,6 +7078,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - allow-list: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - allowed-commit-identities: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - allowlist: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
+- alternate link: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - amount owed: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - analytics event: [SITE-04](#site-04-track-visits-via-session-beacon)
 - analytics lake: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
@@ -7094,6 +7119,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - assert: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - assert configuration: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - asset groups: [DATA-33](#data-33-read-the-google-ads-account-inventory)
+- assistant: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - associate-alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - async request: [SITE-09](#site-09-track-and-poll-async-api-requests), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - async request state: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
@@ -7312,7 +7338,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cash: [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [SITE-30](#site-30-build-the-welsh-pages), [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
-- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment)
+- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -7495,7 +7521,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
-- confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
@@ -7554,7 +7580,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - crawl diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
-- crawler: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment)
+- crawler: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - create secrets: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - create-secrets: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
@@ -7795,7 +7821,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
 - dormant: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
-- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - double rule: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -7957,7 +7983,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing callback: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
-- filing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- filing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - filing periods: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
 - filleted: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - filleted accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
@@ -8046,7 +8072,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - generate-se: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generate-taxi: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generated documentation: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
-- generated page: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- generated page: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - generation: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - geo state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - get /api/v1/companies-house/company: [CH-04](#ch-04-fetch-a-company-profile)
@@ -8104,6 +8130,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gov-test-scenario: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
+- gov.uk quote: [SITE-33](#site-33-check-the-tax-sources-each-week)
 - government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
@@ -8366,7 +8393,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda warming: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - lambda wiring: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [BILL-36](#bill-36-cdk-account-stack)
 - lambda worker: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
-- landing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- landing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - language switch: [SITE-30](#site-30-build-the-welsh-pages)
@@ -8412,6 +8439,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - llm judge: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
 - llm-voice: [SS-57](#ss-57-write-plain-human-prose)
+- llms-full.txt: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
+- llms.txt: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - loading spinner: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - local app: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - local aws credentials: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
@@ -8464,6 +8493,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - manual destroy: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - manual review: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - manual stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- markdown: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - marketing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-and-brand-shots)
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
@@ -8513,7 +8543,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa claim: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
-- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - microsoft advertising: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - microsoft advertising skill: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
@@ -8595,6 +8625,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - node version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - node-qrcode: [SITE-19](#site-19-generate-qr-codes)
 - node_modules reset: [DEV-22](#dev-22-clean-and-update-local-build-state)
+- noindex: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -9177,7 +9208,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - sealed grant: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data)
-- search: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod), [CH-03](#ch-03-search-the-companies-house-register)
+- search: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-03](#ch-03-search-the-companies-house-register)
 - search analytics: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
 - search console: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
@@ -9228,7 +9259,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - send point: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
-- seo: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod), [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
+- seo: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - server.json: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
@@ -9275,7 +9306,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - site verification: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
-- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
+- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root), [SS-25](#ss-25-generate-sitemaps)
 - sitemap errors: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - sitemap submission: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - sitemap urls: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
@@ -9283,7 +9314,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
-- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - small files: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [DEV-55](#dev-55-review-the-operator-dashboard)
@@ -9294,6 +9325,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - soft delete: [BILL-56](#bill-56-delete-generated-passes)
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
+- source age: [SITE-33](#site-33-check-the-tax-sources-each-week)
 - source check: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record)
 - source data: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - source maps: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
@@ -9452,8 +9484,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - tax sources: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
+- tax sources check: [SITE-33](#site-33-check-the-tax-sources-each-week)
 - tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
+- tax-sources-check.yml: [SITE-33](#site-33-check-the-tax-sources-each-week)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - tear down deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - teardown: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
@@ -9633,7 +9667,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat return: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - vat return body: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vat return csv: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
-- vat return from a spreadsheet: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod)
+- vat return from a spreadsheet: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - vat scheme: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - vat validation: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vatinterface: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
@@ -9717,6 +9751,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - week on week: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
+- weekly check: [SITE-33](#site-33-check-the-tax-sources-each-week)
 - weekly crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
