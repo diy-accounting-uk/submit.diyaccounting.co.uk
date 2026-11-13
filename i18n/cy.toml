@@ -116,6 +116,90 @@ cy = '''Teclyn chwilio meddalwedd CThEF'''
 hash = "84609fe4f109"
 cy = '''Mae DIY Accounting Submit wedi’i restru ar declyn chwilio swyddogol CThEF am feddalwedd Troi Treth yn Ddigidol ar gyfer TAW. <a href="https://www.tax.service.gov.uk/making-tax-digital-software" target="_blank" rel="noopener">Chwiliwch am DIY Accounting</a> ar y teclyn i wirio drosoch eich hun.'''
 
+[strings."index.rt-login-note"]
+hash = "8b353468b825"
+cy = '''Mae angen cyfrif a Bundle ar gyfer y gweithgareddau hyn.'''
+
+[strings."index.rt-none"]
+hash = "23f7cb5c6765"
+cy = '''Nid oes gweithgareddau ar gael. Gofynnwch am Bundles ychwanegol i gael mwy o nodweddion.'''
+
+[strings."index.rt-error"]
+hash = "593e7a1318a2"
+cy = '''Gwall wrth lwytho’r gweithgareddau. Adnewyddwch y dudalen.'''
+
+[strings."index.rt-unavailable"]
+hash = "eb8063d3e774"
+cy = '''Methu llwytho’r gweithgareddau. Rhowch gynnig arall arni nes ymlaen.'''
+
+[strings."index.rt-insufficient"]
+hash = "0a27925b850c"
+cy = '''Dim digon o gredyd'''
+
+[strings."index.rt-no-tokens-available"]
+hash = "3a0a9447135c"
+cy = '''Dim credyd ar gael'''
+
+[strings."index.rt-no-tokens"]
+hash = "b8235d8cf82d"
+cy = '''Dim credyd'''
+
+[strings."index.rt-expired"]
+hash = "424a2551d356"
+cy = '''Wedi dod i ben'''
+
+[strings."index.rt-requires"]
+hash = "143f0330d2de"
+cy = '''Angen'''
+
+[strings."index.rt-or"]
+hash = "7175517a370b"
+cy = '''neu'''
+
+[strings."index.rt-sending"]
+hash = "286a3af7348e"
+cy = '''Yn anfon...'''
+
+[strings."index.rt-thanks"]
+hash = "6744fff5488f"
+cy = '''Diolch! Byddwn mewn cysylltiad cyn bo hir.'''
+
+[strings."index.rt-retry"]
+hash = "d8b8392e2c54"
+cy = '''Rhowch gynnig arall arni'''
+
+[strings."index.rt-status-production"]
+hash = "13a7c655a7d4"
+cy = '''Cynhyrchu'''
+
+[strings."index.rt-status-sandbox"]
+hash = "67fc62497e85"
+cy = '''Prawf'''
+
+[strings."index.rt-status-preview"]
+hash = "324b134f57c7"
+cy = '''Rhagolwg'''
+
+[strings."index.rt-meaning-production"]
+hash = "bc8c0922be6a"
+cy = '''at ddefnydd go iawn'''
+
+[strings."index.rt-meaning-sandbox"]
+hash = "2c4f1359ac6e"
+cy = '''yn erbyn gwasanaeth prawf'''
+
+[strings."index.rt-meaning-preview"]
+hash = "ac683e52a277"
+cy = '''ar ein hefelychydd yn unig'''
+
+[strings."index.rt-and"]
+hash = "6201111b83a0"
+cy = '''a'''
+
+[strings."index.rt-and-vowel"]
+hash = "6201111b83a0"
+cy = '''ac'''
+
 [strings."get-started.title"]
 hash = "2491af039e03"
 cy = '''Dechrau arni - DIY Accounting Submit'''

@@ -103,4 +103,33 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box.locator("li", { hasText: "Preview" })).toContainText("HMRC Assist for VAT");
     await expect(box.locator("li", { hasText: "Sandbox" })).toContainText("HMRC Income Tax (MTD)");
   });
+
+  test("the Welsh home page lists the activities and the status in Welsh", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("cognitoIdToken"));
+    await page.route("**/*", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+      if (url.pathname === "/submit.environment-name.txt") return route.fulfill({ status: 200, contentType: "text/plain", body: "prod" });
+      const filePath = path.join(PUBLIC_ROOT, decodeURIComponent(url.pathname));
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        return route.fulfill({
+          status: 200,
+          contentType: CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream",
+          body: fs.readFileSync(filePath),
+        });
+      }
+      return route.fulfill({ status: 404, contentType: "text/plain", body: "Not found" });
+    });
+    await page.goto("http://localhost:3000/cy/index.html", { waitUntil: "domcontentloaded" });
+
+    const activities = page.locator("#dynamicActivities");
+    await expect(activities).toContainText("Mae angen cyfrif a Bundle ar gyfer y gweithgareddau hyn.");
+    await expect(activities.locator("h2").first()).toHaveText("TAW");
+    await expect(activities).toContainText("Cyflwyno TAW (CThEF)");
+    await expect(activities).not.toContainText(/These activities|Submit VAT|Obligations/);
+    const status = page.locator("#featureStatusList");
+    await expect(status).toContainText("at ddefnydd go iawn: TAW CThEF");
+    await expect(status).not.toContainText(/for real use|Production/);
+  });
 });

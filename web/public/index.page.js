@@ -239,7 +239,7 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
 // The status box says what the catalogue lists for this environment.
 function renderFeatureStatus(catalog, environmentName, viewer) {
   const list = document.getElementById("featureStatusList");
-  const { groups } = window.featureStatusSummary(catalog, environmentName, viewer);
+  const { groups } = window.featureStatusSummary(catalog, environmentName, viewer, window.pageLanguage());
   if (list) window.renderFeatureStatusList(list, groups);
 }
 
@@ -255,7 +255,10 @@ async function renderDynamicActivities() {
       text = await catalogService.fetchCatalogText();
     } catch {
       dynamicContainer.replaceChildren(
-        messageParagraph("activity-message activity-message--error", "Unable to load activities. Please try again later."),
+        messageParagraph(
+          "activity-message activity-message--error",
+          window.pageText("unavailable", "Unable to load activities. Please try again later."),
+        ),
       );
       return;
     }
@@ -267,6 +270,7 @@ async function renderDynamicActivities() {
     const viewerSettings = await import("/lib/services/viewer-settings.js");
     const viewer = await viewerSettings.fetchViewer();
     renderFeatureStatus(catalog, currentEnvironmentName, viewer);
+    const language = window.pageLanguage();
 
     // Build a map of bundle id -> levelName for upsell display (distinct levels)
     const bundleLevelNameMap = {};
@@ -304,7 +308,9 @@ async function renderDynamicActivities() {
         // User has access OR display="always" - show active button
         const tokenCost = activity.tokenCost || 0;
         const isMetered = activity.metered === true;
-        const tokenLabel = isMetered && tokenCost > 0 ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
+        const tokenLabel = isMetered && tokenCost > 0 ? window.tokenCostLabel(tokenCost, language) : "";
+        const name = window.activityName(activity, language);
+        const insufficientText = window.pageText("insufficient", "Insufficient tokens");
 
         // An unlimited-grant bundle (the resident-tax-agent practice licence) covering this
         // activity is exempt from the token count - never insufficient, never blocked.
@@ -320,8 +326,8 @@ async function renderDynamicActivities() {
             activityItem({
               buttonClass: "btn",
               disabled: true,
-              label: `Insufficient tokens \u2014 ${activity.name}`,
-              note: "Insufficient tokens",
+              label: `${insufficientText} \u2014 ${name}`,
+              note: insufficientText,
               noteClass: "activity-note activity-note--warn",
             }),
           );
@@ -331,24 +337,31 @@ async function renderDynamicActivities() {
             activityItem({
               buttonClass: "btn",
               disabled: true,
-              label: `No tokens \u2014 ${activity.name}`,
-              note: "No tokens available",
+              label: `${window.pageText("no-tokens", "No tokens")} \u2014 ${name}`,
+              note: window.pageText("no-tokens-available", "No tokens available"),
               noteClass: "activity-note activity-note--warn",
             }),
           );
         } else {
-          addActivity(path, activityItem({ buttonClass: "btn activity-secondary", href: path, label: `${activity.name}${tokenLabel}` }));
+          addActivity(path, activityItem({ buttonClass: "btn activity-secondary", href: path, label: `${name}${tokenLabel}` }));
         }
       } else if (hasExpiredAccess) {
         // User had access but it expired - show disabled button
-        addActivity(path, activityItem({ buttonClass: "btn", disabled: true, label: `Expired \u2014 ${activity.name}` }));
+        addActivity(
+          path,
+          activityItem({
+            buttonClass: "btn",
+            disabled: true,
+            label: `${window.pageText("expired", "Expired")} \u2014 ${window.activityName(activity, language)}`,
+          }),
+        );
       } else if (displayRule === "always-with-upsell") {
         // User doesn't have access - show activity with upsell annotation
         const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
         const distinctLevelNames = [
           ...new Set(activity.bundles.filter((id) => id !== "default").map((id) => bundleLevelNameMap[id] || id)),
         ];
-        const requiredBundleNames = distinctLevelNames.join(" or ");
+        const requiredBundleNames = distinctLevelNames.join(` ${window.pageText("or", "or")} `);
 
         if (isLoggedIn) {
           // Logged in but missing bundle - link to bundles page
@@ -357,8 +370,8 @@ async function renderDynamicActivities() {
             activityItem({
               buttonClass: "btn activity-secondary",
               href: "bundles.html",
-              label: activity.name,
-              note: `Requires: ${requiredBundleNames}`,
+              label: window.activityName(activity, language),
+              note: `${window.pageText("requires", "Requires")}: ${requiredBundleNames}`,
               noteClass: "activity-note",
             }),
           );
@@ -370,7 +383,7 @@ async function renderDynamicActivities() {
             activityItem({
               buttonClass: "btn activity-secondary",
               href: "auth/login.html",
-              label: activity.name,
+              label: window.activityName(activity, language),
             }),
           );
         }
@@ -381,7 +394,10 @@ async function renderDynamicActivities() {
     // If no activities to show, display message
     if (activitiesByArea.size === 0) {
       dynamicContainer.replaceChildren(
-        messageParagraph("activity-message", "No activities available. Request additional bundles to access more features."),
+        messageParagraph(
+          "activity-message",
+          window.pageText("none", "No activities available. Request additional bundles to access more features."),
+        ),
       );
       return;
     }
@@ -392,19 +408,25 @@ async function renderDynamicActivities() {
       .map((area) => {
         const section = document.createElement("section");
         section.className = "activity-group";
-        section.setAttribute("aria-label", area);
+        const areaTitle = window.areaName(area, language);
+        section.setAttribute("aria-label", areaTitle);
         const heading = document.createElement("h2");
-        heading.textContent = area;
+        heading.textContent = areaTitle;
         section.append(heading, ...activitiesByArea.get(area));
         return section;
       });
-    const loginNote = needsLogin ? [messageParagraph("activity-message", "These activities need an account and a bundle.")] : [];
+    const loginNote = needsLogin
+      ? [messageParagraph("activity-message", window.pageText("login-note", "These activities need an account and a bundle."))]
+      : [];
     dynamicContainer.replaceChildren(...loginNote, ...sections);
     dynamicContainer.querySelector(".activity-secondary")?.classList.remove("activity-secondary");
   } catch (error) {
     console.error("Error loading activities:", error);
     dynamicContainer.replaceChildren(
-      messageParagraph("activity-message activity-message--error", "Error loading activities. Please refresh the page."),
+      messageParagraph(
+        "activity-message activity-message--error",
+        window.pageText("error", "Error loading activities. Please refresh the page."),
+      ),
     );
   } finally {
     dynamicContainer.classList.remove("reserve-viewport-height");
@@ -440,20 +462,20 @@ async function initFeedbackEngagementBanner() {
   if (joinBtn) {
     joinBtn.addEventListener("click", async function () {
       joinBtn.disabled = true;
-      joinBtn.textContent = "Sending...";
+      joinBtn.textContent = window.pageText("sending", "Sending...");
       try {
         const response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
         if (response.ok) {
-          joinBtn.textContent = "Thanks! We'll be in touch soon.";
+          joinBtn.textContent = window.pageText("thanks", "Thanks! We'll be in touch soon.");
           joinBtn.classList.add("btn-ok");
           localStorage.setItem("feedbackEngagementRegistered", "true");
         } else {
-          joinBtn.textContent = "Try again";
+          joinBtn.textContent = window.pageText("retry", "Try again");
           joinBtn.disabled = false;
         }
       } catch (err) {
         console.error("Feedback engagement failed:", err);
-        joinBtn.textContent = "Try again";
+        joinBtn.textContent = window.pageText("retry", "Try again");
         joinBtn.disabled = false;
       }
     });

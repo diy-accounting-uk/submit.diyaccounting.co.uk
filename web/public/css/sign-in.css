@@ -90,7 +90,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* holds the place of content that arrives after first paint, so what follows does not jump */
-.reserve-viewport-height {
-  min-height: min(100vh, 48rem);
+/* holds the place of content that the page script replaces after first paint, so what follows does not jump;
+   a reader whose script is off keeps the list the page was built with and gets no empty space below it */
+@media (scripting: enabled) {
+  .reserve-viewport-height {
+    min-height: min(100vh, 48rem);
+  }
 }

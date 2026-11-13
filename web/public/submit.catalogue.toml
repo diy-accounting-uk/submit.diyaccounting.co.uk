@@ -311,6 +311,7 @@ paths = ["bundles.html", "pass.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 [[activities]]
 id = "submit-vat"
 name = "Submit VAT (HMRC)"
+nameCy = "Cyflwyno TAW (CThEF)"
 display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
@@ -349,6 +350,7 @@ environments = ["local", "test", "simulator", "proxy"]
 [[activities]]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
+nameCy = "Rhwymedigaethau TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -364,6 +366,7 @@ hmrcScopesRequired = ["read:vat"]
 [[activities]]
 id = "vat-liabilities"
 name = "VAT Liabilities (HMRC)"
+nameCy = "Dyledion TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -375,6 +378,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "vat-payments"
 name = "VAT Payments (HMRC)"
+nameCy = "Taliadau TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -386,6 +390,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "vat-penalties"
 name = "VAT Penalties (HMRC)"
+nameCy = "Cosbau TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -397,6 +402,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
+nameCy = "Gweld Ffurflen TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -407,6 +413,7 @@ hmrcScopesRequired = ["read:vat"]
 [[activities]]
 id = "self-employed"
 name = "Self Assessment (HMRC, sandbox)"
+nameCy = "Hunanasesiad (CThEF, amgylchedd prawf)"
 display = "always-with-upsell"
 bundles = ["resident-pro"]
 tokenCost = 1
@@ -503,6 +510,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 [[activities]]
 id = "company-lookup"
 name = "Company Lookup (Companies House)"
+nameCy = "Chwilio am gwmni (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
@@ -512,6 +520,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "change-registered-office"
 name = "Change Registered Office Address (Companies House)"
+nameCy = "Newid cyfeiriad y swyddfa gofrestredig (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
@@ -523,6 +532,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "change-registered-email"
 name = "Change Registered Email Address (Companies House)"
+nameCy = "Newid y cyfeiriad e-bost cofrestredig (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
@@ -532,6 +542,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "file-micro-entity-accounts"
 name = "File Micro-entity Accounts (Companies House)"
+nameCy = "Ffeilio cyfrifon microgwmni (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 tokenCost = 1
@@ -542,6 +553,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "file-small-company-accounts"
 name = "File Small Company Accounts (Companies House)"
+nameCy = "Ffeilio cyfrifon cwmni bach (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 tokenCost = 1
@@ -552,6 +564,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "file-company-tax-return"
 name = "File Company Tax Return (HMRC, preview)"
+nameCy = "Ffeilio Ffurflen Dreth Cwmni (CThEF, rhagolwg)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 tokenCost = 1
@@ -576,6 +589,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 [[activities]]
 id = "file-confirmation-statement"
 name = "File Confirmation Statement (Companies House)"
+nameCy = "Ffeilio datganiad cadarnhau (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 tokenCost = 0
@@ -600,6 +614,7 @@ default = true
 [[activities]]
 id = "file-psc-verification-statement"
 name = "File PSC Verification Statement (Companies House, sandbox)"
+nameCy = "Ffeilio datganiad gwirio PSC (Tŷ'r Cwmnïau, amgylchedd prawf)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 metered = false
@@ -609,6 +624,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 [[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
+nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"
 display = "on-entitlement"
 bundles = ["resident-pro"]
 metered = false
@@ -635,6 +651,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 [[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
+nameCy = "Gweld derbynebau a gyflwynwyd eisoes"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
@@ -643,6 +660,7 @@ paths = ["hmrc/receipt/receipts.html", "companies-house/filings.html", "^/api/v1
 [[activities]]
 id = "generate-pass-digital"
 name = "Generate Digital Pass"
+nameCy = "Creu tocyn digidol"
 display = "on-entitlement"
 bundles = ["resident-vat"]
 tokenCost = 10
@@ -658,6 +676,7 @@ accountSetting = "passGeneration"
 [[activities]]
 id = "generate-pass-physical"
 name = "Generate Physical Pass"
+nameCy = "Creu tocyn ffisegol"
 display = "on-entitlement"
 bundles = ["resident-vat"]
 tokenCost = 10
@@ -672,6 +691,7 @@ accountSetting = "passGeneration"
 [[activities]]
 id = "help"
 name = "Learn about DIY Accounting Submit"
+nameCy = "Dysgu am DIY Accounting Submit"
 display = "always"
 bundles = ["default"]
 metered = false
@@ -680,6 +700,7 @@ paths = ["about.html"]
 [[activities]]
 id = "operator-dashboard"
 name = "Operator Dashboard"
+nameCy = "Dangosfwrdd y gweithredwr"
 display = "on-entitlement"
 bundles = ["operator"]
 metered = false
