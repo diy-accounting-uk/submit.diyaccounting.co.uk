@@ -1,0 +1,218 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The tools that the two comparison pages list. scripts/build-filing-pages.mjs reads this file.
+# Each price is the vendor's own words on its own page (`price_url`), read on `price_read`.
+# `price_text` appears in that page's text; scripts/check-compare-prices.mjs checks it each month.
+# `price_pence` and `price_period` (year, month or filing) only set the order of the table.
+# The row marked `ours` has no price here: the generator reads it from web/public/submit.catalogue.toml.
+
+[[tool]]
+compares = "vat"
+name = "DIY Accounting Submit"
+url = "https://submit.diyaccounting.co.uk/"
+files = "VAT returns from a spreadsheet"
+ours = true
+bundle = "resident-vat"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "123 Sheets"
+url = "https://123sheets.com/vat.aspx"
+files = "VAT returns from a spreadsheet"
+price_text = "Annual Price (first year half-price) + VAT: £19.75"
+price_pence = 1975
+price_period = "year"
+price_url = "https://123sheets.com/vat.aspx"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "TinyTax"
+url = "https://tinytax.co.uk/mtd-vat"
+files = "VAT returns from a spreadsheet"
+price_text = "MTD VAT £29 per year, 1 VRN"
+price_pence = 2900
+price_period = "year"
+price_url = "https://tinytax.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "Tax Optimiser"
+url = "https://www.taxoptimiser.co.uk/"
+files = "VAT returns from a spreadsheet"
+price_text = "Free for the first year. £ 30 +VAT yearly per organisation or individual"
+price_pence = 3000
+price_period = "year"
+price_url = "https://www.taxoptimiser.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "VATMonkey"
+url = "https://www.vatmonkey.co.uk"
+files = "VAT returns from a spreadsheet"
+price_text = "only £8.99 per VAT submission"
+price_pence = 899
+price_period = "filing"
+price_url = "https://www.vatmonkey.co.uk"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "Bridge It MTD"
+url = "https://www.bridgeitmtd.co.uk/"
+files = "VAT returns from a spreadsheet"
+price_text = "Single Vat Submission £6.99 + VAT per submission"
+price_pence = 699
+price_period = "filing"
+price_url = "https://www.bridgeitmtd.co.uk/"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "XLVAT"
+url = "https://www.xlvat.com/"
+files = "VAT returns from a spreadsheet"
+price_text = "It costs £5 to file a single VAT return using XLVAT."
+price_pence = 500
+price_period = "filing"
+price_url = "https://www.xlvat.com/pricing.html"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "11 MTD Bridge"
+url = "https://11mtdbridge.co.uk/"
+files = "VAT returns from a spreadsheet"
+price_text = "Start Filing — £5.99 No subscription required Pay per filing"
+price_pence = 599
+price_period = "filing"
+price_url = "https://11mtdbridge.co.uk/"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "HiveMTD"
+url = "https://hivemtd.com/"
+files = "VAT returns from a spreadsheet"
+price_text = "STARTER £5 + VAT Per Month"
+price_pence = 500
+price_period = "month"
+price_url = "https://hivemtd.com/"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "MTD Sheets"
+url = "https://mtdsheets.com/"
+files = "VAT returns from a spreadsheet"
+price_text = "Credits cost £2.99 each, or as little as £0.49 when bought in bulk."
+price_pence = 299
+price_period = "filing"
+price_url = "https://mtdsheets.com/"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "MTDsorted"
+url = "https://www.mtdsorted.co.uk/"
+files = "VAT returns from a spreadsheet"
+price_text = "We don't charge for VAT returns"
+price_pence = 0
+price_period = "year"
+price_url = "https://www.mtdsorted.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "vat"
+name = "WeFile"
+url = "https://wefile.co.uk/vat-returns"
+files = "VAT returns from a spreadsheet"
+price_text = "WeFile includes free Making Tax Digital (MTD) compatible VAT return filing"
+price_pence = 0
+price_period = "year"
+price_url = "https://wefile.co.uk/"
+price_read = "2026-11-13"
+lists = "HMRC bridging software"
+
+[[tool]]
+compares = "accounts"
+name = "DIY Accounting Submit"
+url = "https://submit.diyaccounting.co.uk/"
+files = "Micro-entity, small and dormant company accounts"
+ours = true
+bundle = "resident-ltd"
+lists = "Not on the Companies House list"
+
+[[tool]]
+compares = "accounts"
+name = "TinyTax"
+url = "https://tinytax.co.uk/annual-accounts"
+files = "Micro-entity and small company accounts, with the Company Tax Return"
+price_text = "Solo £69 per year"
+price_pence = 6900
+price_period = "year"
+price_url = "https://tinytax.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "Companies House, unaudited micro-entity accounts"
+
+[[tool]]
+compares = "accounts"
+name = "Tax Optimiser"
+url = "https://www.taxoptimiser.co.uk/"
+files = "Company accounts, with the Company Tax Return"
+price_text = "CT600 + accounts from £10 + VAT"
+price_pence = 1000
+price_period = "year"
+price_url = "https://www.taxoptimiser.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "Companies House, unaudited micro-entity accounts"
+
+[[tool]]
+compares = "accounts"
+name = "Simple CompanyTax"
+url = "https://www.simplecompanytax.co.uk/"
+files = "Micro-entity accounts, with the Company Tax Return"
+price_text = "£25 +VAT per year for eligible active micro-entity companies using FRS 105"
+price_pence = 2500
+price_period = "year"
+price_url = "https://www.simplecompanytax.co.uk/pricing"
+price_read = "2026-11-13"
+lists = "Companies House, unaudited micro-entity accounts"
+
+[[tool]]
+compares = "accounts"
+name = "Easy Digital Filing"
+url = "https://easydigitalfiling.com/"
+files = "Micro-entity accounts, with the Company Tax Return"
+price_text = "Micro Companies £119 +VAT"
+price_pence = 11900
+price_period = "filing"
+price_url = "https://easydigitalfiling.com/pricing"
+price_read = "2026-11-13"
+lists = "Companies House, unaudited micro-entity accounts"
+
+[[tool]]
+compares = "accounts"
+name = "DaFinIT-Micro"
+url = "https://www.dafinit-micro.co.uk/"
+files = "Micro-entity accounts, with the Company Tax Return"
+price_text = "From £2.50 per filing"
+price_pence = 250
+price_period = "filing"
+price_url = "https://www.dafinit-micro.co.uk/"
+price_read = "2026-11-13"
+lists = "Companies House, unaudited micro-entity accounts"

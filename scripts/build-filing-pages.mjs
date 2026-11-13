@@ -4,10 +4,10 @@
 
 // @capability SITE-32 Write a landing page for each filing that is production on prod, and the article pages
 // - **Use when:** a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
-// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). The committed pages are checked against this render.
+// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). A third entry kind, the comparison, writes a table of tools sorted by price from web/public/compare/vendors.toml, with our own row priced from the catalogue. The committed pages are checked against this render.
 // - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
-// - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`
-// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js
+// - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`; `scripts/build-filing-pages.mjs:renderComparisonPage`
+// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
 // - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 // - **Related:** SITE-14, SITE-31
 // @end-capability
@@ -24,11 +24,12 @@ import { AREA_PAGES } from "../web/public/widgets/video-pages.js";
 import { AVAILABILITY, QUARTERLY_FACT, availabilityStatus } from "./build-mtd-calendar.mjs";
 import { FREQUENCIES } from "../web/public/lib/vat/penalty-rules.js";
 import { escapeHtml } from "./page-markers.mjs";
-import { loadSources, sourceQuoteHtml } from "./tax-sources.mjs";
+import { formatIsoDate, loadSources, sourceQuoteHtml } from "./tax-sources.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIRECTORY = join(ROOT, "web", "public");
 const DATA_PATH = join(ROOT, "scripts", "filing-pages.toml");
+const VENDORS_PATH = join(PUBLIC_DIRECTORY, "compare", "vendors.toml");
 const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
 const PUBLIC_ENVIRONMENT = "prod";
 const RESIDENT_BUNDLE_BY_ACTIVITY_AREA = { "vat": "resident-vat", "companies-house": "resident-ltd" };
@@ -39,6 +40,14 @@ export function loadPages() {
 
 export function loadArticles() {
   return TOML.parse(readFileSync(DATA_PATH, "utf8")).article;
+}
+
+export function loadComparisons() {
+  return TOML.parse(readFileSync(DATA_PATH, "utf8")).comparison;
+}
+
+export function loadTools() {
+  return TOML.parse(readFileSync(VENDORS_PATH, "utf8")).tool;
 }
 
 export function loadCatalog() {
@@ -117,12 +126,13 @@ function deadlineHtml(page, sources) {
   return `<p>${escapeHtml(page.deadline.text)}</p>${sourceQuoteHtml(source)}`;
 }
 
-function otherPagesHtml(page, pages) {
+function otherPagesHtml(page, pages, comparisons = []) {
   const links = pages
     .filter((other) => other.file !== page.file)
-    .map((other) => `<li><a href="${other.file}">${escapeHtml(other.heading)}</a></li>`)
-    .join("");
-  return `<ul>${links}</ul>`;
+    .map((other) => `<li><a href="${other.file}">${escapeHtml(other.heading)}</a></li>`);
+  const compared = comparisons.find((comparison) => comparison.file === page.compared_in);
+  if (compared) links.push(`<li><a href="${compared.file}">${escapeHtml(compared.heading)}</a></li>`);
+  return `<ul>${links.join("")}</ul>`;
 }
 
 /**
@@ -208,7 +218,7 @@ ${mainHtml}
  * @param {object} page an entry of filing-pages.toml
  * @param {object[]} pages every entry that gets a page, for the links between them
  */
-export function renderFilingPage(page, pages, catalog, manifest, sources) {
+export function renderFilingPage(page, pages, catalog, manifest, sources, comparisons = []) {
   const video = manifest.videos.find((candidate) => candidate.id === page.video);
   if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
   const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
@@ -245,7 +255,7 @@ export function renderFilingPage(page, pages, catalog, manifest, sources) {
         <h2>Ready to file</h2>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
         <h2>Other filings</h2>
-        ${otherPagesHtml(page, pages)}
+        ${otherPagesHtml(page, pages, comparisons)}
         <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
 `;
@@ -347,6 +357,85 @@ ${sections}
   return renderPageShell(article, main, scripts);
 }
 
+/** What one year costs for sorting: a monthly price counts 12 times, a price for each filing counts `filingsPerYear` times. */
+export function yearPence(tool, filingsPerYear) {
+  const times = { year: 1, month: 12, filing: filingsPerYear }[tool.price_period];
+  if (times === undefined) throw new Error(`${tool.name}: unknown price_period ${tool.price_period}`);
+  return tool.price_pence * times;
+}
+
+/** The tools of one comparison with our own row's price read from the catalogue, sorted by the price for one year. */
+export function comparisonTools(comparison, tools, catalog) {
+  const rows = tools
+    .filter((tool) => tool.compares === comparison.compares)
+    .map((tool) => {
+      if (!tool.ours) return tool;
+      const bundle = catalog.bundles.find((candidate) => candidate.id === tool.bundle);
+      const price = getBundlePrices(bundle).find((candidate) => candidate.default);
+      return {
+        ...tool,
+        price_text: `${formatPounds(price.amount)} ${intervalWords(price.interval)}`,
+        price_pence: price.amount,
+        price_period: price.interval,
+      };
+    });
+  return rows.sort(
+    (a, b) => yearPence(a, comparison.filings_per_year) - yearPence(b, comparison.filings_per_year) || a.name.localeCompare(b.name),
+  );
+}
+
+/** The first and last dates on which a price was read, as words. */
+export function priceReadWords(tools) {
+  const dates = tools
+    .filter((tool) => !tool.ours)
+    .map((tool) => tool.price_read)
+    .sort();
+  const first = formatIsoDate(dates[0]);
+  const last = formatIsoDate(dates[dates.length - 1]);
+  return first === last ? `on ${first}` : `between ${first} and ${last}`;
+}
+
+function toolRowHtml(tool) {
+  const name = tool.ours
+    ? `<a href="${escapeHtml(tool.url)}">${escapeHtml(tool.name)}</a> <strong>(our own product)</strong>`
+    : `<a href="${escapeHtml(tool.url)}" rel="noopener">${escapeHtml(tool.name)}</a>`;
+  const source = tool.ours
+    ? `<a href="bundles.html">Our price list</a>`
+    : `Price read on ${formatIsoDate(tool.price_read)}: <a href="${escapeHtml(tool.price_url)}" rel="noopener">the price page</a>`;
+  return `<tr><td>${name}</td><td>${escapeHtml(tool.files)}</td><td>${escapeHtml(tool.price_text)}</td><td>${source}</td></tr>`;
+}
+
+/**
+ * The HTML of one comparison page, before formatting.
+ * @param {object} comparison an entry of the comparison list in filing-pages.toml
+ * @param {object[]} tools the entries of vendors.toml
+ */
+export function renderComparisonPage(comparison, tools, catalog) {
+  const rows = comparisonTools(comparison, tools, catalog);
+  const vendors = rows.filter((tool) => !tool.ours);
+  const sortRule =
+    comparison.filings_per_year > 1
+      ? `a monthly price counts 12 times and a price for each return counts ${comparison.filings_per_year} times, for ${comparison.filings_per_year} quarterly returns`
+      : "a monthly price counts 12 times";
+  const summary =
+    `This table lists tools that ${comparison.job}. ${comparison.rule} ` +
+    `We read each price on the vendor's own website ${priceReadWords(rows)}. ` +
+    `The table is a selection of ${vendors.length} tools, not every tool on the list.`;
+  const body = rows.map(toolRowHtml).join("");
+  const main = `
+      <div class="form-container">
+        <p>${escapeHtml(summary)}</p>
+        <p>${escapeHtml(comparison.list_sentence)} <a href="${escapeHtml(comparison.list_url)}" rel="noopener">${escapeHtml(comparison.list_name)}</a>.</p>
+        <p>The rows run from the lowest price for one year to the highest: ${escapeHtml(sortRule)}.</p>
+        <div class="table-scroll"><table class="deadline-table compare-table"><thead><tr><th scope="col">Tool</th><th scope="col">What it files</th><th scope="col">Price, in the vendor's words</th><th scope="col">Source</th></tr></thead><tbody>${body}</tbody></table></div>
+        <p>${escapeHtml(comparison.note)}</p>
+        <p>Prices change. The vendor's own page is the authority, so check it before you buy.</p>
+        <p><a class="btn" href="${escapeHtml(comparison.action.href)}">${escapeHtml(comparison.action.label)}</a></p>
+      </div>
+`;
+  return renderPageShell(comparison, main);
+}
+
 /** The fact ids that the quotes on the article pages support. */
 export function articleFactIds(articles = loadArticles(), sources = loadSources()) {
   const names = new Set(articles.flatMap((article) => article.section.flatMap((section) => section.sources ?? [])));
@@ -357,7 +446,13 @@ export function filingPagePath(page) {
   return join(PUBLIC_DIRECTORY, page.file);
 }
 
-export async function renderFilingPages(pages = loadPages(), catalog = loadCatalog(), manifest = loadManifest(), sources = loadSources()) {
+export async function renderFilingPages(
+  pages = loadPages(),
+  catalog = loadCatalog(),
+  manifest = loadManifest(),
+  sources = loadSources(),
+  comparisons = loadComparisons(),
+) {
   const toWrite = filingPagesToWrite(pages, catalog);
   const rendered = new Map();
   for (const page of toWrite) {
@@ -365,7 +460,7 @@ export async function renderFilingPages(pages = loadPages(), catalog = loadCatal
     const config = (await prettier.resolveConfig(path)) ?? {};
     rendered.set(
       page.file,
-      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources), { ...config, filepath: path }),
+      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources, comparisons), { ...config, filepath: path }),
     );
   }
   return rendered;
@@ -381,8 +476,18 @@ export async function renderArticlePages(articles = loadArticles(), sources = lo
   return rendered;
 }
 
+export async function renderComparisonPages(comparisons = loadComparisons(), tools = loadTools(), catalog = loadCatalog()) {
+  const rendered = new Map();
+  for (const comparison of comparisons) {
+    const path = filingPagePath(comparison);
+    const config = (await prettier.resolveConfig(path)) ?? {};
+    rendered.set(comparison.file, await prettier.format(renderComparisonPage(comparison, tools, catalog), { ...config, filepath: path }));
+  }
+  return rendered;
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  for (const [file, html] of [...(await renderFilingPages()), ...(await renderArticlePages())]) {
+  for (const [file, html] of [...(await renderFilingPages()), ...(await renderArticlePages()), ...(await renderComparisonPages())]) {
     writeFileSync(join(PUBLIC_DIRECTORY, file), html);
     console.log(`wrote ${file}`);
   }

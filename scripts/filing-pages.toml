@@ -16,6 +16,7 @@ subtitle = "Send the nine boxes from your spreadsheet to HMRC under Making Tax D
 description = "How to file a VAT return from a spreadsheet with HMRC under Making Tax Digital: what you need, the steps with screenshots, the price and the free pass."
 summary = "Submit sends the nine boxes of your VAT return to HMRC. You keep your records in your own spreadsheet, work out the boxes there, and enter the figures here. HMRC sends back a receipt with a Form Bundle Number."
 action = { label = "File a VAT return", href = "hmrc/vat/submitVat.html" }
+compared_in = "mtd-vat-bridging-software-compared.html"
 before = [
   "Your VAT registration number.",
   "The figures for the nine boxes of the period, worked out in your spreadsheet.",
@@ -34,6 +35,7 @@ subtitle = "File your company's annual accounts online from your own figures"
 description = "How to file micro-entity accounts at Companies House online: what you need, the steps with screenshots, the price and the due date."
 summary = "Submit turns the figures you give it into micro-entity accounts and files them with Companies House. You choose the accounting period, enter the balance sheet and profit and loss figures, check the answers and file."
 action = { label = "File micro-entity accounts", href = "companies-house/fileMicroEntityAccounts.html" }
+compared_in = "company-accounts-filing-software-compared.html"
 before = [
   "Your company number.",
   "The accounting period and the balance sheet and profit and loss figures for it.",
@@ -245,3 +247,35 @@ text = [
   "See [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html).",
   "Every date is on the [MTD calendar](mtd-calendar.html).",
 ]
+
+[[comparison]]
+file = "mtd-vat-bridging-software-compared.html"
+compares = "vat"
+filings_per_year = 4
+title = "MTD VAT bridging software compared by price - DIY Accounting Submit"
+heading = "MTD VAT bridging software compared by price"
+subtitle = "Tools that send a VAT return from a spreadsheet, with each price read on the vendor's own page"
+description = "A table of Making Tax Digital VAT bridging software on HMRC's list, sorted by price, with each vendor's own price words, the price page and the date it was read."
+job = "send a VAT return to HMRC from a spreadsheet"
+rule = "A tool is in the table when it is on HMRC's list of software compatible with Making Tax Digital for VAT as bridging software, shows a public price on its own website, and does the same job."
+list_sentence = "The list is"
+list_name = "Find software that is compatible with Making Tax Digital for VAT"
+list_url = "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat"
+note = "Each price is as the vendor states it, with or without VAT. The multiplication above sets the order only; the column shows the vendor's words."
+action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.html" }
+
+[[comparison]]
+file = "company-accounts-filing-software-compared.html"
+compares = "accounts"
+filings_per_year = 1
+title = "Company accounts filing software compared by price - DIY Accounting Submit"
+heading = "Company accounts filing software compared by price"
+subtitle = "Tools that file micro-entity or small company accounts, with each price read on the vendor's own page"
+description = "A table of software on Companies House's list that files micro-entity or small company accounts, sorted by price, with each vendor's own price words and the date it was read."
+job = "file micro-entity or small company accounts at Companies House"
+rule = "A tool is in the table when it is on the Companies House list of software for filing company accounts, shows a public price on its own website, and does the same job."
+list_sentence = "The list is"
+list_name = "Find software for filing company accounts"
+list_url = "https://www.gov.uk/software-company-accounts"
+note = "DIY Accounting Submit is on this page for comparison and is not on the Companies House list. Several tools also file the Company Tax Return, and their price covers both."
+action = { label = "File company accounts", href = "micro-entity-accounts.html" }
